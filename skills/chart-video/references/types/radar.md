@@ -27,11 +27,11 @@ Worked example: `proof/video-radar-electricity-mix` (2026-09-16), from `proof/st
 - **`hold` — ≈60 frames**. About 19 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- let a spoke take its own scale — one radial scale for every spoke, or area stops meaning anything
-- reorder the spokes for a nicer shape: the order is an editorial decision, made once and stated (here: by family, clockwise from twelve)
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-let-spoke-take` — let a spoke take its own scale — one radial scale for every spoke, or area stops meaning anything
+- `no-reorder-spokes-nicer` — reorder the spokes for a nicer shape: the order is an editorial decision, made once and stated (here: by family, clockwise from twelve)
 
 ## Precision to assert
 - every spoke keeps the same fixed scale, and a part's drawn length is its share × that scale at every frame of the swing

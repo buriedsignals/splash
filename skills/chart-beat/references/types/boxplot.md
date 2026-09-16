@@ -53,12 +53,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the peak category and the monotone fall after it, readable off the medians alone
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- resort the categories by median — a time-ordered categorical axis keeps its own order, or the rise-then-fall shape is destroyed
-- use more than one hue unless two groups are deliberately being compared; the median line and any value label stay in ink, never the box's own fill or stroke
-- stretch a whisker to the outlier it excludes
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-resort-categories-median` — resort the categories by median — a time-ordered categorical axis keeps its own order, or the rise-then-fall shape is destroyed
+- `no-use-hue-unless` — use more than one hue unless two groups are deliberately being compared; the median line and any value label stay in ink, never the box's own fill or stroke
+- `no-stretch-whisker-outlier` — stretch a whisker to the outlier it excludes
 
 ## Precision to assert
 - every summary is computed from the frozen file and the beat throws rather than draw a claim its own numbers do not support

@@ -69,12 +69,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the accented reference against the mass to its left
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- accent a bar: the bars are the distribution and the accent belongs to the reference line, not to the bars' own fill repeated as a second signal
-- choose a bin width that puts the counted threshold inside a bar — the accent would then claim a bin the claim does not count
-- pick a bin width by eye: it can manufacture or erase a peak that is not a property of the data at all
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-accent-bar` — accent a bar: the bars are the distribution and the accent belongs to the reference line, not to the bars' own fill repeated as a second signal
+- `no-choose-bin-width` — choose a bin width that puts the counted threshold inside a bar — the accent would then claim a bin the claim does not count
+- `no-pick-bin-width` — pick a bin width by eye: it can manufacture or erase a peak that is not a property of the data at all
 
 ## Precision to assert
 - every observation falls in exactly one bin and the counts sum to the asserted total

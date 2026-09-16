@@ -119,12 +119,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the leading cell against the cell that leads the sibling beat's ranking
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- put map tiles under the grid — the form has given up position, and the refusal is reasoned on the plate
-- size a key swatch off the hexagon rather than off the widest number that sits under it: that printed five breaks into one another
-- budget a key as one row when it draws two — a row that is drawn has to be a row that is budgeted
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-put-map-tiles` — put map tiles under the grid — the form has given up position, and the refusal is reasoned on the plate
+- `no-size-key-swatch` — size a key swatch off the hexagon rather than off the widest number that sits under it: that printed five breaks into one another
+- `no-budget-key-row` — budget a key as one row when it draws two — a row that is drawn has to be a row that is budgeted
 
 ## Precision to assert
 - the designed grid is checked BOTH ways against the data — every code has a reading and every reading has a cell

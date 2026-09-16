@@ -94,12 +94,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the ringed count against the field, and on the capacity share printed beside it
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- scatter national totals inside national polygons — the pattern a reader would see is the random number generator's, not the world's: every cluster an artefact and every hole one too
-- recolour the subset: that puts a second hue on a plate whose whole reading is one field's density, so the subset is RINGED
-- draw a panel run unwrapped — a panel is a frame too, and there is no such thing as a line short enough to skip the measurement, because how wide a string is depends on the direction
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-scatter-national-totals` — scatter national totals inside national polygons — the pattern a reader would see is the random number generator's, not the world's: every cluster an artefact and every hole one too
+- `no-recolour-subset` — recolour the subset: that puts a second hue on a plate whose whole reading is one field's density, so the subset is RINGED
+- `no-draw-panel-run` — draw a panel run unwrapped — a panel is a frame too, and there is no such thing as a line short enough to skip the measurement, because how wide a string is depends on the direction
 
 ## Precision to assert
 - one dot is one real thing, at the place the source records it

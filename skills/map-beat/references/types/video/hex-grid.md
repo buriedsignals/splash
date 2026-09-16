@@ -13,13 +13,13 @@ Owner rules that apply here: a video is an argument, not a reveal — every even
 - **`hold` — ≈60 frames**. About 20 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- let a bound paint be data-driven (`["get", …]`): `validateScrollyPlan` refuses it, because MapLibre relays the source out on every change and the frame never goes idle
-- put a word that has to be measured on the map as a map label — the key, the counts and the credit are SVG placed from `measured.json`, and the credit is one line over a part of the picture it does not touch
-- let the grid leave geography while a basemap is still under it — the handover and the ground rect are what stop a designed grid being read as a map
-- re-bin between shots: the aggregation is computed once from the frozen events and held fixed
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-let-bound-paint` — let a bound paint be data-driven (`["get", …]`): `validateScrollyPlan` refuses it, because MapLibre relays the source out on every change and the frame never goes idle
+- `no-put-word-measured` — put a word that has to be measured on the map as a map label — the key, the counts and the credit are SVG placed from `measured.json`, and the credit is one line over a part of the picture it does not touch
+- `no-let-grid-leave` — let the grid leave geography while a basemap is still under it — the handover and the ground rect are what stop a designed grid being read as a map
+- `no-re-bin-between` — re-bin between shots: the aggregation is computed once from the frozen events and held fixed
 
 ## Precision to assert
 - bin aggregation is computed once from the frozen events and held fixed across every shot; every country is present beneath the grid

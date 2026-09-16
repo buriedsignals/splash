@@ -31,11 +31,11 @@ Worked example: `proof/web-marimekko-electricity-mix` (2026-09-15), from
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- print a share inside a cell — the cell's area IS the share, and a number in it invites reading the height as the value
-- let a key swatch be measured against its neighbours rather than against the page: inside the chart a band is bounded by its neighbours, but in the KEY it sits on the ground, and its outline is held to the 3:1 non-text floor and re-measured after adjustment
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-print-share-inside` — print a share inside a cell — the cell's area IS the share, and a number in it invites reading the height as the value
+- `no-let-key-swatch` — let a key swatch be measured against its neighbours rather than against the page: inside the chart a band is bounded by its neighbours, but in the KEY it sits on the ground, and its outline is held to the 3:1 non-text floor and re-measured after adjustment
 
 ## Precision to assert
 - column width is on one unit-per-value scale and band height a share of the same 100 %, so a cell's area is the quantity, in every state

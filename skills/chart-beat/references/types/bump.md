@@ -69,12 +69,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the start rank and the end rank of the accented line, both named at their own ends
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- use a second accent hue — the type allows two or three, the recorded palette carries one, and a second would be a colour nobody chose
-- paint any label in a line's own hue, the accented line's name included: that is this type's named, previously-shipped WCAG failure
-- bridge a line across a missing period — the drawn set is by construction present in every period, and the component throws if a track's rank count does not match the period count
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-use-accent-hue` — use a second accent hue — the type allows two or three, the recorded palette carries one, and a second would be a colour nobody chose
+- `no-paint-label-line` — paint any label in a line's own hue, the accented line's name included: that is this type's named, previously-shipped WCAG failure
+- `no-bridge-line-across` — bridge a line across a missing period — the drawn set is by construction present in every period, and the component throws if a track's rank count does not match the period count
 
 ## Precision to assert
 - there is no rank column in the data and no rank typed anywhere: each is the position in a sort of every ISO-coded entity for that period

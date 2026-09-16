@@ -11,11 +11,11 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 - **Pull back** — the whole stack returns, every segment still legible
 
 ## A choreography must NOT
-- replay the static plate's states as a slideshow — every card must change the picture by a continuous transformation, not a hard cut
-- pop marks in groups on a fixed picture instead of interpolating them from the scroll's own continuous progress
-- overlap two pictures on one card
-- let two cards' notes share a slot where both are visible together
-- ask a reader to compare a middle segment's thickness across bars — restrict that comparison to the bottom segment or the total
+- `no-replay-static-plate` — replay the static plate's states as a slideshow — every card must change the picture by a continuous transformation, not a hard cut
+- `no-pop-marks-groups` — pop marks in groups on a fixed picture instead of interpolating them from the scroll's own continuous progress
+- `no-overlap-pictures-card` — overlap two pictures on one card
+- `no-let-cards-notes` — let two cards' notes share a slot where both are visible together
+- `no-ask-reader-compare` — ask a reader to compare a middle segment's thickness across bars — restrict that comparison to the bottom segment or the total
 
 ## Precision to assert
 - segment order (bottom to top) is fixed across every card; shares sum to the same asserted total

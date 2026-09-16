@@ -74,12 +74,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the width of the upper band against the lower, read off the marks
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- spend the accent on a member: a scatter's argument is the shape, not any one member's name, unless a specific point earns a label
-- map a value to RADIUS instead of AREA — and, past that, let a minimum radius pin most of the cloud at one size while the caption says the area is the value
-- state a band's limits from memory: a render audit caught this brief and its render both naming a low end well above the real one
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-spend-accent-member` — spend the accent on a member: a scatter's argument is the shape, not any one member's name, unless a specific point earns a label
+- `no-map-value-radius` — map a value to RADIUS instead of AREA — and, past that, let a minimum radius pin most of the cloud at one size while the caption says the area is the value
+- `no-state-band-limits` — state a band's limits from memory: a render audit caught this brief and its render both naming a low end well above the real one
 
 ## Precision to assert
 - both axes keep the same fixed scale and a log axis is declared as one

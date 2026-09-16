@@ -26,11 +26,11 @@ Worked example: `proof/video-population-pyramid-swiss-age`, from `proof/static-s
 - **`hold` — ≈60 frames**. About 20 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- move the shared centre axis, or let the two sides take different scales in any shot
-- magnify without printing the factor: the crossing is a third of a pixel at ×1, so the ×N is part of the evidence
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-move-shared-centre` — move the shared centre axis, or let the two sides take different scales in any shot
+- `no-magnify-printing-factor` — magnify without printing the factor: the crossing is a third of a pixel at ×1, so the ×N is part of the evidence
 
 ## Precision to assert
 - the shared centre never moves and both sides keep the same scale in every shot

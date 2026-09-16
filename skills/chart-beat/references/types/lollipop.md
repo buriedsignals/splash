@@ -71,12 +71,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the two levels the ratio is taken between
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- draw the earlier state in grey or in a second hue — the same hue, lighter, taken as far toward the ground as it can go while still clearing the non-text floor, because a past nobody can see is not a state but an absent mark
-- lift the stems off zero: a lollipop is read as a height from zero, and a height a reader cannot compare is a dot on a line
-- print a value label in the accent, or reserve only three rows under the baseline when the plate also has to say which cases it chose
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-draw-earlier-state` — draw the earlier state in grey or in a second hue — the same hue, lighter, taken as far toward the ground as it can go while still clearing the non-text floor, because a past nobody can see is not a state but an absent mark
+- `no-lift-stems-zero` — lift the stems off zero: a lollipop is read as a height from zero, and a height a reader cannot compare is a dot on a line
+- `no-print-value-label-accent` — print a value label in the accent, or reserve only three rows under the baseline when the plate also has to say which cases it chose
 
 ## Precision to assert
 - one zero-based value scale for every stem

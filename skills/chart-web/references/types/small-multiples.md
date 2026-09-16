@@ -34,11 +34,11 @@ Worked example: `proof/web-small-multiples-solar-eu-six` (2026-09-15), from
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- fit a panel to its own data — same domain, same axis, same units on every single panel, even if that means some panels look nearly flat; that is the layout's only non-negotiable
-- let a carried curve be re-scaled into its host panel: it is carried at the SHARED scale, or the comparison it exists for is a lie
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-fit-panel-own` — fit a panel to its own data — same domain, same axis, same units on every single panel, even if that means some panels look nearly flat; that is the layout's only non-negotiable
+- `no-let-carried-curve` — let a carried curve be re-scaled into its host panel: it is carried at the SHARED scale, or the comparison it exists for is a lie
 
 ## Precision to assert
 - every panel keeps the same axis scale, asserted equal

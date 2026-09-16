@@ -69,12 +69,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the growth segment of the subject against the growth segment of the leader
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- stack `[earlier level, later level]` — that makes the reader subtract; the repair this type owes is that they do no arithmetic at all
-- drop a number from a segment too narrow to hold one: that is a placement problem, never a licence — such a row prints both figures past the bar's end as one run, which keeps each number and shows the addition
-- reach for a stack where a value FELL: a negative segment cannot be drawn, and the script says so in its own error message and names the forms that can
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-stack-earlier-level` — stack `[earlier level, later level]` — that makes the reader subtract; the repair this type owes is that they do no arithmetic at all
+- `no-drop-number-segment` — drop a number from a segment too narrow to hold one: that is a placement problem, never a licence — such a row prints both figures past the bar's end as one run, which keeps each number and shows the addition
+- `no-reach-stack-value` — reach for a stack where a value FELL: a negative segment cannot be drawn, and the script says so in its own error message and names the forms that can
 
 ## Precision to assert
 - one zero-based scale for every bar

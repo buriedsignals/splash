@@ -29,13 +29,13 @@ Vocabulary: `skills/map-web/assets/classing.ts` + `skills/map-web/assets/live-ch
 - **Keyboard and touch** — every reading is reachable by focus as well as by pointer, one path for both, and the controls are native form elements with the treatment layered on top
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- quote a sibling beat's Mercator figure, or type one: the cost is DERIVED for this subject on every render and stated in the reader's own words
-- let a stylesheet reach a MapLibre paint — no stylesheet does, so the map's half of a state change is built at build time from the same index the markup carries, and what survives with the script off is said on the page
-- shade by a raw COUNT when the honest quantity is a RATE — area would then do uninvited work, and the map lies on the first glance
-- soften a failed join into a quiet no-data class: the join is on the tileset's own key and a dropped region must throw at build time
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-quote-sibling-beat` — quote a sibling beat's Mercator figure, or type one: the cost is DERIVED for this subject on every render and stated in the reader's own words
+- `no-let-stylesheet-reach` — let a stylesheet reach a MapLibre paint — no stylesheet does, so the map's half of a state change is built at build time from the same index the markup carries, and what survives with the script off is said on the page
+- `no-shade-raw-count` — shade by a raw COUNT when the honest quantity is a RATE — area would then do uninvited work, and the map lies on the first glance
+- `no-soften-failed-join` — soften a failed join into a quiet no-data class: the join is on the tileset's own key and a dropped region must throw at build time
 
 ## Precision to assert
 - every region is present at the plate's camera and a region with no reported value carries the neutral no-data class, named in the legend

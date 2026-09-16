@@ -28,11 +28,11 @@ Worked example: `proof/video-lollipop-co2-per-person` (validated 2026-09-15, rec
 - **`hold` — ≈60 frames**. About 18 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- lift the stems off zero — the stem is a length, so the zero rule is the bar's rule
-- paint a value label in the accent: printed values stay in the page's neutral ink and the stem carries the accent
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-lift-stems-zero` — lift the stems off zero — the stem is a length, so the zero rule is the bar's rule
+- `no-paint-value-label` — paint a value label in the accent: printed values stay in the page's neutral ink and the stem carries the accent
 
 ## Precision to assert
 - one zero-based value scale for every stem and every copy, in every shot

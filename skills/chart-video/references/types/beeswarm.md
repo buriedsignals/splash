@@ -27,11 +27,11 @@ Worked example: `proof/video-beeswarm-co2-per-person` (2026-09-15), from `proof/
 - **`hold` — ≈60 frames**. About 20 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- recolour the cases: the field keeps one colour and the cases are RINGED, so the distribution is never split into two populations by hue
-- let a point move to avoid an overlap without the packing being recomputed — a silent nudge is a value moved
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-recolour-cases` — recolour the cases: the field keeps one colour and the cases are RINGED, so the distribution is never split into two populations by hue
+- `no-let-point-move` — let a point move to avoid an overlap without the packing being recomputed — a silent nudge is a value moved
 
 ## Precision to assert
 - the disc's area is always the sum of the areas that have not yet left it, asserted frame by frame

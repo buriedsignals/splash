@@ -75,12 +75,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the rule against the muted bars — the arithmetic, not the colour
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- start the value axis anywhere but zero — non-negotiable for a length encoding
-- print a value label INSIDE a coloured fill: outside the mark the only contrast that has to hold is ink against the ground
-- add a gridline set beside ten printed numbers — the same decoding work done twice, which "every layer earns its place" removes
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-start-value-axis` — start the value axis anywhere but zero — non-negotiable for a length encoding
+- `no-print-value-label` — print a value label INSIDE a coloured fill: outside the mark the only contrast that has to hold is ink against the ground
+- `no-add-gridline-set` — add a gridline set beside ten printed numbers — the same decoding work done twice, which "every layer earns its place" removes
 
 ## Precision to assert
 - the members and their order are computed by ranking the frozen file, with aggregate rows dropped and both counts printed

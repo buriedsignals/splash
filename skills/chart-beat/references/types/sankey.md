@@ -67,12 +67,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the share of one node carried by one ribbon, readable as a thickness against the node's own height
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- let a node's total stop being the sum of its own ribbons — conservation on both rails is the form's promise and is asserted to a stated tolerance
-- drop the node's printed number: conservation is what makes 54 flows legible, and it only works if the node says what it is
-- reach for this form when the question is one-sided — a stacked bar answers that, and a sankey is for where each source GOES
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-let-node-total` — let a node's total stop being the sum of its own ribbons — conservation on both rails is the form's promise and is asserted to a stated tolerance
+- `no-drop-node-printed` — drop the node's printed number: conservation is what makes 54 flows legible, and it only works if the node says what it is
+- `no-reach-form-question` — reach for this form when the question is one-sided — a stacked bar answers that, and a sankey is for where each source GOES
 
 ## Precision to assert
 - every node's total equals the sum of its own ribbons, on both rails, to within a stated rounding tolerance

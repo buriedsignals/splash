@@ -57,12 +57,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the net change between the two totals
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- set a value label inside a bar in white — the sheet's own named defect on narrow bars; the labels float above the growing edge, in ink
-- use a third saturated hue for the totals: they take the page's own muted ink
-- draw a bridge whose steps do not replay — the running total after every step is checked against the closing level before anything is drawn
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-set-value-label` — set a value label inside a bar in white — the sheet's own named defect on narrow bars; the labels float above the growing edge, in ink
+- `no-use-third-saturated` — use a third saturated hue for the totals: they take the page's own muted ink
+- `no-draw-bridge-steps` — draw a bridge whose steps do not replay — the running total after every step is checked against the closing level before anything is drawn
 
 ## Precision to assert
 - opening plus every step equals the closing, asserted to a stated precision before the render

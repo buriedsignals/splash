@@ -37,11 +37,11 @@ Worked example: `proof/web-diverging-stacked-electricity` (2026-09-15), from `pr
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- treat the neutral as a constant — with a control the neutral is a FUNCTION of the cut, so it is declared per cut and refused anywhere but the seam, or duplicated
-- print a label INSIDE a segment: the two side totals sit at the bar's ends, on the ground, so one measurement against the ground covers them
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-treat-neutral-constant` — treat the neutral as a constant — with a control the neutral is a FUNCTION of the cut, so it is declared per cut and refused anywhere but the seam, or duplicated
+- `no-print-label-inside` — print a label INSIDE a segment: the two side totals sit at the bar's ends, on the ground, so one measurement against the ground covers them
 
 ## Precision to assert
 - every row sums to the same asserted total UNDER EVERY CUT, checked per cut, and the runner refuses the page otherwise

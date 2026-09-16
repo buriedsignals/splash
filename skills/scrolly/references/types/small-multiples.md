@@ -11,11 +11,11 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 - **Pull back** — the whole grid stands, the named panel still marked
 
 ## A choreography must NOT
-- replay the static plate's states as a slideshow — every card must change the picture by a continuous transformation, not a hard cut
-- pop marks in groups on a fixed picture instead of interpolating them from the scroll's own continuous progress
-- overlap two pictures on one card
-- let two cards' notes share a slot where both are visible together
-- give panels different scales between cards — one shared scale holds across the whole grid
+- `no-replay-static-plate` — replay the static plate's states as a slideshow — every card must change the picture by a continuous transformation, not a hard cut
+- `no-pop-marks-groups` — pop marks in groups on a fixed picture instead of interpolating them from the scroll's own continuous progress
+- `no-overlap-pictures-card` — overlap two pictures on one card
+- `no-let-cards-notes` — let two cards' notes share a slot where both are visible together
+- `no-give-panels-different` — give panels different scales between cards — one shared scale holds across the whole grid
 
 ## Precision to assert
 - every panel keeps the same axis scale across every card, asserted equal

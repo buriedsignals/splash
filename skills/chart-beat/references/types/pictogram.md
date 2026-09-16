@@ -66,12 +66,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the middle block, countable square by square by a reader who wants to check the arithmetic
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- let one icon stand for a divisible quantity — a square standing for 10.4 TWh is a length in disguise, and the fractional last square is the tell
-- draw a square for a case with no reading: a unit grid counts things, and that square would be counted; the key says one is missing rather than letting the field imply a bigger population
-- ship a square under the countable floor — under it a unit field is a bar chart made of squares, and the component refuses
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-let-icon-stand` — let one icon stand for a divisible quantity — a square standing for 10.4 TWh is a length in disguise, and the fractional last square is the tell
+- `no-draw-square-case` — draw a square for a case with no reading: a unit grid counts things, and that square would be counted; the key says one is missing rather than letting the field imply a bigger population
+- `no-ship-square-under` — ship a square under the countable floor — under it a unit field is a bar chart made of squares, and the component refuses
 
 ## Precision to assert
 - one icon always equals the same stated unit

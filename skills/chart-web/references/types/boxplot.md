@@ -31,11 +31,11 @@ Worked example: `proof/web-boxplot-france-co2-decades` (2026-09-15).
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- let a control hide a box: overlap is the fact the page exists to expose, and it needs every box present
-- let the yardstick re-derive anything — a level lays ONE reference across the plot and every mark keeps exactly the meaning it had
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-let-control-hide` — let a control hide a box: overlap is the fact the page exists to expose, and it needs every box present
+- `no-let-yardstick-re` — let the yardstick re-derive anything — a level lays ONE reference across the plot and every mark keeps exactly the meaning it had
 
 ## Precision to assert
 - every summary is computed from the frozen file and the runner throws rather than draw the headline if any decade after the peak is not below the one before it

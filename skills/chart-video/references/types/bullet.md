@@ -27,11 +27,11 @@ Worked example: `proof/video-bullet-low-carbon-share` (validated 2026-09-15, rec
 - **`hold` — ≈60 frames**. About 18 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- let the qualitative bands change order or width between shots — the backdrop is the constant the bar is judged against
-- let the target arrive before the values it judges: dropping the rule last is what makes the single failure readable
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-let-qualitative-bands` — let the qualitative bands change order or width between shots — the backdrop is the constant the bar is judged against
+- `no-let-target-arrive` — let the target arrive before the values it judges: dropping the rule last is what makes the single failure readable
 
 ## Precision to assert
 - the target marker's position is computed from the same data as the bar and asserted equal to it

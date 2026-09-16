@@ -11,10 +11,10 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 - **Pull back** — every bullet in the set stands together
 
 ## A choreography must NOT
-- replay the static plate's states as a slideshow — every card must change the picture by a continuous transformation, not a hard cut
-- pop marks in groups on a fixed picture instead of interpolating them from the scroll's own continuous progress
-- overlap two pictures on one card
-- let two cards' notes share a slot where both are visible together
+- `no-replay-static-plate` — replay the static plate's states as a slideshow — every card must change the picture by a continuous transformation, not a hard cut
+- `no-pop-marks-groups` — pop marks in groups on a fixed picture instead of interpolating them from the scroll's own continuous progress
+- `no-overlap-pictures-card` — overlap two pictures on one card
+- `no-let-cards-notes` — let two cards' notes share a slot where both are visible together
 
 ## Precision to assert
 - the target marker's position is computed from the same data as the bar, asserted equal

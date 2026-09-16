@@ -65,12 +65,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the accented band's area against the whole mosaic
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- print a share inside a cell — the cell's area IS the share, and a number in it invites reading the height as the value
-- draw a variable-width chart whose narrowest unit falls under a few pixels: it has stopped encoding its second dimension, and this beat measures its own narrowest column before drawing and REFUSES rather than draws
-- let a small cell go unnamed where the type sheet says it should go to the gutter with a leader back to the band it names
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-print-share-inside` — print a share inside a cell — the cell's area IS the share, and a number in it invites reading the height as the value
+- `no-draw-variable-width` — draw a variable-width chart whose narrowest unit falls under a few pixels: it has stopped encoding its second dimension, and this beat measures its own narrowest column before drawing and REFUSES rather than draws
+- `no-let-small-cell` — let a small cell go unnamed where the type sheet says it should go to the gutter with a leader back to the band it names
 
 ## Precision to assert
 - column width is on one unit-per-value scale and band height a share of the same 100 %, so a cell's area is the quantity

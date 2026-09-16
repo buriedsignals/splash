@@ -27,11 +27,11 @@ Worked example: `proof/video-diverging-stacked-electricity` (2026-09-15), from `
 - **`hold` — ≈60 frames**. About 20 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- re-anchor by redrawing: the slide must preserve every segment's length, or the lean is an artefact of the shot rather than of the data
-- change the segment order between rows or between shots — the order IS the response scale
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-re-anchor-redrawing` — re-anchor by redrawing: the slide must preserve every segment's length, or the lean is an artefact of the shot rather than of the data
+- `no-change-segment-order` — change the segment order between rows or between shots — the order IS the response scale
 
 ## Precision to assert
 - every row sums to the same asserted total in every shot

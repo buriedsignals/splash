@@ -30,13 +30,13 @@ Vocabulary: `skills/map-web/assets/pool.ts` + `skills/map-web/assets/live-hex.ts
 - **Keyboard and touch** — every reading is reachable by focus as well as by pointer, one path for both, and the controls are native form elements with the treatment layered on top
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- quote a sibling beat's Mercator figure, or type one: the cost is DERIVED for this subject on every render and stated in the reader's own words
-- let a stylesheet reach a MapLibre paint — no stylesheet does, so the map's half of a state change is built at build time from the same index the markup carries, and what survives with the script off is said on the page
-- build the grid in DEGREES: one degree of latitude is not one degree of longitude on a Mercator screen, so a grid laid out in degrees is a grid of sheared cells — build in Web Mercator METRES and unproject only to hand the seats to MapLibre
-- let the legend's bounds move with the grain: that is a different gesture with a different vocabulary, and conflating them means one word for two behaviours
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-quote-sibling-beat` — quote a sibling beat's Mercator figure, or type one: the cost is DERIVED for this subject on every render and stated in the reader's own words
+- `no-let-stylesheet-reach` — let a stylesheet reach a MapLibre paint — no stylesheet does, so the map's half of a state change is built at build time from the same index the markup carries, and what survives with the script off is said on the page
+- `no-build-grid-degrees` — build the grid in DEGREES: one degree of latitude is not one degree of longitude on a Mercator screen, so a grid laid out in degrees is a grid of sheared cells — build in Web Mercator METRES and unproject only to hand the seats to MapLibre
+- `no-let-legend-bounds` — let the legend's bounds move with the grain: that is a different gesture with a different vocabulary, and conflating them means one word for two behaviours
 
 ## Precision to assert
 - bin aggregation is computed from the frozen events, and every region is present beneath the grid

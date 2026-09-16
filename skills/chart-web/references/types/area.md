@@ -31,11 +31,11 @@ Worked example: `proof/web-area-swiss-co2` (2026-09-15), from `proof/static-area
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- let the reader's cut replace the author's — a partition the plate never states is a second claim, not an answer
-- let the surface leave zero under any control: the surface IS the stock
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-let-reader-cut` — let the reader's cut replace the author's — a partition the plate never states is a second claim, not an answer
+- `no-let-surface-leave` — let the surface leave zero under any control: the surface IS the stock
 
 ## Precision to assert
 - the total, the crossing year and the split are recomputed in the runner from the frozen file, which throws rather than render if the split is not near half

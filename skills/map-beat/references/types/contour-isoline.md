@@ -105,12 +105,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the median line, which is the headline's own number drawn
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- build the field from records: a field with a hole in it does not degrade, it LIES — the hole is filled by whatever surrounds it and nothing says anything is missing, so an isoline map needs a source that defines the field everywhere
-- draw a line its own label would cover — the floor is the label's own width, so it moves with the direction, and the ladder prints how many lines that face cost
-- place a number across another line: a label laid over the next level up reads as THAT line's value, so every candidate seat is tested against the points of every line at a different level
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-build-field-records` — build the field from records: a field with a hole in it does not degrade, it LIES — the hole is filled by whatever surrounds it and nothing says anything is missing, so an isoline map needs a source that defines the field everywhere
+- `no-draw-line-own` — draw a line its own label would cover — the floor is the label's own width, so it moves with the direction, and the ladder prints how many lines that face cost
+- `no-place-number-across` — place a number across another line: a label laid over the next level up reads as THAT line's value, so every candidate seat is tested against the points of every line at a different level
 
 ## Precision to assert
 - the field is an EXACT distance transform on a stated grid in an equal-area projection, not an approximation — an isoline drawn from a rounded field wanders, and a wandering line labelled `200 km` is a false precision the reader cannot see

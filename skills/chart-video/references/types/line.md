@@ -29,11 +29,11 @@ Worked example: `proof/video-line-swiss-co2` (validated 2026-09-15), from the st
 - **`hold` — ≈60 frames**. About 20 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- anchor the value axis at zero because a bar chart would: a line encodes change by slope, and zeroing it flattens the series
-- name the comparison level before the rewind finds it — stating the answer first turns the shot into an illustration
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-anchor-value-axis` — anchor the value axis at zero because a bar chart would: a line encodes change by slope, and zeroing it flattens the series
+- `no-name-comparison-level` — name the comparison level before the rewind finds it — stating the answer first turns the shot into an illustration
 
 ## Precision to assert
 - a gap in the series breaks the line rather than being bridged across missing readings

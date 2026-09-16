@@ -13,13 +13,13 @@ Owner rules that apply here: a video is an argument, not a reveal — every even
 - **`hold` — ≈60 frames**. About 19 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- let a bound paint be data-driven (`["get", …]`): `validateScrollyPlan` refuses it, because MapLibre relays the source out on every change and the frame never goes idle
-- put a word that has to be measured on the map as a map label — the key, the counts and the credit are SVG placed from `measured.json`, and the credit is one line over a part of the picture it does not touch
-- keep the basemap's own labels: they are removed, because the naming is the beat's editorial decision and not the tile provider's
-- let marker size carry a value — a locator's markers are uniform, and the decluttering of their labels is deterministic
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-let-bound-paint` — let a bound paint be data-driven (`["get", …]`): `validateScrollyPlan` refuses it, because MapLibre relays the source out on every change and the frame never goes idle
+- `no-put-word-measured` — put a word that has to be measured on the map as a map label — the key, the counts and the credit are SVG placed from `measured.json`, and the credit is one line over a part of the picture it does not touch
+- `no-keep-basemap-own` — keep the basemap's own labels: they are removed, because the naming is the beat's editorial decision and not the tile provider's
+- `no-let-marker-size` — let marker size carry a value — a locator's markers are uniform, and the decluttering of their labels is deterministic
 
 ## Precision to assert
 - marker radius stays uniform across every shot — size never carries a value — and label decluttering is deterministic

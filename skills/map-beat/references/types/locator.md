@@ -91,12 +91,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the ring, placed on a coastline a reader can recognise
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- name more than the story touches — a locator map that named provinces would have made the reader look for one, so both cuts are RULES and both are printed
-- let a marker's size carry a value: there is none on this type
-- seat an area's name from the whole polygon's centroid — a country whose centroid lies outside the camera reports "no room" while a third of the plate is that country, unnamed; the seat is the centre of the part IN FRAME
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-name-story-touches` — name more than the story touches — a locator map that named provinces would have made the reader look for one, so both cuts are RULES and both are printed
+- `no-let-marker-size` — let a marker's size carry a value: there is none on this type
+- `no-seat-area-name` — seat an area's name from the whole polygon's centroid — a country whose centroid lies outside the camera reports "no room" while a third of the plate is that country, unnamed; the seat is the centre of the part IN FRAME
 
 ## Precision to assert
 - a label may be pushed, never dropped, never laid on another: each takes the first of six offsets that clears every box already placed and stays inside the camera, the subject placed first because it is the one label that may not move, and the plate reports what it could not place

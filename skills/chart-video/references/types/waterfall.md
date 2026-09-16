@@ -27,11 +27,11 @@ Worked example: `proof/video-waterfall-germany-electricity-bridge` (2026-09-15),
 - **`hold` — ≈60 frames**. About 19 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- draw the steps as if they were readings — they are what separates two mixes, and the beat shows them being extracted from those mixes
-- let the bridge stop replaying: opening plus every step must equal the closing, checked to the stated precision, before a frame is drawn
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-draw-steps-were` — draw the steps as if they were readings — they are what separates two mixes, and the beat shows them being extracted from those mixes
+- `no-let-bridge-stop` — let the bridge stop replaying: opening plus every step must equal the closing, checked to the stated precision, before a frame is drawn
 
 ## Precision to assert
 - the running total after every step is asserted arithmetically consistent with the frozen data (opening + steps = closing, to the tenth)

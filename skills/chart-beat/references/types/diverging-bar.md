@@ -65,12 +65,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the exception, named, against 26 bars going the other way
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- make the domain symmetric — mirroring the largest fall with a half nobody occupies halves the pixels per unit on both sides to make room for nothing; equal units per pixel either side of zero is what makes two bars comparable, and the visible asymmetry is the data's
-- give the exception a minimum visible width: it is 1.3 px because it is 0.03 tonnes
-- draw a diverging bar on a one-signed domain — the component throws if the domain ever stops straddling zero
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-make-domain-symmetric` — make the domain symmetric — mirroring the largest fall with a half nobody occupies halves the pixels per unit on both sides to make room for nothing; equal units per pixel either side of zero is what makes two bars comparable, and the visible asymmetry is the data's
+- `no-give-exception-minimum` — give the exception a minimum visible width: it is 1.3 px because it is 0.03 tonnes
+- `no-draw-diverging-bar` — draw a diverging bar on a one-signed domain — the component throws if the domain ever stops straddling zero
 
 ## Precision to assert
 - all categories are asserted to carry a reading in both periods before anything is drawn

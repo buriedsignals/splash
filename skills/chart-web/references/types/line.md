@@ -31,11 +31,11 @@ Worked example: `proof/web-line-swiss-co2` (2026-09-15), from `proof/co2-suisse`
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- add a control because the other thirty-one pages have one: the repertoire is reached for when a claim needs it, and a page that adds one to fill a row is the reflex the doctrine refuses
-- bridge a gap in the series, or anchor the value axis at zero because a bar chart would
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-add-control-because` — add a control because the other thirty-one pages have one: the repertoire is reached for when a claim needs it, and a page that adds one to fill a row is the reflex the doctrine refuses
+- `no-bridge-gap-series` — bridge a gap in the series, or anchor the value axis at zero because a bar chart would
 
 ## Precision to assert
 - the reference year is FOUND, not typed — the last year before the peak still at or below today's reading — and the beat throws if today does not sit between the two readings or if the fall from the peak is not large

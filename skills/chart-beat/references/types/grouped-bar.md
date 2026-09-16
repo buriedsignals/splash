@@ -68,12 +68,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the annotated group against the five that are not
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- reserve a third hue for the subject — colour here carries SERIES identity, and the exception is named in ink, not coloured
-- give the two series different scales, or lift the baseline off zero
-- print the unit on every label: it is said once, because a label carrying the unit is wider than its bar
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-reserve-third-hue` — reserve a third hue for the subject — colour here carries SERIES identity, and the exception is named in ink, not coloured
+- `no-give-series-different` — give the two series different scales, or lift the baseline off zero
+- `no-print-unit-label` — print the unit on every label: it is said once, because a label carrying the unit is wider than its bar
 
 ## Precision to assert
 - one shared value scale from zero across every group

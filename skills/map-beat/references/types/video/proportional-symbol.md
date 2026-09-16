@@ -13,13 +13,13 @@ Owner rules that apply here: a video is an argument, not a reveal — every even
 - **`hold` — ≈60 frames**. About 19 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- let a bound paint be data-driven (`["get", …]`): `validateScrollyPlan` refuses it, because MapLibre relays the source out on every change and the frame never goes idle
-- put a word that has to be measured on the map as a map label — the key, the counts and the credit are SVG placed from `measured.json`, and the credit is one line over a part of the picture it does not touch
-- scale by radius: symbol AREA is proportional to the value, and the key's sample is produced by the same function as the marks
-- fill the symbols — they are hollow, so an overlap accumulates rather than hides one place behind another
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-let-bound-paint` — let a bound paint be data-driven (`["get", …]`): `validateScrollyPlan` refuses it, because MapLibre relays the source out on every change and the frame never goes idle
+- `no-put-word-measured` — put a word that has to be measured on the map as a map label — the key, the counts and the credit are SVG placed from `measured.json`, and the credit is one line over a part of the picture it does not touch
+- `no-scale-radius` — scale by radius: symbol AREA is proportional to the value, and the key's sample is produced by the same function as the marks
+- `no-fill-symbols` — fill the symbols — they are hollow, so an overlap accumulates rather than hides one place behind another
 
 ## Precision to assert
 - symbol area (never radius alone) stays proportional to the same asserted value in every shot, and the key's scale sample matches the camera's own zoom

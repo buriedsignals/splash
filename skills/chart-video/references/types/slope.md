@@ -29,11 +29,11 @@ Worked example: `proof/video-slope-europe-lowcarbon` (validated 2026-09-15, recu
 - **`hold` — ≈60 frames**. About 19 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- drop a category to make the labels fit — the labels are pushed apart to a legible pitch, and a direction whose registers cannot seat them refuses the render
-- believe a crossing on sight: a pass is a sign change in the gap, computed, and the ring is placed at the solved parameter
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-drop-category-make` — drop a category to make the labels fit — the labels are pushed apart to a legible pitch, and a direction whose registers cannot seat them refuses the render
+- `no-believe-crossing-sight` — believe a crossing on sight: a pass is a sign change in the gap, computed, and the ring is placed at the solved parameter
 
 ## Precision to assert
 - both end columns keep the same shared scale in every shot

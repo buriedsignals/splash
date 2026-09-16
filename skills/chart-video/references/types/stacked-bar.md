@@ -27,11 +27,11 @@ Worked example: `proof/video-stacked-bar-lowcarbon-growth` (2026-09-15), from `p
 - **`hold` — ≈60 frames**. About 19 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- change the segment order between shots — bottom-to-top order is fixed, or two bars stop being comparable
-- compare two segments that do not share a baseline without detaching them first: that is precisely the type's blind spot, and the detach is the fix
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-change-segment-order-between` — change the segment order between shots — bottom-to-top order is fixed, or two bars stop being comparable
+- `no-compare-segments-share` — compare two segments that do not share a baseline without detaching them first: that is precisely the type's blind spot, and the detach is the fix
 
 ## Precision to assert
 - one zero-based scale for the levels, the increments and every copy

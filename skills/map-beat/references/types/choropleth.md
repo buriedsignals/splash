@@ -113,12 +113,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the count above the threshold, checkable region by region against the key
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- shade by a raw COUNT when the honest quantity is a RATE — area would do uninvited work and the map lies on the first glance
-- leave a region with no reading in the lowest class: that reports it AT the bottom of the scale rather than absent
-- let the frame imply a reading it does not have — regions the camera cuts are coloured on their NATIONAL share, and the reading line says so
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-shade-raw-count` — shade by a raw COUNT when the honest quantity is a RATE — area would do uninvited work and the map lies on the first glance
+- `no-leave-region-reading` — leave a region with no reading in the lowest class: that reports it AT the bottom of the scale rather than absent
+- `no-let-frame-imply` — let the frame imply a reading it does not have — regions the camera cuts are coloured on their NATIONAL share, and the reading line says so
 
 ## Precision to assert
 - the join is asserted and a dropped region throws at build time rather than rendering as a quiet no-data class

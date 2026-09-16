@@ -63,12 +63,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the opposition of the two outlines, checkable spoke by spoke
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- put non-commensurable variables on the spokes — different units forced onto one radius produce a shape whose size is partly an artefact of unit choice; here every spoke is a share of the SAME denominator
-- treat axis choice and axis order as an incidental layout detail: it is an editorial decision, made once from the subject and stated on the plate
-- let a polygon's area be read as a quantity — area is sensitive to axis order and count in a way the numbers are not, and that is the type's structural weak point rather than a bug to fix in code
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-put-non-commensurable` — put non-commensurable variables on the spokes — different units forced onto one radius produce a shape whose size is partly an artefact of unit choice; here every spoke is a share of the SAME denominator
+- `no-treat-axis-choice` — treat axis choice and axis order as an incidental layout detail: it is an editorial decision, made once from the subject and stated on the plate
+- `no-let-polygon-area` — let a polygon's area be read as a quantity — area is sensitive to axis order and count in a way the numbers are not, and that is the type's structural weak point rather than a bug to fix in code
 
 ## Precision to assert
 - every spoke keeps the same radial scale, and each polygon's own spokes sum to the stated whole

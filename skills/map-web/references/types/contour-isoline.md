@@ -30,13 +30,13 @@ Vocabulary: `skills/map-web/assets/live-contour.ts`.
 - **Keyboard and touch** — every reading is reachable by focus as well as by pointer, one path for both, and the controls are native form elements with the treatment layered on top
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- quote a sibling beat's Mercator figure, or type one: the cost is DERIVED for this subject on every render and stated in the reader's own words
-- let a stylesheet reach a MapLibre paint — no stylesheet does, so the map's half of a state change is built at build time from the same index the markup carries, and what survives with the script off is said on the page
-- offer a step finer than the measurement supports — a 50 km step on a 7 km mesh draws texture the reader will take for information — or coarse enough that the headline's own figure falls inside the first band; each step states its cost in the field's own units
-- answer with the band alone: a banded answer without the measured value is the step's artefact, not a reading
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-quote-sibling-beat` — quote a sibling beat's Mercator figure, or type one: the cost is DERIVED for this subject on every render and stated in the reader's own words
+- `no-let-stylesheet-reach` — let a stylesheet reach a MapLibre paint — no stylesheet does, so the map's half of a state change is built at build time from the same index the markup carries, and what survives with the script off is said on the page
+- `no-offer-step-finer` — offer a step finer than the measurement supports — a 50 km step on a 7 km mesh draws texture the reader will take for information — or coarse enough that the headline's own figure falls inside the first band; each step states its cost in the field's own units
+- `no-answer-band-alone` — answer with the band alone: a banded answer without the measured value is the step's artefact, not a reading
 
 ## Precision to assert
 - the field is measured on an equal-area grid (`camera.ts`, LAEA / EPSG:3035) and only DRAWN on Mercator, so no printed number moves

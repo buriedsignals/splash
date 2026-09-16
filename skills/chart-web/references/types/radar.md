@@ -34,11 +34,11 @@ Worked example: `proof/web-radar-electricity-mix` (2026-09-15), from
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- move an axis label, ever, in any state this page can reach — the owner read a row of pills as filters twice, and under a filter a label that moves is a bug, not a finding; the order gesture is gone
-- use `filter.ts` or `withdraw.ts`: nothing leaves and there is no running total — removing a term replaces two edges with one and the AREA CAN GO UP, which neither vocabulary can say
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-move-axis-label` — move an axis label, ever, in any state this page can reach — the owner read a row of pills as filters twice, and under a filter a label that moves is a bug, not a finding; the order gesture is gone
+- `no-use-filter-ts-withdraw` — use `filter.ts` or `withdraw.ts`: nothing leaves and there is no running total — removing a term replaces two edges with one and the AREA CAN GO UP, which neither vocabulary can say
 
 ## Precision to assert
 - every axis keeps the same fixed scale, so area is never a silently changing unit

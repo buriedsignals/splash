@@ -67,12 +67,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the direction of the moves, read off the field as a whole
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- draw the link as a straight segment — that reads as interpolation, as if the source held the states in between; the bow is a fixed fraction of the chord so a long move bows more than a short one
-- choose an axis pair that is degenerate: a level and its own share of the same group are the same number up to a constant, so every point of one date lands on a ray through the origin and the plate is two straight lines
-- give up on a name: a name that cannot be seated degrades to a short code before it is dropped, and how many degraded is printed
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-draw-link-straight` — draw the link as a straight segment — that reads as interpolation, as if the source held the states in between; the bow is a fixed fraction of the chord so a long move bows more than a short one
+- `no-choose-axis-pair` — choose an axis pair that is degenerate: a level and its own share of the same group are the same number up to a constant, so every point of one date lands on a ray through the origin and the plate is two straight lines
+- `no-give-name` — give up on a name: a name that cannot be seated degrades to a short code before it is dropped, and how many degraded is printed
 
 ## Precision to assert
 - the path's drawn order matches the data's own ordering axis

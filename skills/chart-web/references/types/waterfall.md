@@ -36,11 +36,11 @@ Worked example: `proof/web-waterfall-germany-bridge` (2026-09-15), from
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- let a total bar disagree with the running level the steps before it produced — the type's one trap, and the control REOPENS it by creating three more closing levels nobody had measured
-- print a counterfactual total computed from one arithmetic beside a geometry computed from another: `withdraw.ts` takes the total AS A NUMBER and refuses an option whose printed total is not the level its own geometry lands on
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-let-total-bar` — let a total bar disagree with the running level the steps before it produced — the type's one trap, and the control REOPENS it by creating three more closing levels nobody had measured
+- `no-print-counterfactual-total` — print a counterfactual total computed from one arithmetic beside a geometry computed from another: `withdraw.ts` takes the total AS A NUMBER and refuses an option whose printed total is not the level its own geometry lands on
 
 ## Precision to assert
 - opening plus every step equals the closing, asserted — and asserted again for every withdrawal, so four bridges are checked where the still checks one

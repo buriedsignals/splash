@@ -35,11 +35,11 @@ Worked example: `proof/web-calendar-heatmap-geneva` (2026-09-15), from `proof/st
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- let the colour scale's domain move with the threshold — the cells' meaning is fixed, and only the outlined run changes
-- type the streak: the longest run at or above the current threshold is WALKED out of the frozen file, and the beat throws if no run of the stated length exists at the claim's own threshold
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-let-colour-scale` — let the colour scale's domain move with the threshold — the cells' meaning is fixed, and only the outlined run changes
+- `no-type-streak` — type the streak: the longest run at or above the current threshold is WALKED out of the frozen file, and the beat throws if no run of the stated length exists at the claim's own threshold
 
 ## Precision to assert
 - every day of the period is present and in order, and the cell count is asserted

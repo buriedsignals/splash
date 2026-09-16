@@ -13,13 +13,13 @@ Owner rules that apply here: a video is an argument, not a reveal — every even
 - **`hold` — ≈60 frames**. About 17 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- let a bound paint be data-driven (`["get", …]`): `validateScrollyPlan` refuses it, because MapLibre relays the source out on every change and the frame never goes idle
-- put a word that has to be measured on the map as a map label — the key, the counts and the credit are SVG placed from `measured.json`, and the credit is one line over a part of the picture it does not touch
-- bind a data-driven radius: the marks are split into buckets, each bucket's radius the root of its members' mean square, so the drawn area is exactly theirs
-- imply a dot is a geocoded address when it is not — synthetic placement is declared, and every country is present under the dots
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-let-bound-paint` — let a bound paint be data-driven (`["get", …]`): `validateScrollyPlan` refuses it, because MapLibre relays the source out on every change and the frame never goes idle
+- `no-put-word-measured` — put a word that has to be measured on the map as a map label — the key, the counts and the credit are SVG placed from `measured.json`, and the credit is one line over a part of the picture it does not touch
+- `no-bind-data-driven` — bind a data-driven radius: the marks are split into buckets, each bucket's radius the root of its members' mean square, so the drawn area is exactly theirs
+- `no-imply-dot-geocoded` — imply a dot is a geocoded address when it is not — synthetic placement is declared, and every country is present under the dots
 
 ## Precision to assert
 - dot positions are declared synthetic where they are, and every country is present under them

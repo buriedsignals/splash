@@ -141,12 +141,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the two widest bands against the rest
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- tile the bands around the node's circumference — an arc of the rim is a DIRECTION, and spending the rim on widths spends the directions; twenty-five ribbons then cross the countries they are about
-- inherit the sibling map beats' camera: the camera here is the box THE FLOWS need, and framing the whole continent spends four fifths of the plate on empty sea while the bands pile into a thumbnail
-- drop a band too thin to draw in silence — those cases keep a dot at their seat and are counted under the key, or the plate reads as the whole of the thing while drawing seven eighths of it
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-tile-bands-around` — tile the bands around the node's circumference — an arc of the rim is a DIRECTION, and spending the rim on widths spends the directions; twenty-five ribbons then cross the countries they are about
+- `no-inherit-sibling-map` — inherit the sibling map beats' camera: the camera here is the box THE FLOWS need, and framing the whole continent spends four fifths of the plate on empty sea while the bands pile into a thumbnail
+- `no-drop-band-too` — drop a band too thin to draw in silence — those cases keep a dot at their seat and are counted under the key, or the plate reads as the whole of the thing while drawing seven eighths of it
 
 ## Precision to assert
 - width is the quantity, on one stated scale, and the scale is measured on the drawn plate

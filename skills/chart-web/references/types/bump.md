@@ -33,11 +33,11 @@ Worked example: `proof/web-bump-emitter-rank` (2026-09-15), from `proof/static-b
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- read a rank off the drawn subset — every rank is computed over the whole file, because a rank read off six lines is not a world rank
-- paint an end label in the line's own hue: end labels stay in the page's neutral ink and the subject is told apart by weight and by a small accent swatch
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-read-rank-drawn` — read a rank off the drawn subset — every rank is computed over the whole file, because a rank read off six lines is not a world rank
+- `no-paint-end-label` — paint an end label in the line's own hue: end labels stay in the page's neutral ink and the subject is told apart by weight and by a small accent swatch
 
 ## Precision to assert
 - ranks are computed over all 209–215 countries per year, and the crossings are FOUND by walking the subject's own rank series, never listed by hand

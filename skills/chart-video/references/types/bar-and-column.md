@@ -30,11 +30,11 @@ Worked example: `proof/video-bar-top-emitters-2024` (validated 2026-09-14, recut
 - **`hold` — ≈60 frames** — the state equals the conclusion. About 19 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- float the baseline or rescale between two shots that are being compared — length is the encoding, so one scale holds across the whole beat
-- draw columns when a name cannot hold one line of its slot: the corpus turns to rows rather than truncating a category
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-float-baseline-rescale` — float the baseline or rescale between two shots that are being compared — length is the encoding, so one scale holds across the whole beat
+- `no-draw-columns-name` — draw columns when a name cannot hold one line of its slot: the corpus turns to rows rather than truncating a category
 
 ## Precision to assert
 - one value scale from zero for every shot

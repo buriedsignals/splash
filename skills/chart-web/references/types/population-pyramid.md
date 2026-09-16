@@ -34,11 +34,11 @@ Worked example: `proof/web-population-pyramid-switzerland` (2026-09-15), from
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- sort the bands by size — the silhouette only exists while the age sequence stays intact top to bottom; the fold moves nothing vertically and re-orders nothing
-- ship a profile with a hole in it: `assertFoldDeclaration` refuses one that does not name EVERY drawn band EXACTLY ONCE, in the drawn order
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-sort-bands-size` — sort the bands by size — the silhouette only exists while the age sequence stays intact top to bottom; the fold moves nothing vertically and re-orders nothing
+- `no-ship-profile-hole` — ship a profile with a hole in it: `assertFoldDeclaration` refuses one that does not name EVERY drawn band EXACTLY ONCE, in the drawn order
 
 ## Precision to assert
 - the shared centre never moves and both sides keep the same scale in every state

@@ -31,11 +31,11 @@ Worked example: `proof/web-beeswarm-co2-per-person` (2026-09-15), from `proof/st
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- let the accent follow whichever mark is largest in the current state — the subject named by the claim keeps the accent under every option
-- ship a weighting that is a monotone function of the mark's own position: the swarm's width would then say only what the axis says (refused by measuring Spearman's rho against a declared ceiling)
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-let-accent-follow` — let the accent follow whichever mark is largest in the current state — the subject named by the claim keeps the accent under every option
+- `no-ship-weighting-monotone` — ship a weighting that is a monotone function of the mark's own position: the swarm's width would then say only what the axis says (refused by measuring Spearman's rho against a declared ceiling)
 
 ## Precision to assert
 - the packing is re-derived per state, not transformed — there is no `dx` and no `sx` anywhere

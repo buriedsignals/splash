@@ -28,11 +28,11 @@ Worked example: `proof/video-histogram-carbon-footprint-spread`, from `proof/sta
 - **`hold` — ≈60 frames**. About 20 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- change a bin edge mid-beat — bin width can manufacture or erase a peak, so the edges are fixed once and every shot uses them
-- draw the bars before their observations: the point of the format here is that a bin is a pile of countable things
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-change-bin-edge` — change a bin edge mid-beat — bin width can manufacture or erase a peak, so the edges are fixed once and every shot uses them
+- `no-draw-bars-before` — draw the bars before their observations: the point of the format here is that a bin is a pile of countable things
 
 ## Precision to assert
 - every observation falls in exactly one bin, and the cells sum to the asserted total

@@ -95,12 +95,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the share of the quantity the drawn circles carry, printed beside their count
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- scale by radius: area is proportional to the value, so the radius runs on a square root
-- fill the circles — filled discs would let the largest sites erase the smaller ones beside them, and the map would answer its own question by hiding the evidence
-- draw every mark because the overlap rule permits it: the rule had a condition nobody had measured, and at full density the field measured 302 % of a cell's area in outline — a blot, not a field a reader counts
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-scale-radius` — scale by radius: area is proportional to the value, so the radius runs on a square root
+- `no-fill-circles` — fill the circles — filled discs would let the largest sites erase the smaller ones beside them, and the map would answer its own question by hiding the evidence
+- `no-draw-mark-because` — draw every mark because the overlap rule permits it: the rule had a condition nobody had measured, and at full density the field measured 302 % of a cell's area in outline — a blot, not a field a reader counts
 
 ## Precision to assert
 - symbol AREA, never radius alone, is proportional to the asserted value, and the same function computes the marks and the key

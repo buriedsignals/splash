@@ -39,11 +39,11 @@ Worked example: `proof/web-gantt-top-ten-tenure` (2026-09-15), from `proof/stati
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- recompute the scale between options — three states that do not share one unit are three charts that happen to share a frame
-- let the caption become furniture: under the aligned options the plate LOOKS like a plain bar chart, which is exactly the misreading the type warns about, so the caption states that length means duration
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-recompute-scale-between` — recompute the scale between options — three states that do not share one unit are three charts that happen to share a frame
+- `no-let-caption-become` — let the caption become furniture: under the aligned options the plate LOOKS like a plain bar chart, which is exactly the misreading the type warns about, so the caption states that length means duration
 
 ## Precision to assert
 - spans are computed in the runner from the frozen ranking and asserted before anything is drawn; interruptions are FOUND, not listed, and the page says which years

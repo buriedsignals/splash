@@ -65,12 +65,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the ordering of the panels against the sizes of their gains
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- fit a panel to its own data: one scale governs every panel, or these are sixteen unrelated charts in a grid
-- draw a rule or a tint between panels — the gap is the boundary, and each panel's own short baseline is what makes a gap look like a new axis
-- let a panel's name sit nearer the previous panel's block than its own: on a grid PROXIMITY IS THE GROUPING, and nothing else says which name goes with which pair
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-fit-panel-own` — fit a panel to its own data: one scale governs every panel, or these are sixteen unrelated charts in a grid
+- `no-draw-rule-tint` — draw a rule or a tint between panels — the gap is the boundary, and each panel's own short baseline is what makes a gap look like a new axis
+- `no-let-panel-name` — let a panel's name sit nearer the previous panel's block than its own: on a grid PROXIMITY IS THE GROUPING, and nothing else says which name goes with which pair
 
 ## Precision to assert
 - every panel keeps the same axis scale, asserted equal

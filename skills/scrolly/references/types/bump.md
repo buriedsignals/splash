@@ -11,11 +11,11 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 - **Pull back** — every line's full rank history stands
 
 ## A choreography must NOT
-- replay the static plate's states as a slideshow — every card must change the picture by a continuous transformation, not a hard cut
-- pop marks in groups on a fixed picture instead of interpolating them from the scroll's own continuous progress
-- overlap two pictures on one card
-- let two cards' notes share a slot where both are visible together
-- let two crossing lines' labels collide — reseat them per card
+- `no-replay-static-plate` — replay the static plate's states as a slideshow — every card must change the picture by a continuous transformation, not a hard cut
+- `no-pop-marks-groups` — pop marks in groups on a fixed picture instead of interpolating them from the scroll's own continuous progress
+- `no-overlap-pictures-card` — overlap two pictures on one card
+- `no-let-cards-notes` — let two cards' notes share a slot where both are visible together
+- `no-let-crossing-lines` — let two crossing lines' labels collide — reseat them per card
 
 ## Precision to assert
 - rank at each step is computed from the frozen data, asserted strictly ordered with no ties silently dropped

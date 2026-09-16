@@ -11,11 +11,11 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 - **Pull back** — the whole series returns, both halves or the accent named
 
 ## A choreography must NOT
-- replay the static plate's states as a slideshow — every card must change the picture by a continuous transformation, not a hard cut
-- pop marks in groups on a fixed picture instead of interpolating them from the scroll's own continuous progress
-- overlap two pictures on one card
-- let two cards' notes share a slot where both are visible together
-- invent a smooth fill across a gap nobody measured
+- `no-replay-static-plate` — replay the static plate's states as a slideshow — every card must change the picture by a continuous transformation, not a hard cut
+- `no-pop-marks-groups` — pop marks in groups on a fixed picture instead of interpolating them from the scroll's own continuous progress
+- `no-overlap-pictures-card` — overlap two pictures on one card
+- `no-let-cards-notes` — let two cards' notes share a slot where both are visible together
+- `no-invent-smooth-fill` — invent a smooth fill across a gap nobody measured
 
 ## Precision to assert
 - the window is a viewBox travel, not a redraw: every label re-seats inside the current window

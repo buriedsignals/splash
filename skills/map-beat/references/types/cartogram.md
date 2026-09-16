@@ -119,12 +119,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the two averages the plate prints, one of which only this form can show
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- put map tiles under the grid — the form has just given up position, and a basemap would assert that the cell is THERE exactly where the form says it is not; the refusal is reasoned on the plate, not omitted
-- draw a missing unit as a pale class: a flat neutral floored the same way landed on exactly the tone the lowest class owned, so the missing tile has NO fill and a dashed edge, because no class is hollow
-- measure the legibility floors on the PITCH rather than on the drawn tile — the gap between two tiles carries no name, and measuring the pitch shipped a 15 px tile against a 16.4 px floor
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-put-map-tiles-under` — put map tiles under the grid — the form has just given up position, and a basemap would assert that the cell is THERE exactly where the form says it is not; the refusal is reasoned on the plate, not omitted
+- `no-draw-missing-unit` — draw a missing unit as a pale class: a flat neutral floored the same way landed on exactly the tone the lowest class owned, so the missing tile has NO fill and a dashed edge, because no class is hollow
+- `no-measure-legibility-floors` — measure the legibility floors on the PITCH rather than on the drawn tile — the gap between two tiles carries no name, and measuring the pitch shipped a 15 px tile against a 16.4 px floor
 
 ## Precision to assert
 - the designed grid is checked BOTH ways against the data — every code in the grid has a row, every row has a tile

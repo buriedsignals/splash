@@ -29,11 +29,11 @@ Worked example: `proof/web-dumbbell-life-expectancy-gains` (2026-09-15).
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- draw the references over the data: the uprights go BEHIND the marks, or the casing punches holes in the very heads the option names
-- pay for the control out of the plot — the chrome is paid for in PROSE (a shorter caveat, reading line and source line), because the figure must still fit the window it opens in
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-draw-references-data` — draw the references over the data: the uprights go BEHIND the marks, or the casing punches holes in the very heads the option names
+- `no-pay-control-out` — pay for the control out of the plot — the chrome is paid for in PROSE (a shorter caveat, reading line and source line), because the figure must still fit the window it opens in
 
 ## Precision to assert
 - the drawn connector length equals the asserted computed difference

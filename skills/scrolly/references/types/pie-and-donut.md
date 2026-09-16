@@ -11,11 +11,11 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 - **Pull back** — the whole circle stands, named wedges still marked
 
 ## A choreography must NOT
-- replay the static plate's states as a slideshow — every card must change the picture by a continuous transformation, not a hard cut
-- pop marks in groups on a fixed picture instead of interpolating them from the scroll's own continuous progress
-- overlap two pictures on one card
-- let two cards' notes share a slot where both are visible together
-- let more than five or six wedges accumulate without collapsing the small ones into an asserted 'other'
+- `no-replay-static-plate` — replay the static plate's states as a slideshow — every card must change the picture by a continuous transformation, not a hard cut
+- `no-pop-marks-groups` — pop marks in groups on a fixed picture instead of interpolating them from the scroll's own continuous progress
+- `no-overlap-pictures-card` — overlap two pictures on one card
+- `no-let-cards-notes` — let two cards' notes share a slot where both are visible together
+- `no-let-wedges-accumulate` — let more than five or six wedges accumulate without collapsing the small ones into an asserted 'other'
 
 ## Precision to assert
 - wedge angles sum to the same asserted total (360°) in every card

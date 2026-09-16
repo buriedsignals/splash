@@ -27,11 +27,11 @@ Worked example: `proof/video-dot-strip-lowcarbon-spread` (2026-09-15), from `pro
 - **`hold` — ≈60 frames**. About 19 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- let a chip's colour change between the lanes — a chip is the same category twice, and recolouring it makes it look like two
-- stack chips sideways to fit: they stack into rows, because a sideways nudge is a value moved
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-let-chip-colour` — let a chip's colour change between the lanes — a chip is the same category twice, and recolouring it makes it look like two
+- `no-stack-chips-sideways` — stack chips sideways to fit: they stack into rows, because a sideways nudge is a value moved
 
 ## Precision to assert
 - one scale for both lanes, over the full domain, in every shot

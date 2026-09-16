@@ -28,11 +28,11 @@ Worked example: `proof/video-parallel-coordinates-electricity-mix`, from `proof/
 - **`hold` — ≈60 frames**. About 22 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- fit each rail to its own column here: this beat puts every rail on ONE scale so a slope is a difference in points, not an artefact of two ceilings — and if a beat does keep per-rail scales, it may not let a slope carry meaning
-- reorder the rails mid-beat: the adjacency is the argument, so a rail order is chosen once and stated
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-fit-rail-own` — fit each rail to its own column here: this beat puts every rail on ONE scale so a slope is a difference in points, not an artefact of two ceilings — and if a beat does keep per-rail scales, it may not let a slope carry meaning
+- `no-reorder-rails-mid` — reorder the rails mid-beat: the adjacency is the argument, so a rail order is chosen once and stated
 
 ## Precision to assert
 - every rail carries the same stated scale in this beat, and a standing piece's top equals its line's vertex at every frame

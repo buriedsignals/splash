@@ -27,11 +27,11 @@ Worked example: `proof/video-diverging-bar-eu-per-capita` (validated 2026-09-14)
 - **`hold` — ≈60 frames**. About 20 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- move the shared zero baseline between shots, or use a second scale for the levels and the changes
-- let the camera's magnification go unstated: the factor is printed, because a zoom that is not named is a bar that lies about its length
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-move-shared-zero` — move the shared zero baseline between shots, or use a second scale for the levels and the changes
+- `no-let-camera-magnification` — let the camera's magnification go unstated: the factor is printed, because a zoom that is not named is a bar that lies about its length
 
 ## Precision to assert
 - all categories are read in both periods, and the counts of rises and falls are asserted exactly

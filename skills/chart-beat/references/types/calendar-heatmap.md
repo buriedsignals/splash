@@ -64,12 +64,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the run's length, counted off the cells the reader can see
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- let a cell carry a value the key cannot express — the cost of this form is exact readings, and the key pays it by printing its breaks
-- leave a day out of the grid: every day of the period is present, in order, or the calendar is not a calendar
-- add a value axis — there is none, and the binned key is the whole scale
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-let-cell-carry` — let a cell carry a value the key cannot express — the cost of this form is exact readings, and the key pays it by printing its breaks
+- `no-leave-day-out` — leave a day out of the grid: every day of the period is present, in order, or the calendar is not a calendar
+- `no-add-value-axis` — add a value axis — there is none, and the binned key is the whole scale
 
 ## Precision to assert
 - every day is present and in order, and the cell count is asserted

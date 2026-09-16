@@ -27,11 +27,11 @@ Worked example: `proof/video-gantt-top-ten-tenure` (validated 2026-09-15, recut)
 - **`hold` — ≈60 frames**. About 18 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- compress a bar to make it fit — length is elapsed time, so a shortened bar is a falsified duration
-- ease the year cursor: the axis is measured, so its traversal is linear or the pace of the story is a lie
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-compress-bar-make` — compress a bar to make it fit — length is elapsed time, so a shortened bar is a falsified duration
+- `no-ease-year-cursor` — ease the year cursor: the axis is measured, so its traversal is linear or the pace of the story is a lie
 
 ## Precision to assert
 - a bar's drawn length is proportional to its real duration in every frame

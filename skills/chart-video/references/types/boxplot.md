@@ -28,11 +28,11 @@ Worked example: `proof/video-box-plot-france-co2-decades` (2026-09-15), from `pr
 - **`hold` — ≈60 frames**. About 20 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- draw the box before its readings — the type's whole risk is a summary taken on trust, and the video exists to show where it came from
-- hide a partial category: a decade with five years fills half its slot and is named by its span, rather than being padded or dropped
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-draw-box-before` — draw the box before its readings — the type's whole risk is a summary taken on trust, and the video exists to show where it came from
+- `no-hide-partial-category` — hide a partial category: a decade with five years fills half its slot and is named by its span, rather than being padded or dropped
 
 ## Precision to assert
 - quartiles, the Tukey fence and the fence-clipped whiskers are computed by the static sibling's own `summarizeDecade`, never eyeballed

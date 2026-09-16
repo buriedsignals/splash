@@ -66,12 +66,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the subject band's rank, stated in words because the picture cannot carry it
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- draw a value axis: no band starts at zero, so an axis would be a lie — the numbers are printed instead
-- include a partial period — a partial year drawn on a stream reads as a collapse, so it is excluded and the reason is on the plate
-- expect a reader to recover a number from the picture: strip the labels and nothing on this plate can be turned back into a number, which is the form's own counter-example in this base
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-draw-value-axis` — draw a value axis: no band starts at zero, so an axis would be a lie — the numbers are printed instead
+- `no-include-partial-period` — include a partial period — a partial year drawn on a stream reads as a collapse, so it is excluded and the reason is on the plate
+- `no-expect-reader-recover` — expect a reader to recover a number from the picture: strip the labels and nothing on this plate can be turned back into a number, which is the form's own counter-example in this base
 
 ## Precision to assert
 - the wiggle baseline and the inside-out order are computed once from the frozen file

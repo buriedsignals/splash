@@ -62,12 +62,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the count of unbroken rows, countable off the picture
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- compress a bar to make it fit — length is elapsed time, so a shortened bar is a falsified duration
-- merge an interrupted row into one span: the gap is a fact and it is drawn
-- let the caption go missing — a Gantt bar's length reads exactly like a plain bar's at first glance, so the caption stating that length means DURATION is not furniture
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-compress-bar-make` — compress a bar to make it fit — length is elapsed time, so a shortened bar is a falsified duration
+- `no-merge-interrupted-row` — merge an interrupted row into one span: the gap is a fact and it is drawn
+- `no-let-caption-go` — let the caption go missing — a Gantt bar's length reads exactly like a plain bar's at first glance, so the caption stating that length means DURATION is not furniture
 
 ## Precision to assert
 - every span is computed from the frozen ranking and the headline counts are asserted before the render

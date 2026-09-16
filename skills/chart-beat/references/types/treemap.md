@@ -66,13 +66,13 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the thread's total area against the whole, with the largest cell visibly outside it
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- let the accent coincide with the maximum — the plate refuses to render if the largest cell ever joins the thread, because at that point a reader can no longer tell which of the two the colour means
-- fold the thread into a neutral remainder: a remainder that mixes the thread with the field is not a remainder, it is a place the argument goes to hide, so the tail is split in two
-- draw an accented cell with a number and no name — an assertion with nothing to attach it to; the ladder gives up a country before it gives up that name
-- skip squarification: a treemap that is not squarified draws slivers, and a sliver is a shape whose area a reader cannot read at all
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-let-accent-coincide` — let the accent coincide with the maximum — the plate refuses to render if the largest cell ever joins the thread, because at that point a reader can no longer tell which of the two the colour means
+- `no-fold-thread-neutral` — fold the thread into a neutral remainder: a remainder that mixes the thread with the field is not a remainder, it is a place the argument goes to hide, so the tail is split in two
+- `no-draw-accented-cell` — draw an accented cell with a number and no name — an assertion with nothing to attach it to; the ladder gives up a country before it gives up that name
+- `no-skip-squarification` — skip squarification: a treemap that is not squarified draws slivers, and a sliver is a shape whose area a reader cannot read at all
 
 ## Precision to assert
 - tile area stays proportional to the asserted value, and the cells tile the box

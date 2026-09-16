@@ -30,13 +30,13 @@ Vocabulary: `skills/map-web/assets/live-flow.ts`.
 - **Keyboard and touch** — every reading is reachable by focus as well as by pointer, one path for both, and the controls are native form elements with the treatment layered on top
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- quote a sibling beat's Mercator figure, or type one: the cost is DERIVED for this subject on every render and stated in the reader's own words
-- let a stylesheet reach a MapLibre paint — no stylesheet does, so the map's half of a state change is built at build time from the same index the markup carries, and what survives with the script off is said on the page
-- draw only what is above the floor and say nothing: Minard's rule — a band too thin to see is COUNTED, not drawn — and which bands fall under the floor is a function of the denominator and is NOT a stable set, so the count is stated per denominator and stated to be different bands
-- size a seat marker by anything: a marker here is a pin, `radius: "fixed"`, the same screen size at every zoom, because it locates and does not measure
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-quote-sibling-beat` — quote a sibling beat's Mercator figure, or type one: the cost is DERIVED for this subject on every render and stated in the reader's own words
+- `no-let-stylesheet-reach` — let a stylesheet reach a MapLibre paint — no stylesheet does, so the map's half of a state change is built at build time from the same index the markup carries, and what survives with the script off is said on the page
+- `no-draw-only-above` — draw only what is above the floor and say nothing: Minard's rule — a band too thin to see is COUNTED, not drawn — and which bands fall under the floor is a function of the denominator and is NOT a stable set, so the count is stated per denominator and stated to be different bands
+- `no-size-seat-marker` — size a seat marker by anything: a marker here is a pin, `radius: "fixed"`, the same screen size at every zoom, because it locates and does not measure
 
 ## Precision to assert
 - the route's drawn order matches the data's own sequence, and every region beneath the route is present

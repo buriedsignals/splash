@@ -30,11 +30,11 @@ Worked example: `proof/video-area-swiss-co2` (validated 2026-09-15), from `proof
 - **`hold` — ≈60 frames** — nothing moves; the state equals the conclusion exactly. The beat runs about 20 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- fill an area across a gap in the series — an area drawn over unreported years measures years nobody reported
-- lift the surface off zero for any shot: the surface IS the stock, so a floated baseline changes the quantity being claimed
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-fill-area-across` — fill an area across a gap in the series — an area drawn over unreported years measures years nobody reported
+- `no-lift-surface-zero` — lift the surface off zero for any shot: the surface IS the stock, so a floated baseline changes the quantity being claimed
 
 ## Precision to assert
 - the years are asserted consecutive before a single frame is drawn

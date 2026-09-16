@@ -30,11 +30,11 @@ Worked example: `proof/web-histogram-carbon-footprint` (2026-09-15), from `proof
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- let the reader change the bin width here just because it is the type's own trap — the refusal is measured and written down, and a control whose every option returns the same reading at a different resolution changes the picture and not the reading
-- carry the bin width as a bare literal: the three measurements that chose it are asserted in the render script
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-let-reader-change` — let the reader change the bin width here just because it is the type's own trap — the refusal is measured and written down, and a control whose every option returns the same reading at a different resolution changes the picture and not the reading
+- `no-carry-bin-width` — carry the bin width as a bare literal: the three measurements that chose it are asserted in the render script
 
 ## Precision to assert
 - the threshold the headline counts must land on a bin EDGE, so the accent never claims a bin the claim does not count — asserted, not assumed

@@ -78,12 +78,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the crossing, ringed at the point the two lines actually meet
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- believe a crossing on sight — a pair crosses when the sign of their gap FLIPS between the rails, and the exclusivity half of the sentence is derived the same way
-- truncate a category label to fit a fixed gutter: the gutter is sized to the label, wrapping if the widest needs it, and type shrinks only as a last resort — the data is never the thing that gives
-- drop a label to open the pitch: the placer may PUSH a label and may never drop one, and it reports the largest push it made
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-believe-crossing-sight` — believe a crossing on sight — a pair crosses when the sign of their gap FLIPS between the rails, and the exclusivity half of the sentence is derived the same way
+- `no-truncate-category-label` — truncate a category label to fit a fixed gutter: the gutter is sized to the label, wrapping if the widest needs it, and type shrinks only as a last resort — the data is never the thing that gives
+- `no-drop-label-open` — drop a label to open the pitch: the placer may PUSH a label and may never drop one, and it reports the largest push it made
 
 ## Precision to assert
 - both end columns keep the same shared scale

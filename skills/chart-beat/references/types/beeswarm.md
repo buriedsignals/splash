@@ -73,12 +73,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the named cases, whose position and area together carry the sentence
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- push a mark ALONG the axis to make room — a swarm that slides a circle sideways has lied about the one thing it measures
-- lay the small circles down first: a big circle placed late has nowhere to go and ends up at the edge of the band, reading as a value it does not have
-- spend a plate on a size key — what a circle is and what its area means is said in the running prose the reader is already reading
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-push-mark-along` — push a mark ALONG the axis to make room — a swarm that slides a circle sideways has lied about the one thing it measures
+- `no-lay-small-circles` — lay the small circles down first: a big circle placed late has nowhere to go and ends up at the edge of the band, reading as a value it does not have
+- `no-spend-plate-size` — spend a plate on a size key — what a circle is and what its area means is said in the running prose the reader is already reading
 
 ## Precision to assert
 - the radius ladder is walked from generous to mean and the first rung whose packed swarm still fits its band is taken; the floor under the smallest marks is a distortion the ladder PRINTS rather than hides

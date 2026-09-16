@@ -35,11 +35,11 @@ Worked example: `proof/web-grouped-bar-wind-vs-solar` (2026-09-15), from `proof/
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- keep the author's callout as well as the control — the page earns its format by handing the pointing over, not by doing both
-- let a yardstick move a mark: a level lays a reference across the plot and every datum keeps exactly the meaning it had
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-keep-author-callout` — keep the author's callout as well as the control — the page earns its format by handing the pointing over, not by doing both
+- `no-let-yardstick-move` — let a yardstick move a mark: a level lays a reference across the plot and every datum keeps exactly the meaning it had
 
 ## Precision to assert
 - one shared value scale from zero across every group and every state

@@ -78,12 +78,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the two named cases' arcs having exchanged length between the rings
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- carry identity with a flag or any asset this base does not ship — a plate that drew approximations of them would be inventing a fact about a country; identity is the name under the ring
-- let a turn mean something different on two rings: one full turn is the whole, on every ring, at one radius, because six rings side by side ARE a small multiple
-- recolour the subject — the chroma axis is already spent on the two dates, so the subject takes a SHAPE: a hairline hugging its own number
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-carry-identity-flag` — carry identity with a flag or any asset this base does not ship — a plate that drew approximations of them would be inventing a fact about a country; identity is the name under the ring
+- `no-let-turn-mean` — let a turn mean something different on two rings: one full turn is the whole, on every ring, at one radius, because six rings side by side ARE a small multiple
+- `no-recolour-subject` — recolour the subject — the chroma axis is already spent on the two dates, so the subject takes a SHAPE: a hairline hugging its own number
 
 ## Precision to assert
 - wedge angles sum to the same asserted whole on every ring

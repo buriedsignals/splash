@@ -55,12 +55,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the widest band against the youngest, which is what separates an ageing population from an expanding one
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- sort the bands by size — the silhouette only exists while the age sequence stays intact, oldest at the top
-- let the two sides take different scales, or move the shared centre
-- spend a third hue: the mirrored position already carries the group distinction and colour only reinforces it, as a CVD-safe pair checked AS A PAIR
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-sort-bands-size` — sort the bands by size — the silhouette only exists while the age sequence stays intact, oldest at the top
+- `no-let-sides-take` — let the two sides take different scales, or move the shared centre
+- `no-spend-third-hue` — spend a third hue: the mirrored position already carries the group distinction and colour only reinforces it, as a CVD-safe pair checked AS A PAIR
 
 ## Precision to assert
 - the shared centre never moves and both sides keep the same mirrored, zero-anchored magnitude scale

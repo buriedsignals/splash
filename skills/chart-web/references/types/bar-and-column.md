@@ -32,11 +32,11 @@ Worked example: `proof/web-bar-top-emitters-2024` (2026-09-15), from `proof/stat
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- let a control change the ranking or drop a column — narrowing must be ORTHOGONAL to the encoded variable, or it can hide the claim
-- print a value label on a fill without measuring the ink against that exact fill; this beat side-steps it by printing every value OUTSIDE its column, on the ground
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-let-control-change` — let a control change the ranking or drop a column — narrowing must be ORTHOGONAL to the encoded variable, or it can hide the claim
+- `no-print-value-label` — print a value label on a fill without measuring the ink against that exact fill; this beat side-steps it by printing every value OUTSIDE its column, on the ground
 
 ## Precision to assert
 - the ten are a ranking derived from the frozen file (aggregate rows dropped, both counts printed), never a typed list

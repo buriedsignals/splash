@@ -34,11 +34,11 @@ Worked example: `proof/web-streamgraph-swiss-electricity` (2026-09-15), from
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- re-base with a translation: re-basing a stream is a SHEAR, because the correction is a different number at every step, and a single `dy` per band would be wrong by more than the thing it exists to show
-- leave hit points at coordinates the shear moves — a point that answers for where its band used to be is the worst answer an interactive chart can give, and this corpus has paid for it twice
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-re-base-translation` — re-base with a translation: re-basing a stream is a SHEAR, because the correction is a different number at every step, and a single `dy` per band would be wrong by more than the thing it exists to show
+- `no-leave-hit-points` — leave hit points at coordinates the shear moves — a point that answers for where its band used to be is the worst answer an interactive chart can give, and this corpus has paid for it twice
 
 ## Precision to assert
 - the wiggle baseline is computed once and held fixed in the default state, and every option's shear is derived from it

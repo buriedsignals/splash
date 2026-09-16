@@ -29,11 +29,11 @@ Worked example: `proof/video-grouped-bar-wind-vs-solar` (validated 2026-09-15, r
 - **`hold` — ≈60 frames**. About 19 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- give the two series different scales, or let the scale move between two groups being compared
-- print a callout naming the exception: the count stops short and the one group left standing says it
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-give-series-different` — give the two series different scales, or let the scale move between two groups being compared
+- `no-print-callout-naming` — print a callout naming the exception: the count stops short and the one group left standing says it
 
 ## Precision to assert
 - one shared value scale from zero across every group and every shot

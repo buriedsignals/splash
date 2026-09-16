@@ -27,11 +27,11 @@ Worked example: `proof/video-small-multiples-lowcarbon` (2026-09-16), from `proo
 - **`hold` — ≈60 frames**. About 18 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- give a panel its own scale — every panel keeps the same axis scale, asserted equal, in every shot
-- re-sort the grid without a reason the claim needs: the order is itself the finding here
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-give-panel-own` — give a panel its own scale — every panel keeps the same axis scale, asserted equal, in every shot
+- `no-re-sort-grid` — re-sort the grid without a reason the claim needs: the order is itself the finding here
 
 ## Precision to assert
 - every panel keeps the same axis scale across every shot, asserted equal

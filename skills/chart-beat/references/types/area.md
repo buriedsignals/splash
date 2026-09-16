@@ -74,12 +74,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the two shares either side of the cut, read off the areas the reader has just been shown
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- fill across a gap in the series — the polygon would join the years either side and the reader integrates a value nobody measured
-- lift the surface off zero: the moment a series is filled, every clipped unit becomes surface, so the component throws rather than draw one pixel over a non-zero base
-- draw a smoothed mean over the fill — a second curve bounding a surface it does not bound
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-fill-across-gap` — fill across a gap in the series — the polygon would join the years either side and the reader integrates a value nobody measured
+- `no-lift-surface-zero` — lift the surface off zero: the moment a series is filled, every clipped unit becomes surface, so the component throws rather than draw one pixel over a non-zero base
+- `no-draw-smoothed-mean` — draw a smoothed mean over the fill — a second curve bounding a surface it does not bound
 
 ## Precision to assert
 - the years are asserted consecutive before anything is drawn

@@ -28,11 +28,11 @@ Worked example: `proof/video-treemap-europe-capacity` (2026-09-15), from `proof/
 - **`hold` — ≈60 frames**. About 19 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- move a cell without conserving its area — the gather is only evidence if every frame holds the same area
-- keep a cell that cannot carry its own value as a labelled tile: cells too small to be read fold into a stated remainder rather than becoming unreadable slivers
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-move-cell-conserving` — move a cell without conserving its area — the gather is only evidence if every frame holds the same area
+- `no-keep-cell-cannot` — keep a cell that cannot carry its own value as a labelled tile: cells too small to be read fold into a stated remainder rather than becoming unreadable slivers
 
 ## Precision to assert
 - tile area stays proportional to the same asserted value in every shot, including during the gather

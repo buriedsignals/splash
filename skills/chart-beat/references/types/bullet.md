@@ -63,12 +63,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the one row that falls short of the rule while leading on the change
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- invent a target just to unlock the bullet's shape — the target's provenance is stated
-- let a qualitative band change order or width between rows: the backdrop is the constant the bar is judged against
-- accent more than the row the claim names — every other row is neutral, or the verdict has no subject
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-invent-target-just` — invent a target just to unlock the bullet's shape — the target's provenance is stated
+- `no-let-qualitative-band` — let a qualitative band change order or width between rows: the backdrop is the constant the bar is judged against
+- `no-accent-row-claim` — accent more than the row the claim names — every other row is neutral, or the verdict has no subject
 
 ## Precision to assert
 - the target marker's position is computed from the same data as the bar and asserted equal to it

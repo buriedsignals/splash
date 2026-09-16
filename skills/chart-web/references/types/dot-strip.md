@@ -36,11 +36,11 @@ Worked example: `proof/web-dot-strip-lowcarbon-spread` (2026-09-15), from `proof
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- let a dot move to avoid an overlap without the move being visible as declared jitter — a silent nudge is a value moved
-- offer a definition the page cannot state: each rung names what it sums over, and the caveat travels with the state
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-let-dot-move` — let a dot move to avoid an overlap without the move being visible as declared jitter — a silent nudge is a value moved
+- `no-offer-definition-page` — offer a definition the page cannot state: each rung names what it sums over, and the caveat travels with the state
 
 ## Precision to assert
 - the runner refuses to render if the floor did not rise far while the ceiling barely moved, if the spread did not close by more than the stated fraction, or if the last rung does not open it

@@ -27,11 +27,11 @@ Worked example: `proof/video-donut-world-co2-share` (2026-09-15), from `proof/st
 - **`hold` — ≈60 frames**. About 18 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- let a turn mean something different on two rings — one full turn is the whole, on every ring, in every shot
-- change an arc's angle while it is in flight: the split moves rings, it does not re-proportion them
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-let-turn-mean` — let a turn mean something different on two rings — one full turn is the whole, on every ring, in every shot
+- `no-change-arc-angle` — change an arc's angle while it is in flight: the split moves rings, it does not re-proportion them
 
 ## Precision to assert
 - wedge angles sum to the same asserted whole (360°) on every ring

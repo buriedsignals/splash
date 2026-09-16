@@ -35,11 +35,11 @@ Worked example: `proof/web-treemap-europe-capacity` (2026-09-15), from
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- narrow a treemap without re-scaling: a filter's own promise is that the frame does not move, which is the exact opposite of a descent, and narrowing without re-squarifying leaves the same picture with holes
-- pick label ink by a brightness rule — `inkOnFill` measures each candidate against THAT EXACT fill and takes whichever wins
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-narrow-treemap-re` — narrow a treemap without re-scaling: a filter's own promise is that the frame does not move, which is the exact opposite of a descent, and narrowing without re-squarifying leaves the same picture with holes
+- `no-pick-label-ink` — pick label ink by a brightness rule — `inkOnFill` measures each candidate against THAT EXACT fill and takes whichever wins
 
 ## Precision to assert
 - tile area stays proportional to the asserted value at every depth, and a descent re-squarifies so a cell's area means share OF THIS BRANCH

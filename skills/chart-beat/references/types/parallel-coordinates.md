@@ -64,12 +64,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the pair of accented lines against the field, read across the two named rails
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- reorder the rails for a nicer picture — adjacency IS the argument, so a rail order is chosen once from the claim and stated
-- let a slope carry meaning while each rail keeps its own scale, unless the sheet's own condition is met
-- seat an item's name more than once, or where it would cross a neighbouring rail
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-reorder-rails-nicer` — reorder the rails for a nicer picture — adjacency IS the argument, so a rail order is chosen once from the claim and stated
+- `no-let-slope-carry` — let a slope carry meaning while each rail keeps its own scale, unless the sheet's own condition is met
+- `no-seat-item-name` — seat an item's name more than once, or where it would cross a neighbouring rail
 
 ## Precision to assert
 - each axis keeps its own fixed scale, stated

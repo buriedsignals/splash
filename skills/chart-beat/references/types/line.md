@@ -83,12 +83,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the last point and its label, at the end of the curve, in the accent
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- accent the maximum — the peak is not the subject, and accenting it is exactly the anti-pattern the doctrine names
-- force the value axis to zero: this is a line, the slope carries the value
-- repeat in a label what the surrounding text already says, or add a legend where two direct labels do the work
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-accent-maximum` — accent the maximum — the peak is not the subject, and accenting it is exactly the anti-pattern the doctrine names
+- `no-force-value-axis` — force the value axis to zero: this is a line, the slope carries the value
+- `no-repeat-label-surrounding` — repeat in a label what the surrounding text already says, or add a legend where two direct labels do the work
 
 ## Precision to assert
 - a gap in the series breaks the line rather than being bridged across missing readings

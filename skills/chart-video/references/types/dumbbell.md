@@ -26,11 +26,11 @@ Worked example: `proof/video-dumbbell-life-expectancy-gains` (2026-09-15), from 
 - **`hold` — ≈60 frames**. About 19 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- recolour the subject's row — the two series are one hue at two chromas and the subject is RINGED, so the series encoding is never spent on emphasis
-- anchor the value axis at zero: the gap is the point, and zeroing the axis compresses every gap the chart exists to show
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-recolour-subject-row` — recolour the subject's row — the two series are one hue at two chromas and the subject is RINGED, so the series encoding is never spent on emphasis
+- `no-anchor-value-axis-zero` — anchor the value axis at zero: the gap is the point, and zeroing the axis compresses every gap the chart exists to show
 
 ## Precision to assert
 - the drawn connector length equals the asserted computed difference, in every shot and for every copy

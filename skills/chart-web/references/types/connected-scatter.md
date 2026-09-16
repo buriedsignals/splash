@@ -34,11 +34,11 @@ Worked example: `proof/web-connected-scatter-lowcarbon` (2026-09-15), from `proo
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- move the tail — the tail is the invariant the pointer resolves on, and a `dx`/`dy` that moved the whole arrow would destroy the one fixed thing on the page
-- aim a head at a point the plate never drew: each head is checked against the frame, and the length and angle are DERIVED from the two declared points rather than typed beside them
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-move-tail` — move the tail — the tail is the invariant the pointer resolves on, and a `dx`/`dy` that moved the whole arrow would destroy the one fixed thing on the page
+- `no-aim-head-point` — aim a head at a point the plate never drew: each head is checked against the frame, and the length and angle are DERIVED from the two declared points rather than typed beside them
 
 ## Precision to assert
 - the path's drawn order matches the data's own ordering axis exactly

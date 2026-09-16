@@ -35,11 +35,11 @@ Worked example: `proof/video-streamgraph-swiss-electricity` (validated 2026-09-1
 - **`hold` — ≈60 frames**. About 20 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- print a value against a band: the baseline is free, so a height read off a wiggling band is not a reading
-- recentre the wiggle baseline between shots — it is computed once and held, or the bands move for reasons the data did not
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-print-value-against` — print a value against a band: the baseline is free, so a height read off a wiggling band is not a reading
+- `no-recentre-wiggle-baseline` — recentre the wiggle baseline between shots — it is computed once and held, or the bands move for reasons the data did not
 
 ## Precision to assert
 - the wiggle baseline is computed once and held fixed across every shot

@@ -71,12 +71,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the longest bar and the shortest, at the two ends of the sorted column
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- give this type one accent plus neutrals: a dumbbell has two colour ROLES, one per series, capped at exactly two
-- drop the legend as decoration — without a positional convention it is the only thing telling the reader which dot is which
-- anchor the value scale at zero: the gap is the point, and zeroing compresses every gap the chart exists to show
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-give-type-accent` — give this type one accent plus neutrals: a dumbbell has two colour ROLES, one per series, capped at exactly two
+- `no-drop-legend-decoration` — drop the legend as decoration — without a positional convention it is the only thing telling the reader which dot is which
+- `no-anchor-value-scale` — anchor the value scale at zero: the gap is the point, and zeroing compresses every gap the chart exists to show
 
 ## Precision to assert
 - the drawn bar length equals the asserted computed difference for every row

@@ -35,11 +35,11 @@ Worked example: `proof/web-bullet-low-carbon-share` (2026-09-15), from `proof/st
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- invent a target just to unlock the bullet's shape — every option names a provenance and is verified against the data
-- let an option leave a row unjudged: a benchmark is per row, confined to that row's own track, and every row gets a verdict
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-invent-target-just` — invent a target just to unlock the bullet's shape — every option names a provenance and is verified against the data
+- `no-let-option-leave` — let an option leave a row unjudged: a benchmark is per row, confined to that row's own track, and every row gets a verdict
 
 ## Precision to assert
 - the target marker's position is computed from the same data as the bar and asserted equal to it

@@ -28,11 +28,11 @@ Worked example: `proof/video-heatmap-europe-electricity` (2026-09-16), from `pro
 - **`hold` — ≈60 frames**. About 21 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- let the colour scale's domain move between shots — a cell's tint must mean the same thing at second 3 and second 20
-- reorder more rows than the claim needs: every row that moves has to be paid for by the argument
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-let-colour-scale` — let the colour scale's domain move between shots — a cell's tint must mean the same thing at second 3 and second 20
+- `no-reorder-rows-claim` — reorder more rows than the claim needs: every row that moves has to be paid for by the argument
 
 ## Precision to assert
 - the class breaks are computed once from the frozen file and printed in the key

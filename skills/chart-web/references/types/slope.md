@@ -31,11 +31,11 @@ Worked example: `proof/web-slope-europe-lowcarbon` (2026-09-15), from
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- believe a crossing on sight — a pair crosses when the sign of their gap FLIPS, and the crossing's height is read off BOTH lines and refused unless the two agree
-- truncate a category label to fit a fixed gutter: the gutter is sized to the label, and the measured overlaps are bounding boxes, measured at five widths, not glyphs
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-believe-crossing-sight` — believe a crossing on sight — a pair crosses when the sign of their gap FLIPS, and the crossing's height is read off BOTH lines and refused unless the two agree
+- `no-truncate-category-label` — truncate a category label to fit a fixed gutter: the gutter is sized to the label, and the measured overlaps are bounding boxes, measured at five widths, not glyphs
 
 ## Precision to assert
 - both end columns keep the same shared scale in every state

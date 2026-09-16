@@ -29,11 +29,11 @@ Worked example: `proof/web-lollipop-co2-per-person` (2026-09-15), from
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- paint a value label in the mark's accent — every printed value is in the page's neutral ink, which is this type's own filed trap
-- pay for the control out of the plot: the chrome's cost is measured at 375 px and given back in prose
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-paint-value-label` — paint a value label in the mark's accent — every printed value is in the page's neutral ink, which is this type's own filed trap
+- `no-pay-control-out-plot` — pay for the control out of the plot: the chrome's cost is measured at 375 px and given back in prose
 
 ## Precision to assert
 - one zero-based value scale for every stem in every state

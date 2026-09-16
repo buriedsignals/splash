@@ -33,11 +33,11 @@ Worked example: `proof/web-parallel-coordinates-electricity` (2026-09-15), from
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- use `filter.ts` for this: a filter's narrowed set must be ORTHOGONAL to the encoded variable so narrowing can never hide the claim, and a brush is the opposite — hence a different word, a different file and a different attribute (`data-brush`)
-- let the two states of a selected mark differ by less than a MEASURED contrast step, which is the one refusal `filter.ts` has no reason to make
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-use-filter-ts` — use `filter.ts` for this: a filter's narrowed set must be ORTHOGONAL to the encoded variable so narrowing can never hide the claim, and a brush is the opposite — hence a different word, a different file and a different attribute (`data-brush`)
+- `no-let-states-selected` — let the two states of a selected mark differ by less than a MEASURED contrast step, which is the one refusal `filter.ts` has no reason to make
 
 ## Precision to assert
 - each axis keeps its own fixed scale across every state, so a line's slope always means the same thing

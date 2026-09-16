@@ -26,11 +26,11 @@ Worked example: `proof/video-marimekko-electricity-mix` (2026-09-15), from `proo
 - **`hold` — ≈60 frames**. About 20 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- print a share inside a cell — the cell's area IS the share, and a number in it invites reading the height as the value
-- reshape a cell without conserving its area: the pour is only honest if every frame of it holds the same area
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-print-share-inside` — print a share inside a cell — the cell's area IS the share, and a number in it invites reading the height as the value
+- `no-reshape-cell-conserving` — reshape a cell without conserving its area: the pour is only honest if every frame of it holds the same area
 
 ## Precision to assert
 - column width is on one unit-per-value scale and band height a share of the same 100 %, so a cell's area is the quantity, in every shot

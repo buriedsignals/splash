@@ -60,12 +60,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the distance between the two lanes' floors against the distance between their ceilings
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- let a dot move to avoid an overlap without the move being visible as declared jitter — a silent nudge is a value moved
-- give the two lanes different scales, or recolour a dot between them: a dot is the same category twice
-- summarise: this is the one lossless distribution in the catalogue, and a box or a bin gives away what it is for
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-let-dot-move` — let a dot move to avoid an overlap without the move being visible as declared jitter — a silent nudge is a value moved
+- `no-give-lanes-different` — give the two lanes different scales, or recolour a dot between them: a dot is the same category twice
+- `no-summarise` — summarise: this is the one lossless distribution in the catalogue, and a box or a bin gives away what it is for
 
 ## Precision to assert
 - one scale for both lanes over the full domain

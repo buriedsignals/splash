@@ -31,11 +31,11 @@ Worked example: `proof/web-sankey-electricity-sources` (2026-09-15), from
 - **Keyboard and touch** — every reading is `tabIndex={0}` at build time and one `show(point, x, y)` serves focus and pointer alike; the controls are native form elements with the treatment layered on top (`opacity: 0`, never `display: none`)
 
 ## A choreography must NOT
-- put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
-- ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
-- describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
-- check conservation against the DATA and call it checked: fifteen links here fall under half a pixel and are not drawn, so the promise is verified against what the plate DRAWS, per node, with the undrawn residue printed
-- let a followed flow re-scale anything — tracing selects, it does not re-proportion
+- `no-put-anything-argument` — put anything argument-bearing behind a control — the takeaway, the reference rule and the subject's accent are drawn unconditionally
+- `no-ship-control-applied` — ship a control whose applied state equals the DEFAULT state — an answer the plate already prints is refused by `assertInteractionPlan`
+- `no-describe-control-mechanism` — describe a control as a mechanism ("a hover detail", "a filter") instead of as the reader's own question, or let the browser format a number — every derived reading is computed in the runner
+- `no-check-conservation-against` — check conservation against the DATA and call it checked: fifteen links here fall under half a pixel and are not drawn, so the promise is verified against what the plate DRAWS, per node, with the undrawn residue printed
+- `no-let-followed-flow` — let a followed flow re-scale anything — tracing selects, it does not re-proportion
 
 ## Precision to assert
 - every node's total equals the sum of its own ribbons, checked against the drawn geometry and not only against the file

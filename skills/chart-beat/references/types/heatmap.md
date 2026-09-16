@@ -83,12 +83,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the partition of the top block into its routes, visible as which columns are dark in which rows
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- print a value in every cell when the cell count forbids it: at 108 cells the value register's band does not fit the row pitch, so the plate NAMES the region instead
-- hand-pick the rows — which of forty are drawn is a stated editorial rule (everyone above the floor, plus the largest producers), and the first draft that hand-picked eighteen asserted a count that was false across the real forty
-- leave the row or column order in the data's order: neither is in the data, and both are printed on the plate
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-print-value-cell` — print a value in every cell when the cell count forbids it: at 108 cells the value register's band does not fit the row pitch, so the plate NAMES the region instead
+- `no-hand-pick-rows` — hand-pick the rows — which of forty are drawn is a stated editorial rule (everyone above the floor, plus the largest producers), and the first draft that hand-picked eighteen asserted a count that was false across the real forty
+- `no-leave-row-column` — leave the row or column order in the data's order: neither is in the data, and both are printed on the plate
 
 ## Precision to assert
 - the colour scale's domain is fixed and the key prints its breaks

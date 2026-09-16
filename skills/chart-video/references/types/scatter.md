@@ -28,11 +28,11 @@ Worked example: `proof/video-scatter-income-life-expectancy` (2026-09-15), from 
 - **`hold` — ≈60 frames**. About 20 s
 
 ## A choreography must NOT
-- replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
-- hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
-- ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
-- spend the accent on a country: this type has a cloud in which no single mark is the argument, so the accent goes on the break and its spans
-- let a dot change height at any point — y is fixed from the first shot, and only x is ever applied
+- `no-replay-static-plate` — replay the static plate on a timer, its marks switched on one at a time — every event owes a transformation of the picture before it
+- `no-hold-event-computed` — hold an event whose computed state equals the one before it — `assertEventStates` refuses it, and only a final `hold` is exempt
+- `no-ease-traversal-measured` — ease the traversal of a measured axis, or end on a card: the last shot is the whole chart with the lesson lightly marked and the credit on one line
+- `no-spend-accent-country` — spend the accent on a country: this type has a cloud in which no single mark is the argument, so the accent goes on the break and its spans
+- `no-let-dot-change` — let a dot change height at any point — y is fixed from the first shot, and only x is ever applied
 
 ## Precision to assert
 - both axes keep the same fixed scale in every shot, and a log axis is declared as one

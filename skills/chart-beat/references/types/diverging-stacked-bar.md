@@ -71,12 +71,12 @@ Owner rules that apply here: one frame, read at rest — one accent, all furnitu
 - **The claim lands on** the row whose middle band outweighs both its wings
 
 ## A choreography must NOT
-- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
-- send the reader to a legend for a reading a direct label could carry at the mark itself
-- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
-- name the neutral by judgement — the level in the middle has to belong to neither side as a matter of CLASSIFICATION, and the plate says so in its reading line without saying whether it is good
-- print a label inside a segment: a single light/dark threshold fails on a mid-toned fill, so the totals go outside, at the ends, where one measurement against the ground covers them
-- let two neighbouring levels of the scale merge into one band
+- `no-accent-thing-claim` — accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- `no-send-reader-legend` — send the reader to a legend for a reading a direct label could carry at the mark itself
+- `no-give-furniture-colour` — give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- `no-name-neutral-judgement` — name the neutral by judgement — the level in the middle has to belong to neither side as a matter of CLASSIFICATION, and the plate says so in its reading line without saying whether it is good
+- `no-print-label-inside` — print a label inside a segment: a single light/dark threshold fails on a mid-toned fill, so the totals go outside, at the ends, where one measurement against the ground covers them
+- `no-let-neighbouring-levels` — let two neighbouring levels of the scale merge into one band
 
 ## Precision to assert
 - every row sums to the same asserted total
