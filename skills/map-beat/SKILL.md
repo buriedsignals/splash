@@ -152,23 +152,23 @@ fails the frame rather than ship a missing tile.
 | step | read / do |
 | --- | --- |
 | 1 | `chart-video/references/directed-type-choreography.md` — the video rules (title card 1.5 s, argument not reveal, whole map at the end, credit on one line, 30 px floor, 18–22 s) |
-| 2 | `references/types/<type>.md`, its "In video" section |
+| 2 | `references/types/video/<type>.md` — the type's shot gestures, its prohibitions, its precision and the devices its worked example implements; `references/types/<type>.md`'s "In video" section is the older narrative record of the same beat |
 | 3 | the worked example (index below), split as in the pilot table |
 | 4 | Scaffold: `bun skills/map-beat/scripts/scaffold-map-video-beat.mjs …` (see the script's header) |
 | 5 | `BRIEF.md` choreography → plan + states + `mapStateAt` (TDD, offline) → `measure.mjs` → overlay placement → `--look` → renders |
 
-### The type index
+### The type index (video)
 
 | type | sheet | worked example (live MapTiler map) |
 | --- | --- | --- |
-| Cartogram | `references/types/cartogram.md` | `proof/video-cartogram-europe-lowcarbon` |
-| Choropleth (pilot) | `references/types/choropleth.md` | `proof/video-choropleth-europe-lowcarbon` |
-| Contour / isoline | `references/types/contour-isoline.md` | `proof/video-contour-europe-distance` |
-| Dot density | `references/types/dot-density.md` | `proof/video-dot-density-europe-stations` |
-| Flow map | `references/types/flow-map.md` | `proof/video-flow-map-ukraine-protection` |
-| Hex grid | `references/types/hex-grid.md` | `proof/video-hex-grid-europe-protection` |
-| Locator | `references/types/locator.md` | `proof/video-locator-zaporizhzhia` |
-| Proportional symbol | `references/types/proportional-symbol.md` | `proof/video-proportional-symbol-europe-capacity` |
+| Cartogram | `references/types/video/cartogram.md` | `proof/video-cartogram-europe-lowcarbon` |
+| Choropleth (pilot) | `references/types/video/choropleth.md` | `proof/video-choropleth-europe-lowcarbon` |
+| Contour / isoline | `references/types/video/contour-isoline.md` | `proof/video-contour-europe-distance` |
+| Dot density | `references/types/video/dot-density.md` | `proof/video-dot-density-europe-stations` |
+| Flow map | `references/types/video/flow-map.md` | `proof/video-flow-map-ukraine-protection` |
+| Hex grid | `references/types/video/hex-grid.md` | `proof/video-hex-grid-europe-protection` |
+| Locator | `references/types/video/locator.md` | `proof/video-locator-zaporizhzhia` |
+| Proportional symbol | `references/types/video/proportional-symbol.md` | `proof/video-proportional-symbol-europe-capacity` |
 
 All built on the live map 2026-09-15/16 and awaiting the owner (`docs/design-base/CATALOGUE.md`).
 

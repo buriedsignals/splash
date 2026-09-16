@@ -104,9 +104,9 @@ window. Use a directory unique to the beat (a shared scratchpad `look/` already 
 | type | sheet | worked example | owner |
 | --- | --- | --- | --- |
 | Area | `references/types/area.md` | `proof/video-area-swiss-co2` | validated |
-| Bar and column | `references/types/bar.md` | `proof/video-bar-top-emitters-2024` | validated |
+| Bar and column | `references/types/bar-and-column.md` | `proof/video-bar-top-emitters-2024` | validated |
 | Beeswarm | `references/types/beeswarm.md` | `proof/video-beeswarm-co2-per-person` | awaiting |
-| Box plot | `references/types/box-plot.md` | `proof/video-box-plot-france-co2-decades` | awaiting |
+| Box plot | `references/types/boxplot.md` | `proof/video-box-plot-france-co2-decades` | awaiting |
 | Bullet | `references/types/bullet.md` | `proof/video-bullet-low-carbon-share` | validated |
 | Bump | `references/types/bump.md` | `proof/video-bump-emitter-rank` | validated |
 | Calendar heatmap | `references/types/calendar-heatmap.md` | `proof/video-calendar-heatmap-geneva` | validated |
@@ -124,7 +124,7 @@ window. Use a directory unique to the beat (a shared scratchpad `look/` already 
 | Marimekko | `references/types/marimekko.md` | `proof/video-marimekko-electricity-mix` | awaiting |
 | Parallel coordinates | `references/types/parallel-coordinates.md` | `proof/video-parallel-coordinates-electricity-mix` | awaiting |
 | Pictogram | `references/types/pictogram.md` | `proof/video-pictogram-europe-lowcarbon` | awaiting |
-| Pie and donut | `references/types/donut.md` | `proof/video-donut-world-co2-share` | awaiting |
+| Pie and donut | `references/types/pie-and-donut.md` | `proof/video-donut-world-co2-share` | awaiting |
 | Population pyramid | `references/types/population-pyramid.md` | `proof/video-population-pyramid-swiss-age` | awaiting |
 | Radar | `references/types/radar.md` | `proof/video-radar-electricity-mix` | awaiting |
 | Sankey | `references/types/sankey.md` | `proof/video-sankey-electricity-sources` | awaiting |
