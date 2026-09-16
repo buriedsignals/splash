@@ -64,6 +64,24 @@ reader nothing at all — it deserves the same legibility as the headline, not
 footer-line treatment, because without it the map cannot be read as data at
 all, only as texture.
 
+## In video
+
+Worked example: `proof/video-dot-density-europe-stations` (validated 2026-09-14). A dot map's two readings — the count
+of places and the weight of each — are told one after the other on the same dots: the units arrive kind by kind (the
+rare kind last, never buried) while the count climbs; the subject is ringed while the rest steps back; then **every dot
+grows to an area proportional to its quantity**, the ring closing onto the disc, the share of the total climbing and a
+size reference landing in the key. Every text a count can show is measured in Bun and keyed by its number, so the
+composition types no word. The key and the credit are seated clear of every disc at its largest, not only of the dots.
+
+Recut 2026-09-15: the growth carries each dot's **area** linearly (not its radius), and **one bar in the key measures
+both readings** — the subject's share of the weights, a sliver while every unit counts one, widening to its share of the
+quantity as the dots grow, the first share ticked. The credit sits on one line in the lowest corner clear of every disc.
+
+On the live MapTiler map (2026-09-15, awaiting the owner): the units are GeoJSON `circle` layers split by kind × the
+radius they grow to (a bucket's radius the root of its members' mean square), so the growth is one data-constant
+expression per layer bound to the frame's weight — a `["get", …]` radius would relay out the source every frame. The
+camera holds every unit; the key and the credit stand on the measured open sea, clear of every disc at its largest.
+
 ## The worked example in this tree
 
 `proof/static-dot-density-europe-stations` — a **directed** beat of this type: written by hand under the doctrine, taken through a

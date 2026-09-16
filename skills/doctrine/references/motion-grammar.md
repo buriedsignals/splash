@@ -13,13 +13,20 @@ power and the whole danger, and every rule below is a consequence of it.
 
 The only thing that earns an animation is **evidence appearing**. The line drawing itself, a point
 landing, a reference level being laid down — those are the events. The ground does not move, the
-title does not slide, the axis does not fly in from the left, the frame does not zoom. If a layer
-moves and no new evidence arrived with it, that motion is `anti-patterns.md`'s "decoration that
-encodes nothing" with a time axis.
+title does not slide, the axis does not fly in from the left, the frame zooms, rescales or reframes
+only when that move is itself evidence arriving — a window closing onto the years the claim is about,
+a region enlarged to print values the overview cannot; never for energy. If a layer moves
+and no new evidence arrived with it, that motion is `anti-patterns.md`'s "decoration that encodes
+nothing" with a time axis.
 
 Corollary: **do not animate every layer at once.** A build in which the axis fades, the line draws,
 the label rises and the annotation scales in the same window is not a build — it is one event
 wearing four costumes. At any moment, one thing should be arriving.
+
+A directed video beat's full repertoire of gestures — reveal in order, filter, zoom/focus, reorder,
+rescale, count up, compare, trace, name, pull back — and when to reach for each, lives in
+`chart-video/references/directed-type-choreography.md`, not here: this file states what a layer is
+allowed to do, that reference states what a beat's choreography is written and checked against.
 
 ## The order is chronological, or it is argumentative
 

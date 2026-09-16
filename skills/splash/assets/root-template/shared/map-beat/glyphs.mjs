@@ -11,6 +11,9 @@
 
 import { createHash } from "node:crypto";
 
+import { LADDERS } from "../design-base/resolve-families.mjs";
+import { SERVED_BY_MAPTILER } from "../design-base/typefaces.mjs";
+
 /** The ranges a European beat needs: the Latin block, and the block that carries the typographic
  *  apostrophe (U+2019). A range that is not served makes the character vanish from the word with no
  *  error — "Mer d'Azov" printed as "Mer dAzov" for a full render cycle. */
@@ -62,6 +65,70 @@ export function assertNotFallback(candidate, fallback, name) {
       `"${name}" was substituted: its glyphs are byte-identical to the fallback face. The map would ` +
         `render in a typeface nobody chose, and neither MapTiler nor MapLibre would report it`,
     );
+}
+
+/** MAPTILER SERVES FACES, NOT FAMILIES — and a name it does not have comes back 200, as Noto Sans.
+ *
+ *  Measured on 2026-09-13 against the live endpoint: `Open Sans` — the bare family name, which is
+ *  what a register's `fontFamily` is and what the plan used to declare — is byte-identical to the
+ *  fallback, so the whole map would have been set in a typeface nobody chose with nothing to say so.
+ *  `Open Sans Regular`, `Open Sans Medium`, `Open Sans Bold`, `Open Sans Italic` and
+ *  `Open Sans Medium Italic` are real; `Open Sans SemiBold` is not. The naming is Google's own, which
+ *  MapTiler follows: the weight word, and "Regular" dropped when the face is italic.
+ *
+ *  `bake.mjs` proves each of these is really served before it takes the picture — this only decides
+ *  what to ask for. A weight with no face name is a refusal here rather than a silent substitution
+ *  there. This is why every text face asked of MapTiler goes through this name and
+ *  `assertNotFallback`: a bare family is served as Noto Sans with a 200, and neither MapTiler nor
+ *  MapLibre says so. */
+export const FACE_WEIGHTS = { 400: "Regular", 500: "Medium", 700: "Bold" };
+
+/**
+ * WHICH FAMILY THE MAP'S OWN LABELS ARE SET IN — which is not always the family the beat is set in.
+ *
+ * THE OWNER'S RULING (2026-09-16): a house face outside the seventeen MapTiler serves is KEPT. It
+ * sets the title, the key, the counters, every word the beat draws outside the map, and that is most
+ * of the type on the frame. Only the labels MapLibre itself draws fall back, because MapLibre reads
+ * MapTiler's SDF glyphs and can read nothing else — refusing the whole face over them would throw
+ * away the newsroom's identity to save a dozen place names.
+ *
+ * The stand-in is not a taste: it is the first family on the register's OWN role ladder that
+ * MapTiler serves, so the map's labels stay in the same voice the role asked for. The swap is
+ * RETURNED rather than hidden — the caller prints it the way a refused face is printed, because a
+ * reader comparing the panel to the map must be told why the two differ.
+ *
+ * @param {string} family  the family the register is set in
+ * @param {{role?: string}} options  the register's role (`serif` | `sans` | `geometric sans`)
+ * @returns {{family: string, stoodInFor: string|null}}
+ */
+export function mapLabelFamily(family, { role = "sans" } = {}) {
+  if (SERVED_BY_MAPTILER.includes(family)) return { family, stoodInFor: null };
+  const ladder = LADDERS[role] ?? LADDERS.sans;
+  const served = ladder.find((candidate) => SERVED_BY_MAPTILER.includes(candidate));
+  if (!served)
+    throw new Error(
+      `no family on the "${role}" ladder is served by MapTiler, so the map's labels have nothing to ` +
+        `stand in for the house face "${family}" — the ladder or the served list has drifted.`,
+    );
+  return { family: served, stoodInFor: family };
+}
+
+/** The face name asked of MapTiler. `mapFamily` — what `mapLabelFamily` decided — wins over the
+ *  register's own `fontFamily`, which may be a house face MapTiler does not serve. */
+export function maptilerFace(r) {
+  const family = r.mapFamily ?? r.fontFamily;
+  const weight = FACE_WEIGHTS[Number(r.fontWeight)];
+  if (!weight)
+    throw new Error(
+      `no MapTiler face name for ${family} at weight ${r.fontWeight}: the served faces are ` +
+        `${Object.values(FACE_WEIGHTS).join(", ")} and their italics. Asking for a face MapTiler does ` +
+        `not have returns Noto Sans with a 200, so this refuses rather than letting the map say it.`,
+    );
+  const italic = r.fontStyle === "italic";
+  const parts = [family];
+  if (!(italic && weight === "Regular")) parts.push(weight);
+  if (italic) parts.push("Italic");
+  return parts.join(" ");
 }
 
 /** THE TRUNK DOES NOT REACH INTO `skills/`. `shared/` is vendored on its own into a newsroom's root

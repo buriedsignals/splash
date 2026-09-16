@@ -24,6 +24,13 @@ import {
   readPngSize,
   sizeFor,
 } from "#shared/chart-video/sizes.mjs";
+import {
+  activeTypeface,
+  readTypeface,
+  useTypeface,
+} from "../../skills/chart-video/scripts/render-still.mjs";
+import { writeRenderProps } from "../../skills/chart-video/scripts/video-faces.mjs";
+import { FONT_WEIGHTS } from "./LifeExpectancyVideo.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../..");
@@ -192,8 +199,17 @@ const props = {
   height: sizeFor(size).height,
   ...deriveFurniture(BEAT.ground),
 };
-const propsPath = join(outDir, `${stem}-props.json`);
-await writeFile(propsPath, JSON.stringify(props, null, 2));
+// THE FACE, AS BYTES. Chrome paints the frames, so the recorded typeface is handed to the composition
+// rather than put in force here. No `TYPEFACE.md` sits under `proof/`, so this beat draws in the one
+// the chart-video skill records.
+const TYPEFACE_DIR = join(PACKAGE_ROOT, "skills", "chart-video");
+useTypeface(readTypeface(TYPEFACE_DIR, { stopAt: TYPEFACE_DIR }));
+const propsPath = await writeRenderProps({
+  props,
+  stack: activeTypeface().family,
+  weights: FONT_WEIGHTS,
+  auditPath: join(outDir, `${stem}-props.json`),
+});
 
 // Rung 2a: the last frame, on its own. If the end state is not a complete, readable chart, the
 // video is wrong and nothing below is worth waiting for.

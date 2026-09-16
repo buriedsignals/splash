@@ -1,0 +1,77 @@
+/**
+ * One frame of `%%BEAT%%` — the title card, the story (BRIEF.md, « The choreography »), the credit.
+ *
+ * NOTHING HERE IS MEASURED OR CHOSEN: positions, texts and colours come from `build.mjs`; motion from `sceneAt`. A pure
+ * component of its props and `at`, so Bun renders the same markup and holds it to the type floor.
+ */
+
+import type { Ref } from "react";
+import { sceneAt } from "./scene.mjs";
+
+type Register = { fontFamily: string; fontSize: number; fontWeight: number; fontStyle: string; letterSpacing: number; lead: number };
+type Line = { text: string; x: number; y: number; width: number };
+type Slot = "display" | "eyebrow" | "value" | "axis" | "annot" | "source";
+
+export type %%Name%%FrameProps = {
+  frame: { width: number; height: number };
+  registers: Record<Slot, Register>;
+  titleCard: { register: Register; eyebrow: Line; title: Line[] };
+  credit: { at: { x: number; y: number }; halo: number; lines: Line[] };
+  colours: { ground: string; grid: string; accent: string; text: Record<"eyebrow" | "title" | "source", string> };
+  strokes: { grid: number; rule: number };
+  halo: number;
+  states: Record<string, number>[];
+  timing: unknown;
+  // SCAFFOLD: the layout's props (`build.mjs`, THE LAYOUT), typed.
+};
+
+/** Every word the frame draws: set in its register, carrying the width Bun measured (`data-width`) for the read-back. */
+export function Word({ line, register, fill, opacity = 1, halo }: { line: Line; register: Register; fill: string; opacity?: number; halo?: { colour: string; width: number } }) {
+  return (
+    <text
+      x={line.x}
+      y={line.y}
+      fontFamily={register.fontFamily}
+      fontSize={register.fontSize}
+      fontWeight={register.fontWeight}
+      fontStyle={register.fontStyle}
+      letterSpacing={register.letterSpacing}
+      fill={fill}
+      opacity={opacity}
+      stroke={halo?.colour}
+      strokeWidth={halo?.width}
+      strokeLinejoin={halo ? "round" : undefined}
+      paintOrder={halo ? "stroke" : undefined}
+      data-width={line.width}
+    >
+      {line.text}
+    </text>
+  );
+}
+
+export function %%Name%%Frame(props: %%Name%%FrameProps & { at: number; svgRef?: Ref<SVGSVGElement> }) {
+  const { frame, registers: r, colours, credit, titleCard } = props;
+  const scene = sceneAt(props as never, props.at);
+
+  return (
+    <svg ref={props.svgRef} xmlns="http://www.w3.org/2000/svg" width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
+      <rect width={frame.width} height={frame.height} fill={colours.ground} />
+
+      {/* ════ THE STORY — SCAFFOLD: this beat's marks and words at build.mjs's coordinates, moved by `scene`; every word through <Word>. ════ */}
+
+      <g transform={`translate(${credit.at.x} ${credit.at.y})`} opacity={scene.source}>
+        {credit.lines.map((line, i) => (
+          <Word key={`credit${i}`} line={line} register={r.source} fill={colours.text.source} halo={{ colour: colours.ground, width: credit.halo }} />
+        ))}
+      </g>
+
+      <g opacity={scene.title}>
+        <rect width={frame.width} height={frame.height} fill={colours.ground} />
+        <Word line={titleCard.eyebrow} register={r.eyebrow} fill={colours.text.eyebrow} />
+        {titleCard.title.map((line, i) => (
+          <Word key={`title${i}`} line={line} register={titleCard.register} fill={colours.text.title} />
+        ))}
+      </g>
+    </svg>
+  );
+}

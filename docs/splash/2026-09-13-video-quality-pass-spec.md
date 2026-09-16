@@ -1,0 +1,367 @@
+# La vidéo au niveau du statique : chaque type du catalogue, dirigé, sur n'importe quel sujet
+
+**Statut :** design approuvé en conversation le 2026-09-13 ; plan 1 (le mécanisme) implémenté sur
+`quality/video` ; plan 2 (les preuves par type) pas encore écrit.
+**Branche :** `quality/video` (worktree `video/`), partie de `b49a59b3`.
+**Décisions du propriétaire enregistrées ici :** le livrable est le skill, pas une collection de
+beats (§2) ; trois mp4 par type, un par direction (§4.4) ; tous les types du catalogue, sans refus
+(§2) ; même identité et même précision que le statique, mais tailles, texte et composition refaits
+sous contraintes vidéo (§3) ; pilote choroplèthe (§6) ; on attend la fusion de
+`rerender/static-corpus` avant de produire (§8) ; validation un type à la fois, en ouvrant seulement
+les mp4 (§5) ; moteur carte en direct derrière un proxy qui garde la clé (§4.3) ; chorégraphie écrite
+avant le code et motion grammar amendée pour le zoom qui révèle une preuve (§3).
+
+---
+
+## 1. Le problème, mesuré
+
+Le 2026-09-13, sur `b49a59b3` :
+
+- **Aucun beat vidéo n'est dirigé.** `docs/design-base/CATALOGUE.md` : « No directed beat in any
+  other export yet ». Aucun `proof/vid*`, `video-*`, `mapvid-*` ne porte de `render-directions*`,
+  n'importe une direction, un registre, un traitement ou le composer.
+- **Le catalogue compte 32 charts et 8 cartes.** La vidéo en couvre 23 (17 charts, 6 cartes), avec
+  des beats antérieurs au design base, et **17 types n'ont aucune vidéo** : beeswarm, bullet,
+  calendar heatmap, cartogramme, connected scatter, contours, diverging stacked bar, donut, dot
+  strip, gantt, marimekko, coordonnées parallèles, pictogramme, radar, sankey, streamgraph, treemap.
+  (`MATRIX.md` annonce 19 types de charts, dont deux sont propres au scrolly.)
+- **La typographie des vidéos existantes est machine-dépendante.** Chrome dessinait chaque frame en
+  Helvetica système alors que le seed nomme Open Sans — corrigé pour le mécanisme par `ec9946b1`,
+  mais 25 compositions portent encore `FONT_FAMILY = "Helvetica, Arial, sans-serif"`, des jetons
+  tapés (`TITLE { fontSize: 38, fontWeight: 700, lead: 48 }`), et le choroplèthe une hauteur de
+  capitale lue dans l'AFM d'Helvetica (`proof/mapgen-choropleth-video/ChoroplethVideo.tsx:63`).
+- **Les cartes vidéo ignorent le tronc `shared/map-beat/`.** Eau peinte à la main (`#aac9e0`,
+  mesurée 1,730:1, au-dessus de `BASEMAP_MAX`), plaques à taille fixe 496/620, marques en SVG
+  par-dessus la plaque au lieu de couches cuites à la taille dessinée, aucun plan validé.
+- **Les gardes de format ont des trous.** Six cartes et `vidz-diverging-bar` n'épinglent aucune
+  taille (trois rendent hors du tableau : 1080×1350, 1080×1440) ; `assertTypeFloor` manque dans
+  les cartes et quatre charts ; `assertWithinStage` n'est appelé par aucun beat ; `MATRIX.md` a
+  dérivé (`matrix:check` échoue).
+
+Ce que la passe statique a apporté est **déjà dans la base** de cette branche — fontes en fichiers
+et couverture par cmap (`7340e91e`, `45e31334`), mesure italique (`5b2e6ae3`), plan de carte et
+taille dessinée (`9d3e0c8f`, `ff74ba93`), teintes mesurées (`be1d2597`), marques cuites
+(`fcfe0535`), taille déposée lue comme hauteur de capitale et étiquette près de son objet
+(`8fef04b6`) — **sauf l'interligne réglé sur la police**, qui vit sur `rerender/static-corpus`
+(`vertical-metrics.mjs`, `register.mjs` : `registerOf`, `leadOf`, `gapOf`, colonne `leading`
+obligatoire des directions).
+
+## 2. Le but
+
+**À la fin, `chart-video` et le format vidéo de `map-beat` produisent n'importe quel type du
+catalogue, sur n'importe quel sujet, au niveau de qualité du statique.** Le critère n'est pas
+qu'une preuve existe par type : c'est qu'un agent qui suit le skill, sur un sujet qu'il n'a jamais
+vu, produise une vidéo dirigée qui tient dans les trois directions.
+
+Les preuves `proof/video-<type>/` servent à ça : chacune est produite **en suivant le skill**, et
+chaque défaut trouvé à la validation remonte **dans le skill** (doctrine, fiche de type, seed,
+garde), jamais seulement dans la preuve.
+
+Tous les types du catalogue passent en vidéo : si un sujet peut être produit en statique, il peut
+l'être en vidéo.
+
+## 3. Ce que la vidéo reprend du statique, et ce qu'elle refait
+
+**Repris, identique** — ce qui fait qu'un même sujet se reconnaît d'un export à l'autre :
+
+- la direction : ground, accent, jeu de traits, familles par rôle et leurs ladders, graisses,
+  italique, approche, casse, rôle d'encre ;
+- la précision : taille déposée lue en hauteur de capitale (`registerOf`), interligne en
+  coefficient de la hauteur naturelle de la police (`leadOf`, `gapOf`), couverture de glyphes,
+  planchers de contraste (`adjustToContrast` à 4,5:1 texte, 3:1 non-texte) ;
+- les traitements que l'arbitre déclare applicables au beat (`beatFacts`, `applicableTreatments`) ;
+- les données gelées et le message confirmé.
+
+**Refait pour la vidéo** — le même sujet, pas le même rendu :
+
+- **Les tailles** partent du tableau vidéo (`shared/chart-video/sizes.mjs`), pas du cadre 960×540
+  lu dans une colonne d'article : plancher 30 px en paysage, 36 px en carré et portrait, bande sûre
+  en portrait. *Amendée le 2026-09-13, sur `quality/video` :* un seul facteur `k` porte les six
+  registres résolus d'une direction ensemble — `k = max(typeScale, plancher / la plus petite taille
+  résolue parmi les six)` — et chaque taille dessinée est `taille résolue × k`, arrondie à deux
+  décimales ; `assertTypeFloor` mesure le rendu et refuse sous le plancher. La règle initiale
+  relevait au plancher le seul registre qui y tombait, ce qui pouvait inverser la hiérarchie que
+  `registerOf` avait construite (un eyebrow relevé au-delà du body sous lequel il se tient) ; un
+  facteur unique fait monter toute l'échelle ensemble, et l'ordre des six tailles survit. Le pilote
+  valide le résultat à l'œil.
+- **Le texte** est réécrit pour être lu dans le temps : titre court, pas de paragraphe de limites,
+  source courte ; le volume est borné par le temps de lecture de la tenue. Chaque direction garde sa
+  hiérarchie de registres (eyebrow, display, body, axis, annot, value).
+- **La composition** est recomposée pour le cadre vidéo, zones sûres comprises. Ce n'est pas le
+  layout statique animé.
+- **La narration est une chorégraphie, pas un rejeu du statique.** *Amendée le 2026-09-13, décision
+  du propriétaire, sur la démarche validée côté scrolly (`skills/scrolly/references/directed-type-choreography.md`
+  sur `quality/scrolly`) et ses mots : « ça ne s'arrête pas à juste reproduire un static, c'est le même
+  sujet rendu sur des formats différents ».* Le plan statique est le plancher — données, affirmation,
+  mots, règles de couleur, traitements — jamais le plafond. Donc :
+  1. **La chorégraphie s'écrit avant le code**, plan par plan, dans le `BRIEF.md` du beat : ce que dit
+     le plan, le geste que fait l'image, ce que le spectateur voit bouger, et à quel événement du
+     contrat de timing il appartient.
+  2. **Chaque événement change l'image.** Un événement dont l'état égale celui d'avant est refusé par
+     une garde.
+  3. **Le répertoire** : révéler dans l'ordre, filtrer, zoomer / cadrer, réordonner, changer
+     d'échelle, compter, comparer, tracer, nommer, revenir au tout. Un beat en prend rarement plus de
+     quatre.
+  4. **Une valeur dérivée** (cumul, moyenne, rang, écart) est calculée des données gelées dans le
+     runner et y est refusée quand les données cessent de la soutenir, comme les affirmations du
+     statique.
+  5. **Le mouvement suit le temps**, pas le scroll : chaque geste est interpolé du contrat de timing,
+     et la tenue finale reste lisible.
+  `skills/doctrine/references/motion-grammar.md` est amendé en conséquence : ses règles tiennent
+  (ordre chronologique ou argumentatif, la base avant la preuve, le sujet comme événement propre, la
+  conclusion après sa preuve, pas de mouvement sans donnée nouvelle, la tenue), sauf « le cadre ne
+  zoome pas », qui devient : **un zoom, un changement d'échelle ou un recadrage est admis quand il
+  fait apparaître une preuve** ; jamais pour l'énergie.
+  Le répertoire vit dans `skills/chart-video/references/directed-type-choreography.md`, porté dans
+  `map-beat`.
+
+## 4. Architecture
+
+### 4.1 La frontière Bun / Chrome
+
+Le statique mesure dans Bun (resvg, `registerOf`, `measureTextBand`), et ces modules ne
+s'embarquent pas dans un bundle Remotion. Donc :
+
+**Dans Bun, le script de rendu du beat**, une fois par direction :
+
+1. `readDirection` → `resolveDirectionFamilies(direction, textPerRegister)` sur le texte que la
+   vidéo affichera ;
+2. `composeDirections` + `report`, imprimé comme en statique ;
+3. `beatFacts` → `applicableTreatments` ;
+4. les six registres résolus par `registerOf` / `leadOf` / `gapOf`, mis à l'échelle de la taille
+   vidéo (§3) et réduits en objets de dessin par la couture (§4.2) ;
+5. les couleurs dérivées de la direction (`deriveFurniture`, `adjustToContrast`) ;
+6. les faces de **toutes** les familles × graisses des registres, embarquées en octets
+   (`videoFaces`, étendu d'une pile unique à une liste de familles, toujours par
+   `embeddedWebFaces`) ;
+7. **la mise en page** — retours à la ligne, gouttières, rectangle de la carte et sa taille
+   dessinée — mesurée ici, avec `measureText` / `measureTextBand` sur les mêmes fichiers de fonte,
+   exactement comme le statique la mesure. *Amendé le 2026-09-13 :* une carte doit connaître sa
+   taille dessinée avant que son plan soit écrit, et une seule mesure pour tous les exports est la
+   précision du statique reprise telle quelle ;
+8. `writeRenderProps` : les octets dans un fichier temporaire, le fichier de props commité sans
+   base64.
+
+*Amendé le 2026-09-13 (le texte remis est déjà casé) :* la composition reçoit un texte déjà casé —
+`applyCase(text, register.transform)`, appliqué en Bun avant que le texte n'entre dans les props, et
+c'est sur ce texte casé que le sous-ensemble de glyphes (étape 6) est découpé. `text-transform` CSS
+est interdit dans une composition dirigée, sous toute forme, même pilotée par un registre : la garde
+`a-directed-video-types-no-style` le refuse, parce qu'ici la casse n'est plus une propriété CSS mais
+une transformation de la chaîne elle-même, faite avant que Chrome ne la voie.
+
+**Dans Chrome, la composition** écrite pour ce beat :
+
+- elle ne dessine rien avant ses faces (`useEmbeddedFaces`) et relit chaque frame contre elles ;
+- elle dessine aux coordonnées reçues, et vérifie **l'accord de largeur**, défini ainsi : Bun mesure
+  chaque ligne mise en page comme `measureText(texte casé, { fontSize, fontWeight, fontFamily,
+  fontStyle }) + letterSpacing × (nombre de caractères − 1)` ; Chrome relit la même ligne avec
+  `SVGTextElement.getComputedTextLength()`, moins l'espacement que CSS ajoute après le dernier
+  caractère et moins l'approche droite du dernier glyphe (mesurée sur le même visage par le canvas) —
+  Bun mesure l'encre, Chrome la somme des avances ; le rendu est annulé quand `|chrome − bun| >
+  max(1 px, 2 % de bun)`. *Recalibrée sur le pilote (`proof/video-choropleth-europe-lowcarbon`,
+  2026-09-14), depuis 1 % :* écart maximal mesuré **creme 1,61 %** (3,52 px, « plus de 94 % »,
+  Merriweather Italic 39 px ; 4,19 px au plus en absolu, la source), **rapport 1,20 %** (8,63 px, la
+  conclusion en Merriweather Italic 41 px), **nocturne 0,62 %** (1,79 px, « PLUS DE 94 % » ; 4,92 px
+  au plus en absolu, la source). Le reste n'est pas du bruit : Bun mesure le TrueType statique de
+  Google, Chrome dessine le woff2 web, deux fontes différentes — chargée depuis le TrueType, la même
+  ligne mesure dans Chrome exactement la largeur de Bun ;
+- elle ne tape **aucune** taille, graisse, interligne, écart de bloc ni couleur : tout vient des
+  registres et de la direction reçus en props ;
+- ses fenêtres d'animation dérivent de son contrat de timing (`progressOf`, `checkTiming`).
+
+*Amendé le 2026-09-13 (une étiquette de carte échappe au contrôle DOM) :* le contrôle de couverture
+(`face-coverage.ts`) relit les nœuds `<text>` du DOM — une étiquette de carte que MapLibre peint sur
+un `<canvas>` n'en est pas un, et reste invisible à ce contrôle quel que soit le moteur de rendu. Le
+moteur en direct (§4.3) réutilise `rangesNeededBy` / `assertRangesServed` du tronc `shared/map-beat/`
+pour les mots de la carte à la place — la même vérification que le bake fait déjà pour les glyphes
+qu'il sert, plutôt qu'une relecture DOM qui ne verrait rien.
+
+### 4.2 La couture registre → dessin
+
+**Les fichiers du mécanisme vivent dans `skills/chart-video/`** (portés dans `map-beat` par copie
+`// twin/`, byte pour byte) ; un beat sous `proof/` les importe par chemin relatif DEPUIS LE SKILL —
+précédent déjà établi, pas une exception : `proof/vidx-line-life-expectancy/render.mjs` importe
+`../../skills/chart-video/scripts/render-still.mjs` de la même façon.
+
+`skills/chart-video/scripts/video-registers.mjs` **prend les six registres déjà résolus par le beat
+lui-même** : `videoRegistersOf(resolvedByName, sizeName)`, où `resolvedByName` est
+`{ display, eyebrow, body, annot, value, axis }`, chacun un résultat de `registerOf(direction, name)`
+appelé par le beat — jamais par ce module, qui n'importe aucun `#shared/*`. Un registre résolu
+devient `{ fontFamily, fontSize, fontWeight, fontStyle, letterSpacing, transform, lead, fill }`, où
+`lead` est la distance entre lignes de base en pixels du cadre, à la taille dessinée (le facteur `k`
+de §3 porte les six ensemble). **L'interligne est porté** : c'est le défaut silencieux que la
+couture web `shared/design-base/web.mjs` a encore (le `leading` y est jeté). La couture passe par
+`registerOf` et ne lit jamais `.leading` directement — la garde de la session statique fait échouer
+toute source qui le fait hors des trois modules autorisés.
+
+Elle vit dans le skill, pas dans `shared/` : rien à annoncer aux autres sessions.
+
+### 4.3 Les cartes
+
+Le format vidéo de `map-beat` passe par le tronc `shared/map-beat/`, relu et figé : plan validé
+(`plan.mjs`), teintes mesurées (`plateTints`), style transformé et appliqué (`style.mjs`), noms de
+faces MapTiler par suffixe (`maptilerFace`, jamais une famille nue, qui revient en Noto Sans). Si un
+besoin du format vidéo exige de toucher au tronc, il est annoncé aux autres sessions avant d'être
+commencé, avec les fichiers exacts, et toutes les copies portées sont mises à jour dans le même
+commit.
+
+**Le moteur de rendu (renderer A) : les marques montées en direct, comme des couches du plan, sur
+des tuiles vivantes, dans la composition** (décision du propriétaire, 2026-09-13, sur la mesure de
+`.superpowers/sdd/2026-09-13-video-quality-pass-1-mechanism/task-4-report.md`). MapLibre est monté
+dans la composition Remotion avec le style MapTiler transformé et `mountPlan` ; les propriétés de
+peinture changent à chaque frame, et chaque frame attend `idle` sous `delayRender`. Mesuré sur macOS
+arm64 : sous `--gl=swangle` — le drapeau retenu, le seul qui tient au still cuit au pixel près —
+**0,066 s par frame en régime établi** (au-delà de la première frame, qui boot le réseau) ; sous
+`--gl=angle` (GPU), 0,039 s par frame en régime établi, gardé pour référence seulement, avec une
+dérive d'anti-crénelage sur ~0,03 % des pixels que `--gl=swangle` n'a pas. Déterministe (frame et
+mp4 identiques d'un rendu à l'autre), 0 px de décalage, révélation pays par pays possible. **C'est le
+seul chemin où la caméra peut bouger** : les marques ne sont pas cuites en couches, elles sont
+montées en direct sur des tuiles qui peuvent, elles, changer de cadrage frame par frame.
+
+Ce que le choix impose :
+
+- **La clé MapTiler et le réseau sont requis à chaque rendu.** Remotion injecte dans la page tout
+  le `.env` de la racine sauf `--env-file` (constaté : les clés MapTiler, Datawrapper, Gemini et
+  Cloudflare de ce dépôt). **La clé n'entre donc jamais dans la page** : le script de rendu la lit
+  et la garde dans son propre process, où un proxy local — lié à `127.0.0.1` seulement, jamais à
+  une interface réseau — relaie vers `api.maptiler.com` uniquement, ajoute la clé en amont et la
+  retire de chaque corps JSON rendu (style, TileJSON) ; la page ne voit que des URL `localhost` sans
+  clé, et reçoit un `--env-file` vide. La clé n'entre jamais dans un fichier de props, un log
+  conservé ou un argument de commande (mesuré par la vérification : origines de la page = le
+  serveur Remotion et le proxy).
+- **L'`--env-file` vide n'est pas propre au moteur carte.** *Amendé le 2026-09-13 :* la garde
+  `skills/splash/test/a-video-render-hides-the-env.test.ts` fait échouer tout appel `remotion` sous
+  `skills/`, et dans tout beat vidéo dirigé sous `proof/*/` (un dossier portant
+  `render-directions-video.mjs`), qui n'a pas son `--env-file` vide — pas seulement le moteur carte.
+  Les beats `proof/` antérieurs à cette passe restent hors périmètre (décision du propriétaire) :
+  leurs clés fuyaient déjà avant cette session et ne sont pas corrigées ici.
+- **`--gl=swangle`** pour que la vidéo tienne au still ; le GPU (`--gl=angle`) dérive
+  d'anti-crénelage sur ~0,03 % des pixels.
+- **Le fond vient des tuiles vivantes**, pas de la plaque gelée : un restyle MapTiler change la
+  vidéo sous un still inchangé. La preuve compare sa dernière frame au still avec tolérance.
+- **Point ouvert, nommé :** en production la clé n'est hydratée que dans l'opération de cuisson
+  scellée d'Engine (`README.md`, Credentials). Un rendu vidéo carte en direct demande une opération
+  Engine équivalente ; tant qu'elle n'existe pas, ce moteur est un moteur de développement.
+- Non mesuré : l'hôte de rendu d'Engine (Linux sans GPU probablement).
+
+### 4.4 La preuve par type
+
+```
+proof/video-<slug du beat statique>/     ex. proof/video-choropleth-europe-lowcarbon
+  BRIEF.md                 type, sujet, message confirmé, format video, size landscape,
+                           et la chorégraphie plan par plan (§3)
+  PALETTE.md
+  data.csv                 les données du beat statique dirigé du même type
+  Directed<Type>Video.tsx  la composition
+  Root.tsx, index.ts       l'enregistrement Remotion
+  timing-contract.ts       + timing.test.ts
+  render-directions-video.mjs
+  renders/creme.mp4  renders/nocturne.mp4  renders/rapport.mp4
+  renders/<direction>-props.json
+```
+
+Même sujet et mêmes données que `proof/static-<type>/`, pour que les exports se comparent. Taille
+livrée : paysage 1920×1080 ; le carré et le portrait restent rendables par `--size` et entrent dans
+le périmètre quand un type est validé en paysage.
+
+Quand un type est validé, son ancienne vidéo est retirée de `proof/` et la colonne vidéo de
+`CATALOGUE.md` et de `MATRIX.md` est mise à jour.
+
+### 4.5 Ce que gagne le skill
+
+- **`chart-video/SKILL.md`** : une section « design base » au niveau de `chart-beat` (rendre dans
+  chaque direction, toute couleur dérivée de la direction, tout chiffre reproductible des données),
+  la frontière Bun / Chrome, la couture, les contraintes vidéo, le cycle de validation. Les passages
+  périmés sont corrigés (Remotion est dans le root template ; le seed a sa taille en dur).
+- **`chart-video/references/types/<type>.md`** : une fiche vidéo par type, propre au skill (un skill
+  ne lit pas les fichiers d'un autre) — ce que le type garde, retire ou transforme en vidéo, l'ordre
+  de sa narration, ce qui a cassé à la validation.
+- **`map-beat/references/types/<type>.md`** : une section vidéo dans chaque fiche de carte existante.
+- **Le seed** devient dirigé : il montre le câblage complet (directions, couture, faces, contrat).
+
+## 5. Le cycle de validation, par type
+
+1. Lire le beat statique dirigé du type, sa fiche, et la fiche vidéo si elle existe.
+2. Écrire la chorégraphie dans le `BRIEF.md` (§3), avant le code.
+3. Produire `proof/video-<slug>/` en suivant le skill.
+4. Rendre la dernière frame de chaque direction, la regarder ; puis les trois mp4.
+5. Extraire au moins quatre frames par mp4 (pendant la base, pendant la révélation, à l'arrivée du
+   sujet, la tenue) et les regarder : fonte, planchers, rien de rogné, l'accent jamais avant sa
+   preuve, la tenue lisible.
+6. Ouvrir **seulement** les trois mp4 pour le propriétaire.
+7. Il valide, ou le défaut est corrigé **dans le skill** puis le type est re-rendu.
+8. Commit à pathspec explicite ; catalogue et matrice à jour ; ancienne vidéo retirée.
+
+Un type à la fois. On n'accélère que quand le propriétaire le dit.
+
+## 6. L'ordre
+
+1. **Pilote : choroplèthe.** Il construit tout : section design base, couture, faces multi-familles,
+   rendu par direction, tronc carte, fiche vidéo.
+2. **Les sept autres cartes** : cartogramme, contours, densité de points, flux, hexagones,
+   localisateur, symboles proportionnels.
+3. **Les 32 charts, par famille de mouvement :**
+   - le temps : line, area, streamgraph, slope, bump, connected scatter, calendar heatmap, gantt ;
+   - les grandeurs : bar and column, grouped bar, lollipop, bullet, diverging bar, waterfall,
+     population pyramid, dumbbell ;
+   - les distributions : histogram, box plot, beeswarm, dot strip, scatter ;
+   - les parts : stacked bar, diverging stacked bar, pie and donut, treemap, marimekko, pictogram,
+     sankey ;
+   - le reste : heatmap, radar, parallel coordinates, small multiples.
+
+## 7. Gardes et vérification
+
+- Chaque garde nouvelle est vérifiée par mutation : la mutation qui la fait rougir est nommée et
+  lancée.
+- Gardes existantes à faire tenir sur chaque preuve : `assertDeliveredSize` (mp4 par ffprobe),
+  `assertTypeFloor`, `assertTypeMayEnter`, `assertWithinStage` en portrait, `checkTiming`,
+  `video-first-frame-not-empty`, `video-handover-is-a-cut`, `video-helper-parity`,
+  `carried-copies`, `no-cross-skill-imports`.
+- Garde nouvelle attendue : une composition dirigée ne tape ni taille, ni graisse, ni interligne, ni
+  couleur (le pendant vidéo de `a-directed-layout-types-no-leading`). *Livrée le 2026-09-13* :
+  `skills/splash/test/a-directed-video-types-no-style.test.ts` — étendue à `fontStyle`,
+  `textTransform` (interdit sous toute forme, §4.1), une couleur nommée ou fonctionnelle sur un
+  attribut porteur de couleur, et les propriétés MapLibre kebab-case (`text-size`, `fill-color`…).
+- Garde nouvelle attendue (plan 2) : un événement du contrat de timing dont l’état de l’image égale celui de l’événement précédent est refusé — le pendant vidéo de `assertStates` du scrolly (§3).
+- Garde nouvelle livrée cette passe : `skills/splash/test/a-video-render-hides-the-env.test.ts` —
+  voir §4.3, l'`--env-file` vide n'est pas propre au moteur carte.
+- Une étiquette de carte peinte sur un `<canvas>` échappe au contrôle DOM de `face-coverage.ts` ;
+  le moteur en direct réutilise `rangesNeededBy` / `assertRangesServed` du tronc pour les mots de la
+  carte à la place (§4.1).
+- Tests ciblés uniquement ; jamais `bun run test` complet sauf demande (consigne de coût de
+  `KNOWN-STATE.md`).
+- **Une suite verte ne valide rien** : la validation est le regard sur les frames puis celui du
+  propriétaire sur les mp4.
+
+## 8. Dépendances et coordination
+
+- **`rerender/static-corpus` a été FUSIONNÉ dans `quality/video`** — commit `0f7e6c2d`, une fusion
+  à deux parents, pas un rebase (`27be5a5b` et `28b29b98` en parents). *Amendé le 2026-09-13 :*
+  fusionner `main` dans `quality/video` plus tard n'est un no-op que si la branche statique atteint
+  `main` sans avoir été rebasée ni squashée entre-temps — un rebase ou un squash en amont réécrirait
+  ses commits, et la fusion déjà faite ici ne les reconnaîtrait plus comme les mêmes, rejouant le
+  même contenu en conflit ou en double. Rien n'est construit contre `registerOf` avant qu'il ait
+  atterri, et il a atterri.
+- **`shared/` n'est à personne** : tout changement du tronc est annoncé avant d'être commencé, avec
+  les fichiers exacts, et ses copies portées sont mises à jour dans le même commit.
+- Territoire de cette session : `skills/chart-video`, le format vidéo de `map-beat` (assets vidéo,
+  sections vidéo des fiches, scripts vidéo), `proof/video-*` et les anciennes vidéos qu'ils
+  remplacent.
+
+## 9. Déjà sur la branche
+
+- `ec9946b1` — `video-faces.mjs`, `embedded-faces.ts`, `face-coverage.ts` : les octets de la face
+  entrent dans Chrome, et une frame dont un caractère, une graisse ou une famille n'est pas couvert
+  annule le rendu. Réutilisé tel quel, étendu aux familles multiples.
+- `bd9168aa` — `writeRenderProps` : props commitées sans octets.
+- `808d0293` — le bloc Latin-1 imprimable est toujours embarqué : une composition tape des mots que
+  les props ne contiennent pas.
+- Les deux anciennes vidéos migrées dans ces commits (`vidx-line-life-expectancy`,
+  `life-expectancy`) seront retirées quand leur type sera validé en version dirigée.
+
+## 10. Hors périmètre, nommé
+
+- Une vidéo regardée verticale dans un fil (plancher à 64 px) : jamais regardée, pas supposée.
+- `wrap` coupe avant un tiret cadratin (27 copies tenues à l'identité) : chantier séparé.
+- Son, voix off, sous-titres : aucun skill ne les porte ; hors de cette passe.
+- Le scrolly et le web : leurs sessions.

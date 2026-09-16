@@ -73,6 +73,34 @@ colour-vision deficiency simulation, not just distinguishable from white or
 grey, or the two directions of the story (better than the reference vs. worse
 than it) collapse into the same colour for a meaningful fraction of readers.
 
+## In video
+
+Worked example: `proof/video-choropleth-europe-lowcarbon` (validated 2026-09-14; on the live MapTiler map 2026-09-15, awaiting the owner). What the type keeps,
+drops and changes when it is watched rather than read:
+
+- **The map is the live MapTiler map of the scrolly pilot** (owner, 2026-09-15: « comme dans scrolly »): the pilot's
+  plan copied, every country present, class fills from MapTiler Countries beneath the basemap's water, names as map
+  layers, driven per frame — a camera in Web Mercator numbers and bound paint fields — and each frame held until every
+  tile is loaded, rendered `--gl=swangle` through the local key proxy and its keyless tile cache. The words that must be
+  measured (the key, the close-up's labels and gauges, the credit) stay SVG, placed from a frozen measurement of the real
+  map at each fixed camera. (Before 2026-09-15 the basemap was Natural Earth in SVG; that version is superseded.)
+- **The ramp arrives class by class**, lowest first, and **the floor rises**: a cursor travels the key's
+  bornes while every class it passes steps back to bare land and the count steps down with it. This is
+  the filter as time — the one gesture a still cannot make.
+- **The exception gets a close-up that measures it**: the camera travels onto it, framed on the subject's ring and
+  the neighbours' names, and once it has settled each measured share counts up with a **gauge** under its words —
+  one scale for all, the floor the video raised notched on it — so the exception crosses the notch and its
+  neighbours visibly do not. The gauge is part of its name's box, so placement and framing account for it. No
+  callout: the gauges say it.
+- **Pull back to the whole**, the claim's areas named again, and **end on the map** with the source as a
+  one-line credit. A map run edge to edge rarely leaves a sea corner a line wide: the credit is seated first, in
+  the first row whose line crosses no studied country (outside land such as Greenland is allowed, in an ink that
+  reads on sea and land), and the key hangs under it. No end card.
+- What broke at validation: the first frame was the map (the title's window opened at frame 0); the title
+  stayed four seconds; the key was a plated block with a unit line that hid Iceland; the close-up centred
+  Albania with half the shot on the Adriatic; an end card repeated the title; the source was set at the
+  axis size. A QuickTime window left open on a replaced mp4 plays black — close it before re-opening.
+
 ## The worked example in this tree
 
 `proof/static-choropleth-europe-lowcarbon` — a **directed** beat of this type: written by hand under the doctrine, taken through a

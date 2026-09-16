@@ -1,0 +1,68 @@
+import { describe, expect, it } from "bun:test";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { assertTypeFloor } from "#shared/chart-video/sizes.mjs";
+import { EVENT_ORDER, endOf } from "#shared/chart-video/timing.ts";
+import { %%Name%%Frame } from "./%%Name%%Frame.tsx";
+import { buildDirection, directionsFor, loadBeat, parseDirectionArgs, SCAFFOLD_MARK, SIZE } from "./build.mjs";
+import { sceneAt } from "./scene.mjs";
+import { assertClaim } from "./subject.mjs";
+
+/**
+ * What every directed video owes, at the direction the runner renders by default — ONE, the composer's best candidate
+ * for the newsroom: no word under the type floor and every word with its measured width at the last frame of every
+ * event, the title card at frame 0, the credit on one line at the end. The argument told in order is this beat's own
+ * test, below.
+ */
+
+const beat = loadBeat();
+const { directions } = directionsFor(beat);
+
+describe("the directions %%BEAT%% renders", () => {
+  it("should render exactly one composed direction by default, the demo set only on --filed", () => {
+    expect(directions.length).toBe(1);
+    expect(parseDirectionArgs([])).toMatchObject({ candidates: 1, filed: false });
+    expect(parseDirectionArgs(["--filed"]).filed).toBe(true);
+  });
+});
+
+for (const entry of directions) {
+  const { props } = buildDirection(entry, beat);
+  const T = props.timing as any;
+  const P = props as any;
+  const markupAt = (frame: number) => renderToStaticMarkup(createElement(%%Name%%Frame, { ...P, at: frame }));
+  const last = (event: string) => endOf(T[event]) - 1;
+
+  describe(`%%BEAT%% in ${entry.label}`, () => {
+    for (const event of EVENT_ORDER)
+      it(`should draw no word under the floor at the end of ${event}, and every word with its measured width`, () => {
+        const svg = markupAt(last(event));
+        expect(() => assertTypeFloor(svg, SIZE)).not.toThrow();
+        const texts = [...svg.matchAll(/<text\b([^>]*)>/g)].map((m) => m[1]);
+        expect(texts.filter((attrs) => !/data-width="\d/.test(attrs))).toEqual([]);
+      });
+
+    it("should open on the title card at frame 0", () => {
+      expect([sceneAt(P, 0).title, props.titleCard.title.length > 0]).toEqual([1, true]);
+    });
+
+    it("should end on the picture with the credit on one line", () => {
+      expect([sceneAt(P, T.total - 1).title, sceneAt(P, T.total - 1).source, props.credit.lines.length]).toEqual([0, 1, 1]);
+    });
+
+    it("should tell BRIEF.md's argument in order — SCAFFOLD PLACEHOLDER", () => {
+      // SCAFFOLD: the gesture tests — each gesture's derived value asserted at the frames where it lands (`sceneAt`).
+      throw new Error("write the gesture tests (frame.test.ts)");
+    });
+  });
+}
+
+describe("%%BEAT%% is written, not scaffolded", () => {
+  it("should carry no SCAFFOLD placeholder in its copy", () => {
+    expect(JSON.stringify(beat.copy)).not.toContain(SCAFFOLD_MARK);
+  });
+
+  it("should assert its claim from the frozen rows (subject.mjs, assertClaim — SCAFFOLD until written)", () => {
+    expect(() => assertClaim(beat.subject)).not.toThrow();
+  });
+});

@@ -1,0 +1,13 @@
+// The Remotion composition: `%%Name%%Frame` at the current frame, drawn only once the embedded faces are in.
+import { AbsoluteFill, useCurrentFrame } from "remotion";
+import { useEmbeddedFaces } from "%%UP%%/skills/chart-video/assets/embedded-faces";
+import type { EmbeddedFace } from "%%UP%%/skills/chart-video/assets/face-coverage";
+import { %%Name%%Frame, type %%Name%%FrameProps } from "./%%Name%%Frame";
+
+export type Directed%%Name%%VideoProps = %%Name%%FrameProps & { faces: EmbeddedFace[] };
+
+export function Directed%%Name%%Video(props: Directed%%Name%%VideoProps) {
+  const frame = useCurrentFrame();
+  const { ready, ref } = useEmbeddedFaces<SVGSVGElement>(props.faces);
+  return <AbsoluteFill style={{ backgroundColor: props.colours?.ground }}>{ready ? <%%Name%%Frame {...props} at={frame} svgRef={ref} /> : null}</AbsoluteFill>;
+}

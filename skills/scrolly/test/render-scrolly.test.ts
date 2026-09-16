@@ -20,6 +20,7 @@ import {
 } from "../assets/gauge-data.ts";
 import { render, renderScrolly, SEED } from "../scripts/render-scrolly.mjs";
 import { pickActiveStep, measureProgress } from "../assets/interaction.mjs";
+import { assertFontsEmbedded, embeddedFacesInHtml } from "../scripts/typefaces.mjs";
 
 // `deriveFurniture`/`contrast` are cheap, but `render`/`renderScrolly` load a native rasteriser
 // nowhere in this file directly — kept anyway, the same default-timeout bump every other format's
@@ -445,6 +446,128 @@ function makeStep(id: string, prose: string[]) {
     frame: createElement(ImageFrame, { src: "data:image/png;base64,AA==" }),
   };
 }
+
+// THE TYPEFACE TRAVELS WITH THE PAGE. This format's stylesheet named `Helvetica, Arial, sans-serif`
+// on `body` and embedded nothing, so every word a frame did not style itself — the prose card, the
+// title, the credit — was set in whatever the reader's machine had. The web formats closed this in
+// `de112dff`; the scaffold is the same page shape and gets the same guard.
+describe("renderScrolly — the typeface travels with the page, as bytes", () => {
+  function textStep(id: string, family: string) {
+    return {
+      id,
+      prose: [`Step ${id}, set in the frame's own face.`],
+      frame: createElement(
+        "p",
+        { style: { fontFamily: family } },
+        `Label ${id}`,
+      ),
+    };
+  }
+
+  it("should carry every family its page names as an embedded @font-face", async () => {
+    const { outPath } = await renderScrolly({
+      steps: [
+        textStep("a", '"Merriweather", Georgia, serif'),
+        textStep("b", '"Merriweather", Georgia, serif'),
+      ],
+      title: "Carried",
+      source: "Test fixture",
+      ground: "#FFFFFF",
+      outDir: "/tmp/scrolly-test-typeface",
+      name: "carried.html",
+    });
+    const html = await readFile(outPath, "utf8");
+    expect(() => assertFontsEmbedded(html)).not.toThrow();
+  });
+
+  it("should set the page body in the family its frames draw in, not a literal", async () => {
+    const { outPath } = await renderScrolly({
+      steps: [
+        textStep("a", '"Merriweather", Georgia, serif'),
+        textStep("b", '"Merriweather", Georgia, serif'),
+      ],
+      title: "Carried",
+      source: "Test fixture",
+      ground: "#FFFFFF",
+      outDir: "/tmp/scrolly-test-typeface",
+      name: "body.html",
+    });
+    const html = await readFile(outPath, "utf8");
+    const body = /(?:^|\n)body \{([^}]*)\}/.exec(html)?.[1] ?? "";
+    expect(body).toMatch(/font-family:\s*"?Merriweather\b/);
+  });
+
+  // An `<h2>` is bold by the browser's own stylesheet, which no build-time scan reads. Left unnamed,
+  // only the 400 face is carried and the browser fakes the title's bold out of it — measured on the
+  // seed in a real browser (verify-scrolly T), invisible to `assertFontsEmbedded`.
+  it("should carry the bold face its title is drawn in", async () => {
+    const { outPath } = await renderScrolly({
+      steps: [
+        textStep("a", '"Merriweather", Georgia, serif'),
+        textStep("b", '"Merriweather", Georgia, serif'),
+      ],
+      title: "Carried",
+      source: "Test fixture",
+      ground: "#FFFFFF",
+      outDir: "/tmp/scrolly-test-typeface",
+      name: "title.html",
+    });
+    const html = await readFile(outPath, "utf8");
+    const bold = embeddedFacesInHtml(html).filter(
+      (f) =>
+        f.family === "Merriweather" &&
+        f.style === "normal" &&
+        f.weight <= 700 &&
+        f.weightTo >= 700,
+    );
+    expect(bold.length).toBeGreaterThan(0);
+  });
+
+  it("should refuse to write a page that names a family nothing can carry", async () => {
+    await expect(
+      renderScrolly({
+        steps: [
+          textStep("a", '"Avenir Next", Helvetica, sans-serif'),
+          textStep("b", '"Avenir Next", Helvetica, sans-serif'),
+        ],
+        title: "Refused",
+        source: "Test fixture",
+        ground: "#FFFFFF",
+        outDir: "/tmp/scrolly-test-typeface",
+        name: "refused.html",
+      }),
+    ).rejects.toThrow();
+  });
+
+  // The fetch skips a weight it cannot resolve; only the written-page guard names it. Without that
+  // guard this page ships and the browser fakes whichever weight the custom property meant.
+  it("should refuse to write a page whose frame asks for a weight nothing on the page defines", async () => {
+    const step = (id: string) => ({
+      id,
+      prose: [`Step ${id}.`],
+      frame: createElement(
+        "p",
+        {
+          style: {
+            fontFamily: '"Merriweather", Georgia, serif',
+            fontWeight: "var(--undefined-weight)",
+          },
+        },
+        `Label ${id}`,
+      ),
+    });
+    await expect(
+      renderScrolly({
+        steps: [step("a"), step("b")],
+        title: "Refused",
+        source: "Test fixture",
+        ground: "#FFFFFF",
+        outDir: "/tmp/scrolly-test-typeface",
+        name: "unresolved.html",
+      }),
+    ).rejects.toThrow("typeface nobody chose");
+  });
+});
 
 describe("renderScrolly — the full self-contained page", () => {
   it("should refuse fewer than two steps", async () => {

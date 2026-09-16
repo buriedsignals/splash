@@ -284,5 +284,29 @@
   "size": "landscape",
   "ink": "#000000",
   "muted": "#616161",
-  "grid": "#d1d1d1"
+  "grid": "#d1d1d1",
+  "fontFamily": "Open Sans, Helvetica, Arial, sans-serif",
+  "faces": [
+    {
+      "family": "Open Sans",
+      "style": "normal",
+      "weight": 700,
+      "weightTo": 700,
+      "unicodeRange": "U+23, U+25-29, U+2B-3A, U+41-42, U+44, U+46, U+4E-50, U+53, U+55, U+57, U+61, U+63-69, U+6B-6C, U+6E-70, U+72-7A, U+B0, U+B7, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Open Sans",
+      "style": "normal",
+      "weight": 400,
+      "weightTo": 400,
+      "unicodeRange": "U+23, U+25-29, U+2B-3A, U+41-42, U+44, U+46, U+4E-50, U+53, U+55, U+57, U+61, U+63-69, U+6B-6C, U+6E-70, U+72-7A, U+B0, U+B7, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Open Sans",
+      "style": "normal",
+      "weight": 600,
+      "weightTo": 600,
+      "unicodeRange": "U+23, U+25-29, U+2B-3A, U+41-42, U+44, U+46, U+4E-50, U+53, U+55, U+57, U+61, U+63-69, U+6B-6C, U+6E-70, U+72-7A, U+B0, U+B7, U+2013-2014, U+2019, U+2212"
+    }
+  ]
 }

@@ -1,0 +1,201 @@
+// EVERYTHING ONE DIRECTION'S RENDER IS HANDED, BUILT IN BUN — the direction, its registers at the video's size, the
+// title card, the credit, the colours floored, the states and the timing; and, in THE LAYOUT section, this beat's own
+// picture, measured. The runner renders what `buildDirection` returns; the tests read the same object.
+//
+// THE DIRECTION IS COMPOSED FROM THE EDITORIAL SIDE, NOT PICKED FROM THE DEMO SET. `directionsFor` reads the
+// newsroom's identity (the root's NEWSROOM.md), composes candidates with the design base (`composeDirections`) and
+// returns the best one — exactly one. `candidates: N` returns the top N for the journalist to choose between;
+// `filed: true` returns every filed direction, for a catalogue or demo proof only.
+//
+// Runs in Bun only.
+
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
+import { adjustToContrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
+import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
+import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
+import { composeDirections, report as reportComposition } from "#shared/design-base/compose.mjs";
+import { readDirection } from "#shared/design-base/read-direction.mjs";
+import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
+import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
+import { isDeclinedProfile, parseNewsroom, validateNewsroom } from "%%UP%%/skills/splash/scripts/newsroom.mjs";
+import { applyCase } from "%%UP%%/skills/chart-video/scripts/registers.mjs";
+import { BAND_PROBE, bandOf, CREDIT_ONE_LINE, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "%%UP%%/skills/chart-video/scripts/shots.mjs";
+import { videoRegistersOf } from "%%UP%%/skills/chart-video/scripts/video-registers.mjs";
+import { statesFor } from "./states.mjs";
+import { assertClaim, loadSubject } from "./subject.mjs";
+import { %%CONST%%_VIDEO_TIMING } from "./timing-contract.ts";
+
+const HERE = import.meta.dir;
+export const ROOT = join(HERE, "%%UP%%");
+export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
+export const SIZE = "landscape";
+export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
+/** The no-break space, written as its escape. */
+export const NB = "\u00A0";
+/** SCAFFOLD: how many ranked levels of evidence BRIEF.md names — the composer wants that many distinguishable voices. */
+export const BEAT_FACTS = Object.freeze({ evidenceLevels: 3 });
+/** The mark every scaffold placeholder in the copy carries; `assertWritten` refuses a render while one is left. */
+export const SCAFFOLD_MARK = "SCAFFOLD";
+
+export function loadBeat() {
+  const subject = loadSubject();
+  return { subject, states: statesFor(), copy: copyOf(subject) };
+}
+
+/** The words. SCAFFOLD: write the copy — every string carrying SCAFFOLD_MARK is refused by the runner. */
+export function copyOf(subject) {
+  return {
+    eyebrow: "SCAFFOLD eyebrow",
+    /** The title's forms, longest first: the title card takes the first that holds its lines. */
+    title: ["SCAFFOLD the title, its longest form", "SCAFFOLD the title"],
+    /** The credit's forms, longest first: the first that holds one line. */
+    source: ["Source : SCAFFOLD", "SCAFFOLD"],
+  };
+}
+
+/** What each register sets on this beat — the faces are resolved to cover it. SCAFFOLD: every word the layout draws. */
+export function textPerRegisterOf(copy) {
+  return {
+    display: copy.title.join(" "),
+    eyebrow: copy.eyebrow,
+    body: copy.source.join(" "),
+    annot: "0123456789",
+    value: "0123456789",
+    axis: `0123456789 ${copy.source.join(" ")}`,
+  };
+}
+
+/** Refuses a beat still carrying a scaffold placeholder: the copy, and the claim's assertions. */
+export function assertWritten(beat) {
+  if (JSON.stringify(beat.copy).includes(SCAFFOLD_MARK)) throw new Error(`the copy still carries ${SCAFFOLD_MARK} placeholders — write it (build.mjs, copyOf)`);
+  assertClaim(beat.subject);
+}
+
+// ── the direction ─────────────────────────────────────────────────────────────────────────────────────────────
+
+/** The newsroom's identity: its ground, its primary accent and its declared faces, or null when it has none on record — and why. */
+export function newsroomOf(root = ROOT) {
+  const path = join(root, "NEWSROOM.md");
+  if (!existsSync(path)) return { newsroom: null, note: "no NEWSROOM.md at the root: composed without a newsroom palette" };
+  const profile = parseNewsroom(readFileSync(path, "utf8"));
+  if (isDeclinedProfile(profile)) return { newsroom: null, note: "the newsroom declined a house profile: composed without a newsroom palette" };
+  const errors = validateNewsroom(profile);
+  if (errors.length) throw new Error(`NEWSROOM.md is not a complete profile (${errors.join("; ")}) — complete it, or record a decline`);
+  // `typefaces` travels with the palette: the composer gives a declared house face the registers it can serve and
+  // names in its report every face it could not use, with the reason. Dropping the field here is what made the house
+  // faces invisible — a newsroom filled the line in and nothing downstream ever read it.
+  const typefaces = (profile.typefaces ?? "").split(",").map((face) => face.trim()).filter(Boolean);
+  const faces = typefaces.length ? `, faces ${typefaces.join(", ")}` : "";
+  return { newsroom: { ground: profile.ground, accent: profile.brandColor, typefaces }, note: `composed for ${profile.name}: ground ${profile.ground}, accent ${profile.brandColor}${faces} (NEWSROOM.md)` };
+}
+
+export const filedDirections = () =>
+  readdirSync(DIRECTIONS)
+    .filter((f) => f.endsWith(".md"))
+    .sort()
+    .map((f) => readDirection(join(DIRECTIONS, f)));
+
+const labelOf = (id) => id.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+
+/**
+ * The direction(s) this beat renders in, each `{ label, direction }`.
+ *   default           ONE — the composer's best candidate for the newsroom and this beat's own text
+ *   { candidates: N } the composer's top N, for the journalist to choose between
+ *   { filed: true }   every filed demo direction — a catalogue or demo proof, never a production render
+ */
+export function directionsFor(beat, { candidates = 1, filed = false, root = ROOT } = {}) {
+  const all = filedDirections();
+  if (filed) return { directions: all.map((d) => ({ label: labelOf(d.id), direction: d })), composition: null, note: "every filed demo direction (--filed): a catalogue proof, not a production render" };
+  if (!(Number.isInteger(candidates) && candidates >= 1)) throw new Error(`candidates is a count of at least 1, got ${JSON.stringify(candidates)}`);
+  const { newsroom, note } = newsroomOf(root);
+  const composition = composeDirections({ newsroom, filed: all, beat: BEAT_FACTS, textPerRegister: textPerRegisterOf(beat.copy), limit: Math.max(3, candidates) });
+  if (!composition.offered.length) throw new Error(`no composed direction holds up for this beat:\n${reportComposition(composition, { beat: BEAT_FACTS })}`);
+  const directions = composition.offered.slice(0, candidates).map((d) => ({ label: labelOf(d.id), direction: d }));
+  return { directions, composition, note };
+}
+
+/** The runner's direction flags: `--candidates <N>` and `--filed` are opt-in, and exclusive; `--only <label>`. */
+export function parseDirectionArgs(args) {
+  const valueOf = (name) => {
+    const i = args.indexOf(name);
+    if (i === -1) return null;
+    if (!args[i + 1] || args[i + 1].startsWith("--")) throw new Error(`${name} takes a value`);
+    return args[i + 1];
+  };
+  const raw = valueOf("--candidates");
+  if (raw !== null && !/^[1-9]\d*$/.test(raw)) throw new Error(`--candidates takes a count of at least 1, got ${JSON.stringify(raw)}`);
+  const filed = args.includes("--filed");
+  if (filed && raw !== null) throw new Error("--filed and --candidates are exclusive: --filed renders the demo directions, --candidates the composed ones");
+  return { candidates: raw === null ? 1 : Number(raw), filed, only: valueOf("--only"), still: args.includes("--still"), look: valueOf("--look") };
+}
+
+// ── the build ─────────────────────────────────────────────────────────────────────────────────────────────────
+
+/** @param {{ label: string, direction: object }} entry  one of `directionsFor(beat).directions` */
+export function buildDirection({ label, direction: chosen }, { subject, states, copy }) {
+  const direction = resolveDirectionFamilies(chosen, textPerRegisterOf(copy));
+  const resolved = Object.fromEntries(REGISTER_NAMES.map((name) => [name, registerOf(direction, name)]));
+  const registers = videoRegistersOf(resolved, SIZE);
+  const k = registers.axis.fontSize / resolved.axis.fontSize;
+  const row = sizeFor(SIZE);
+  const stage = { width: row.width, height: row.height };
+  const inset = frameInsetFor(SIZE);
+  const vInset = verticalInsetFor(SIZE);
+  for (const [name, r] of Object.entries(registers)) if (!(r.fontSize >= row.minTypePx)) throw new Error(`${label}: register ${name} is ${r.fontSize}px, under the ${row.minTypePx}px floor`);
+  /** A word as drawn: cased by its register, measured on the face the composition embeds. */
+  const measure = (text, r) => {
+    const cased = applyCase(text, r.transform);
+    return { text: cased, width: widthOf(cased, r) };
+  };
+  const axisBand = bandOf(BAND_PROBE, registers.axis);
+
+  // ── the shots every directed video shares: the title card from frame 0, the credit on one line at the bottom ──
+  const titleCard = titleCardFor({ registers, eyebrow: copy.eyebrow, title: copy.title, size: SIZE, eyebrowToDisplay: EYEBROW_TO_DISPLAY });
+  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k, ...CREDIT_ONE_LINE });
+  const creditAt = { x: inset, y: stage.height - vInset - credit.height };
+
+  // ── colours: every text held to the text floor, every mark to the non-text floor, on the direction's ground ──
+  const { ground, accent } = direction;
+  const { ink, muted, grid } = deriveFurniture(ground);
+  const floored = (colour, floor, what) => {
+    const walked = adjustToContrast(colour, ground, floor);
+    if (!walked) throw new Error(`${label}: ${what} has no variant that reads at ${floor}:1 on ${ground}`);
+    return walked;
+  };
+  const mark = (colour, what) => floored(colour, NON_TEXT_CONTRAST_MIN, what);
+  const text = (colour, what) => floored(colour, TEXT_CONTRAST_MIN, what);
+  const colours = {
+    ground,
+    grid,
+    accent: mark(accent, "the accent"),
+    text: {
+      eyebrow: text(registers.eyebrow.fill ?? accent, "the eyebrow"),
+      title: text(registers.display.fill ?? ink, "the title"),
+      source: text(muted, "the credit"),
+    },
+    // SCAFFOLD: this beat's own colours, each through `mark` or `text` (a tint: `mark(mix(muted, accent, …), …)`).
+  };
+
+  // ════ THE LAYOUT — SCAFFOLD ═══════════════════════════════════════════════════════════════════════════════════
+  // SCAFFOLD: this beat's picture, measured — the plot or the marks between `inset`/`vInset` and the credit's row,
+  // every word through `measure`, every gap a multiple of a register's lead (`axisBand` for a tick's ascent), every
+  // placement asserted (throw when a word would leave the frame or sit on a mark). Hand the frame everything it draws
+  // through `layout`; the frame chooses nothing.
+  const layout = {};
+  // ════ END OF THE LAYOUT ═══════════════════════════════════════════════════════════════════════════════════════
+
+  const props = {
+    frame: stage,
+    registers: { display: titleCard.register, eyebrow: registers.eyebrow, value: registers.value, axis: registers.axis, annot: registers.annot, source: sourceRegister },
+    titleCard,
+    credit: { ...credit, at: creditAt },
+    colours,
+    strokes: { grid: (direction.stroke?.hairline ?? 0.6) * k, rule: (direction.stroke?.rule ?? 1) * k },
+    halo: haloOf(registers.value, k),
+    ...layout,
+    states,
+    timing: %%CONST%%_VIDEO_TIMING,
+  };
+  return { label, direction, props, report: { k, titleForm: titleCard.form, sourceForm: credit.form } };
+}

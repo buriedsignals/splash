@@ -1,0 +1,604 @@
+{
+  "frame": {
+    "width": 1920,
+    "height": 1080
+  },
+  "inset": 85,
+  "slot": 291.6666666666667,
+  "valueBand": 53.10791015625,
+  "registers": {
+    "display": {
+      "fontFamily": "Merriweather",
+      "fontSize": 70.5,
+      "fontWeight": 700,
+      "fontStyle": "normal",
+      "letterSpacing": -0.47,
+      "transform": "none",
+      "lead": 86.0131161,
+      "fill": "#000000"
+    },
+    "eyebrow": {
+      "fontFamily": "Open Sans",
+      "fontSize": 30,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 5.7,
+      "transform": "uppercase",
+      "lead": 36.000978515625,
+      "fill": "#1757B6"
+    },
+    "axis": {
+      "fontFamily": "Open Sans",
+      "fontSize": 33,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 1.2000000000000002,
+      "transform": "none",
+      "lead": 39.6010763671875,
+      "fill": "#61605a"
+    },
+    "value": {
+      "fontFamily": "Open Sans",
+      "fontSize": 45,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 54.0014677734375,
+      "fill": "#1757B6"
+    },
+    "annot": {
+      "fontFamily": "Merriweather",
+      "fontSize": 39,
+      "fontWeight": 400,
+      "fontStyle": "italic",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 54.601817399999995,
+      "fill": "#61605a"
+    },
+    "source": {
+      "fontFamily": "Open Sans",
+      "fontSize": 30,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 1.090909090909091,
+      "transform": "none",
+      "lead": 36.000978515625,
+      "fill": "#61605a"
+    }
+  },
+  "titleCard": {
+    "form": 0,
+    "register": {
+      "fontFamily": "Merriweather",
+      "fontSize": 70.5,
+      "fontWeight": 700,
+      "fontStyle": "normal",
+      "letterSpacing": -0.47,
+      "transform": "none",
+      "lead": 86.0131161,
+      "fill": "#000000"
+    },
+    "eyebrow": {
+      "text": "CLIMAT · MONDE",
+      "x": 85,
+      "y": 407.7529296875,
+      "width": 318.4798828125
+    },
+    "title": [
+      {
+        "text": "En 2000 les États-Unis émettaient",
+        "x": 85,
+        "y": 505.1941237792969,
+        "width": 1170.805268726349
+      },
+      {
+        "text": "un quart du CO₂ mondial et la Chine",
+        "x": 85,
+        "y": 591.2072398792969,
+        "width": 1216.7830254030227
+      },
+      {
+        "text": "un septième ; en 2023, c’est l’inverse",
+        "x": 85,
+        "y": 677.2203559792969,
+        "width": 1231.3411650514602
+      }
+    ]
+  },
+  "credit": {
+    "form": 0,
+    "lines": [
+      {
+        "text": "Sources : Global Carbon Budget 2025 · population, via Our World in Data",
+        "x": 4.80615234375,
+        "y": 27.59912109375,
+        "width": 1099.0589488636365
+      }
+    ],
+    "halo": 9.6123046875,
+    "width": 1131,
+    "height": 40,
+    "at": {
+      "x": 85,
+      "y": 980
+    }
+  },
+  "colours": {
+    "ground": "#FFFCEE",
+    "past": "#929088",
+    "present": "#1755b2",
+    "track": "#e8e5d9",
+    "text": {
+      "eyebrow": "#1755b2",
+      "title": "#000000",
+      "name": "#000000",
+      "muted": "#5f5e58",
+      "accent": "#1755b2"
+    }
+  },
+  "strokes": {
+    "ring": 2.6999999999999997
+  },
+  "world": {
+    "x": 960,
+    "y": 540,
+    "r0": 311.3522713166322,
+    "r1": 466,
+    "width": 26.83333333333334,
+    "seam": 8.05,
+    "pxPerGt": 79.1276100960019,
+    "labels": {
+      "before": [
+        {
+          "code": "CHN",
+          "text": "Chine 14,7 %",
+          "width": 274.04296875,
+          "x": 1048.5080553570506,
+          "y": 199.77655394540434,
+          "box": {
+            "x0": 1048.5080553570506,
+            "x1": 1328.0318834820505,
+            "y0": 157.47919066415434,
+            "y1": 210.58710082040434
+          }
+        },
+        {
+          "code": "USA",
+          "text": "États-Unis 24,4 %",
+          "width": 369.5361328125,
+          "x": 1300.6202906543176,
+          "y": 600.389009243678,
+          "box": {
+            "x0": 1300.6202906543176,
+            "x1": 1677.5471461230677,
+            "y0": 558.091645962428,
+            "y1": 611.199556118678
+          }
+        }
+      ],
+      "after": [
+        {
+          "code": "CHN",
+          "text": "Chine 32,9 %",
+          "width": 274.04296875,
+          "x": 1386.4177150758123,
+          "y": 276.3199701558169,
+          "box": {
+            "x0": 1386.4177150758123,
+            "x1": 1665.9415432008122,
+            "y0": 234.02260687456692,
+            "y1": 287.1305170308169
+          }
+        },
+        {
+          "code": "USA",
+          "text": "États-Unis 13,3 %",
+          "width": 369.5361328125,
+          "x": 1217.5241605800393,
+          "y": 1005.5549451158057,
+          "box": {
+            "x0": 1217.5241605800393,
+            "x1": 1594.4510160487894,
+            "y0": 963.2575818345557,
+            "y1": 1016.3654919908057
+          }
+        }
+      ]
+    },
+    "centre": {
+      "before": {
+        "text": "2000 · 24,7 Gt",
+        "width": 288.9404296875,
+        "x": 812.640380859375,
+        "y": 525.2293454882813
+      },
+      "after": {
+        "text": "2023 · 37,0 Gt",
+        "width": 288.9404296875,
+        "x": 812.640380859375,
+        "y": 586.2574709179688
+      }
+    }
+  },
+  "small": {
+    "width": 13.41666666666667,
+    "outer": 127.45833333333336,
+    "inner": 108.67500000000001,
+    "holeRing": 81.61149281149214
+  },
+  "countries": [
+    {
+      "code": "CHN",
+      "subject": true,
+      "gt0": 3.643809692523312,
+      "gt1": 12.172007955746729,
+      "share0": 14.738450561529307,
+      "share1": 32.89459103465517,
+      "seat": {
+        "x": 230.83333333333334,
+        "y": 436.60824370117183
+      },
+      "hole": {
+        "text": "32,9 %",
+        "width": 138.18603515625,
+        "x": 160.35845540364585,
+        "y": 452.35165190429683
+      },
+      "name": {
+        "text": "Chine",
+        "width": 101.40464973449707,
+        "x": 179.11696196873984,
+        "y": 625.1863248014323
+      },
+      "tonnes": [
+        {
+          "text": "2000 · 3,6 Gt",
+          "width": 206.5025390625,
+          "x": 125.51703841145834,
+          "y": 674.1891816764323
+        },
+        {
+          "text": "2023 · 12,2 Gt",
+          "width": 226.57119140625,
+          "x": 115.28202571614584,
+          "y": 713.7902580436198
+        }
+      ]
+    },
+    {
+      "code": "USA",
+      "subject": false,
+      "gt0": 6.023157920370361,
+      "gt1": 4.918406453068499,
+      "share0": 24.36241810756814,
+      "share1": 13.291888191669502,
+      "seat": {
+        "x": 522.5,
+        "y": 436.60824370117183
+      },
+      "hole": {
+        "text": "13,3 %",
+        "width": 138.18603515625,
+        "x": 452.0251220703125,
+        "y": 452.35165190429683
+      },
+      "name": {
+        "text": "États-Unis",
+        "width": 180.99900817871094,
+        "x": 430.19050582885745,
+        "y": 625.1863248014323
+      },
+      "tonnes": [
+        {
+          "text": "2000 · 6,0 Gt",
+          "width": 206.5025390625,
+          "x": 417.183705078125,
+          "y": 674.1891816764323
+        },
+        {
+          "text": "2023 · 4,9 Gt",
+          "width": 206.5025390625,
+          "x": 417.183705078125,
+          "y": 713.7902580436198
+        }
+      ]
+    },
+    {
+      "code": "IND",
+      "subject": false,
+      "gt0": 0.9870651823230819,
+      "gt1": 3.062756047533093,
+      "share0": 3.9924728836761507,
+      "share1": 8.277032679308437,
+      "seat": {
+        "x": 814.1666666666667,
+        "y": 436.60824370117183
+      },
+      "hole": {
+        "text": "8,3 %",
+        "width": 112.4560546875,
+        "x": 756.8140787760417,
+        "y": 452.35165190429683
+      },
+      "name": {
+        "text": "Inde",
+        "width": 76.75664154440165,
+        "x": 775.0207794790219,
+        "y": 625.1863248014323
+      },
+      "tonnes": [
+        {
+          "text": "2000 · 1,0 Gt",
+          "width": 206.5025390625,
+          "x": 708.8503717447918,
+          "y": 674.1891816764323
+        },
+        {
+          "text": "2023 · 3,1 Gt",
+          "width": 206.5025390625,
+          "x": 708.8503717447918,
+          "y": 713.7902580436198
+        }
+      ]
+    },
+    {
+      "code": "RUS",
+      "subject": false,
+      "gt0": 1.4805764014704481,
+      "gt1": 1.7331344700579,
+      "share0": 5.988622880172429,
+      "share1": 4.683758818420928,
+      "seat": {
+        "x": 1105.8333333333335,
+        "y": 436.60824370117183
+      },
+      "hole": {
+        "text": "4,7 %",
+        "width": 112.4560546875,
+        "x": 1048.4807454427084,
+        "y": 452.35165190429683
+      },
+      "name": {
+        "text": "Russie",
+        "width": 110.41366168856621,
+        "x": 1049.5223658721648,
+        "y": 625.1863248014323
+      },
+      "tonnes": [
+        {
+          "text": "2000 · 1,5 Gt",
+          "width": 206.5025390625,
+          "x": 1000.5170384114585,
+          "y": 674.1891816764323
+        },
+        {
+          "text": "2023 · 1,7 Gt",
+          "width": 206.5025390625,
+          "x": 1000.5170384114585,
+          "y": 713.7902580436198
+        }
+      ]
+    },
+    {
+      "code": "JPN",
+      "subject": false,
+      "gt0": 1.260202984574478,
+      "gt1": 0.9869100798276581,
+      "share0": 5.097258351267146,
+      "share1": 2.6671033720925705,
+      "seat": {
+        "x": 1397.5,
+        "y": 436.60824370117183
+      },
+      "hole": {
+        "text": "2,7 %",
+        "width": 112.4560546875,
+        "x": 1340.147412109375,
+        "y": 452.35165190429683
+      },
+      "name": {
+        "text": "Japon",
+        "width": 100.01550579071045,
+        "x": 1346.4920920467378,
+        "y": 625.1863248014323
+      },
+      "tonnes": [
+        {
+          "text": "2000 · 1,3 Gt",
+          "width": 206.5025390625,
+          "x": 1292.183705078125,
+          "y": 674.1891816764323
+        },
+        {
+          "text": "2023 · 1,0 Gt",
+          "width": 206.5025390625,
+          "x": 1292.183705078125,
+          "y": 713.7902580436198
+        }
+      ]
+    },
+    {
+      "code": "IRN",
+      "subject": false,
+      "gt0": 0.367213367539648,
+      "gt1": 0.789675820831548,
+      "share0": 1.4853015167397268,
+      "share1": 2.1340820077221037,
+      "seat": {
+        "x": 1689.1666666666667,
+        "y": 436.60824370117183
+      },
+      "hole": {
+        "text": "2,1 %",
+        "width": 112.4560546875,
+        "x": 1631.8140787760417,
+        "y": 452.35165190429683
+      },
+      "name": {
+        "text": "Iran",
+        "width": 70.82400146871805,
+        "x": 1653.0464259176206,
+        "y": 625.1863248014323
+      },
+      "tonnes": [
+        {
+          "text": "2000 · 0,4 Gt",
+          "width": 206.5025390625,
+          "x": 1583.8503717447918,
+          "y": 674.1891816764323
+        },
+        {
+          "text": "2023 · 0,8 Gt",
+          "width": 206.5025390625,
+          "x": 1583.8503717447918,
+          "y": 713.7902580436198
+        }
+      ]
+    }
+  ],
+  "states": [
+    {
+      "title": 1,
+      "world": 0,
+      "grow": 0,
+      "relabel": 0,
+      "split": 0,
+      "ring": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "world": 1,
+      "grow": 0,
+      "relabel": 0,
+      "split": 0,
+      "ring": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "world": 1,
+      "grow": 1,
+      "relabel": 1,
+      "split": 0,
+      "ring": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "world": 1,
+      "grow": 1,
+      "relabel": 1,
+      "split": 1,
+      "ring": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "world": 1,
+      "grow": 1,
+      "relabel": 1,
+      "split": 1,
+      "ring": 1,
+      "source": 1
+    },
+    {
+      "title": 0,
+      "world": 1,
+      "grow": 1,
+      "relabel": 1,
+      "split": 1,
+      "ring": 1,
+      "source": 1
+    }
+  ],
+  "timing": {
+    "fps": 30,
+    "total": 540,
+    "establish": {
+      "start": 0,
+      "duration": 45
+    },
+    "reference": {
+      "start": 45,
+      "duration": 60
+    },
+    "reveal": {
+      "start": 105,
+      "duration": 135
+    },
+    "subject": {
+      "start": 240,
+      "duration": 180
+    },
+    "conclusion": {
+      "start": 420,
+      "duration": 60
+    },
+    "hold": {
+      "start": 480,
+      "duration": 60
+    }
+  },
+  "fontFamily": null,
+  "faces": [
+    {
+      "family": "Merriweather",
+      "style": "normal",
+      "weight": 700,
+      "weightTo": 700,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Merriweather",
+      "style": "normal",
+      "weight": 700,
+      "weightTo": 700,
+      "unicodeRange": "U+2082"
+    },
+    {
+      "family": "Open Sans",
+      "style": "normal",
+      "weight": 600,
+      "weightTo": 600,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Open Sans",
+      "style": "normal",
+      "weight": 600,
+      "weightTo": 600,
+      "unicodeRange": "U+2082"
+    },
+    {
+      "family": "Open Sans",
+      "style": "normal",
+      "weight": 500,
+      "weightTo": 500,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Open Sans",
+      "style": "normal",
+      "weight": 500,
+      "weightTo": 500,
+      "unicodeRange": "U+2082"
+    },
+    {
+      "family": "Merriweather",
+      "style": "italic",
+      "weight": 400,
+      "weightTo": 400,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Merriweather",
+      "style": "italic",
+      "weight": 400,
+      "weightTo": 400,
+      "unicodeRange": "U+2082"
+    }
+  ]
+}

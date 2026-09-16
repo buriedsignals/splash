@@ -98,6 +98,14 @@
 //      standing in for the continuous one), and that the two stay in LOCK-STEP: the active step is
 //      never more than half a step away from where the progress says the reader is, which is what
 //      keeps a scrubbed drawing and the caption beside it describing the same moment.
+//   T. EVERY WORD IS SET IN THE FACE THE PAGE NAMES, NOT IN THE BRIDGE BEHIND IT. Once per file, not
+//      per width. `probeTypefaces` (the carried `./typefaces.mjs`) walks every text node — every
+//      frame's labels included, visible or not yet — and for each (family, weight, style) the page
+//      sets: the document declares a face for it, the face's `unicodeRange` as the browser parsed it
+//      reaches every character, and the same string measures a different width with the family
+//      taken out of its stack. The last is the one a family merely installed on this machine cannot
+//      satisfy. The format has no tooltip and writes no drawn text at run time, so the load-time
+//      walk is the whole surface.
 //
 // WHAT IS REPORTED BUT NOT ASSERTED, and why. THE CENSUS OF WHAT THE CARD COVERS: how many
 // animation frames of the pass a card sat over one of the active frame's own labels, how many it sat
@@ -115,6 +123,7 @@
 
 import puppeteer from "puppeteer-core";
 import { existsSync, readdirSync } from "node:fs";
+import { probeTypefaces } from "./typefaces.mjs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
@@ -381,11 +390,19 @@ function contrastOfCss(a, b) {
  * `failures` are assertion breaches; `notes` are measured facts a person should read.
  */
 export async function verifyOne(page, file, { w, h }) {
+  // ANY UNCAUGHT ERROR IN THE PAGE IS A FAILURE. A beat's own script that throws on every paint
+  // leaves its visual in whatever state it was rendered in, and every assertion below — which read
+  // the scaffold, not the beat — stays green. Measured on the first directed type beat, whose label
+  // seating threw on each frame while the whole contract passed.
+  const thrown = [];
+  const onError = (error) => thrown.push(String(error?.message ?? error).split("\n")[0]);
+  page.on("pageerror", onError);
   await page.setViewport({ width: w, height: h, deviceScaleFactor: 1 });
   await page.goto(`file://${file}`, { waitUntil: "load" });
   await new Promise((r) => setTimeout(r, 300));
   await page.evaluate(recorder);
   await scrollThrough(page, FRAMES_PER_STEP);
+  page.off("pageerror", onError);
 
   const rec = await page.evaluate(() => window.__rec);
   const shape = await page.evaluate(() => {
@@ -416,6 +433,31 @@ export async function verifyOne(page, file, { w, h }) {
   const notes = [];
   if (rec.length < 20)
     failures.push(`${where}: only ${rec.length} animation frames recorded`);
+  // T2 — A TITLE LADDER STEPS DOWN UNTIL THE HEADER FITS. The header never scrolls away, so a title
+  // that runs to seven lines on a phone takes that height from the graphic for the whole read.
+  const ladder = await page.evaluate(() => {
+    const heading = document.querySelector(".scrolly-header h2[data-title-forms]");
+    if (!heading) return null;
+    const forms = JSON.parse(heading.getAttribute("data-title-forms"));
+    return {
+      share: document.querySelector(".scrolly-header").offsetHeight / document.querySelector(".scrolly").clientHeight,
+      form: forms.indexOf(heading.textContent),
+      forms: forms.length,
+    };
+  });
+  if (ladder && ladder.form < 0)
+    failures.push(`${where}: the title reads a form that is not on its own ladder`);
+  if (ladder && ladder.form >= 0 && ladder.share > 0.22 + 0.005 && ladder.form < ladder.forms - 1)
+    failures.push(
+      `${where}: the header takes ${(ladder.share * 100).toFixed(0)}% of the frame with title form ${ladder.form + 1} of ` +
+        `${ladder.forms} — a shorter form was available and was not taken`,
+    );
+  if (ladder) notes.push(`${where}: title form ${ladder.form + 1} of ${ladder.forms}, header ${(ladder.share * 100).toFixed(0)}% of the frame`);
+  if (thrown.length > 0)
+    failures.push(
+      `${where}: the page threw ${thrown.length} uncaught error${thrown.length === 1 ? "" : "s"} during the pass — ` +
+        [...new Set(thrown)].slice(0, 3).join(" | "),
+    );
 
   // A — the page does not scroll.
   if (shape.docScrollable > 1)
@@ -821,7 +863,56 @@ export async function verifyStates(browser, file) {
   return out;
 }
 
-/** Drives every file at every width, plus the two state checks per file, on ONE browser. */
+/** T — every word is set in the face the page names. See this file's header. */
+export async function verifyTypefaces(browser, file) {
+  const out = { failures: [], notes: [] };
+  const name = file.split("/").slice(-2).join("/");
+  const page = await browser.newPage();
+  await page.setViewport({ width: 1280, height: 800 });
+  await page.goto(`file://${file}`, { waitUntil: "load" });
+  const { uses, declared } = await page.evaluate(probeTypefaces);
+  await page.close();
+
+  if (uses.length === 0)
+    out.failures.push(`${name} @ typeface: no word on this page is set in a named family — every one falls to a generic stack`);
+  for (const use of uses) {
+    const who = `${name} @ typeface: ${use.family} ${use.weight} ${use.style}`;
+    if (!use.hasFace) {
+      out.failures.push(`${who} — ${use.nodes} text nodes ask for it and the page carries no face for it; the reader sees ${use.fallbackStack}`);
+      continue;
+    }
+    if (!use.hasExactFace) out.failures.push(`${who} — carried, but not at that weight and style`);
+    if (use.uncovered.length > 0)
+      out.failures.push(`${who} — no embedded unicode-range reaches ${use.uncovered.join(", ")}; drawn by the fallback`);
+    else if (!use.loaded)
+      out.failures.push(`${who} — the embedded bytes never loaded as a font`);
+    const delta = Math.abs(use.widthWithFirst - use.widthWithoutFirst);
+    // THE WIDTH DIFFERENTIAL CAN BE SILENT ON DIGITS. Measured on a bullet beat's axis ("0 50 100 %"):
+    // Open Sans 500 and Helvetica set those characters 0.2px apart over 164px. When the face is
+    // declared at that weight, loaded, and its parsed range reaches every character, equal widths are
+    // not a fallback — it is a string the two faces happen to set alike — so it is reported, not
+    // failed. Stripped faces, unloadable bytes and a range that misses a character still fail above.
+    const inconclusive = !(delta > 0.5) && use.hasExactFace && use.loaded && use.uncovered.length === 0;
+    if (inconclusive)
+      out.notes.push(
+        `${who}: width differential inconclusive (${delta.toFixed(1)}px over "${use.stack}") — face declared, loaded and covering`,
+      );
+    else if (!(delta > 0.5))
+      out.failures.push(
+        `${who} — draws its fallback: ${use.widthWithFirst.toFixed(1)}px in "${use.stack}" against ${use.widthWithoutFirst.toFixed(1)}px in "${use.fallbackStack}"`,
+      );
+    else
+      out.notes.push(`${who}: ${use.characters} characters, ${use.nodes} nodes, ${delta.toFixed(1)}px from its fallback`);
+  }
+  const used = new Set(uses.map((u) => `${u.family}|${u.weight}|${u.style}`));
+  const unused = new Set(
+    declared.filter((f) => f.status === "unloaded" && !used.has(`${f.family}|${f.weight}|${f.style}`)).map((f) => `${f.family} ${f.weight} ${f.style}`),
+  );
+  for (const face of unused) out.notes.push(`${name} @ typeface: ${face} is carried and never used`);
+  return out;
+}
+
+/** Drives every file at every width, plus the state and typeface checks per file, on ONE browser. */
 export async function verifyAll(files, widths = WIDTHS) {
   const browser = await puppeteer.launch({
     executablePath: resolveChrome(),
@@ -841,6 +932,9 @@ export async function verifyAll(files, widths = WIDTHS) {
       const s = await verifyStates(browser, file);
       failures.push(...s.failures);
       notes.push(...s.notes);
+      const t = await verifyTypefaces(browser, file);
+      failures.push(...t.failures);
+      notes.push(...t.notes);
     }
     await page.close();
   } finally {

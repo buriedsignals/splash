@@ -42,6 +42,9 @@ const PLACEHOLDER: LifeExpectancyGapVideoProps = {
   reference: 80,
   referenceLabel: "Placeholder",
   size: "landscape",
+  // No bytes: a render driven by this placeholder is refused rather than drawn in a system face.
+  fontFamily: "Open Sans, Helvetica, Arial, sans-serif",
+  faces: [],
 };
 
 export const RemotionRoot: React.FC = () => (

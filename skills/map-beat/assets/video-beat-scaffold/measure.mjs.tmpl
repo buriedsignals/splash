@@ -1,0 +1,51 @@
+// Usage: set -a && . ./.env && set +a && bun %%BEAT_PATH%%/measure.mjs [--candidates <N> | --filed]
+//
+// THE FIXED CAMERAS, MEASURED ON THE REAL MAP ONCE AND FROZEN — where MapLibre draws every seat the overlay needs, and
+// the colour it paints under every cell, for each direction the runner renders (the same flags). `build.mjs` reads the
+// result offline; a plan changed since is refused there (`planDigest`), and a measurement taken while a tile was still
+// loading is refused here. Each picture is measured at the frame its words are seen over (`mapStateAt`):
+//   whole   the last frame — the credit's open sea
+//   SCAFFOLD: every other picture a word is seated on (the close-up at the end of `subject`, …)
+
+import { createHash } from "node:crypto";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { mapTilerKeyIn } from "#shared/map-beat/glyphs.mjs";
+
+export const planDigestOf = (plan) => createHash("sha256").update(JSON.stringify(plan)).digest("hex");
+
+/** The frames the fixed cameras are measured at. SCAFFOLD: one entry per picture a word is seated on. */
+export const MEASURED_FRAMES = Object.freeze({
+  whole: (timing) => timing.total - 1,
+});
+
+/** A half-drawn map seats words on colours it never shows: every camera must have measured with every tile loaded. */
+export function assertTilesLoaded(label, cameras) {
+  for (const [name, m] of Object.entries(cameras)) if (m.tilesLoaded !== true) throw new Error(`${label} ${name}: a tile was still loading when it was measured`);
+  return cameras;
+}
+
+if (import.meta.main) {
+  const key = mapTilerKeyIn(process.env);
+  if (!key) throw new Error("no MapTiler key in the environment: run with the worktree's .env loaded (set -a && . ./.env && set +a)");
+  // Loaded here, not at the top: `build.mjs` reads `planDigestOf` from this file, and neither the tests nor the build
+  // should start a browser driver to do so.
+  const { measureLiveMap } = await import("%%UP%%/skills/map-beat/scripts/measure-live-map.mjs");
+  const { buildDirection, directionsFor, loadBeat, MEASURED, parseDirectionArgs } = await import("./build.mjs");
+  const { mapStateAt } = await import("./scene.mjs");
+  const { %%CONST%%_VIDEO_TIMING: timing } = await import("./timing-contract.ts");
+  const args = parseDirectionArgs(process.argv.slice(2));
+  const beat = loadBeat();
+  const { directions, note } = directionsFor(beat, { candidates: args.candidates, filed: args.filed });
+  console.log(note);
+  // Merged into what is already measured: measuring the candidates does not unmeasure the default.
+  const out = existsSync(MEASURED) ? JSON.parse(readFileSync(MEASURED, "utf8")) : { size: { width: 1920, height: 1080 }, planDigest: {}, cameras: {} };
+  for (const entry of directions) {
+    const { props } = buildDirection(entry, beat, { measured: null });
+    const states = Object.fromEntries(Object.entries(MEASURED_FRAMES).map(([name, frameOf]) => [name, mapStateAt({ cameras: props.cameras, states: beat.states, timing }, frameOf(timing))]));
+    const cameras = await measureLiveMap({ plan: props.mapPlan, states, seats: beat.mapSeats, size: out.size, mapTilerKey: key, tints: props.mapPlan.tints });
+    out.cameras[entry.label] = assertTilesLoaded(entry.label, cameras);
+    out.planDigest[entry.label] = planDigestOf(props.mapPlan);
+    console.log(`${entry.label} measured`);
+  }
+  writeFileSync(MEASURED, JSON.stringify(out) + "\n");
+}

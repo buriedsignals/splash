@@ -33,6 +33,9 @@ const PLACEHOLDER: Omit<LifeExpectancyVideoProps, "size"> = {
   referenceLabel: "Placeholder",
   subjectYear: 2020,
   recoveryYear: 2023,
+  // No bytes: a render driven by this placeholder is refused rather than drawn in a system face.
+  fontFamily: "Open Sans, Helvetica, Arial, sans-serif",
+  faces: [],
 };
 
 export const RemotionRoot: React.FC = () => (

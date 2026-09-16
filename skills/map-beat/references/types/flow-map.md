@@ -111,6 +111,23 @@ widths and sent every ribbon looping across the map, and a camera inherited from
 beats framed the whole continent for a story that sits in its middle.
 
 
+## In video
+
+Worked example: `proof/video-flow-map-ukraine-protection` (validated 2026-09-14). The gesture only a video has is **the
+trace**: each band drawing itself out of the node (a dash offset along its length, measured in Bun), largest first,
+the slices overlapping so the fan reads as one gesture, the host's name landing as its band arrives and the total
+climbing band by band — the count's texts measured for every number of bands arrived. The subject's share is a filter
+and a count. The key is a column at the left with the width scale at the drawn scale; the camera is the box the largest
+hosts need, fitted to the right of it. A host whose seat is outside the frame's margins gets no band (a band running off
+the edge ends nowhere); a name never sits across a band a quarter of the widest or wider, and stays within three of its
+heights of its own band's end.
+
+On the live MapTiler map (2026-09-15, awaiting the owner): each band a GeoJSON `line` layer, its arc sampled in Bun in
+lon/lat and its width a constant in px at the still camera; the trace a cut of the arc at its drawn share handed to the
+band's source each frame (`setData`) — `line-gradient` needs `line-progress`, refused in a binding, and a dash restarts at
+tile edges. The node and the named hosts are circle + symbol layers; a name stands beside every seat dot. The key and the
+credit stand on the measured open sea, clear of every band.
+
 ## The worked example in this tree
 
 `proof/static-flow-map-ukraine-protection` — a **directed** beat of this type: written by hand under the doctrine, taken through a

@@ -72,6 +72,27 @@ prominently, not just on the legend swatch but stated in the caption or title ("
 so it survives being screen-read or printed in monochrome, where the fill's sequential ramp — this
 type's only other channel — disappears entirely and the labelled lines are all that's left.
 
+## In video
+
+Worked example: `proof/video-contour-europe-distance` (validated 2026-09-14, recut 2026-09-15; on the live MapTiler map
+2026-09-15, awaiting the owner). **The map is the live MapTiler map** (owner: « comme dans scrolly »): the field stays
+measured in Bun, its lines unprojected to lon/lat as GeoJSON `line` layers, their numbers `symbol` layers, the study land
+a Countries fill beneath the basemap's water and the land outside the measurement the basemap's own land drawn over the
+sweep. The gesture only a video has is **the sweep**: the field resampled onto a Web Mercator grid and mounted as a
+MapLibre `canvas` source beneath the water, thresholded at a level that travels linearly in the field's own unit and
+uploaded once per frame, its front in a rim colour, each line left whole the moment the front reaches it and its number
+set once the front has moved on, the count read off the field's own table. The claim's level (the median) lands as its
+own gesture; a line within 50 km of it gives way. A number sits on its line in a halo of the land's colour, at the seat
+crossing the fewest other lines. Every text the count can show is measured in Bun.
+
+- **The argument measures what the sweep covers**: beside the map, a curve of the share of the land within each
+  distance, drawn from the field's own `within` table and traced to the sweep's front — its head at the front's
+  distance and the share it has covered — so the steep rise along the coasts and the long flat tail are seen, not
+  read. The claim's level lands with dashed guides on the curve. The curve carries no word.
+- **The credit sits on one line over open sea** with « © MapTiler © OpenStreetMap », in the first row of the measured
+  map whose cells are all sea; the key and the curve stand in the column under it, each over at most 3 % land, and the
+  lines' numbers keep clear of all three.
+
 ## The worked example in this tree
 
 `proof/static-contour-europe-distance` — a **directed** beat of this type: written by hand under the doctrine, taken through a

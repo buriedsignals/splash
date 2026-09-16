@@ -11,9 +11,14 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  activeTypeface,
   deriveFurniture,
   readPalette,
+  readTypeface,
+  useTypeface,
 } from "../../skills/chart-video/scripts/render-still.mjs";
+import { writeRenderProps } from "../../skills/chart-video/scripts/video-faces.mjs";
+import { FONT_WEIGHTS } from "./LifeExpectancyGapVideo.tsx";
 // The VIDEO format's own size table (landscape floor 30, type scale 2.5), and the type-vs-size
 // question, which is craft-neutral and therefore has one copy serving both formats.
 import {
@@ -167,8 +172,16 @@ if (che[che.length - 1].value <= fra[fra.length - 1].value)
 
 const props = { ...BEAT, che, fra, size, ...deriveFurniture(BEAT.ground) };
 delete props.firstYear;
-const propsPath = join(outDir, `${stem}-props.json`);
-await writeFile(propsPath, JSON.stringify(props, null, 2));
+// THE FACE, AS BYTES. Chrome paints the frames, so the recorded typeface is handed to the
+// composition rather than put in force here. No `TYPEFACE.md` sits under `proof/`, so this beat
+// draws in the one the video skill records, like the rest of the machinery it borrows from there.
+useTypeface(readTypeface(join(PACKAGE_ROOT, "skills", "chart-video"), { stopAt: join(PACKAGE_ROOT, "skills", "chart-video") }));
+const propsPath = await writeRenderProps({
+  props,
+  stack: activeTypeface().family,
+  weights: FONT_WEIGHTS,
+  auditPath: join(outDir, `${stem}-props.json`),
+});
 
 // Rung 2a: the last frame, on its own.
 const stillPath = join(outDir, `${stem}-final-frame.png`);

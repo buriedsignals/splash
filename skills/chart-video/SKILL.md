@@ -1,161 +1,283 @@
 ---
 name: chart-video
-description: Use to produce a chart beat in the VIDEO format — a short motion build of a chart that already exists as geometry, written under the motion grammar, driven by one editable timing contract, and verified by looking at the final frame before the mp4 and at four extracted frames after it. Carries the timing contract, the seed composition, and the render ladder's second rung.
+description: Use to produce a chart beat in the VIDEO format — a directed motion piece (title card, an argument told in shots, the whole chart at the end) written under the owner's choreography rules and one editable timing contract, measured in Bun and verified by looking at rendered frames before the mp4. Carries the directed-video path (rules, 32 type sheets, the shared shot helpers), the timing contract, the seed composition, and the render ladder's second rung.
 ---
 
-# chart-video — write the edit, render the last frame first, then look at four
+# chart-video — write the edit, render the last frame first, then look
 
 ## Overview
 
-The video format of a chart beat. It does not hold a chart: it holds **the edit**.
+The video format of a chart beat. It does not hold a chart: it holds **the edit** — an order in time
+that a still cannot have.
 
-A video beat adds exactly one thing to a chart that a still cannot have — an **order in time**. This
-skill carries its **seed** (`co2-suisse`); the stories that used to live here, `life-expectancy` and
-`migration`, now each live in their own workspaces with their own registrations — `proof/life-expectancy/`
-and `proof/migration/`, respectively, each with its own `Root.tsx`/`index.ts`/`render.mjs`. Each beat is
-its own composition, its own timing contract instance, and its own pure geometry — never a general "video
-chart" parameterised by data, per the replace-me discipline below:
+Two things live here, and only the first is how a video is built today:
 
-1. **`co2-suisse`** (`EmissionsVideo.tsx`, `timing.ts`'s `CO2_TIMING`) — the seed. A series climbs to a
-   peak and later falls back through a level the reader is shown first. It carries its **own inlined**
-   pure geometry (`fr`, `yTickValues`, `crossingGeometry`, at the top of `EmissionsVideo.tsx`) and
-   imports none: nothing under a skill may import out of the skill, and this seed reached into
-   `proof/co2-suisse/crossing-geometry.ts` until that was caught — see "The one gotcha". The story
-   beats under `proof/co2-suisse/` do share that file **among themselves**, which is a statement about
-   that workspace and not about this skill. (The seed's id, its filename and its `BEAT` constants
-   still say `co2-suisse` while the beat it draws is the rainfall sample — a rename parked as its own
-   task. Read every `co2-suisse` in this skill as the seed's name, never as a link to `proof/`.)
+1. **The directed video path** — any subject, any of the 32 chart types: the owner's choreography
+   rules, one type sheet per type, one worked example per type under `proof/video-<type>-…`, and the
+   shared helpers every beat calls. Start at "The directed video path" below.
+2. **The seed** (`co2-suisse`, `assets/EmissionsVideo.tsx`) — an 8 s teaching composition that predates
+   the design base. It is kept because the standalone-render and parity tests exercise it; it is not
+   the model for a new beat (no title card, no argument, no direction). `life-expectancy` and
+   `migration` moved out to `proof/life-expectancy/` and `proof/migration/`, same pre-directed shape.
 
-**Moved out:** `life-expectancy` and `migration` now live outside this skill. See `proof/life-expectancy/`
-and `proof/migration/` for their own compositions, timing contracts, and render scripts. Each carries its
-own copies of `FONT_FAMILY`/`measureText`/`wrap`/`drawnSoFar` (the settled rule: a story that needs
-something a skill has duplicates it, it does not reach back across the skill boundary) and reaches the
-shared timing type by a temporary relative path — see those files' own doc-comments.
+The doctrine is `doctrine/references/motion-grammar.md`; the owner's binding rules on top of it are
+`references/directed-type-choreography.md`.
 
-The things that actually live here:
+## The directed video path (start here)
 
-- **a timing contract** — six events named editorially (`establish`, `reference`, `reveal`,
-  `subject`, `conclusion`, `hold`), each with a `start` and a `duration` in frames. Every
-  interpolation window in the composition derives from it and **no frame literal appears in the
-  drawing**, so a journalist retimes the piece by editing one object. `assets/timing.ts` carries the
-  shared type and the arithmetic (`progressOf`, `checkTiming`) plus `CO2_TIMING`.
-- **one worked composition**, marked replace-me the way `chart-beat`'s seed is. Read
-  `EmissionsVideo.tsx` to learn the shape. This is the seed; other compositions have been moved to
-  their own proof workspaces.
-- **`scripts/render-video.mjs`** — the render ladder's second rung for the seed: the final-frame
-  still first, then the mp4. `render-video.mjs` is the CO₂ beat's (kept unrenamed — it predates the
-  others). Other beats' render scripts now live in their respective proof workspaces.
+Read in this order, then write.
 
-The doctrine it is written under is `doctrine/references/motion-grammar.md`, which was written
-against the first of these builds.
+| step | read / do | what it gives you |
+| --- | --- | --- |
+| 1 | `references/directed-type-choreography.md` | the rules (below) and the gesture repertoire |
+| 2 | `references/types/<type>.md` | what the type keeps, drops and changes in video; the worked example's name |
+| 3 | the worked example `proof/video-<type>-…` (index below) | the beat's split into files (table below) |
+| 4 | scaffold the plumbing | Scaffold: `bun skills/chart-video/scripts/scaffold-video-beat.mjs …` (see the script's header) |
+| 5 | `BRIEF.md`: the choreography shot by shot, each shot tied to an event | the design; no code before it |
+| 6 | TDD `states.mjs` / `timing-contract.ts` / `scene.mjs`, then the frame | green tests before any render — the subject-agnostic maths comes from `scripts/series.mjs` (below), never copied into the beat |
+| 7 | `--look <dir>`, open the PNGs, fix, then the renders | the mp4s |
+
+**The rules, in brief** (`directed-type-choreography.md` holds the owner's words):
+
+- **Title card at frame 0**, eyebrow + short title only, `establish` = 45 frames (1.5 s); its opacity window closes before frame 0.
+- **An argument, not a reveal**: transform a state the viewer understands into the answer (split, detach, slide, magnify, pull back), lengths on one scale. Revealing marks one by one is the floor.
+- **Every event changes the picture** (`assertEventStates`); only a last `hold` repeats the state before it.
+- **Linear on a measured axis** (time, value); easing only for arrivals.
+- **Minimal text**: counts and names, no sentences, no unit line, no standfirst.
+- **Whole chart at the end**, the lesson lightly marked; no end card.
+- **Credit on one line** (`CREDIT_ONE_LINE`), at the type floor, touching no word.
+- **Brisk**: 18–22 s at 30 fps (540–660 frames), `hold` about 60 frames, moves overlapping.
+- **30 px floor** in landscape, 36 px square/portrait (`assertTypeFloor`); widths measured in Bun and checked back in Chrome.
+- **Zoom** when the decisive datum is too small at overview scale (e.g. a mark one year from the series end): no shared chart camera exists, write it in `scene.mjs`.
+
+**Which style a render uses.** A production video's style comes from the editorial side: the
+newsroom's identity (`NEWSROOM.md`, derived by `newsroom-charter` or supplied; parsed and validated by
+`parseNewsroom` / `validateNewsroom` in `skills/splash/scripts/newsroom.mjs`, checked at preflight) and
+the subject, composed by `composeDirections({ newsroom, filed, palettes?, beat, textPerRegister })`
+(`shared/design-base/compose.mjs`), best guarded candidate first. The three **filed directions**
+(`creme`, `nocturne`, `rapport` — `shared/design-base/directions/*.md`, byte-identical to
+`docs/design-base/directions/`, parsed by `readDirection(path)`, all three by `filedDirections()`) are
+demo/catalogue directions:
+
+- a **proof beat** renders all three (`--filed`), one mp4 per direction, in each direction's own accent;
+- a **newsroom run** renders the composed direction (`--candidates <n>` for the top n to choose from).
+
+The flags are the scaffolded runner's (see the scaffold's header). The composer's report lines
+("N were tried and refused: …") record what was dropped for this beat's text; they do not stop a
+`--filed` render. A proof beat's `PALETTE.md` is the newsroom answer the composer reads
+(`readPalette`), not the colour a filed render draws in.
+
+**The newsroom's typefaces are part of that identity.** `NEWSROOM.md`'s `typefaces` line is a ladder,
+most prominent first, and `composeDirections` walks it against the direction's own roles in the
+direction's prominence order: the first declared face that can serve the `display` register's role
+takes it, the next face takes the next role, and a role the list does not reach keeps its own ladder.
+A face is used only when it passes the guards every ladder entry passes — there is a file for it at
+the weights and slants those registers ask for, and it covers the words they set, read out of the
+face's own cmap — and **a face that cannot is printed in the report, one line, naming the face and
+the reason** (`not installed`, `no coverage for this beat's words`, or the guard that refused it). No
+guard is relaxed to admit a house face. Read the report before the render: `the newsroom declares …`
+is the block that says which faces went in and which did not.
+
+### The worked example, file by file
+
+Every chart example has the same split (`proof/video-area-swiss-co2`):
+
+| file | holds | plumbing or beat |
+| --- | --- | --- |
+| `index.ts`, `Root.tsx`, `Directed<Type>Video.tsx` | entry, one `Composition` sized by `sizeFor`, faces via `useEmbeddedFaces` | plumbing (names only) |
+| `render-directions-video.mjs` | args (`--only <id>`, `--still`, `--look <dir>`), composer report, type floor at every event end, `writeRenderProps`, `remotion still` then `render` with an empty `--env-file`, `--concurrency=1`, ffprobe size check, refusal cleanup | plumbing; only the look-frame list differs |
+| `subject.mjs` | frozen CSV read, shape asserts (e.g. consecutive years) | beat |
+| `timing-contract.ts` | the `BeatTiming` instance | beat |
+| `states.mjs` | the picture's state at the end of each event, `assertEventStates` | beat |
+| `scene.mjs` | `WINDOWS` (share of each event a field moves over), `fieldAt` (windowed, eased unless linear), `sceneAt(props, frame)` | mechanics plumbing, windows and geometry beat |
+| `build.mjs` | direction → `resolveDirectionFamilies` → `registerOf` → `videoRegistersOf` → `k`, stage and insets, `titleCardFor`, `sourceCreditFor`, then the beat's own layout; returns `{ props, report, direction }` | ~⅓ plumbing |
+| `<Type>Frame.tsx` | the SVG drawn from `sceneAt`; ground, title-card and credit groups | ground/card/credit plumbing |
+| `timing.test.ts`, `states.test.ts`, `frame.test.ts` | `checkTiming`, title ≤ 1.5 s, hold ≥ 60, total ≤ 22 s; the states; floor + measured widths at every event end | per-direction loops plumbing |
+| `BRIEF.md`, `PALETTE.md`, `renders/` | the choreography; the newsroom answer; `<id>.mp4`, `<id>-final-frame.png`, `<id>-props.json` | beat |
+
+`--look <dir>` renders the last frame of every event, frame 0, and the middle of each gesture's
+window. Use a directory unique to the beat (a shared scratchpad `look/` already holds other beats' PNGs).
+
+### The type index
+
+| type | sheet | worked example | owner |
+| --- | --- | --- | --- |
+| Area | `references/types/area.md` | `proof/video-area-swiss-co2` | validated |
+| Bar and column | `references/types/bar.md` | `proof/video-bar-top-emitters-2024` | validated |
+| Beeswarm | `references/types/beeswarm.md` | `proof/video-beeswarm-co2-per-person` | awaiting |
+| Box plot | `references/types/box-plot.md` | `proof/video-box-plot-france-co2-decades` | awaiting |
+| Bullet | `references/types/bullet.md` | `proof/video-bullet-low-carbon-share` | validated |
+| Bump | `references/types/bump.md` | `proof/video-bump-emitter-rank` | validated |
+| Calendar heatmap | `references/types/calendar-heatmap.md` | `proof/video-calendar-heatmap-geneva` | validated |
+| Connected scatter | `references/types/connected-scatter.md` | `proof/video-connected-scatter-lowcarbon` | validated |
+| Diverging bar | `references/types/diverging-bar.md` | `proof/video-diverging-bar-eu-per-capita` | validated |
+| Diverging stacked bar | `references/types/diverging-stacked-bar.md` | `proof/video-diverging-stacked-electricity` | awaiting |
+| Dot strip | `references/types/dot-strip.md` | `proof/video-dot-strip-lowcarbon-spread` | awaiting |
+| Dumbbell | `references/types/dumbbell.md` | `proof/video-dumbbell-life-expectancy-gains` | awaiting |
+| Gantt | `references/types/gantt.md` | `proof/video-gantt-top-ten-tenure` | validated |
+| Grouped bar | `references/types/grouped-bar.md` | `proof/video-grouped-bar-wind-vs-solar` | validated |
+| Heatmap | `references/types/heatmap.md` | `proof/video-heatmap-europe-electricity` | awaiting |
+| Histogram | `references/types/histogram.md` | `proof/video-histogram-carbon-footprint-spread` | awaiting |
+| Line | `references/types/line.md` | `proof/video-line-swiss-co2` | validated |
+| Lollipop | `references/types/lollipop.md` | `proof/video-lollipop-co2-per-person` | validated |
+| Marimekko | `references/types/marimekko.md` | `proof/video-marimekko-electricity-mix` | awaiting |
+| Parallel coordinates | `references/types/parallel-coordinates.md` | `proof/video-parallel-coordinates-electricity-mix` | awaiting |
+| Pictogram | `references/types/pictogram.md` | `proof/video-pictogram-europe-lowcarbon` | awaiting |
+| Pie and donut | `references/types/donut.md` | `proof/video-donut-world-co2-share` | awaiting |
+| Population pyramid | `references/types/population-pyramid.md` | `proof/video-population-pyramid-swiss-age` | awaiting |
+| Radar | `references/types/radar.md` | `proof/video-radar-electricity-mix` | awaiting |
+| Sankey | `references/types/sankey.md` | `proof/video-sankey-electricity-sources` | awaiting |
+| Scatter | `references/types/scatter.md` | `proof/video-scatter-income-life-expectancy` | awaiting |
+| Slope | `references/types/slope.md` | `proof/video-slope-europe-lowcarbon` | validated |
+| Small multiples | `references/types/small-multiples.md` | `proof/video-small-multiples-lowcarbon` | awaiting |
+| Stacked bar | `references/types/stacked-bar.md` | `proof/video-stacked-bar-lowcarbon-growth` | awaiting |
+| Streamgraph | `references/types/streamgraph.md` | `proof/video-streamgraph-swiss-electricity` | validated |
+| Treemap | `references/types/treemap.md` | `proof/video-treemap-europe-capacity` | awaiting |
+| Waterfall | `references/types/waterfall.md` | `proof/video-waterfall-germany-electricity-bridge` | awaiting |
+
+"validated" = by the owner 2026-09-14; "awaiting" = built 2026-09-16, not yet reviewed
+(`docs/design-base/CATALOGUE.md`). Choosing between two types for one subject (line vs area for a
+level series): take the static sibling's type, then write the argument the subject supports.
+
+### The shared helpers a beat calls
+
+A beat under `proof/` imports these by `#shared/...` (the root's `imports` alias to `shared/`) or by a
+relative path into this skill. A skill itself may import neither out of its own directory.
+
+| helper | file | import from a beat as |
+| --- | --- | --- |
+| `titleCardFor`, `sourceCreditFor`, `keyFor`, `CREDIT_ONE_LINE`, `widthOf`, `bandOf`, `haloOf`, `verticalInsetFor`, `DRAWN_WIDER`, `BAND_PROBE` | `scripts/shots.mjs` | `../../skills/chart-video/scripts/shots.mjs` |
+| `videoRegistersOf` (a direction's registers at a video size, floor lifts the whole ladder) | `scripts/video-registers.mjs` | `../../skills/chart-video/scripts/video-registers.mjs` |
+| `resolveRegister`, `applyCase` | `scripts/registers.mjs` | `../../skills/chart-video/scripts/registers.mjs` |
+| `assertEventStates` | `scripts/choreography.mjs` | `../../skills/chart-video/scripts/choreography.mjs` |
+| `wantedOf`, `writeRenderProps`, `videoFaces` | `scripts/video-faces.mjs` | `../../skills/chart-video/scripts/video-faces.mjs` |
+| `useEmbeddedFaces` | `assets/embedded-faces.ts` | `../../skills/chart-video/assets/embedded-faces` |
+| `sizeFor`, `frameInsetFor`, `assertTypeFloor`, `assertDeliveredSize`, `readPngSize` | `shared/chart-video/sizes.mjs` (copy of `scripts/sizes.mjs`) | `#shared/chart-video/sizes.mjs` |
+| `EVENT_ORDER`, `endOf`, `progressOf`, `checkTiming`, `BeatTiming` | `shared/chart-video/timing.ts` (copy of `assets/timing.ts`) | `#shared/chart-video/timing.ts` |
+| `clamp01`, `ease`, `lerp` (the easing helpers) | `skills/scrolly/assets/reveal.mjs` | `../../skills/scrolly/assets/reveal.mjs` |
+| `fieldAtOf`, `moveOf`, `drawnTo`, `areaPath`, `polylinePath`, `curveTopOver`, `widestOf`, `firstCrossing` (+ `clamp01`, `ease`, `lerp`, `round1`) | `skills/chart-video/scripts/series.mjs` | `../../skills/chart-video/scripts/series.mjs` |
+| `readDirection`, `registerOf`, `EYEBROW_TO_DISPLAY`, `resolveDirectionFamilies`, `composeDirections`, `report` | `shared/design-base/` | `#shared/design-base/<file>.mjs` |
+| `readPalette`, `mix`, `contrast`, `adjustToContrast`; `deriveFurniture` | `shared/chart-beat/colour.mjs`; `shared/chart-beat/render-still.mjs` | `#shared/chart-beat/...` |
+
+Sizes: landscape 1920×1080 (`typeScale` 2.5, floor 30 px), square 1080×1080 and portrait 1080×1920
+(3.0, floor 36 px; portrait keeps a safe band, `assertWithinStage`).
+
+## What the beat takes, and what it must write itself
+
+`scripts/series.mjs` holds the arithmetic every beat needs and no beat should own: the easing, the
+field accumulator (`fieldAtOf` — a beat declares only its `WINDOWS` and `LINEAR` and takes the rest),
+a series drawn to a clock (`reachAlong`, `drawnTo`) and its outline and surface (`polylinePath`,
+`areaPath`), staggered moves (`moveOf`), the room a word has over a curve (`curveTopOver`,
+`standsClearOfCurve`), the widest measured text (`widestOf`), a crossing and a gap (`firstCrossing`,
+`firstYearGap`). It is subject-agnostic and unit-tested; a beat that writes any of it out again is
+carrying a copy, and the copy is what drifts.
+
+What never moves into the skill: **the argument, the gestures, the layout and the composition**.
+They are the beat's whole reason to exist, and a parameterised chart that could draw them all would
+draw none of them well.
+
+## The copy's language
+
+Every word a beat draws is in ONE language, and which one is decided by the first of these that
+answers — never by the data, the source or the subject:
+
+1. **The journalist's request.** They asked in French, the beat is French. Nothing downstream
+   overrules the person who asked.
+2. **`NEWSROOM.md`'s `languages`, primary first.** It records every language the newsroom publishes
+   in, most-used first (`newsroomLanguages(profile)` in `skills/splash/scripts/newsroom.mjs` reads it,
+   and the singular `language` an older profile carries); the primary is the answer.
+3. **The static sibling**, when neither of the two above says anything: the beat reads in the
+   language its own family already reads in.
+
+A French request beside an English profile is not a contradiction to settle by taste — rule 1 wins.
+The scaffolded `BRIEF.md` carries a **The copy's language** section; name the language and the rule
+that chose it there, before any copy is written.
 
 ## When to use
 
-- When a closed `STORYBOARD.md` picks medium `chart` and format **video**, and the beat's `BRIEF.md`
-  is written. No brief, no code — same rule as the static format.
-- When the argument has an **order**: a baseline the evidence is read against, a subject that lands,
-  a sentence that only holds once the marks are on screen. A chart with no order in its argument is
-  a still, and a still is a whole format — animating it anyway is the motion grammar's first
-  anti-pattern.
-- **Not** to re-draw a chart that already exists as a still. Reuse its geometry. If the geometry is
-  entangled with the still's rasteriser, split the pure core out first (that is what
-  `proof/co2-suisse/crossing-geometry.ts` is — the extraction, done once, that lets that STORY's still
-  and web beats draw one core). How you reuse it depends on which side of the skill boundary you are
-  on: a story's own video composition, filed beside its story, imports that module; this skill's SEED
-  cannot, and carries its own copy — see "The one gotcha".
-- **Not** for a map (a different engine) and **not** for a Datawrapper chart (a different producer).
+- A closed `STORYBOARD.md` picks medium `chart` and format **video**, or a bare request for a
+  `proof/video-<type>-…` beat. `BRIEF.md` first; no brief, no code.
+- The argument has an **order**: a state the viewer understands, then a transformation that answers.
+  A chart with no order in its argument is a still.
+- **Not** for a map: that is `map-beat`'s live-map video path. **Not** for a Datawrapper chart.
 
 ## The one gotcha that will waste your day (read first)
 
 **The geometry you want to reuse probably cannot be bundled for a browser.** The still path's
 `render-still.mjs` loads `@resvg/resvg-js` — a native module — at module scope, so anything that
-imports it, however indirectly, kills the Remotion bundle. The first version of
-`proof/co2-suisse`'s former static component held both the pure geometry *and* that import in one file; the
-fix was to lift the pure half into its own module — `proof/co2-suisse/crossing-geometry.ts` — which
-that story's static and web beats both import.
+imports it, however indirectly, kills the Remotion bundle. Keep pure geometry in its own module
+(`proof/co2-suisse/crossing-geometry.ts` is the first such split). In a directed beat, `scene.mjs` and
+the frame component stay browser-safe: no Node module, no `#shared/chart-beat` import; everything that
+reads files or derives furniture runs in `build.mjs`, in Bun, and reaches the composition as props.
 
-**Inside one story's workspace, that is the shape. Across the skill boundary it is not.** This
-skill's own seed cannot import that module: a skill directory has to build after being copied, on its
-own, into a journalist's root, and no copy carries a story workspace with it. So the seed carries its
-own copy of the pure core (`fr`, `yTickValues`, `crossingGeometry` in `assets/EmissionsVideo.tsx`) —
-it imported `proof/co2-suisse/crossing-geometry` until that was caught, and
-`splash/test/no-cross-skill-imports.test.ts` now fails loud on any specifier leaving a skill,
-with `splash/test/helper-parity.test.ts` keeping the copies in step and
-`splash/test/seed-renders-standalone.test.ts` rendering this seed in a root that holds nothing
-but this directory.
+**Across the skill boundary it is copy, not import.** A skill directory has to build on its own in a
+journalist's root, so the seed carries its own copy of its pure core (`fr`, `yTickValues`,
+`crossingGeometry` in `assets/EmissionsVideo.tsx`); `splash/test/no-cross-skill-imports.test.ts` fails
+on any specifier leaving a skill, `splash/test/helper-parity.test.ts` keeps copies in step and
+`splash/test/seed-renders-standalone.test.ts` renders the seed alone. Beats under `proof/` are not
+skills and do import from skills (table above).
 
-The same trap, one level up, for colour: `deriveFurniture` lives beside the rasteriser and cannot be
-called in the browser either. **Do not reimplement it in the composition.** `scripts/render-video.mjs`
-runs in node, calls the one implementation there, and passes `ink`/`muted`/`grid` in as input props.
-A second copy of the contrast escalation inside a composition is how two formats end up disagreeing
-about what "muted" means on the same newsroom ground.
+Same trap for colour: `deriveFurniture` cannot run in the browser. Call it in Bun and pass the
+colours as props; never reimplement it in a composition.
 
 ## Architecture
 
 | Layer | File | Role |
 | --- | --- | --- |
-| Doctrine | `doctrine/references/motion-grammar.md` | What a layer may do over time; the order a reveal follows; why the conclusion rule governs assertions while the title, source, axis and scale are furniture that establishes first |
-| Contract | `assets/timing.ts` | `BeatTiming`, `progressOf` (clamped), `checkTiming` (the structural rules as arithmetic), and `CO2_TIMING` (the seed's instance). `life-expectancy`'s and `migration`'s instances are now in their own proof workspaces: `proof/life-expectancy/timing-contract.ts` and `proof/migration/timing-contract.ts` |
-| Composition | `assets/EmissionsVideo.tsx` | The seed beat's drawing, frame by frame, with its own pure geometry and exports `drawnSoFar` (the chronological partial path). Other compositions have been moved to `proof/life-expectancy/LifeExpectancyVideo.tsx` and `proof/migration/MigrationVideo.tsx` |
-| Registration | `assets/Root.tsx`, `assets/index.ts` | The seed composition (`co2-suisse`, `durationInFrames` IS `CO2_TIMING.total`) and the one entry point. Other stories register in their own proof workspaces: `proof/life-expectancy/Root.tsx` + `index.ts` and `proof/migration/Root.tsx` + `index.ts` |
-| Geometry | inlined in `assets/EmissionsVideo.tsx` (`fr`, `yTickValues`, `crossingGeometry`) | The seed's own pure core, carried not imported — a skill imports nothing outside itself. `proof/co2-suisse/crossing-geometry.ts` is the STORY's copy, shared between that workspace's own still and web beats; the two are kept in step by `splash/test/helper-parity.test.ts`. Other stories' geometries (`migrationGeometry`, `lifeExpectancyGeometry`) likewise live inside their moved compositions in proof workspaces |
-| Render | `scripts/render-video.mjs` | The seed beat's render ladder second rung: reads frozen CSV, derives furniture in node, renders final-frame still, then mp4. Other scripts now live in proof workspaces: `proof/life-expectancy/render.mjs` and `proof/migration/render.mjs` |
-| Test | `test/timing.test.ts`, `canon.test.ts` | `timing.test.ts` pins the seed beat's contract. `canon.test.ts` asserts this skill's `assets/` no longer carries the migrated stories. Other contract tests are now in proof workspaces: `proof/life-expectancy/timing.test.ts` and `proof/migration/timing.test.ts` |
+| Doctrine | `doctrine/references/motion-grammar.md` | What a layer may do over time; reveal order; furniture establishes first |
+| Owner rules | `references/directed-type-choreography.md` | The directed video rules: shots, title card, argument, whole chart at the end, rhythm, precision |
+| Type sheets | `references/types/` | 32 sheets, one per chart type, each naming its worked example |
+| Shots | `scripts/shots.mjs` | Title card, one-line credit, key, widths and bands measured in Bun |
+| Registers | `scripts/video-registers.mjs`, `scripts/registers.mjs` | A direction's registers scaled to the video size and floor |
+| Choreography | `scripts/choreography.mjs` | `assertEventStates`: every event changes the picture |
+| Sizes | `scripts/sizes.mjs`, `shared/chart-video/sizes.mjs` | The three export sizes, floors, delivered-size checks |
+| Contract | `assets/timing.ts`, `shared/chart-video/timing.ts` | `BeatTiming`, `progressOf`, `checkTiming`; the skill copy also holds the seed's `CO2_TIMING` |
+| Faces | `scripts/video-faces.mjs`, `assets/embedded-faces.ts` | Faces resolved in Bun, shipped as woff2 props, checked on every frame in Chrome |
+| Directions | `shared/design-base/directions/` | The three filed demo directions |
+| Seed composition | `assets/EmissionsVideo.tsx` | The seed beat's drawing with its own pure geometry; exports `drawnSoFar` |
+| Seed registration | `assets/Root.tsx`, `assets/index.ts` | The seed composition (`co2-suisse`) and entry point |
+| Seed render | `scripts/render-video.mjs` | The seed's ladder: frozen CSV, furniture in node, final-frame still, then mp4 |
+| Test | `test/timing.test.ts`, `test/choreography.test.ts`, `test/shots.test.ts`, `test/video-registers.test.ts` | The contract rules, the event-state rule, the shot helpers, the register scaling |
 
-**Where Remotion lives.** `remotion` and `@remotion/cli` are `devDependencies` of `twin/package.json`
-— this repository's own dependencies, alongside `puppeteer` and the d3 packages. They are **not** in
-`splash/assets/root-template/package.json`, so an installed Splash root cannot yet render a
-video beat. That is a real, named gap and it is deliberate for this exploratory pass: adding them to
-the root template is a change to a different skill, and it drags a ~93 MB Chrome Headless Shell
-download into every journalist's install, which is a distribution decision, not a code decision.
-Whoever ships the video format for real makes that call and moves the two packages.
+**Where Remotion lives.** `remotion` and `@remotion/cli` (4.0.507, pinned) are in this repository's
+`package.json` and in `splash/assets/root-template/package.json`, so an installed Splash root can
+render a video beat (`splash/test/root-template-tells-the-truth.test.ts` guards it).
 
 ## How it works (the shape)
 
-1. **Read the motion grammar**, then write the timing contract before the drawing. The edit is the
-   design; the JSX is the consequence.
-2. **`checkTiming` the contract** — events in order, nothing starting before the evidence it depends
-   on has finished, `hold` ending exactly on the last frame. A test, not a review comment.
-3. **Import the geometry**; do not redraw it. Layout is computed once per frame and is identical at
-   every frame — the build changes what is *visible*, never where anything *sits*. Anything that
-   arrives late has its space reserved from frame 0, so nothing shifts when it lands.
-4. **Derive each window from the contract** with `progressOf`, clamped. Linear where the axis is
-   time; `Easing.out` for things that arrive; `spring` only critically damped, because a mark that
-   overshoots is showing a value the data does not contain.
-5. **Render the final frame first** (`--still-only`). If the end state is not a complete, readable
-   chart, the video is wrong and you have spent seconds instead of minutes finding out.
-6. **Render the mp4, then extract frames** — at minimum mid-reveal, the moment the subject lands, and
-   the final hold — and look at all of them. Confirm the accent does not appear before its evidence,
-   nothing is clipped, and the final hold matches the still.
+1. **Write the choreography, then the timing contract, before the drawing.** The edit is the design.
+2. **`checkTiming` the contract** in a test: events in order, `hold` ending on the last frame.
+3. **Compute states per event and assert them** (`assertEventStates`); derive every window from the
+   contract with `progressOf`, clamped. Linear on a measured axis; eased for arrivals; a spring only
+   critically damped.
+4. **Lay out once, in Bun** (`build.mjs`): anything that arrives late has its space reserved from
+   frame 0, so nothing shifts when it lands.
+5. **Look before rendering the mp4**: `--look <dir>`, then open every PNG. Then `--still` (the last
+   frame: a complete, readable chart), then the mp4 per direction.
+6. **After the mp4**, open the mp4 only; confirm nothing is clipped and the last frame is the whole chart.
 
 ## Quick start
 
+A directed beat (the path above). Scaffold: `bun skills/chart-video/scripts/scaffold-video-beat.mjs …` (see the script's header).
+
 ```sh
-# the last frame, on its own, first — this skill's seed
-bun skills/chart-video/scripts/render-video.mjs --still-only
-
-# the mp4 (still + render), concurrency 1
-bun skills/chart-video/scripts/render-video.mjs --out /tmp/video-twin
-
-# frames to verify by
-cd /tmp/video-twin
-for n in 45 110 165 239; do
-  ffmpeg -loglevel error -i co2.mp4 -vf "select=eq(n\,$n)" -vsync 0 -frames:v 1 -y co2-frame-$n.png
-done
+bun test proof/video-<type>-<slug>
+bun proof/video-<type>-<slug>/render-directions-video.mjs --look "$SCRATCH/look-<slug>"   # open them
+bun proof/video-<type>-<slug>/render-directions-video.mjs --still                         # last frames
+bun proof/video-<type>-<slug>/render-directions-video.mjs                                 # the mp4s
 ```
 
-Then open them. The frame numbers land inside `reference`, inside `reveal`, at (or just before)
-`subject`'s end, and the last frame of `hold` — read off the timing contract.
+The seed (8 s, 240 frames — its own teaching contract, not the directed 18–22 s):
 
-Other stories (`life-expectancy`, `migration`) are in their own proof workspaces — see their own
-`render.mjs` scripts for the same shape of command.
+```sh
+bun skills/chart-video/scripts/render-video.mjs --still-only
+bun skills/chart-video/scripts/render-video.mjs --out /tmp/video-twin
+```
 
 ## Tuning knobs
 
-The table below is `CO2_TIMING`'s. Other beats (`life-expectancy`, `migration`) have their own timing
-contracts in their own proof workspaces with the same six-event shape but different values — each
-has a doc-comment explaining *why* its numbers differ, not just what they are. See
-`proof/life-expectancy/timing-contract.ts` and `proof/migration/timing-contract.ts`.
+The seed's `CO2_TIMING` and composition. A directed beat's knobs are its own `timing-contract.ts` and
+`scene.mjs`'s `WINDOWS`.
 
 | Want | Knob | Where |
 | --- | --- | --- |
@@ -211,42 +333,47 @@ has a doc-comment explaining *why* its numbers differ, not just what they are. S
   wants a proposal with availability measured, next to the palette's, and it should land with
   issue #41.
 
+- `references/directed-type-choreography.md` — the owner's rules for a directed video beat. Read first.
+- `references/types/` — 32 type sheets; each names its worked example under `proof/video-<type>-…`.
+- `scripts/shots.mjs` — `titleCardFor`, `sourceCreditFor`, `keyFor`, `CREDIT_ONE_LINE`: the shots every type shares, measured in Bun.
+- `scripts/video-registers.mjs` — `videoRegistersOf`, `scaleRegister`: registers at a video size; the floor lifts the whole ladder.
+- `scripts/registers.mjs` — `resolveRegister`, `applyCase`: a register resolved against a direction.
+- `scripts/choreography.mjs` — `assertEventStates`: refuses an event that does not change the picture.
+- `scripts/sizes.mjs` — `sizeFor`, `stageFor`, `frameInsetFor`, `assertTypeFloor`, `assertDeliveredSize`: the three export sizes and their floors.
+- `scripts/video-faces.mjs` — **the face reaches Chrome as bytes, or the frame is not drawn.**
+  `useTypeface` only puts a family in force in the node process; the frames are painted by headless
+  Chrome. A render calls `wantedOf(registers)` then `writeRenderProps` (or `videoFaces`) and passes
+  `fontFamily` and `faces` (woff2 cut to the props' words) as props.
+- `assets/embedded-faces.ts` — `useEmbeddedFaces`: loads those bytes as `FontFace`s behind
+  `delayRender`, draws nothing until they are in, then reads back every text run the frame drew and
+  cancels the render if a character, a weight or a family is not covered. `assets/face-coverage.ts`
+  is its pure comparison.
 - `assets/timing.ts` — the shared timing contract type, `progressOf`, `checkTiming`, and `CO2_TIMING`
-  (the seed beat's instance).
+  (the seed beat's instance). Beats import the carried copy `shared/chart-video/timing.ts`.
 - `assets/EmissionsVideo.tsx` — the seed beat's composition. **Replace per story**; do not
   parameterise it into a general video chart. Carries its own copy of the pure core it draws (`fr`,
-  `yTickValues`, `crossingGeometry`) rather than importing one, because nothing under a skill may
-  import out of the skill — see "The one gotcha". Exports `FONT_FAMILY`, `measureText`, `wrap` and
+  `yTickValues`, `crossingGeometry`). Exports `FONT_FAMILY`, `measureText`, `wrap` and
   `drawnSoFar` so this skill's own tests and `splash/test/helper-parity.test.ts` can exercise
-  them without a browser — **not** as a library for another beat to import: the two beats that began
-  beside this one (`proof/life-expectancy/LifeExpectancyVideo.tsx`,
-  `proof/migration/MigrationVideo.tsx`) each carry their own copy, which is what
-  duplicate-do-not-link requires of them.
+  them without a browser — not as a library for another beat to import.
 - `assets/Root.tsx` — the Remotion root; registers the seed composition (`co2-suisse`), sized and
-  timed from its own contract. `remotion still`/`remotion render` select a beat by composition id.
+  timed from its own contract.
 - `assets/index.ts` — the one Remotion entry point (`registerRoot`).
-- `assets/sample-data/rainfall.json` — canonical sample data for the seed. Contains 11 rows of
-  `{ year, value }` pairs from 2015–2025 — the seed's data.
-- `assets/preview.png` — a rendered PNG of the seed at its **last frame** (frame 239 of the
-  video's 240 total). Rendered by `bun scripts/render-preview.mjs` from the seed's current shape.
-  The last frame is used because a video seed's first frame is deliberately empty.
-- `output-proof/preview.png` — the artifact this skill's seed produces from this skill's own sample
-  data — regenerated by `bun scripts/render-preview.mjs --out output-proof`.
+- `assets/sample-data/rainfall.json` — canonical sample data for the seed: 11 rows of
+  `{ year, value }` pairs from 2015–2025.
+- `assets/preview.png` — the seed at its **last frame** (frame 239 of 240), rendered by
+  `bun scripts/render-preview.mjs`.
+- `output-proof/preview.png` — the seed's artifact from this skill's own sample data —
+  regenerated by `bun scripts/render-preview.mjs --out output-proof`.
 - `scripts/render-video.mjs` — the seed beat's render script: `readingsFromCsv`, still → mp4.
   Imports `deriveFurniture` from this skill's OWN `scripts/render-still.mjs` (a copy, not the
-  `chart-beat` original — a skill never imports another skill), in node, and passes the result
-  in as props.
+  `chart-beat` original), in node, and passes the result in as props.
 - `scripts/render-preview.mjs` — renders THIS skill's seed from THIS skill's sample data at its
-  last frame. Accepts `--out <dir>` to write the proof to that directory instead of `assets/preview.png`.
-  Supports `--check` to verify the preview is up-to-date (exits 1 if stale).
+  last frame. `--out <dir>` writes elsewhere; `--check` exits 1 if the preview is stale.
 - `test/timing.test.ts` — pins the seed beat's contract rules, asserted both green and red.
-- `test/canon.test.ts` — asserts `assets/` no longer carries the stories that have been moved out.
-  Also asserts the seed carries the canon's marker wording, sample data exists, and the preview is
-  current.
+- `test/canon.test.ts` — asserts `assets/` no longer carries the moved stories, the seed carries the
+  canon's marker wording, sample data exists, and the preview is current.
 - `doctrine/references/motion-grammar.md` — the doctrine. Read it before writing an edit.
-- `proof/life-expectancy/` — `life-expectancy`'s own workspace: `Root.tsx` + `index.ts` (its own
-  Remotion registration), `LifeExpectancyVideo.tsx` (with its own copies of helper functions),
-  `timing-contract.ts`, `render.mjs`, `timing.test.ts`.
-- `proof/migration/` — `migration`'s own workspace: `Root.tsx` + `index.ts` (its own Remotion
-  registration), `MigrationVideo.tsx` (with its own copies of helper functions), `timing-contract.ts`,
-  `render.mjs`, `timing.test.ts`.
+- `proof/life-expectancy/` — `life-expectancy`'s own pre-directed workspace: `Root.tsx` + `index.ts`,
+  `LifeExpectancyVideo.tsx`, `timing-contract.ts`, `render.mjs`, `timing.test.ts`.
+- `proof/migration/` — `migration`'s own pre-directed workspace: `Root.tsx` + `index.ts`,
+  `MigrationVideo.tsx`, `timing-contract.ts`, `render.mjs`, `timing.test.ts`.

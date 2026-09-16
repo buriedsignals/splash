@@ -1,0 +1,61 @@
+{
+  "provenance": "Each country's pole of inaccessibility on its largest ring, [lon, lat], as frozen in proof/scrolly-choropleth-europe-lowcarbon/seats.mjs's output (Natural Earth 50 m); the twelve of the frozen data copied by value. POL_SW and POL_NE are Poland's mainland box corners (Natural Earth 50 m extent, rounded), measured as seats so its name stands outside the ring.",
+  "seats": {
+    "BGR": [
+      24.6815,
+      42.6358
+    ],
+    "CZE": [
+      14.3338,
+      49.8162
+    ],
+    "DNK": [
+      9.0538,
+      56.0528
+    ],
+    "FIN": [
+      26.5326,
+      62.7604
+    ],
+    "DEU": [
+      9.2966,
+      50.929
+    ],
+    "GRC": [
+      21.6546,
+      39.8063
+    ],
+    "HUN": [
+      20.0387,
+      47.1727
+    ],
+    "NLD": [
+      5.6324,
+      52.4525
+    ],
+    "POL": [
+      19.5304,
+      52.2719
+    ],
+    "ROU": [
+      24.9774,
+      45.8255
+    ],
+    "SVN": [
+      14.9483,
+      46.0892
+    ],
+    "GBR": [
+      -1.2104,
+      52.3507
+    ],
+    "POL_SW": [
+      14.12,
+      49.0
+    ],
+    "POL_NE": [
+      24.15,
+      54.84
+    ]
+  }
+}
