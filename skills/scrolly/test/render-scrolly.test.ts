@@ -1,5 +1,5 @@
 import { describe, it, expect, setDefaultTimeout } from "bun:test";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createElement } from "react";
@@ -20,7 +20,10 @@ import {
 } from "../assets/gauge-data.ts";
 import { render, renderScrolly, SEED } from "../scripts/render-scrolly.mjs";
 import { pickActiveStep, measureProgress } from "../assets/interaction.mjs";
-import { assertFontsEmbedded, embeddedFacesInHtml } from "../scripts/typefaces.mjs";
+import {
+  assertFontsEmbedded,
+  embeddedFacesInHtml,
+} from "../scripts/typefaces.mjs";
 
 // `deriveFurniture`/`contrast` are cheap, but `render`/`renderScrolly` load a native rasteriser
 // nowhere in this file directly — kept anyway, the same default-timeout bump every other format's
@@ -1054,5 +1057,94 @@ describe("render — the seed's own runner", () => {
     for (const step of STEPS_META) {
       for (const p of step.prose(facts)) expect(html).toContain(p);
     }
+  });
+});
+
+describe("vendor scripts", () => {
+  const baseArgs = {
+    steps: [makeStep("a", ["a"]), makeStep("b", ["b"])],
+    title: "t",
+    source: "s",
+    ground: "#FFFFFF",
+    outDir: "/tmp/scrolly-test-vendor",
+    name: "vendor-test.html",
+  };
+
+  it("should put vendor CSS in the head after the charset, and vendor JS at the end of the body before the reveal driver", async () => {
+    const { outPath } = await renderScrolly({
+      ...baseArgs,
+      name: "vendor-probe.html",
+      vendor: [{ css: ".vendor-probe{}", js: "window.__vendorProbe = 1;" }],
+      reveal: {
+        element: createElement("div", null, "the one picture"),
+        states: [{ shown: 0 }, { shown: 1 }],
+        driver: "function applyProbe(root, state) { root.style.opacity = String(state.shown); }",
+        apply: "applyProbe",
+      },
+    });
+    const html = readFileSync(outPath, "utf8");
+    const head = html.slice(0, html.indexOf("</head>"));
+    expect(head.indexOf(".vendor-probe{}")).toBeGreaterThan(head.indexOf('<meta name="viewport"'));
+    const js = html.indexOf("window.__vendorProbe = 1;");
+    expect(js).toBeGreaterThan(html.indexOf("</article>"));
+    expect(js).toBeLessThan(html.indexOf("initReveal("));
+  });
+
+  it("should keep the charset declaration inside the first 1024 bytes when a vendor asset is large", async () => {
+    // A browser only honours <meta charset> within the first 1024 bytes. With MapLibre's 800 KB inlined
+    // first in the head, the pilot's pages carried it at byte ~1,126,934 and fell back to sniffing.
+    const { outPath } = await renderScrolly({
+      ...baseArgs,
+      name: "vendor-large.html",
+      vendor: [{ css: `.big{content:"${"x".repeat(200_000)}"}`, js: `window.__big = "${"y".repeat(900_000)}";` }],
+    });
+    const html = readFileSync(outPath, "utf8");
+    expect(Buffer.byteLength(html.slice(0, html.indexOf("<meta charset")), "utf8")).toBeLessThan(1024);
+  });
+
+  it("should strip source map comments from inlined vendor assets, whose maps the page never carries", async () => {
+    const { outPath } = await renderScrolly({
+      ...baseArgs,
+      name: "vendor-sourcemap.html",
+      vendor: [
+        {
+          css: ".m{}\n/*# sourceMappingURL=maplibre-gl.css.map */",
+          js: "window.__m = 1;\n//# sourceMappingURL=maplibre-gl.js.map",
+        },
+      ],
+    });
+    const html = readFileSync(outPath, "utf8");
+    expect(html).toContain("window.__m = 1;");
+    expect(html).not.toContain("sourceMappingURL");
+  });
+
+  it("should refuse a vendor script that closes its own script tag", async () => {
+    await expect(
+      renderScrolly({
+        ...baseArgs,
+        name: "vendor-bad.html",
+        vendor: [{ js: "</script>" }],
+      }),
+    ).rejects.toThrow(/closing.*(script|style).*tag/);
+  });
+
+  it("should not scan vendor CSS for font requirements, and still write it once to the output", async () => {
+    const { outPath } = await renderScrolly({
+      ...baseArgs,
+      name: "vendor-css-fonts.html",
+      vendor: [
+        {
+          css: '.x{font-family:"Nonexistent Face";font-weight:900}',
+        },
+      ],
+    });
+    const html = readFileSync(outPath, "utf8");
+    // Vendor CSS is present exactly once
+    const matches = html.match(
+      /\.x\{font-family:"Nonexistent Face";font-weight:900\}/g,
+    );
+    expect(matches?.length).toBe(1);
+    // The page still rendered without throwing (vendor CSS was not scanned for fonts)
+    expect(html).toContain(".x{font-family:");
   });
 });

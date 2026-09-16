@@ -50,8 +50,8 @@ import {
   studyExtentOf,
 } from "../assets/geo.ts";
 
-const MAPLIBRE = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js";
-const MAPLIBRE_CSS = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css";
+const MAPLIBRE = "https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js";
+const MAPLIBRE_CSS = "https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css";
 
 /** The six rungs, each two zoom levels wide, anchored on the Earth's own circumference. The target
  *  is the geometric mean of the band — the middle of the rung, in the only sense a ratio scale has
@@ -247,7 +247,7 @@ async function capture({ bounds, width, height, marks, radiusPx, file }) {
         interactive: false,
         attributionControl: false,
         fadeDuration: 0,
-        preserveDrawingBuffer: true,
+        canvasContextAttributes: { preserveDrawingBuffer: true },
         bounds,
         fitBoundsOptions: { padding: 0, animate: false },
       });

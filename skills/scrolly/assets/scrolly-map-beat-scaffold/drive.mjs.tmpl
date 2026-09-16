@@ -1,0 +1,51 @@
+// SCAFFOLD — the painting function for %%Name%%'s one visual, inlined by renderScrolly's `reveal` option AFTER
+// the map runtime (`shared/map-beat`'s own trunk, prepended by the runner as `cards.mapScript`), inside the same
+// IIFE: `initScrollyMap` and `applyScrollyMap` are already in scope. Read skills/scrolly/references/types/%%TYPE%%.md
+// and this beat's own BRIEF.md before filling this in.
+//
+// THE RUNTIME OWNS THE CAMERA AND EVERY PLAN LAYER'S PAINT (%%TYPE%%-plan.mjs). This file owns what sits outside
+// the plan: which frozen card image lies under the live map (until it is ready), and the labels/notes above it.
+//
+// A STATE, field by field — SCAFFOLD, and its own camera fields (card, camX, camY, camZoom, camBearing, camPitch,
+// camAlignY), merged in by the runner's STATES.
+
+export function apply%%Name%%State(root, state) {
+  if (!root.__%%name%%) seat%%Name%%(root);
+  const c = root.__%%name%%;
+  applyScrollyMap(c.handle, state);
+  const clamp = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+  const card = Math.max(0, Math.min(c.cards - 1, Math.round(state.card)));
+  // A stage this narrow drops the labels that would collide — reuse below wherever a mark's own label is placed.
+  const narrow = c.stage.clientWidth < 560;
+
+  const shownLive = Boolean(c.handle && c.handle.ready);
+  c.fallbacks.forEach((img) => {
+    const opacity = !shownLive && Number(img.dataset.fallback) === card ? "1" : "0";
+    if (img.style.opacity !== opacity) img.style.opacity = opacity;
+  });
+
+  // SCAFFOLD: paint every label from `state`'s own fields (clamped as the choreography needs).
+
+  c.notes.forEach((node, k) => {
+    node.style.opacity = String(clamp(1 - 2 * Math.abs(state.note - k)));
+  });
+}
+
+function seat%%Name%%(root) {
+  const plan = JSON.parse(root.querySelector('[data-part="plan"]').textContent);
+  const repaint = () => {
+    if (root.dataset.state) apply%%Name%%State(root, JSON.parse(root.dataset.state));
+  };
+  const handle = initScrollyMap(root, plan, { window, preserveDrawingBuffer: /[?&]verify/.test(location.search), onShown: repaint, onReady: repaint });
+  root.__handle = handle;
+  window.__scrollyMap = handle;
+  root.__%%name%% = {
+    plan,
+    handle,
+    stage: root.querySelector('[data-part="stage"]'),
+    fallbacks: Array.from(root.querySelectorAll("[data-fallback]")),
+    cards: plan.fallback.wide.cards.length,
+    notes: root.querySelectorAll ? Array.from(root.querySelectorAll("[data-note]")) : [],
+    // SCAFFOLD: every other node the paint step reads, queried once here.
+  };
+}

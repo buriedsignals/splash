@@ -5,6 +5,7 @@
 //   measure  the thin saturated 2024 bars extending on from where 2015 ends              0..1
 //   reorder  the rows gliding from their 2015 order to the order of their gain           0..1
 //   verdict  every row's change in points, counted, and the two state names on the first row 0..1
+//   half     the half ruled across the tracks, every row past it stepping back           0..1
 //   zoom     the axis closing from 0–100 % onto the top of the scale                      0..1
 //
 // THE ZOOM IS A DOMAIN, NOT A STRETCH. Every length is recomputed as (value − lo) / (100 − lo) of the
@@ -31,7 +32,9 @@ export function applyBulletState(root, state, context) {
     c.markers[i].style.transform = "translateY(-50%)";
     c.measures[i].style.width = length(measureNow);
     c.measures[i].style.transform = "translateY(-50%)";
-    c.measures[i].style.opacity = state.measure > 0 ? "1" : "0";
+    // Faded in over the first stretch of its card: a hair of progress past the 2015 card must not draw the
+    // thin bar at full strength over the thick one.
+    c.measures[i].style.opacity = String(clamp(state.measure * 6));
 
     // AN INSERTION, ONE ROW AT A TIME. The 2015 order and the order of gain are nearly each other's
     // reverse: moved together, or merely staggered, several rows crossed each other at once in the middle
@@ -40,7 +43,7 @@ export function applyBulletState(root, state, context) {
     // single row climbs while the rows it passes step down one slot together.
     const slot = c.slotAt(i, state.reorder);
     const offset = (slot - i) * c.pitch;
-    const dim = 1 - 0.7 * state.zoom * (row.measure < c.zoomFrom ? 1 : 0);
+    const dim = (1 - 0.7 * state.zoom * (row.measure < c.zoomFrom ? 1 : 0)) * (1 - 0.7 * clamp(state.half) * (row.measure >= 50 ? 1 : 0));
     for (const node of c.byRow[i]) {
       node.style.transform = `translateY(${offset}px)`;
       node.style.opacity = String(dim);
@@ -56,13 +59,18 @@ export function applyBulletState(root, state, context) {
   // and leave while the axis is narrowed.
   c.key.style.opacity = String(clamp(state.reorder * 2 - 1) * (1 - state.zoom));
 
+  c.half.style.opacity = String(clamp(state.half) * (1 - state.zoom));
+  c.halfRule.style.left = length(50);
+  c.halfLabel.style.left = `calc(${length(50)} + 6px)`;
+
   for (const tick of c.ticks) {
     const value = Number(tick.dataset.tick);
     const shown = (tick.dataset.set === "zoom") === state.zoom >= 0.5;
     tick.style.left = length(value);
     const edge = value === c.ceiling ? "translateX(-100%)" : value === 0 || value === c.zoomFrom ? "none" : "translateX(-50%)";
     tick.style.transform = edge;
-    tick.style.opacity = shown && value >= lo ? "1" : "0";
+    // A hair of zoom must not lift the floor past the 0 tick.
+    tick.style.opacity = shown && value >= lo - 0.5 ? "1" : "0";
   }
 }
 
@@ -103,6 +111,9 @@ function seatBullet(root, carrier) {
     measures: tracks.map((t) => t.querySelector('[data-part="measure"]')),
     verdicts: data.rows.map((_, i) => root.querySelector(`[data-part="verdict"][data-row="${i}"]`)),
     key: root.querySelector('[data-part="key"]'),
+    half: root.querySelector('[data-part="half"]'),
+    halfRule: root.querySelector('[data-part="half-rule"]'),
+    halfLabel: root.querySelector('[data-part="half-label"]'),
     ticks: Array.from(root.querySelectorAll("[data-tick]")),
   };
 }

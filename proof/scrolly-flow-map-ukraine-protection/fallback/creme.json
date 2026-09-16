@@ -1,0 +1,83 @@
+{
+  "planHash": "8a1818850677c406845aefd204ba4b5684f9e640f4b17223e75ea49987d1db56",
+  "shapes": {
+    "wide": {
+      "size": {
+        "width": 1464,
+        "height": 585
+      },
+      "cards": [
+        {
+          "zoom": 3.6307205293989813
+        },
+        {
+          "zoom": 3.6307205293989813
+        },
+        {
+          "zoom": 3.6307205293989813
+        },
+        {
+          "zoom": 3.6307205293989813
+        },
+        {
+          "zoom": 3.6307205293989813
+        },
+        {
+          "zoom": 3.6307205293989813
+        }
+      ]
+    },
+    "tall": {
+      "size": {
+        "width": 330,
+        "height": 703
+      },
+      "cards": [
+        {
+          "zoom": 1.8425713946089974
+        },
+        {
+          "zoom": 1.8425713946089974
+        },
+        {
+          "zoom": 1.8425713946089974
+        },
+        {
+          "zoom": 1.8425713946089974
+        },
+        {
+          "zoom": 1.8425713946089974
+        },
+        {
+          "zoom": 1.8425713946089974
+        }
+      ]
+    }
+  },
+  "images": {
+    "creme-wide@2x-1.webp": "dfa3c5bec12ef70155fc3eeffc54165d29b5a6cf70c94efbb99a3b2d87d79681",
+    "creme-wide@1x-1.webp": "5d374f6023dbc9d60751c7699b3fe9ad6e8ccd97d2457d098a38fe958cceeaf7",
+    "creme-tall@2x-1.webp": "03f5335e8975202fc8db98b8d4d2c8e79a1d95a132ba2e0fbb790d542ee0cf61",
+    "creme-tall@1x-1.webp": "b3e5fcf4b30e358252532157b7d5e5aa341d2f87208903e1241049e980d091af",
+    "creme-wide@2x-2.webp": "2f9f1b01b0281321c74d8e6e5f77a013588c1cf81174e7e49fb19684e3035ef7",
+    "creme-wide@1x-2.webp": "9f49eab347ade7ded3df7328697f6f670720cb36753cfb7f26addd5714e100ee",
+    "creme-tall@2x-2.webp": "222ac9520e32d388c583d0d906b434a05d0cc49fb51f52ac10d8eda8accf331f",
+    "creme-tall@1x-2.webp": "3200dbbc2e019f304ffddb53fb0f9d49f54bf08a52b3301119ceae1c65630f5b",
+    "creme-wide@2x-3.webp": "371d0558ba6e082609c7b22c85122e7135751d35a1c3e7f6efaba090a397d7ae",
+    "creme-wide@1x-3.webp": "987fcd20beea01908e406dd542e37fe8329c08dafc0c497c49efc416da892227",
+    "creme-tall@2x-3.webp": "cd875c8aa18dede408b77aaac6e6185d7341e38072088a1b4550f8a6bc950aa5",
+    "creme-tall@1x-3.webp": "ea485af2005820013ac27363c261c7167d4f49911828a9f65309b113d962acb6",
+    "creme-wide@2x-4.webp": "eebaf23bdab31a0f1179e60dea671d2ad934369eebcb453da7471683d93aeb9a",
+    "creme-wide@1x-4.webp": "2b4f476241cd36e9807f075858583f933ed7727405310ec164e0f44d87827158",
+    "creme-tall@2x-4.webp": "b52f2ee1690370e1180729a8ffc8513dc3e33774714dd538b888705e3d7ba18e",
+    "creme-tall@1x-4.webp": "afa7a2ec5d71d90ec52dc447a772c4fc557bdaa6e1e3f84a7f30e03682cf69e2",
+    "creme-wide@2x-5.webp": "dc53ae094eeadd5edade55a8ede4b022835872d5b7a8c7e99be1b94adaa2c7e0",
+    "creme-wide@1x-5.webp": "b38fdf1e3ee78f0cd8091e8d49df9ec23669791c6bdcc262207f516752c39604",
+    "creme-tall@2x-5.webp": "c2711f8889ba0c047ba747fe460e06e53d7e122e7848a1430325ca3a9809bb5b",
+    "creme-tall@1x-5.webp": "81eeeedb20c36fd9d9e213c37df6f499a885d5b36a53e849149c319ccab4dcd1",
+    "creme-wide@2x-6.webp": "9c30f648c9b650b2d063c345483bc53c15f753b5b51b0f5b2d19b5a72d6c97f8",
+    "creme-wide@1x-6.webp": "a65ea18d006619932ab1da3a45ce1343518f8811d8a458ba6e849b378773848d",
+    "creme-tall@2x-6.webp": "ea3542969806aee5644199f014fd297bb76265e022d935f93a740b43228090ef",
+    "creme-tall@1x-6.webp": "a9b9bdb93ab55cfba4dcc96fb9fa328a01ba26bbe9831cfdb1945273cae3ae49"
+  }
+}

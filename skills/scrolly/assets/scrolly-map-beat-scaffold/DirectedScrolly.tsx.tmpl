@@ -1,0 +1,88 @@
+/**
+ * SCAFFOLD — %%Name%%'s own visual, drawn on a live MapTiler map and CHOREOGRAPHED by the scroll. Read
+ * skills/scrolly/references/types/%%TYPE%%.md for this type's own scroll gestures, and
+ * skills/scrolly/references/directed-type-choreography.md for the repertoire, before filling this in.
+ *
+ * THE MAP IS LIVE, driven by the plan (%%TYPE%%-plan.mjs): every mark is a MapLibre layer over the basemap.
+ * UNDER IT, ONE FROZEN CARD IMAGE PER CARD (`live-map-cards.mjs`'s `CardImages`) — a reader without a script,
+ * or before the live map has painted, sees the frozen image for the active card instead. The markup below is
+ * card 1's own picture.
+ *
+ * SCAFFOLD: every prop this component needs beyond the ones already wired (the type's own shape, derived from
+ * the runner's `subject`), and the labels/notes the driver moves per state.
+ */
+import type { CSSProperties } from "react";
+import { adjustToContrast, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
+import { CardImages, noScriptCss, shapeSelectionCss } from "../../skills/scrolly/scripts/live-map-cards.mjs";
+
+/** SCAFFOLD: one id per header note the driver toggles exclusively — see the dot-density beat's own notes. */
+export const NOTES = ["note"] as const;
+
+export function Directed%%Name%%Scrolly({
+  plan,
+  fallbacks,
+  words,
+  alt,
+  regs,
+  ground,
+  accent,
+  ink,
+  muted,
+}: {
+  plan: Record<string, unknown>;
+  fallbacks: Record<"wide" | "tall", { x1: string; x2: string }>[];
+  words: Record<(typeof NOTES)[number] | "unit", string>;
+  alt: string;
+  regs: Record<"display" | "eyebrow" | "body" | "axis" | "annot" | "value", Record<string, string | number>>;
+  ground: string;
+  accent: string;
+  ink: string;
+  muted: string;
+}) {
+  const accentInk = adjustToContrast(accent, ground, TEXT_CONTRAST_MIN) ?? accent;
+  const mutedInk = adjustToContrast(muted, ground, TEXT_CONTRAST_MIN) ?? muted;
+  const slot: CSSProperties = { gridArea: "1 / 1", justifySelf: "end", textAlign: "right" };
+  const scope = '[data-part="symbols"]';
+  // SCAFFOLD: `reference` is the plan's own `{ width, height }` — pass it through from the runner once written.
+  const shapes = shapeSelectionCss(scope, { width: 1280, height: 800 });
+  const noScript = noScriptCss(scope, fallbacks.length - 1, []);
+
+  return (
+    <div
+      data-part="symbols"
+      role="img"
+      aria-label={alt}
+      style={{
+        position: "absolute",
+        inset: 0,
+        background: ground,
+        display: "grid",
+        gridTemplateRows: "auto minmax(0, 1fr)",
+        gridTemplateColumns: "minmax(0, 1fr)",
+        rowGap: "10px",
+        padding: `12px var(--prose-gutter, clamp(16px, 6vw, 56px))`,
+      }}
+    >
+      <noscript style={{ display: "none" }} dangerouslySetInnerHTML={{ __html: `<style>${noScript}</style>` }} />
+      <style dangerouslySetInnerHTML={{ __html: shapes }} />
+
+      <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "baseline", gap: "4px 16px" }}>
+        <span style={{ ...regs.axis, color: mutedInk, fontWeight: 700 }}>{words.unit}</span>
+        <span style={{ display: "grid", marginLeft: "auto" }}>
+          {NOTES.map((k) => (
+            <span key={k} data-note={k} style={{ ...regs.value, ...slot, color: accentInk, opacity: 0 }}>
+              {words[k]}
+            </span>
+          ))}
+        </span>
+      </div>
+
+      <div data-part="stage" style={{ position: "relative", minHeight: 0, overflow: "hidden" }}>
+        <CardImages fallbacks={fallbacks} first={0} />
+        <div data-part="live" style={{ position: "absolute", inset: 0, opacity: 0 }} />
+        <script type="application/json" data-part="plan" dangerouslySetInnerHTML={{ __html: JSON.stringify(plan).replace(/</g, "\\u003c") }} />
+        {/* SCAFFOLD: any label the driver moves per state, absolutely positioned over the live/frozen stage. */}
+      </div>
+    </div>
+  );
+}

@@ -5,6 +5,7 @@
 
 import { join } from "node:path";
 import { transformStyle } from "./style.mjs";
+import { bindState, stageViewOf } from "./scrolly.mjs";
 
 /** The shape MapLibre asks a glyph endpoint for, with the two placeholders it substitutes itself.
  *  A fontstack is a name with spaces in it, so it arrives percent-encoded. */
@@ -98,4 +99,68 @@ export async function bakePlan({ page, plan, glyphsUrl, tints, keepLabels, outPa
   );
   await page.screenshot({ path: outPath });
   return { png: outPath, camera };
+}
+
+/** ONE FALLBACK PER CARD. A scrolly's cameras are authored, so the picture a reader without a live map
+ *  gets on each card can be baked: the same plan, the same tints, the card's own camera and the card's
+ *  own state applied to every binding. Baked at the size the layout publishes, like `bakePlan`.
+ *
+ *  `viewStage` is the stage the view is computed for (default `size`); `scale` is the device pixel ratio of the bake. `project` is a list of [lon, lat] read back through
+ *  `map.project` at each card's camera, in CSS pixels of `size`: what a page needs to seat furniture of
+ *  its own (a lifted label, a leader) over the fallback image when there is no live map to ask. Each
+ *  result carries them as `projected`, with the `zoom` the card was baked at.
+ *
+ *  The page must define `window.__mountPlan`, and `mountPlan` is not self-contained (it calls
+ *  `sourceIdOf`, `beforeIdFor`, `radiusPaintOf`…): inject `scrollyMapScript()` and
+ *  `window.__mountPlan = mountPlan`, never `mountPlan.toString()`. The same holds for `bakePlan`. */
+export async function bakeCards({ page, plan, cameras, size, viewStage = size, glyphsUrl, tints, keepLabels, statesForCards, outDir, stem, project = [], scale = 2 }) {
+  const style = transformStyle(plan.style, { tints, glyphs: glyphsUrl, keepLabels });
+  // The same stage view the live runtime draws on `viewStage`, the stage the page publishes: cameras are authored for
+  // the plan's reference stage. A card baked LARGER than that stage (to be shown `cover`) keeps that stage's view at its
+  // centre — measured on the proportional symbol scrolly, a phone card baked at 330 × 704 with the view of a 704 px
+  // stage put the bottom-aligned map (`camAlignY`) 23 % of the stage away from the live map at the swap.
+  const shiftedView = (k) => stageViewOf(plan, cameras[k], viewStage.width, viewStage.height);
+  // `scale` is the device pixel ratio the card is baked for (2 by default). A 1x screen must be given a 1x
+  // bake: a 2x picture drawn at half size renders the map's words thinner than the live 1x canvas that
+  // replaces it, and the reader sees the type change at the reveal.
+  await page.setViewport({ ...size, deviceScaleFactor: scale });
+  await page.evaluate(
+    async (style, plan, first) => {
+      const map = new maplibregl.Map({ container: "map", style, ...first, interactive: false, attributionControl: false, fadeDuration: 0 });
+      await new Promise((r) => map.once("style.load", r));
+      // A flat Web Mercator map unless the plan names another projection (owner's ruling, addendum §7.1).
+      map.setProjection({ type: plan.projection || "mercator" });
+      window.__mountPlan(map, plan);
+      window.__cardsMap = map;
+      await new Promise((r) => (map.loaded() ? r() : map.once("idle", r)));
+    },
+    style,
+    plan,
+    shiftedView(0),
+  );
+  const out = [];
+  for (let k = 0; k < cameras.length; k++) {
+    const paints = [];
+    for (const layer of plan.layers)
+      for (const property in layer.bindings || {}) paints.push([layer.id, property, bindState(layer.bindings[property], statesForCards[k])]);
+    const projected = await page.evaluate(
+      async (view, paints, points) => {
+        const map = window.__cardsMap;
+        map.jumpTo(view);
+        for (const [id, property, value] of paints) map.setPaintProperty(id, property, value);
+        await new Promise((r) => map.once("idle", r));
+        return points.map((p) => {
+          const q = map.project(p);
+          return [q.x, q.y];
+        });
+      },
+      shiftedView(k),
+      paints,
+      project,
+    );
+    const png = join(outDir, `${stem}-${k + 1}.png`);
+    await page.screenshot({ path: png });
+    out.push({ png, card: k, projected, zoom: shiftedView(k).zoom });
+  }
+  return out;
 }

@@ -1,0 +1,33 @@
+{
+  "planHash": "6990f8d2c0cd43af5aa712504c2772aa430215b99a53b23420d413e3c29fd909",
+  "shapes": {
+    "wide": {
+      "size": {
+        "width": 1374,
+        "height": 549
+      },
+      "cards": [
+        {
+          "zoom": 2.4758739321075827
+        }
+      ]
+    },
+    "tall": {
+      "size": {
+        "width": 330,
+        "height": 704
+      },
+      "cards": [
+        {
+          "zoom": 0.963926228684648
+        }
+      ]
+    }
+  },
+  "images": {
+    "nocturne-wide@2x-1.webp": "c0fee79431f9f19217c937fade220abac1bd52ebaa41edad8712ad03007d08ac",
+    "nocturne-wide@1x-1.webp": "79fa34662961e26276f883f280e23959a21c1ce9b7bb4bab09fef59040b7f4c7",
+    "nocturne-tall@2x-1.webp": "dab6a4ea58ab22d6d26f92d60a99c314a0ee058db52a7b232bd3ece0582592bf",
+    "nocturne-tall@1x-1.webp": "1407eb728a3722e0daae16b30622409f91fce11d9f5eff4d8cd9631db88819a3"
+  }
+}

@@ -262,6 +262,35 @@
       ]
     },
     {
+      "id": "chart.scrolly",
+      "label": "Scroll-driven chart",
+      "medium": "chart",
+      "format": "scrolly",
+      "producer": "scrolly",
+      "sizeRule": {
+        "kind": "none"
+      },
+      "interaction": {
+        "kind": "scroll",
+        "promise": "Prose-led steps advance one fixed chart on a fixed stage, the scroll interpolating continuously between the chart's states rather than replaying the static — every card changes the picture."
+      },
+      "deliveryForms": [
+        "owned-file",
+        "source-bundle",
+        "embed",
+        "cms-insertion"
+      ],
+      "requiredCapabilities": [],
+      "optionalCapabilities": [],
+      "runtimePrerequisites": [
+        "bun",
+        "production-dependencies"
+      ],
+      "browserPrerequisites": [
+        "engine-managed-chromium"
+      ]
+    },
+    {
       "id": "map.static",
       "label": "Static map",
       "medium": "map",
@@ -469,7 +498,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -488,7 +518,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -507,7 +538,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -526,7 +558,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -545,7 +578,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -565,7 +599,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -584,7 +619,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -603,7 +639,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -622,7 +659,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -642,7 +680,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -662,7 +701,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -681,7 +721,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -700,7 +741,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -720,7 +762,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -739,7 +782,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -758,7 +802,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -777,7 +822,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -796,7 +842,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -815,7 +862,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -835,7 +883,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -854,7 +903,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -873,7 +923,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -892,7 +943,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -912,7 +964,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -932,7 +985,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -951,7 +1005,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -971,7 +1026,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -990,7 +1046,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -1010,7 +1067,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -1030,7 +1088,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -1050,7 +1109,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },
@@ -1070,7 +1130,8 @@
       "formats": [
         "static",
         "web",
-        "video"
+        "video",
+        "scrolly"
       ],
       "state": "selectable"
     },

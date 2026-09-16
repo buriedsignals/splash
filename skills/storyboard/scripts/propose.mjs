@@ -827,8 +827,9 @@ export function proposeMediums({ capabilities = {}, survey = typeSurvey() } = {}
       // already committed to a medium; but it has its own anatomy (a fixed graphic, prose cards
       // travelling over it, the page itself not scrolling) and its own producer, which makes it a
       // G2a question. Named HERE so the journalist meets the choice where it is actually made.
-      // `chart/scrolly` is no longer among them: the scrolly skill says plainly that it "does not
-      // step a single chart through several states", and the catalogue advertised exactly that.
+      // Available for every medium the catalogue pairs with `scrolly` — chart, map and image
+      // alike: the scrolly skill produces image, map and chart scrollys, each one fixed graphic
+      // with prose cards travelling over it, so `chart/scrolly` reopened alongside the others.
       scrolly: formats.includes("scrolly")
         ? { available: true, label: `${medium} scrolly` }
         : { available: false },

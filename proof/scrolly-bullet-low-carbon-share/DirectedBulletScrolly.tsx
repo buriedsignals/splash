@@ -40,6 +40,7 @@ export function DirectedBulletScrolly({
   ceiling,
   markerLabel,
   measureLabel,
+  halfLabel,
   ticks,
   zoomTicks,
   zoomFrom,
@@ -59,6 +60,7 @@ export function DirectedBulletScrolly({
   ceiling: number;
   markerLabel: string;
   measureLabel: string;
+  halfLabel: string;
   ticks: { value: number; label: string }[];
   /** The narrowed axis the fifth card opens, and where it starts. */
   zoomTicks: { value: number; label: string }[];
@@ -230,6 +232,41 @@ export function DirectedBulletScrolly({
           </span>,
         ];
       })}
+
+      {/* The half, ruled across every track on the card that reads it. */}
+      <div
+        data-part="half"
+        style={{
+          gridColumn: 2,
+          gridRow: `2 / span ${rows.length}`,
+          position: "relative",
+          pointerEvents: "none",
+          opacity: 0,
+        }}
+      >
+        <div
+          data-part="half-rule"
+          style={abs({
+            left: pct(50),
+            top: 0,
+            bottom: 0,
+            borderLeft: `1.5px dashed ${regs.annot.color ?? ink}`,
+          })}
+        />
+        <span
+          data-part="half-label"
+          style={abs({
+            ...regs.annot,
+            left: `calc(${pct(50)} + 6px)`,
+            top: 0,
+            whiteSpace: "nowrap",
+            background: ground,
+            padding: "0 4px",
+          })}
+        >
+          {halfLabel}
+        </span>
+      </div>
 
       <div
         style={{

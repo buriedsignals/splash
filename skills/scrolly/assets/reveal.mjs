@@ -47,6 +47,23 @@ export function stateAt(states, position, reduced) {
   return lerpState(states[i], states[i + 1], ease(p - i));
 }
 
+/** HOW FAST THE PAINTED POSITION CATCHES THE SCROLL: a time constant, in ms. */
+export const FOLLOW_MS = 90;
+
+/**
+ * THE PAINTED POSITION FOLLOWS THE SCROLL, IT DOES NOT JUMP TO IT. The scaffold publishes `data-progress` from the
+ * scroll offset, and a scroll offset arrives in steps: measured on the proportional symbol scrolly (2026-09-15), a
+ * 100 px mouse-wheel notch moved it by 0.108 in one frame, so the map's camera jumped 0.39 zoom levels and a band of
+ * stations popped in — the owner's « passages de steps en steps saccadés ». Each frame the painted position covers
+ * the share `1 − e^(−dt/τ)` of what is left, whatever the frame rate, and lands on the scroll once it is within half
+ * a thousandth. A long frame (a background tab) is counted as 100 ms, so it never teleports either.
+ */
+export function followProgress(shown, target, dtMs, tauMs = FOLLOW_MS) {
+  const dt = Math.max(0, Math.min(100, dtMs));
+  const next = shown + (target - shown) * (1 - Math.exp(-dt / tauMs));
+  return Math.abs(target - next) < 0.0005 ? target : next;
+}
+
 /** Refuses a state list that cannot be interpolated. A state carrying a string would silently stop
  *  moving, which looks exactly like a page whose script never ran. */
 export function assertStates(states, steps) {
@@ -148,10 +165,18 @@ export function initReveal(root, states, apply) {
   let queued = false;
   let last = -1;
   let resized = true;
+  let shown = null;
+  let shownAt = 0;
 
-  function paint() {
+  function paint(now) {
     queued = false;
-    const position = readProgress(source);
+    const target = readProgress(source);
+    const time = typeof now === "number" ? now : view.performance.now();
+    // The first paint, and a reader who asked for no motion, take the scroll as it is; every other paint follows it.
+    shown = shown === null || reduced.matches ? target : followProgress(shown, target, time - shownAt);
+    shownAt = time;
+    if (shown !== target) schedule();
+    const position = shown;
     if (!resized && Math.abs(position - last) < 0.0005) return;
     last = position;
     const state = stateAt(states, position, reduced.matches);

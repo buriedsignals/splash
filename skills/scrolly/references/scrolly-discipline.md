@@ -1216,17 +1216,19 @@ regardless (see above), but the animated GRAPHIC advancing on command is not. Th
 gap, the same register `web-discipline.md`'s own "Known cost, not hidden" section keeps for its
 75-Tab-stops limitation.
 
-**Stepping a single chart through several reveal states.** This format's own `SKILL.md`, "When to
-use," states this as the primary reason to reach for a DIFFERENT tool: a scrolly earns its existence
-by assembling media a single beat cannot assemble on its own; a chart stepped through several states
-belongs to `chart-web`, which animates on its own. This skill's own `test/canon.test.ts` locks
-the seed itself to at least three visibly different `frameKind`s — and specifically to carrying a
-`map` and a `chart` — so this format's own worked example never regresses into the shape it exists to
-redirect a reader away from. Two kinds was the earlier floor, and it was too weak: a picture and a
-diagram are media no other skill here produces, so a seed carrying only those demonstrated the
-mechanism without ever demonstrating the point. A map and a chart are media other skills DO produce
-on their own, which is exactly why assembling BOTH behind one narrative is the thing that earns this
-vehicle its keep.
+**Replaying a single chart's static states as a slideshow.** A chart scrolly (owner decision,
+2026-09-16 — see `references/types/`) is legitimate, and 32 worked `proof/scrolly-<type>-*` beats
+prove it: one chart on a fixed stage, prose cards travelling over it, the scroll interpolating the
+chart's own states CONTINUOUSLY. What this format still does not attempt is the shape that
+discussion once conflated with it — toggling which marks are visible between fixed static frames,
+popping marks in groups, or overlapping two pictures on one card. Each card must change the picture
+by a real, continuous transformation of the chart's own geometry (position, scale, order, opacity as
+a function of scroll progress), never a hard cut between static states; `references/types/<type>.md`
+names the gestures that suit each type and what its choreography must not do. The multi-track
+assembly seed keeps its own separate floor: `test/canon.test.ts` locks it to at least three visibly
+different `frameKind`s, specifically carrying a `map` and a `chart`, so the worked example for the
+ASSEMBLY extension never regresses into a single-medium beat — that is a floor on the assembly seed,
+not a ban on a single chart earning its own scrolly.
 
 **A per-beat-tinted prose panel.** `renderScrolly`'s `ground` argument derives furniture for the
 whole render once; a beat wanting its prose panel tinted differently from the page's own ground

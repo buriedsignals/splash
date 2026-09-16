@@ -33,8 +33,8 @@ const HERE = dirname(fileURLToPath(import.meta.url));
  *  nobody checked. Iceland at 24°W sets the west edge. */
 const BEAT = { bounds: null, style: "dataviz-light" };
 
-const MAPLIBRE = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js";
-const MAPLIBRE_CSS = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css";
+const MAPLIBRE = "https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js";
+const MAPLIBRE_CSS = "https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css";
 
 const argv = process.argv.slice(2);
 const flag = (name, fallback) => {
@@ -220,7 +220,7 @@ const gate = await page.evaluate(
       interactive: false,
       attributionControl: false,
       fadeDuration: 0,
-      preserveDrawingBuffer: true,
+      canvasContextAttributes: { preserveDrawingBuffer: true },
       bounds,
       fitBoundsOptions: { padding: 0, animate: false },
     });

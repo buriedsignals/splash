@@ -1,0 +1,131 @@
+{
+  "planHash": "b049c7322142b58d810e56e543048ce2da7f2826bb63246dce97a1caf6f64c0b",
+  "shapes": {
+    "wide": {
+      "size": {
+        "width": 1430,
+        "height": 572
+      },
+      "cards": [
+        {
+          "odd": [
+            829.9,
+            488.6
+          ],
+          "zoom": 2.8020382888324145
+        },
+        {
+          "odd": [
+            829.9,
+            488.6
+          ],
+          "zoom": 2.8020382888324145
+        },
+        {
+          "odd": [
+            829.9,
+            488.6
+          ],
+          "zoom": 2.8020382888324145
+        },
+        {
+          "odd": [
+            829.9,
+            488.6
+          ],
+          "zoom": 2.8020382888324145
+        },
+        {
+          "odd": [
+            715,
+            286
+          ],
+          "zoom": 5.102038288832414
+        },
+        {
+          "odd": [
+            829.9,
+            488.6
+          ],
+          "zoom": 2.8020382888324145
+        }
+      ]
+    },
+    "tall": {
+      "size": {
+        "width": 330,
+        "height": 703
+      },
+      "cards": [
+        {
+          "odd": [
+            215.4,
+            440.4
+          ],
+          "zoom": 1.6128570661935901
+        },
+        {
+          "odd": [
+            215.4,
+            440.4
+          ],
+          "zoom": 1.6128570661935901
+        },
+        {
+          "odd": [
+            215.4,
+            440.4
+          ],
+          "zoom": 1.6128570661935901
+        },
+        {
+          "odd": [
+            215.4,
+            440.4
+          ],
+          "zoom": 1.6128570661935901
+        },
+        {
+          "odd": [
+            165,
+            351.5
+          ],
+          "zoom": 3.91285706619359
+        },
+        {
+          "odd": [
+            215.4,
+            440.4
+          ],
+          "zoom": 1.6128570661935901
+        }
+      ]
+    }
+  },
+  "images": {
+    "rapport-wide@2x-1.webp": "6974e5689fd1688351ee808465ae5cd89b2a1c8ed976f12d5a562b50f065d4e5",
+    "rapport-wide@1x-1.webp": "85ed8adc553dc11311ad252ea81d8854696f9e96e59e90196b9b99e6cb809960",
+    "rapport-tall@2x-1.webp": "9122b9e1b23fe2c90cd59051c5ea717aa1e8f198b599aa46481942e71b2cb0d1",
+    "rapport-tall@1x-1.webp": "0b569797981afa1d904239773164549abf420359707076335776553ee89da5cc",
+    "rapport-wide@2x-2.webp": "f833ece463e737441e1da7a5cffd5f9adad3060ae96de7ef285d5f77fd79a417",
+    "rapport-wide@1x-2.webp": "c698b60b809f5a7000e77f9b46e4c28049380c861c564f7a33fa30ec1a86f360",
+    "rapport-tall@2x-2.webp": "9654ee4527707b1d3743a26424199f3de3ea46be1996c6501a3a52b9ddc716a7",
+    "rapport-tall@1x-2.webp": "8ee20524eae0746494df16657f60a2f491080602b13968e16bfa816a937071ae",
+    "rapport-wide@2x-3.webp": "57c20d7a1b828fb8166b96f655079943619c4979788af0e120e8e2b50fe00cda",
+    "rapport-wide@1x-3.webp": "d99e3c460405fdf91c67b7ef074185351a0c2050dbba81e865f3f5902df15df9",
+    "rapport-tall@2x-3.webp": "64bf634b079d49a73355c2f9a5918224e2dd84c446c766311aab2de5894449e0",
+    "rapport-tall@1x-3.webp": "f4554cb1f9b185211988d821ec5170da77dc6764b62d4b4105641cfc3d1fc67b",
+    "rapport-wide@2x-4.webp": "52c0442da842e780fd1a31a2e9d43f79834c5f740ba6129e00617aef9fda6613",
+    "rapport-wide@1x-4.webp": "198c42bdc5d6f30ce948bcbe84561e4b941db49925031d37d72f0cd652d93d4a",
+    "rapport-tall@2x-4.webp": "772f19cc66792b92e70fc6caa21264b2de7b74701fc975ca620a59e141b17979",
+    "rapport-tall@1x-4.webp": "d917489c82dcc3e02b787dea3c2666e9a62245c695eae29459b9aa56ecfaf8e6",
+    "rapport-wide@2x-5.webp": "30513a1cbc43e96c61a899c23e539da5b9607174fadb289638a20d8e3408da2e",
+    "rapport-wide@1x-5.webp": "9fb8788f77008c1cae86f8fd8e0b39c8d5519b8b11c059b4cdac46fcafccc20c",
+    "rapport-tall@2x-5.webp": "0a9b375a0c26d29ebdec634791c8ea4f339fb17b53162d01a00cb4e9562e4b74",
+    "rapport-tall@1x-5.webp": "44ead0ab9e0931e99db120a1b2e983040391bcbe0ad4c1a71feb6e5ab158ce9e",
+    "rapport-wide@2x-6.webp": "543bd0d88e2f9c7d3b2a25741ed51366c13f6d993e1dc015e24bc2eacf484dd1",
+    "rapport-wide@1x-6.webp": "f7e687b74466fc34c0817e0ef930ab83cb92d080d0c3f739f7ab20365e477f45",
+    "rapport-tall@2x-6.webp": "771e4c3a934d5157ecf3905fe1b79890660d1f991027ee0bcb5487296221a919",
+    "rapport-tall@1x-6.webp": "d842539f7b2b9225877f58705ff3ee5e7d3e8ed9b43680a46562d631fdf313ae"
+  }
+}

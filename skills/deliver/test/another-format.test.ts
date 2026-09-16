@@ -26,7 +26,14 @@
  *      may not.
  */
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
-import { mkdtemp, mkdir, readFile, readdir, writeFile, rm } from "node:fs/promises";
+import {
+  mkdtemp,
+  mkdir,
+  readFile,
+  readdir,
+  writeFile,
+  rm,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
 import {
@@ -89,8 +96,9 @@ describe("otherFormatsFor — what else this beat could be", () => {
       deliveredFormat: "web",
       language: "en",
     });
-    // No scrolly — issue #39 removed chart/scrolly; the two scrollies that exist are map and image.
-    expect(rows.map((r) => r.format)).toEqual(["static", "video"]);
+    // chart/scrolly reopened, owner decision 2026-09-16 — the scrolly skill produces a chart
+    // scrolly too, so it is offered alongside static and video.
+    expect(rows.map((r) => r.format)).toEqual(["static", "video", "scrolly"]);
     expect(rows.every((r) => r.verdict === "offered")).toBe(true);
   });
 
@@ -232,7 +240,9 @@ describe("formatAnotherFormatOffer — what the journalist reads", () => {
     expect(text).toContain("records the request only");
     expect(text).toContain("does not schedule production");
     expect(text).toContain("another format");
-    expect(text).not.toMatch(/you pick its size|starts? production automatically/i);
+    expect(text).not.toMatch(
+      /you pick its size|starts? production automatically/i,
+    );
   });
 
   it("should say plainly that declining is an answer", () => {
@@ -285,7 +295,9 @@ describe("formatAnotherFormatOffer — in the story's own language", () => {
 
   it("should refuse to make the offer at all when no language was recorded", () => {
     expect(() => rowsIn("")).toThrow(/own language/);
-    expect(() => formatAnotherFormatOffer(rowsIn("en"))).toThrow(/STORYBOARD\.md/);
+    expect(() => formatAnotherFormatOffer(rowsIn("en"))).toThrow(
+      /STORYBOARD\.md/,
+    );
   });
 
   it("should say it is falling back to English when the recorded language has no scaffold", () => {
@@ -441,22 +453,36 @@ describe("another-format receipt compatibility", () => {
     const exportDir = await receiptFixture();
     await writeFile(join(exportDir, LEGACY_FORMAT_OFFER_RECEIPT), "declined\n");
 
-    expect(await deliveryClosed(exportDir)).toMatchObject({ closed: true, answer: "declined" });
-    expect(await readFile(join(exportDir, LEGACY_FORMAT_OFFER_RECEIPT), "utf8")).toBe("declined\n");
+    expect(await deliveryClosed(exportDir)).toMatchObject({
+      closed: true,
+      answer: "declined",
+    });
+    expect(
+      await readFile(join(exportDir, LEGACY_FORMAT_OFFER_RECEIPT), "utf8"),
+    ).toBe("declined\n");
     expect(await readdir(exportDir)).not.toContain(FORMAT_OFFER_RECEIPT);
   });
 
   it("reads a canonical-only receipt", async () => {
     const exportDir = await receiptFixture();
     await writeFile(join(exportDir, FORMAT_OFFER_RECEIPT), "declined\n");
-    expect(await deliveryClosed(exportDir)).toMatchObject({ closed: true, answer: "declined" });
+    expect(await deliveryClosed(exportDir)).toMatchObject({
+      closed: true,
+      answer: "declined",
+    });
   });
 
   it("accepts matching dual receipts and fails closed on conflicting ones", async () => {
     const exportDir = await receiptFixture();
     await writeFile(join(exportDir, FORMAT_OFFER_RECEIPT), "taken video\n");
-    await writeFile(join(exportDir, LEGACY_FORMAT_OFFER_RECEIPT), "taken video\n");
-    expect(await deliveryClosed(exportDir)).toMatchObject({ closed: true, answer: "taken video" });
+    await writeFile(
+      join(exportDir, LEGACY_FORMAT_OFFER_RECEIPT),
+      "taken video\n",
+    );
+    expect(await deliveryClosed(exportDir)).toMatchObject({
+      closed: true,
+      answer: "taken video",
+    });
 
     await writeFile(join(exportDir, LEGACY_FORMAT_OFFER_RECEIPT), "declined\n");
     await expect(deliveryClosed(exportDir)).rejects.toThrow(
@@ -470,9 +496,13 @@ describe("another-format receipt compatibility", () => {
 
     await recordFormatAnswer({ exportDir, answer: "taken", format: "video" });
 
-    expect(await readFile(join(exportDir, FORMAT_OFFER_RECEIPT), "utf8")).toBe("taken video\n");
+    expect(await readFile(join(exportDir, FORMAT_OFFER_RECEIPT), "utf8")).toBe(
+      "taken video\n",
+    );
     expect(await readdir(exportDir)).not.toContain(LEGACY_FORMAT_OFFER_RECEIPT);
-    expect((await readdir(exportDir)).filter((name) => name.includes("video"))).toEqual([]);
+    expect(
+      (await readdir(exportDir)).filter((name) => name.includes("video")),
+    ).toEqual([]);
   });
 
   it("rejects genre on the canonical answer API", async () => {

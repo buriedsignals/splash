@@ -1,0 +1,29 @@
+# Sankey — scrolly
+
+**Argues:** A sankey diagram answers "how does a quantity flow and split as it moves through a sequence of stages" — energy from source to sector, users from signup to churn, a budget from allocation to spend — with each stage laid out as its own column of nodes and ribbons flowing between them whose THICKNESS is proportional to the amount flowing.
+
+Owner rules that apply here: this is not a static replay; the scroll's transitions interpolate continuously; this type finds its own approach from its subject rather than reusing another type's choreography.
+
+## Scroll gestures
+- **Trace** — a flow draws itself from source to destination, in order
+- **Filter** — the flow the claim is about keeps its ink, the rest steps back
+- **Name** — a flow's value is named once traced
+- **Pull back** — the whole diagram stands, the named flow still marked
+
+## A choreography must NOT
+- replay the static plate's states as a slideshow — every card must change the picture by a continuous transformation, not a hard cut
+- pop marks in groups on a fixed picture instead of interpolating them from the scroll's own continuous progress
+- overlap two pictures on one card
+- let two cards' notes share a slot where both are visible together
+
+## Precision to assert
+- flow widths stay proportional to the same asserted values in every card; node totals balance
+
+## Devices the worked example implements
+- **One scale for both rails** — ribbon width is computed from a single shared scale so the ribbons out of a node always sum exactly to that node on EITHER rail — never two independently-fitted scales that could drift apart.
+- **Flip which rail a share reads against** — `focus0`/`focus1` keep only the ribbons into one focused country, and write each ribbon's share of THAT COUNTRY at the source's own rail (the opposite of `shares`, which writes a source's ribbons' share of ITSELF at the country's rail). The same flow, read from either end.
+
+## Worked example
+`proof/scrolly-sankey-electricity-sources/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedSankeyScrolly.tsx` (the marks) and `sankey-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type sankey --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
+
+**Start from the validated video when one exists.** `/Users/rmdms/Sites/Professional/splash/video/skills/chart-video/references/types/sankey.md` (read-only, other worktree) and its `proof/video-sankey-*` — the same subject's build order is often the scrolly's own card order, adapted to be scroll-driven rather than timed.

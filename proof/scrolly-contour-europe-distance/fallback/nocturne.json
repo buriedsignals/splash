@@ -1,0 +1,83 @@
+{
+  "planHash": "cb14e47a4b95efab9d5a958950c95798595c4567378ca7e2717e11f6b94718d8",
+  "shapes": {
+    "wide": {
+      "size": {
+        "width": 1464,
+        "height": 585
+      },
+      "cards": [
+        {
+          "zoom": 2.456283322512988
+        },
+        {
+          "zoom": 2.456283322512988
+        },
+        {
+          "zoom": 2.456283322512988
+        },
+        {
+          "zoom": 2.456283322512988
+        },
+        {
+          "zoom": 4.060387605993476
+        },
+        {
+          "zoom": 2.456283322512988
+        }
+      ]
+    },
+    "tall": {
+      "size": {
+        "width": 330,
+        "height": 704
+      },
+      "cards": [
+        {
+          "zoom": 1.6178609812417806
+        },
+        {
+          "zoom": 1.6178609812417806
+        },
+        {
+          "zoom": 1.6178609812417806
+        },
+        {
+          "zoom": 1.6178609812417806
+        },
+        {
+          "zoom": 3.221965264722269
+        },
+        {
+          "zoom": 1.6178609812417806
+        }
+      ]
+    }
+  },
+  "images": {
+    "nocturne-wide@2x-1.webp": "3ca0ce8d4d4ceab79560a69cce2b18411b2f54876acf4e456deab4b19a0a7b3e",
+    "nocturne-wide@1x-1.webp": "238a85576b49cbd0dd0429207485c55a5155ef4ee8c683ce6f9e11fb265e03aa",
+    "nocturne-tall@2x-1.webp": "9cc54a9dcdeba215c40e182ae221719bb5aa8a61095b9b470364944bb01cd37b",
+    "nocturne-tall@1x-1.webp": "5c18dabc9f9cec31f1b34d6dc05987bdaf69a6703e78def49437e90c2a0edbf9",
+    "nocturne-wide@2x-2.webp": "387b16cd64bff90c05c0889a6d8f69b53bbeac5f43e59bc2ed8c0ecf3a44aa69",
+    "nocturne-wide@1x-2.webp": "84b70630cff4c373d0e1e88d8fa4a03fd8c56f3552ead3eeecc46ad810034c24",
+    "nocturne-tall@2x-2.webp": "6a31950c7d579a2af10f4734e91616ac999a4724c84d11790c20e33a58dfebf7",
+    "nocturne-tall@1x-2.webp": "ff523ae06c64e3193963fc839839c002afad1d8ee995be38c78ce5a6d06ce8af",
+    "nocturne-wide@2x-3.webp": "58cd8e9a2881d57ffca9cabe57b8c46752be1f922a9b80ada84d4697cae47045",
+    "nocturne-wide@1x-3.webp": "7dce57790d50e5abef1928990cd0d06573f664a19c731edaa249c3411e7bc89a",
+    "nocturne-tall@2x-3.webp": "7c8d7b08a260c4beb9f3f247c13ee78c388d91fe182eb6d1860460652d3cee67",
+    "nocturne-tall@1x-3.webp": "ae0ae6d17bbc20d7da1458d949dec5cbfd883e27ae1c86a1e34e9568baf282ce",
+    "nocturne-wide@2x-4.webp": "1ab33ee64f813bd8f6e47af515be71f1f230955f59b5971384752e5c8a433434",
+    "nocturne-wide@1x-4.webp": "17b21a542544de460db4448efa4a2995e98ec964379ac0c0963ccdbc0b61f00d",
+    "nocturne-tall@2x-4.webp": "b7e4a9d343ec5730ba064401d23935ab26cf221dee2ad20754062ad893680ff2",
+    "nocturne-tall@1x-4.webp": "a00f9e179d2c7574abf14296da10750af27825db808d3e104c29ff154f894ade",
+    "nocturne-wide@2x-5.webp": "aa58563b0689c014b5e5faf0eb496f067874c3c76051e2c0a0576ca32ae6cd24",
+    "nocturne-wide@1x-5.webp": "80055ec2bbd8334adaedd73355a4b2341363bfa186d87270f9cf842b342afa68",
+    "nocturne-tall@2x-5.webp": "cec5b9da2d2eb18d2e4f5f2bb18afc23120cca250e49f350f112659696fc12d3",
+    "nocturne-tall@1x-5.webp": "f8f9d6f74520c435061aa49b7f6dfe63fb9fdcd85690682e00bbdd16c441109f",
+    "nocturne-wide@2x-6.webp": "84ac520921eb32814130deb4e50c29a387652fa326bf9e0c9c8626af933cea57",
+    "nocturne-wide@1x-6.webp": "27038b7daf1d5ffe0b541b4ef4216e391b4ec2339d331f22141f7e10f71ed0b9",
+    "nocturne-tall@2x-6.webp": "0e912a93e6bee9468a808386a9e27988079c3f712e0a8fe55078993f739240c2",
+    "nocturne-tall@1x-6.webp": "029104f953b3274d88f4bbcccbba73492df239140bd643bff73bb3057ddd2c09"
+  }
+}

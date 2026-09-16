@@ -1,0 +1,131 @@
+{
+  "planHash": "74049c94ea0cbb2c2f63e1ccec3f7ad272eef382bdae05c1114d282bf4bd83a4",
+  "shapes": {
+    "wide": {
+      "size": {
+        "width": 1404,
+        "height": 561
+      },
+      "cards": [
+        {
+          "odd": [
+            814.7,
+            479.2
+          ],
+          "zoom": 2.774023912662818
+        },
+        {
+          "odd": [
+            814.7,
+            479.2
+          ],
+          "zoom": 2.774023912662818
+        },
+        {
+          "odd": [
+            814.7,
+            479.2
+          ],
+          "zoom": 2.774023912662818
+        },
+        {
+          "odd": [
+            814.7,
+            479.2
+          ],
+          "zoom": 2.774023912662818
+        },
+        {
+          "odd": [
+            702,
+            280.5
+          ],
+          "zoom": 5.074023912662818
+        },
+        {
+          "odd": [
+            814.7,
+            479.2
+          ],
+          "zoom": 2.774023912662818
+        }
+      ]
+    },
+    "tall": {
+      "size": {
+        "width": 330,
+        "height": 703
+      },
+      "cards": [
+        {
+          "odd": [
+            215.4,
+            440.4
+          ],
+          "zoom": 1.6128570661935901
+        },
+        {
+          "odd": [
+            215.4,
+            440.4
+          ],
+          "zoom": 1.6128570661935901
+        },
+        {
+          "odd": [
+            215.4,
+            440.4
+          ],
+          "zoom": 1.6128570661935901
+        },
+        {
+          "odd": [
+            215.4,
+            440.4
+          ],
+          "zoom": 1.6128570661935901
+        },
+        {
+          "odd": [
+            165,
+            351.5
+          ],
+          "zoom": 3.91285706619359
+        },
+        {
+          "odd": [
+            215.4,
+            440.4
+          ],
+          "zoom": 1.6128570661935901
+        }
+      ]
+    }
+  },
+  "images": {
+    "nocturne-wide@2x-1.webp": "b878fdbb04415466de528afb5bae82c632126b1ad9ba313feb8e1086d638fb66",
+    "nocturne-wide@1x-1.webp": "8b64f7f502522a501f215bd0c45d43fc47d4c2f2bad742392829f332e6ca25fe",
+    "nocturne-tall@2x-1.webp": "90951ed11c2b128da84f914eb27cfe8b98582038969565a6eee45e2c0990f6ea",
+    "nocturne-tall@1x-1.webp": "7d6ba9bbc84b4dba2c224aef2946281c57c913f3d094902bbbe709dd895400d9",
+    "nocturne-wide@2x-2.webp": "096412520f8a1a32cd41fe01d478d7694b246fa9983c687feccd722ed3c7f1d0",
+    "nocturne-wide@1x-2.webp": "64759d556c0fa7e3909591fd382d717adb1fee3ff080979256b224cffa2a7e0e",
+    "nocturne-tall@2x-2.webp": "47c446569671a8fd85937f5a172207c8668023037e53573c9967470240128801",
+    "nocturne-tall@1x-2.webp": "75514ed94e7466afec27f0991d89c802998a9a24170e8fbb979f5d6600f2e0b8",
+    "nocturne-wide@2x-3.webp": "e9e65fab630a53839d61c9ba2932c19d8ace682296cef7fb150dccc18459254a",
+    "nocturne-wide@1x-3.webp": "6b0df8f6bd67cc305fae5b6996841226bee76bcbaffc21589d5b40c37eb5ad05",
+    "nocturne-tall@2x-3.webp": "7e511f78c262801cf88513646dfe68b65af96abe9cfbcbf609eb378972e8b706",
+    "nocturne-tall@1x-3.webp": "1ae6e91acfa9cdc3ac36790c1bb3bce537ceb3a11cbf268fad462723ef76be93",
+    "nocturne-wide@2x-4.webp": "ea1b2c6f0f54aa3315f6a5e23627bc2aa843f2daf50d966aedf62efa0276594d",
+    "nocturne-wide@1x-4.webp": "2f66021eae66ee9352c6dbe1662fbab5b43657b21447146c8dfe84be13048a3d",
+    "nocturne-tall@2x-4.webp": "f6ccf9a7aeb9839cc48da3a78c348e392b7adcc4c1903c44db8761cd2cef2464",
+    "nocturne-tall@1x-4.webp": "f43dd12f7fcb3edc9b95ebbee5d34a6e799b239060dd22a2cd25ee1e1d6ac1de",
+    "nocturne-wide@2x-5.webp": "35427c3ac349edfee2fa569cf99ab677aac47c968432a73522c817bcd64ace8d",
+    "nocturne-wide@1x-5.webp": "9545566e05453ee16959d55919600026f19c77066678a5f5d66d5d90fe6a27f1",
+    "nocturne-tall@2x-5.webp": "6a8628dd0bcefe0df8532a48615ceb4ff097eb1d8b4552d6e80e1ca23ddb23e9",
+    "nocturne-tall@1x-5.webp": "7362276e47e9fa8b5b3381856d09708c80e761a75c8c2e5f87905e1e3ef72480",
+    "nocturne-wide@2x-6.webp": "655cc3efb453ac03a7b8a33283c8bf1326e5b7bc412daa7e3061133314c89fc6",
+    "nocturne-wide@1x-6.webp": "2ba5dd113a078ce446fb6d4ceec13a974e8dcdae965857c8e3eedce80871d6aa",
+    "nocturne-tall@2x-6.webp": "11a800e4df0485fd58629d0dc4ff0151d63b50c7330ab4d32c26ddaaa36da01b",
+    "nocturne-tall@1x-6.webp": "664793401768eb538267eb8e55dae05c9d634ae1556c08206e95b79bca3654a7"
+  }
+}

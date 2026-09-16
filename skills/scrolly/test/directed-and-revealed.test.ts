@@ -346,3 +346,26 @@ describe("fitViewBox — a map fills its stage and keeps its subject clear of th
     expect(b).toBeLessThanOrEqual(stage.height - insets.bottom + 1e-6);
   });
 });
+
+describe("reveal — the painted position follows the scroll smoothly", () => {
+  it("should cover a share 1 − e^(−dt/τ) of the distance to the scroll in one frame", async () => {
+    const { followProgress } = await import("../assets/reveal.mjs");
+    expect(followProgress(0, 1, 16, 90)).toBeCloseTo(1 - Math.exp(-16 / 90), 9);
+  });
+
+  it("should never move a wheel notch's whole jump in one frame", async () => {
+    const { followProgress } = await import("../assets/reveal.mjs");
+    // Measured on the proportional symbol scrolly: a 100 px wheel notch moved data-progress by 0.108 in one frame.
+    expect(followProgress(1, 1.108, 16, 90) - 1).toBeLessThan(0.03);
+  });
+
+  it("should land exactly on the scroll once within half a thousandth of it", async () => {
+    const { followProgress } = await import("../assets/reveal.mjs");
+    expect(followProgress(2.9996, 3, 16, 90)).toBe(3);
+  });
+
+  it("should not jump across a frame that took a long time (a background tab)", async () => {
+    const { followProgress } = await import("../assets/reveal.mjs");
+    expect(followProgress(0, 1, 5000, 90)).toBeLessThan(1);
+  });
+});

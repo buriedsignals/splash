@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "id": "article",
+      "path": "source/article.md",
+      "kind": "prose",
+      "digest": "sha256:3c19b160561b87b4f8d02f4c0260544dcbee545a1ef6febad470b5c02752dcdb",
+      "sections": [
+        {
+          "id": "europe-s-coal-power-is-now-a-handful-of-countries-problem",
+          "level": 1,
+          "heading": "Europe's coal power is now a handful-of-countries problem",
+          "line": 1
+        }
+      ]
+    },
+    {
+      "id": "draft-data",
+      "path": "source/data.csv",
+      "kind": "table",
+      "digest": "sha256:09a71681ce22f61559e0e01de57189b7ab099489cac5edd8633fe5652f7885b4",
+      "profile": "source/profile.json"
+    }
+  ]
+}

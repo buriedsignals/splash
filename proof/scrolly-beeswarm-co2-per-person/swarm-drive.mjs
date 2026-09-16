@@ -69,6 +69,15 @@ export function seatSwarm(root) {
   const field = root.querySelector('[data-part="field"]');
   if (!carrier || !plot || !field) throw new Error("this visual carries no swarm, plot or field to seat");
   const { marks, xMax } = JSON.parse(carrier.getAttribute("data-swarm"));
+  // THE AXIS NAME TAKES A LINE OF ITS OWN WHEN IT WOULD HIDE TICKS: on a phone, set beside the ticks, it left
+  // only 0 and 10 on an axis that runs to 40. Decided before the plot is measured, since the axis row grows.
+  const axis = root.querySelector('[data-part="axis"]');
+  const axisName = root.querySelector('[data-part="axis-name"]');
+  const nameBelow = !!axis && !!axisName && axisName.offsetWidth > plot.clientWidth * 0.4;
+  if (axis && axisName) {
+    axis.style.height = nameBelow ? "3.4em" : "1.8em";
+    axisName.style.top = nameBelow ? "1.7em" : "0px";
+  }
   const W = plot.clientWidth;
   const H = plot.clientHeight;
   if (!(W > 0 && H > 0)) return;
@@ -92,7 +101,7 @@ export function seatSwarm(root) {
     bandHeight: band,
     cards: cardNodes.map((n) => ({ code: cards.find((k) => k.role === n.getAttribute("data-role")).code, width: n.offsetWidth })),
     ticks: tickNodes.map((n) => ({ value: Number(n.getAttribute("data-tick")), width: n.offsetWidth })),
-    nameWidth: nameNode ? nameNode.offsetWidth : 0,
+    nameWidth: nameNode && !nameBelow ? nameNode.offsetWidth : 0,
   });
   // The dots before their surfaces mean anything: one radius, the same packing rule.
   const dots = packSwarm(marks, layout.x, layout.maxRadius, 2.4);

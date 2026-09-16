@@ -1,0 +1,53 @@
+---
+format: scrolly
+type: dot-density
+---
+
+# Beat — SCAFFOLD: the claim, as the title says it (scrolly, live map)
+
+**Type:** dot-density. **Medium/format:** map / **scrolly**. **Frame:** the whole graphic, from a phone to a wide
+desktop. **Map:** a live MapTiler map, flat Web Mercator, with a frozen card image under it per card.
+
+SCAFFOLD: the subject, the frozen data (credited here) and the claim — every number derived from the rows and
+asserted in `render-directions-scrolly.mjs`, never typed.
+
+## The choreography
+
+SCAFFOLD: this beat's code was scaffolded `--from proof/scrolly-dot-density-europe-stations` — read that beat's own BRIEF.md and its
+runner/plan/driver/directed component (marked SCAFFOLD: where they are its own subject) before writing this table.
+
+
+SCAFFOLD: read `skills/scrolly/references/types/dot-density.md` for this type's own scroll gestures (what a
+choreography must not do, the precision to assert) and the worked example it names, then write the argument card
+by card — every card changes the picture, and names its own camera.
+
+| card | what the card says | gesture | camera | what the reader sees move |
+| --- | --- | --- | --- | --- |
+| 1 |  |  |  |  |
+| 2 |  |  |  |  |
+
+## Precision
+
+SCAFFOLD: every bound paint is DATA-CONSTANT (`validateScrollyPlan` refuses one that is not) — a mark's size or
+colour travels through a `{ $state: "…" }` expression bound to a STATES field, never through per-feature data
+that changes between cards. The list of assertions `render-directions-scrolly.mjs` checks the data against.
+
+## The owner's rules — checked before the render
+
+- [ ] Every card changes the picture; the scroll interpolates continuously, never a slideshow of grouped marks.
+- [ ] Every sentence is asserted against the frozen data, never a hand-typed number.
+- [ ] ONE art direction, composed from this beat's own PALETTE.md and text — never the three filed demo
+      directions, except for a catalogue proof (`--filed`).
+- [ ] The no-break space written as the ` ` escape in the scripts, never typed.
+- [ ] The committed page carries `__MAPTILER_KEY__`; the key is substituted only in the git-ignored
+      `.local.html` copy and at delivery — never committed keyed.
+- [ ] Driven CONTINUOUSLY (`skills/scrolly/scripts/verify-scrolly.mjs` and
+      `skills/scrolly/scripts/verify-live-map-scrolly.mjs`), not checked by jumping to scroll positions — see
+      "The one gotcha" in `skills/scrolly/SKILL.md`.
+
+## Direction
+
+One — the composer's best candidate for this beat's own PALETTE.md and text
+(`render-directions-scrolly.mjs`): `renders/<id>.html` plus its `.local.html` copy. `--filed` renders `creme`,
+`nocturne`, `rapport` instead, for a catalogue proof; `--no-bake` reuses the card images already on disk for a
+fast iteration loop.

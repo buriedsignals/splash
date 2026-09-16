@@ -28,9 +28,11 @@ export function lonLatOf([x, y]) {
   return [lon, lat];
 }
 
-export function cameraFields({ center, zoom, bearing = 0, pitch = 0 }) {
+/** `alignY` (−1 top … 1 bottom) places the reference ground on a stage taller than it (`stageViewOf`); a camera
+ *  that does not name it carries no `camAlignY` field. */
+export function cameraFields({ center, zoom, bearing = 0, pitch = 0, alignY }) {
   const [camX, camY] = mercatorOf(center);
-  return { camX, camY, camZoom: zoom, camBearing: bearing, camPitch: pitch };
+  return { camX, camY, camZoom: zoom, camBearing: bearing, camPitch: pitch, ...(alignY === undefined ? {} : { camAlignY: alignY }) };
 }
 
 export function viewOf(state) {
@@ -51,8 +53,31 @@ export function viewOf(state) {
  *  fallback bake. */
 export function zoomShiftFor(plan, width, height) {
   if (!plan || !plan.referenceWidth) return 0;
+  // A stage with no size yet (a hidden tab, a 0-size iframe) keeps the authored camera: log2(0) is -Infinity.
+  if (!(width > 0) || (plan.referenceHeight && !(height > 0))) return 0;
   const ratio = plan.referenceHeight ? Math.min(width / plan.referenceWidth, height / plan.referenceHeight) : width / plan.referenceWidth;
   return Math.log2(ratio);
+}
+
+/** THE CARD'S VIEW ON A REAL STAGE: the zoom shifted by `zoomShiftFor`, and, when a card says `camAlignY`, the
+ *  reference ground placed on a stage TALLER than it (a phone, fitted by its width) — −1 at the top, 0 centred
+ *  (the default), 1 at the bottom. The centre moves by that share of half the spare height, in the plane MapLibre
+ *  moves in, so a field that interpolates between two cards glides. A close-up that centres its subject says
+ *  nothing and stays centred. Needs `referenceHeight`; a stage fitted by its height has no spare height.
+ *
+ *  Why it exists: on the proportional symbol pilot (375 × 812) the centred ground put the station card 1 names
+ *  under the resting card; the SVG beat had held it clear by pinning its whole map. One definition, read by the
+ *  live runtime, its warm and the fallback bake. */
+export function stageViewOf(plan, state, width, height) {
+  const view = viewOf(state);
+  const shift = zoomShiftFor(plan, width, height);
+  view.zoom += shift;
+  const align = state.camAlignY ?? 0;
+  if (align && plan && plan.referenceHeight && width > 0 && height > 0) {
+    const spare = height - plan.referenceHeight * 2 ** shift;
+    if (spare > 0) view.center = lonLatOf([state.camX, state.camY - (align * spare) / 2 / (512 * 2 ** view.zoom)]);
+  }
+  return view;
 }
 
 const isToken = (v) => v !== null && typeof v === "object" && !Array.isArray(v) && typeof v.$state === "string";

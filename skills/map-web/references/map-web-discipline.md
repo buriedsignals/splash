@@ -667,7 +667,7 @@ code** — clicking every chip in a real browser at 1600 × 900:
 
 ### The price, measured
 
-- **Payload.** `maplibre-gl@4.7.1` inlined is 803 KB of JS and 65.5 KB of CSS. Committed pages ran
+- **Payload.** `maplibre-gl@5.24.0` inlined is 803 KB of JS and 65.5 KB of CSS. Committed pages ran
   186–642 KB, almost all of it the plate; keeping the fallback AND adding the library roughly doubles
   the file. Inlined rather than loaded from a CDN, because a `<script src>` would trade payload for a
   SECOND third-party host — inlining keeps the count at one, `api.maptiler.com`, which is the honest

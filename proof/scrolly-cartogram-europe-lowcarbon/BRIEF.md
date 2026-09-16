@@ -15,16 +15,17 @@ keeps its own palette and faces — creme, nocturne, rapport.
 ## The choreography
 
 The static plate's claim is that a map's ink follows territory and a cartogram's follows countries. The
-scroll shows exactly that: the reader watches the map become the cartogram.
+scroll shows exactly that — the reader watches the map become the cartogram — then gives the tiles a third
+weight, the electricity each country produces, so the reader sees that every mean is a choice of what counts.
 
 | card | what the card says | gesture | what the reader sees move |
 | --- | --- | --- | --- |
 | 1 | 41 countries, each taking the room of its territory | — | the map, shaded by class, neighbours in a neutral |
 | 2 | Russia is 73 % of these countries' territory at 35,9 %; by km² the mean falls to 44,9 % | **focus + count** | Russia picked out, the rest steps back; "au km² : 44,9 %" counts up |
-| 3 | give every country the same room | **morph** | each country shrinks or swells into its equal tile — Russia melts, Malta swells |
-| 4 | one tile, one vote: 65,1 %; both means are true | **filter + count + compare** | the ramp steps back to a neutral; "par pays : 65,1 %" counts up beside the other |
-| 5 | the classes, lowest first | **reveal in order** | the classes return one by one, with the key |
-| 6 | Ukraine has no 2024 reading; the layout is designed | **name** | Ukraine's hollow tile named |
+| 3 | give every country the same room: one tile, one vote, 65,1 % | **morph + count** | each country shrinks or swells into its equal tile; "par pays : 65,1 %" counts up |
+| 4 | each tile sized to its production: Russia 1 209 TWh first, France 562 second, Malta and Luxembourg a dot; by kWh 61,3 % | **resize + count** | every tile becomes a square whose area is its production; "au kWh : 61,3 %" counts up |
+| 5 | three means, all true; each drawing shows one | **compare** | the tiles step back, the three means on one 0–100 % rule |
+| 6 | Ukraine has no 2024 reading; the layout is designed | **pull back + name** | the equal tiles again, Ukraine's hollow tile ringed and named |
 
 ## Precision
 
@@ -33,17 +34,29 @@ scroll shows exactly that: the reader watches the map become the cartogram.
   simplified; area figures computed on whole countries, never on the window.
 - **The morph is an affine map per country**, from the shape's box onto its tile, the viewBox fitted
   uniformly so no country is stretched on one axis; strokes do not scale.
-- **Names are placed through the SVG's own screen matrix**, and shown all or none: on a phone the tiles
-  are ~26 px wide and three-letter codes do not all fit, so the grid carries no names there rather than
-  half of them.
-- **The static plate's floors**: the lowest class and the neutral floored against the ground; the missing
-  country hollow with a dashed edge.
+- **The resize is the same affine map** onto a square centred in the tile, its side the tile's short side
+  times the square root of the country's share of the largest producer, so a square's area is its production.
+- **Names are placed through the SVG's own screen matrix.** On the equal tiles they are shown all or none,
+  at the largest size every tile holds and never below 70 %; on the resized squares a name shows where its
+  own square holds it.
+- **On a phone the frame is fitted into the stage's upper part**, clear of the card that reads over the
+  middle, with a line kept at the top for the missing country's note; the rule of the three means sits in
+  that band too. On a wide stage the rule sits near the top.
+- **Every sentence is asserted**: the static plate's two checks, plus the three means in the order km² <
+  kWh < country, Russia then France the two largest producers, Malta and Luxembourg the two smallest.
 
 - **The map fills its own row, from gutter to gutter.** The counter sits in a row above it and the key in a
   row below it — never over the map. The page's own side gutter (the header's, `--prose-gutter`) bounds the
   map, so its edges line up with the title; inside that box the frame is fitted and the view widened to the
   box's aspect (`skills/scrolly/assets/reveal.mjs`, `fitViewBox`), with geography drawn far enough past the
   frame that no side of the row is left bare.
+- **Batch pass (2026-09-16)**: all three directions baked and rendered, now with a fallback for every card,
+  tile cards included (before, only cards 1–2 had one). Only cards 1–2 are ever a distinct live-map picture
+  (`subject` is the map's only bound field); every card index now points at whichever of the two bakes
+  matches its own `subject` value (`CARD_TO_BAKE` in `render-directions-scrolly.mjs`) — no new bytes baked,
+  so the fallback guard sees nothing duplicated. `verify-scrolly.mjs` refused all three at first (`c.handle.map`
+  read on a null handle with no key) — fixed the same way as the sibling maps. Now clean;
+  `verify-live-map-scrolly.mjs` clean on all three; swap check on `creme` clean at both viewports.
 
 ## Directions
 

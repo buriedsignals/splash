@@ -193,16 +193,6 @@ export function sourceIdOf(layer) {
   return layer.id;
 }
 
-/** Run inside the page. Sources first, then layers in plan order — a leader drawn over its own word
- *  is a scratch.
- *
- *  A layer that declares a `radius` strategy gets its `circle-radius` from `radiusPaintOf` rather
- *  than from its own paint. Adding a circle layer with NO radius at all would draw MapLibre's own
- *  default 5px for one frame, which is a visible flash of the wrong circle — so the strategy is
- *  applied at mount, and a camera-scaled layer is re-derived once the camera has actually fitted.
- *
- *  A layer that reads a VECTOR source must name its source layer: without one MapLibre adds a layer
- *  that matches no feature and draws nothing, silently — the empty-layer shape again. */
 /**
  * WHERE A PLAN LAYER GOES IN THE BASEMAP'S STACK. By default above every style layer. `beneath: "water"`
  * puts it before the style's first water fill, found by the rule the style sweep tints water by
@@ -223,6 +213,17 @@ export function beforeIdFor(map, layer) {
   return water.id;
 }
 
+/** Run inside the page, where it calls `sourceIdOf`, `beforeIdFor` and `radiusPaintOf`: a page gets it
+ *  with the rest of the trunk through `scrollyMapScript()`, never as its own `toString()`.
+ *  Sources first, then layers in plan order — a leader drawn over its own word is a scratch.
+ *
+ *  A layer that declares a `radius` strategy gets its `circle-radius` from `radiusPaintOf` rather
+ *  than from its own paint. Adding a circle layer with NO radius at all would draw MapLibre's own
+ *  default 5px for one frame, which is a visible flash of the wrong circle — so the strategy is
+ *  applied at mount, and a camera-scaled layer is re-derived once the camera has actually fitted.
+ *
+ *  A layer that reads a VECTOR source must name its source layer: without one MapLibre adds a layer
+ *  that matches no feature and draws nothing, silently — the empty-layer shape again. */
 export function mountPlan(map, plan) {
   for (const layer of plan.layers) {
     const id = sourceIdOf(layer);
@@ -250,5 +251,9 @@ export function mountPlan(map, plan) {
       },
       beforeIdFor(map, layer),
     );
+    // MAPLIBRE REFUSES AN INVALID LAYER WITH AN `error` EVENT, NOT A THROW, and adds nothing: a layer missing from
+    // every frame with every guard green (the proportional symbol scrolly's station name, 2026-09-15).
+    if (typeof map.getLayer === "function" && !map.getLayer(layer.id))
+      throw new Error(`layer "${layer.id}" was refused by the map and is not drawn — its spec is invalid (see the map's error event)`);
   }
 }

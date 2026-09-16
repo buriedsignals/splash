@@ -1,0 +1,216 @@
+// %%BEAT_PATH%%/render-directions-scrolly.mjs — %%BEAT%%'s own %%TYPE%% scrolly, on a live MapTiler map, rendered
+// once per DIRECTION with frozen card images baked under it.
+// SCAFFOLD: read skills/scrolly/references/types/%%TYPE%%.md for this type's own scroll gestures before writing
+// the choreography, Directed%%Name%%Scrolly.tsx, %%TYPE%%-drive.mjs and %%TYPE%%-plan.mjs.
+//
+// ONE ART DIRECTION BY DEFAULT: composed from this beat's own PALETTE.md (or an ancestor's) and its own text,
+// through composeDirections — a production run renders exactly one. --filed renders the three filed demo
+// directions instead, for a catalogue proof only. --only <id> picks one of whichever set is rendered.
+// --no-bake reuses the card images already on disk, even stale — tuning only, for a fast iteration loop; the
+// committed page still needs a real bake before delivery. EVERY WRITTEN PAGE also gets a local, keyed
+// `.local.html` copy beside it (git-ignored) so it can be opened directly against MapTiler with no proxy — the
+// committed page keeps the __MAPTILER_KEY__ placeholder, because the repository is public.
+//
+// Usage: set -a && . ./.env && set +a && bun %%BEAT_PATH%%/render-directions-scrolly.mjs [--filed] [--only <id>] [--no-bake]
+
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { readFile, rm } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { cameraFields } from "#shared/map-beat/scrolly.mjs";
+import { readPalette } from "#shared/chart-beat/colour.mjs";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+
+/** The Splash repo root — the nearest ancestor whose package.json declares the "#shared/*" import — found by
+ * walking up rather than counting levels, so this runner works unchanged from proof/<beat>/ or a story's own
+ * stories/<slug>/beats/<id>/. */
+function splashRoot(startDir) {
+  const looked = [];
+  for (let dir = startDir; ; ) {
+    looked.push(dir);
+    const manifest = join(dir, "package.json");
+    if (existsSync(manifest)) {
+      try {
+        if (JSON.parse(readFileSync(manifest, "utf8"))?.imports?.["#shared/*"]) return dir;
+      } catch {
+        // an unparsable package.json is not this function's business — keep walking
+      }
+    }
+    const parent = dirname(dir);
+    if (parent === dir) throw new Error(`no Splash root above ${startDir} — looked in:\n  ${looked.join("\n  ")}`);
+    dir = parent;
+  }
+}
+
+const ROOT = splashRoot(HERE);
+const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
+const OUT = join(HERE, "renders");
+const FALLBACK = join(HERE, "fallback");
+/** The no-break space, written as its escape — number formatting helpers live at #shared/design-base/web.mjs. */
+const NB = "\u00A0";
+const SCAFFOLD_MARK = "SCAFFOLD";
+const ONLY = process.argv.includes("--only") ? process.argv[process.argv.indexOf("--only") + 1] : null;
+const FILED = process.argv.includes("--filed");
+const NO_BAKE = process.argv.includes("--no-bake");
+
+// ── SCAFFOLD: the readings, and this beat's own assertions ──────────────────────────────────────
+// Freeze the data beside this beat (a data.csv or GeoJSON, credited in BRIEF.md), load it here and derive every
+// figure the beat says out loud from it — never a hand-typed number. Throw a named error when the data does not
+// support the claim, so a beat whose numbers drifted refuses to render rather than shipping a stale one.
+function loadSubject() {
+  throw new Error(`${SCAFFOLD_MARK}: %%BEAT%% has no data loaded yet — freeze it beside the beat and read it here (render-directions-scrolly.mjs, loadSubject)`);
+}
+
+// ── the words, and the cameras ────────────────────────────────────────────────────────────────
+const EYEBROW = `${SCAFFOLD_MARK} eyebrow`;
+const title = [`${SCAFFOLD_MARK} the title, its longest form`, `${SCAFFOLD_MARK} a shorter title`];
+const prose = [[`${SCAFFOLD_MARK} card 1's prose`], [`${SCAFFOLD_MARK} card 2's prose`]];
+const source = `${SCAFFOLD_MARK} Source : … · fond de carte © MapTiler © OpenStreetMap`;
+const words = { unit: `${SCAFFOLD_MARK} unit`, note: `${SCAFFOLD_MARK} note` };
+const alt = `${SCAFFOLD_MARK} the alt text a reader without the picture gets`;
+if ([title.join(""), prose.flat().join(""), source, JSON.stringify(words), alt].some((s) => s.includes(SCAFFOLD_MARK)))
+  throw new Error(`${SCAFFOLD_MARK}: %%BEAT%% still carries placeholder copy — write the title, prose, source, words and alt before rendering (render-directions-scrolly.mjs)`);
+
+// PALETTE.md is a journalist decision, recorded by hand via skills/palette — nothing here defaults or writes
+// one. Checked before any heavy machinery loads, so a beat with no palette answer yet refuses immediately.
+const newsroom = readPalette(HERE);
+
+const subject = loadSubject();
+
+// SCAFFOLD — subject-specific: replace with the cameras this beat's own subject earns. A generic Europe-wide
+// view sweeping into a closer one, so the unedited scaffold already shows a camera move across the cards —
+// `cameraFields({ center: [lon, lat], zoom, alignY })`, `#shared/map-beat/scrolly.mjs`.
+const CAMERA_SWEEP = [
+  { center: [10, 50], zoom: 3 },
+  { center: [15, 48], zoom: 4.3 },
+];
+const CAMERAS = prose.map((_, k) => cameraFields({ ...CAMERA_SWEEP[k % CAMERA_SWEEP.length], alignY: 0.5 }));
+if (CAMERAS.length !== prose.length) throw new Error(`${SCAFFOLD_MARK}: CAMERAS carries ${CAMERAS.length} cameras for ${prose.length} cards of prose — one per card`);
+
+// `reveal` walks 0 -> 1 across the cards, bound onto %%TYPE%%-plan.mjs's own bucket layer's opacity (see
+// references/map-scrolly-state-binding.md) — SCAFFOLD: this beat's own choreography likely wants more than
+// one field; add them here and give each its own layer binding or driver-painted label.
+const STATES = prose.map((_, k) => ({ note: 0, reveal: prose.length > 1 ? k / (prose.length - 1) : 1, ...CAMERAS[k], card: k }));
+
+// ── only past this point is the heavy machinery (the rasteriser, puppeteer, renderScrolly) loaded — a beat
+// still carrying placeholder copy refuses above, without ever touching any of it or the network. ────────────
+const { createElement } = await import("react");
+const { deriveFurniture } = await import("#shared/chart-beat/render-still.mjs");
+const { adjustToContrast, NON_TEXT_CONTRAST_MIN } = await import("#shared/chart-beat/colour.mjs");
+const { readDirection } = await import("#shared/design-base/read-direction.mjs");
+const { composeDirections, report } = await import("#shared/design-base/compose.mjs");
+const { resolveDirectionFamilies } = await import("#shared/design-base/resolve-families.mjs");
+const { webRegisters } = await import("#shared/design-base/web.mjs");
+const { EYEBROW_TO_DISPLAY, gapOf, registerOf } = await import("#shared/design-base/register.mjs");
+const { validateExpressions } = await import("#shared/map-beat/mount.mjs");
+const { validateScrollyPlan } = await import("#shared/map-beat/scrolly.mjs");
+const { plateTints } = await import("#shared/map-beat/tints.mjs");
+const { renderScrolly } = await import(join(ROOT, "skills", "scrolly", "scripts", "render-scrolly.mjs"));
+const { openLiveMapCards, renderWithCardImages } = await import(join(ROOT, "skills", "scrolly", "scripts", "live-map-cards-bake.mjs"));
+const { %%name%%PlanOf } = await import("./%%TYPE%%-plan.mjs");
+const { Directed%%Name%%Scrolly } = await import("./Directed%%Name%%Scrolly.tsx");
+
+const textPerRegister = {
+  display: title.join(" "),
+  eyebrow: EYEBROW,
+  body: `${prose.flat().join(" ")} ${source}`,
+  axis: words.unit,
+  annot: "",
+  value: Object.values(words).join(" "),
+};
+
+const filed = readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md")).sort().map((f) => readDirection(join(DIRECTIONS, f)));
+const BEAT_FACTS = { evidenceLevels: 3 }; // SCAFFOLD: how many ranked levels of evidence BRIEF.md names
+const composition = composeDirections({ newsroom, filed, beat: BEAT_FACTS, textPerRegister });
+console.log(report(composition, { beat: BEAT_FACTS }));
+console.log("");
+
+const labelOf = (id) => id.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+const chosen = FILED
+  ? filed.map((d) => ({ id: labelOf(d.id), direction: d }))
+  : (() => {
+      if (!composition.offered.length) throw new Error(`no composed direction holds up for this beat:\n${report(composition, { beat: BEAT_FACTS })}`);
+      return [{ id: labelOf(composition.offered[0].id), direction: composition.offered[0] }];
+    })();
+if (ONLY && !chosen.some((c) => c.id === ONLY)) throw new Error(`--only takes one of ${chosen.map((c) => c.id).join(", ")}`);
+const toRender = chosen.filter((c) => !ONLY || c.id === ONLY);
+
+const cards = await openLiveMapCards();
+const driver = `${cards.mapScript}\n${await readFile(join(HERE, "%%TYPE%%-drive.mjs"), "utf8")}`;
+const refused = [];
+try {
+  for (const { id, direction: picked } of toRender) {
+    const direction = resolveDirectionFamilies(picked, textPerRegister);
+    const { ink, muted } = deriveFurniture(direction.ground);
+    const regs = webRegisters(direction, { ink: { ink, muted, accent: direction.accent } });
+    try {
+      const tints = plateTints(direction);
+      const walked = (c, on, floor) => adjustToContrast(c, on, floor) ?? c;
+      const colours = { land: tints.land, accent: walked(direction.accent, tints.land, NON_TEXT_CONTRAST_MIN) };
+      const plan = %%name%%PlanOf({
+        tints: { water: tints.water, land: tints.land },
+        colours,
+        cameras: CAMERAS,
+        statesForCards: STATES,
+        referenceWidth: 1280,
+        referenceHeight: 800,
+      });
+      const violations = [...validateScrollyPlan(plan, STATES), ...validateExpressions(plan)];
+      if (violations.length) throw new Error(`the plan is not renderable:\n  ${violations.join("\n  ")}`);
+
+      const renderPage = (fallbacks, shapes) =>
+        renderScrolly({
+          steps: prose.map((p, i) => ({ id: `card-${i + 1}`, prose: p })),
+          reveal: {
+            element: createElement(Directed%%Name%%Scrolly, {
+              // SCAFFOLD: this type's own shape, derived from `subject` above.
+              plan: { ...plan, fallback: shapes },
+              fallbacks,
+              words,
+              alt,
+              regs,
+              ground: direction.ground,
+              accent: direction.accent,
+              ink,
+              muted,
+            }),
+            states: STATES,
+            driver,
+            apply: "apply%%Name%%State",
+          },
+          vendor: [{ js: cards.maplibreJs, css: cards.maplibreCss }],
+          title,
+          eyebrow: EYEBROW,
+          source,
+          ground: direction.ground,
+          type: { eyebrow: { ...regs.eyebrow, marginBottom: `${gapOf(registerOf(direction, "eyebrow"), EYEBROW_TO_DISPLAY)}px` }, display: regs.display, body: regs.body, source: regs.body },
+          lang: "en", // SCAFFOLD: the beat's own language
+          outDir: OUT,
+          name: `${id}.html`,
+        });
+
+      const { outPath } = await renderWithCardImages(cards, {
+        id,
+        plan,
+        states: STATES,
+        fallbackDir: FALLBACK,
+        stageGround: tints.water,
+        cardOf: (baked) => ({ zoom: baked.zoom }),
+        renderPage,
+        noBake: NO_BAKE,
+      });
+      console.log(`${id} -> ${outPath.replace(`${HERE}/`, "")}`);
+    } catch (error) {
+      await rm(join(OUT, `${id}.html`), { force: true });
+      refused.push({ id, why: error.message });
+      console.log(`${id} REFUSED — ${error.message}`);
+    }
+  }
+} finally {
+  await cards.close();
+}
+if (refused.length) {
+  console.log(`\nrefused by ${refused.length}: ${refused.map((x) => x.id).join(", ")}`);
+  process.exitCode = 1;
+}

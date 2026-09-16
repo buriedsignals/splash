@@ -37,7 +37,8 @@ owner's own skill or persona brief; this document duplicates no owner body.
   result, failure, or approval, call `whereIs` again — never continue from conversation memory or
   from what a previous turn was doing. For a new story, preflight and
   `createStory({root, title})` first create the canonical directory and its local `AGENTS.md`;
-  then call `whereIs` for the first time.
+  then call `whereIs` for the first time. `createStory` (`scripts/new-story.mjs`) is a function, not
+  a CLI — no `bin`/`import.meta.main` entrypoint — import and call it.
 - Once per session, open the Splash studio in the journalist's browser rather
   than collecting readiness or visual choices in chat. From the Splash checkout,
   with Engine environment (`SPLASH_CHECKOUT_ROOT`, `SPLASH_BSIG_PATH`,
@@ -48,11 +49,13 @@ owner's own skill or persona brief; this document duplicates no owner body.
   chat.
 - When a caller (human or agent) asks to skip a phase — refuse, report `missing` verbatim, and
   stop. A missing prerequisite is **reported**, never argued around, never designed around.
-- Once per session, before any story exists: run `runPreflight`
-  (`scripts/preflight.mjs`) — dependencies, `NEWSROOM.md`'s identity, and a **probed** (not merely
-  present) `MAPTILER_KEY` / `DATAWRAPPER_TOKEN`. It is NEVER silent: state the newsroom's identity
-  read back, the house credit convention, and every capability with what would open it, and ask
-  once whether the journalist wants to fill a closed one. "Ready" means only `dependencies` and
+- Once per session, before any story exists: call `runPreflight({root, env, fetchFn})`
+  (`scripts/preflight.mjs`) — a function, not a CLI (no `bin`/`import.meta.main` entrypoint); import
+  it and call it, the way `references/preflight-and-install.md` and `skills/intake/SKILL.md`'s own
+  `freezeSource` snippet do. It checks dependencies, `NEWSROOM.md`'s identity, and a **probed** (not
+  merely present) `MAPTILER_KEY` / `DATAWRAPPER_TOKEN`. It is NEVER silent: state the newsroom's
+  identity read back, the house credit convention, and every capability with what would open it, and
+  ask once whether the journalist wants to fill a closed one. "Ready" means only `dependencies` and
   `newsroom-profile` are answered — **a key gates a capability, never the session.** The full
   preflight/newsroom/install detail lives in `references/preflight-and-install.md`.
 - **Not** for writing a chart, map, brief, or export — those belong to `intake`, `storyboard`,
@@ -114,7 +117,7 @@ independent visual review select personas.
 | `intake` | `skill:intake` — freezes `source/article.md`, `source/data.csv` and `source/profile.json` |
 | `framing` | `persona:editor` — prepares framing material; `missing` is `a confirmed takeaway`, not `STORYBOARD.md` |
 | `storyboard` | `skill:storyboard` — conducts G1, G2a/b/c, G2-treatment and G2-producer |
-| `production` / analysis required | `skill:analyst` — writes bound `data.json` for chart/map beats |
+| `production` / analysis required | `skill:analyst` — writes bound `data.json` for chart/map beats (never for image beats). Invoke via `bun skills/analyst/scripts/build-data.mjs <storyDir> <slotId>` (a real CLI, `import.meta.main`) or `buildData({storyDir, slotId})` — do not rely solely on `Skill({skill:"splash:analyst"})` resolving; if it throws `Unknown skill`, run the CLI directly, the same way `skills/analyst/SKILL.md`'s own Quick Start does |
 | `production` / craft | The exact existing craft skill selected from the slot's medium, format and producer |
 | `production` / current render review | `persona:designer` — independent read-only review; the journalist still closes G3 |
 | `delivery` | `skill:deliver` — materialises the journalist's selected form per beat |
@@ -139,6 +142,8 @@ Each gate: what closes it (a sealed file), who closes it (unit vs human).
 | G1 — takeaway confirmed against frozen data                  | `STORYBOARD.md` front matter: confirmed `takeaway` + recorded `grounding:` verdict                | journalist (asked by `storyboard`) |
 | G2a/G2b/G2c — medium, publication format, size per slot       | slot's `medium:` / `format:` / `size:` + `reachable: yes`                                        | journalist |
 | G2-treatment / G2-producer — treatment, then conditional producer choice | slot's `chosen` (drawn from its own `candidates`) + `producer`/`datawrapperType` when eligible | journalist |
+| G2-subjects — the article's other angles surveyed | `SUBJECTS.md` in the story's own directory (never a beat's), written by `recordSurveyedSubjects({ storyDir, subjects })` (`skills/deliver/scripts/other-subjects.mjs`) at movement 10 of the storyboard exchange, while the angles still exist — an article with nothing else records the empty survey (`subjects: []`) | unit, during `storyboard` |
+| Analyst data — chart/map beats only, before any render exists | `beats/<id>/data.json` + `DATA-NOTES.md`, hash-bound to the current storyboard, profile and CSV bytes (`meta.hashes`) — a beat whose source moved under it, or that never had this written, reports `missing` (`"beat <id>: run analyst (data.json)"` / `"... analyst data stale — rebuild"`) and blocks before `beatsAwaitingApproval` is even consulted | unit (`skill:analyst`) |
 | G3 — pixel approval, per beat                                | current `BRIEF.md` plan and findings + approved `OUTPUT-REVIEW.json` bound to that current plan, findings, render, and passing QA | journalist |
 | G4 — delivery hand-over, per beat                            | `HANDOVER.md` + complete `.delivery-manifest.json` bound to the accepted `OUTPUT-REVIEW.json` and current export artifact digests | unit, after the journalist chooses the form |
 

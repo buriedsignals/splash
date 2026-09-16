@@ -59,8 +59,8 @@ const BEAT = {
   },
 };
 
-const MAPLIBRE = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js";
-const MAPLIBRE_CSS = "https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css";
+const MAPLIBRE = "https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js";
+const MAPLIBRE_CSS = "https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css";
 
 const argv = process.argv.slice(2);
 const flag = (name, fallback) => {
@@ -314,7 +314,7 @@ const gate = await page.evaluate(
       attributionControl: false,
       fadeDuration: 0,
       // Without this the WebGL canvas is empty by the time a screenshot reads it (rule 6).
-      preserveDrawingBuffer: true,
+      canvasContextAttributes: { preserveDrawingBuffer: true },
       bounds,
       fitBoundsOptions: { padding: 0, animate: false },
     });
