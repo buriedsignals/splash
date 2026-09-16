@@ -18,8 +18,8 @@
 //     (`proof/web-heatmap-europe-electricity`) spends a threshold-shaped `filter.ts` on nine
 //     unordered source columns, and a survivor list is the correct answer to "which of these still
 //     matter". It stops being right the moment the columns are CONSECUTIVE and the encoded variable
-//     is the one both a filter and a cutoff would move along — `proof/web-heatmap-coal-share-europe`'s
-//     fifteen years, `proof/web-calendar-heatmap-geneva`'s days. There, filtering on it deletes the
+//     is the one both a filter and a cutoff would move along — `proof/web-calendar-heatmap-geneva`'s
+//     days are the worked example. There, filtering on it deletes the
 //     bottom of the chart's own ramp AND erases the shape a reader needs: a cell that crosses back
 //     above the line (a relapse) just leaves with the rest, and nothing on the page marks that it was
 //     ever there to leave. A cutoff removes nothing: every datum stays drawn, in the ink it always

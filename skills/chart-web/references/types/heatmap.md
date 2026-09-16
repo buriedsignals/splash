@@ -20,9 +20,8 @@ Worked example: `proof/web-heatmap-europe-electricity` (2026-09-15), from `proof
 - **`filter.ts` is the right mechanism here because the columns are an unordered set.** Nine sources
   carry no sequence, so a floor that removes the rounding-error cells leaves exactly what the question
   asks for: a list of survivors. That stops being true the moment a heatmap's columns are consecutive
-  and the reader's question is about crossing a line rather than surviving one — `proof/web-heatmap-coal-share-europe`
-  is the same type with fifteen columns of consecutive years, and there a filter would delete a
-  relapse (a country crossing back above the line) with nothing on the page marking that it ever
-  happened. That beat builds with `chart-web/assets/cutoff.ts` instead, for exactly that reason — read
-  its own `BRIEF.md`, "The gesture, argued", before assuming this sheet's mechanism transfers to a
+  and the reader's question is about crossing a line rather than surviving one. There a filter would
+  delete a relapse (a series crossing back above the line) with nothing on the page marking that it
+  ever happened, so the gesture is `chart-web/assets/cutoff.ts` — the worked example for consecutive
+  columns is `proof/web-calendar-heatmap-geneva`. Do not assume this sheet's mechanism transfers to a
   time-columned grid.
