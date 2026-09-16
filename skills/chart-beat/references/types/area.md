@@ -1,5 +1,7 @@
 # Area (and stacked area)
 
+**Argues:** A single-series area chart is a line chart with the space beneath it filled.
+
 ## What it is for
 
 A single-series area chart is a line chart with the space beneath it filled. The line already carries
@@ -61,6 +63,33 @@ part-to-whole device, and the story it tells cleanly is "how did the total move,
 bottom layer move" — not "which of these two middle bands grew faster," which the stack itself makes
 nearly unreadable no matter how well it's drawn. If that second question is the actual story, this
 is the wrong chart regardless of how carefully it's built.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the filled surface — the one mark on the plate, in the accent, because the surface IS the quantity
+- **Then** the rule that cuts it, with its year written ON the rule that marks it rather than in a legend
+- **Then** the last reading, named at the end of the curve in the surface's own colour
+- **Subordinate** — the zero baseline, the value ticks and the year axis, all derived from the ground, all neutral
+- **The claim lands on** the two shares either side of the cut, read off the areas the reader has just been shown
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- fill across a gap in the series — the polygon would join the years either side and the reader integrates a value nobody measured
+- lift the surface off zero: the moment a series is filled, every clipped unit becomes surface, so the component throws rather than draw one pixel over a non-zero base
+- draw a smoothed mean over the fill — a second curve bounding a surface it does not bound
+
+## Precision to assert
+- the years are asserted consecutive before anything is drawn
+- every printed number is the integral the surface draws, computed from the same readings the surface is drawn from
+- the plate refuses to render if the split it measures is not near the one the claim states
+
+## Devices the worked example implements
+- **A zero-base check that throws, not a comment** — the fill's whole claim enforced in code (`DirectedArea.tsx`)
+- **The consecutive-years refusal** — a series with a hole is rejected before a mark is drawn (`render-directions.mjs`)
+- **The target named on the rule that draws it** — no legend, and the end label in the surface's own colour (`DirectedArea.tsx`)
 
 ## Worked example
 

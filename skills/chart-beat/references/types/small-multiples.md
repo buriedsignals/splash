@@ -1,5 +1,7 @@
 # Small multiples
 
+**Argues:** Small multiples isn't a chart type — it's a layout decision: repeat the same small chart once per category, panel after panel, all built the same way.
+
 Small multiples isn't a chart type — it's a layout decision: instead of forcing every group into
 one crowded chart, repeat the same small chart once per category, panel after panel, all built
 the same way. It answers a question that a single crowded chart structurally can't: "how does the
@@ -52,6 +54,33 @@ grid of a dozen is not reinforcement, it's redundant decoding work repeated a do
 put the shared axis label and unit once, at the level of the whole grid, and let each panel carry
 only its own category name. A reader who has already read "GDP growth, %" on panel one shouldn't
 have to re-verify it eleven more times to reach the panel that actually matters to them.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the grid as a whole — the pattern across the panels is the claim, and the grid is the form that makes such a pattern visible (and the form in which it would be easy to believe one that was not there)
+- **Then** one panel, which a reader must be able to read on its own: its name and its delta are drawn IN it
+- **Then** the key, which states once what is shared — the dates and the ceiling
+- **Subordinate** — each panel's own short baseline, exactly as wide as its own pair; no rules, no alternating tint, no grid, because the CUT is the boundary
+- **The claim lands on** the ordering of the panels against the sizes of their gains
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- fit a panel to its own data: one scale governs every panel, or these are sixteen unrelated charts in a grid
+- draw a rule or a tint between panels — the gap is the boundary, and each panel's own short baseline is what makes a gap look like a new axis
+- let a panel's name sit nearer the previous panel's block than its own: on a grid PROXIMITY IS THE GROUPING, and nothing else says which name goes with which pair
+
+## Precision to assert
+- every panel keeps the same axis scale, asserted equal
+- a claim about a PATTERN is derived rather than eyeballed — here the correlation between start and gain is computed and asserted clearly negative
+- the gap between panels is checked to be at least twice the gaps inside one before the plate draws
+
+## Devices the worked example implements
+- **The between-panel gap as a checked quantity** — a defect that was invisible to every guard, now a precondition (`render-directions.mjs`)
+- **The cut as the boundary** — no rules, no tint, each panel with its own short baseline (`DirectedSmallMultiples.tsx`)
+- **Shared stated once, varying repeated** — the dates and the ceiling in the key, the name and the delta in the panel (`DirectedSmallMultiples.tsx`)
 
 ## Worked example
 

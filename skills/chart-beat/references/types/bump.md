@@ -1,5 +1,7 @@
 # Bump (ranking-over-time)
 
+**Argues:** A bump chart answers "who overtook whom, and when" among several competitors ranked over multiple periods.
+
 ## What it is for
 
 A bump chart answers "who overtook whom, and when" among several competitors ranked over multiple
@@ -56,6 +58,33 @@ a small decorative swatch glyph next to the name rather than on the text itself 
 exempt from the text-contrast rule in a way the name itself never is. End labels get the same
 treatment: always neutral ink, never the line's own hue, with truncation rather than overlap when two
 ranks land close together at the final period.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the accented line, drawn ON TOP and heavier, so a crossing between it and a background line reads as ITS crossing rather than as a tangle
+- **Then** BOTH end columns of names — a still has no reveal, so the first period gets its own label column as well as the last
+- **Then** the crossings themselves, which are the argument of this type and the whole reason a reader follows one line
+- **Subordinate** — every other line in one neutral, the rank rows, the period axis
+- **The claim lands on** the start rank and the end rank of the accented line, both named at their own ends
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- use a second accent hue — the type allows two or three, the recorded palette carries one, and a second would be a colour nobody chose
+- paint any label in a line's own hue, the accented line's name included: that is this type's named, previously-shipped WCAG failure
+- bridge a line across a missing period — the drawn set is by construction present in every period, and the component throws if a track's rank count does not match the period count
+
+## Precision to assert
+- there is no rank column in the data and no rank typed anywhere: each is the position in a sort of every ISO-coded entity for that period
+- which competitors are drawn is a computed rule, and the beat throws if the answer falls outside the range this type can carry legibly
+- the two label columns are collision-free BY CONSTRUCTION — distinct ranks in one period cannot share a row — and `assertLabelRowsAreDistinct` proves it on the real ranks at both ends
+
+## Devices the worked example implements
+- **`assertLabelRowsAreDistinct`** — the both-ends labelling proved rather than hoped (`render.mjs`)
+- **Computed membership and a computed subject** — the drawn set and the largest unique climb, both refused if the data stops supporting them (`render.mjs`)
+- **The accent drawn on top and heavier** — the one legibility decision the crossings depend on (`EmitterRankBump.tsx`, `DirectedBump.tsx`)
 
 ## Worked example
 

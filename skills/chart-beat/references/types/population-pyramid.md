@@ -1,5 +1,7 @@
 # Population pyramid
 
+**Argues:** A population pyramid is two back-to-back bar charts sharing a central category axis: ordered bands run up the middle, one group's bars extend left, the other's right, on the same scale.
+
 A population pyramid is two back-to-back bar charts sharing a central category axis: ordered
 bands run up the middle, one group's bars extend left, the other's right, each bar's length a
 magnitude on the same scale. Age by sex is the canonical case that gives the type its name, but
@@ -42,6 +44,33 @@ own. Beyond that, the mirrored layout itself already carries the group distincti
 position — left versus right — so the colour pairing is reinforcing a difference the shape
 already makes, not carrying it alone; that redundancy is exactly why this type stays legible
 even in greyscale, provided the mirrored positions are still there to read.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the silhouette as a whole — the shape read at once, which is the type's subject
+- **Then** the widest band, named by ONE ink annotation, found by the render script rather than asserted
+- **Then** the two halves against each other at that band
+- **Subordinate** — the band names in the spine, the shared mirrored zero-anchored scale, the ticks under each half, the two-hue key
+- **The claim lands on** the widest band against the youngest, which is what separates an ageing population from an expanding one
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- sort the bands by size — the silhouette only exists while the age sequence stays intact, oldest at the top
+- let the two sides take different scales, or move the shared centre
+- spend a third hue: the mirrored position already carries the group distinction and colour only reinforces it, as a CVD-safe pair checked AS A PAIR
+
+## Precision to assert
+- the shared centre never moves and both sides keep the same mirrored, zero-anchored magnitude scale
+- the widest band is FOUND by the render script, not typed
+- the bands sum to the asserted population total
+
+## Devices the worked example implements
+- **A per-story frame choice** — 21 bands need more vertical room than the default, and the frame is chosen for the data rather than the data squeezed into the frame (`render.mjs`)
+- **One ink annotation on the found band** — the claim named where it is, not in a legend (`SwissAgePyramid.tsx`)
+- **A CVD-safe pair checked as a pair** — colour reinforcing a distinction position already carries (`DirectedPyramid.tsx`)
 
 ## Worked example
 

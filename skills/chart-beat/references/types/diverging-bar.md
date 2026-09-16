@@ -1,5 +1,7 @@
 # Diverging bar
 
+**Argues:** A diverging bar answers "who gained and who lost, and by how much" for a set of categories whose values are SIGNED.
+
 ## What it is for
 
 A diverging bar answers "who gained and who lost, and by how much" for a set of categories whose
@@ -52,6 +54,33 @@ is pointing when the bar itself is short enough that its position relative to th
 to judge at a glance. And exactly like every other type in this bar family, a value label painted in
 the bar's own accent hue — rather than the page's neutral ink — is the specific mistake that has
 failed WCAG contrast here before: keep the label in ink, let the fill carry the sign.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the zero line, drawn ON TOP of the bars so no fill can cover it
+- **Then** the mass on the majority side, and the one bar on the other — here a 1.3 px sliver, because it is the value it is
+- **Then** the dashed average rule and the value labels, all printed at rest and all legible simultaneously: a still has one instant and has to hold every word at once
+- **Subordinate** — the gridlines, the category names, the axis
+- **The claim lands on** the exception, named, against 26 bars going the other way
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- make the domain symmetric — mirroring the largest fall with a half nobody occupies halves the pixels per unit on both sides to make room for nothing; equal units per pixel either side of zero is what makes two bars comparable, and the visible asymmetry is the data's
+- give the exception a minimum visible width: it is 1.3 px because it is 0.03 tonnes
+- draw a diverging bar on a one-signed domain — the component throws if the domain ever stops straddling zero
+
+## Precision to assert
+- all categories are asserted to carry a reading in both periods before anything is drawn
+- the count of risers and fallers, the mean fall and the extremes are computed from the frozen file
+- every reader-facing claim string lives in one `words` object, one entry per comma, because a claim `const` declared immediately after another was swallowed by its predecessor's expression and the grounding guard went green on a figure the data could not reproduce
+
+## Devices the worked example implements
+- **The zero line painted after the bars** — the sheet's own requirement, and the reason it is not painted before them (`DirectedDivergingBar.tsx`)
+- **A `words` object instead of consecutive claim consts** — a measured gap in `claims-grounded-in-data.test.ts` worked around at the beat, and recorded (`render.mjs`)
+- **Two columns of rows at the type floor** — 27 rows measured rather than assumed (`DivergingBarChange.tsx`)
 
 ## Worked example
 

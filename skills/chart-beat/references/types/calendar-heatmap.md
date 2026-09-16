@@ -1,5 +1,7 @@
 # Calendar heatmap
 
+**Argues:** A calendar heatmap answers "when, across a real calendar, did this value run high or low" by laying one cell per day into a fixed grid and colouring each cell by its value.
+
 ## What it is for
 
 A calendar heatmap answers "when, across a real calendar, did this value run high or low" by laying
@@ -51,6 +53,33 @@ in exactly the direction that makes it disappear. Every stop in the ramp needs r
 against the calendar's actual background — not an assumed white page — because a calendar heatmap is
 frequently the densest grid of individually-meaningful cells in this whole set, and a vanishing bottom
 third of the ramp here means an entire season's worth of low readings reads as blank.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the block of adjacent dark cells — a streak is read as a SHAPE here, which is exactly what a line chart cannot give
+- **Then** the outline that names it, and its two dates
+- **Then** the key, binned, printing its BREAKS in the unit, because no single cell's value can be read exactly
+- **Subordinate** — the month rows, the day ticks, the grid itself
+- **The claim lands on** the run's length, counted off the cells the reader can see
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- let a cell carry a value the key cannot express — the cost of this form is exact readings, and the key pays it by printing its breaks
+- leave a day out of the grid: every day of the period is present, in order, or the calendar is not a calendar
+- add a value axis — there is none, and the binned key is the whole scale
+
+## Precision to assert
+- every day is present and in order, and the cell count is asserted
+- the run, its length, its two dates, the period means and the two extremes are all computed from the frozen file, and the headline's run is asserted before the render
+- the bins are fixed once from the frozen series and the key prints their breaks in the unit
+
+## Devices the worked example implements
+- **A binned key that prints its breaks** — the exact-reading cost paid rather than hidden (`DirectedCalendarHeatmap.tsx`)
+- **The run found, not typed** — the longest sequence at or above the threshold walked out of the file (`render-directions.mjs`)
+- **A fixed weekday-by-week grid** — the structure comes from the calendar, not from the data (`DirectedCalendarHeatmap.tsx`)
 
 ## Worked example
 

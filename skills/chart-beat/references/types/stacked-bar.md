@@ -1,5 +1,7 @@
 # Stacked bar
 
+**Argues:** Several series summed into one bar per category, so a single mark carries both the total (the bar's full length) and the composition (each segment's own length within it).
+
 ## What it's for
 
 Several series summed into one bar per category, so a single mark carries both the total (the
@@ -56,6 +58,33 @@ though the fill itself was a perfectly legitimate, colourblind-safe choice for t
 that fixed it generalises cleanly to every stacked bar: the mark carries the hue, the label carries
 the value, and the two are never allowed to be the same colour, no matter how well that colour
 passed its own test as a fill.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the bar lengths, which are the totals and the only free comparison a stack gives
+- **Then** the two segments of the row the claim names — stacked `[level, growth]`, not `[earlier, later]`, so no segment's number has to be subtracted from another
+- **Then** every segment's own number, because a segment that does not start at zero cannot be measured by eye
+- **Subordinate** — the zero-based scale, the row names, the two-swatch key, the unit said once
+- **The claim lands on** the growth segment of the subject against the growth segment of the leader
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- stack `[earlier level, later level]` — that makes the reader subtract; the repair this type owes is that they do no arithmetic at all
+- drop a number from a segment too narrow to hold one: that is a placement problem, never a licence — such a row prints both figures past the bar's end as one run, which keeps each number and shows the addition
+- reach for a stack where a value FELL: a negative segment cannot be drawn, and the script says so in its own error message and names the forms that can
+
+## Precision to assert
+- one zero-based scale for every bar
+- shares sum to the same asserted total, and every segment prints its own number — none silent
+- all four parts of the claim are asserted: the largest adder, that it added more than the leader, that the leader started several times higher, and that the leader still holds the largest total
+
+## Devices the worked example implements
+- **`[level, growth]` stacking** — the choice that removes the reader's arithmetic, and the refusal it implies (`render-directions.mjs`)
+- **Sub-pixel segments printed as one run past the bar's end** — `a-segment-not-starting-at-zero-carries-its-own-number` kept at any width (`DirectedStackedBar.tsx`)
+- **A negative-segment refusal that names the right form** — a waterfall or a diverging bar (`render-directions.mjs`)
 
 ## Worked example
 

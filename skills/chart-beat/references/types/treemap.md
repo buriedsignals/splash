@@ -1,5 +1,7 @@
 # Treemap
 
+**Argues:** A treemap answers "how does a total break down, when the pieces ALSO belong to groups worth keeping together" — area encodes each item's value and items sharing a group are laid out as contiguous tiles.
+
 ## What it is for
 
 A treemap answers "how does a total break down, when the pieces ALSO belong to groups worth keeping
@@ -53,6 +55,34 @@ floor, even though the same white cleared comfortably on a darker cell in the sa
 holds: pick each cell's label ink by the actual measured contrast against that exact fill, checking
 both white and dark options and using whichever wins — never a single luminance threshold applied
 uniformly across every hue in the palette.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the largest cell, then across the squarified rows in descending area
+- **Then** each cell's own three registers — value, subject, basis — so a figure never appears without the kind of figure it is
+- **Then** the accented thread running through the field, which is the argument and is deliberately NOT the maximum
+- **Subordinate** — the two remainder cells (the thread's own and the field's), each carrying its number and its count; the key
+- **The claim lands on** the thread's total area against the whole, with the largest cell visibly outside it
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- let the accent coincide with the maximum — the plate refuses to render if the largest cell ever joins the thread, because at that point a reader can no longer tell which of the two the colour means
+- fold the thread into a neutral remainder: a remainder that mixes the thread with the field is not a remainder, it is a place the argument goes to hide, so the tail is split in two
+- draw an accented cell with a number and no name — an assertion with nothing to attach it to; the ladder gives up a country before it gives up that name
+- skip squarification: a treemap that is not squarified draws slivers, and a sliver is a shape whose area a reader cannot read at all
+
+## Precision to assert
+- tile area stays proportional to the asserted value, and the cells tile the box
+- how many cells are drawn is a LADDER whose rung is chosen by whether every drawn cell can hold its own figure; what does not fit is folded into a remainder that carries its own number too
+- a cell too small for all three registers drops the BASIS first and the SUBJECT second — the value is the last thing to go, and a cell that cannot hold the value does not exist
+
+## Devices the worked example implements
+- **The accent-is-not-the-maximum refusal** — a reference's rule turned into a check rather than an intention (`render-directions.mjs`)
+- **A remainder split along the thread** — with each half carrying its number and its count (`render-directions.mjs`)
+- **Three registers per label, dropped in a stated order, name wrapped to the cell** — because a treemap's cells are whatever shape the data makes them (`DirectedTreemap.tsx`)
 
 ## Worked example
 

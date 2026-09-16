@@ -1,5 +1,7 @@
 # Cartogram (area distortion — and tile cartogram)
 
+**Argues:** A cartogram answers "how big is this region's VALUE," honestly, by distorting each region's own area to be proportional to a number — trading recognisable geography for magnitude.
+
 ## What it's for
 
 A cartogram answers "how big is this region's VALUE," honestly, by distorting each region's own area
@@ -106,6 +108,33 @@ tile — an affine map per country, the shape giving way to the tile's rect in t
   corner the tiles leave. Every text the live pivot can show is measured in Bun.
 - The rings are clipped, not clamped. The tile's code register is the axis voice sized to what every tile holds,
   never under the floor. `key` cannot be a prop name on a React component — React keeps it.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place. On a map the basemap is a MapTiler plate baked once per filed direction and tinted by it, every mark placed from that plate's RECORDED camera (`frameCorners`, measured with `map.unproject()` after the camera settles — never the nominal bounds, which `fitBounds` widens) — except where the form gives up position, where the refusal of a basemap is reasoned on the plate.
+
+## Reading stations
+- **Enter at** the field of tiles, every unit the same size, which is what the form buys
+- **Then** the classed fills across it, the shape the claim is about
+- **Then** the code inside each tile — a reader must be able to say which unit a tile is, or the geography it preserves is decoration
+- **Subordinate** — the key with its breaks in the data's units and its classes named in their own colours; the reading form saying the layout is DRAWN, not measured
+- **The claim lands on** the two averages the plate prints, one of which only this form can show
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- put map tiles under the grid — the form has just given up position, and a basemap would assert that the cell is THERE exactly where the form says it is not; the refusal is reasoned on the plate, not omitted
+- draw a missing unit as a pale class: a flat neutral floored the same way landed on exactly the tone the lowest class owned, so the missing tile has NO fill and a dashed edge, because no class is hollow
+- measure the legibility floors on the PITCH rather than on the drawn tile — the gap between two tiles carries no name, and measuring the pitch shipped a 15 px tile against a 16.4 px floor
+
+## Precision to assert
+- the designed grid is checked BOTH ways against the data — every code in the grid has a row, every row has a tile
+- both averages are computed from the same frozen shapes in the same equal-area projection the choropleth uses, so the comparison is between two drawings of ONE dataset
+- the bottom of the ramp is floored at 3:1 against the direction's own ground, and the plate refuses if the direction's colours cannot reach it
+
+## Devices the worked example implements
+- **A hand-authored grid, checked both ways, and declared as drawn** — the one thing on the plate a reader cannot check against the source, so the plate says it (`render-directions.mjs`)
+- **Two floors measured on the DRAWN tile** — height against the register's band, width against the widest code (`DirectedTileCartogram.tsx`)
+- **A hollow missing tile** — outside the ramp, not merely beside it (`DirectedTileCartogram.tsx`)
 
 ## Worked example
 

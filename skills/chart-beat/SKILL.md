@@ -135,6 +135,47 @@ system `/Applications/Google Chrome.app` — a prerequisite a journalist's lapto
 the preflight would then have to ask for. resvg installs with the root, renders in milliseconds,
 and exposes `getBBox()`, which is what makes a **measured** gutter possible at all.
 
+### The type index
+
+Each sheet states what the type argues, its reading stations in one composed frame, what a
+composition of this type must NOT do, the precision to assert, the devices its worked example
+implements and the worked example's own CODE.
+
+| type | sheet | static worked example |
+| --- | --- | --- |
+| Area (and stacked area) | `references/types/area.md` | `proof/static-area-swiss-co2` |
+| Bar and column | `references/types/bar-and-column.md` | `proof/static-bar-top-emitters-2024` |
+| Beeswarm | `references/types/beeswarm.md` | `proof/static-beeswarm-co2-per-person` |
+| Box plot | `references/types/boxplot.md` | `proof/more-boxplot-france-co2-decades` |
+| Bullet | `references/types/bullet.md` | `proof/static-bullet-low-carbon-share` |
+| Bump (ranking-over-time) | `references/types/bump.md` | `proof/static-bump-emitter-rank` |
+| Calendar heatmap | `references/types/calendar-heatmap.md` | `proof/static-calendar-heatmap-geneva` |
+| Connected scatter | `references/types/connected-scatter.md` | `proof/static-connected-scatter-lowcarbon` |
+| Diverging bar | `references/types/diverging-bar.md` | `proof/static-diverging-bar-eu-per-capita` |
+| Diverging stacked bar (Likert) | `references/types/diverging-stacked-bar.md` | `proof/static-diverging-stacked-electricity` |
+| Dot strip | `references/types/dot-strip.md` | `proof/static-dot-strip-lowcarbon-spread` |
+| Dumbbell (range plot) | `references/types/dumbbell.md` | `proof/more-dumbbell-life-expectancy-gains` |
+| Gantt | `references/types/gantt.md` | `proof/static-gantt-top-ten-tenure` |
+| Grouped bar | `references/types/grouped-bar.md` | `proof/static-wind-vs-solar` |
+| Heatmap (matrix) | `references/types/heatmap.md` | `proof/static-heatmap-europe-electricity` |
+| Histogram | `references/types/histogram.md` | `proof/static-carbon-footprint-spread` |
+| Line | `references/types/line.md` | `proof/co2-suisse` |
+| Lollipop | `references/types/lollipop.md` | `proof/static-lollipop-co2-per-person` |
+| Marimekko (mosaic plot) | `references/types/marimekko.md` | `proof/static-marimekko-electricity-mix` |
+| Parallel coordinates | `references/types/parallel-coordinates.md` | `proof/static-parallel-coordinates-electricity-mix` |
+| Pictogram (isotype) | `references/types/pictogram.md` | `proof/static-pictogram-europe-lowcarbon` |
+| Pie and donut | `references/types/pie-and-donut.md` | `proof/static-donut-world-co2-share` |
+| Population pyramid | `references/types/population-pyramid.md` | `proof/static-swiss-age-pyramid` |
+| Radar (spider) | `references/types/radar.md` | `proof/static-radar-electricity-mix` |
+| Sankey | `references/types/sankey.md` | `proof/static-sankey-electricity-sources` |
+| Scatter (and bubble) | `references/types/scatter.md` | `proof/static-income-life-expectancy` |
+| Slope (slopegraph) | `references/types/slope.md` | `proof/static-slope-europe-lowcarbon` |
+| Small multiples | `references/types/small-multiples.md` | `proof/static-small-multiples-lowcarbon` |
+| Stacked bar | `references/types/stacked-bar.md` | `proof/static-stacked-bar-lowcarbon-growth` |
+| Streamgraph | `references/types/streamgraph.md` | `proof/static-streamgraph-swiss-electricity` |
+| Treemap | `references/types/treemap.md` | `proof/static-treemap-europe-capacity` |
+| Waterfall (bridge) | `references/types/waterfall.md` | `proof/static-germany-electricity-bridge` |
+
 ## How it works (the shape)
 
 1. **The brief names the subject, the accent and the source.** The component is written from it.

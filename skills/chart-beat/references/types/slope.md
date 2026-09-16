@@ -1,5 +1,7 @@
 # Slope (slopegraph)
 
+**Argues:** A slope chart answers "who moved, in which direction, and by how much, between exactly two moments" — for many categories at once.
+
 ## What it is for
 
 A slope chart answers "who moved, in which direction, and by how much, between exactly two moments"
@@ -65,6 +67,33 @@ specifically because there's already an accent colour doing visual work there �
 line's end-value label in that same accent hue is exactly the move that has previously failed WCAG
 contrast in this codebase. Keep every value label in the page's neutral ink; let the line itself, not
 its printed number, carry the accent.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the field of tilts — one direction across the whole set, which is the first half of the claim
+- **Then** the one pair that crosses, which is what a dumbbell of the same data could never show
+- **Then** the end labels at both rails, LOAD-BEARING because there is no value axis: without an axis the plate owes the reader every end value it draws
+- **Subordinate** — the two rail heads as chips (`2000`, `2024`), not axis ticks; the change as a third fact at a third weight
+- **The claim lands on** the crossing, ringed at the point the two lines actually meet
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- believe a crossing on sight — a pair crosses when the sign of their gap FLIPS between the rails, and the exclusivity half of the sentence is derived the same way
+- truncate a category label to fit a fixed gutter: the gutter is sized to the label, wrapping if the widest needs it, and type shrinks only as a last resort — the data is never the thing that gives
+- drop a label to open the pitch: the placer may PUSH a label and may never drop one, and it reports the largest push it made
+
+## Precision to assert
+- both end columns keep the same shared scale
+- every drawn line carries both its numbers, because there is no value axis
+- the de-collision is `decollide` from `render-still.mjs`, called ONCE on the ranking to be read down the page, so a label at either end takes its own row's placement and a moved label owes a leader
+
+## Devices the worked example implements
+- **A derived crossing** — the one thing this type exists to show is the one thing not believed on sight (`render-directions.mjs`)
+- **Rail heads as chips** — `each-rail-is-headed-by-what-it-is` (`DirectedSlope.tsx`)
+- **A push-never-drop label placer that reports its worst push** — a judgement handed to a person rather than hidden (`DirectedSlope.tsx`)
 
 ## Worked example
 

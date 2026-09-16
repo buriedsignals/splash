@@ -1,5 +1,7 @@
 # Locator
 
+**Argues:** A locator answers "where, exactly" — it names a set of places relevant to the story with nothing more than position and, optionally, a category.
+
 ## What it's for
 
 A locator answers "where, exactly" — it names a set of places relevant to the
@@ -78,6 +80,33 @@ continent fitted "meet", the close-up centred on the subject on both axes — in
 linear in the eased travel. The focus country's tint and its regions are MapTiler Countries (`level` 0 and 1, joined by
 `iso_a2`) beneath the basemap's water, the subject a circle ring and dot, every place's name a symbol layer bound to the
 camera having settled; each camera is measured, and names, halos and the credit are placed on the measured close-up.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place. On a map the basemap is a MapTiler plate baked once per filed direction and tinted by it, every mark placed from that plate's RECORDED camera (`frameCorners`, measured with `map.unproject()` after the camera settles — never the nominal bounds, which `fitBounds` widens) — except where the form gives up position, where the refusal of a basemap is reasoned on the plate.
+
+## Reading stations
+- **Enter at** the subject, ringed in the accent — not a place class at all, but the beat's subject wearing the clothes it wears on every other form in this base
+- **Then** the three classes of place, separated by TYPOGRAPHY alone: administrative areas in the axis register uppercased and tracked in muted ink; settlements in the annot register, mixed case, a step darker, each on its own open dot; water in the annot register in italic, in the water tint
+- **Then** the subject's own figure
+- **Subordinate** — the basemap giving up its contrast, the scale of the frame, the printed rules saying which places are named and which are not
+- **The claim lands on** the ring, placed on a coastline a reader can recognise
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- name more than the story touches — a locator map that named provinces would have made the reader look for one, so both cuts are RULES and both are printed
+- let a marker's size carry a value: there is none on this type
+- seat an area's name from the whole polygon's centroid — a country whose centroid lies outside the camera reports "no room" while a third of the plate is that country, unnamed; the seat is the centre of the part IN FRAME
+
+## Precision to assert
+- a label may be pushed, never dropped, never laid on another: each takes the first of six offsets that clears every box already placed and stays inside the camera, the subject placed first because it is the one label that may not move, and the plate reports what it could not place
+- the camera's bounds always come from the subject
+- the projection's cost is stated and shown to be negligible at this scale — a fraction of a per cent across the frame — rather than assumed
+
+## Devices the worked example implements
+- **Three classes, three typographic treatments** — `three-classes-of-place-three-treatments` made testable for the first time in this tree (`DirectedLocator.tsx`)
+- **In-frame seating** — an area named at the centre of what the reader can see (`render-directions.mjs`)
+- **A push-never-drop placer that reports its failures** — `DirectedLocator.tsx`
 
 ## Worked example
 

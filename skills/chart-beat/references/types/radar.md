@@ -1,5 +1,7 @@
 # Radar (spider)
 
+**Argues:** A radar chart plots several variables as axes radiating from a shared centre, each on the SAME radial scale, with one item's readings joined into a closed polygon — so the shape of that polygon is the read.
+
 ## What it is for
 
 A radar chart plots several variables as axes radiating from a shared centre, each on the SAME radial
@@ -50,6 +52,33 @@ the hue instead on a small decorative swatch exempt from the text-contrast rule.
 no mechanical guard behind it: this type has no built-in warning for the axis-order/area-distortion
 problem described above, so treat every radar's axis selection and ordering as something to check by
 eye against the actual numbers before publishing, not something the chart itself will catch for you.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the two polygons' shapes against each other — the read is the shape, and here the claim is that they share almost nothing
+- **Then** the spoke the claim turns on, with both shares at its end
+- **Then** the family grouping of the spokes, ordered by family clockwise, which is the editorial decision this type makes and hides
+- **Subordinate** — the rings, the ceiling value, the key naming the two items, the spoke names
+- **The claim lands on** the opposition of the two outlines, checkable spoke by spoke
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- put non-commensurable variables on the spokes — different units forced onto one radius produce a shape whose size is partly an artefact of unit choice; here every spoke is a share of the SAME denominator
+- treat axis choice and axis order as an incidental layout detail: it is an editorial decision, made once from the subject and stated on the plate
+- let a polygon's area be read as a quantity — area is sensitive to axis order and count in a way the numbers are not, and that is the type's structural weak point rather than a bug to fix in code
+
+## Precision to assert
+- every spoke keeps the same radial scale, and each polygon's own spokes sum to the stated whole
+- the ceiling is the next round step above the largest share, stated
+- the totals and the headline gap are asserted before the render
+
+## Devices the worked example implements
+- **One denominator for every spoke** — what makes the form legitimate here rather than merely available (`render-directions.mjs`)
+- **Spokes ordered by family, clockwise from twelve** — the editorial decision put on the plate (`DirectedRadar.tsx`)
+- **A stated ceiling** — the radial scale given a number so a shape cannot be read as a magnitude it is not (`DirectedRadar.tsx`)
 
 ## Worked example
 

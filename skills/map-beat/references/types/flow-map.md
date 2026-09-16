@@ -1,5 +1,7 @@
 # Flow map (route — and origin-destination)
 
+**Argues:** A flow/route map answers "what path did this take, and what did it pass through, in order" — where the sequence of places crossed is part of the claim.
+
 ## What it's for
 
 A flow/route map answers "what path did this take, and what did it pass
@@ -128,6 +130,33 @@ lon/lat and its width a constant in px at the still camera; the trace a cut of t
 band's source each frame (`setData`) — `line-gradient` needs `line-progress`, refused in a binding, and a dash restarts at
 tile edges. The node and the named hosts are circle + symbol layers; a name stands beside every seat dot. The key and the
 credit stand on the measured open sea, clear of every band.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place. On a map the basemap is a MapTiler plate baked once per filed direction and tinted by it, every mark placed from that plate's RECORDED camera (`frameCorners`, measured with `map.unproject()` after the camera settles — never the nominal bounds, which `fitBounds` widens) — except where the form gives up position, where the refusal of a basemap is reasoned on the plate.
+
+## Reading stations
+- **Enter at** the origin node, which the crop is guaranteed to keep: every band leaves from it, and a west-anchored crop once cut it in half
+- **Then** the widest bands, each a name and a number at its own end
+- **Then** the width scale in the key, in the data's units, MEASURED at the size the plate actually drew rather than declared in advance
+- **Subordinate** — the land in one faint step off the ground, no borders and no water tint, because the ink belongs to the flow; the reading line saying the routes are schematic
+- **The claim lands on** the two widest bands against the rest
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- tile the bands around the node's circumference — an arc of the rim is a DIRECTION, and spending the rim on widths spends the directions; twenty-five ribbons then cross the countries they are about
+- inherit the sibling map beats' camera: the camera here is the box THE FLOWS need, and framing the whole continent spends four fifths of the plate on empty sea while the bands pile into a thumbnail
+- drop a band too thin to draw in silence — those cases keep a dot at their seat and are counted under the key, or the plate reads as the whole of the thing while drawing seven eighths of it
+
+## Precision to assert
+- width is the quantity, on one stated scale, and the scale is measured on the drawn plate
+- the plate refuses to render if the subject is not the largest, if the two largest do not take about the claimed share, or if the total falls under its stated floor
+- the widest band is capped at a share of the map and every other width follows from it, so the plate stays a map rather than becoming a ribbon diagram over a faint basemap
+
+## Devices the worked example implements
+- **A camera computed from the flows** — the box the origin and the largest hosts need, padded, with the rule that picks them printed (`render-directions.mjs`)
+- **A crop that keeps the origin** — the node slides into the box with room for its own label (`render-directions.mjs`)
+- **Undrawn bands kept as dots and counted** — Minard's rule under a floor (`DirectedFlowMap.tsx`)
 
 ## Worked example
 

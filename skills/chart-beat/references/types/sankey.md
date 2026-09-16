@@ -1,5 +1,7 @@
 # Sankey
 
+**Argues:** A sankey diagram answers "how does a quantity flow and split as it moves through a sequence of stages" — ribbons between columns of nodes whose THICKNESS is proportional to the amount flowing.
+
 ## What it is for
 
 A sankey diagram answers "how does a quantity flow and split as it moves through a sequence of
@@ -54,6 +56,33 @@ carry it on a small decorative swatch exempt from the text-contrast rule rather 
 itself. Because sankey ribbons carry both category (via hue) and quantity (via thickness) at once, a
 reader relying on colour alone to track one flow across the diagram needs the swatch-and-neutral-name
 pattern just as much as any bar-family label does.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the thickest ribbon, which is the claim
+- **Then** the node it leaves and the node it arrives at, each printing its own number
+- **Then** the rest of the fan, which is what makes the thick ribbon's share legible
+- **Subordinate** — the node names and totals beside the rails, the ribbon fills
+- **The claim lands on** the share of one node carried by one ribbon, readable as a thickness against the node's own height
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- let a node's total stop being the sum of its own ribbons — conservation on both rails is the form's promise and is asserted to a stated tolerance
+- drop the node's printed number: conservation is what makes 54 flows legible, and it only works if the node says what it is
+- reach for this form when the question is one-sided — a stacked bar answers that, and a sankey is for where each source GOES
+
+## Precision to assert
+- every node's total equals the sum of its own ribbons, on both rails, to within a stated rounding tolerance
+- one pixels-per-unit scale for every node and every ribbon
+- the headline's share is computed from the frozen file and asserted before the render
+
+## Devices the worked example implements
+- **Conservation asserted on both rails** — the form's own promise made a check (`render-directions.mjs`)
+- **Every node printing its own number** — what keeps 54 flows readable (`DirectedSankey.tsx`)
+- **One mark per pair** — the two-sided question answered without a second chart (`DirectedSankey.tsx`)
 
 ## Worked example
 

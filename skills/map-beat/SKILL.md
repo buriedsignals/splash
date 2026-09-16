@@ -147,6 +147,23 @@ The second trap, one level up: **`idle` alone never fires when one tile never re
 gates on idle **or** a bounded settle; the live map waits for idle **and** `areTilesLoaded()` and
 fails the frame rather than ship a missing tile.
 
+### The type index (static)
+
+Each sheet states what the type argues, its reading stations in one composed frame, what a
+composition of this type must NOT do, the precision to assert, the devices its worked example
+implements and the worked example's own CODE.
+
+| type | sheet | static worked example |
+| --- | --- | --- |
+| Cartogram (area distortion — and tile cartogram) | `references/types/cartogram.md` | `proof/static-cartogram-europe-lowcarbon` |
+| Choropleth | `references/types/choropleth.md` | `proof/static-choropleth-europe-lowcarbon` |
+| Contour / isoline | `references/types/contour-isoline.md` | `proof/static-contour-europe-distance` |
+| Dot density | `references/types/dot-density.md` | `proof/static-dot-density-europe-stations` |
+| Flow map (route — and origin-destination) | `references/types/flow-map.md` | `proof/static-flow-map-ukraine-protection` |
+| Hex grid (spatial binning — and hex cartogram) | `references/types/hex-grid.md` | `proof/static-hex-grid-europe-protection` |
+| Locator | `references/types/locator.md` | `proof/static-locator-zaporizhzhia` |
+| Proportional symbol (symbol / bubble map) | `references/types/proportional-symbol.md` | `proof/static-proportional-symbol-europe-capacity` |
+
 ## The live-map video path (start here for a map video)
 
 | step | read / do |

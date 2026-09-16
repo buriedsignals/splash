@@ -1,5 +1,7 @@
 # Lollipop
 
+**Argues:** A lollipop chart is a bar chart's thin sibling: same job, same baseline-at-zero rule, same encoding — just a thin stem and a dot standing in for the solid rectangle.
+
 ## What it is for
 
 A lollipop chart is a bar chart's thin sibling: same job (rank or compare a magnitude per category),
@@ -58,6 +60,33 @@ running text measured under WCAG's 4.5:1 floor even though the same hue was perf
 colour on a stem or a dot. The fix is structural, not cosmetic — keep every label in ink, keep every
 accent on the mark, and treat "which element is text and which is a mark" as the thing that decides
 its colour, not "which elements are near each other."
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the heads, whose HEIGHTS FROM ZERO are the first reading — that is what separates this from the dumbbell, where the gap is the first reading
+- **Then** the paired stems, the earlier state a lighter TINT of the later state's own hue, so a pair reads as one subject in two states rather than as two subjects
+- **Then** the change glyph — the direction gets a glyph before it gets a number, so the sign survives a glance, and the triangle is drawn as a PATH rather than set as a character no face guarantees
+- **Subordinate** — the value above each head, the unit said once, the dates said once, and the four reserved rows under the baseline (dates, change, name, and the selection rule)
+- **The claim lands on** the two levels the ratio is taken between
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- draw the earlier state in grey or in a second hue — the same hue, lighter, taken as far toward the ground as it can go while still clearing the non-text floor, because a past nobody can see is not a state but an absent mark
+- lift the stems off zero: a lollipop is read as a height from zero, and a height a reader cannot compare is a dot on a line
+- print a value label in the accent, or reserve only three rows under the baseline when the plate also has to say which cases it chose
+
+## Precision to assert
+- one zero-based value scale for every stem
+- the cases are a computed rule, and the plate refuses if the subject did not move as claimed, if the ratio did not fall into the stated band, or if the set does not carry most of the whole
+- the stems owe six value-bands of room — the tallest stem, the number above its head, and enough between pairs to rank them by eye — and the copy ladder spends until that is met
+
+## Devices the worked example implements
+- **One hue at two chromas** — `two-states-of-one-measure-are-one-hue-at-two-chromas`, with the tint floored against the ground (`DirectedLollipops.tsx`)
+- **A change triangle drawn as a path** — no dependence on a glyph the face may not carry (`DirectedLollipops.tsx`)
+- **Four reserved rows under the baseline** — including the line that states the selection rule (`render-directions.mjs`)
 
 ## Worked example
 

@@ -1,5 +1,7 @@
 # Dot strip
 
+**Argues:** A dot strip lays one horizontal lane per category and marks every raw observation in that category as a dot positioned by its own value, with a small deterministic jitter and a neutral tick at the category's mean.
+
 ## What it is for
 
 A dot strip lays one horizontal lane per category and marks every raw observation in that category as
@@ -47,6 +49,33 @@ hand-built legend: it has to reserve exactly the space it will use once wrapped,
 chart might render at, or the mean-tick and sample-dot key can overrun the frame at the narrow end of
 the responsive range, silently clipping the one piece of text that tells a reader what the neutral tick
 even means.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the SHAPE of each field — where it starts, where it ends, where it bunches; that shape is the claim, and no other paired form in this tree lets a reader see a distribution move
+- **Then** the two extremes, named, because they are what the claim measures
+- **Then** the leaders joining a category to itself across the lanes, the only line on the plate
+- **Subordinate** — the lane rules, the shared ticks, the mean ticks
+- **The claim lands on** the distance between the two lanes' floors against the distance between their ceilings
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- let a dot move to avoid an overlap without the move being visible as declared jitter — a silent nudge is a value moved
+- give the two lanes different scales, or recolour a dot between them: a dot is the same category twice
+- summarise: this is the one lossless distribution in the catalogue, and a box or a bin gives away what it is for
+
+## Precision to assert
+- one scale for both lanes over the full domain
+- the plate refuses to render if the floor did not rise far while the ceiling barely moved, if the spread did not close by more than the stated fraction, or if the subject is not the category that actually was the extreme
+- the floor, the ceiling, the spread and the median are all computed from the frozen file
+
+## Devices the worked example implements
+- **Leaders joining a category to itself** — what stops the two lanes reading as two populations (`DirectedDotStrips.tsx`)
+- **Chips stacked into rows, never sideways** — separation paid for across the lane, never along the axis (`DirectedDotStrips.tsx`)
+- **Three refusals on the shape of the move** — the claim's own geometry asserted before the render (`render-directions.mjs`)
 
 ## Worked example
 

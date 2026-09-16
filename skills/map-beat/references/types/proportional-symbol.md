@@ -1,5 +1,7 @@
 # Proportional symbol (symbol / bubble map)
 
+**Argues:** A proportional symbol map answers "how big is this quantity AT this specific place" — where the geography is a set of POINTS, not a partition of area.
+
 ## What it's for
 
 A proportional symbol map answers "how big is this quantity AT this specific
@@ -82,6 +84,33 @@ On the live MapTiler map (2026-09-15, awaiting the owner): each symbol that arri
 `circle` layer, hollow, its radius a constant expression bound to its own arrival field (less half the stroke — MapLibre
 strokes outside the radius); the rest share one layer bound to their presence. The key and the counts stay SVG, the key
 and the credit on the measured open sea, clear of every symbol.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place. On a map the basemap is a MapTiler plate baked once per filed direction and tinted by it, every mark placed from that plate's RECORDED camera (`frameCorners`, measured with `map.unproject()` after the camera settles — never the nominal bounds, which `fitBounds` widens) — except where the form gives up position, where the refusal of a basemap is reasoned on the plate.
+
+## Reading stations
+- **Enter at** the largest circles, whose AREA is the quantity
+- **Then** the field of smaller ones, hollow, so an overlap accumulates rather than hiding one place behind another
+- **Then** the key's NAMED circles at stated megawatts, computed by the same function as the marks — or the key is a decoration that happens to sit near the map
+- **Subordinate** — the basemap giving up its contrast, the water as a tint, the printed cut saying what is not drawn and why
+- **The claim lands on** the share of the quantity the drawn circles carry, printed beside their count
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- scale by radius: area is proportional to the value, so the radius runs on a square root
+- fill the circles — filled discs would let the largest sites erase the smaller ones beside them, and the map would answer its own question by hiding the evidence
+- draw every mark because the overlap rule permits it: the rule had a condition nobody had measured, and at full density the field measured 302 % of a cell's area in outline — a blot, not a field a reader counts
+
+## Precision to assert
+- symbol AREA, never radius alone, is proportional to the asserted value, and the same function computes the marks and the key
+- the density floor is measured on the WORST cell of a grid over the camera, not on an average, and the component enforces it again at the camera it actually got
+- the threshold that cut the field is printed on the plate, with its reason
+
+## Devices the worked example implements
+- **A capacity-threshold ladder against a measured ink floor** — the readability condition the overlap rule always had, made a number (`render-directions.mjs`)
+- **Hollow circles** — `an-overlap-accumulates-rather-than-occluding` (`DirectedProportionalSymbol.tsx`)
+- **A key drawn by the marks' own function** — no second derivation of the same number (`DirectedProportionalSymbol.tsx`)
 
 ## Worked example
 

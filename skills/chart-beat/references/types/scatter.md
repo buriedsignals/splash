@@ -1,5 +1,7 @@
 # Scatter (and bubble)
 
+**Argues:** A scatter plot answers one question: as one continuous variable moves, what happens to another, across every unit at once.
+
 ## What it is for
 
 A scatter plot answers one question: as one continuous variable moves, what happens to another,
@@ -61,6 +63,33 @@ own corner furniture: an axis label or title sitting in the plot's own corner ca
 a real point that happens to fall underneath it — a reader loses a data point and never knows it
 was there. If a point could land under a corner label, give the axis a little extra headroom on
 that side rather than trusting the two to never collide.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the cloud's SHAPE — the steep rise then the flattening, which is the claim; no point is the subject
+- **Then** the declared break, which is where the accent goes
+- **Then** the two measured bands either side of it
+- **Subordinate** — every point in one muted, semi-transparent neutral; the two axes with the log one declared as such; the ticks
+- **The claim lands on** the width of the upper band against the lower, read off the marks
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- spend the accent on a member: a scatter's argument is the shape, not any one member's name, unless a specific point earns a label
+- map a value to RADIUS instead of AREA — and, past that, let a minimum radius pin most of the cloud at one size while the caption says the area is the value
+- state a band's limits from memory: a render audit caught this brief and its render both naming a low end well above the real one
+
+## Precision to assert
+- both axes keep the same fixed scale and a log axis is declared as one
+- both bands are measured off the data, and the beat throws if the upper band is not much narrower than the lower
+- every figure in the claim is recomputed from the frozen file rather than carried in prose
+
+## Devices the worked example implements
+- **No named subject, accent reserved and unused** — the type's own rule taken literally (`DirectedScatter.tsx`)
+- **An area-true size scale** — and where area-true and visible are not both available, the trade measured (`IncomeLifeExpectancyScatter.tsx`)
+- **A declared break rather than a fitted one** — the threshold is editorial and is printed (`render.mjs`)
 
 ## Worked example
 

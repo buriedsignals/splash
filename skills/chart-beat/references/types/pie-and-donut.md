@@ -1,5 +1,7 @@
 # Pie and donut
 
+**Argues:** A pie (or donut) answers exactly one question: of a fixed whole, what share does each part hold, when there are few enough parts that the reader can hold all of them in view at once.
+
 ## What it is for
 
 A pie (or donut — same chart, a hole in the middle and a total in it) answers exactly one question:
@@ -65,6 +67,33 @@ non-negotiable rather than nice-to-have: every slice's hue must be colourblind-s
 its neighbours, and every slice's label (or its legend entry) must actually render, every time — a
 label that silently fails to place due to overlap turns that wedge into color-only information for
 a CVD reader, with no other channel left to fall back on.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the ring of the case the claim names, its two concentric arcs a few pixels apart so the change is a GAP rather than a second mark
+- **Then** the share printed in the hole — the hole's job, and a floor the ladder spends copy to meet
+- **Then** the tonnes under each ring, because a share chart that does not carry its own absolute values can be read backwards and stay silent about it
+- **Subordinate** — the ring tracks, the names under the rings, the earlier arc in the measured past treatment
+- **The claim lands on** the two named cases' arcs having exchanged length between the rings
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- carry identity with a flag or any asset this base does not ship — a plate that drew approximations of them would be inventing a fact about a country; identity is the name under the ring
+- let a turn mean something different on two rings: one full turn is the whole, on every ring, at one radius, because six rings side by side ARE a small multiple
+- recolour the subject — the chroma axis is already spent on the two dates, so the subject takes a SHAPE: a hairline hugging its own number
+
+## Precision to assert
+- wedge angles sum to the same asserted whole on every ring
+- two floors are measured before the rings are drawn — the shortest arc must clear a stated drawn length (an arc a reader cannot see is not a share, it is a gap in the ring) and the hole must hold its own number
+- the plate refuses if the two named cases did not swap, if the whole did not grow by at least the stated fraction, or if NO case falls into the share-versus-absolute trap the reading line warns about
+
+## Devices the worked example implements
+- **Tint measured against a separation floor, not only against the ground** — two chromas a reader cannot separate on concentric arcs is worse than a grey they can, and the disagreement between two references is recorded (`render-directions.mjs`)
+- **The absolute value under every ring** — the form's own trap closed on the plate (`DirectedDonuts.tsx`)
+- **The subject ringed, not recoloured** — a hairline hugging its number (`DirectedDonuts.tsx`)
 
 ## Worked example
 

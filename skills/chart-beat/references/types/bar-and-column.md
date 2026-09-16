@@ -1,5 +1,7 @@
 # Bar and column
 
+**Argues:** One value per category, encoded as the LENGTH of a rectangle from a shared baseline.
+
 ## What it's for
 
 One value per category, encoded as the LENGTH of a rectangle from a shared baseline. Length sits
@@ -62,6 +64,33 @@ floor even though the same white reads fine on a darker or lighter fill; the dar
 the floor comfortably on that exact green. The only reliable fix is to measure both real contrast
 ratios against the actual fill in front of you and use whichever one is higher — never a luminance
 threshold standing in for a measurement.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the tallest bar, which here is also the subject — the one case `static-discipline.md`'s one-accent rule warns about
+- **Then** the dashed rule drawn at the subject's own level, running across every other bar: the comparison the claim makes is DRAWN, so a reader who ignores the colour entirely still sees the argument
+- **Then** the caption on that rule, carrying the computed sum, moved clear of the subject's own label
+- **Subordinate** — every other bar muted, the zero baseline kept as the floor the lengths are measured from, and no value axis at all
+- **The claim lands on** the rule against the muted bars — the arithmetic, not the colour
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- start the value axis anywhere but zero — non-negotiable for a length encoding
+- print a value label INSIDE a coloured fill: outside the mark the only contrast that has to hold is ink against the ground
+- add a gridline set beside ten printed numbers — the same decoding work done twice, which "every layer earns its place" removes
+
+## Precision to assert
+- the members and their order are computed by ranking the frozen file, with aggregate rows dropped and both counts printed
+- "the next five" is a search whose stop is computed, not a phrase typed into a title
+- the number format is chosen so no two ranks print the same figure in a chart whose whole job is a ranking
+
+## Devices the worked example implements
+- **The comparison drawn as a rule** — the argument survives a reader who cannot see the accent (`TopEmittersColumns.tsx`)
+- **Aggregates dropped by code shape** — only bare ISO-3166 alpha-3 rows are kept, which is what stops "Asia" topping a chart of countries (`render.mjs`)
+- **Category labels wrapped on MEASURED width, never rotated** — the wrap width is the band width, so a label cannot outgrow its column (`DirectedColumns.tsx`)
 
 ## Worked example
 

@@ -1,5 +1,7 @@
 # Line
 
+**Argues:** A continuous series read against an ordered axis, almost always time, encoded as position and joined into a single stroke that reads as one trend.
+
 ## What it's for
 
 A continuous series read against an ordered axis, almost always time, encoded as position and
@@ -70,6 +72,33 @@ line is which, which means it is the one thing that must never be allowed to ove
 illegibility. If two lines are going to land within a label's height of each other, nudge the
 labels apart — up and down, not sideways off the line's actual endpoint — rather than letting them
 print on top of one another and silently removing the one cue a colourblind reader had left.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the title, then the source under it
+- **Then** the reference rule and its label — the only piece of context carrying text
+- **Then** the curve crossing that rule: the rise, the plateau, the fall, which is the décor the claim sits in
+- **Subordinate** — the peak, MARKED but mute on its value, because the prose beside the visual already gives it; three labelled ticks; no legend at all
+- **The claim lands on** the last point and its label, at the end of the curve, in the accent
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- accent the maximum — the peak is not the subject, and accenting it is exactly the anti-pattern the doctrine names
+- force the value axis to zero: this is a line, the slope carries the value
+- repeat in a label what the surrounding text already says, or add a legend where two direct labels do the work
+
+## Precision to assert
+- a gap in the series breaks the line rather than being bridged across missing readings
+- the reference year is FOUND, not typed — the last year before the peak still at or below the last reading
+- nothing in the title, the label or the alt may overreach the source's own scope (here: territorial emissions, not a footprint)
+
+## Devices the worked example implements
+- **`crossing-geometry.ts`** — the crossing solved once and shared with every sibling format of this claim (`crossing-geometry.ts`)
+- **A marked but unnumbered peak** — the one place this plate refuses to repeat the prose (`DirectedLine.tsx`)
+- **Two direct labels instead of a legend** — one on the rule, one at the end of the curve (`DirectedLine.tsx`)
 
 ## Worked example
 

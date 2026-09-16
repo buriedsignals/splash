@@ -1,5 +1,7 @@
 # Diverging stacked bar (Likert)
 
+**Argues:** A diverging stacked bar answers "how did opinion split, for many items at once, when the response scale itself has a neutral middle" — segments stacked outward from a shared centre.
+
 ## What it is for
 
 A diverging stacked bar answers "how did opinion split, for many items at once, when the response
@@ -58,6 +60,33 @@ segments over. And because the two sides of the scale are colour-coded by design
 is the ONLY thing separating "leans positive" from "leans negative" for a segment sitting close to the
 centre — both ramps must stay CVD-distinguishable from each other at every step, not just from white,
 or the two directions of opinion the chart exists to contrast start reading as the same colour.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the lean — which side each row's mass falls on, which is the one thing this arrangement is for
+- **Then** the neutral straddling the centre, symmetric about the anchor so it adds to neither side
+- **Then** the two side totals, at the bar's ENDS, on the ground
+- **Subordinate** — the anchor, the side names, the row names; no axis ticks, because every length carries its own value
+- **The claim lands on** the row whose middle band outweighs both its wings
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- name the neutral by judgement — the level in the middle has to belong to neither side as a matter of CLASSIFICATION, and the plate says so in its reading line without saying whether it is good
+- print a label inside a segment: a single light/dark threshold fails on a mid-toned fill, so the totals go outside, at the ends, where one measurement against the ground covers them
+- let two neighbouring levels of the scale merge into one band
+
+## Precision to assert
+- every row sums to the same asserted total
+- the segment order is the response scale's own order and is fixed
+- the headline's comparison is asserted before the render
+
+## Devices the worked example implements
+- **A definitional neutral** — nuclear is neither fossil nor renewable, both statements definitional, and the plate states the definition rather than the verdict (`render-directions.mjs`)
+- **Totals outside the bar, at the ends** — the accessibility trap side-stepped rather than solved with a luminance rule (`DirectedDivergingStack.tsx`)
+- **A symmetric neutral about the anchor** — so the lean it draws is one side against the other and the middle adds to neither (`DirectedDivergingStack.tsx`)
 
 ## Worked example
 

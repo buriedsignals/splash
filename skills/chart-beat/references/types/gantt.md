@@ -1,5 +1,7 @@
 # Gantt
 
+**Argues:** A Gantt chart draws each item as a bar spanning its own start to its own end on one shared, to-scale time axis, one row per item — answering "when did this happen, how long did it take, and what overlapped with what."
+
 ## What it is for
 
 A Gantt chart draws each item as a bar spanning its own start to its own end on one shared, to-scale
@@ -49,6 +51,33 @@ typically the row's category name sitting in the row gutter, in neutral ink, rat
 printed inside a coloured fill — but if a value or duration label is ever added inside the bar itself,
 the same real-contrast-against-the-actual-fill discipline the rest of this family uses applies here
 too.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the block of unbroken rows at the top — the continuous spans are the claim's own set, and they are first because the rows are ordered by first appearance then tenure
+- **Then** the rows that arrive, leave, or both, and the holes in the two interrupted ones
+- **Then** the single-period row, which is what makes "at least once" concrete
+- **Subordinate** — the row names, the shared date axis, the grid
+- **The claim lands on** the count of unbroken rows, countable off the picture
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- compress a bar to make it fit — length is elapsed time, so a shortened bar is a falsified duration
+- merge an interrupted row into one span: the gap is a fact and it is drawn
+- let the caption go missing — a Gantt bar's length reads exactly like a plain bar's at first glance, so the caption stating that length means DURATION is not furniture
+
+## Precision to assert
+- every span is computed from the frozen ranking and the headline counts are asserted before the render
+- interruptions are FOUND, not listed, and the page says which periods
+- no span may be inverted: spans are built by walking sorted held periods, so an end can never precede its own start
+
+## Devices the worked example implements
+- **Tenure read out of a ranking** — the same file the bump beat draws, taken as duration rather than as position (`render-directions.mjs`)
+- **Interruptions kept as holes** — found by span count, not by a list (`render-directions.mjs`)
+- **Rows ordered by first appearance then tenure** — an order that is itself a claim, and stated (`DirectedGantt.tsx`)
 
 ## Worked example
 

@@ -1,5 +1,7 @@
 # Dumbbell (range plot)
 
+**Argues:** A dumbbell chart answers "how big is the gap between two values, for each of several categories, and which categories have the biggest gap" — two dots joined by a connecting line whose LENGTH is the point.
+
 ## What it is for
 
 A dumbbell chart answers "how big is the gap between two values, for each of several categories, and
@@ -58,6 +60,33 @@ collapses to "two dots, unknown series." And exactly like every other type in th
 labels belong in the page's neutral ink, never in either dot's own colour — a value label painted in
 a dot's accent hue has previously failed WCAG contrast here and had to be moved off the mark's colour
 entirely.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the top row, because the rows are sorted by GAP, descending — the sort IS the ranking the claim makes
+- **Then** the connecting bars, whose lengths are the reading; the two dots are its ends
+- **Then** the small legend naming the two series' colours — load-bearing here, and the deliberate exception to this discipline's "direct end labels, not a legend", because nothing positional tells a reader which dot is which series
+- **Subordinate** — the row names, the shared value scale, the ticks
+- **The claim lands on** the longest bar and the shortest, at the two ends of the sorted column
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- give this type one accent plus neutrals: a dumbbell has two colour ROLES, one per series, capped at exactly two
+- drop the legend as decoration — without a positional convention it is the only thing telling the reader which dot is which
+- anchor the value scale at zero: the gap is the point, and zeroing compresses every gap the chart exists to show
+
+## Precision to assert
+- the drawn bar length equals the asserted computed difference for every row
+- the rows' order is the computed order of gap, not a hand-kept list
+- the beat throws if any category did not move in the claimed direction
+
+## Devices the worked example implements
+- **Two CVD-safe hues, capped at two** — the series pair as the only colour decision (`DumbbellLifeExpectancyGains.tsx`)
+- **Rows sorted by gap, descending** — the ranking computed rather than typed (`render.mjs`)
+- **A legend declared load-bearing** — the exception written down where the next beat will read it (`DirectedDumbbell.tsx`)
 
 ## Worked example
 

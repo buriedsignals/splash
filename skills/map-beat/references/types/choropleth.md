@@ -1,5 +1,7 @@
 # Choropleth
 
+**Argues:** A choropleth answers "which of these named regions is proportionally worse or better off," where the regions are a partition the reader already recognises.
+
 ## What it's for
 
 A choropleth answers "which of these named regions is proportionally worse or
@@ -100,6 +102,33 @@ drops and changes when it is watched rather than read:
   stayed four seconds; the key was a plated block with a unit line that hid Iceland; the close-up centred
   Albania with half the shot on the Adriatic; an end card repeated the title; the source was set at the
   axis size. A QuickTime window left open on a replaced mp4 plays black — close it before re-opening.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place. On a map the basemap is a MapTiler plate baked once per filed direction and tinted by it, every mark placed from that plate's RECORDED camera (`frameCorners`, measured with `map.unproject()` after the camera settles — never the nominal bounds, which `fitBounds` widens) — except where the form gives up position, where the refusal of a basemap is reasoned on the plate.
+
+## Reading stations
+- **Enter at** the block of dark regions, which is the claim's shape
+- **Then** the exception, legible because it is a bright cell surrounded by dark ones — an adjacency no ranked list can form
+- **Then** the key, printing its breaks in the data's units and naming its classes in their own colours
+- **Subordinate** — three states, three fills: the studied regions on the ramp, the studied region with no reading in a neutral OUTSIDE the ramp and named, and the regions in frame but not in the study set in the faintest land step
+- **The claim lands on** the count above the threshold, checkable region by region against the key
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- shade by a raw COUNT when the honest quantity is a RATE — area would do uninvited work and the map lies on the first glance
+- leave a region with no reading in the lowest class: that reports it AT the bottom of the scale rather than absent
+- let the frame imply a reading it does not have — regions the camera cuts are coloured on their NATIONAL share, and the reading line says so
+
+## Precision to assert
+- the join is asserted and a dropped region throws at build time rather than rendering as a quiet no-data class
+- the geography in the claim is MEASURED, not felt: neighbours are derived from the frozen rings by a test that is coarse in the safe direction (it can only ever find more neighbours than exist), and "north or west" is a measurement on the projected anchors
+- the basemap is a MapTiler plate baked once per direction, repainted with the direction's own two tints before the capture, and the three plates are verified identical in camera before the render
+
+## Devices the worked example implements
+- **Neighbours derived from the frozen rings** — a geographic claim made checkable (`render-directions.mjs`)
+- **Three states, three fills, two named in the key** — absence separated from context (`DirectedChoroplethMap.tsx`)
+- **A per-direction baked plate with a recorded camera** — `bake.mjs`, `plate-cache.mjs`, `beat.mjs`
 
 ## Worked example
 

@@ -1,5 +1,7 @@
 # Parallel coordinates
 
+**Argues:** Parallel coordinates lay several variables out as parallel vertical axes, each keeping its own scale, with one item drawn as a polyline crossing every axis in turn — so the crossing pattern reveals trade-offs a table hides.
+
 ## What it is for
 
 Parallel coordinates lay several variables out as parallel vertical axes, each keeping its OWN
@@ -51,6 +53,33 @@ text-contrast rule rather than painting the name itself in colour. Separately, t
 context lines being exempt from the categorical-palette CVD check is a deliberate, documented carve-out
 in this codebase, not an oversight — but it only stays a safe carve-out as long as those lines are
 genuinely unaccented background, never quietly pressed into carrying meaning of their own.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the two adjacent axes the claim is about, which is why the claim sits between the FIRST TWO: adjacency is the only place a trade-off is legible
+- **Then** the two accented polylines that clear both thresholds
+- **Then** the two threshold marks on their own rails, the only numbers the scale prints
+- **Subordinate** — the fourteen other lines in one neutral, the axis heads and their names, the item names seated once per line at its highest vertex
+- **The claim lands on** the pair of accented lines against the field, read across the two named rails
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- reorder the rails for a nicer picture — adjacency IS the argument, so a rail order is chosen once from the claim and stated
+- let a slope carry meaning while each rail keeps its own scale, unless the sheet's own condition is met
+- seat an item's name more than once, or where it would cross a neighbouring rail
+
+## Precision to assert
+- each axis keeps its own fixed scale, stated
+- the correlation the claim reports is computed here, not asserted from elsewhere
+- the counts at each threshold and their intersection are derived from the frozen file and asserted
+
+## Devices the worked example implements
+- **The claim placed between the first two rails** — the layout decision that makes the finding readable at all (`render-directions.mjs`)
+- **One name per line, at its highest vertex** — with a shortened form only where the full name would cross a rail (`DirectedParallelCoordinates.tsx`)
+- **Two thresholds as the only printed numbers** — the scale spends nothing else (`DirectedParallelCoordinates.tsx`)
 
 ## Worked example
 

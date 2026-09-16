@@ -1,5 +1,7 @@
 # Heatmap (matrix)
 
+**Argues:** A heatmap lays a grid across two categorical (or temporal) dimensions and encodes a third, quantitative value as the colour of each cell.
+
 A heatmap lays a grid across two categorical (or temporal) dimensions — day by hour, region by
 year — and encodes a third, quantitative value as the colour of each cell. It answers "where are
 the highs and lows across two dimensions at once," a question neither axis alone can answer: the
@@ -70,6 +72,33 @@ about a third more range without naming a second hue.
 And say what the floor still costs, rather than papering over it. On a white ground, "almost none"
 cannot be drawn as almost nothing — the palest cell is a mid-grey. If the alt text calls it "pale
 grey", a reader who cannot see the grid has been told something the grid does not show.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the BLOCK of darkness at the top — the finding here is a block, not a cell, and the shape of that darkness is the argument
+- **Then** the bracket naming the region, drawn in the ink, OUTSIDE the ramp entirely so it can never be read as a value
+- **Then** the sorted column at the right, printing the quantity the rows are ordered on — an order is a claim, and a reader who cannot see the quantity cannot check it
+- **Subordinate** — the column families named above a drawn rule, the row names, the key with its printed breaks
+- **The claim lands on** the partition of the top block into its routes, visible as which columns are dark in which rows
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- print a value in every cell when the cell count forbids it: at 108 cells the value register's band does not fit the row pitch, so the plate NAMES the region instead
+- hand-pick the rows — which of forty are drawn is a stated editorial rule (everyone above the floor, plus the largest producers), and the first draft that hand-picked eighteen asserted a count that was false across the real forty
+- leave the row or column order in the data's order: neither is in the data, and both are printed on the plate
+
+## Precision to assert
+- the colour scale's domain is fixed and the key prints its breaks
+- the routes the claim names are a COMPUTED partition — three disjoint tests, and a case falling into none or two throws
+- the row count is measured against what the frame can carry, and the component refuses rather than shrink the row labels
+
+## Devices the worked example implements
+- **A bracket outside the ramp** — the region named where a value cannot be printed (`DirectedHeatmap.tsx`)
+- **The selection printed as a rule** — the editorial act put on the plate rather than left in the runner (`render-directions.mjs`)
+- **A copy ladder that spends the reading line first** — and prints which rung each direction took (`render-directions.mjs`)
 
 ## Worked example
 

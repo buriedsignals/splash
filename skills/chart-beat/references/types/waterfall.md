@@ -1,5 +1,7 @@
 # Waterfall (bridge)
 
+**Argues:** A waterfall chart shows how a starting total arrives at an ending total through a sequence of signed steps — a revenue build, a budget variance, an opening-to-closing balance.
+
 A waterfall chart shows how a starting total arrives at an ending total through a sequence of
 signed steps — a revenue build, a budget variance, an opening-to-closing balance. Each step is a
 floating bar that begins exactly where the previous one ended, so the eye can walk the bridge
@@ -44,6 +46,33 @@ happens to be. Category labels have their own version of the same problem when t
 enough to need rotating — truncate from the end (keep the readable start), and give the rotated
 label a bounded strip of vertical room rather than letting a long name push the whole plot area
 around or run into the source line underneath it.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the opening total and the closing total, the two full-height bars the bridge runs between
+- **Then** the steps in order, each in its own role's colour — increase, decrease, total — three roles and three colours, deliberately not red/green
+- **Then** the connectors, which carry the running level across each gap
+- **Subordinate** — the value labels floating above each bar's growing edge, in ink, never set inside a bar in white; the ticks
+- **The claim lands on** the net change between the two totals
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- set a value label inside a bar in white — the sheet's own named defect on narrow bars; the labels float above the growing edge, in ink
+- use a third saturated hue for the totals: they take the page's own muted ink
+- draw a bridge whose steps do not replay — the running total after every step is checked against the closing level before anything is drawn
+
+## Precision to assert
+- opening plus every step equals the closing, asserted to a stated precision before the render
+- one scale from zero for the totals and the steps
+- each step's from/to is computed from the frozen file, never typed
+
+## Devices the worked example implements
+- **The bridge replayed as a check** — arithmetic consistency proved rather than trusted (`ElectricityBridgeWaterfall.tsx`)
+- **Three roles, three colours, not red/green** — the CVD-safe pair plus the page's own muted ink (`DirectedWaterfall.tsx`)
+- **Labels above the growing edge** — the narrow-bar defect designed out (`ElectricityBridgeWaterfall.tsx`)
 
 ## Worked example
 

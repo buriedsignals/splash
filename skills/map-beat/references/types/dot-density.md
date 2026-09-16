@@ -1,5 +1,7 @@
 # Dot density
 
+**Argues:** A dot-density map answers "where inside these regions is this concentrated" at a texture level: dense clusters of dots read as dense clusters of the thing.
+
 ## What it's for
 
 A dot-density map answers "where inside these regions is this concentrated" —
@@ -81,6 +83,33 @@ On the live MapTiler map (2026-09-15, awaiting the owner): the units are GeoJSON
 radius they grow to (a bucket's radius the root of its members' mean square), so the growth is one data-constant
 expression per layer bound to the frame's weight — a `["get", …]` radius would relay out the source every frame. The
 camera holds every unit; the key and the credit stand on the measured open sea, clear of every disc at its largest.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place. On a map the basemap is a MapTiler plate baked once per filed direction and tinted by it, every mark placed from that plate's RECORDED camera (`frameCorners`, measured with `map.unproject()` after the camera settles — never the nominal bounds, which `fitBounds` widens) — except where the form gives up position, where the refusal of a basemap is reasoned on the plate.
+
+## Reading stations
+- **Enter at** the texture — where the field is dense and where it is bare, which is the count of PLACES
+- **Then** the ringed subset, which carries the weight half of the claim
+- **Then** the key, saying what one dot is and what a ring is
+- **Subordinate** — the basemap giving up its contrast (against thousands of points that is the only way the points stay countable), the water as a tint mixed toward the ground, the source-limit note
+- **The claim lands on** the ringed count against the field, and on the capacity share printed beside it
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- scatter national totals inside national polygons — the pattern a reader would see is the random number generator's, not the world's: every cluster an artefact and every hole one too
+- recolour the subset: that puts a second hue on a plate whose whole reading is one field's density, so the subset is RINGED
+- draw a panel run unwrapped — a panel is a frame too, and there is no such thing as a line short enough to skip the measurement, because how wide a string is depends on the direction
+
+## Precision to assert
+- one dot is one real thing, at the place the source records it
+- the count, the share and the per-site ranking are all derived, so a data refresh that overturned one would change the sentence
+- every panel run is measured and wrapped at the direction's own type, not assumed short
+
+## Devices the worked example implements
+- **A source that records a position for every thing it counts** — fetched rather than reusing the file every sibling beat uses (`render-directions.mjs`)
+- **The subset ringed, not recoloured** — one hue, one reading (`DirectedDotDensity.tsx`)
+- **A per-direction baked plate with a recorded camera** — `bake.mjs`
 
 ## Worked example
 

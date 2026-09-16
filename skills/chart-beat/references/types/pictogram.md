@@ -1,5 +1,7 @@
 # Pictogram (isotype)
 
+**Argues:** A pictogram states a magnitude as a countable row of equal-size icons, where ONE icon always stands for a stated number of units and count — never icon size — carries the value.
+
 ## What it is for
 
 A pictogram states a magnitude as a countable row of equal-size icons, where ONE icon always stands for
@@ -53,6 +55,33 @@ described above: a chart that silently drops a small remainder below some thresh
 nuance, it's a correctness failure indistinguishable, on the page, from data simply being missing —
 verify by eye that every row's rendered icon count, including its partial icon, actually reflects the
 value behind it before treating a pictogram as ready to publish.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the three blocks and their relative lengths, which is the shape the claim is about
+- **Then** each block's own count, printed IN UNITS beside the field it counts — a field of things is counted in things, never in per cent
+- **Then** the ramp running across the field, which shows the distribution inside each block and is what three bars could not give
+- **Subordinate** — the key, which also says what is MISSING, and the block names
+- **The claim lands on** the middle block, countable square by square by a reader who wants to check the arithmetic
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- let one icon stand for a divisible quantity — a square standing for 10.4 TWh is a length in disguise, and the fractional last square is the tell
+- draw a square for a case with no reading: a unit grid counts things, and that square would be counted; the key says one is missing rather than letting the field imply a bigger population
+- ship a square under the countable floor — under it a unit field is a bar chart made of squares, and the component refuses
+
+## Precision to assert
+- one icon always equals the same stated unit
+- the blocks are asserted to account for every case, and the claim's block is asserted to be the minority it says it is
+- the row width is a rung of a ladder — widest first, because a wider row is fewer rows and fewer rows is more size per square — and the floor is never lowered
+
+## Devices the worked example implements
+- **A unit that is a real thing** — one square, one country, which is what makes the field countable (`render-directions.mjs`)
+- **Each block paired with its own figure, in units** — `a-countable-field-is-paired-with-its-own-figure` (`DirectedUnitGrid.tsx`)
+- **The absence stated in the key** — the case with no reading is not drawn and is named (`DirectedUnitGrid.tsx`)
 
 ## Worked example
 

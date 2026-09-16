@@ -1,5 +1,7 @@
 # Histogram
 
+**Argues:** A histogram bins one continuous variable into contiguous intervals and draws a bar per bin whose height is the count that landed there.
+
 A histogram bins one continuous variable into contiguous intervals and draws a bar per bin
 whose height is the count that landed there. It answers a question a bar chart cannot: not
 "how big is each category" but "where does the mass of this variable sit, how spread out is it,
@@ -56,6 +58,33 @@ is near-black and the beat takes no accent at all. Derive it — `marksUnder` th
 cannot see was not carrying the accent either. The same arithmetic moves the median's LABEL: it
 cannot be inked at all while it lies half on the page and half on a bar, so it is pushed clear of
 every bar it would sit on and then inked against what is left.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the overall shape — the mode at the left and the long thin tail, which is the distribution's own statement
+- **Then** the reference line, which is where the ONE accent is spent: no single bar is the subject
+- **Then** the threshold the headline counts, landing on a bin EDGE
+- **Subordinate** — the bars in the page's muted tone, the count ticks, the bin names
+- **The claim lands on** the accented reference against the mass to its left
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- accent a bar: the bars are the distribution and the accent belongs to the reference line, not to the bars' own fill repeated as a second signal
+- choose a bin width that puts the counted threshold inside a bar — the accent would then claim a bin the claim does not count
+- pick a bin width by eye: it can manufacture or erase a peak that is not a property of the data at all
+
+## Precision to assert
+- every observation falls in exactly one bin and the counts sum to the asserted total
+- one count scale from zero
+- the bin width is chosen by a stated rule against the type's floor and ceiling, and the share under the threshold is asserted
+
+## Devices the worked example implements
+- **The accent on the reference, not the bars** — the type's own worked-example rule taken (`CarbonFootprintHistogram.tsx`)
+- **Bars in the page's muted tone** — a distribution has no subject, so it has no accent (`DirectedHistogram.tsx`)
+- **The counted share asserted before the render** — the headline refused if the data moves (`render.mjs`)
 
 ## Worked example
 

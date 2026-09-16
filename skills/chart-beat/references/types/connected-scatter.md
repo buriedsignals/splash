@@ -1,5 +1,7 @@
 # Connected scatter
 
+**Argues:** A connected scatter answers "what path did these two measures trace together, over time" — each point is ordered and the points are joined, so loops and reversals become visible shapes.
+
 ## What it is for
 
 A connected scatter answers "what path did these two measures trace together, over time" — unlike a
@@ -54,6 +56,33 @@ the sequence, not just a colour-vision-safe stroke. Missing axis titles are the 
 failure here — a chart with two unlabelled continuous axes and a path drawn through them communicates
 nothing accessibly, screen reader or not, because there is no other channel stating what is being
 traced against what.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the field of links — hollow ring for before, filled disc for after, one hue, joined by a curved dotted link, and NO key for it: the convention is old enough that a reader carries it
+- **Then** the subject's own move, the longest or the one the claim names
+- **Then** the labels, on the LATER state only — the label belongs to the entity, and the entity's current position is where a reader looks for it; the ring carries nothing
+- **Subordinate** — the two axes and their names, the ticks, and a hairline leader on any name that had to sit far from its mark
+- **The claim lands on** the direction of the moves, read off the field as a whole
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- draw the link as a straight segment — that reads as interpolation, as if the source held the states in between; the bow is a fixed fraction of the chord so a long move bows more than a short one
+- choose an axis pair that is degenerate: a level and its own share of the same group are the same number up to a constant, so every point of one date lands on a ray through the origin and the plate is two straight lines
+- give up on a name: a name that cannot be seated degrades to a short code before it is dropped, and how many degraded is printed
+
+## Precision to assert
+- the path's drawn order matches the data's own ordering axis
+- the plate refuses to render if any case moved the wrong way, if the sub-claim's set is not a minority, or if the subject did not move in the stated direction
+- every size rung is tried WHOLE — laid out, scaled, packed AND named — and the first rung on which every entity is named is the one that renders
+
+## Devices the worked example implements
+- **The whole-rung ladder** — naming is part of fitting, not a step after it (`render-directions.mjs`)
+- **The seat cascade** — eight directions at five distances, near first, then a degraded code, then a leader (`DirectedConnectedScatter.tsx`)
+- **A bow proportional to the chord** — no arc collapses into a straight line and none reads as interpolation (`DirectedConnectedScatter.tsx`)
 
 ## Worked example
 

@@ -1,5 +1,7 @@
 # Beeswarm
 
+**Argues:** A beeswarm shows every raw observation on one shared value axis, with no aggregation and no overlap — the "show your data" distribution chart.
+
 ## What it is for
 
 A beeswarm shows every raw observation on one shared value axis, with no aggregation and no
@@ -60,6 +62,33 @@ under the WCAG text-contrast floor. With category-split swarms, the up-to-five h
 separating groups whose points otherwise share the same axis and the same shape logic, so every one of
 those hues has to stay distinguishable from its neighbours under a colour-vision-deficiency simulation,
 not merely distinct to full-colour vision.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the swarm's own shape — where it is thick and where it thins, which is the only aggregate statement this type makes
+- **Then** the reference rule (the weighted average) with its value, the one piece of furniture carrying text
+- **Then** the two derived callouts, seated ABOVE the field with a hairline leader down to the circle's edge — a card is allowed to move, a circle is not
+- **Subordinate** — the axis name and its ticks on one row, separated by weight; where they collide the TICK gives way, and the ladder prints how many ticks the name cost
+- **The claim lands on** the named cases, whose position and area together carry the sentence
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- push a mark ALONG the axis to make room — a swarm that slides a circle sideways has lied about the one thing it measures
+- lay the small circles down first: a big circle placed late has nowhere to go and ends up at the edge of the band, reading as a value it does not have
+- spend a plate on a size key — what a circle is and what its area means is said in the running prose the reader is already reading
+
+## Precision to assert
+- the radius ladder is walked from generous to mean and the first rung whose packed swarm still fits its band is taken; the floor under the smallest marks is a distortion the ladder PRINTS rather than hides
+- both callouts are derived (the biggest circle and the farthest one out), never chosen
+- the plate refuses to render if the claim's set holds more than its stated share, if the average sits above less than its stated share of the weight, or if the largest circle is not below the median
+
+## Devices the worked example implements
+- **The radius ladder** — eight rungs walked, the first that fits taken, and the smallest-mark floor printed (`DirectedBeeswarm.tsx`)
+- **Cards above the field with leaders down** — the fix for a callout that landed on the swarm it was naming (`DirectedBeeswarm.tsx`)
+- **Derived callouts and three refusals** — the two marks the eye lands on anyway, named by code (`render-directions.mjs`)
 
 ## Worked example
 

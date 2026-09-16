@@ -1,5 +1,7 @@
 # Marimekko (mosaic plot)
 
+**Argues:** A Marimekko shows two nested part-to-whole proportions at once: column WIDTH encodes each group's share of the grand total, and the segments inside encode that group's own composition — so a cell's AREA is the joint share.
+
 ## What it is for
 
 A Marimekko shows two nested part-to-whole proportions at once: column WIDTH encodes each group's
@@ -52,6 +54,33 @@ per column and column widths varying on top of that, this type accumulates more 
 combinations on one chart than almost any other type in this set, which makes checking every
 combination's real contrast, rather than trusting one rule to generalise across all of them, especially
 worth doing deliberately rather than assuming it from a single spot-check.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the two wide columns carrying the subject band — area is the reading, so the eye goes to the largest areas of the accented source
+- **Then** the hairline or absent bands in every other column, which is the second half of the claim
+- **Then** the column names above and the totals under them, so width has a number once
+- **Subordinate** — the source names in the right gutter, the grand total, the 100 % scale
+- **The claim lands on** the accented band's area against the whole mosaic
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- print a share inside a cell — the cell's area IS the share, and a number in it invites reading the height as the value
+- draw a variable-width chart whose narrowest unit falls under a few pixels: it has stopped encoding its second dimension, and this beat measures its own narrowest column before drawing and REFUSES rather than draws
+- let a small cell go unnamed where the type sheet says it should go to the gutter with a leader back to the band it names
+
+## Precision to assert
+- column width is on one unit-per-value scale and band height a share of the same 100 %, so a cell's area is the quantity
+- every column's bands sum to that column's own total and the widths sum to the grand total
+- the narrowest column is measured against a stated legibility floor before the render
+
+## Devices the worked example implements
+- **The narrowest-column refusal** — the corpus's worked negative case turned into a check (`render-directions.mjs`)
+- **Area as the only reading** — no share printed in a cell, the totals on braces under the columns (`DirectedMarimekko.tsx`)
+- **Small cells named in the gutter with a leader** — the type sheet's own rule, implemented (`DirectedMarimekko.tsx`)
 
 ## Worked example
 

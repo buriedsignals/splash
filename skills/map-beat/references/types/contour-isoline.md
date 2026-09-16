@@ -1,5 +1,7 @@
 # Contour / isoline
 
+**Argues:** A contour (isoline) map answers "where does this continuous field cross a given value" by drawing lines that connect every point sharing the same value.
+
 > **Built here on 2026-09-09, having never been built in the source engine.** `map-native` designed
 > this type and never made it — `skills/map-native/src/map-types.ts` omits it from the discriminator
 > with the comment "designed but never built, so it has no component" — so everything below the
@@ -92,6 +94,33 @@ crossing the fewest other lines. Every text the count can show is measured in Bu
 - **The credit sits on one line over open sea** with « © MapTiler © OpenStreetMap », in the first row of the measured
   map whose cells are all sea; the key and the curve stand in the column under it, each over at most 3 % land, and the
   lines' numbers keep clear of all three.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place. On a map the basemap is a MapTiler plate baked once per filed direction and tinted by it, every mark placed from that plate's RECORDED camera (`frameCorners`, measured with `map.unproject()` after the camera settles — never the nominal bounds, which `fitBounds` widens) — except where the form gives up position, where the refusal of a basemap is reasoned on the plate.
+
+## Reading stations
+- **Enter at** the nest of lines, which is the only mark this form has and the reason a reader can put a number on a place the data never names
+- **Then** each line's own break, printed ON the line it belongs to — there is no key to look away to, which is the whole argument for labelling a contour rather than legending it
+- **Then** the spot-marked extreme, the one label on the plate that may not move: it is placed FIRST and every contour label is placed around it
+- **Subordinate** — the basemap's land in one faint step, the study-area limit line, the ladder's own report of how many lines the face cost
+- **The claim lands on** the median line, which is the headline's own number drawn
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- build the field from records: a field with a hole in it does not degrade, it LIES — the hole is filled by whatever surrounds it and nothing says anything is missing, so an isoline map needs a source that defines the field everywhere
+- draw a line its own label would cover — the floor is the label's own width, so it moves with the direction, and the ladder prints how many lines that face cost
+- place a number across another line: a label laid over the next level up reads as THAT line's value, so every candidate seat is tested against the points of every line at a different level
+
+## Precision to assert
+- the field is an EXACT distance transform on a stated grid in an equal-area projection, not an approximation — an isoline drawn from a rounded field wanders, and a wandering line labelled `200 km` is a false precision the reader cannot see
+- the study area is stated, and a region the frame cuts is excluded rather than measured to a coastline that stops at the edge of the paper
+- among the clear seats, a number takes the one farthest from every number already placed
+
+## Devices the worked example implements
+- **Breaks printed on their own lines** — `the-key-prints-its-breaks-in-the-data-s-units` in the strongest form this base has seen (`DirectedContourField.tsx`)
+- **A spot-marked summit placed first** — the headline's number given something on the map to sit on (`DirectedContourField.tsx`)
+- **A refused field, with the numbers that refused it** — the beat that was built, measured and thrown away is on the record (`BRIEF.md`, cited here)
 
 ## Worked example
 

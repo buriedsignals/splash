@@ -1,5 +1,7 @@
 # Streamgraph
 
+**Argues:** A streamgraph shows many overlapping time series stacked with no fixed baseline — so the READ is the overall rhythm and relative flow of many series at once, not the exact value of any one band.
+
 ## What it is for
 
 A streamgraph shows many overlapping time series stacked with no fixed baseline — bands can wiggle up
@@ -53,6 +55,33 @@ landed it on a mid-toned green band, measuring under the WCAG 4.5:1 text floor. 
 measure real contrast against the exact fill a label sits on and pick whichever of white or dark ink
 actually clears the floor — never a single brightness threshold applied the same way across every hue
 in the palette.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the silhouette — the rhythm of the whole, which is what this form gives and a stacked area does not
+- **Then** the subject band, named inside itself once it is thick enough to hold a name
+- **Then** the rule at the year the claim turns on, and the printed numbers that stand in for the axis this form forbids
+- **Subordinate** — the period ticks along the foot, the other bands in their neutrals, the note saying which period is excluded and why
+- **The claim lands on** the subject band's rank, stated in words because the picture cannot carry it
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- draw a value axis: no band starts at zero, so an axis would be a lie — the numbers are printed instead
+- include a partial period — a partial year drawn on a stream reads as a collapse, so it is excluded and the reason is on the plate
+- expect a reader to recover a number from the picture: strip the labels and nothing on this plate can be turned back into a number, which is the form's own counter-example in this base
+
+## Precision to assert
+- the wiggle baseline and the inside-out order are computed once from the frozen file
+- the rank, the period it was first reached and the fact that it held are all computed and asserted before the render
+- every period in the drawn range is complete; an incomplete one is excluded and said to be
+
+## Devices the worked example implements
+- **`a-free-baseline-forbids-a-value-axis`** — the debt named and paid in printed numbers (`DirectedStreamgraph.tsx`)
+- **The partial period excluded on the plate** — the exclusion is a reading, not a silence (`render-directions.mjs`)
+- **A computed rank held across every period** — the claim refused if the subject reached the rank and lost it (`render-directions.mjs`)
 
 ## Worked example
 

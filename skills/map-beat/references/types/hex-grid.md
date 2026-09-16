@@ -1,5 +1,7 @@
 # Hex grid (spatial binning — and hex cartogram)
 
+**Argues:** A hex-grid map answers "where is this cluster of scattered EVENTS actually densest," by aggregating raw points into a regular grid of cells.
+
 ## What it's for
 
 A hex-grid map answers "where is this cluster of scattered EVENTS actually
@@ -106,6 +108,33 @@ to the text floor at the end of every event.
   Before anything moves, SVG shapes projected with the measured camera rise over the fills and the fills leave; each
   unit then travels from its mainland's box into its hexagon — an affine map ending exactly on the cell — while a ground
   rect rises over the basemap, so the classing happens on no map at all.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place. On a map the basemap is a MapTiler plate baked once per filed direction and tinted by it, every mark placed from that plate's RECORDED camera (`frameCorners`, measured with `map.unproject()` after the camera settles — never the nominal bounds, which `fitBounds` widens) — except where the form gives up position, where the refusal of a basemap is reasoned on the plate.
+
+## Reading stations
+- **Enter at** the tiled surface — the cells separated by a stroke in the GROUND's own colour, so the grid reads as a surface rather than as scattered marks
+- **Then** the classed fills, the ranking the claim is about
+- **Then** the unit's code inside its own cell, and the plate refuses a hexagon too narrow to hold it
+- **Subordinate** — the key's two rows, each budgeted because it is drawn, each box sized by the label it carries
+- **The claim lands on** the leading cell against the cell that leads the sibling beat's ranking
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- put map tiles under the grid — the form has given up position, and the refusal is reasoned on the plate
+- size a key swatch off the hexagon rather than off the widest number that sits under it: that printed five breaks into one another
+- budget a key as one row when it draws two — a row that is drawn has to be a row that is budgeted
+
+## Precision to assert
+- the designed grid is checked BOTH ways against the data — every code has a reading and every reading has a cell
+- the beat refuses to render if the same unit leads both this ranking and its pair's, because at that point the pair would have nothing to show
+- the code floor is measured on the DRAWN cell, as on the tile cartogram
+
+## Devices the worked example implements
+- **Six edge-sharing neighbours** — no corner contact to argue about, which is the geometric difference from a square grid and the reason the rows are offset by half a cell (`DirectedHexGrid.tsx`)
+- **A pair-refusal** — the beat will not render if its ranking does not invert its sibling's (`render-directions.mjs`)
+- **Cells stroked in the ground's own colour** — a tiled surface rather than scattered marks (`DirectedHexGrid.tsx`)
 
 ## Worked example
 

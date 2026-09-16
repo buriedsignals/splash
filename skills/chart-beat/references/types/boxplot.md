@@ -1,5 +1,7 @@
 # Box plot
 
+**Argues:** A box plot compresses a distribution into a five-number summary — minimum, first quartile, median, third quartile, maximum — and draws it as a box with whiskers, one per category.
+
 A box plot compresses a distribution into a five-number summary — minimum, first quartile,
 median, third quartile, maximum — and draws it as a box with whiskers, one per category. It
 answers "how do these groups compare on centre, spread, and skew, in one glance across many
@@ -40,6 +42,33 @@ mark here: whatever color decorates the box is not automatically safe to reuse a
 value label sitting next to it. If outliers get numbers, render those numbers in ink, not in the
 box's fill or stroke color — check the actual contrast of the label against its real background,
 not against an assumption of white.
+
+Owner rules that apply here: one frame, read at rest — one accent, all furniture derived from the ground, the subject named where it ends rather than in a legend, and nothing on the plate that does not earn its place.
+
+## Reading stations
+- **Enter at** the row of medians, which is the shape the claim is about
+- **Then** the boxes themselves, in ONE hue across every category, because this is a single-group comparison and not two groups being compared
+- **Then** the one outlier, drawn as its own dot with its value in INK, and the whisker clipped to the furthest reading still inside the fence
+- **Subordinate** — the value axis fitted to the data (a position encoding, so no zero floor), the unit on the top tick, and the n under each category
+- **The claim lands on** the peak category and the monotone fall after it, readable off the medians alone
+
+## A choreography must NOT
+- accent more than the one thing the claim is about — a plate where everything is accented has no accent left
+- send the reader to a legend for a reading a direct label could carry at the mark itself
+- give furniture a colour of its own instead of deriving it from the ground, or bridge a gap in the data rather than showing it
+- resort the categories by median — a time-ordered categorical axis keeps its own order, or the rise-then-fall shape is destroyed
+- use more than one hue unless two groups are deliberately being compared; the median line and any value label stay in ink, never the box's own fill or stroke
+- stretch a whisker to the outlier it excludes
+
+## Precision to assert
+- every summary is computed from the frozen file and the beat throws rather than draw a claim its own numbers do not support
+- outliers are COUNTED from the computed summaries rather than asserted, and a partial category states its n
+- no token may sit under the size table's type floor — the two smallest things here were the n and the outlier's own value, and both were raised rather than the floor lowered
+
+## Devices the worked example implements
+- **`summarizeDecade`** — quartiles, the Tukey fence and fence-clipped whiskers in one place, shared with the video and web siblings (`render.mjs`)
+- **The monotone-fall assertion** — the headline refused if the computed medians stop supporting it (`render.mjs`)
+- **A category band derived from where the credit sits** — so the n row cannot land on the source line (`DecadeBoxplot.tsx`)
 
 ## Worked example
 
