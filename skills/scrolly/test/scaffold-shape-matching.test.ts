@@ -176,9 +176,18 @@ describe("scaffold-scrolly-map-beat — an honest shape mismatch, end to end", (
   const MATCH_NAME = `.scaffold-test-scrolly-shape-match-${STAMP}`;
   const MATCH_BEAT = join(PROOF, MATCH_NAME);
 
+  const PALETTE_FIXTURE =
+    '---\nground: "#16191B"\naccent: "#D4A853"\naccents: "#5B8A8A"\norigin: "newsroom"\n---\n';
   beforeAll(() => {
     removeProbe(MISMATCH_BEAT, MISMATCH_NAME);
     removeProbe(MATCH_BEAT, MATCH_NAME);
+    // Both scaffolds below adapt dot-density-europe-stations, whose runner reads "stations.csv" beside the
+    // beat, and both now also require a reachable PALETTE.md — see depth-independent.mjs.
+    for (const dir of [MISMATCH_BEAT, MATCH_BEAT]) {
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(dir, "PALETTE.md"), PALETTE_FIXTURE);
+      writeFileSync(join(dir, "stations.csv"), "x\n1\n");
+    }
   });
   afterAll(() => {
     removeProbe(MISMATCH_BEAT, MISMATCH_NAME);

@@ -34,6 +34,7 @@
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
+import { defaultLanguage, depthIndependentPaths, languageAwareNumbers, missingAssetsMessage, paletteReachable, paletteRefusalMessage, requiredLocalAssets } from "./depth-independent.mjs";
 
 const HERE = import.meta.dirname;
 const TEMPLATES = join(HERE, "..", "assets", "scrolly-beat-scaffold");
@@ -186,6 +187,13 @@ export function adaptFromBeat({ root, fromBeat, values }) {
   drive = markBefore(drive, DRIVE_FN_ANCHOR, [`SCAFFOLD: paint — the fields this driver reads and writes below are ${fromBeat}'s own. Adapt them to`, `this beat's own state fields; keep the seat/paint split.`]);
   drive = prependBanner(drive, topBanner(fromBeat));
 
+  // Depth-independent paths (this beat may sit at any depth, unlike fromBeat's own proof/<beat>/) and a number
+  // formatter matching this beat's own default language, defaulted from NEWSROOM.md — see depth-independent.mjs.
+  const lang = defaultLanguage(root);
+  runner = languageAwareNumbers(depthIndependentPaths(runner), lang);
+  tsx = languageAwareNumbers(depthIndependentPaths(tsx), lang, { typed: true });
+  drive = languageAwareNumbers(depthIndependentPaths(drive), lang);
+
   return {
     [runnerFile]: runner,
     [`Directed${values.Name}Scrolly.tsx`]: tsx,
@@ -220,7 +228,10 @@ export function scaffoldBeat({ root = DEFAULT_ROOT, templates, files, type, beat
       `## The choreography\n\nSCAFFOLD: this beat's code was scaffolded \`--from ${fromBeat}\` — read that beat's own BRIEF.md and its\nrunner/driver/directed component (marked SCAFFOLD: where they are its own subject) before writing this table.\n`,
     );
     planned = Object.entries({ ...adapted, "BRIEF.md": brief });
+    const missing = requiredLocalAssets(Object.values(adapted), Object.keys(adapted)).filter((name) => !existsSync(join(beatDir, name)));
+    if (missing.length) throw new Error(missingAssetsMessage({ relBeatDir: relative(root, beatDir), fromBeat, sourceDir: resolve(root, fromBeat), missing }));
   }
+  if (!paletteReachable(beatDir)) throw new Error(paletteRefusalMessage({ root, relBeatDir: relative(root, beatDir) }));
   const collisions = planned.map(([target]) => target).filter((target) => existsSync(join(beatDir, target))).sort();
   if (collisions.length) throw new Error(`${relative(root, beatDir)} already has ${collisions.join(", ")} — the scaffold never overwrites a file`);
   mkdirSync(beatDir, { recursive: true });

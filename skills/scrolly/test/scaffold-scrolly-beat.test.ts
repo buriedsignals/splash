@@ -120,6 +120,20 @@ const MAP_FROM_EXPECTED = [
 const run = (script: string, args: string[]) =>
   spawnSync("bun", [script, ...args], { cwd: ROOT, encoding: "utf8" });
 
+// Both scaffolds now refuse at scaffold time (not deep inside the render) when no PALETTE.md is reachable, and
+// the default (--from) path also refuses when the worked example's own data assets (data.csv / stations.csv)
+// are not yet beside the beat — see skills/scrolly/scripts/depth-independent.mjs. These fixtures let the
+// existing "should succeed" scaffolds here keep succeeding; the refusals themselves are covered by
+// depth-independent.test.ts.
+const PALETTE_FIXTURE =
+  '---\nground: "#16191B"\naccent: "#D4A853"\naccents: "#5B8A8A"\norigin: "newsroom"\n---\n';
+const DATA_FIXTURE = "x\n1\n";
+function seed(dir: string, files: Record<string, string>) {
+  mkdirSync(dir, { recursive: true });
+  for (const [name, content] of Object.entries(files))
+    writeFileSync(join(dir, name), content);
+}
+
 function removeProbe(dir: string, name: string) {
   if (
     dirname(dir) === PROOF &&
@@ -150,6 +164,16 @@ beforeAll(async () => {
   removeProbe(MAP_BEAT, MAP_NAME);
   removeProbe(CHART_FROM_BEAT, CHART_FROM_NAME);
   removeProbe(MAP_FROM_BEAT, MAP_FROM_NAME);
+  seed(CHART_BEAT, { "PALETTE.md": PALETTE_FIXTURE });
+  seed(MAP_BEAT, { "PALETTE.md": PALETTE_FIXTURE });
+  seed(CHART_FROM_BEAT, {
+    "PALETTE.md": PALETTE_FIXTURE,
+    "data.csv": DATA_FIXTURE,
+  });
+  seed(MAP_FROM_BEAT, {
+    "PALETTE.md": PALETTE_FIXTURE,
+    "stations.csv": DATA_FIXTURE,
+  });
   chartFirst = run(CHART_SCRIPT, CHART_ARGS);
   mapFirst = run(MAP_SCRIPT, MAP_ARGS);
   chartFromFirst = run(CHART_SCRIPT, CHART_FROM_ARGS);
@@ -166,7 +190,7 @@ describe("scaffold-scrolly-beat (chart)", () => {
   it("should write exactly the chart plumbing files, and say which", () => {
     expect(chartFirst.status).toBe(0);
     expect(readdirSync(CHART_BEAT).sort()).toEqual(
-      CHART_EXPECTED.slice().sort(),
+      [...CHART_EXPECTED, "PALETTE.md"].sort(),
     );
     for (const file of CHART_EXPECTED)
       expect(chartFirst.stdout).toContain(file);
@@ -187,8 +211,11 @@ describe("scaffold-scrolly-beat (chart)", () => {
     const name = `.scaffold-test-scrolly-chart-existing-${STAMP}`;
     const dir = join(PROOF, name);
     removeProbe(dir, name);
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(join(dir, "data.json"), "{}");
+    seed(dir, {
+      "data.json": "{}",
+      "PALETTE.md": PALETTE_FIXTURE,
+      "data.csv": DATA_FIXTURE,
+    });
     try {
       const result = run(CHART_SCRIPT, [
         "--type",
@@ -200,7 +227,7 @@ describe("scaffold-scrolly-beat (chart)", () => {
       ]);
       expect(result.status).toBe(0);
       expect(readdirSync(dir).sort()).toEqual(
-        [...CHART_EXPECTED, "data.json"].sort(),
+        [...CHART_EXPECTED, "data.json", "PALETTE.md", "data.csv"].sort(),
       );
       expect(readFileSync(join(dir, "data.json"), "utf8")).toBe("{}");
     } finally {
@@ -241,6 +268,7 @@ describe("scaffold-scrolly-beat (chart)", () => {
     const name = `.scaffold-test-scrolly-chart-suffix-${STAMP}`;
     const dir = join(PROOF, name);
     removeProbe(dir, name);
+    seed(dir, { "PALETTE.md": PALETTE_FIXTURE, "data.csv": DATA_FIXTURE });
     try {
       const result = run(CHART_SCRIPT, [
         "--type",
@@ -283,7 +311,9 @@ describe("scaffold-scrolly-beat (chart)", () => {
 describe("scaffold-scrolly-map-beat (map)", () => {
   it("should write exactly the map plumbing files, and say which", () => {
     expect(mapFirst.status).toBe(0);
-    expect(readdirSync(MAP_BEAT).sort()).toEqual(MAP_EXPECTED.slice().sort());
+    expect(readdirSync(MAP_BEAT).sort()).toEqual(
+      [...MAP_EXPECTED, "PALETTE.md"].sort(),
+    );
     for (const file of MAP_EXPECTED) expect(mapFirst.stdout).toContain(file);
   });
 
@@ -306,6 +336,7 @@ describe("scaffold-scrolly-map-beat (map)", () => {
     const name = `.scaffold-test-scrolly-map-suffix-${STAMP}`;
     const dir = join(PROOF, name);
     removeProbe(dir, name);
+    seed(dir, { "PALETTE.md": PALETTE_FIXTURE, "stations.csv": DATA_FIXTURE });
     try {
       const result = run(MAP_SCRIPT, [
         "--type",
@@ -343,7 +374,7 @@ describe("scaffold-scrolly-beat (chart) — default --from", () => {
   it("should adapt boxplot's own worked example, preserving its driver's own filename, and say which", () => {
     expect(chartFromFirst.status).toBe(0);
     expect(readdirSync(CHART_FROM_BEAT).sort()).toEqual(
-      CHART_FROM_EXPECTED.slice().sort(),
+      [...CHART_FROM_EXPECTED, "PALETTE.md", "data.csv"].sort(),
     );
     for (const file of CHART_FROM_EXPECTED)
       expect(chartFromFirst.stdout).toContain(file);
@@ -398,13 +429,59 @@ describe("scaffold-scrolly-beat (chart) — default --from", () => {
       bad.stderr.includes("--from proof/scrolly-does-not-exist does not exist"),
     ]).toEqual([1, false, true]);
   });
+
+  it("should refuse at scaffold time, naming exactly the missing data.csv, when the worked example's own data is not yet beside the beat", () => {
+    const name = `.scaffold-test-scrolly-chart-noassets-${STAMP}`;
+    const dir = join(PROOF, name);
+    removeProbe(dir, name);
+    try {
+      const result = run(CHART_SCRIPT, [
+        "--type",
+        "boxplot",
+        "--beat",
+        `proof/${name}`,
+        "--component",
+        "ScaffoldProbe",
+      ]);
+      expect([result.status, existsSync(dir)]).toEqual([1, false]);
+      expect(result.stderr).toContain(`proof/${name} is missing the data`);
+      expect(result.stderr).toContain("data.csv");
+    } finally {
+      removeProbe(dir, name);
+    }
+  });
+
+  it("should refuse at scaffold time, with the exact bun -e command, when no PALETTE.md is reachable", () => {
+    const name = `.scaffold-test-scrolly-chart-nopalette-${STAMP}`;
+    const dir = join(PROOF, name);
+    removeProbe(dir, name);
+    seed(dir, { "data.csv": DATA_FIXTURE });
+    try {
+      const result = run(CHART_SCRIPT, [
+        "--type",
+        "boxplot",
+        "--beat",
+        `proof/${name}`,
+        "--component",
+        "ScaffoldProbe",
+      ]);
+      expect([result.status, existsSync(join(dir, "BRIEF.md"))]).toEqual([
+        1,
+        false,
+      ]);
+      expect(result.stderr).toContain("has no PALETTE.md reachable");
+      expect(result.stderr).toContain("bun -e");
+    } finally {
+      removeProbe(dir, name);
+    }
+  });
 });
 
 describe("scaffold-scrolly-map-beat (map) — default --from", () => {
   it("should adapt dot-density's own worked example, preserving its plan's and driver's own filenames, and say which", () => {
     expect(mapFromFirst.status).toBe(0);
     expect(readdirSync(MAP_FROM_BEAT).sort()).toEqual(
-      MAP_FROM_EXPECTED.slice().sort(),
+      [...MAP_FROM_EXPECTED, "PALETTE.md", "stations.csv"].sort(),
     );
     for (const file of MAP_FROM_EXPECTED)
       expect(mapFromFirst.stdout).toContain(file);
