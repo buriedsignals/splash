@@ -1,0 +1,124 @@
+// `video-cold2-coal-share-europe` — rendered as video (BRIEF.md). Everything is measured and asserted in Bun first (`build.mjs`, on the map
+// `measure.mjs` froze), and a beat still carrying a scaffold placeholder is refused; the markup of every event's last
+// frame is held to the type floor; the faces are embedded; then Remotion renders the live MapTiler map under the
+// overlay through the local key proxy (`renderVideoMap`: `--gl=swangle`, `--concurrency=1`, an EMPTY `--env-file`):
+// the still at the last frame, then the mp4. The key stays in this process; the page reaches MapTiler through the
+// proxy (`buildProps(origin)` → `mapPlanProxied`), and the tiles are cached outside the repository.
+//
+// ONE ART DIRECTION BY DEFAULT: the design base's best composed candidate for the newsroom's identity (the root's
+// NEWSROOM.md) and this beat's text (`directionsFor`). A production video renders one direction, not three.
+//   --candidates <N>  render the composer's top N, for the journalist to choose between (measure them first)
+//   --filed           render every filed demo direction — a catalogue or demo proof only (measure them first)
+//   --only <label>    render one of those, by its label
+//   --still           the last frame only, no mp4
+//   --look <dir>      the frames a reviewer looks at, into <dir> — a directory of this beat's own, not a shared one
+//
+// Usage:  set -a && . ./.env && set +a && bun proof/video-cold2-coal-share-europe/render-directions-video.mjs [--candidates <N> | --filed] [--only <label>] [--still] [--look <dir>]
+
+import { spawnSync } from "node:child_process";
+import { mkdir, mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join, relative } from "node:path";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { assertDeliveredSize, assertTypeFloor, readPngSize } from "#shared/chart-video/sizes.mjs";
+import { EVENT_ORDER, endOf } from "#shared/chart-video/timing.ts";
+import { report as reportComposition } from "#shared/design-base/compose.mjs";
+import { mapTilerKeyIn } from "#shared/map-beat/glyphs.mjs";
+import { DEFAULT_CACHE_DIR } from "../../skills/map-beat/scripts/maptiler-proxy.mjs";
+import { throughProxy } from "../../skills/map-beat/scripts/measure-live-map.mjs";
+import { renderVideoMap } from "../../skills/map-beat/scripts/render-video-map.mjs";
+import { wantedOf, writeRenderProps } from "../../skills/map-beat/scripts/video-faces.mjs";
+import { assertWritten, BEAT_FACTS, buildDirection, directionsFor, loadBeat, parseDirectionArgs, ROOT, SIZE } from "./build.mjs";
+import { Cold2CoalShareEuropeFrame } from "./Cold2CoalShareEuropeFrame.tsx";
+import { COMPOSITION_ID } from "./Root.tsx";
+
+const HERE = import.meta.dirname;
+const OUT = join(HERE, "renders");
+
+/** The frames a reviewer looks at besides every event's end — the middle of each gesture and camera move. */
+const gestureFrames = (T) => [
+  { name: "mid-arrive", frame: T.reference.start + Math.round(0.55 * T.reference.duration) },
+  { name: "mid-years", frame: T.reveal.start + Math.round(0.5 * T.reveal.duration) },
+  { name: "mid-zoom", frame: T.subject.start + Math.round(0.14 * T.subject.duration) },
+  { name: "mid-replay", frame: T.subject.start + Math.round(0.66 * T.subject.duration) },
+  { name: "mid-pullback", frame: T.conclusion.start + Math.round(0.3 * T.conclusion.duration) },
+];
+
+const args = parseDirectionArgs(process.argv.slice(2));
+const key = mapTilerKeyIn(process.env);
+if (!key) throw new Error("no MapTiler key in the environment: run with the worktree's .env loaded (set -a && . ./.env && set +a)");
+const beat = loadBeat();
+assertWritten(beat);
+const { directions, composition, note } = directionsFor(beat, { candidates: args.candidates, filed: args.filed });
+console.log(note);
+if (composition) console.log(reportComposition(composition, { beat: BEAT_FACTS }));
+if (args.only !== null && !directions.some((d) => d.label === args.only)) throw new Error(`--only takes one of ${directions.map((d) => d.label).join(", ")}`);
+const chosen = directions.filter((d) => args.only === null || d.label === args.only);
+console.log(`\nrendering ${chosen.length === 1 ? "one direction" : `${chosen.length} directions`}: ${chosen.map((d) => d.label).join(", ")}\n`);
+
+/** The markup of every event's last frame, rendered in Bun with no map, held to the type floor. */
+export function assertEventFramesReadable(props, label) {
+  for (const event of EVENT_ORDER) {
+    const frame = Math.min(endOf(props.timing[event]), props.timing.total) - 1;
+    assertTypeFloor(renderToStaticMarkup(createElement(Cold2CoalShareEuropeFrame, { ...props, at: frame, liveMap: () => null })), SIZE, { what: `${label} at the end of ${event} (frame ${frame})` });
+  }
+}
+
+function mp4Size(path) {
+  const probe = spawnSync("ffprobe", ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "json", path], { encoding: "utf8" });
+  if (probe.status !== 0) throw new Error(`ffprobe could not read ${relative(ROOT, path)}: ${probe.stderr.trim()}`);
+  const [{ width, height }] = JSON.parse(probe.stdout).streams;
+  return { width, height };
+}
+
+const refused = [];
+await mkdir(OUT, { recursive: true });
+for (const entry of chosen) {
+  const { label } = entry;
+  const outputs = [`${label}.mp4`, `${label}-final-frame.png`, `${label}-props.json`].map((f) => join(OUT, f));
+  const scratch = await mkdtemp(join(tmpdir(), "video-map-props-"));
+  try {
+    const { props, report, direction } = buildDirection(entry, beat);
+    console.log(label);
+    for (const d of direction.decisions) console.log(`  ${d.register.padEnd(8)} ${d.role.padEnd(15)} -> ${d.family}`);
+    console.log(`  title form ${report.titleForm + 1} at ${report.titleSize}px · source « ${report.sourceText} » · k ${report.k.toFixed(3)}`);
+    assertEventFramesReadable(props, label);
+
+    const wanted = wantedOf(props.registers);
+    // The audit copy: the props as built, no proxy origin, no key.
+    if (!args.look) await writeRenderProps({ props, wanted, auditPath: join(OUT, `${label}-props.json`) });
+    // The render copy: the plan pointed at this render's proxy, written to a temp file and never committed.
+    const buildProps = (origin) => writeRenderProps({ props: { ...props, mapPlanProxied: throughProxy(props.mapPlan, origin) }, wanted, auditPath: join(scratch, "audit.json") });
+    const common = { entry: relative(ROOT, join(HERE, "index.ts")), composition: COMPOSITION_ID, buildProps, mapTilerKey: key, cacheDir: DEFAULT_CACHE_DIR };
+
+    if (args.look) {
+      await mkdir(args.look, { recursive: true });
+      const T = props.timing;
+      const frames = [...EVENT_ORDER.map((event) => ({ name: `end-${event}`, frame: endOf(T[event]) - 1 })), ...gestureFrames(T)];
+      for (const { name, frame } of frames) await renderVideoMap({ ...common, outDir: args.look, name: `${label}-${String(frame).padStart(3, "0")}-${name}`, mode: "still", frame });
+      console.log(`  -> ${frames.length} frames in ${args.look}`);
+      continue;
+    }
+
+    const still = await renderVideoMap({ ...common, outDir: OUT, name: label, mode: "still" });
+    assertDeliveredSize(readPngSize(await readFile(still.path)), SIZE, { what: `renders/${label}-final-frame.png` });
+    console.log(`  -> renders/${label}-final-frame.png (${still.seconds}s)`);
+    if (args.still) continue;
+
+    const movie = await renderVideoMap({ ...common, outDir: OUT, name: label, mode: "mp4" });
+    assertDeliveredSize(mp4Size(movie.path), SIZE, { what: `renders/${label}.mp4` });
+    console.log(`  -> renders/${label}.mp4 (${movie.seconds}s) · ${Object.entries(movie.proxyCounts).map(([k, v]) => `${k}: ${v}`).join(", ")}\n`);
+  } catch (error) {
+    if (!args.look) for (const path of outputs) await rm(path, { force: true });
+    refused.push({ label, why: error.message });
+    console.log(`  REFUSED — ${error.message}\n`);
+  } finally {
+    await rm(scratch, { recursive: true, force: true });
+  }
+}
+
+if (refused.length) {
+  console.log(`refused by ${refused.length}: ${refused.map((r) => r.label).join(", ")}`);
+  process.exitCode = 1;
+}
