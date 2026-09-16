@@ -1,43 +1,46 @@
 // skills/scrolly/scripts/scaffold-scrolly-beat.mjs
 //
-// THE PLUMBING OF A DIRECTED CHART SCROLLY, WRITTEN ONCE — AND NOTHING ELSE.
+// THE PLUMBING OF A DIRECTED CHART SCROLLY — ADAPTED FROM THE TYPE'S OWN WORKED EXAMPLE BY DEFAULT.
 //
 // Usage:  bun skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type <type> --beat proof/scrolly-<subject>
-//           [--component <PascalName>]
+//           [--component <PascalName>] [--from <beat>] [--generic]
 //
-// Cold runs starting from skills/splash/SKILL.md alone were measured copying ~400-500 lines of identical
-// plumbing from the last worked example (`proof/scrolly-boxplot-france-co2-decades`,
-// `proof/scrolly-dot-density-europe-stations`). This writes exactly those files, from
-// `assets/scrolly-beat-scaffold/`, with the beat's own names in them:
+// Two cold runs starting from skills/splash/SKILL.md alone were measured either improvising the whole plumbing or
+// never reaching a rendered page: the type sheets pointed only at the worked beat's BRIEF.md (the editorial
+// half), never its CODE. The owner's own method, every time a beat of this type was built and validated in this
+// session, was: read the validated beat's own runner/driver/directed component (the CODE, not just its BRIEF)
+// and adapt it. This scaffold now does that copy mechanically:
 //
-//   render-directions-scrolly.mjs   the runner: SCAFFOLD data loading with a named-error hook, the words object,
-//                                    STATES, composeDirections/report, resolveDirectionFamilies, deriveFurniture,
-//                                    webRegisters, one renderScrolly call per direction with the reveal driver
-//                                    inlined. ONE COMPOSED DIRECTION BY DEFAULT; --filed renders the three filed
-//                                    demo directions (a catalogue proof only); --only <id> picks one.
-//   Directed<Name>Scrolly.tsx       an empty directed component: the carrier pattern (data-<type> JSON payload),
-//                                    the header unit + exclusive notes slot, the stage/field.
-//   <type>-drive.mjs                an empty driver: the seat/paint skeleton, the `set` helper, exclusive notes,
-//                                    the narrow-stage flag.
-//   BRIEF.md                        the choreography table's header and the owner's rules checklist.
+//   BY DEFAULT (no --from, no --generic): the type sheet's own "## Worked example" names the validated beat this
+//   type adapts from (`workedExampleOf`); its render-directions-scrolly.mjs, Directed<Name>Scrolly.tsx and
+//   <word>-drive.mjs are copied into the new beat, the source beat's own component name and path renamed
+//   throughout, and every subject-specific region (data loading, its assertions, its card sentences, its marks)
+//   marked `SCAFFOLD:` in place — the working code stays working code, not blanked into a stub, because reading
+//   a real pattern is exactly what the cold runs lacked.
 //
-// WHAT IT DELIBERATELY DOES NOT GENERATE — the beat's own work, left as marked SCAFFOLD stubs: the subject's data
-// and its assertions, the claim, the copy (title/prose/source/words/alt), the choreography (STATES' fields), the
-// marks (the component's SVG geometry and labels), and the paint (the driver's own fields). The runner throws a
-// named error — its message carries SCAFFOLD_MARK — while any of the copy is still a placeholder.
+//   --from <beat>   adapts a named beat instead of the type's own worked example (a deliberate override — reuse
+//                   another subject's beat of the same type, or, for an unusual case, a different type's).
+//
+//   --generic       the old, fully generic stub output (assets/scrolly-beat-scaffold/*.tmpl) — empty plumbing
+//                   with no subject to adapt from. Required for a type whose sheet names no worked example yet;
+//                   optional otherwise.
+//
+//   BRIEF.md        always generated fresh from the generic template (its own choreography table is this beat's
+//                   own work, never copied) — in --from mode, one line names the beat it was adapted from.
 //
 // Works into an existing beat folder — the mandatory `analyst` step already creates
 // `stories/<story>/beats/<id>/` (with data.json, DATA-NOTES.md) before scrolly ever runs. Refuses only to
 // overwrite a file it would itself write, naming every one that already exists.
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 
 const HERE = import.meta.dirname;
 const TEMPLATES = join(HERE, "..", "assets", "scrolly-beat-scaffold");
 export const DEFAULT_ROOT = resolve(HERE, "..", "..", "..");
 
-/** Template file → the file it becomes; `%%Name%%`/`%%TYPE%%` are filled from the beat's own names. */
+/** Template file → the file it becomes; `%%Name%%`/`%%TYPE%%` are filled from the beat's own names. Used only in
+ *  `--generic` mode, or to generate BRIEF.md (always template-driven — see the header). */
 const FILES = Object.freeze({
   "render-directions-scrolly.mjs.tmpl": "render-directions-scrolly.mjs",
   "DirectedScrolly.tsx.tmpl": "Directed%%Name%%Scrolly.tsx",
@@ -103,16 +106,121 @@ export function fill(template, values) {
   });
 }
 
+// ── --from: adapt a validated beat's own code, instead of the generic stub ──────────────────────
+
+/** The `## Worked example` section of a type sheet names the validated beat this type's default `--from` adapts
+ *  — parsed here (a backtick-quoted `proof/scrolly-…` path) rather than hardcoded, so the scaffold and the sheet
+ *  cannot drift apart. Returns null when the sheet carries no such section (a type with no worked example yet). */
+export function workedExampleOf(root, type) {
+  const sheet = join(root, "skills", "scrolly", "references", "types", `${type}.md`);
+  if (!existsSync(sheet)) return null;
+  const text = readFileSync(sheet, "utf8");
+  const heading = text.indexOf("## Worked example");
+  if (heading === -1) return null;
+  const m = /`(proof\/scrolly-[a-z0-9-]+)/.exec(text.slice(heading));
+  return m ? m[1] : null;
+}
+
+/** A worked beat's own `// ── section ──` divider comments, re-labelled `SCAFFOLD:` wherever the label itself
+ *  names subject-specific content (its data, its claim, its assertions, its card sentences) — the plumbing
+ *  sections (the direction loop, the live-map wiring) are left alone. A beat with no divider comments, or none
+ *  matching, is left as copied. */
+const DIVIDER_KEYWORDS = /read|station|assert|word|claim|subject|data|figure|title|prose|\balt\b|camera|bucket|bound|rank|bank/i;
+function markDividers(content) {
+  return content.replace(/^(\/\/ ── )(.+?)( ─+)$/gm, (full, pre, label, tail) => (/scaffold/i.test(label) || !DIVIDER_KEYWORDS.test(label) ? full : `${pre}SCAFFOLD: ${label}${tail}`));
+}
+
+/** One banner, inserted before the first line an anchor (a `^`-anchored, `m`-flag regex) matches; a no-op when
+ *  the beat's own code carries no such line — not every type's code has every region. */
+function markBefore(content, anchor, lines) {
+  const m = anchor.exec(content);
+  if (!m) return content;
+  const indent = /^\s*/.exec(m[0])[0];
+  const banner = `${lines.map((l) => `${indent}// ${l}`).join("\n")}\n`;
+  return content.slice(0, m.index) + banner + content.slice(m.index);
+}
+
+const topBanner = (fromBeat) => [
+  `SCAFFOLD: scaffolded --from ${fromBeat} — this file is that beat's own code, renamed for this one. The`,
+  `header comment below, and every region marked SCAFFOLD:, describe ${fromBeat}'s own subject; rewrite them`,
+  `for this beat's. Read ${fromBeat}/BRIEF.md alongside this code before changing the choreography.`,
+];
+const prependBanner = (content, lines) => `// ${lines.join("\n// ")}\n${content}`;
+
+const DATA_ANCHOR = /^const \w+ = .*(?:readFile|readFileSync)\(join\(HERE/m;
+const ASSERT_ANCHOR = /^if \(/m;
+const CARDS_ANCHOR = /^const (?:title|prose) = /m;
+const RETURN_ANCHOR = /^(\s*)return \($/m;
+const DRIVE_FN_ANCHOR = /^export function \w+\(/m;
+
+/** Reads `fromBeat`'s own runner, directed component and driver, renamed for this beat's own name and path, and
+ *  re-marked SCAFFOLD over the regions that are `fromBeat`'s own subject rather than this type's plumbing — the
+ *  gesture the owner's cold-run method always used (read the worked beat's code, adapt it), encoded instead of
+ *  left tacit. Returns `{ filename: content }`, ready to write beside a fresh BRIEF.md. */
+export function adaptFromBeat({ root, fromBeat, values }) {
+  const sourceDir = resolve(root, fromBeat);
+  if (!existsSync(sourceDir)) throw new Error(`--from ${fromBeat} does not exist`);
+  const entries = readdirSync(sourceDir);
+  const runnerFile = "render-directions-scrolly.mjs";
+  if (!entries.includes(runnerFile)) throw new Error(`--from ${fromBeat} has no ${runnerFile}`);
+  const tsxNames = entries.filter((f) => /^Directed[A-Za-z0-9]+Scrolly\.tsx$/.test(f));
+  if (tsxNames.length !== 1) throw new Error(`--from ${fromBeat} must carry exactly one Directed*Scrolly.tsx, found ${tsxNames.length}`);
+  const driveNames = entries.filter((f) => f.endsWith("-drive.mjs"));
+  if (driveNames.length !== 1) throw new Error(`--from ${fromBeat} must carry exactly one *-drive.mjs, found ${driveNames.length}`);
+  const sourceName = /^Directed([A-Za-z0-9]+)Scrolly\.tsx$/.exec(tsxNames[0])[1];
+  const oldPath = relative(root, sourceDir).split(sep).join("/");
+  const rename = (text) => text.split(sourceName).join(values.Name).split(oldPath).join(values.BEAT_PATH);
+  const read = (name) => rename(readFileSync(join(sourceDir, name), "utf8"));
+
+  let runner = markDividers(read(runnerFile));
+  runner = markBefore(runner, DATA_ANCHOR, [`SCAFFOLD: data loading — ${fromBeat}'s own reader. Point this at this beat's own frozen data and`, `keep the shape (fields coerced to numbers, throw on anything unusable).`]);
+  runner = markBefore(runner, ASSERT_ANCHOR, [`SCAFFOLD: assertions — ${fromBeat}'s own claim, checked against its data. Rewrite every check against`, `this beat's own figures; a beat whose numbers drift must refuse to render, not ship a stale claim.`]);
+  runner = markBefore(runner, CARDS_ANCHOR, [`SCAFFOLD: card sentences — ${fromBeat}'s own title, prose, words and alt. Rewrite for this beat's own`, `subject; keep the no-break space escapes and the register split (display/body/axis/annot/value).`]);
+  runner = prependBanner(runner, topBanner(fromBeat));
+
+  let tsx = markDividers(read(tsxNames[0]));
+  tsx = markBefore(tsx, RETURN_ANCHOR, [`SCAFFOLD: marks — the JSX below draws ${fromBeat}'s own geometry. Replace it with this beat's own`, `marks, keeping the data-part contract the driver and CSS rely on.`]);
+  tsx = prependBanner(tsx, topBanner(fromBeat));
+
+  let drive = markDividers(read(driveNames[0]));
+  drive = markBefore(drive, DRIVE_FN_ANCHOR, [`SCAFFOLD: paint — the fields this driver reads and writes below are ${fromBeat}'s own. Adapt them to`, `this beat's own state fields; keep the seat/paint split.`]);
+  drive = prependBanner(drive, topBanner(fromBeat));
+
+  return {
+    [runnerFile]: runner,
+    [`Directed${values.Name}Scrolly.tsx`]: tsx,
+    [driveNames[0]]: drive,
+  };
+}
+
 /**
- * Writes the scaffold. Every file is filled in memory first; then, if the beat folder already carries any of
- * the files this scaffold would write, the whole call refuses and names every collision. Otherwise the folder
- * is created if needed (a no-op when the beat already exists, e.g. analyst's own data.json beside it) and each
- * file written with an exclusive flag.
+ * Writes the scaffold. By default (no `generic`), adapts `from` — or, when `from` is not given, the type sheet's
+ * own worked example — renamed and marked SCAFFOLD (`adaptFromBeat`); refuses when neither names a beat, telling
+ * the caller to pass `--from` or `--generic`. With `generic: true`, writes the old fully empty stub from
+ * `templates`/`files` instead. Either way, BRIEF.md is generated fresh from the template — in from-mode, with one
+ * added line naming the beat it was adapted from.
+ *
+ * Every file is filled in memory first; then, if the beat folder already carries any of the files this scaffold
+ * would write, the whole call refuses and names every collision. Otherwise the folder is created if needed (a
+ * no-op when the beat already exists, e.g. analyst's own data.json beside it) and each file written exclusively.
  * @returns {string[]} the files written, relative to the beat
  */
-export function scaffoldBeat({ root = DEFAULT_ROOT, templates, files, type, beat, component }) {
+export function scaffoldBeat({ root = DEFAULT_ROOT, templates, files, type, beat, component, from, generic = false }) {
   const { beatDir, values } = tokensFor({ root, type, beat, component });
-  const planned = Object.entries(files).map(([template, target]) => [fill(target, values), fill(readFileSync(join(templates, template), "utf8"), values)]);
+  const briefTemplate = fill(readFileSync(join(templates, "BRIEF.md.tmpl"), "utf8"), values);
+  let planned;
+  if (generic) {
+    planned = Object.entries(files).map(([template, target]) => [fill(target, values), fill(readFileSync(join(templates, template), "utf8"), values)]);
+  } else {
+    const fromBeat = from ?? workedExampleOf(root, type);
+    if (!fromBeat) throw new Error(`--type ${JSON.stringify(type)} has no worked example in its sheet — pass --from <beat>, or --generic for the empty stub`);
+    const adapted = adaptFromBeat({ root, fromBeat, values });
+    const brief = briefTemplate.replace(
+      "## The choreography",
+      `## The choreography\n\nSCAFFOLD: this beat's code was scaffolded \`--from ${fromBeat}\` — read that beat's own BRIEF.md and its\nrunner/driver/directed component (marked SCAFFOLD: where they are its own subject) before writing this table.\n`,
+    );
+    planned = Object.entries({ ...adapted, "BRIEF.md": brief });
+  }
   const collisions = planned.map(([target]) => target).filter((target) => existsSync(join(beatDir, target))).sort();
   if (collisions.length) throw new Error(`${relative(root, beatDir)} already has ${collisions.join(", ")} — the scaffold never overwrites a file`);
   mkdirSync(beatDir, { recursive: true });
@@ -121,12 +229,19 @@ export function scaffoldBeat({ root = DEFAULT_ROOT, templates, files, type, beat
 }
 
 export function parseArgs(argv) {
-  const known = new Set(["--type", "--beat", "--component"]);
+  const known = new Set(["--type", "--beat", "--component", "--from"]);
   const out = {};
-  for (let i = 0; i < argv.length; i += 2) {
-    if (!known.has(argv[i])) throw new Error(`unknown argument ${JSON.stringify(argv[i])} — takes --type, --beat, --component`);
-    if (argv[i + 1] === undefined || argv[i + 1].startsWith("--")) throw new Error(`${argv[i]} takes a value`);
-    out[argv[i].slice(2)] = argv[i + 1];
+  for (let i = 0; i < argv.length; ) {
+    const flag = argv[i];
+    if (flag === "--generic") {
+      out.generic = true;
+      i += 1;
+      continue;
+    }
+    if (!known.has(flag)) throw new Error(`unknown argument ${JSON.stringify(flag)} — takes --type, --beat, --component, --from, --generic`);
+    if (argv[i + 1] === undefined || argv[i + 1].startsWith("--")) throw new Error(`${flag} takes a value`);
+    out[flag.slice(2)] = argv[i + 1];
+    i += 2;
   }
   for (const required of ["type", "beat"]) if (!out[required]) throw new Error(`--${required} is required`);
   return out;
@@ -135,8 +250,12 @@ export function parseArgs(argv) {
 if (import.meta.main) {
   try {
     const args = parseArgs(process.argv.slice(2));
-    const written = scaffoldBeat({ templates: TEMPLATES, files: FILES, type: args.type, beat: args.beat, component: args.component });
-    console.log(`scaffolded ${args.beat}:\n  ${written.join("\n  ")}\n\nNext: read skills/scrolly/references/types/${args.type}.md, write BRIEF.md's choreography, then the SCAFFOLD stubs (grep -rn SCAFFOLD ${args.beat}).`);
+    const generic = Boolean(args.generic);
+    const written = scaffoldBeat({ templates: TEMPLATES, files: FILES, type: args.type, beat: args.beat, component: args.component, from: args.from, generic });
+    const next = generic
+      ? `Next: read skills/scrolly/references/types/${args.type}.md, write BRIEF.md's choreography, then the SCAFFOLD stubs (grep -rn SCAFFOLD ${args.beat}).`
+      : `Next: grep -rn SCAFFOLD ${args.beat} and work through each marked region; BRIEF.md names the beat it was adapted from — read its own BRIEF.md too.`;
+    console.log(`scaffolded ${args.beat}:\n  ${written.join("\n  ")}\n\n${next}`);
   } catch (error) {
     console.error(`refused — ${error.message}`);
     process.exitCode = 1;

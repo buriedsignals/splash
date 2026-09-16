@@ -13,11 +13,14 @@ import { basename, dirname, join, resolve } from "node:path";
 /**
  * THE SCROLLY SCAFFOLDS WRITE THE PLUMBING ONLY, REFUSE TO OVERWRITE, AND THE FILES THEY WRITE PARSE.
  *
- * Scaffolds a chart beat and a map beat into hidden folders under `proof/` (removed after), each from a real
- * type sheet, then checks: the exact plumbing files are written and named on stdout; every file's syntax is
- * valid (Bun's own transpiler, so no import needs to resolve); no `%%TOKEN%%` or typed no-break space is left in
- * any file; and the generated runner refuses to render with a named SCAFFOLD error, before it ever reaches the
- * network (a beat with no PALETTE.md and no MapTiler key still fails on its own placeholder copy first).
+ * Two describe blocks per scaffold: `--generic` (the old, fully empty stub — required for a type with no worked
+ * example, optional otherwise) and the DEFAULT path (no flag), which adapts the type sheet's own worked example
+ * beat instead — the owner's cold-run method (read the validated beat's own code, adapt it) encoded mechanically.
+ * Scaffolds into hidden folders under `proof/` (removed after), then checks: the exact plumbing files are
+ * written and named on stdout; every file's syntax is valid (Bun's own transpiler, so no import needs to
+ * resolve); no `%%TOKEN%%` or typed no-break space is left in any file; the `--generic` runner refuses to render
+ * with a named SCAFFOLD error before it ever reaches the network; and the default runner carries `SCAFFOLD:`
+ * banners over the regions adapted from its worked example (data loading, assertions, card sentences).
  */
 
 const ROOT = resolve(import.meta.dirname, "..", "..", "..");
@@ -47,6 +50,7 @@ const CHART_ARGS = [
   `proof/${CHART_NAME}`,
   "--component",
   "ScaffoldProbe",
+  "--generic",
 ];
 const CHART_EXPECTED = [
   "BRIEF.md",
@@ -64,12 +68,52 @@ const MAP_ARGS = [
   `proof/${MAP_NAME}`,
   "--component",
   "ScaffoldProbe",
+  "--generic",
 ];
 const MAP_EXPECTED = [
   "BRIEF.md",
   "DirectedScaffoldProbeScrolly.tsx",
   "dot-density-drive.mjs",
   "dot-density-plan.mjs",
+  "render-directions-scrolly.mjs",
+];
+
+// The DEFAULT path (no --generic): adapts the type sheet's own worked example — boxplot's is
+// proof/scrolly-boxplot-france-co2-decades (its own driver happens to be named boxplot-drive.mjs already);
+// dot-density's is proof/scrolly-dot-density-europe-stations, whose plan and driver keep their own short names
+// (plan.mjs, dot-drive.mjs) rather than the generic %%TYPE%%-plan.mjs / %%TYPE%%-drive.mjs convention.
+const CHART_FROM_NAME = `.scaffold-test-scrolly-chart-from-${STAMP}`;
+const CHART_FROM_BEAT = join(PROOF, CHART_FROM_NAME);
+const CHART_FROM_ARGS = [
+  "--type",
+  "boxplot",
+  "--beat",
+  `proof/${CHART_FROM_NAME}`,
+  "--component",
+  "ScaffoldProbe",
+];
+const CHART_FROM_EXPECTED = [
+  "BRIEF.md",
+  "DirectedScaffoldProbeScrolly.tsx",
+  "boxplot-drive.mjs",
+  "render-directions-scrolly.mjs",
+];
+
+const MAP_FROM_NAME = `.scaffold-test-scrolly-map-from-${STAMP}`;
+const MAP_FROM_BEAT = join(PROOF, MAP_FROM_NAME);
+const MAP_FROM_ARGS = [
+  "--type",
+  "dot-density",
+  "--beat",
+  `proof/${MAP_FROM_NAME}`,
+  "--component",
+  "ScaffoldProbe",
+];
+const MAP_FROM_EXPECTED = [
+  "BRIEF.md",
+  "DirectedScaffoldProbeScrolly.tsx",
+  "dot-drive.mjs",
+  "plan.mjs",
   "render-directions-scrolly.mjs",
 ];
 
@@ -99,15 +143,23 @@ function assertEveryFileParses(dir: string, files: string[]) {
 
 let chartFirst: ReturnType<typeof run>;
 let mapFirst: ReturnType<typeof run>;
+let chartFromFirst: ReturnType<typeof run>;
+let mapFromFirst: ReturnType<typeof run>;
 beforeAll(async () => {
   removeProbe(CHART_BEAT, CHART_NAME);
   removeProbe(MAP_BEAT, MAP_NAME);
+  removeProbe(CHART_FROM_BEAT, CHART_FROM_NAME);
+  removeProbe(MAP_FROM_BEAT, MAP_FROM_NAME);
   chartFirst = run(CHART_SCRIPT, CHART_ARGS);
   mapFirst = run(MAP_SCRIPT, MAP_ARGS);
+  chartFromFirst = run(CHART_SCRIPT, CHART_FROM_ARGS);
+  mapFromFirst = run(MAP_SCRIPT, MAP_FROM_ARGS);
 });
 afterAll(() => {
   removeProbe(CHART_BEAT, CHART_NAME);
   removeProbe(MAP_BEAT, MAP_NAME);
+  removeProbe(CHART_FROM_BEAT, CHART_FROM_NAME);
+  removeProbe(MAP_FROM_BEAT, MAP_FROM_NAME);
 });
 
 describe("scaffold-scrolly-beat (chart)", () => {
@@ -284,5 +336,101 @@ describe("scaffold-scrolly-map-beat (map)", () => {
     expect(rendered.status).not.toBe(0);
     expect(rendered.stderr).toContain("SCAFFOLD");
     expect(rendered.stderr).not.toContain("no MapTiler key");
+  });
+});
+
+describe("scaffold-scrolly-beat (chart) — default --from", () => {
+  it("should adapt boxplot's own worked example, preserving its driver's own filename, and say which", () => {
+    expect(chartFromFirst.status).toBe(0);
+    expect(readdirSync(CHART_FROM_BEAT).sort()).toEqual(
+      CHART_FROM_EXPECTED.slice().sort(),
+    );
+    for (const file of CHART_FROM_EXPECTED)
+      expect(chartFromFirst.stdout).toContain(file);
+  });
+
+  it("should mark the worked example's own subject-specific regions SCAFFOLD, and rename its component throughout", () => {
+    const runner = readFileSync(
+      join(CHART_FROM_BEAT, "render-directions-scrolly.mjs"),
+      "utf8",
+    );
+    expect(runner).toContain(
+      "SCAFFOLD: scaffolded --from proof/scrolly-boxplot-france-co2-decades",
+    );
+    expect(runner).toContain("SCAFFOLD: data loading");
+    expect(runner).toContain("SCAFFOLD: assertions");
+    expect(runner).toContain("SCAFFOLD: card sentences");
+    expect(runner).toContain("DirectedScaffoldProbeScrolly");
+    expect(runner).not.toContain("DirectedBoxplotScrolly");
+    const brief = readFileSync(join(CHART_FROM_BEAT, "BRIEF.md"), "utf8");
+    expect(brief).toContain(
+      "scaffolded `--from proof/scrolly-boxplot-france-co2-decades`",
+    );
+  });
+
+  it("should leave no template token in any file", async () => {
+    for (const file of CHART_FROM_EXPECTED) {
+      const text = await Bun.file(join(CHART_FROM_BEAT, file)).text();
+      expect([file, text.includes("%%")]).toEqual([file, false]);
+    }
+  });
+
+  it("should write every file so it parses", () => {
+    assertEveryFileParses(
+      CHART_FROM_BEAT,
+      CHART_FROM_EXPECTED.filter((f) => !f.endsWith(".md")),
+    );
+  });
+
+  it("should refuse a --from beat that does not exist", () => {
+    const name = `.scaffold-test-scrolly-chart-badfrom-${STAMP}`;
+    const bad = run(CHART_SCRIPT, [
+      "--type",
+      "boxplot",
+      "--beat",
+      `proof/${name}`,
+      "--from",
+      "proof/scrolly-does-not-exist",
+    ]);
+    expect([
+      bad.status,
+      existsSync(join(PROOF, name)),
+      bad.stderr.includes("--from proof/scrolly-does-not-exist does not exist"),
+    ]).toEqual([1, false, true]);
+  });
+});
+
+describe("scaffold-scrolly-map-beat (map) — default --from", () => {
+  it("should adapt dot-density's own worked example, preserving its plan's and driver's own filenames, and say which", () => {
+    expect(mapFromFirst.status).toBe(0);
+    expect(readdirSync(MAP_FROM_BEAT).sort()).toEqual(
+      MAP_FROM_EXPECTED.slice().sort(),
+    );
+    for (const file of MAP_FROM_EXPECTED)
+      expect(mapFromFirst.stdout).toContain(file);
+  });
+
+  it("should mark the worked example's own subject-specific regions SCAFFOLD in its plan and its driver", () => {
+    const plan = readFileSync(join(MAP_FROM_BEAT, "plan.mjs"), "utf8");
+    expect(plan).toContain(
+      "SCAFFOLD: scaffolded --from proof/scrolly-dot-density-europe-stations",
+    );
+    expect(plan).toContain("SCAFFOLD: marks");
+    const drive = readFileSync(join(MAP_FROM_BEAT, "dot-drive.mjs"), "utf8");
+    expect(drive).toContain("SCAFFOLD: paint");
+  });
+
+  it("should leave no template token in any file", async () => {
+    for (const file of MAP_FROM_EXPECTED) {
+      const text = await Bun.file(join(MAP_FROM_BEAT, file)).text();
+      expect([file, text.includes("%%")]).toEqual([file, false]);
+    }
+  });
+
+  it("should write every file so it parses", () => {
+    assertEveryFileParses(
+      MAP_FROM_BEAT,
+      MAP_FROM_EXPECTED.filter((f) => !f.endsWith(".md")),
+    );
   });
 });
