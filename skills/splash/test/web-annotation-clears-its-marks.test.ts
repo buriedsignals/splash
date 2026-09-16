@@ -221,12 +221,10 @@ const READ_ANNOTATIONS = (floor: number) => `(() => {
 /**
  * The standing findings on committed proof pages — the debt, counted. Key: `<page> @ <width>: <text>`.
  * Remove a line when its page is fixed; never add one for a new page (fix the page instead).
+ * `webx-world-population`, the page this set once pinned findings for, archived 2026-09-17 — empty
+ * until a kept beat exhibits the same defect.
  */
-const ACCEPTED = new Set([
-  'proof/webx-world-population/world-population.html @ 375: "passed 1 billion in 1805" covers a path filled rgb(11, 122, 117) at 1/25 sample points',
-  'proof/webx-world-population/world-population.html @ 768: "passed 1 billion in 1805" covers a path filled rgb(11, 122, 117) at 1/25 sample points',
-  'proof/webx-world-population/world-population.html @ 1400: "passed 1 billion in 1805" covers a path filled rgb(11, 122, 117) at 1/25 sample points',
-]);
+const ACCEPTED = new Set<string>([]);
 
 type Annotation = {
   peak: boolean;
@@ -266,7 +264,9 @@ describe("a web annotation is placed by the shape it annotates", () => {
                     `at ${n.worst.covered}/25 sample points`,
                 );
               if (n.collides)
-                reported.push(`${rel} @ ${w}: "${n.text}" is printed over "${n.collides}"`);
+                reported.push(
+                  `${rel} @ ${w}: "${n.text}" is printed over "${n.collides}"`,
+                );
               continue;
             }
             peaksSeen += 1;
@@ -296,14 +296,14 @@ describe("a web annotation is placed by the shape it annotates", () => {
     // Standing findings are a pinned set, not a report: anything new fails, anything fixed strikes.
     const unexpected = reported.filter((line) => !ACCEPTED.has(line));
     const struck = [...ACCEPTED].filter((line) => !reported.includes(line));
-    expect(["annotations over a mark outside the pinned set", unexpected]).toEqual([
+    expect([
       "annotations over a mark outside the pinned set",
-      [],
-    ]);
-    expect(["pinned findings no longer found — remove from ACCEPTED", struck]).toEqual([
+      unexpected,
+    ]).toEqual(["annotations over a mark outside the pinned set", []]);
+    expect([
       "pinned findings no longer found — remove from ACCEPTED",
-      [],
-    ]);
+      struck,
+    ]).toEqual(["pinned findings no longer found — remove from ACCEPTED", []]);
     expect(peaksSeen).toBeGreaterThan(0);
     expect(failures.join("\n")).toBe("");
   });

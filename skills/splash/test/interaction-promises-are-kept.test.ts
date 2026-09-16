@@ -358,7 +358,8 @@ const READ_TOOLTIP = `(() => {
  *  fractional coordinates. `inView` is what stops a silent no-op being read as a broken artifact. */
 function aimAtMark(i: number) {
   const mark = document.querySelectorAll("[data-detail]")[i] as
-    HTMLElement | undefined;
+    | HTMLElement
+    | undefined;
   if (!mark) return null;
   mark.scrollIntoView({ block: "center", inline: "center" });
   const r = mark.getBoundingClientRect();
@@ -394,7 +395,8 @@ function aimAtMark(i: number) {
 function aimAtMarkEdges(i: number) {
   const INSET = 4;
   const hit = document.querySelectorAll("[data-detail]")[i] as
-    HTMLElement | undefined;
+    | HTMLElement
+    | undefined;
   if (!hit) return null;
   const key = hit.getAttribute("data-key");
   if (!key) return { derivable: false as const };
@@ -787,9 +789,9 @@ function summary(r: ArtifactReport): string {
  *   strip `data-key` off the drawn `<circle>`s of `quake-symbol.html`, leaving its hit buttons
  *   keyed — i.e. arrive silently at `mapgen-dot-web`'s state:
  *
- *     Expected: "proof/mapgen-symbol-web/quake-symbol.html: some mark is edge-measurable, 3 probed"
- *     Received: "proof/mapgen-symbol-web/quake-symbol.html: NO mark is edge-measurable, 3 probed"
- *     (fail) … proof/mapgen-symbol-web/quake-symbol.html > should edge-probe as many of its marks
+ *     Expected: "archive/mapgen-symbol-web/quake-symbol.html: some mark is edge-measurable, 3 probed"
+ *     Received: "archive/mapgen-symbol-web/quake-symbol.html: NO mark is edge-measurable, 3 probed"
+ *     (fail) … archive/mapgen-symbol-web/quake-symbol.html > should edge-probe as many of its marks
  *            as its recorded census says
  *      320 pass · 1 fail
  *
@@ -802,23 +804,18 @@ function summary(r: ArtifactReport): string {
  *     Received: "proof/fake-new-web/fake.html has a census row: false"
  *      330 pass · 2 fail
  */
+// Archived 2026-09-17: every row this census once held for `mapgen-*`, `webx-*`/`weby-*`/`webz-*`,
+// `more-heatmap-co2-per-capita-decades`, `mapmore-scrolly-danube`, `mapscrolly-*` and the legacy
+// scrolly probes moved out with those beats — none of them are discovered under `proof/` any more,
+// so a stale row here would show as recorded-but-undriven. `co2-suisse` is the one survivor.
+//
+// KNOWN GAP, PRE-EXISTING AND NOT CLOSED BY THIS PASS: the ~30 directed `web-<type>-<subject>`
+// beats this catalogue now cites (`docs/design-base/CATALOGUE.md`) carry no row here at all — this
+// table was never extended to them when they were built, so every one of their rendered pages
+// fails "should edge-probe as many of its marks as its recorded census says" below. Closing it
+// needs the same browser measurement the rest of this table was built from, per beat; it is not a
+// name change and is out of scope for a `proof/`↔`archive/` reorganisation.
 const EDGE_CENSUS: Record<string, { measurable: boolean; probed: number }> = {
-  // ── map × web: the hit element's `data-key` names a drawn `<path>`/`<circle>`, so the probe
-  //    has a mark to measure. This is the population assertion 4b was written for.
-  "proof/mapgen-hexgrid-web/hex-grid.html": { measurable: true, probed: 3 },
-  "proof/mapgen-locator-web/locator.html": { measurable: true, probed: 3 },
-  "proof/mapgen-symbol-web/quake-symbol.html": { measurable: true, probed: 3 },
-  // One or two of its three probed countries are concave enough that fewer than two inset points
-  // land on painted mark — Iceland's bounding box is mostly open sea. Which of the two it is moves
-  // between checkouts, which is why this table records "measurable at all" and not the split.
-  "proof/mapgen-choropleth-web/render/choropleth.html": {
-    measurable: true,
-    probed: 3,
-  },
-  // ── the beat the owner reported. Its hit elements sit at a country's anchor and the country's
-  //    own polygon carries no key, so "a probe 60px inside France answers nothing" is measured by
-  //    nobody. Closing it is ruling R1's `queryRenderedFeatures` rewrite of that layer.
-  "proof/mapgen-dot-web/dot-population.html": { measurable: false, probed: 3 },
   // ── the hex CARTOGRAM in web. Its drawn mark is the `<polygon>`, which carries `data-key`; its
   //    answering element is a transparent `<circle>` INSCRIBED in that hexagon, and the circle
   //    carries `data-detail` but no key. That is not an oversight waiting to be closed the way
@@ -827,9 +824,18 @@ const EDGE_CENSUS: Record<string, { measurable: boolean; probed: number }> = {
   //    top and bottom aims land outside the element that answers, by construction. Keying the
   //    circle would make this measurable and then immediately red for a reason that is geometry
   //    rather than a defect. Recorded as what it is.
-  "proof/web-hex-grid-europe-protection/renders/creme.html": { measurable: false, probed: 3 },
-  "proof/web-hex-grid-europe-protection/renders/nocturne.html": { measurable: false, probed: 3 },
-  "proof/web-hex-grid-europe-protection/renders/rapport.html": { measurable: false, probed: 3 },
+  "proof/web-hex-grid-europe-protection/renders/creme.html": {
+    measurable: false,
+    probed: 3,
+  },
+  "proof/web-hex-grid-europe-protection/renders/nocturne.html": {
+    measurable: false,
+    probed: 3,
+  },
+  "proof/web-hex-grid-europe-protection/renders/rapport.html": {
+    measurable: false,
+    probed: 3,
+  },
   // ── chart × web: the format emits NO `data-key` anywhere — 0 occurrences in every one of these
   //    files. Its hit element is a transparent full-height band (`<rect class="bin-hit">`)
   //    deliberately WIDER than the mark it stands for, so "the target is smaller than the mark"
@@ -837,87 +843,6 @@ const EDGE_CENSUS: Record<string, { measurable: boolean; probed: number }> = {
   //    a measurement: nothing here proves it, and until `chart-web` keys its drawn marks
   //    nothing can.
   "proof/co2-suisse/co2.html": { measurable: false, probed: 3 },
-  "proof/more-heatmap-co2-per-capita-decades/co2-heatmap.html": {
-    measurable: false,
-    probed: 3,
-  },
-  "proof/web-co2-decline-slope/co2-decline-slope.html": {
-    measurable: false,
-    probed: 3,
-  },
-  "proof/web-co2-ranking/dist/co2-ranking.html": {
-    measurable: false,
-    probed: 3,
-  },
-  "proof/web-income-life-expectancy/income-life-expectancy.html": {
-    measurable: false,
-    probed: 3,
-  },
-  "proof/webx-carbon-footprint/carbon-footprint.html": {
-    measurable: false,
-    probed: 3,
-  },
-  "proof/webx-germany-bridge/germany-bridge.html": {
-    measurable: false,
-    probed: 3,
-  },
-  "proof/webx-wind-vs-solar/wind-vs-solar.html": {
-    measurable: false,
-    probed: 3,
-  },
-  "proof/webx-world-population/world-population.html": {
-    measurable: false,
-    probed: 3,
-  },
-  "proof/weby-boxplot-france-co2-decades/boxplot-france-co2-decades.html": {
-    measurable: false,
-    probed: 3,
-  },
-  "proof/weby-dumbbell-life-expectancy-gains/dumbbell-life-expectancy-gains.html":
-    { measurable: false, probed: 3 },
-  "proof/weby-lollipop-co2-per-capita/lollipop-co2-per-capita.html": {
-    measurable: false,
-    probed: 3,
-  },
-  "proof/weby-population-pyramid-switzerland/population-pyramid-switzerland.html":
-    { measurable: false, probed: 3 },
-  "proof/weby-small-multiples-co2-per-capita/small-multiples-co2-per-capita.html":
-    { measurable: false, probed: 3 },
-  "proof/webz-bump-emitter-rank/bump-emitter-rank.html": {
-    measurable: false,
-    probed: 3,
-  },
-  "proof/webz-diverging-bar-eu-per-capita/diverging-bar-eu-per-capita.html": {
-    measurable: false,
-    probed: 3,
-  },
-  // ── scrolly: no per-mark tooltip, so nothing is probed at all and nothing should be.
-  "proof/mapmore-scrolly-danube/render/danube-scrolly.html": {
-    measurable: false,
-    probed: 0,
-  },
-  "proof/mapscrolly-one-map-europe-carbon/render/one-map-four-readings.html": {
-    measurable: false,
-    probed: 0,
-  },
-  "proof/mapscrolly-quakes-three-ways/render/quakes-four-maps.html": {
-    measurable: false,
-    probed: 0,
-  },
-  "proof/scrolly-chart-eu-carbon/render/eu-carbon-four-charts.html": {
-    measurable: false,
-    probed: 0,
-  },
-  "proof/scrolly-image-grinnell-glacier/render/grinnell-glacier.html": {
-    measurable: false,
-    probed: 0,
-  },
-  "proof/scrolly-mixed-grinnell-ice/render/three-media-one-glacier.html": {
-    measurable: false,
-    probed: 0,
-  },
-  "proof/scrolly-one-chart-swiss-life-expectancy/render/one-line-four-readings.html":
-    { measurable: false, probed: 0 },
 };
 
 /**

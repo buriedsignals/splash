@@ -1206,7 +1206,7 @@ delivery. Two decisions are worth copying:
 **A moving camera.** The map track shows one baked plate. A scroll-driven `flyTo` between waypoints
 would mean either a live map in the delivered file (no longer self-contained, and shipping a key) or
 one baked plate per waypoint. Reusing one plate and changing only what is drawn ON it is the shape
-`proof/mapmore-scrolly-danube` already ships as a consumer of this scaffold.
+`archive/mapmore-scrolly-danube` (archived 2026-09-17) already shipped as a consumer of this scaffold.
 
 **Roving-tabindex / single-stop keyboard navigation of the reveal itself.** There is no keyboard
 shortcut that advances the active step directly (no `ArrowDown` handler, unlike

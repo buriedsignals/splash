@@ -41,6 +41,10 @@ import { resolveFamily } from "../../../shared/design-base/resolve-families.mjs"
 
 const TWIN = join(import.meta.dirname, "..", "..", "..");
 const PROOF = join(TWIN, "proof");
+// Archived 2026-09-17: the flat-root legacy web pages this guard's population is drawn from
+// (`mapgen-*-web`, `webx-*`/`weby-*`/`webz-*`) moved to `archive/`, keeping their names — walked
+// alongside `proof/` so this guard's population does not silently empty.
+const ARCHIVE = join(TWIN, "archive");
 const DIRECTIONS = join(TWIN, "shared", "design-base", "directions");
 
 type Page = { beat: string; file: string; html: string; direction: string };
@@ -58,7 +62,9 @@ function declaredDirection(dir: string): string | null {
 
 /** Every direction on file, by id. */
 const FILED = existsSync(DIRECTIONS)
-  ? readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md")).map((f) => f.replace(/\.md$/, ""))
+  ? readdirSync(DIRECTIONS)
+      .filter((f) => f.endsWith(".md"))
+      .map((f) => f.replace(/\.md$/, ""))
   : [];
 
 /**
@@ -80,12 +86,12 @@ function directionOf(dir: string, file: string): string {
   return declaredDirection(dir) ?? "";
 }
 
-function directedPages(): Page[] {
-  if (!existsSync(PROOF)) return [];
+function directedPagesUnder(root: string): Page[] {
+  if (!existsSync(root)) return [];
   const out: Page[] = [];
-  for (const entry of readdirSync(PROOF, { withFileTypes: true })) {
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
-    const dir = join(PROOF, entry.name);
+    const dir = join(root, entry.name);
     /** A BEAT'S PAGE IS NOT ALWAYS AT ITS OWN ROOT. This walk read the beat directory only, and
      *  `proof/mapgen-choropleth-web` delivers into `render/` — so the second map type to be set in
      *  its direction's own face joined a population of one level and was measured by nothing. One
@@ -99,18 +105,33 @@ function directedPages(): Page[] {
     const keyed = /\.local\.html$/;
     const files: string[] = [];
     for (const file of readdirSync(dir, { withFileTypes: true })) {
-      if (file.isFile() && file.name.endsWith(".html") && !keyed.test(file.name)) files.push(file.name);
+      if (
+        file.isFile() &&
+        file.name.endsWith(".html") &&
+        !keyed.test(file.name)
+      )
+        files.push(file.name);
       if (!file.isDirectory()) continue;
       for (const nested of readdirSync(join(dir, file.name)))
-        if (nested.endsWith(".html") && !keyed.test(nested)) files.push(join(file.name, nested));
+        if (nested.endsWith(".html") && !keyed.test(nested))
+          files.push(join(file.name, nested));
     }
     for (const file of files) {
       const html = readFileSync(join(dir, file), "utf8");
       if (!html.includes("--title-family")) continue;
-      out.push({ beat: entry.name, file, html, direction: directionOf(dir, file) });
+      out.push({
+        beat: entry.name,
+        file,
+        html,
+        direction: directionOf(dir, file),
+      });
     }
   }
   return out;
+}
+
+function directedPages(): Page[] {
+  return [...directedPagesUnder(PROOF), ...directedPagesUnder(ARCHIVE)];
 }
 
 /** What a custom property is set to, read out of the page's own stylesheet — OR out of the inline
@@ -176,8 +197,11 @@ describe("a page that declares a filed direction", () => {
       // only the first reddened every directed chart × web page in the tree for setting its title in
       // exactly the face the direction filed.
       const family = head(customProperty(page.html, "--title-family")!);
-      const titleStyle = /class="chart-title"[^>]*style="([^"]*)"/.exec(page.html)?.[1] ?? "";
-      const drawnInline = new RegExp(`font-family:[^;]*${family}`).test(unescapeHtml(titleStyle));
+      const titleStyle =
+        /class="chart-title"[^>]*style="([^"]*)"/.exec(page.html)?.[1] ?? "";
+      const drawnInline = new RegExp(`font-family:[^;]*${family}`).test(
+        unescapeHtml(titleStyle),
+      );
       expect(
         /font-family:\s*var\(--title-family\)/.test(page.html) || drawnInline,
         `${where} names ${family} and neither reads --title-family in a rule nor sets it on the ` +

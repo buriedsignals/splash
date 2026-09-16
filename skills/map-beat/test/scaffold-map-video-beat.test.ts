@@ -15,7 +15,7 @@ import { basename, dirname, join, resolve } from "node:path";
  * THE MAP VIDEO SCAFFOLD WRITES THE PLUMBING, REFUSES TO OVERWRITE, AND ITS GUARDS RUN GREEN BUT FOR THE PLACEHOLDERS.
  *
  * Scaffolds a real map beat into a hidden folder under `proof/` (removed after), from the frozen
- * `static-heatmap-coal-share-europe`. The live measurement needs the MapTiler key, so the offline guards are run on a
+ * `static-heatmap-europe-electricity`. The live measurement needs the MapTiler key, so the offline guards are run on a
  * SYNTHETIC measurement — an all-sea map under the generated plan's own digest — which is exactly what `measured.json`
  * holds, minus the land. Every failing test must be a SCAFFOLD placeholder; the plumbing's own tests must pass, the
  * default of one composed direction and the credit seated on the sea among them.
@@ -38,7 +38,7 @@ const ARGS = [
   "--beat",
   `proof/${NAME}`,
   "--static",
-  "proof/static-heatmap-coal-share-europe",
+  "proof/static-heatmap-europe-electricity",
   "--component",
   "ScaffoldProbe",
 ];

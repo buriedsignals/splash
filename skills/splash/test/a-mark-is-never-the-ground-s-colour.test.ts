@@ -51,7 +51,7 @@ import { readdirSync } from "node:fs";
 
 const ROOT = join(import.meta.dirname, "..", "..", "..");
 const DIRECTIONS = join(ROOT, "shared", "design-base", "directions");
-const DANUBE = join(ROOT, "proof", "web-flow-map-danube");
+const DANUBE = join(ROOT, "archive", "web-flow-map-danube");
 
 /** THE OCCUPANCY THESE CASES ARE ABOUT, FIXED ON PURPOSE.
  *

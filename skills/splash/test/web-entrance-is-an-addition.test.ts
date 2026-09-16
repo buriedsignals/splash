@@ -139,22 +139,7 @@ const TWIN = join(new URL(".", import.meta.url).pathname, "../../..");
  * script. The list is EXACT, so migrating one reddens this guard until the name is removed, and a
  * seventeenth page landing tomorrow with no entrance reddens it without anybody remembering.
  */
-const ENTRANCE_PENDING = [
-  "proof/co2-suisse/co2.html",
-  "proof/web-co2-decline-slope/co2-decline-slope.html",
-  "proof/web-co2-ranking/dist/co2-ranking.html",
-  "proof/web-income-life-expectancy/income-life-expectancy.html",
-  "proof/webx-carbon-footprint/carbon-footprint.html",
-  "proof/webx-germany-bridge/germany-bridge.html",
-  "proof/webx-wind-vs-solar/wind-vs-solar.html",
-  "proof/webx-world-population/world-population.html",
-  "proof/weby-boxplot-france-co2-decades/boxplot-france-co2-decades.html",
-  "proof/weby-dumbbell-life-expectancy-gains/dumbbell-life-expectancy-gains.html",
-  "proof/weby-lollipop-co2-per-capita/lollipop-co2-per-capita.html",
-  "proof/weby-population-pyramid-switzerland/population-pyramid-switzerland.html",
-  "proof/weby-small-multiples-co2-per-capita/small-multiples-co2-per-capita.html",
-  "proof/webz-diverging-bar-eu-per-capita/diverging-bar-eu-per-capita.html",
-];
+const ENTRANCE_PENDING = ["proof/co2-suisse/co2.html"];
 
 type Subject = { label: string; html: string };
 
@@ -165,18 +150,20 @@ function committedChartWebPages(): Subject[] {
     encoding: "utf8",
     maxBuffer: 64 * 1024 * 1024,
   });
-  return out
-    .split("\n")
-    .filter(Boolean)
-    .filter((p) => !p.includes("/drive/"))
-    // Story workspaces and their delivered renders are historical records, not the maintained
-    // proof corpus this exact pending-list census governs.
-    .filter((p) => !p.startsWith("stories/"))
-    // Colocated Jujutsu can leave a working-copy deletion visible to Git's compatibility index
-    // until the change is recorded. The current tree, not that stale index entry, is the subject.
-    .filter((p) => existsSync(join(TWIN, p)))
-    .map((p) => ({ label: p, html: readFileSync(join(TWIN, p), "utf8") }))
-    .filter((s) => s.html.includes('class="chart-figure"'));
+  return (
+    out
+      .split("\n")
+      .filter(Boolean)
+      .filter((p) => !p.includes("/drive/"))
+      // Story workspaces and their delivered renders, and archived beats, are historical
+      // records, not the maintained proof corpus this exact pending-list census governs.
+      .filter((p) => !p.startsWith("stories/") && !p.startsWith("archive/"))
+      // Colocated Jujutsu can leave a working-copy deletion visible to Git's compatibility index
+      // until the change is recorded. The current tree, not that stale index entry, is the subject.
+      .filter((p) => existsSync(join(TWIN, p)))
+      .map((p) => ({ label: p, html: readFileSync(join(TWIN, p), "utf8") }))
+      .filter((s) => s.html.includes('class="chart-figure"'))
+  );
 }
 
 /** The skill's own seed, rendered on the fly the way `verify-web.mjs` renders it — it ships no
@@ -184,10 +171,7 @@ function committedChartWebPages(): Subject[] {
 async function renderedSeed(): Promise<Subject> {
   const dir = await mkdtemp(join(tmpdir(), "entrance-seed-"));
   const { outPath } = await renderSeed({
-    dataPath: join(
-      TWIN,
-      "skills/chart-web/assets/sample-data/rainfall.json",
-    ),
+    dataPath: join(TWIN, "skills/chart-web/assets/sample-data/rainfall.json"),
     outDir: dir,
   });
   return {

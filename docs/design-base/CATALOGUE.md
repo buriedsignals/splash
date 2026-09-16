@@ -6,10 +6,11 @@ and a tick means a **directed** beat exists — one that goes through the design
 its six registers, the arbiter's treatments). Beats that predate the design base are not ticked here;
 they are listed at the foot.
 
-Last measured: 2026-09-16 · 179 references · 40 directed static beats · 40 directed video beats
+Last measured: 2026-09-17 · 179 references · 40 directed static beats · 40 directed video beats
 · 40 directed scrolly beats · 40 directed web beats. The scrolly column was filled on 2026-09-15
 (branch `quality/scrolly`), the video column on 2026-09-16, and the web column on 2026-09-15 —
-each the directed beats the owner validated in that pass.
+each the directed beats the owner validated in that pass. `proof/` was pruned to exactly these 160
+beats on 2026-09-17; everything it does not cite moved to `archive/`, names kept.
 
 - ✅ a directed beat exists
 - ◦ references are harvested, no beat yet
@@ -215,7 +216,7 @@ All eight are now live MapTiler on a flat Web Mercator map, baked in the three d
 | Dumbbell | scrolly | `proof/scrolly-dumbbell-life-expectancy-gains` |
 | Gantt | scrolly | `proof/scrolly-gantt-top-ten-tenure` |
 | Grouped bar | scrolly | `proof/scrolly-wind-vs-solar` |
-| Heatmap | scrolly | `proof/scrolly-heatmap-europe-electricity`, `proof/scrolly-heatmap-coal-share-europe` |
+| Heatmap | scrolly | `proof/scrolly-heatmap-coal-share-europe` |
 | Histogram | scrolly | `proof/scrolly-carbon-footprint-spread` |
 | Line | scrolly | `proof/scrolly-line-swiss-co2` |
 | Lollipop | scrolly | `proof/scrolly-lollipop-co2-per-person` |
@@ -227,9 +228,9 @@ All eight are now live MapTiler on a flat Web Mercator map, baked in the three d
 | Radar | scrolly | `proof/scrolly-radar-electricity-mix` |
 | Sankey | scrolly | `proof/scrolly-sankey-electricity-sources` |
 | Scatter | scrolly | `proof/scrolly-scatter-income-life-expectancy` |
-| Slope | scrolly | `proof/scrolly-slope-europe-lowcarbon`, `proof/scrolly-renewables-shift` |
-| Small multiples | scrolly | `proof/scrolly-small-multiples-lowcarbon`, `proof/scrolly-small-multiples-solar-eu-six` |
-| Stacked bar | scrolly | `proof/scrolly-stacked-bar-lowcarbon-growth`, `proof/scrolly-electricity-mix-source` |
+| Slope | scrolly | `proof/scrolly-slope-europe-lowcarbon` |
+| Small multiples | scrolly | `proof/scrolly-small-multiples-lowcarbon` |
+| Stacked bar | scrolly | `proof/scrolly-stacked-bar-lowcarbon-growth` |
 | Streamgraph | scrolly | `proof/scrolly-streamgraph-swiss-electricity` |
 | Treemap | scrolly | `proof/scrolly-treemap-europe-capacity` |
 | Waterfall | scrolly | `proof/scrolly-germany-electricity-bridge` |
@@ -259,8 +260,44 @@ directed static beat.
 
 ## Beats that predate the design base
 
-Not ticked above, because they do not go through a direction. They are working proof of the export
-machinery and the place a directed beat of that export starts from: `proof/vidx-*`, `proof/vidy-*`
-(video), `proof/webx-*`, `proof/weby-*`, `proof/webz-*` (web), `proof/mapmore-scrolly-danube`
-(scrolly), `proof/mapgen-*`, `proof/map-*`, `proof/mapmore-*` (maps, on a tile basemap rather than on
-frozen shapes).
+Not ticked above, because they do not go through a direction. Archived 2026-09-17, alongside every
+`proof/` folder this table does not cite: working proof of the export machinery and the place a
+directed beat of that export started from, now under `archive/` with their names kept —
+`vidx-*`, `vidy-*`, `vidz-*` (video), `webx-*`, `weby-*`, `webz-*` (web), `mapmore-scrolly-danube`,
+`mapscrolly-*` (scrolly), `mapgen-*`, `map-*`, `mapmore-*`, `mapvid-*` (maps, on a tile basemap
+rather than on frozen shapes).
+
+## Beats archived 2026-09-17
+
+`proof/` held 245 folders against the 160 this catalogue names (40 types × static/web/video/scrolly);
+85 moved to `archive/`, keeping their names, plus three `stories/` workspaces to `archive/stories/`.
+Besides the legacy prefixes above, this swept: the `more-*`/`static-*`/`video-*`/`web-*`/`scrolly-*`
+beats this table superseded and stopped citing (`static-world-population`, `static-renewables-shift`,
+`static-heatmap-coal-share-europe`, `static-small-multiples-solar-eu-six`,
+`static-electricity-mix-source`, and their video/web/scrolly counterparts); one-off probes and
+dossiers (`comparison`, `trial`, `seance`, `palette-proof`, `portrait-aspect-probe`, `migration`,
+`life-expectancy`, `RankBars.tsx`, `stamp-superseded.mjs`); two web beats the merge brought in but
+never entered into this table (`web-flow-map-danube`, `web-heatmap-coal-share-europe` — superseded by
+`web-flow-map-ukraine-protection` and `web-heatmap-europe-electricity`, the cited beats for those
+pairs); and seven duplicate citations resolved per form — the beat NOT kept in each pair moved to
+`archive/`:
+
+- scrolly Heatmap: kept `scrolly-heatmap-coal-share-europe` (the type sheet's own worked example),
+  archived `scrolly-heatmap-europe-electricity`.
+- scrolly Slope: kept `scrolly-slope-europe-lowcarbon` (the type sheet's own worked example),
+  archived `scrolly-renewables-shift`.
+- scrolly Small multiples: kept `scrolly-small-multiples-lowcarbon` (the type sheet's own worked
+  example), archived `scrolly-small-multiples-solar-eu-six`.
+- scrolly Stacked bar: kept `scrolly-stacked-bar-lowcarbon-growth` (the type sheet's own worked
+  example), archived `scrolly-electricity-mix-source`.
+- web Bar and column: kept `web-bar-top-emitters-2024` (2026-09-12, the subject-naming convention
+  shared with the other three exports), archived the older `web-co2-ranking` (2026-08-13).
+- web Slope: kept `web-slope-europe-lowcarbon` (2026-09-12, same convention), archived the older
+  `web-co2-decline-slope` (2026-08-13).
+- web Scatter: kept `web-scatter-income-life-expectancy` (2026-09-12, same convention), archived the
+  older `web-income-life-expectancy` (2026-08-13).
+
+Also archived, from earlier cold-run exercises and never cited above:
+`scrolly-choropleth-europe-nuclear`, `scrolly-hex-grid-europe-wind-2024`, and
+`stories/europe-low-carbon-electricity-leaders-2024`, `stories/europe-hydropower-2024`,
+`stories/europe-coal-electricity-2024` (each now under `archive/stories/`).

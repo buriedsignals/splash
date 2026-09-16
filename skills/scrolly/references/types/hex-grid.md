@@ -20,7 +20,7 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 - bin aggregation is computed once from the frozen events and held fixed across every card; every country is present beneath the grid
 
 ## Devices the worked example implements
-- **Origin / no-data hollow cell** — one cell rendered hollow with a dashed edge (`colours.originFill`/`originEdge`, `line-dasharray`) for an area OUTSIDE the measure — a source country, or a genuine no-data gap (`hex-drive.mjs`: `rateClass === null ? originFill : …`). Lives in `plan.mjs`'s optional `origin` param (`fillLayer("origin", …)` + `origin-edge` layer); a subject where every area is inside the measure omits `origin` entirely (`proof/scrolly-hex-grid-europe-wind-2024`).
+- **Origin / no-data hollow cell** — one cell rendered hollow with a dashed edge (`colours.originFill`/`originEdge`, `line-dasharray`) for an area OUTSIDE the measure — a source country, or a genuine no-data gap (`hex-drive.mjs`: `rateClass === null ? originFill : …`). Lives in `plan.mjs`'s optional `origin` param (`fillLayer("origin", …)` + `origin-edge` layer); a subject where every area is inside the measure omits `origin` entirely (`archive/scrolly-hex-grid-europe-wind-2024`).
 - **Two-metric re-encode (count → rate)** — the grid's fill re-encodes from one metric to a second (absolute count, then rate/share) rather than only staggering a single value's reveal; read the worked example's own `t.countClass`/`t.rateClass` pair and the card that crosses from one to the other before choosing a second variable.
 
 ## Worked example

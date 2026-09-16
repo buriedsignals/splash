@@ -60,6 +60,10 @@ import { join } from "node:path";
 
 const TWIN = join(import.meta.dirname, "..", "..", "..");
 const PROOF = join(TWIN, "proof");
+// Archived 2026-09-17: every point beat this census names used the flat, single-camera
+// `plate/geometry.json` shape the newer directed map beats replaced with one bake per direction —
+// all of them moved to `archive/`, keeping their names.
+const ARCHIVE = join(TWIN, "archive");
 
 /**
  * How many of each beat's own catalogued rows fall outside its own committed frame, and whether
@@ -85,17 +89,18 @@ const CROP_CENSUS: Record<string, number> = {
 
 type PointBeat = {
   name: string;
+  root: string;
   frameCorners: { west: number; east: number; north: number; south: number };
   bakedPoints: number | null;
   rows: { lon: number; lat: number }[];
 };
 
-function readPointBeats(): PointBeat[] {
-  if (!existsSync(PROOF)) return [];
+function readPointBeatsUnder(root: string): PointBeat[] {
+  if (!existsSync(root)) return [];
   const out: PointBeat[] = [];
-  for (const entry of readdirSync(PROOF, { withFileTypes: true })) {
+  for (const entry of readdirSync(root, { withFileTypes: true })) {
     if (!entry.isDirectory()) continue;
-    const dir = join(PROOF, entry.name);
+    const dir = join(root, entry.name);
     const geometryPath = join(dir, "plate", "geometry.json");
     if (!existsSync(geometryPath)) continue;
     const geometry = JSON.parse(readFileSync(geometryPath, "utf8"));
@@ -116,6 +121,7 @@ function readPointBeats(): PointBeat[] {
       }
       out.push({
         name: entry.name,
+        root,
         frameCorners: geometry.frameCorners,
         bakedPoints: Array.isArray(geometry.points)
           ? geometry.points.length
@@ -125,7 +131,13 @@ function readPointBeats(): PointBeat[] {
       break;
     }
   }
-  return out.sort((a, b) => a.name.localeCompare(b.name));
+  return out;
+}
+
+function readPointBeats(): PointBeat[] {
+  return [...readPointBeatsUnder(PROOF), ...readPointBeatsUnder(ARCHIVE)].sort(
+    (a, b) => a.name.localeCompare(b.name),
+  );
 }
 
 /** The bake's own longitude convention: a point west of the frame's west edge is read one turn on,
@@ -187,7 +199,7 @@ describe("a baked camera holds the beat's own study set, or says what it drops",
 
     it(`proof/${beat.name} should tell a reader, in its own BRIEF, about anything it crops`, () => {
       const recorded = CROP_CENSUS[beat.name]!;
-      const briefPath = join(PROOF, beat.name, "BRIEF.md");
+      const briefPath = join(beat.root, beat.name, "BRIEF.md");
       const brief = existsSync(briefPath)
         ? readFileSync(briefPath, "utf8")
         : "";

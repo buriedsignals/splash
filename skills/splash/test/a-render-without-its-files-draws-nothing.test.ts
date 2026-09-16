@@ -116,7 +116,14 @@ describe("a render without its font files", () => {
    * the roster on the next run with nobody editing this file.
    */
   const SOURCE = /\.(mjs|mts|cjs|cts|ts|tsx|js|jsx)$/;
-  const SKIP = new Set(["node_modules", "test", "output-proof", ".git", "renders", "render"]);
+  const SKIP = new Set([
+    "node_modules",
+    "test",
+    "output-proof",
+    ".git",
+    "renders",
+    "render",
+  ]);
 
   function* walk(dir: string): Generator<string> {
     let entries;
@@ -141,14 +148,19 @@ describe("a render without its font files", () => {
     const found: string[] = [];
     for (const root of ["skills", "shared"]) {
       for (const path of walk(join(TWIN, root))) {
-        if (/\bnew Resvg\(/.test(codeOf(readFileSync(path, "utf8")))) found.push(relative(TWIN, path));
+        if (/\bnew Resvg\(/.test(codeOf(readFileSync(path, "utf8"))))
+          found.push(relative(TWIN, path));
       }
     }
-    const proof = join(TWIN, "proof");
-    if (statSync(proof, { throwIfNoEntry: false })?.isDirectory()) {
-      for (const path of walk(proof)) {
+    // Archived 2026-09-17: several of the thirteen map beats above moved to `archive/`, keeping
+    // their names — walked alongside `proof/` so this population does not silently shrink.
+    for (const root of ["proof", "archive"]) {
+      const dir = join(TWIN, root);
+      if (!statSync(dir, { throwIfNoEntry: false })?.isDirectory()) continue;
+      for (const path of walk(dir)) {
         if (!/^render-.+\.(mjs|ts|tsx)$/.test(basename(path))) continue;
-        if (/\bnew Resvg\(/.test(codeOf(readFileSync(path, "utf8")))) found.push(relative(TWIN, path));
+        if (/\bnew Resvg\(/.test(codeOf(readFileSync(path, "utf8"))))
+          found.push(relative(TWIN, path));
       }
     }
     return found.sort();
@@ -164,29 +176,43 @@ describe("a render without its font files", () => {
     // a number a new skill would have to come here and edit.
     expect(sites.length).toBeGreaterThan(20);
     // The five that nothing held before this rewrite, named so their absence is loud.
-    for (const skill of ["chart-beat", "chart-web", "image-beat", "map-beat", "scrolly"]) {
-      expect([skill, sites.includes(`skills/${skill}/scripts/render-preview.mjs`)]).toEqual([skill, true]);
+    for (const skill of [
+      "chart-beat",
+      "chart-web",
+      "image-beat",
+      "map-beat",
+      "scrolly",
+    ]) {
+      expect([
+        skill,
+        sites.includes(`skills/${skill}/scripts/render-preview.mjs`),
+      ]).toEqual([skill, true]);
     }
-    // And the beats' own copies, which are outside `carried-copies`' walk entirely.
-    expect(sites.filter((f) => /^proof\/.*\/render-still\.mjs$/.test(f)).length).toBeGreaterThan(10);
+    // And the beats' own copies, which are outside `carried-copies`' walk entirely. Archived
+    // 2026-09-17: all ten now live under `archive/`, keeping their names — none of the kept
+    // beats construct their own `Resvg`.
+    expect(
+      sites.filter((f) => /^(proof|archive)\/.*\/render-still\.mjs$/.test(f))
+        .length,
+    ).toBeGreaterThan(5);
   });
 
   for (const file of sites) {
     it(`${file} should construct every Resvg with system fonts switched off`, () => {
       const code = codeOf(readFileSync(join(TWIN, file), "utf8"));
       const constructions = (code.match(/\bnew Resvg\(/g) ?? []).length;
-      expect([file, "says loadSystemFonts: true", code.includes("loadSystemFonts: true")]).toEqual([
+      expect([
         file,
         "says loadSystemFonts: true",
-        false,
-      ]);
+        code.includes("loadSystemFonts: true"),
+      ]).toEqual([file, "says loadSystemFonts: true", false]);
       // One `false` per construction: a site that omits the font option entirely gets resvg's own
       // default, which is system fonts ON, and would otherwise pass the check above.
-      expect([file, "guarded constructions", (code.match(/loadSystemFonts: false/g) ?? []).length]).toEqual([
+      expect([
         file,
         "guarded constructions",
-        constructions,
-      ]);
+        (code.match(/loadSystemFonts: false/g) ?? []).length,
+      ]).toEqual([file, "guarded constructions", constructions]);
     });
   }
 });

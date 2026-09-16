@@ -129,7 +129,9 @@ function committedMapWebPages(): { rel: string; html: string }[] {
 
 function isMapWebPath(rel: string): boolean {
   return (
-    /^proof\/mapgen-[a-z]+-web\//.test(rel) ||
+    // Archived 2026-09-17: these five superseded the mapgen-*-web beats but this audit still
+    // names them, now under `archive/` rather than `proof/`.
+    /^archive\/mapgen-[a-z]+-web\//.test(rel) ||
     rel.startsWith("skills/map-web/output-proof/")
   );
 }
@@ -141,11 +143,11 @@ describe("every committed map page keeps its value table collapsed", () => {
     // Anti-vacuity, and the reason this is not a bare `for` loop: a sweep that finds no work to do
     // passes, which is exactly how a guard stops covering what was added after it.
     expect(pages.map((page) => page.rel).sort()).toEqual([
-      "proof/mapgen-choropleth-web/render/choropleth.html",
-      "proof/mapgen-dot-web/dot-population.html",
-      "proof/mapgen-hexgrid-web/hex-grid.html",
-      "proof/mapgen-locator-web/locator.html",
-      "proof/mapgen-symbol-web/quake-symbol.html",
+      "archive/mapgen-choropleth-web/render/choropleth.html",
+      "archive/mapgen-dot-web/dot-population.html",
+      "archive/mapgen-hexgrid-web/hex-grid.html",
+      "archive/mapgen-locator-web/locator.html",
+      "archive/mapgen-symbol-web/quake-symbol.html",
       // The seed at its OTHER supported setting (#52). This format ships two table states and only
       // one of them had ever been rendered by anything in the tree, which is how the table-on page
       // came to overflow the window by the height of its own disclosure at every width.
@@ -162,11 +164,11 @@ describe("every committed map page keeps its value table collapsed", () => {
     // than by a beat and therefore the only one that guards the seed's own disclosure markup.
     const withTables = pages.filter((page) => tableCount(page.html) > 0);
     expect(withTables.map((page) => page.rel).sort()).toEqual([
-      "proof/mapgen-choropleth-web/render/choropleth.html",
-      "proof/mapgen-dot-web/dot-population.html",
-      "proof/mapgen-hexgrid-web/hex-grid.html",
-      "proof/mapgen-locator-web/locator.html",
-      "proof/mapgen-symbol-web/quake-symbol.html",
+      "archive/mapgen-choropleth-web/render/choropleth.html",
+      "archive/mapgen-dot-web/dot-population.html",
+      "archive/mapgen-hexgrid-web/hex-grid.html",
+      "archive/mapgen-locator-web/locator.html",
+      "archive/mapgen-symbol-web/quake-symbol.html",
       "skills/map-web/output-proof/population-with-table.html",
     ]);
   });

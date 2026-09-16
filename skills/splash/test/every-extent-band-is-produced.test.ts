@@ -58,6 +58,10 @@ import { join } from "node:path";
 
 const TWIN = join(import.meta.dirname, "..", "..", "..");
 const PROOF = join(TWIN, "proof");
+// Archived 2026-09-17: the flat, single-camera `plate/geometry.json` beats this census counts
+// moved to `archive/`, keeping their names — walked alongside `proof/` so the six rungs still
+// find the cameras that reach them.
+const ARCHIVE = join(TWIN, "archive");
 const RANGE = join(
   TWIN,
   "skills",
@@ -151,19 +155,24 @@ const PROBE_ONLY_RUNGS = ["country", "region"];
 
 type Beat = { name: string; corners: Corners };
 
-const BEATS: Beat[] = existsSync(PROOF)
-  ? readdirSync(PROOF, { withFileTypes: true })
-      .filter((e) => e.isDirectory())
-      .flatMap((e) => {
-        const path = join(PROOF, e.name, "plate", "geometry.json");
-        if (!existsSync(path)) return [];
-        const geometry = JSON.parse(readFileSync(path, "utf8"));
-        return geometry.frameCorners
-          ? [{ name: e.name, corners: geometry.frameCorners as Corners }]
-          : [];
-      })
-      .sort((a, b) => a.name.localeCompare(b.name))
-  : [];
+function beatsUnder(root: string): Beat[] {
+  return existsSync(root)
+    ? readdirSync(root, { withFileTypes: true })
+        .filter((e) => e.isDirectory())
+        .flatMap((e) => {
+          const path = join(root, e.name, "plate", "geometry.json");
+          if (!existsSync(path)) return [];
+          const geometry = JSON.parse(readFileSync(path, "utf8"));
+          return geometry.frameCorners
+            ? [{ name: e.name, corners: geometry.frameCorners as Corners }]
+            : [];
+        })
+    : [];
+}
+
+const BEATS: Beat[] = [...beatsUnder(PROOF), ...beatsUnder(ARCHIVE)].sort(
+  (a, b) => a.name.localeCompare(b.name),
+);
 
 const range = existsSync(RANGE)
   ? JSON.parse(readFileSync(RANGE, "utf8"))

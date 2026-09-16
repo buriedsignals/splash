@@ -221,7 +221,7 @@ the one you intend to spend before you declare it.**
   This seed's own filter (narrow to "2015–2019" or "2020–2025") is a THRESHOLD-shaped declaration
   kept so the mechanism is runnable end to end in the skill a journalist copies — not evidence that
   a beat should have one. Of the twenty-one committed chart × web beats, exactly one declares a
-  filter (`proof/web-income-life-expectancy`, OWID's world-region column over 164 countries).
+  filter (`archive/web-income-life-expectancy`, OWID's world-region column over 164 countries).
 - **Not** to re-draw a chart that already exists as a still or a video build. Import its geometry —
   a story's web composition imports its own `crossing-geometry.ts`-shaped module **from its own
   workspace**, exactly as its static sibling does (`proof/co2-suisse/EmissionsWeb.tsx` and

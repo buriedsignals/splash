@@ -66,19 +66,17 @@ const ROOT = resolve(import.meta.dirname, "..", "..", "..");
 /**
  * THE PAGES THAT SHIP A CONTROL CHANGING NOTHING, named exactly — `<path> :: <control kind>`.
  *
- * Not a skip list and not a shrug. `proof/mapgen-locator-web` prints all eleven organisation names
- * on the map as direct labels and prints all three categories on its filter chips; hovering a
- * marker answers "<the label already on it> — <the category already on a chip>", and its table
- * repeats the same two columns a third time. A locator's own reading is POSITION, which the map
- * already gives — so the honest repairs are a reading the plate cannot carry (distance from the
- * common centre, the Wikidata identifier, the pair 13 m apart the frame cannot separate) or no ask
- * at all. Which one is an editorial call about that beat, made when the walk through
- * `chart-beat/references/types/` reaches the locator sheet, not a transformation applied here.
+ * Not a skip list and not a shrug. `mapgen-locator-web` (archived 2026-09-17) printed all eleven
+ * organisation names on the map as direct labels and all three categories on its filter chips;
+ * hovering a marker answered "<the label already on it> — <the category already on a chip>", and
+ * its table repeated the same two columns a third time. A locator's own reading is POSITION, which
+ * the map already gives — so the honest repairs are a reading the plate cannot carry (distance from
+ * the common centre, the Wikidata identifier, the pair 13 m apart the frame cannot separate) or no
+ * ask at all. Which one is an editorial call about that beat, made when the walk through
+ * `chart-beat/references/types/` reaches the locator sheet, not a transformation applied here. No
+ * kept beat exhibits this defect, so the list below is empty.
  */
-const CHANGES_NOTHING = [
-  "proof/mapgen-locator-web/locator.html :: ask",
-  "proof/mapgen-locator-web/locator.html :: table",
-];
+const CHANGES_NOTHING: string[] = [];
 
 /** Every delivered web page in the tree. Walked from the filesystem rather than from `git ls-files`
  *  so this census stays in the FAST lane (`scripts/test-lanes.mjs` reads a spawned `git` as a
@@ -86,7 +84,12 @@ const CHANGES_NOTHING = [
  *  `.html` files, byte for byte. */
 function* walk(dir: string): Generator<string> {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === "node_modules" || entry.name === ".git" || entry.name === "drive") continue;
+    if (
+      entry.name === "node_modules" ||
+      entry.name === ".git" ||
+      entry.name === "drive"
+    )
+      continue;
     const path = join(dir, entry.name);
     if (entry.isDirectory()) yield* walk(path);
     else if (entry.isFile() && entry.name.endsWith(".html")) yield path;
@@ -103,7 +106,11 @@ function webPages(): Page[] {
     for (const path of walk(dir)) {
       const html = readFileSync(path, "utf8");
       // The two frames this genre delivers in: `chart-web`'s figure and `map-web`'s page.
-      if (!html.includes('class="chart-figure"') && !html.includes("map-web-page")) continue;
+      if (
+        !html.includes('class="chart-figure"') &&
+        !html.includes("map-web-page")
+      )
+        continue;
       out.push({ label: relative(ROOT, path), html });
     }
   }
@@ -165,7 +172,9 @@ describe("the census: what the committed web corpus does when a reader asks", ()
   });
 
   it("every page ships at least one control — a web beat with none is a still with a stylesheet", () => {
-    const bare = PAGES.filter((page) => shippedControls(page.html).length === 0).map((p) => p.label);
+    const bare = PAGES.filter(
+      (page) => shippedControls(page.html).length === 0,
+    ).map((p) => p.label);
     expect(bare).toEqual([]);
   });
 
@@ -173,12 +182,15 @@ describe("the census: what the committed web corpus does when a reader asks", ()
     PAGES.filter(
       (page) =>
         !shippedControls(page.html).some(
-          (control) => control.changes === 0 &&
+          (control) =>
+            control.changes === 0 &&
             CHANGES_NOTHING.includes(`${page.label} :: ${control.kind}`),
         ),
     ).map((page) => [page.label, page] as const),
   )("%s — every control it ships changes the picture", (_label, page) => {
-    expect(() => assertControlsChangeSomething(page.html, page.label)).not.toThrow();
+    expect(() =>
+      assertControlsChangeSomething(page.html, page.label),
+    ).not.toThrow();
   });
 });
 
@@ -189,10 +201,13 @@ describe("the guard is wired where an author meets it, not only here", () => {
   it.each([
     ["skills/chart-web/scripts/render-web.mjs"],
     ["skills/map-web/scripts/render-web.mjs"],
-  ])("%s calls assertInteractionPlan on the page it is about to write", (path) => {
-    const source = readFileSync(join(ROOT, path), "utf8");
-    expect(source).toContain("assertInteractionPlan(draft");
-  });
+  ])(
+    "%s calls assertInteractionPlan on the page it is about to write",
+    (path) => {
+      const source = readFileSync(join(ROOT, path), "utf8");
+      expect(source).toContain("assertInteractionPlan(draft");
+    },
+  );
 });
 
 // ------------------------------------------------------------------------------------------------
@@ -200,21 +215,28 @@ describe("the guard is wired where an author meets it, not only here", () => {
 // that was run against the real corpus before it was written down here.
 // ------------------------------------------------------------------------------------------------
 
-const page = (body: string) => `<!doctype html><html><body><div class="chart-figure">${body}</div></body></html>`;
+const page = (body: string) =>
+  `<!doctype html><html><body><div class="chart-figure">${body}</div></body></html>`;
 
 describe("defaultPrintedText — what the reader sees before touching anything", () => {
   it("counts the words the page prints", () => {
-    expect(defaultPrintedText(page("<p>Bern 4,1 t</p>"))).toContain("Bern 4,1 t");
+    expect(defaultPrintedText(page("<p>Bern 4,1 t</p>"))).toContain(
+      "Bern 4,1 t",
+    );
   });
 
   it("does NOT count an SVG <title>, which is a native tooltip and not print", () => {
     // Measured: `proof/mapgen-choropleth-web` carries a `<title>` on all 41 shapes. Counting those
     // as printed made the one channel any of those 41 values are on look dead.
-    expect(defaultPrintedText(page("<circle><title>Bern 4,1 t</title></circle>"))).not.toContain("Bern");
+    expect(
+      defaultPrintedText(page("<circle><title>Bern 4,1 t</title></circle>")),
+    ).not.toContain("Bern");
   });
 
   it("does NOT count a disclosure's body, which a control opens", () => {
-    const html = page("<details><summary>Table of values</summary><table><tr><td>Bern 4,1 t</td></tr></table></details>");
+    const html = page(
+      "<details><summary>Table of values</summary><table><tr><td>Bern 4,1 t</td></tr></table></details>",
+    );
     expect(defaultPrintedText(html)).toContain("Table of values");
     expect(defaultPrintedText(html)).not.toContain("Bern");
   });
@@ -222,14 +244,18 @@ describe("defaultPrintedText — what the reader sees before touching anything",
 
 describe("tableCells — a table's readings, not its furniture", () => {
   it("reads the cells", () => {
-    const html = page("<details><summary>s</summary><table><tr><td>Bern</td><td>4,1 t</td></tr></table></details>");
+    const html = page(
+      "<details><summary>s</summary><table><tr><td>Bern</td><td>4,1 t</td></tr></table></details>",
+    );
     expect(tableCells(html)).toEqual(["Bern", "4,1 t"]);
   });
 
   it("drops the <caption>, because a caption is about the control rather than in it", () => {
     // Without this, `proof/mapgen-locator-web`'s table — eleven rows, every one already printed on
     // the map — passed on the strength of its own caption alone.
-    const html = page("<details><summary>s</summary><table><caption>Every organisation behind the map</caption><tr><td>Bern</td></tr></table></details>");
+    const html = page(
+      "<details><summary>s</summary><table><caption>Every organisation behind the map</caption><tr><td>Bern</td></tr></table></details>",
+    );
     expect(tableCells(html)).toEqual(["Bern"]);
   });
 });
@@ -240,25 +266,39 @@ describe("filterOptionSlugs — the options the page ships", () => {
     // precede `id=`; `chart-web` writes `<input id="chart-filter-africa" type="radio" …>` and
     // `map-web` writes them the other way round, so it found four of the corpus's five filters and
     // reported the fifth page as having no control at all.
-    const chartOrder = page('<input id="chart-filter-africa" type="radio" name="chart-filter"/>');
-    const mapOrder = page('<input type="radio" id="mw-filter-un-system" name="mw-filter"/>');
+    const chartOrder = page(
+      '<input id="chart-filter-africa" type="radio" name="chart-filter"/>',
+    );
+    const mapOrder = page(
+      '<input type="radio" id="mw-filter-un-system" name="mw-filter"/>',
+    );
     expect(filterOptionSlugs(chartOrder)).toEqual(["africa"]);
     expect(filterOptionSlugs(mapOrder)).toEqual(["un-system"]);
   });
 
   it("does not count the unfiltered option, which narrows nothing by definition", () => {
-    expect(filterOptionSlugs(page('<input id="chart-filter-all" type="radio"/>'))).toEqual([]);
+    expect(
+      filterOptionSlugs(page('<input id="chart-filter-all" type="radio"/>')),
+    ).toEqual([]);
   });
 });
 
 describe("stackOptionSlugs and stackNotes — the second control the format can generate", () => {
   it("finds the options whichever order the attributes are written in", () => {
-    expect(stackOptionSlugs(page('<input id="chart-stack-chn" type="radio" name="chart-stack"/>'))).toEqual(["chn"]);
-    expect(stackOptionSlugs(page('<input type="radio" id="chart-stack-usa"/>'))).toEqual(["usa"]);
+    expect(
+      stackOptionSlugs(
+        page('<input id="chart-stack-chn" type="radio" name="chart-stack"/>'),
+      ),
+    ).toEqual(["chn"]);
+    expect(
+      stackOptionSlugs(page('<input type="radio" id="chart-stack-usa"/>')),
+    ).toEqual(["usa"]);
   });
 
   it("does not count the untouched option, which is the plate itself", () => {
-    expect(stackOptionSlugs(page('<input id="chart-stack-none" type="radio"/>'))).toEqual([]);
+    expect(
+      stackOptionSlugs(page('<input id="chart-stack-none" type="radio"/>')),
+    ).toEqual([]);
   });
 
   it("does not mistake a filter's radios for a stack's, or the other way round", () => {
@@ -270,28 +310,38 @@ describe("stackOptionSlugs and stackNotes — the second control the format can 
   });
 
   it("reads the sentence each option reveals", () => {
-    expect(stackNotes(page('<p data-stack-note="chn">6 pays &middot; 12,45 Gt</p>'))).toEqual([
-      { slug: "chn", text: "6 pays &middot; 12,45 Gt" },
-    ]);
+    expect(
+      stackNotes(page('<p data-stack-note="chn">6 pays &middot; 12,45 Gt</p>')),
+    ).toEqual([{ slug: "chn", text: "6 pays &middot; 12,45 Gt" }]);
   });
 
   it("does NOT count that sentence as printed — it is revealed by :checked, like a filter's note", () => {
-    const html = page('<p>Chine 12,29</p><p data-stack-note="chn">6 pays &middot; 12,45 Gt</p>');
+    const html = page(
+      '<p>Chine 12,29</p><p data-stack-note="chn">6 pays &middot; 12,45 Gt</p>',
+    );
     expect(defaultPrintedText(html)).toContain("Chine 12,29");
     expect(defaultPrintedText(html)).not.toContain("12,45");
   });
 
   const stacked = (note: string, printed: string) =>
-    page(`<p>${printed}</p><input id="chart-stack-chn" type="radio"/><p data-stack-note="chn">${note}</p>`);
+    page(
+      `<p>${printed}</p><input id="chart-stack-chn" type="radio"/><p data-stack-note="chn">${note}</p>`,
+    );
 
   it("passes a stack whose sentence carries a reading the plate does not print", () => {
-    expect(() => assertControlsChangeSomething(stacked("6 pays &middot; 12,45 Gt", "Chine 12,29 Gt"))).not.toThrow();
+    expect(() =>
+      assertControlsChangeSomething(
+        stacked("6 pays &middot; 12,45 Gt", "Chine 12,29 Gt"),
+      ),
+    ).not.toThrow();
   });
 
   it("refuses a stack whose every sentence is already printed", () => {
-    expect(() => assertControlsChangeSomething(stacked("Chine 12,29 Gt", "Chine 12,29 Gt"))).toThrow(
-      /changes nothing/,
-    );
+    expect(() =>
+      assertControlsChangeSomething(
+        stacked("Chine 12,29 Gt", "Chine 12,29 Gt"),
+      ),
+    ).toThrow(/changes nothing/);
   });
 
   it("refuses a stack that reveals no sentence at all — a hundred moved columns are not a reading", () => {
@@ -300,7 +350,9 @@ describe("stackOptionSlugs and stackNotes — the second control the format can 
     // would stay green; this one reddens, because a reader who cannot read the count and the total
     // has been shown a picture and told nothing.
     expect(() =>
-      assertControlsChangeSomething(page('<p>Chine</p><input id="chart-stack-chn" type="radio"/>')),
+      assertControlsChangeSomething(
+        page('<p>Chine</p><input id="chart-stack-chn" type="radio"/>'),
+      ),
     ).toThrow(/changes nothing/);
   });
 });
@@ -310,13 +362,15 @@ describe("assertControlsChangeSomething — the mechanical refusal", () => {
     page(`<p>${printed}</p><circle data-detail="${answer}"></circle>`);
 
   it("passes an ask that answers with a reading the plate does not print", () => {
-    expect(() => assertControlsChangeSomething(asks("Bern · 4,1 t · rank 12", "Bern"))).not.toThrow();
+    expect(() =>
+      assertControlsChangeSomething(asks("Bern · 4,1 t · rank 12", "Bern")),
+    ).not.toThrow();
   });
 
   it("refuses an ask whose every answer is already printed", () => {
-    expect(() => assertControlsChangeSomething(asks("Bern · 4,1 t", "Bern 4,1 t"))).toThrow(
-      /changes nothing/,
-    );
+    expect(() =>
+      assertControlsChangeSomething(asks("Bern · 4,1 t", "Bern 4,1 t")),
+    ).toThrow(/changes nothing/);
   });
 
   it("names the reference and the repertoire in the refusal, so an author knows what to reach for", () => {
@@ -331,7 +385,9 @@ describe("assertControlsChangeSomething — the mechanical refusal", () => {
         '<circle data-key="a" data-filter="europe" data-detail="Austria · 6,2 t"></circle>' +
         '<circle data-key="b" data-filter="europe" data-detail="Belgium · 7,2 t"></circle>',
     );
-    expect(() => assertControlsChangeSomething(html)).toThrow(/the unfiltered view under a second name/);
+    expect(() => assertControlsChangeSomething(html)).toThrow(
+      /the unfiltered view under a second name/,
+    );
   });
 
   it("refuses a filter whose options are keyed to the LEGACY map vocabulary and keep everything", () => {
@@ -345,7 +401,9 @@ describe("assertControlsChangeSomething — the mechanical refusal", () => {
         '<circle data-group="sunda-arc" data-detail="Aceh · M8.6"></circle>' +
         '<circle data-group="sunda-arc" data-detail="Nias · M8.4"></circle>',
     );
-    expect(() => assertControlsChangeSomething(html)).toThrow(/the unfiltered view under a second name/);
+    expect(() => assertControlsChangeSomething(html)).toThrow(
+      /the unfiltered view under a second name/,
+    );
   });
 
   it("refuses a filter whose options tag no element at all — chips over a picture they cannot reach", () => {
@@ -353,18 +411,25 @@ describe("assertControlsChangeSomething — the mechanical refusal", () => {
       '<input type="radio" id="mw-filter-all"/><input type="radio" id="mw-filter-sunda-arc"/>' +
         '<circle data-detail="Aceh · M8.6"></circle>',
     );
-    expect(() => assertControlsChangeSomething(html)).toThrow(/carries the filter vocabulary/);
+    expect(() => assertControlsChangeSomething(html)).toThrow(
+      /carries the filter vocabulary/,
+    );
   });
 
   it("refuses a page that ships no control at all", () => {
-    expect(() => assertControlsChangeSomething(page("<p>Bern</p>"))).toThrow(/no reader control at all/);
+    expect(() => assertControlsChangeSomething(page("<p>Bern</p>"))).toThrow(
+      /no reader control at all/,
+    );
   });
 });
 
 describe("assertInteractionPlan — the interaction is written before the code", () => {
-  const shipped = page('<p>Bern</p><circle data-detail="Bern · 4,1 t · rank 12"></circle>');
+  const shipped = page(
+    '<p>Bern</p><circle data-detail="Bern · 4,1 t · rank 12"></circle>',
+  );
   const plan = {
-    earns: "a still can rank these marks and cannot let a reader ask one what it is worth",
+    earns:
+      "a still can rank these marks and cannot let a reader ask one what it is worth",
     controls: [
       {
         question: "What is this mark worth?",
@@ -385,27 +450,43 @@ describe("assertInteractionPlan — the interaction is written before the code",
   });
 
   it("refuses a control described as a mechanism instead of the reader's question", () => {
-    const bad = { ...plan, controls: [{ ...plan.controls[0], question: "hover detail" }] };
-    expect(() => assertInteractionPlan(shipped, bad)).toThrow(/READER'S OWN QUESTION/);
+    const bad = {
+      ...plan,
+      controls: [{ ...plan.controls[0], question: "hover detail" }],
+    };
+    expect(() => assertInteractionPlan(shipped, bad)).toThrow(
+      /READER'S OWN QUESTION/,
+    );
   });
 
   it("refuses a gesture that is not in the repertoire", () => {
-    const bad = { ...plan, controls: [{ ...plan.controls[0], gesture: "sparkle" as never }] };
-    expect(() => assertInteractionPlan(shipped, bad)).toThrow(/not in the\s+repertoire|not in the repertoire/);
+    const bad = {
+      ...plan,
+      controls: [{ ...plan.controls[0], gesture: "sparkle" as never }],
+    };
+    expect(() => assertInteractionPlan(shipped, bad)).toThrow(
+      /not in the\s+repertoire|not in the repertoire/,
+    );
   });
 
   it("refuses a control that does not say what changes in the picture", () => {
-    const bad = { ...plan, controls: [{ ...plan.controls[0], changes: "it updates" }] };
-    expect(() => assertInteractionPlan(shipped, bad)).toThrow(/WHAT CHANGES IN THE PICTURE/);
+    const bad = {
+      ...plan,
+      controls: [{ ...plan.controls[0], changes: "it updates" }],
+    };
+    expect(() => assertInteractionPlan(shipped, bad)).toThrow(
+      /WHAT CHANGES IN THE PICTURE/,
+    );
   });
 
   it("refuses a page that ships a control the plan never declared", () => {
-    const withTable =
-      shipped.replace(
-        "</div>",
-        "<details><summary>Table</summary><table><tr><td>Bern 4,1 t rank 12</td></tr></table></details></div>",
-      );
-    expect(() => assertInteractionPlan(withTable, plan)).toThrow(/the plan declares no control for it/);
+    const withTable = shipped.replace(
+      "</div>",
+      "<details><summary>Table</summary><table><tr><td>Bern 4,1 t rank 12</td></tr></table></details></div>",
+    );
+    expect(() => assertInteractionPlan(withTable, plan)).toThrow(
+      /the plan declares no control for it/,
+    );
   });
 
   it("refuses a plan that promises a control the render does not build", () => {
@@ -420,6 +501,8 @@ describe("assertInteractionPlan — the interaction is written before the code",
         },
       ],
     };
-    expect(() => assertInteractionPlan(shipped, bad)).toThrow(/the page ships none/);
+    expect(() => assertInteractionPlan(shipped, bad)).toThrow(
+      /the page ships none/,
+    );
   });
 });

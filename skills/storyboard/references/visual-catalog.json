@@ -1204,7 +1204,6 @@
       "state": "selectable",
       "purpose": "A continuous series read against an ordered axis, almost always time, encoded as position and joined into a single stroke that reads as one trend.",
       "proofFormats": [
-        "static",
         "web",
         "video",
         "scrolly"
@@ -1478,10 +1477,7 @@
       "state": "selectable",
       "purpose": "A slope chart answers \"who moved, in which direction, and by how much, between exactly two moments\" — for many categories at once.",
       "proofFormats": [
-        "static",
-        "web",
-        "video",
-        "scrolly"
+        "web"
       ]
     },
     {
@@ -1618,7 +1614,6 @@
       "purpose": "A waterfall chart shows how a starting total arrives at an ending total through a sequence of signed steps — a revenue build, a budget variance, an opening-to-closing balance.",
       "proofFormats": [
         "static",
-        "web",
         "video",
         "scrolly"
       ]
@@ -1861,9 +1856,7 @@
       ],
       "state": "selectable",
       "purpose": "A run of the journalist's own photographs, read in the order they were taken or the order the argument needs, each carrying its own caption and its own credit.",
-      "proofFormats": [
-        "scrolly"
-      ]
+      "proofFormats": []
     }
   ]
 }

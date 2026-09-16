@@ -120,18 +120,31 @@ function sourceAnchors(src: string): { name: string; expression: string }[] {
   return found;
 }
 
-function beatDirs(): string[] {
-  const proof = join(TWIN, "proof");
-  if (!existsSync(proof)) return [];
-  return readdirSync(proof, { withFileTypes: true })
+function dirsUnder(root: string): string[] {
+  if (!existsSync(root)) return [];
+  return readdirSync(root, { withFileTypes: true })
     .filter((e) => e.isDirectory())
-    .map((e) => join(proof, e.name))
+    .map((e) => join(root, e.name))
     .filter((d) => existsSync(join(d, BEAT_MARKER)));
+}
+
+function beatDirs(): string[] {
+  return dirsUnder(join(TWIN, "proof"));
+}
+
+// Archived 2026-09-17: three of the four per-format spot checks below name components now under
+// `archive/`, keeping their names. Scoped to the component census only — `BEAT_HTML` below stays
+// on `proof/` alone, matching every other "current corpus" census in this tree.
+function componentBeatDirs(): string[] {
+  return [
+    ...dirsUnder(join(TWIN, "proof")),
+    ...dirsUnder(join(TWIN, "archive")),
+  ];
 }
 
 const COMPONENTS = [
   ...tsxFiles(join(TWIN, SKILL_ROOT)),
-  ...beatDirs().flatMap((d) => [...tsxFiles(d)]),
+  ...componentBeatDirs().flatMap((d) => [...tsxFiles(d)]),
 ]
   .map((path) => ({ path, label: relative(TWIN, path) }))
   .filter(({ path }) => sourceAnchors(readFileSync(path, "utf8")).length > 0)
@@ -149,11 +162,13 @@ describe("the credit is anchored to the frame's bottom, discovered rather than l
       "skills/chart-web/assets/ChartWebSeed.tsx",
       "skills/map-beat/assets/Co2MapStill.tsx",
       "skills/map-beat/assets/Co2MapVideo.tsx",
-      // and one beat per format, so a walk that silently stopped covering `proof/` is caught
+      // and one beat per format, so a walk that silently stopped covering `proof/`/`archive/` is
+      // caught. The video and legacy-map examples are archived 2026-09-17 (no kept beat uses this
+      // anchor mechanism outside the static genre), kept as spot checks under their new root.
       "proof/static-wind-vs-solar/WindVsSolarBar.tsx",
-      "proof/vidz-bump-emitter-rank/BumpVideo.tsx",
-      "proof/map-quake-symbol/QuakeSymbolStill.tsx",
-      "proof/mapvid-locator-geneva/LocatorVideo.tsx",
+      "archive/vidz-bump-emitter-rank/BumpVideo.tsx",
+      "archive/map-quake-symbol/QuakeSymbolStill.tsx",
+      "archive/mapvid-locator-geneva/LocatorVideo.tsx",
     ]) {
       expect([expected, labels.includes(expected)]).toEqual([expected, true]);
     }
@@ -341,15 +356,10 @@ describe("the credit LANDS at the frame's bottom in the committed artifact", () 
  *              row from CREDIT_NOT_AT_THE_BOTTOM so the next regression here is caught",
  *           115 pass, 1 fail
  */
-const CREDIT_NOT_AT_THE_BOTTOM: Record<string, string> = {
-  // W2 §3.4.5 — the map × web seed renders `<p class="mw-source">` as the second child, under the
-  // title. Five delivered pages inherit it.
-  "proof/mapgen-choropleth-web/render/choropleth.html": "map-web seed, §3.4.5",
-  "proof/mapgen-dot-web/dot-population.html": "map-web seed, §3.4.5",
-  "proof/mapgen-hexgrid-web/hex-grid.html": "map-web seed, §3.4.5",
-  "proof/mapgen-locator-web/locator.html": "map-web seed, §3.4.5",
-  "proof/mapgen-symbol-web/quake-symbol.html": "map-web seed, §3.4.5",
-};
+// W2 §3.4.5 — the map × web seed renders `<p class="mw-source">` as the second child, under the
+// title. The five delivered pages that inherited it (`mapgen-*-web`) archived 2026-09-17; this
+// census is empty until a kept beat exhibits the same residue.
+const CREDIT_NOT_AT_THE_BOTTOM: Record<string, string> = {};
 
 /** A credit node: a block element whose class list carries a credit token. The class LIST is
  *  tokenised, never substring-matched — `class="source"` and `class="chart-source"` are both

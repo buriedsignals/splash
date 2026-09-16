@@ -108,7 +108,7 @@
  *   otherwise have made rules 2 and 3 pass on a script writing entirely into a scratch directory.
  */
 import { describe, it, expect } from "bun:test";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 const PROOF_ROOT = join(import.meta.dirname, "..", "..", "..", "proof");
@@ -359,23 +359,47 @@ function absoluteLiterals(expr: string): string[] {
   return out;
 }
 
-type Finding = { beat: string; script: string; where: string; why: string };
+type Finding = {
+  root: string;
+  beat: string;
+  script: string;
+  where: string;
+  why: string;
+};
 
-function beatDirs(): string[] {
-  return readdirSync(PROOF_ROOT)
+// Archived 2026-09-17: many of the beats this legacy render.mjs/render-web.mjs/render-map.mjs
+// census counts moved to `archive/`, keeping their names — walked alongside `proof/` so this
+// population does not silently shrink below its own floor.
+const ARCHIVE_ROOT = join(import.meta.dirname, "..", "..", "..", "archive");
+
+function beatDirsUnder(root: string): string[] {
+  if (!existsSync(root)) return [];
+  return readdirSync(root)
     .filter((name) => !NOT_A_BEAT.has(name))
-    .filter((name) => statSync(join(PROOF_ROOT, name)).isDirectory())
+    .filter((name) => statSync(join(root, name)).isDirectory())
     .sort();
 }
 
-const scans = beatDirs().flatMap((beat) =>
-  readdirSync(join(PROOF_ROOT, beat))
+const scans = [
+  ...beatDirsUnder(PROOF_ROOT).map((beat) => ({
+    root: "proof",
+    rootDir: PROOF_ROOT,
+    beat,
+  })),
+  ...beatDirsUnder(ARCHIVE_ROOT).map((beat) => ({
+    root: "archive",
+    rootDir: ARCHIVE_ROOT,
+    beat,
+  })),
+].flatMap(({ root, rootDir, beat }) =>
+  readdirSync(join(rootDir, beat))
     .filter((f) => BEAT_SCRIPTS.has(f))
     .sort()
     .map((script) => ({
+      root,
       beat,
       script,
-      text: stripComments(readFileSync(join(PROOF_ROOT, beat, script), "utf8")),
+      text: stripComments(readFileSync(join(rootDir, beat, script), "utf8")),
     })),
 );
 
@@ -385,13 +409,13 @@ const OWN_DIRECTORY =
 
 const unanchored = scans
   .filter(({ text }) => !OWN_DIRECTORY.test(text))
-  .map(({ beat, script }) => `proof/${beat}/${script}`);
+  .map(({ root, beat, script }) => `${root}/${beat}/${script}`);
 
 // ---- rules 2 and 3 ------------------------------------------------------------------------
 const escaping: Finding[] = [];
 const absoluteAnywhere: Finding[] = [];
 
-for (const { beat, script, text } of scans) {
+for (const { root, beat, script, text } of scans) {
   const consts = constDeclarations(text);
   const anchors = new Set([
     ...[...consts.keys()].filter((name) => OUT_FAMILY.has(name)),
@@ -410,11 +434,13 @@ for (const { beat, script, text } of scans) {
           : [...anchors].some((n) => new RegExp(`\\b${n}\\b`).test(resolved))
             ? null
             : "cannot be traced to the beat's own directory";
-    if (why) escaping.push({ beat, script, where, why: `${where} — ${why}` });
+    if (why)
+      escaping.push({ root, beat, script, where, why: `${where} — ${why}` });
   }
 
   for (const literal of absoluteLiterals(text))
     absoluteAnywhere.push({
+      root,
       beat,
       script,
       where: literal,
@@ -422,7 +448,7 @@ for (const { beat, script, text } of scans) {
     });
 }
 
-const show = (f: Finding) => `proof/${f.beat}/${f.script}: ${f.why}`;
+const show = (f: Finding) => `${f.root}/${f.beat}/${f.script}: ${f.why}`;
 
 describe("a beat render script writes beside its own beat by default", () => {
   it("should anchor HERE on the script's own directory", () => {
@@ -460,7 +486,8 @@ describe("a beat render script writes beside its own beat by default", () => {
 describe("the population this guard covers", () => {
   it("should scan every beat script under proof/", () => {
     expect(scans.length).toBeGreaterThan(60);
-    expect(scans.some((s) => s.beat === "vidx-line-life-expectancy")).toBe(
+    // vidx-line-life-expectancy, archived 2026-09-17, was the spot check here.
+    expect(scans.some((s) => s.beat === "static-bar-top-emitters-2024")).toBe(
       true,
     );
     expect(scans.some((s) => s.beat === "comparison")).toBe(false);

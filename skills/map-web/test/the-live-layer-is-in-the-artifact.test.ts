@@ -210,7 +210,9 @@ describe("the renderer puts the live map into the file it writes", () => {
     });
     expect(plan.degreesPerPixel).toBeGreaterThan(0);
     // One vocabulary: the slug the radio's id carries, the CSS selector quotes and `setFilter` reads.
-    const marks = plan.layers.find((layer: { id: string }) => layer.id === "mw-marks");
+    const marks = plan.layers.find(
+      (layer: { id: string }) => layer.id === "mw-marks",
+    );
     const groups = marks.data.features.map(
       (f: { properties: { group: string } }) => f.properties.group,
     );
@@ -262,7 +264,9 @@ function committedMapWebPages(): { rel: string; html: string }[] {
 
 function isMapWebPath(rel: string): boolean {
   return (
-    /^proof\/mapgen-[a-z]+-web\//.test(rel) ||
+    // Archived 2026-09-17: these five superseded the mapgen-*-web beats but the retrofit-tracking
+    // audit below still names them, now under `archive/` rather than `proof/`.
+    /^archive\/mapgen-[a-z]+-web\//.test(rel) ||
     rel.startsWith("skills/map-web/output-proof/")
   );
 }
@@ -276,11 +280,11 @@ describe("every committed map-web page is a live map", () => {
     // Every map-web beat in the tree, named, so a beat that stops committing its own rendered file
     // reddens here rather than disappearing from the check.
     expect(pages.map((page) => page.rel).sort()).toEqual([
-      "proof/mapgen-choropleth-web/render/choropleth.html",
-      "proof/mapgen-dot-web/dot-population.html",
-      "proof/mapgen-hexgrid-web/hex-grid.html",
-      "proof/mapgen-locator-web/locator.html",
-      "proof/mapgen-symbol-web/quake-symbol.html",
+      "archive/mapgen-choropleth-web/render/choropleth.html",
+      "archive/mapgen-dot-web/dot-population.html",
+      "archive/mapgen-hexgrid-web/hex-grid.html",
+      "archive/mapgen-locator-web/locator.html",
+      "archive/mapgen-symbol-web/quake-symbol.html",
       // The seed at its other supported setting (#52). It is the same render with `regionTable`
       // on, so ruling R1 applies to it exactly as it applies to the default — a web map you cannot
       // move through is a picture whether or not a table hangs beneath it.

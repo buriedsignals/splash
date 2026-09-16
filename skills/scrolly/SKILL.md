@@ -127,7 +127,7 @@ and each worked example's own data shape. Read the type's sheet before writing i
 
 | Type | Sheet | Worked example |
 | --- | --- | --- |
-| Area (and stacked area) | `references/types/area.md` | `proof/scrolly-area-swiss-co2/` |
+| Area (and stacked area) | `references/types/area.md` | `proof/scrolly-world-population/` |
 | Bar and column | `references/types/bar-and-column.md` | `proof/scrolly-bar-top-emitters-2024/` |
 | Beeswarm | `references/types/beeswarm.md` | `proof/scrolly-beeswarm-co2-per-person/` |
 | Box plot | `references/types/boxplot.md` | `proof/scrolly-boxplot-france-co2-decades/` |

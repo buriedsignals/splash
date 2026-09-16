@@ -19,7 +19,14 @@
 // turn the next author's better idea into a red.
 
 import { describe, it, expect } from "bun:test";
-import { mkdtempSync, mkdirSync, writeFileSync, readFileSync, readdirSync, rmSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createElement } from "react";
@@ -46,7 +53,11 @@ function fixture(): { root: string; beat: string; cleanup: () => void } {
   const beat = `.scaffold-probe-${process.pid}-${counter++}`;
   const dir = join(REPO, "proof", beat);
   rmSync(dir, { recursive: true, force: true });
-  return { root: REPO, beat: `proof/${beat}`, cleanup: () => rmSync(dir, { recursive: true, force: true }) };
+  return {
+    root: REPO,
+    beat: `proof/${beat}`,
+    cleanup: () => rmSync(dir, { recursive: true, force: true }),
+  };
 }
 
 /** The other half: a root that is NOT this repository, for the refusals about the static sibling. */
@@ -59,7 +70,10 @@ function bareRoot(): string {
   return root;
 }
 
-const generate = (f: { root: string; beat: string }, over: Record<string, string> = {}) =>
+const generate = (
+  f: { root: string; beat: string },
+  over: Record<string, string> = {},
+) =>
   scaffoldBeat({
     root: f.root,
     type: "flow-map",
@@ -70,7 +84,9 @@ const generate = (f: { root: string; beat: string }, over: Record<string, string
 
 const beatDirOf = (f: { root: string; beat: string }) => join(f.root, f.beat);
 const componentOf = (f: { root: string; beat: string }) =>
-  readdirSync(beatDirOf(f)).find((x) => /^Directed.*Web\.tsx$/.test(x)) as string;
+  readdirSync(beatDirOf(f)).find((x) =>
+    /^Directed.*Web\.tsx$/.test(x),
+  ) as string;
 
 /** What is left of a line once its comments are gone — a `SCAFFOLD` in prose is guidance, not a hole. */
 const stripComments = (line: string) =>
@@ -103,7 +119,14 @@ describe("the map × web scaffold — every hole refuses, and the skeleton is we
     try {
       const name = componentNameOf(f.beat.replace("proof/", ""), "flow-map");
       expect(generate(f).sort()).toEqual(
-        ["BRIEF.md", `Directed${name}Web.tsx`, "PALETTE.md", "bake.mjs", "camera.ts", "render-directions-web.mjs"].sort(),
+        [
+          "BRIEF.md",
+          `Directed${name}Web.tsx`,
+          "PALETTE.md",
+          "bake.mjs",
+          "camera.ts",
+          "render-directions-web.mjs",
+        ].sort(),
       );
     } finally {
       f.cleanup();
@@ -115,7 +138,9 @@ describe("the map × web scaffold — every hole refuses, and the skeleton is we
     try {
       for (const file of generate(f)) {
         const source = readFileSync(join(beatDirOf(f), file), "utf8");
-        expect({ file, tokens: source.match(/%%[A-Za-z_]+%%/g) ?? [] }).toEqual({ file, tokens: [] });
+        expect({ file, tokens: source.match(/%%[A-Za-z_]+%%/g) ?? [] }).toEqual(
+          { file, tokens: [] },
+        );
       }
     } finally {
       f.cleanup();
@@ -127,9 +152,15 @@ describe("the map × web scaffold — every hole refuses, and the skeleton is we
     try {
       for (const file of generate(f)) {
         if (file.endsWith(".md")) continue;
-        const loader = file.endsWith(".tsx") ? "tsx" : file.endsWith(".ts") ? "ts" : "js";
+        const loader = file.endsWith(".tsx")
+          ? "tsx"
+          : file.endsWith(".ts")
+            ? "ts"
+            : "js";
         const source = readFileSync(join(beatDirOf(f), file), "utf8");
-        expect(() => new Bun.Transpiler({ loader }).transformSync(source)).not.toThrow();
+        expect(() =>
+          new Bun.Transpiler({ loader }).transformSync(source),
+        ).not.toThrow();
       }
     } finally {
       f.cleanup();
@@ -151,11 +182,22 @@ describe("the map × web scaffold — every hole refuses, and the skeleton is we
         for (const [i, raw] of lines.entries()) {
           const code = stripComments(raw);
           if (!code.includes("SCAFFOLD")) continue;
-          if (/\bSCAFFOLD\s*=|function SCAFFOLD\b|throw new Error\(`SCAFFOLD:|throw new Error\("SCAFFOLD:/.test(code)) continue;
+          if (
+            /\bSCAFFOLD\s*=|function SCAFFOLD\b|throw new Error\(`SCAFFOLD:|throw new Error\("SCAFFOLD:/.test(
+              code,
+            )
+          )
+            continue;
           if (/\bSCAFFOLD\(/.test(code)) continue;
           // A sentinel is allowed only where the file itself refuses on it.
-          const sentinel = code.match(/const ([A-Z_][A-Z_0-9]*) = "SCAFFOLD"/)?.[1];
-          if (sentinel && new RegExp(`${sentinel} === "SCAFFOLD"\\) SCAFFOLD\\(`).test(source)) continue;
+          const sentinel = code.match(
+            /const ([A-Z_][A-Z_0-9]*) = "SCAFFOLD"/,
+          )?.[1];
+          if (
+            sentinel &&
+            new RegExp(`${sentinel} === "SCAFFOLD"\\) SCAFFOLD\\(`).test(source)
+          )
+            continue;
           offenders.push(`${file}:${i + 1} ${raw.trim()}`);
         }
       }
@@ -169,24 +211,37 @@ describe("the map × web scaffold — every hole refuses, and the skeleton is we
     const f = fixture();
     try {
       const written = generate(f);
-      for (const file of ["render-directions-web.mjs", written.find((x) => x.endsWith(".tsx")) as string]) {
+      for (const file of [
+        "render-directions-web.mjs",
+        written.find((x) => x.endsWith(".tsx")) as string,
+      ]) {
         const source = readFileSync(join(beatDirOf(f), file), "utf8");
         const names = holeNamesIn(source);
         // A file the scaffold wrote with no hole at all would pass every other assertion here.
-        expect({ file, holes: names.length > 0 }).toEqual({ file, holes: true });
+        expect({ file, holes: names.length > 0 }).toEqual({
+          file,
+          holes: true,
+        });
 
         // The file's own helper, extracted and executed — the single mechanism every hole calls.
         const declaration =
           source.match(/const SCAFFOLD = \(what\) => \{[\s\S]*?\n\};/)?.[0] ??
-          source.match(/function SCAFFOLD\(what: string\): never \{[\s\S]*?\n\}/)?.[0];
-        expect({ file, helper: Boolean(declaration) }).toEqual({ file, helper: true });
+          source.match(
+            /function SCAFFOLD\(what: string\): never \{[\s\S]*?\n\}/,
+          )?.[0];
+        expect({ file, helper: Boolean(declaration) }).toEqual({
+          file,
+          helper: true,
+        });
         const helper = new Function(
           `${(declaration as string).replace(/: string\): never/, ")")}\nreturn SCAFFOLD;`,
         )() as (what: string) => never;
 
         for (const name of names)
           expect(() => helper(name)).toThrow(
-            new RegExp(`^SCAFFOLD: .*${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`),
+            new RegExp(
+              `^SCAFFOLD: .*${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`,
+            ),
           );
       }
     } finally {
@@ -199,10 +254,14 @@ describe("the map × web scaffold — every hole refuses, and the skeleton is we
     try {
       generate(f);
       const file = componentOf(f);
-      const module = await import(`${join(beatDirOf(f), file)}?probe=${Date.now()}`);
+      const module = await import(
+        `${join(beatDirOf(f), file)}?probe=${Date.now()}`
+      );
       const Component = module[file.replace(/\.tsx$/, "")];
       expect(typeof Component).toBe("function");
-      expect(() => renderToStaticMarkup(createElement(Component, {} as never))).toThrow(/^SCAFFOLD: .* has no /);
+      expect(() =>
+        renderToStaticMarkup(createElement(Component, {} as never)),
+      ).toThrow(/^SCAFFOLD: .* has no /);
     } finally {
       f.cleanup();
     }
@@ -212,8 +271,11 @@ describe("the map × web scaffold — every hole refuses, and the skeleton is we
     const f = fixture();
     try {
       generate(f);
-      const source = readFileSync(join(beatDirOf(f), "render-directions-web.mjs"), "utf8");
-      const firstHole = source.indexOf("SCAFFOLD(\"eyebrow\")");
+      const source = readFileSync(
+        join(beatDirOf(f), "render-directions-web.mjs"),
+        "utf8",
+      );
+      const firstHole = source.indexOf('SCAFFOLD("eyebrow")');
       const firstBake = source.indexOf("ensurePlate(id,");
       expect(firstHole).toBeGreaterThan(-1);
       expect(firstBake).toBeGreaterThan(-1);
@@ -227,11 +289,25 @@ describe("the map × web scaffold — every hole refuses, and the skeleton is we
     const f = fixture();
     try {
       generate(f);
-      const component = readFileSync(join(beatDirOf(f), componentOf(f)), "utf8");
+      const component = readFileSync(
+        join(beatDirOf(f), componentOf(f)),
+        "utf8",
+      );
       for (const landmark of LANDMARKS)
-        expect({ landmark, present: component.includes(landmark) }).toEqual({ landmark, present: true });
-      for (const landmark of ["data-mark={row.key}", "data-detail={row.detail}", "data-stack-note", 'role="status"'])
-        expect({ landmark, present: component.includes(landmark) }).toEqual({ landmark, present: true });
+        expect({ landmark, present: component.includes(landmark) }).toEqual({
+          landmark,
+          present: true,
+        });
+      for (const landmark of [
+        "data-mark={row.key}",
+        "data-detail={row.detail}",
+        "data-stack-note",
+        'role="status"',
+      ])
+        expect({ landmark, present: component.includes(landmark) }).toEqual({
+          landmark,
+          present: true,
+        });
     } finally {
       f.cleanup();
     }
@@ -250,7 +326,9 @@ describe("the map × web scaffold — every hole refuses, and the skeleton is we
   it("should refuse a type with no sheet, and refuse the one type that is not a live map", () => {
     const f = fixture();
     try {
-      expect(() => generate(f, { type: "waffle" })).toThrow(/--type must be one of the eight map types/);
+      expect(() => generate(f, { type: "waffle" })).toThrow(
+        /--type must be one of the eight map types/,
+      );
       for (const type of NOT_A_LIVE_MAP) {
         expect(TYPES).toContain(type);
         expect(() => generate(f, { type })).toThrow(/is not a live map/);
@@ -266,11 +344,17 @@ describe("the map × web scaffold — every hole refuses, and the skeleton is we
       const bare = join(root, "proof", "static-flow-map-bare");
       mkdirSync(bare, { recursive: true });
       const at = { root, beat: "proof/web-flow-map-danube" };
-      expect(() => generate(at, { staticBeat: "proof/static-flow-map-bare" })).toThrow(/carries no PALETTE.md/);
+      expect(() =>
+        generate(at, { staticBeat: "proof/static-flow-map-bare" }),
+      ).toThrow(/carries no PALETTE.md/);
       writeFileSync(join(bare, "PALETTE.md"), "# Palette\n");
-      expect(() => generate(at, { staticBeat: "proof/static-flow-map-bare" })).toThrow(/carries no frozen data/);
+      expect(() =>
+        generate(at, { staticBeat: "proof/static-flow-map-bare" }),
+      ).toThrow(/carries no frozen data/);
       // And the happy path on a root that is not this repository, so the refusals above are not vacuous.
-      expect(() => generate(at, { staticBeat: "proof/static-flow-map-danube" })).not.toThrow();
+      expect(() =>
+        generate(at, { staticBeat: "proof/static-flow-map-danube" }),
+      ).not.toThrow();
     } finally {
       rmSync(root, { recursive: true, force: true });
     }
@@ -280,7 +364,10 @@ describe("the map × web scaffold — every hole refuses, and the skeleton is we
     const root = bareRoot();
     try {
       expect(() =>
-        generate({ root, beat: "proof/nested/web-flow-map-danube" }, { staticBeat: "proof/static-flow-map-danube" }),
+        generate(
+          { root, beat: "proof/nested/web-flow-map-danube" },
+          { staticBeat: "proof/static-flow-map-danube" },
+        ),
       ).toThrow(/directly under proof\//);
     } finally {
       rmSync(root, { recursive: true, force: true });
@@ -288,7 +375,9 @@ describe("the map × web scaffold — every hole refuses, and the skeleton is we
   });
 
   it("should derive the component name from the beat's subject, never from its type", () => {
-    expect(componentNameOf("web-dot-density-europe-stations", "dot-density")).toBe("EuropeStations");
+    expect(
+      componentNameOf("web-dot-density-europe-stations", "dot-density"),
+    ).toBe("EuropeStations");
     expect(componentNameOf("web-flow-map-danube", "flow-map")).toBe("Danube");
   });
 
@@ -314,23 +403,39 @@ describe("the map × web scaffold — every hole refuses, and the skeleton is we
     const live = readdirSync(proof)
       .filter((d) => d.startsWith("web-"))
       .filter((d) => readdirSync(join(proof, d)).includes("bake.mjs"));
-    expect(live.length).toBeGreaterThanOrEqual(7);
+    // Was 7 until `web-flow-map-danube`, a superseded duplicate, archived 2026-09-17 — 6 is the
+    // floor among the kept, catalogue-cited beats (cartogram and hex-grid ship no bake.mjs).
+    expect(live.length).toBeGreaterThanOrEqual(6);
     for (const beat of live) {
-      const file = readdirSync(join(proof, beat)).find((x) => /^Directed.*Web\.tsx$/.test(x)) as string;
+      const file = readdirSync(join(proof, beat)).find((x) =>
+        /^Directed.*Web\.tsx$/.test(x),
+      ) as string;
       const source = readFileSync(join(proof, beat, file), "utf8");
       for (const landmark of LANDMARKS)
-        expect({ beat, landmark, present: source.includes(landmark) }).toEqual({ beat, landmark, present: true });
+        expect({ beat, landmark, present: source.includes(landmark) }).toEqual({
+          beat,
+          landmark,
+          present: true,
+        });
     }
   });
 
   it("should point at the file that actually owns the three radius behaviours", () => {
     // The cold read found SKILL.md naming `assets/live-map.mjs`; `radiusPaintOf` — the one place a
     // `radius` strategy becomes a paint value — is in `mount.mjs`, which `live-map.mjs` imports.
-    const skill = readFileSync(join(REPO, "skills", "map-web", "SKILL.md"), "utf8");
-    const line = skill.split("\n").find((l) => l.includes("Three radius behaviours")) as string;
-    expect(line).toContain("mount.mjs");
-    expect(readFileSync(join(REPO, "skills", "map-web", "assets", "mount.mjs"), "utf8")).toContain(
-      "export function radiusPaintOf(",
+    const skill = readFileSync(
+      join(REPO, "skills", "map-web", "SKILL.md"),
+      "utf8",
     );
+    const line = skill
+      .split("\n")
+      .find((l) => l.includes("Three radius behaviours")) as string;
+    expect(line).toContain("mount.mjs");
+    expect(
+      readFileSync(
+        join(REPO, "skills", "map-web", "assets", "mount.mjs"),
+        "utf8",
+      ),
+    ).toContain("export function radiusPaintOf(");
   });
 });

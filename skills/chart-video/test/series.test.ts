@@ -56,7 +56,7 @@ import { statesFor as lineStates } from "../../../proof/video-line-swiss-co2/sta
 import { LINE_VIDEO_TIMING } from "../../../proof/video-line-swiss-co2/timing-contract.ts";
 import { moveOf as barMoveOf } from "../../../proof/video-bar-top-emitters-2024/scene.mjs";
 import { moveOf as scatterMoveOf } from "../../../proof/video-connected-scatter-lowcarbon/scene.mjs";
-import { loadSubject as loadPopulation } from "../../../proof/video-cold-world-population/subject.mjs";
+import { loadSubject as loadPopulation } from "../../../archive/video-cold-world-population/subject.mjs";
 
 // ── the two beats' real series, projected the way their own builds project them ────────────────────────────────────
 

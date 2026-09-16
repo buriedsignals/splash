@@ -13,7 +13,7 @@ import { basename, dirname, join, resolve } from "node:path";
 /**
  * THE CHART VIDEO SCAFFOLD WRITES THE PLUMBING, REFUSES TO OVERWRITE, AND ITS GUARDS RUN GREEN BUT FOR THE PLACEHOLDERS.
  *
- * Scaffolds a real beat into a hidden folder under `proof/` (removed after), from the frozen `static-world-population`,
+ * Scaffolds a real beat into a hidden folder under `proof/` (removed after), from the frozen `static-area-swiss-co2`,
  * then runs the generated tests with the two repository guards a directed video must pass. Every failing test must be
  * a SCAFFOLD placeholder — the gesture tests, the copy, the claim — and the plumbing's own tests must pass, the default
  * of one composed direction among them.
@@ -36,7 +36,7 @@ const ARGS = [
   "--beat",
   `proof/${NAME}`,
   "--static",
-  "proof/static-world-population",
+  "proof/static-area-swiss-co2",
   "--component",
   "ScaffoldProbe",
 ];
@@ -138,7 +138,7 @@ describe("scaffold-video-beat", () => {
       "--beat",
       "skills/chart-video/nope",
       "--static",
-      "proof/static-world-population",
+      "proof/static-area-swiss-co2",
     ]);
     expect([
       outside.status,
@@ -159,7 +159,7 @@ describe("scaffold-video-beat", () => {
   it("should copy the static beat's PALETTE.md and wire its frozen data", () => {
     expect(readFileSync(join(BEAT, "PALETTE.md"), "utf8")).toBe(
       readFileSync(
-        join(PROOF, "static-world-population", "PALETTE.md"),
+        join(PROOF, "static-area-swiss-co2", "PALETTE.md"),
         "utf8",
       ),
     );

@@ -18,7 +18,8 @@ Two things live here, and only the first is how a video is built today:
 2. **The seed** (`co2-suisse`, `assets/EmissionsVideo.tsx`) — an 8 s teaching composition that predates
    the design base. It is kept because the standalone-render and parity tests exercise it; it is not
    the model for a new beat (no title card, no argument, no direction). `life-expectancy` and
-   `migration` moved out to `proof/life-expectancy/` and `proof/migration/`, same pre-directed shape.
+   `migration` moved out to `archive/life-expectancy/` and `archive/migration/` (archived 2026-09-17),
+   same pre-directed shape.
 
 The doctrine is `doctrine/references/motion-grammar.md`; the owner's binding rules on top of it are
 `references/directed-type-choreography.md`.
@@ -373,7 +374,7 @@ The seed's `CO2_TIMING` and composition. A directed beat's knobs are its own `ti
 - `test/canon.test.ts` — asserts `assets/` no longer carries the moved stories, the seed carries the
   canon's marker wording, sample data exists, and the preview is current.
 - `doctrine/references/motion-grammar.md` — the doctrine. Read it before writing an edit.
-- `proof/life-expectancy/` — `life-expectancy`'s own pre-directed workspace: `Root.tsx` + `index.ts`,
-  `LifeExpectancyVideo.tsx`, `timing-contract.ts`, `render.mjs`, `timing.test.ts`.
-- `proof/migration/` — `migration`'s own pre-directed workspace: `Root.tsx` + `index.ts`,
-  `MigrationVideo.tsx`, `timing-contract.ts`, `render.mjs`, `timing.test.ts`.
+- `archive/life-expectancy/` — `life-expectancy`'s own pre-directed workspace (archived 2026-09-17):
+  `Root.tsx` + `index.ts`, `LifeExpectancyVideo.tsx`, `timing-contract.ts`, `render.mjs`, `timing.test.ts`.
+- `archive/migration/` — `migration`'s own pre-directed workspace (archived 2026-09-17): `Root.tsx` +
+  `index.ts`, `MigrationVideo.tsx`, `timing-contract.ts`, `render.mjs`, `timing.test.ts`.

@@ -126,6 +126,8 @@ function trackedWebPages(): string[] {
       // A scrolly is a different format with a different contract (`map-web-discipline.md`: a map on a
       // scrolly has no controls at all) and is out of this chantier's scope by instruction.
       .filter((p) => !p.includes("scrolly") && !p.includes("/drive/"))
+      // Archived 2026-09-17: superseded beats, not the maintained proof corpus this census governs.
+      .filter((p) => !p.startsWith("archive/"))
   );
 }
 
@@ -161,9 +163,9 @@ type Page = {
  * **This list is exact, and that is what makes the gap self-closing**: migrating a page reddens this
  * test until its path is removed, and adding a NEW page on the legacy mechanism reddens it too.
  */
+// `mapgen-locator-web` and `mapgen-symbol-web`, the two beats once on the legacy `data-group`
+// mechanism, archived 2026-09-17 — none of the kept `web-*` map beats use it.
 const LEGACY_MAP_VOCABULARY = [
-  "proof/mapgen-locator-web/locator.html",
-  "proof/mapgen-symbol-web/quake-symbol.html",
   "skills/map-web/output-proof/population.html",
   // The same seed at its other supported setting (#52), so the same renderer and therefore the
   // same `data-group` mechanism — one page, not a second migration. It reddened here the moment it
@@ -349,7 +351,8 @@ async function orphanTexts(
       // them furniture — including a `<th scope="col">Organisation` in the accessible table's own
       // header, which is why `thead` is in the list while `tbody` deliberately is not (a row header
       // there IS a datum's name and must be checked).
-      const FURNITURE = "fieldset, legend, thead, [data-filter-note], [class*='legend'], figcaption";
+      const FURNITURE =
+        "fieldset, legend, thead, [data-filter-note], [class*='legend'], figcaption";
       for (const el of document.querySelectorAll<HTMLElement>("body *")) {
         if (el.children.length > 0) continue; // leaves only: an ancestor's text is its children's
         if (el.getClientRects().length === 0) continue;
@@ -379,125 +382,129 @@ describe("driven: a filtered value disappears whole", () => {
       // class is checked on them today; what they are exempt from is the narrowing note, which the
       // mechanism they still run has no notion of.
       const attr = subject.legacy ? "data-group" : "data-filter";
-    const browser = await puppeteer.launch({
-      headless: true,
-      executablePath: resolveChrome(),
-      args: ["--no-sandbox", "--disable-dev-shm-usage"],
-    });
-    const failures: string[] = [];
-    try {
-      for (const viewport of [WIDE, PHONE]) {
-        const page = await browser.newPage();
-        await page.setViewport(viewport);
-        await page.goto(`file://${join(TWIN, path)}`, { waitUntil: "load" });
-        const where = `${viewport.width}x${viewport.height}`;
+      const browser = await puppeteer.launch({
+        headless: true,
+        executablePath: resolveChrome(),
+        args: ["--no-sandbox", "--disable-dev-shm-usage"],
+      });
+      const failures: string[] = [];
+      try {
+        for (const viewport of [WIDE, PHONE]) {
+          const page = await browser.newPage();
+          await page.setViewport(viewport);
+          await page.goto(`file://${join(TWIN, path)}`, { waitUntil: "load" });
+          const where = `${viewport.width}x${viewport.height}`;
 
-        const vocabulary = await readVocabulary(page, attr);
-        if (vocabulary.keys.length === 0)
-          failures.push(
-            `${where}: the page has a control and no datum carries the vocabulary`,
-          );
-
-        // THE DEFAULT STATE IS THE WHOLE CLAIM — nothing argument-bearing behind the control. Every
-        // datum must be DRAWN, which is "at least one of its elements has a box" and deliberately
-        // not "all of them do": measured on `proof/mapgen-locator-web`, nine of eleven markers ship
-        // a `.point-label` at `display: none` in the unfiltered state, because that beat declutters
-        // its label layer on purpose. Asserting every element would call a real editorial decision
-        // a defect, which is how a guard gets ignored.
-        for (const { key } of vocabulary.keys) {
-          const v = await visibility(page, key);
-          if (v.visible === 0)
+          const vocabulary = await readVocabulary(page, attr);
+          if (vocabulary.keys.length === 0)
             failures.push(
-              `${where}: unfiltered, "${key}" is not drawn at all — none of its ${v.total} elements has a box`,
+              `${where}: the page has a control and no datum carries the vocabulary`,
             );
-        }
 
-        // EVERY option, EVERY datum, EVERY element. No sampling.
-        for (const option of vocabulary.options) {
-          // A REAL click on the CHIP a reader sees, not on the input the CSS moves out of sight —
-          // clicking the visually-hidden `<input>` directly would pass in a world where the pill is
-          // covered by something and no reader could ever select it. `page.mouse.click` at the
-          // label's own centre is what a pointer does; falling back to the input's own `.click()`
-          // only when the label has no box at all (a format that draws the radio bare).
-          const box = await page.evaluate((id) => {
-            const input = document.getElementById(id) as HTMLInputElement;
-            const chip = (input.closest("label") ?? input) as HTMLElement;
-            const r = chip.getBoundingClientRect();
-            if (r.width < 1 || r.height < 1) return null;
-            return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
-          }, option.id);
-          if (box) await page.mouse.click(box.x, box.y);
-          else
-            await page.evaluate((id) => {
-              (document.getElementById(id) as HTMLInputElement).click();
+          // THE DEFAULT STATE IS THE WHOLE CLAIM — nothing argument-bearing behind the control. Every
+          // datum must be DRAWN, which is "at least one of its elements has a box" and deliberately
+          // not "all of them do": measured on `proof/mapgen-locator-web`, nine of eleven markers ship
+          // a `.point-label` at `display: none` in the unfiltered state, because that beat declutters
+          // its label layer on purpose. Asserting every element would call a real editorial decision
+          // a defect, which is how a guard gets ignored.
+          for (const { key } of vocabulary.keys) {
+            const v = await visibility(page, key);
+            if (v.visible === 0)
+              failures.push(
+                `${where}: unfiltered, "${key}" is not drawn at all — none of its ${v.total} elements has a box`,
+              );
+          }
+
+          // EVERY option, EVERY datum, EVERY element. No sampling.
+          for (const option of vocabulary.options) {
+            // A REAL click on the CHIP a reader sees, not on the input the CSS moves out of sight —
+            // clicking the visually-hidden `<input>` directly would pass in a world where the pill is
+            // covered by something and no reader could ever select it. `page.mouse.click` at the
+            // label's own centre is what a pointer does; falling back to the input's own `.click()`
+            // only when the label has no box at all (a format that draws the radio bare).
+            const box = await page.evaluate((id) => {
+              const input = document.getElementById(id) as HTMLInputElement;
+              const chip = (input.closest("label") ?? input) as HTMLElement;
+              const r = chip.getBoundingClientRect();
+              if (r.width < 1 || r.height < 1) return null;
+              return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
             }, option.id);
-          const isAll = await page.evaluate(
-            (id) => id.replace(/^(?:chart-filter|mw-filter)-/, "") === "all",
-            option.id,
-          );
+            if (box) await page.mouse.click(box.x, box.y);
+            else
+              await page.evaluate((id) => {
+                (document.getElementById(id) as HTMLInputElement).click();
+              }, option.id);
+            const isAll = await page.evaluate(
+              (id) => id.replace(/^(?:chart-filter|mw-filter)-/, "") === "all",
+              option.id,
+            );
 
-          for (const datum of vocabulary.keys) {
-            const kept = isAll || datum.slugs.includes(option.slug);
-            const v = await visibility(page, datum.key);
-            if (kept && v.visible === 0)
-              failures.push(
-                `${where} / "${option.slug}": "${datum.key}" is in this option and not one of its ${v.total} elements is drawn`,
-              );
-            if (!kept && v.visible > 0)
-              failures.push(
-                `${where} / "${option.slug}": "${datum.key}" is filtered out and ${v.visible} of its ${v.total} elements still have a client rect`,
-              );
-          }
+            for (const datum of vocabulary.keys) {
+              const kept = isAll || datum.slugs.includes(option.slug);
+              const v = await visibility(page, datum.key);
+              if (kept && v.visible === 0)
+                failures.push(
+                  `${where} / "${option.slug}": "${datum.key}" is in this option and not one of its ${v.total} elements is drawn`,
+                );
+              if (!kept && v.visible > 0)
+                failures.push(
+                  `${where} / "${option.slug}": "${datum.key}" is filtered out and ${v.visible} of its ${v.total} elements still have a client rect`,
+                );
+            }
 
-          // THE ORPHAN HALF, run once per option over the whole page rather than once per datum:
-          // a word belonging to a datum this option excludes, still drawn, with the mark it names
-          // gone. One DOM walk instead of one per datum keeps a 164-country page to seven walks.
-          {
-            const hiddenNames = vocabulary.keys
-              .filter((d) => !(isAll || d.slugs.includes(option.slug)))
-              .flatMap((d) => d.names);
-            const keptNames = vocabulary.keys
-              .filter((d) => isAll || d.slugs.includes(option.slug))
-              .flatMap((d) => d.names);
-            for (const text of await orphanTexts(page, hiddenNames, keptNames))
-              failures.push(
-                `${where} / "${option.slug}": ${JSON.stringify(text)} belongs to a datum this option excludes and is still drawn`,
-              );
-          }
+            // THE ORPHAN HALF, run once per option over the whole page rather than once per datum:
+            // a word belonging to a datum this option excludes, still drawn, with the mark it names
+            // gone. One DOM walk instead of one per datum keeps a 164-country page to seven walks.
+            {
+              const hiddenNames = vocabulary.keys
+                .filter((d) => !(isAll || d.slugs.includes(option.slug)))
+                .flatMap((d) => d.names);
+              const keptNames = vocabulary.keys
+                .filter((d) => isAll || d.slugs.includes(option.slug))
+                .flatMap((d) => d.names);
+              for (const text of await orphanTexts(
+                page,
+                hiddenNames,
+                keptNames,
+              ))
+                failures.push(
+                  `${where} / "${option.slug}": ${JSON.stringify(text)} belongs to a datum this option excludes and is still drawn`,
+                );
+            }
 
-          // THE READER-FACING CONSEQUENCE: a narrowed view says so, and the whole view does not.
-          //
-          // A CLIENT RECT IS NOT ENOUGH TO CALL A SENTENCE DRAWN, and this is why. The note row is
-          // reserved by STACKING every sentence in one grid cell and hiding the unchosen ones with
-          // `visibility: hidden` (`control-chrome.ts`), so that the row is as deep as its deepest
-          // sentence at the reader's own width and the plot never moves. A `visibility: hidden`
-          // element keeps its box — it is exactly what pays for the reservation — so counting boxes
-          // reported all three of this beat's sentences as printed at once, on a page where a reader
-          // sees one. `verify-web.mjs` reads the computed style for the same reason.
-          const note = await page.evaluate(() => {
-            const shown = [
-              ...document.querySelectorAll<HTMLElement>("[data-filter-note]"),
-            ].filter((e) => {
-              if (e.getClientRects().length === 0) return false;
-              const cs = getComputedStyle(e);
-              return cs.visibility !== "hidden" && Number(cs.opacity) !== 0;
+            // THE READER-FACING CONSEQUENCE: a narrowed view says so, and the whole view does not.
+            //
+            // A CLIENT RECT IS NOT ENOUGH TO CALL A SENTENCE DRAWN, and this is why. The note row is
+            // reserved by STACKING every sentence in one grid cell and hiding the unchosen ones with
+            // `visibility: hidden` (`control-chrome.ts`), so that the row is as deep as its deepest
+            // sentence at the reader's own width and the plot never moves. A `visibility: hidden`
+            // element keeps its box — it is exactly what pays for the reservation — so counting boxes
+            // reported all three of this beat's sentences as printed at once, on a page where a reader
+            // sees one. `verify-web.mjs` reads the computed style for the same reason.
+            const note = await page.evaluate(() => {
+              const shown = [
+                ...document.querySelectorAll<HTMLElement>("[data-filter-note]"),
+              ].filter((e) => {
+                if (e.getClientRects().length === 0) return false;
+                const cs = getComputedStyle(e);
+                return cs.visibility !== "hidden" && Number(cs.opacity) !== 0;
+              });
+              return shown.map((e) => (e.textContent ?? "").trim());
             });
-            return shown.map((e) => (e.textContent ?? "").trim());
-          });
-          if (isAll && note.length > 0)
-            failures.push(
-              `${where}: the unfiltered view prints a narrowing note — ${note.join(" / ")}`,
-            );
-          if (!isAll && !subject.legacy && note.length !== 1)
-            failures.push(
-              `${where} / "${option.slug}": ${note.length} narrowing notes are drawn, wanted exactly one`,
-            );
+            if (isAll && note.length > 0)
+              failures.push(
+                `${where}: the unfiltered view prints a narrowing note — ${note.join(" / ")}`,
+              );
+            if (!isAll && !subject.legacy && note.length !== 1)
+              failures.push(
+                `${where} / "${option.slug}": ${note.length} narrowing notes are drawn, wanted exactly one`,
+              );
+          }
+          await page.close();
         }
-        await page.close();
+      } finally {
+        await browser.close();
       }
-    } finally {
-      await browser.close();
-    }
       expect(failures).toEqual([]);
     },
   );

@@ -247,6 +247,9 @@ import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
 import { join } from "node:path";
 
 const PROOF_ROOT = join(import.meta.dirname, "..", "..", "..", "proof");
+// Archived 2026-09-17: `map-quake-density` and `static-renewables-shift`, this guard's own
+// density/sparseness illustrations, moved to `archive/`, keeping their names.
+const ARCHIVE_ROOT = join(import.meta.dirname, "..", "..", "..", "archive");
 
 /** Directories under proof/ that hold evidence ABOUT the experiment, not a beat's own production. */
 const NOT_A_BEAT = new Set(["comparison", "seance", "trial"]);
@@ -389,7 +392,8 @@ function readExpression(
     // entirely. Measured — a beat declaring `subtitle` immediately after `title` had its subtitle
     // scanned by nothing, and a false figure planted in it left this guard green. Found by an
     // agent writing a new beat, not by this file's own tests.
-    if ((c === "," || c === "}" || c === ")" || c === ";") && depth === 0) break;
+    if ((c === "," || c === "}" || c === ")" || c === ";") && depth === 0)
+      break;
     // A computed operand: an identifier, a call, a ternary. Consume to the next top-level
     // `+` or terminator and record it as a hole.
     sawSomething = true;
@@ -401,7 +405,8 @@ function readExpression(
         if (depth === 0) break;
         depth--;
       }
-      if (depth === 0 && (d === "," || d === ";" || (d === "+" && expr.trim()))) break;
+      if (depth === 0 && (d === "," || d === ";" || (d === "+" && expr.trim())))
+        break;
       expr += d;
       i++;
     }
@@ -788,13 +793,13 @@ describe("the measurements this guard's header quotes", () => {
   });
 
   it("should record that a dense data file grounds almost any small integer", () => {
-    const dense = groundSet(join(PROOF_ROOT, "map-quake-density")).values;
+    const dense = groundSet(join(ARCHIVE_ROOT, "map-quake-density")).values;
     let hits = 0;
     for (let k = 1; k < 1000; k++) if (grounded(k, dense)) hits++;
     expect(hits / 999).toBeGreaterThan(0.95);
 
     const sparse = groundSet(
-      join(PROOF_ROOT, "static-renewables-shift"),
+      join(ARCHIVE_ROOT, "static-renewables-shift"),
     ).values;
     let sparseHits = 0;
     for (let k = 1; k < 1000; k++) if (grounded(k, sparse)) sparseHits++;
