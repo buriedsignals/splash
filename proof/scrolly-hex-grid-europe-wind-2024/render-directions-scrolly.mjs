@@ -29,7 +29,8 @@ import { EYEBROW_TO_DISPLAY, gapOf, registerOf } from "#shared/design-base/regis
 import { validateExpressions } from "#shared/map-beat/mount.mjs";
 import { validateScrollyPlan } from "#shared/map-beat/scrolly.mjs";
 import { plateTints } from "#shared/map-beat/tints.mjs";
-import { fitCamera, hexMapPlan, iso2Of } from "./plan.mjs";
+import { fitCamera, hexMapPlan } from "./plan.mjs";
+import { iso2CodesFor } from "#shared/map-beat/iso-codes.mjs";
 import { DirectedEuropeWindHexScrolly } from "./DirectedEuropeWindHexScrolly.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -221,7 +222,10 @@ const BEAT_FACTS = { evidenceLevels: 4 };
 console.log(report(composeDirections({ newsroom, filed, beat: BEAT_FACTS, textPerRegister }), { beat: BEAT_FACTS }));
 console.log("");
 
-for (const code of allCodes) iso2Of(code); // every host (and the no-data country) joins MapTiler Countries, or refuses loudly here
+// Every host (and the no-data country) joins MapTiler Countries, validated together in one call — a beat
+// naming several codes the shared table does not carry learns every gap in one message, not one refusal at
+// a time (cold run 6, 2026-09-16: GBR, then ALB, discovered serially).
+iso2CodesFor(allCodes);
 
 const cards = await openLiveMapCards();
 const driver = `${cards.mapScript}\n${await readFile(join(HERE, "hex-drive.mjs"), "utf8")}`;

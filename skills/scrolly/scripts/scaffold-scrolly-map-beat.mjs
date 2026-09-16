@@ -255,6 +255,31 @@ const topBanner = (fromBeat) => [
 ];
 const prependBanner = (content, lines) => `// ${lines.join("\n// ")}\n${content}`;
 
+// A worked example's own local ISO A2 table — `const ISO2 = {...}` plus the `iso2Of` that reads it — copied
+// verbatim by every worked example that joins MapTiler Countries, covering only ITS OWN subject's countries
+// (32 in the protection beat, 41 in the wind beat). Silently inherited into a fresh beat, it failed one
+// missing code at a time (cold run 6, 2026-09-16: GBR, then ALB, discovered serially) because nothing marked
+// it as a region to replace. Matched here so the scaffold can swap it for the shared canonical table instead
+// of copying the partial one forward again.
+const ISO2_TABLE_RE = /(?:\/\*\*[^]*?\*\/\n)?const ISO2 = \{[^]*?\n\};\nexport const iso2Of = \(iso\) => \{\n(?:.*\n)*?\};\n/;
+
+/** Swaps a copied worked example's own local ISO A2 table for the shared canonical one (`iso-codes.mjs`),
+ *  named as a SCAFFOLD region so it is never again silently inherited. A no-op when the source beat's plan
+ *  carries no such table (most types never join on MapTiler Countries this way). */
+function replaceIso2Table(content, fromBeat) {
+  if (!ISO2_TABLE_RE.test(content)) return content;
+  const banner = [
+    `SCAFFOLD: ISO A2 table — ${fromBeat}'s own table above only covered its own subject's countries. It is`,
+    `replaced here by the shared canonical table (shared/map-beat/iso-codes.mjs). Call`,
+    `iso2CodesFor(<this beat's own whole country list>) ONCE, before any per-country lookup, so every code`,
+    `this beat needs is validated together and every missing one is named in one message — never one`,
+    `refusal at a time. See proof/scrolly-hex-grid-europe-wind-2024/plan.mjs for the worked pattern.`,
+  ]
+    .map((l) => `// ${l}`)
+    .join("\n");
+  return content.replace(ISO2_TABLE_RE, `${banner}\nimport { iso2CodesFor, iso2Of } from "#shared/map-beat/iso-codes.mjs";\n`);
+}
+
 const DATA_ANCHOR = /^const \w+ = .*(?:readFile|readFileSync)\(join\(HERE/m;
 const ASSERT_ANCHOR = /^if \(/m;
 const CARDS_ANCHOR = /^const (?:title|prose) = /m;
@@ -297,6 +322,7 @@ export function adaptFromBeat({ root, fromBeat, values, shapeMismatch = null }) 
   runner = prependBanner(runner, topBanner(fromBeat));
 
   let plan = markDividers(read(planNames[0]));
+  plan = replaceIso2Table(plan, fromBeat);
   plan = markBefore(plan, PLAN_FN_ANCHOR, [...(shapeMismatch ? shapeMismatchLines(shapeMismatch) : []), `SCAFFOLD: marks — the layers this function returns are ${fromBeat}'s own. Adapt the geometry, the`, `bindings and the buckets for this beat's own subject; keep the $state contract (a binding must stay`, `data-constant — validateScrollyPlan refuses one that reads a per-feature property).`]);
   plan = prependBanner(plan, topBanner(fromBeat));
 

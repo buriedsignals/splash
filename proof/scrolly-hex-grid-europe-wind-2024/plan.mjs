@@ -13,6 +13,7 @@
 // would separate two coordinate spaces that were never the same one.
 
 import { cameraFields, lonLatOf, mercatorOf } from "#shared/map-beat/scrolly.mjs";
+import { iso2CodesFor } from "#shared/map-beat/iso-codes.mjs";
 
 const KEY = "__MAPTILER" + "_KEY__";
 export const LAYER = "administrative";
@@ -32,19 +33,6 @@ export function fitCamera({ west, south, east, north }, stage) {
   return cameraFields({ center: lonLatOf([(x0 + x1) / 2, (y0 + y1) / 2]), zoom: Math.log2(worldPx / 512) });
 }
 
-/** ISO 3166-1 alpha-2 for every code the grid places (hosts + Ukraine). */
-const ISO2 = {
-  ISL: "IS", NOR: "NO", SWE: "SE", FIN: "FI", IRL: "IE", DNK: "DK", EST: "EE", LVA: "LV", NLD: "NL", DEU: "DE",
-  POL: "PL", LTU: "LT", UKR: "UA", BEL: "BE", LUX: "LU", CHE: "CH", CZE: "CZ", SVK: "SK", HUN: "HU", ROU: "RO",
-  PRT: "PT", ESP: "ES", FRA: "FR", LIE: "LI", AUT: "AT", SVN: "SI", HRV: "HR", BGR: "BG", MLT: "MT", ITA: "IT",
-  GRC: "GR", CYP: "CY", GBR: "GB", TUR: "TR", RUS: "RU", SRB: "RS", BIH: "BA", MNE: "ME", MKD: "MK", MDA: "MD",
-  BLR: "BY", ALB: "AL",
-};
-export const iso2Of = (iso) => {
-  if (!ISO2[iso]) throw new Error(`no ISO A2 code recorded for ${iso} — the live map joins MapTiler Countries on it`);
-  return ISO2[iso];
-};
-
 const byLevel0 = (codes) => ["all", ["==", ["get", LEVEL], 0], ["match", ["get", ISO], codes, true, false]];
 const byLevel1 = (codes) => ["all", ["==", ["get", LEVEL], 1], ["match", ["get", ISO], codes, true, false]];
 
@@ -54,9 +42,13 @@ const byLevel1 = (codes) => ["all", ["==", ["get", LEVEL], 1], ["match", ["get",
  *   referenceWidth: number, referenceHeight: number }} input
  */
 export function hexMapPlan({ hosts, origin = null, colours, strokes, camera, referenceWidth, referenceHeight }) {
-  const codes = hosts.map(iso2Of);
+  // The beat's own whole country list, validated in one call before any lookup runs — a beat naming a code
+  // this table does not carry learns every gap together, not one refusal at a time (cold run 6, 2026-09-16).
+  const allCountries = origin ? [...hosts, origin] : hosts;
+  const allCodes = iso2CodesFor(allCountries);
+  const codes = origin ? allCodes.slice(0, -1) : allCodes;
+  const originCode = origin ? allCodes[allCodes.length - 1] : null;
   const small = codes.filter((c) => SMALL_BELOW_Z4.includes(c));
-  const originCode = origin ? iso2Of(origin) : null;
   const fillLayer = (id, list, colour, maxzoom) => ({
     id,
     type: "fill",
