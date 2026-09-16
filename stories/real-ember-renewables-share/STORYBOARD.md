@@ -18,6 +18,7 @@ slots:
     reachable: yes
     candidates: ["Dot strip", "Histogram", "Lollipop"]
     intent: unrecorded
+    interaction: explore
     chosen: "Dot strip"
 ---
 

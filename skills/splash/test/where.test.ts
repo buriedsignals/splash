@@ -70,6 +70,8 @@ const SLOT: Record<string, string> = {
   // treatment was the one major decision in the exchange with no recorded justification, and a
   // slot whose form was picked by vibes closed Gate 2 as long as `reference:` carried a string.
   intent: '"show a trend over time"',
+  // The catalogue's own interaction for chart/static, confirmed by the journalist (audit gap 2).
+  interaction: "none",
   chosen: "trajectory",
   candidates: "[trajectory, comparison]",
 };
@@ -171,6 +173,7 @@ function secondSlot(): string {
     "    size: landscape\n" +
     "    reachable: yes\n" +
     '    intent: "show the gap between exactly two values"\n' +
+    "    interaction: none\n" +
     "    chosen: comparison\n" +
     "    candidates: [comparison, dumbbell]"
   );

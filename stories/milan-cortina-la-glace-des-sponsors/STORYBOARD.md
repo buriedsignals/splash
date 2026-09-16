@@ -17,6 +17,7 @@ slots:
     reachable: yes
     candidates: ["Stacked bar", "Waterfall (bridge)", "Treemap"]
     intent: unrecorded
+    interaction: none
     chosen: "Stacked bar"
     producer: custom
   - id: 2
@@ -27,6 +28,7 @@ slots:
     reachable: yes
     candidates: ["Stacked bar", "Waterfall (bridge)", "Treemap"]
     intent: unrecorded
+    interaction: none
     chosen: "Stacked bar"
     producer: custom
 ---

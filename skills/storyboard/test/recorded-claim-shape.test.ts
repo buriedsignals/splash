@@ -233,6 +233,7 @@ describe("gate 2 refuses a half-recorded answer", () => {
         size: "landscape",
         reachable: "yes",
         intent: "compare values across categories",
+        interaction: "none",
         candidates: ["Bar and column"],
         chosen: "Bar and column",
         producer: "custom",

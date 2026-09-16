@@ -125,12 +125,15 @@ rule anywhere else.
    fields, the recorded verdict `grounding`, `language`, optionally `reference` (movement ⑧ — see
    below) and optionally the recorded-claim block (`claimShape`, `claimColumn`, `claimEntity`,
    `claimVersus`, `claimDirection` — see below), and
-   `slots: [{id, proves, medium, format, size, reachable, intent, candidates, chosen, producer,
-   datawrapperType}, ...]`) above the prose
+   `slots: [{id, proves, medium, format, size, reachable, intent, interaction, candidates, chosen,
+   producer, datawrapperType}, ...]`) above the prose
    the journalist actually reads. **`intent` is REQUIRED on every slot** (`REQUIRED_SLOT_FIELDS`,
    `scripts/gate-contract.mjs`) — the one-field record that the chooser was actually consulted,
    asked in its own G2-intent pass after every slot's G2a/b/c triple closes (see "Stop at every
-   human gate" above).
+   human gate" above). **`interaction` is REQUIRED too**, and it is a CONFIRMATION rather than a
+   new question: the catalogue files one kind per medium/format pair (`none`, `explore`, `motion`,
+   `scroll`) with the promise it makes a reader, `formatCandidateRows` now prints that promise
+   beside each candidate, and the slot records the kind the journalist accepted.
 
    **`reference` is OFFERED, not required** (movement ⑧, `exchange.md`) — it is no longer in
    `REQUIRED_SCALARS` and there is no `G2-reference` gate; Gate 2 closes without it. When the

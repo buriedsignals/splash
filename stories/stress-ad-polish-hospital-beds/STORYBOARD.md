@@ -18,6 +18,7 @@ slots:
     reachable: "yes"
     candidates: ["Bar and column", "Scatter (and bubble)"]
     intent: unrecorded
+    interaction: none
     chosen: "Bar and column"
     producer: "custom"
 ---

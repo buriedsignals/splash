@@ -24,6 +24,7 @@ slots:
     reachable: "yes"
     candidates: ["Line", "Slope", "Small multiples"]
     intent: unrecorded
+    interaction: none
     chosen: "Line"
     producer: "custom"
 ---

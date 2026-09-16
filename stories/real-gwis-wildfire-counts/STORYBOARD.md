@@ -19,6 +19,7 @@ slots:
     reachable: yes
     candidates: ["Area (and stacked area)", "Line", "Bar and column"]
     intent: unrecorded
+    interaction: none
     chosen: "Area (and stacked area)"
     producer: custom
 ---

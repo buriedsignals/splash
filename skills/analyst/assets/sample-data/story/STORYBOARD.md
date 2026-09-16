@@ -17,6 +17,7 @@ slots:
     size: landscape
     reachable: yes
     intent: "show a trend over time"
+    interaction: none
     chosen: trajectory
     candidates: [trajectory, comparison]
 ---

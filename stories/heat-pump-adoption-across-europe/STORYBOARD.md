@@ -17,6 +17,7 @@ slots:
     reachable: "yes"
     candidates: ["Slope (slopegraph)", "Dumbbell (range plot)", "Line"]
     intent: unrecorded
+    interaction: explore
     chosen: "Slope (slopegraph)"
     producer: "custom"
 ---

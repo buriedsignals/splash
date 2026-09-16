@@ -18,6 +18,7 @@ slots:
     reachable: "yes"
     candidates: ["Bar and column", "Lollipop", "Treemap"]
     intent: unrecorded
+    interaction: none
     chosen: "Bar and column"
     producer: "custom"
   - id: 2
@@ -27,6 +28,7 @@ slots:
     reachable: "yes"
     candidates: ["Slope (slopegraph)","Dumbbell (range plot)","Grouped bar"]
     intent: unrecorded
+    interaction: explore
     chosen: "Slope (slopegraph)"
     producer: custom
   - id: 3
@@ -37,6 +39,7 @@ slots:
     reachable: "yes"
     candidates: ["Lollipop", "Bar and column"]
     intent: unrecorded
+    interaction: none
     chosen: "Lollipop"
 ---
 

@@ -18,6 +18,7 @@ slots:
     reachable: yes
     candidates: ["Choropleth", "Proportional symbol (symbol / bubble map)"]
     intent: unrecorded
+    interaction: motion
     chosen: "Choropleth"
 ---
 

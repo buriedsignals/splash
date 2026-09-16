@@ -17,6 +17,7 @@ slots:
     reachable: yes
     candidates: ["Choropleth", "Proportional symbol (symbol / bubble map)", "Cartogram"]
     intent: unrecorded
+    interaction: explore
     chosen: "Choropleth"
     producer: custom
 ---

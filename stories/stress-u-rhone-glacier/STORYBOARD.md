@@ -17,6 +17,7 @@ slots:
     reachable: "yes"
     candidates: ["Line", "Slope (slopegraph)", "Waterfall (bridge)"]
     intent: unrecorded
+    interaction: scroll
     chosen: "Line"
 ---
 

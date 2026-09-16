@@ -18,6 +18,7 @@ slots:
     reachable: "yes"
     candidates: ["Histogram", "Box plot", "Beeswarm"]
     intent: unrecorded
+    interaction: none
     chosen: "Histogram"
 ---
 

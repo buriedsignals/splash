@@ -1104,10 +1104,31 @@ function ideaOf(type, survey) {
  * a number 36× too big refuses types the data comfortably supports and quotes a sheet out of
  * context to do it.
  */
-export function formatCandidates({ medium, candidates, profile = null, capabilities = {}, survey = typeSurvey() }) {
+export function formatCandidates(options) {
+  return formatCandidateRows(options).map((row) => row.line).join("\n");
+}
+
+/**
+ * THE SAME MENU, AS ROWS — and the reason this function exists at all.
+ *
+ * `formatCandidates` renders Markdown, and a rendered menu is unreadable by code: the retained
+ * proposal (`shared/editorial/retained.mjs`) needs the catalogue's `interaction { kind, promise }`
+ * for the pair each candidate would be produced as, and a downstream reader cannot get it back out
+ * of a sentence. So the lookup happens ONCE, here, and both the menu the journalist reads and the
+ * record the chain reads are built from the same rows.
+ *
+ * This is also the call that un-orphans `visualCatalogueEntries`. The catalogue has carried an
+ * `interaction` on every medium/format pair since it was written and nothing outside a test had
+ * ever read one — which is exactly how a journalist could choose a web beat and never be told what
+ * a web beat promises a reader (audit gap 2).
+ *
+ * A candidate that names no format yet has no pair, so it has no interaction: `null`, stated,
+ * rather than a kind guessed from the medium.
+ */
+export function formatCandidateRows({ medium, candidates, profile = null, capabilities = {}, survey = typeSurvey() }) {
   assertDistinctWays(candidates, { survey });
   const rowCount = Number.isSafeInteger(profile?.rowCount) ? profile.rowCount : null;
-  const lines = candidates.map((raw) => {
+  return candidates.map((raw) => {
     const { type, why, format, marks } = readCandidate(raw);
     if (format) confirmFormatReachable({ medium, format, capabilities });
     const row = findSurveyRow(survey, medium, type);
@@ -1154,7 +1175,38 @@ export function formatCandidates({ medium, candidates, profile = null, capabilit
       marks === undefined && rowLimits.length
         ? `\n  Check by hand — this sheet refuses ${rowLimits.map((l) => `${l.unit} ${l.op} ${l.value}`).join(", ")}, counted as the MARKS this beat would draw. Nobody said how many that is (pass \`marks\`), and the frozen table's ${rowCount === null ? "row count is unknown" : `${rowCount} row(s) is not that number unless this beat draws one mark per row`}.`
         : "";
-    return `- **${type}**${reach}${purpose}${notFor}${handNote}${unmeasured}\n  Why here: ${why}`;
+    // WHAT THIS FORMAT PROMISES THE READER, IN THE CATALOGUE'S OWN WORDS. The journalist is choosing
+    // a way of seeing AND a way of being read; until now the menu named only the first.
+    const entry = catalogueEntryFor({ medium, type, format, capabilities });
+    const promise = entry
+      ? `\n  Interaction (${entry.interaction.kind}): ${entry.interaction.promise}`
+      : "";
+    return {
+      type,
+      why,
+      format: format ?? null,
+      marks,
+      catalogueId: entry?.id ?? null,
+      interaction: entry?.interaction ?? null,
+      line: `- **${type}**${reach}${purpose}${notFor}${handNote}${unmeasured}${promise}\n  Why here: ${why}`,
+    };
   });
-  return lines.join("\n");
+}
+
+/**
+ * The catalogue entry a candidate would be produced as — the treatment matched by the same
+ * `treatmentNames` reading every other name check in this file uses, so "Slope (slopegraph)",
+ * "slope chart" and "Slope" all reach the one row. `null` where no format has been named.
+ */
+function catalogueEntryFor({ medium, type, format, capabilities = {} }) {
+  if (!format) return null;
+  const keys = treatmentKeys(type);
+  return (
+    visualCatalogueEntries({ capabilities }).find(
+      (entry) =>
+        entry.medium === medium &&
+        entry.format === format &&
+        treatmentKeys(entry.treatment).some((key) => keys.includes(key)),
+    ) ?? null
+  );
 }

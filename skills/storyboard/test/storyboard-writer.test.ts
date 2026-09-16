@@ -33,6 +33,7 @@ slots:
     proves: "The second claim."
     medium: map
     format: static
+    interaction: none
     genre: static
 ---
 

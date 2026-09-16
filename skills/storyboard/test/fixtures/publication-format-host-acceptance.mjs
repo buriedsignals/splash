@@ -82,6 +82,7 @@ The confirmed framing, before the publication-format decision.
       "slot 1: format is missing — gate 2b never closed",
       "slot 1: this medium and format were never confirmed reachable",
       "slot 1: no narrow intent was named — step 1 of references/chart-choice.md. \"Show association\" and \"show departure from an expected ordering\" reach different rank-1 forms from the same two columns of data, and it is a question a journalist answers instantly and an agent gets wrong.",
+      "slot 1: interaction is missing or is not one of none, explore, motion, scroll — the catalogue files one kind per medium/format pair, and it is what this beat promises a reader. Read the promise beside the candidate in the menu and record the kind you accepted.",
       "slot 1: nothing chosen — gate 2 is not closed",
     ],
     attempts: 0,
@@ -93,6 +94,7 @@ The confirmed framing, before the publication-format decision.
     owner: { kind: "skill", id: "storyboard" },
     missing: [
       "slot 1: no narrow intent was named — step 1 of references/chart-choice.md. \"Show association\" and \"show departure from an expected ordering\" reach different rank-1 forms from the same two columns of data, and it is a question a journalist answers instantly and an agent gets wrong.",
+      "slot 1: interaction is missing or is not one of none, explore, motion, scroll — the catalogue files one kind per medium/format pair, and it is what this beat promises a reader. Read the promise beside the candidate in the menu and record the kind you accepted.",
       "slot 1: nothing chosen — gate 2 is not closed",
     ],
     attempts: 0,

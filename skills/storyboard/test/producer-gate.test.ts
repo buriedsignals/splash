@@ -54,6 +54,9 @@ function storyboard({
   datawrapperType,
 } = {}) {
   const sized = format === "static" || format === "video" ? "    size: landscape\n" : "";
+  // The catalogue's own interaction kind for chart/<format> — the slot records what the journalist
+  // confirmed, and gate 2 no longer closes without it.
+  const interaction = { static: "none", web: "explore", video: "motion", scrolly: "scroll" }[format];
   return `---
 language: "en"
 takeaway: "Every country increased while the gap remained wide."
@@ -73,6 +76,7 @@ slots:
 ${sized}    reachable: yes
     candidates: ${JSON.stringify(candidates)}
     intent: "show the gap between exactly two values"
+    interaction: ${interaction}
     chosen: ${JSON.stringify(treatment)}
 ${producer ? `    producer: ${producer}\n` : ""}${datawrapperType ? `    datawrapperType: ${datawrapperType}\n` : ""}---
 `;
@@ -268,6 +272,7 @@ describe("persisted producer state", () => {
     format: web
     reachable: yes
     intent: "compare values across categories"
+    interaction: explore
     candidates: ["Line", "Bar and column"]
 ---
 `,

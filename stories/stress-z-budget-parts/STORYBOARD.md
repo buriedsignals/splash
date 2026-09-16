@@ -17,6 +17,7 @@ slots:
     reachable: yes
     candidates: ["Diverging bar", "Pie and donut", "Waterfall (bridge)"]
     intent: unrecorded
+    interaction: explore
     chosen: "Diverging bar"
 ---
 

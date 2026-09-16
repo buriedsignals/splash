@@ -84,8 +84,24 @@ export const REQUIRED_SLOT_FIELDS = [
   "size",
   "reachable",
   "intent",
+  // `interaction` is the OTHER half of what the journalist chose, and it was the half nobody wrote
+  // down (audit gap 2). The visual catalogue has carried an `interaction { kind, promise }` on every
+  // medium/format pair since it was written — what a static beat promises a reader, what a web beat
+  // promises, what a video and a scrolly promise — and no gate, no slot and no BRIEF ever recorded
+  // which one was accepted. The kind is implied by the pair, so this is a CONFIRMATION rather than
+  // a new question: the menu now prints the promise beside each candidate
+  // (`propose.mjs formatCandidateRows`), and the slot records that it was read. Everything the
+  // chain later derives from the interaction — `choreographyFrame`'s `constrains.interactionKind`,
+  // the web export's `promiseSource: "slot"` — reads this field, so a slot without it is a beat
+  // produced against a promise nobody agreed to.
+  "interaction",
   "chosen",
 ];
+
+// The four kinds the visual catalogue files, one per medium/format pair. Spelled out rather than
+// imported: `gate-contract.mjs` is CARRIED into `splash` and `analyst`, and neither carries the
+// catalogue JSON. `storyboard/test/visual-catalog.test.ts` is where the two are held together.
+const INTERACTION_KINDS = ["none", "explore", "motion", "scroll"];
 
 // Ruling R2, read literally: landscape for YouTube and article web, portrait for stories, square
 // for social posts. Charts and maps alike, one model. The pixel dimensions are NOT here — they are
@@ -251,7 +267,10 @@ const SLOT_SUB_GATE = { medium: "2a", format: "2b", size: "2c" };
 // the dishonesty the field exists to prevent. Same idiom as `TYPEFACE.md`'s `origin: default`.
 export const UNRECORDED = "unrecorded";
 
-const SLOT_VOCABULARY = { reachable: (value) => value === "yes" };
+const SLOT_VOCABULARY = {
+  reachable: (value) => value === "yes",
+  interaction: (value) => INTERACTION_KINDS.includes(String(value).trim()),
+};
 
 function slotGap(field, id) {
   if (field === "id")
@@ -268,6 +287,12 @@ function slotGap(field, id) {
       `"Show association" and "show departure from an expected ordering" reach different rank-1 ` +
       `forms from the same two columns of data, and it is a question a journalist answers ` +
       `instantly and an agent gets wrong.`
+    );
+  if (field === "interaction")
+    return (
+      `slot ${id}: interaction is missing or is not one of ${INTERACTION_KINDS.join(", ")} — ` +
+      `the catalogue files one kind per medium/format pair, and it is what this beat promises a ` +
+      `reader. Read the promise beside the candidate in the menu and record the kind you accepted.`
     );
   const subGate = SLOT_SUB_GATE[field];
   return subGate
