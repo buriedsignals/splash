@@ -1,0 +1,841 @@
+{
+  "frame": {
+    "width": 1920,
+    "height": 1080
+  },
+  "registers": {
+    "display": {
+      "fontFamily": "Merriweather",
+      "fontSize": 90,
+      "fontWeight": 700,
+      "fontStyle": "normal",
+      "letterSpacing": -0.6,
+      "transform": "none",
+      "lead": 109.803978,
+      "fill": "#000000"
+    },
+    "eyebrow": {
+      "fontFamily": "Open Sans",
+      "fontSize": 30,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 5.7,
+      "transform": "uppercase",
+      "lead": 36.000978515625,
+      "fill": "#1757B6"
+    },
+    "value": {
+      "fontFamily": "Open Sans",
+      "fontSize": 45,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 54.0014677734375,
+      "fill": "#1757B6"
+    },
+    "axis": {
+      "fontFamily": "Open Sans",
+      "fontSize": 33,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 1.2000000000000002,
+      "transform": "none",
+      "lead": 39.6010763671875,
+      "fill": "#61605a"
+    },
+    "source": {
+      "fontFamily": "Open Sans",
+      "fontSize": 30,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 1.090909090909091,
+      "transform": "none",
+      "lead": 36.000978515625,
+      "fill": "#61605a"
+    }
+  },
+  "titleCard": {
+    "form": 0,
+    "register": {
+      "fontFamily": "Merriweather",
+      "fontSize": 90,
+      "fontWeight": 700,
+      "fontStyle": "normal",
+      "letterSpacing": -0.6,
+      "transform": "none",
+      "lead": 109.803978,
+      "fill": "#000000"
+    },
+    "eyebrow": {
+      "text": "ÉNERGIE · EUROPE",
+      "x": 85,
+      "y": 379.1982421875,
+      "width": 348.29296875
+    },
+    "title": [
+      {
+        "text": "En France, le nucléaire pèse",
+        "x": 85,
+        "y": 486.6369490966797,
+        "width": 1200.555029439926
+      },
+      {
+        "text": "plus que le fossile et le",
+        "x": 85,
+        "y": 596.4409270966797,
+        "width": 967.094912147522
+      },
+      {
+        "text": "renouvelable réunis",
+        "x": 85,
+        "y": 706.2449050966798,
+        "width": 862.4700123786927
+      }
+    ]
+  },
+  "credit": {
+    "form": 0,
+    "lines": [
+      {
+        "text": "Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data",
+        "x": 4.80615234375,
+        "y": 27.76025390625,
+        "width": 1485.839754971591
+      }
+    ],
+    "halo": 9.6123046875,
+    "width": 1526,
+    "height": 40,
+    "at": {
+      "x": 85,
+      "y": 980
+    }
+  },
+  "colours": {
+    "ground": "#FFFCEE",
+    "fill": {
+      "Nuclear": "#dbd9cd",
+      "Gas": "#817f78",
+      "Oil": "#5a5954",
+      "Coal": "#343330",
+      "Bioenergy": "#b9cbdd",
+      "Other renewables": "#91aed3",
+      "Hydropower": "#6891ca",
+      "Solar": "#4074c0",
+      "Wind": "#1757b6"
+    },
+    "edge": "#939089",
+    "anchor": "#000000",
+    "ring": "#1755b2",
+    "text": {
+      "eyebrow": "#1755b2",
+      "title": "#000000",
+      "name": "#000000",
+      "subject": "#1755b2",
+      "axis": "#5f5e58",
+      "renewable": "#1755b2",
+      "onCentre": "#000000",
+      "sum": "#000000"
+    }
+  },
+  "subject": "France",
+  "rows": [
+    {
+      "key": "Poland",
+      "fossil": 68.85312572623751,
+      "centre": 0,
+      "renewable": 31.14687427376249,
+      "left": [
+        "Gas",
+        "Oil",
+        "Coal"
+      ],
+      "right": [
+        "Bioenergy",
+        "Other renewables",
+        "Hydropower",
+        "Solar",
+        "Wind"
+      ],
+      "mid": 205.80947376627603,
+      "y": 175.47546993880206,
+      "segments": [
+        {
+          "key": "Coal",
+          "group": "left",
+          "share": 54.32256565187079
+        },
+        {
+          "key": "Oil",
+          "group": "left",
+          "share": 2.643504531722054
+        },
+        {
+          "key": "Gas",
+          "group": "left",
+          "share": 11.887055542644667
+        },
+        {
+          "key": "Nuclear",
+          "group": "centre",
+          "share": 0
+        },
+        {
+          "key": "Bioenergy",
+          "group": "right",
+          "share": 4.618870555426446
+        },
+        {
+          "key": "Other renewables",
+          "group": "right",
+          "share": 0
+        },
+        {
+          "key": "Hydropower",
+          "group": "right",
+          "share": 1.2258889147106669
+        },
+        {
+          "key": "Solar",
+          "group": "right",
+          "share": 10.260283523123402
+        },
+        {
+          "key": "Wind",
+          "group": "right",
+          "share": 15.041831280501974
+        }
+      ],
+      "name": {
+        "text": "Pologne",
+        "width": 131.86845703125,
+        "x": 126.79469921875003,
+        "y": 217.39492298502603
+      },
+      "leftTotal": {
+        "text": "68,9",
+        "width": 67.344140625,
+        "y": 217.39492298502603
+      },
+      "rightTotal": {
+        "text": "31,1",
+        "width": 62.20400390625,
+        "y": 217.39492298502603
+      },
+      "centreValue": null
+    },
+    {
+      "key": "Germany",
+      "fossil": 41.35768866307789,
+      "centre": 0,
+      "renewable": 58.64231133692212,
+      "left": [
+        "Gas",
+        "Oil",
+        "Coal"
+      ],
+      "right": [
+        "Bioenergy",
+        "Other renewables",
+        "Hydropower",
+        "Solar",
+        "Wind"
+      ],
+      "mid": 343.69130934570313,
+      "y": 313.35730551822917,
+      "segments": [
+        {
+          "key": "Coal",
+          "group": "left",
+          "share": 21.437932216375334
+        },
+        {
+          "key": "Oil",
+          "group": "left",
+          "share": 4.110969979233453
+        },
+        {
+          "key": "Gas",
+          "group": "left",
+          "share": 15.808786467469101
+        },
+        {
+          "key": "Nuclear",
+          "group": "centre",
+          "share": 0
+        },
+        {
+          "key": "Bioenergy",
+          "group": "right",
+          "share": 10.298594729732455
+        },
+        {
+          "key": "Other renewables",
+          "group": "right",
+          "share": 0.044355732978487473
+        },
+        {
+          "key": "Hydropower",
+          "group": "right",
+          "share": 4.804532349442529
+        },
+        {
+          "key": "Solar",
+          "group": "right",
+          "share": 14.945865844069436
+        },
+        {
+          "key": "Wind",
+          "group": "right",
+          "share": 28.54896268069921
+        }
+      ],
+      "name": {
+        "text": "Allemagne",
+        "width": 172.84365234375,
+        "x": 85.00000000000003,
+        "y": 355.27675856445313
+      },
+      "leftTotal": {
+        "text": "41,4",
+        "width": 68.35927734375,
+        "y": 355.27675856445313
+      },
+      "rightTotal": {
+        "text": "58,6",
+        "width": 67.5052734375,
+        "y": 355.27675856445313
+      },
+      "centreValue": null
+    },
+    {
+      "key": "France",
+      "fossil": 5.101641211862296,
+      "centre": 67.72224002278472,
+      "renewable": 27.17611876535299,
+      "left": [
+        "Gas",
+        "Oil",
+        "Coal"
+      ],
+      "right": [
+        "Bioenergy",
+        "Other renewables",
+        "Hydropower",
+        "Solar",
+        "Wind"
+      ],
+      "mid": 481.5731449251302,
+      "y": 451.2391410976562,
+      "segments": [
+        {
+          "key": "Coal",
+          "group": "left",
+          "share": 0.18156573747730428
+        },
+        {
+          "key": "Oil",
+          "group": "left",
+          "share": 1.6981736622877281
+        },
+        {
+          "key": "Gas",
+          "group": "left",
+          "share": 3.221901812097263
+        },
+        {
+          "key": "Nuclear",
+          "group": "centre",
+          "share": 67.72224002278472
+        },
+        {
+          "key": "Bioenergy",
+          "group": "right",
+          "share": 1.9011000747623625
+        },
+        {
+          "key": "Other renewables",
+          "group": "right",
+          "share": 0.1014632062373171
+        },
+        {
+          "key": "Hydropower",
+          "group": "right",
+          "share": 12.659760048417532
+        },
+        {
+          "key": "Solar",
+          "group": "right",
+          "share": 4.4269998931966255
+        },
+        {
+          "key": "Wind",
+          "group": "right",
+          "share": 8.08679554273915
+        }
+      ],
+      "name": {
+        "text": "France",
+        "width": 109.7373046875,
+        "x": 149.36847460937503,
+        "y": 493.1585941438802
+      },
+      "leftTotal": {
+        "text": "5,1",
+        "width": 42.1353515625,
+        "y": 493.1585941438802
+      },
+      "rightTotal": {
+        "text": "27,2",
+        "width": 67.344140625,
+        "y": 493.1585941438802
+      },
+      "centreValue": {
+        "text": "67,7",
+        "width": 67.45693359375,
+        "y": 493.1585941438802
+      }
+    },
+    {
+      "key": "Switzerland",
+      "fossil": 1.901237718514738,
+      "centre": 30.649483220620137,
+      "renewable": 67.44927906086512,
+      "left": [
+        "Gas",
+        "Oil",
+        "Coal"
+      ],
+      "right": [
+        "Bioenergy",
+        "Other renewables",
+        "Hydropower",
+        "Solar",
+        "Wind"
+      ],
+      "mid": 619.4549805045573,
+      "y": 589.1209766770834,
+      "segments": [
+        {
+          "key": "Coal",
+          "group": "left",
+          "share": 0
+        },
+        {
+          "key": "Oil",
+          "group": "left",
+          "share": 1.5567181319382417
+        },
+        {
+          "key": "Gas",
+          "group": "left",
+          "share": 0.3445195865764962
+        },
+        {
+          "key": "Nuclear",
+          "group": "centre",
+          "share": 30.649483220620137
+        },
+        {
+          "key": "Bioenergy",
+          "group": "right",
+          "share": 1.327038407553911
+        },
+        {
+          "key": "Other renewables",
+          "group": "right",
+          "share": 1.327038407553911
+        },
+        {
+          "key": "Hydropower",
+          "group": "right",
+          "share": 57.34337118795458
+        },
+        {
+          "key": "Solar",
+          "group": "right",
+          "share": 7.2221513334184015
+        },
+        {
+          "key": "Wind",
+          "group": "right",
+          "share": 0.22967972438433076
+        }
+      ],
+      "name": {
+        "text": "Suisse",
+        "width": 102.421875,
+        "x": 156.830212890625,
+        "y": 631.0404297233073
+      },
+      "leftTotal": {
+        "text": "1,9",
+        "width": 47.27548828125,
+        "y": 631.0404297233073
+      },
+      "rightTotal": {
+        "text": "67,4",
+        "width": 68.35927734375,
+        "y": 631.0404297233073
+      },
+      "centreValue": {
+        "text": "30,6",
+        "width": 67.5052734375,
+        "y": 631.0404297233073
+      }
+    },
+    {
+      "key": "Norway",
+      "fossil": 1.39392782127172,
+      "centre": 0,
+      "renewable": 98.60607217872828,
+      "left": [
+        "Gas",
+        "Oil",
+        "Coal"
+      ],
+      "right": [
+        "Bioenergy",
+        "Other renewables",
+        "Hydropower",
+        "Solar",
+        "Wind"
+      ],
+      "mid": 757.3368160839844,
+      "y": 727.0028122565105,
+      "segments": [
+        {
+          "key": "Coal",
+          "group": "left",
+          "share": 0
+        },
+        {
+          "key": "Oil",
+          "group": "left",
+          "share": 0.4582776398701546
+        },
+        {
+          "key": "Gas",
+          "group": "left",
+          "share": 0.9356501814015656
+        },
+        {
+          "key": "Nuclear",
+          "group": "centre",
+          "share": 0
+        },
+        {
+          "key": "Bioenergy",
+          "group": "right",
+          "share": 0.15275921329005154
+        },
+        {
+          "key": "Other renewables",
+          "group": "right",
+          "share": 0
+        },
+        {
+          "key": "Hydropower",
+          "group": "right",
+          "share": 88.82311756094457
+        },
+        {
+          "key": "Solar",
+          "group": "right",
+          "share": 0.33734326268219716
+        },
+        {
+          "key": "Wind",
+          "group": "right",
+          "share": 9.292852141811467
+        }
+      ],
+      "name": {
+        "text": "Norvège",
+        "width": 137.459765625,
+        "x": 121.09156445312502,
+        "y": 768.9222653027344
+      },
+      "leftTotal": {
+        "text": "1,4",
+        "width": 48.290625,
+        "y": 768.9222653027344
+      },
+      "rightTotal": {
+        "text": "98,6",
+        "width": 67.5052734375,
+        "y": 768.9222653027344
+      },
+      "centreValue": null
+    },
+    {
+      "key": "Sweden",
+      "fossil": 1.2082486203891953,
+      "centre": 29.433633459192563,
+      "renewable": 69.35811792041824,
+      "left": [
+        "Gas",
+        "Oil",
+        "Coal"
+      ],
+      "right": [
+        "Bioenergy",
+        "Other renewables",
+        "Hydropower",
+        "Solar",
+        "Wind"
+      ],
+      "mid": 895.2186516634114,
+      "y": 864.8846478359375,
+      "segments": [
+        {
+          "key": "Coal",
+          "group": "left",
+          "share": 0
+        },
+        {
+          "key": "Oil",
+          "group": "left",
+          "share": 1.1443508568109206
+        },
+        {
+          "key": "Gas",
+          "group": "left",
+          "share": 0.06389776357827476
+        },
+        {
+          "key": "Nuclear",
+          "group": "centre",
+          "share": 29.433633459192563
+        },
+        {
+          "key": "Bioenergy",
+          "group": "right",
+          "share": 5.913447574789427
+        },
+        {
+          "key": "Other renewables",
+          "group": "right",
+          "share": 0
+        },
+        {
+          "key": "Hydropower",
+          "group": "right",
+          "share": 37.531222770839385
+        },
+        {
+          "key": "Solar",
+          "group": "right",
+          "share": 2.416497240778391
+        },
+        {
+          "key": "Wind",
+          "group": "right",
+          "share": 23.49695033401104
+        }
+      ],
+      "name": {
+        "text": "Suède",
+        "width": 99.78779296875,
+        "x": 159.51697656250002,
+        "y": 906.8041008821614
+      },
+      "leftTotal": {
+        "text": "1,2",
+        "width": 47.27548828125,
+        "y": 906.8041008821614
+      },
+      "rightTotal": {
+        "text": "69,4",
+        "width": 68.35927734375,
+        "y": 906.8041008821614
+      },
+      "centreValue": {
+        "text": "29,4",
+        "width": 68.35927734375,
+        "y": 906.8041008821614
+      }
+    }
+  ],
+  "plotLeft": 354.7876341015625,
+  "anchor": 931.4715836549719,
+  "unit": 8.375566736742286,
+  "barH": 60.668007654947914,
+  "lift": 34.29411146419271,
+  "gap": 15.840430546875002,
+  "plot": {
+    "top": 167.55525466536457,
+    "bottom": 933.4728707643229
+  },
+  "year": {
+    "text": "2024",
+    "width": 102.12890625,
+    "x": 85,
+    "y": 102.29736328125
+  },
+  "hundred": {
+    "text": "100 %",
+    "width": 96.387890625,
+    "x": 1094.0286593382912,
+    "y": 102.29736328125
+  },
+  "sides": {
+    "left": {
+      "text": "Fossile",
+      "width": 110.96953125,
+      "x": 354.7876341015625,
+      "y": 102.29736328125
+    },
+    "centre": {
+      "text": "Nucléaire",
+      "width": 157.6810546875,
+      "x": 851.0542457643469,
+      "y": 102.29736328125
+    },
+    "right": {
+      "text": "Renouvelable",
+      "width": 223.510546875,
+      "x": 1529.3725640234375,
+      "y": 102.29736328125
+    }
+  },
+  "sum": {
+    "text": "32,3",
+    "width": 67.1830078125
+  },
+  "strokes": {
+    "anchor": 3.5999999999999996,
+    "edge": 1.7999999999999998,
+    "ring": 4.199999999999999
+  },
+  "halo": {
+    "axis": 10.573535156250001
+  },
+  "states": [
+    {
+      "title": 1,
+      "furniture": 0,
+      "grow": 0,
+      "slide": 0,
+      "focus": 0,
+      "split": 0,
+      "carry": 0,
+      "sum": 0,
+      "ring": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "grow": 1,
+      "slide": 0,
+      "focus": 0,
+      "split": 0,
+      "carry": 0,
+      "sum": 0,
+      "ring": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "grow": 1,
+      "slide": 1,
+      "focus": 0,
+      "split": 0,
+      "carry": 0,
+      "sum": 0,
+      "ring": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "grow": 1,
+      "slide": 1,
+      "focus": 1,
+      "split": 1,
+      "carry": 1,
+      "sum": 1,
+      "ring": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "grow": 1,
+      "slide": 1,
+      "focus": 0,
+      "split": 0,
+      "carry": 0,
+      "sum": 0,
+      "ring": 1,
+      "source": 1
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "grow": 1,
+      "slide": 1,
+      "focus": 0,
+      "split": 0,
+      "carry": 0,
+      "sum": 0,
+      "ring": 1,
+      "source": 1
+    }
+  ],
+  "timing": {
+    "fps": 30,
+    "total": 585,
+    "establish": {
+      "start": 0,
+      "duration": 45
+    },
+    "reference": {
+      "start": 45,
+      "duration": 90
+    },
+    "reveal": {
+      "start": 135,
+      "duration": 120
+    },
+    "subject": {
+      "start": 255,
+      "duration": 180
+    },
+    "conclusion": {
+      "start": 435,
+      "duration": 90
+    },
+    "hold": {
+      "start": 525,
+      "duration": 60
+    }
+  },
+  "fontFamily": null,
+  "faces": [
+    {
+      "family": "Merriweather",
+      "style": "normal",
+      "weight": 700,
+      "weightTo": 700,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Open Sans",
+      "style": "normal",
+      "weight": 600,
+      "weightTo": 600,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Open Sans",
+      "style": "normal",
+      "weight": 500,
+      "weightTo": 500,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    }
+  ]
+}

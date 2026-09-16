@@ -28,6 +28,9 @@ const CO2_PLACEHOLDER: EmissionsVideoProps = {
   grid: "#D1D1D1",
   reference: 32.5,
   referenceLabel: "Placeholder",
+  // No bytes: a render driven by this placeholder is refused rather than drawn in a system face.
+  fontFamily: "Open Sans, Helvetica, Arial, sans-serif",
+  faces: [],
 };
 
 export function RemotionRoot() {

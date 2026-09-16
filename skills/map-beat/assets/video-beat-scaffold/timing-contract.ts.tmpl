@@ -1,0 +1,28 @@
+/**
+ * The timing contract for `%%BEAT%%` (BRIEF.md, « The choreography »).
+ *
+ * SCAFFOLD: a legal ~20 s skeleton — the title card 45 frames, the hold 60 — not a choice. Retime every event to the
+ * gesture BRIEF.md gives it, and rewrite each line below with what the event shows.
+ *
+ * - `establish` 45: the title card, alone on the ground from frame 0.
+ * - `reference` 60: SCAFFOLD — what the viewer is given to measure against.
+ * - `reveal` 180: SCAFFOLD — the data arriving.
+ * - `subject` 210: SCAFFOLD — the gesture the claim is about.
+ * - `conclusion` 45: SCAFFOLD — the close, and the credit.
+ * - `hold` 60.
+ *
+ * Total: 600 frames, 20 s at 30 fps.
+ */
+
+import type { BeatTiming } from "#shared/chart-video/timing.ts";
+
+export const %%CONST%%_VIDEO_TIMING: BeatTiming = {
+  fps: 30,
+  total: 600,
+  establish: { start: 0, duration: 45 },
+  reference: { start: 45, duration: 60 },
+  reveal: { start: 105, duration: 180 },
+  subject: { start: 285, duration: 210 },
+  conclusion: { start: 495, duration: 45 },
+  hold: { start: 540, duration: 60 },
+};

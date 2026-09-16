@@ -1,0 +1,67 @@
+---
+format: video
+size: landscape
+type: %%TYPE%%
+---
+
+# Beat — SCAFFOLD: the claim, as the title says it (video)
+
+**Type:** %%TYPE%%. **Medium/format:** %%MEDIUM%% / **video**. **Size:** landscape (1920 × 1080).
+
+SCAFFOLD: the subject, the frozen data (`%%STATIC_REL%%/%%DATA_FILE%%`) and the claim, as `proof/%%STATIC%%` states
+them — every number derived from the rows and asserted in `subject.mjs`, never typed.
+
+## The picture — shots, not a page
+
+SCAFFOLD: the title card from frame 0; the story on the whole frame; any close-up; no end card.
+
+## The copy's language
+
+SCAFFOLD: name the language every word of this beat is written in — the title, the eyebrow, the annotations, the
+credit — and the reason it is that one. The rule is an order of precedence, and the first line that answers wins:
+
+1. **the journalist's request.** They asked in French, the beat is French. Their language is the choice; nothing
+   downstream overrules it.
+2. **`NEWSROOM.md`'s `languages`, primary first**, when the request does not say. A profile that records
+   `languages: fr, de` publishes in French first; that is the newsroom's own answer, not the alphabet's.
+3. **the static sibling** (`proof/%%STATIC%%`), when neither of the two above says anything — the beat then reads in
+   the language its own family already reads in.
+
+Nothing here is guessed from the data, the source or the subject. A request in one language beside a profile in
+another is NOT a contradiction to resolve by taste: the request wins, and the line below says so out loud.
+
+**This beat:** SCAFFOLD: `fr` / `de` / `en`, by rule 1 / 2 / 3.
+
+## The choreography
+
+SCAFFOLD: the argument as a visual argument — what is transformed, magnified or morphed to prove the claim — not
+marks revealed one after another.
+
+| event | what the shot says | gesture | what the viewer sees move | derived value asserted |
+| --- | --- | --- | --- | --- |
+| `establish` |  | — | the title card |  |
+| `reference` |  |  |  |  |
+| `reveal` |  |  |  |  |
+| `subject` |  |  |  |  |
+| `conclusion` |  |  |  |  |
+| `hold` |  | — | nothing | hold = conclusion |
+
+## The owner's rules — checked before the render
+
+- [ ] The title card from frame 0, no longer than 1.5 s; the final frame held at least 60 frames; 18 to 22 s in all.
+- [ ] Every event but the hold changes the picture; the hold changes nothing.
+- [ ] The video follows the scrolly's picture and choreography, without its cards.
+- [ ] A documentary argument — transform, magnify, morph — not marks toggled on.
+- [ ] As little text as the picture allows: no sentence, no standfirst; a close-up names only what it frames.
+- [ ] A close-up centres its subject on both axes.
+- [ ] No end card: the video ends on its picture, the credit on one line.
+- [ ] No word under the type floor at any event's end; every word drawn at its measured width.
+- [ ] ONE art direction, composed from the newsroom's identity (NEWSROOM.md) — never the three filed demo directions.
+- [ ] Every word in the language named above, that language chosen by the first rule that answers.
+- [ ] The no-break space written as the `\u00A0` escape in the scripts, never typed.
+- [ ] Looked at before the mp4: every event's last frame and the middle of each gesture.
+
+## Direction
+
+One — the design base's best composed candidate for the newsroom and this beat's text
+(`render-directions-video.mjs`): `renders/<label>.mp4`, `renders/<label>-final-frame.png`, `renders/<label>-props.json`.

@@ -83,6 +83,30 @@ hollow cell, because no class is hollow. The hex cartogram in `hex-grid.md` is t
 six neighbours instead of four.
 
 
+## In video
+
+Worked example: `proof/video-cartogram-europe-lowcarbon` (validated 2026-09-14, recut 2026-09-15, on MapTiler
+2026-09-15). The gesture only a video has is **the morph**: every country travelling from its shape's box into its equal
+tile — an affine map per country, the shape giving way to the tile's rect in the last third.
+
+- **Geography is the live map; the tiles are not.** While the form shows geography it is the live MapTiler map (flat
+  Web Mercator, class fills from Countries beneath the water, the focus as bound opacities). Before anything moves, SVG
+  shapes projected with the measured camera rise over the fills and the fills leave; the morph is SVG, and a ground
+  rect rises with it, so the tiles end on no basemap. The equal-area claim moves to the balance's true-area weights.
+
+- **The argument is a balance**, because a cartogram's claim is about what counts as one. Beside the map, a 0–100 %
+  beam carries every country as a column at its share, its height its weight — its share of the territory on the map
+  — and a pivot stands under the mean those weights strike. The morph carries the weights with the shapes, from
+  territory to one each, so the columns of the large countries melt as their shapes do, and a live pivot slides to
+  the unweighted mean, the first pivot left where it stood. One eased value moves the map and the weights: the pivot
+  is tested to sit under the columns' balance at every frame, and the columns to fill the beam's height.
+- The widest country is picked out while the area pivot drops (the others step back on the map and on the beam).
+- The key (classes only) and the balance stand in one column at the left for the whole story, and the grid is laid
+  out beside it, so nothing covers a tile; the video ends on the tiles with both pivots and a one-line credit in the
+  corner the tiles leave. Every text the live pivot can show is measured in Bun.
+- The rings are clipped, not clamped. The tile's code register is the axis voice sized to what every tile holds,
+  never under the floor. `key` cannot be a prop name on a React component — React keeps it.
+
 ## The worked example in this tree
 
 `proof/static-cartogram-europe-lowcarbon` — a **directed** beat of this type: written by hand under the doctrine, taken through a

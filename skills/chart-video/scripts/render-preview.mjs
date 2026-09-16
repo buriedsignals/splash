@@ -6,11 +6,20 @@
 // test. This renders at the LAST frame, which shows the finished chart.
 
 import { spawnSync } from "node:child_process";
-import { readFile, writeFile, mkdir, rm } from "node:fs/promises";
+import { readFile, writeFile, mkdir, mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { deriveFurniture, readPalette, readTypeface, useTypeface } from "./render-still.mjs";
+import {
+  activeTypeface,
+  deriveFurniture,
+  readPalette,
+  readTypeface,
+  useTypeface,
+} from "./render-still.mjs";
+import { videoFaces } from "./video-faces.mjs";
 import { CO2_TIMING } from "../assets/timing.ts";
+import { FONT_WEIGHTS } from "../assets/EmissionsVideo.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../../..");
@@ -73,6 +82,11 @@ const props = {
   referenceLabel: `${firstReading.year} level`,
   ...furniture,
 };
+// The face travels into Chrome as bytes, or the frame is set in whatever this machine has.
+Object.assign(
+  props,
+  await videoFaces({ stack: activeTypeface().family, weights: FONT_WEIGHTS, props }),
+);
 
 await mkdir(dirname(TARGET), { recursive: true });
 const propsPath = join(dirname(TARGET), "preview-props.json");
@@ -80,6 +94,13 @@ await writeFile(propsPath, JSON.stringify(props, null, 2));
 
 // Determine output path based on whether we're checking
 const outputPath = process.argv.includes("--check") ? TEMP_PNG : TARGET;
+
+// An EMPTY `--env-file` — Remotion otherwise injects the whole repository `.env` (this repo's
+// MapTiler, Datawrapper, Gemini and Cloudflare keys among them) into the page's `process.env` for
+// every render, seed preview included.
+const envFileDir = await mkdtemp(join(tmpdir(), "video-env-"));
+const envFile = join(envFileDir, "empty.env");
+await writeFile(envFile, "");
 
 // Render at the last frame
 const binary = join(PACKAGE_ROOT, "node_modules/.bin/remotion");
@@ -92,6 +113,7 @@ const result = spawnSync(binary, [
   `--frame=${LAST_FRAME}`,
   `--props=${propsPath}`,
   "--timeout=120000",
+  `--env-file=${envFile}`,
 ], { cwd: PACKAGE_ROOT, stdio: "inherit" });
 
 if (result.status !== 0) {
@@ -100,6 +122,7 @@ if (result.status !== 0) {
   // when something had gone wrong and the tree most needed to be readable.
   await rm(propsPath, { force: true });
   if (outputPath === TEMP_PNG) await rm(TEMP_PNG, { force: true });
+  await rm(envFileDir, { recursive: true, force: true });
   console.error(`remotion still exited with ${result.status}`);
   process.exit(1);
 }
@@ -111,6 +134,7 @@ if (process.argv.includes("--check")) {
   const freshlyRendered = await readFile(TEMP_PNG);
   await rm(TEMP_PNG);
   await rm(propsPath);
+  await rm(envFileDir, { recursive: true, force: true });
   if (!committed.equals(freshlyRendered)) {
     console.error("preview.png is stale — the seed changed and the preview did not. Re-run without --check.");
     process.exit(1);
@@ -119,4 +143,5 @@ if (process.argv.includes("--check")) {
 } else {
   console.log(`wrote ${TARGET} at frame ${LAST_FRAME} (${elapsed}s) — now open it and look at it.`);
   await rm(propsPath);
+  await rm(envFileDir, { recursive: true, force: true });
 }

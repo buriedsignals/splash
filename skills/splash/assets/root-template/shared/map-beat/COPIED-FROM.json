@@ -1,0 +1,11 @@
+{
+  "branch": "quality/scrolly",
+  "commit": "2f88e169",
+  "note": "The copy is now a merge: quality/scrolly was merged whole, so the two engine files are the branch's own, not a snapshot of it. The pins below are re-measured against that merge and still guard against undecided drift.",
+  "files": {
+    "shared/map-beat/scrolly.mjs": "91c42c7c99705c59c2b6cfbc3b51f18a06f1efcb8abf25f3f97150e9bc01a43d",
+    "shared/map-beat/mount.mjs": "89cc675da53ac3127d2af0fce36a001c261d6fc083b63a74d2016c1b0b7842a7",
+    "proof/video-choropleth-europe-lowcarbon/plan.mjs": "b2bcfedd03d48e6ed862be6c9066c0a6cbb3e2bdb111fb6d6a2cad3b98ea5571",
+    "proof/video-choropleth-europe-lowcarbon/seats.json": "8c4719eba78488c86b357c998332f052fe04c6c0c015ff652e875dd1b24284eb"
+  }
+}

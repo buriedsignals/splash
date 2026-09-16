@@ -1,0 +1,42 @@
+// THE PICTURE AT ONE FRAME — pure arithmetic, run by the composition in Chrome and by the tests in Bun. Browser-safe:
+// no Node import.
+//
+// The shared mechanics: one state per event (`states.mjs`), each field's change run through its WINDOW inside the
+// event (shares of the event's duration), eased unless the field is LINEAR. `sceneAt` is this beat's own.
+//
+// THE SUBJECT-AGNOSTIC MATHS IS NOT WRITTEN HERE. `skills/chart-video/scripts/series.mjs` carries what every beat
+// needs and no beat should own: the easing, the field accumulator, a series drawn to a clock (`drawnTo`), its
+// outline and surface (`polylinePath`, `areaPath`), staggered moves (`moveOf`), the room a word has over a curve
+// (`curveTopOver`, `standsClearOfCurve`), the widest measured text (`widestOf`), a crossing (`firstCrossing`).
+// The ARGUMENT, the gestures, the layout and the composition stay here — they are this beat's, and only this beat's.
+
+import { EVENT_ORDER, progressOf } from "#shared/chart-video/timing.ts";
+import { clamp01, ease, fieldAtOf, lerp } from "../../skills/chart-video/scripts/series.mjs";
+
+export { clamp01, ease, lerp };
+
+/** Where, inside its event, each field's change runs: [from, to] as shares of the event. A field not named runs [0, 1]. */
+export const WINDOWS = Object.freeze({
+  establish: { title: [-1, 0] },
+  reference: { title: [0, 0.2], furniture: [0.1, 0.8] },
+  reveal: {}, // SCAFFOLD: the reveal's gesture windows
+  subject: {}, // SCAFFOLD: the subject's gesture windows
+  conclusion: { source: [0.3, 0.9] },
+});
+
+/** The fields that move at constant speed — a count, a fill in the data's own units. Every other field is eased. */
+export const LINEAR = new Set([]); // SCAFFOLD
+
+/** A field's value at `frame`: every event's change to it, run through its window (the arithmetic is the skill's). */
+export const fieldAt = fieldAtOf({ order: EVENT_ORDER, progressOf, windows: WINDOWS, linear: LINEAR });
+
+/** Everything the frame draws that moves, at `frame`. */
+export function sceneAt(props, frame) {
+  const at = (field) => fieldAt(field, frame, props.states, props.timing);
+  return {
+    title: at("title"),
+    furniture: at("furniture"),
+    source: at("source"),
+    // SCAFFOLD: the scene maths — every gesture's value at this frame, from the props `build.mjs` measured.
+  };
+}

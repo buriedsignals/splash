@@ -63,6 +63,22 @@ declutter only gives you the first one. Don't assume edge-safety is solved
 just because the labels don't overlap each other — check the actual rendered
 edges before shipping.
 
+## In video
+
+Worked example: `proof/video-locator-zaporizhzhia`. The gesture only a video has is **travelling there**: the continent
+first, the focus country tinted and named and the subject ringed on it, then the camera closing in until the names that place it can be printed — countries uppercase, settlements with a dot, waters
+italic — landing only once the camera has settled, and the subject's figure counting up. **When the camera focuses on a
+country, its regional borders are drawn** (the owner, 2026-09-14: « si tu focus sur un pays il faut montrer les frontières
+des régions »): that country's admin-1 borders, thinner than a national border,
+floored at 1.6:1 on the country's fill, landing as the camera closes in and absent from the continental shot. A country's
+name is centred inside its own country; settlements are placed before the subject's block, so every name hugs its dot.
+
+**On the live MapTiler map** (2026-09-15, `proof/video-locator-zaporizhzhia`): the travel is two fixed cameras — the
+continent fitted "meet", the close-up centred on the subject on both axes — interpolated in Web Mercator numbers, zoom
+linear in the eased travel. The focus country's tint and its regions are MapTiler Countries (`level` 0 and 1, joined by
+`iso_a2`) beneath the basemap's water, the subject a circle ring and dot, every place's name a symbol layer bound to the
+camera having settled; each camera is measured, and names, halos and the credit are placed on the measured close-up.
+
 ## The worked example in this tree
 
 `proof/static-locator-zaporizhzhia` — a **directed** beat of this type: written by hand under the doctrine, taken through a

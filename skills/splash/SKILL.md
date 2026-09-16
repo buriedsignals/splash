@@ -127,6 +127,8 @@ The craft mapping remains Splash-owned in the filesystem resolver: `chart-beat`,
 `chart-video`, `map-beat`, `map-web`, `image-beat`, `scrolly`, or `dw-beat`. The parent invokes
 `invokeResolvedOwner(storyDir, adapters)`, never preloads alternatives, and resolves from disk again
 after the outcome.
+A video export of a chart goes to `chart-video`'s directed path; of a map, to `map-beat`'s live-map
+path (a bare `proof/video-<type>-…` request, with no story directory, goes straight there).
 Catching a human boundary ends the turn; neither `editor` nor `designer` may write the durable
 journalist approval that closes it.
 

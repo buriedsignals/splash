@@ -1,0 +1,32 @@
+// THE SUBJECT OF `%%STATIC%%`, READ FROM ITS FROZEN DATA — and, once `assertClaim` is written, ASSERTED: every number
+// the title and the gestures state is derived from the rows here, never typed.
+//
+// Runs in Bun only.
+
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+export const STATIC_DIR = join(import.meta.dir, "%%STATIC_REL%%");
+/** SCAFFOLD: the static beat's frozen data as the scaffold found it — name another file if the argument reads it. */
+export const DATA_FILE = join(STATIC_DIR, "%%DATA_FILE%%");
+
+/** The frozen rows as read: a CSV's rows as objects of strings (no quoted commas), a JSON file parsed. */
+export function readRows(path = DATA_FILE) {
+  const text = readFileSync(path, "utf8");
+  if (!/\.csv$/i.test(path)) return JSON.parse(text);
+  const [header, ...lines] = text.trim().split(/\r?\n/);
+  const names = header.split(",");
+  return lines.map((line) => Object.fromEntries(line.split(",").map((value, i) => [names[i], value])));
+}
+
+export function loadSubject() {
+  const rows = readRows();
+  // SCAFFOLD: shape the rows into what the argument reads — series, sets, derived values — refusing a gap or a
+  // missing reading loudly rather than drawing it.
+  return { rows };
+}
+
+/** The claim, measured. SCAFFOLD PLACEHOLDER: throws until written; the runner renders nothing before it passes. */
+export function assertClaim(subject) {
+  throw new Error("write assertClaim (subject.mjs): every number the title and the gestures state, derived from the rows and asserted");
+}

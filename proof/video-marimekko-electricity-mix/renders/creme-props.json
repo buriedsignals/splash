@@ -1,0 +1,830 @@
+{
+  "frame": {
+    "width": 1920,
+    "height": 1080
+  },
+  "registers": {
+    "display": {
+      "fontFamily": "Merriweather",
+      "fontSize": 90,
+      "fontWeight": 700,
+      "fontStyle": "normal",
+      "letterSpacing": -0.6,
+      "transform": "none",
+      "lead": 109.803978,
+      "fill": "#000000"
+    },
+    "eyebrow": {
+      "fontFamily": "Open Sans",
+      "fontSize": 30,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 5.7,
+      "transform": "uppercase",
+      "lead": 36.000978515625,
+      "fill": "#1757B6"
+    },
+    "value": {
+      "fontFamily": "Open Sans",
+      "fontSize": 45,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 54.0014677734375,
+      "fill": "#1757B6"
+    },
+    "axis": {
+      "fontFamily": "Open Sans",
+      "fontSize": 33,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 1.2000000000000002,
+      "transform": "none",
+      "lead": 39.6010763671875,
+      "fill": "#61605a"
+    },
+    "source": {
+      "fontFamily": "Open Sans",
+      "fontSize": 30,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 1.090909090909091,
+      "transform": "none",
+      "lead": 36.000978515625,
+      "fill": "#61605a"
+    }
+  },
+  "titleCard": {
+    "form": 0,
+    "register": {
+      "fontFamily": "Merriweather",
+      "fontSize": 90,
+      "fontWeight": 700,
+      "fontStyle": "normal",
+      "letterSpacing": -0.6,
+      "transform": "none",
+      "lead": 109.803978,
+      "fill": "#000000"
+    },
+    "eyebrow": {
+      "text": "ÉNERGIE · EUROPE",
+      "x": 85,
+      "y": 379.1982421875,
+      "width": 348.29296875
+    },
+    "title": [
+      {
+        "text": "Le charbon, 12 % de",
+        "x": 85,
+        "y": 486.6369490966797,
+        "width": 865.710017156601
+      },
+      {
+        "text": "l’électricité de six pays, tient",
+        "x": 85,
+        "y": 596.4409270966797,
+        "width": 1231.0950635910035
+      },
+      {
+        "text": "dans deux colonnes",
+        "x": 85,
+        "y": 706.2449050966798,
+        "width": 859.9199731826782
+      }
+    ]
+  },
+  "credit": {
+    "form": 0,
+    "lines": [
+      {
+        "text": "Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data",
+        "x": 4.80615234375,
+        "y": 27.76025390625,
+        "width": 1485.839754971591
+      }
+    ],
+    "halo": 9.6123046875,
+    "width": 1526,
+    "height": 40,
+    "at": {
+      "x": 85,
+      "y": 980
+    }
+  },
+  "colours": {
+    "ground": "#FFFCEE",
+    "fill": {
+      "Coal": "#092145",
+      "Oil": "#203758",
+      "Gas": "#384d6c",
+      "Nuclear": "#4f637f",
+      "Bioenergy": "#667992",
+      "Other renewables": "#7d8fa5",
+      "Hydropower": "#95a5b9",
+      "Solar": "#acbbcc",
+      "Wind": "#c3d1df"
+    },
+    "whole": "#64778f",
+    "rule": "#5f5e58",
+    "ring": "#000000",
+    "text": {
+      "eyebrow": "#1755b2",
+      "title": "#000000",
+      "name": "#000000",
+      "axis": "#5f5e58",
+      "onCoal": "#fffcee"
+    }
+  },
+  "tracked": "Coal",
+  "rings": [
+    "Germany",
+    "Poland"
+  ],
+  "plotLeft": 85,
+  "plotRight": 1553.874453359375,
+  "plotTop": 133.9857434765625,
+  "plotBottom": 893.452341171875,
+  "H": 759.4665976953124,
+  "u": 0.8607362589822376,
+  "room": 1409.4728388085937,
+  "colGap": 11.880322910156252,
+  "gap": 15.840430546875002,
+  "tickH": 7.920215273437501,
+  "braceTop": 901.3725564453125,
+  "columns": [
+    {
+      "key": "France",
+      "total": 561.78,
+      "cum": 0,
+      "x": 85,
+      "w": 483.54441557104144,
+      "bands": [
+        {
+          "key": "Coal",
+          "share": 0.001815657374773043
+        },
+        {
+          "key": "Oil",
+          "share": 0.016981736622877282
+        },
+        {
+          "key": "Gas",
+          "share": 0.03221901812097263
+        },
+        {
+          "key": "Nuclear",
+          "share": 0.6772224002278472
+        },
+        {
+          "key": "Bioenergy",
+          "share": 0.019011000747623626
+        },
+        {
+          "key": "Other renewables",
+          "share": 0.001014632062373171
+        },
+        {
+          "key": "Hydropower",
+          "share": 0.12659760048417532
+        },
+        {
+          "key": "Solar",
+          "share": 0.04426999893196625
+        },
+        {
+          "key": "Wind",
+          "share": 0.0808679554273915
+        }
+      ],
+      "name": {
+        "text": "France",
+        "width": 109.7373046875,
+        "x": 270.8061823948957,
+        "y": 102.29736328125
+      },
+      "tick": null,
+      "totalWord": {
+        "text": "562",
+        "width": 57.378515625,
+        "x": 297.50916481677075,
+        "y": 948.3116198046876
+      }
+    },
+    {
+      "key": "Germany",
+      "total": 495.99,
+      "cum": 561.78,
+      "x": 580.4247384811977,
+      "w": 426.91657709260005,
+      "bands": [
+        {
+          "key": "Coal",
+          "share": 0.2143793221637533
+        },
+        {
+          "key": "Oil",
+          "share": 0.041109699792334524
+        },
+        {
+          "key": "Gas",
+          "share": 0.15808786467469102
+        },
+        {
+          "key": "Nuclear",
+          "share": 0
+        },
+        {
+          "key": "Bioenergy",
+          "share": 0.10298594729732453
+        },
+        {
+          "key": "Other renewables",
+          "share": 0.00044355732978487467
+        },
+        {
+          "key": "Hydropower",
+          "share": 0.048045323494425286
+        },
+        {
+          "key": "Solar",
+          "share": 0.14945865844069436
+        },
+        {
+          "key": "Wind",
+          "share": 0.2854896268069921
+        }
+      ],
+      "name": {
+        "text": "Allemagne",
+        "width": 172.84365234375,
+        "x": 705.7327643321853,
+        "y": 102.29736328125
+      },
+      "tick": null,
+      "totalWord": {
+        "text": "496",
+        "width": 57.5396484375,
+        "x": 764.5378063243727,
+        "y": 948.3116198046876
+      }
+    },
+    {
+      "key": "Sweden",
+      "total": 172.14999999999998,
+      "cum": 1057.77,
+      "x": 1019.2216384839539,
+      "w": 148.17574698379218,
+      "bands": [
+        {
+          "key": "Coal",
+          "share": 0
+        },
+        {
+          "key": "Oil",
+          "share": 0.011443508568109209
+        },
+        {
+          "key": "Gas",
+          "share": 0.0006389776357827477
+        },
+        {
+          "key": "Nuclear",
+          "share": 0.2943363345919257
+        },
+        {
+          "key": "Bioenergy",
+          "share": 0.05913447574789429
+        },
+        {
+          "key": "Other renewables",
+          "share": 0
+        },
+        {
+          "key": "Hydropower",
+          "share": 0.3753122277083939
+        },
+        {
+          "key": "Solar",
+          "share": 0.024164972407783914
+        },
+        {
+          "key": "Wind",
+          "share": 0.2349695033401104
+        }
+      ],
+      "name": {
+        "text": "Suède",
+        "width": 99.78779296875,
+        "x": 1025.38451328125,
+        "y": 102.29736328125
+      },
+      "tick": {
+        "x1": 1076.2762876953125,
+        "y1": 114.18520529296875,
+        "x2": 1093.30951197585,
+        "y2": 130.02563583984374
+      },
+      "totalWord": {
+        "text": "172",
+        "width": 57.378515625,
+        "x": 1064.0464690071,
+        "y": 948.3116198046876
+      }
+    },
+    {
+      "key": "Poland",
+      "total": 172.12,
+      "cum": 1229.92,
+      "x": 1179.2777083779026,
+      "w": 148.14992489602275,
+      "bands": [
+        {
+          "key": "Coal",
+          "share": 0.5432256565187079
+        },
+        {
+          "key": "Oil",
+          "share": 0.026435045317220542
+        },
+        {
+          "key": "Gas",
+          "share": 0.11887055542644667
+        },
+        {
+          "key": "Nuclear",
+          "share": 0
+        },
+        {
+          "key": "Bioenergy",
+          "share": 0.046188705554264464
+        },
+        {
+          "key": "Other renewables",
+          "share": 0
+        },
+        {
+          "key": "Hydropower",
+          "share": 0.012258889147106669
+        },
+        {
+          "key": "Solar",
+          "share": 0.10260283523123402
+        },
+        {
+          "key": "Wind",
+          "share": 0.15041831280501974
+        }
+      ],
+      "name": {
+        "text": "Pologne",
+        "width": 131.86845703125,
+        "x": 1143.00849265625,
+        "y": 102.29736328125
+      },
+      "tick": {
+        "x1": 1210.2614057421874,
+        "y1": 114.18520529296875,
+        "x2": 1253.352670825914,
+        "y2": 130.02563583984374
+      },
+      "totalWord": {
+        "text": "172",
+        "width": 57.378515625,
+        "x": 1224.089627857164,
+        "y": 948.3116198046876
+      }
+    },
+    {
+      "key": "Norway",
+      "total": 157.11,
+      "cum": 1402.04,
+      "x": 1339.3079561840814,
+      "w": 135.23027364869935,
+      "bands": [
+        {
+          "key": "Coal",
+          "share": 0
+        },
+        {
+          "key": "Oil",
+          "share": 0.004582776398701546
+        },
+        {
+          "key": "Gas",
+          "share": 0.009356501814015657
+        },
+        {
+          "key": "Nuclear",
+          "share": 0
+        },
+        {
+          "key": "Bioenergy",
+          "share": 0.0015275921329005154
+        },
+        {
+          "key": "Other renewables",
+          "share": 0
+        },
+        {
+          "key": "Hydropower",
+          "share": 0.8882311756094456
+        },
+        {
+          "key": "Solar",
+          "share": 0.003373432626821972
+        },
+        {
+          "key": "Wind",
+          "share": 0.09292852141811468
+        }
+      ],
+      "name": {
+        "text": "Norvège",
+        "width": 137.459765625,
+        "x": 1293.354749375,
+        "y": 102.29736328125
+      },
+      "tick": {
+        "x1": 1363.4592298437499,
+        "y1": 114.18520529296875,
+        "x2": 1406.9230930084311,
+        "y2": 130.02563583984374
+      },
+      "totalWord": {
+        "text": "157",
+        "width": 57.49130859375,
+        "x": 1377.6025256256187,
+        "y": 948.3116198046876
+      }
+    },
+    {
+      "key": "Switzerland",
+      "total": 78.37,
+      "cum": 1559.15,
+      "x": 1486.418552742937,
+      "w": 67.45590061643796,
+      "bands": [
+        {
+          "key": "Coal",
+          "share": 0
+        },
+        {
+          "key": "Oil",
+          "share": 0.015567181319382416
+        },
+        {
+          "key": "Gas",
+          "share": 0.0034451958657649613
+        },
+        {
+          "key": "Nuclear",
+          "share": 0.30649483220620133
+        },
+        {
+          "key": "Bioenergy",
+          "share": 0.01327038407553911
+        },
+        {
+          "key": "Other renewables",
+          "share": 0.01327038407553911
+        },
+        {
+          "key": "Hydropower",
+          "share": 0.5734337118795457
+        },
+        {
+          "key": "Solar",
+          "share": 0.072221513334184
+        },
+        {
+          "key": "Wind",
+          "share": 0.0022967972438433073
+        }
+      ],
+      "name": {
+        "text": "Suisse",
+        "width": 102.421875,
+        "x": 1449.4041408593748,
+        "y": 102.29736328125
+      },
+      "tick": {
+        "x1": 1501.6392971093749,
+        "y1": 114.18520529296875,
+        "x2": 1520.146503051156,
+        "y2": 130.02563583984374
+      },
+      "totalWord": {
+        "text": "78",
+        "width": 37.358203125,
+        "x": 1501.093819457406,
+        "y": 948.3116198046876
+      }
+    }
+  ],
+  "whole": {
+    "text": "1 638 TWh",
+    "width": 169.42763671875,
+    "x": 703.3283246777344,
+    "y": 948.3116198046876
+  },
+  "strip": {
+    "top": 909.29277171875,
+    "h": 93.15236830518315,
+    "pieces": [
+      {
+        "key": "France",
+        "x": 85,
+        "w": 7.157890443538788,
+        "name": null
+      },
+      {
+        "key": "Germany",
+        "x": 92.15789044353879,
+        "w": 746.174991040666,
+        "name": {
+          "text": "Allemagne",
+          "width": 172.84365234375,
+          "x": 377.0951232685593,
+          "y": 967.4544050900917
+        }
+      },
+      {
+        "key": "Sweden",
+        "x": 838.3328814842048,
+        "w": 0,
+        "name": null
+      },
+      {
+        "key": "Poland",
+        "x": 838.3328814842048,
+        "w": 656.1399573243889,
+        "name": {
+          "text": "Pologne",
+          "width": 131.86845703125,
+          "x": 1099.1499470604617,
+          "y": 967.4544050900917
+        }
+      },
+      {
+        "key": "Norway",
+        "x": 1494.4728388085937,
+        "w": 0,
+        "name": null
+      },
+      {
+        "key": "Switzerland",
+        "x": 1494.4728388085937,
+        "w": 0,
+        "name": null
+      }
+    ],
+    "label": {
+      "text": "12,3 %",
+      "width": 106.353515625,
+      "x": 1510.3132693554687,
+      "y": 967.4544050900917
+    }
+  },
+  "legend": [
+    {
+      "key": "Coal",
+      "from": 893.452341171875,
+      "mid": 873.939157578125,
+      "line": {
+        "text": "Charbon",
+        "width": 139.58671875,
+        "x": 1585.555314453125,
+        "y": 885.524606796875
+      }
+    },
+    {
+      "key": "Oil",
+      "from": 887.5409640557064,
+      "mid": 830.9526827539063,
+      "line": {
+        "text": "Pétrole",
+        "width": 118.20439453125,
+        "x": 1585.555314453125,
+        "y": 842.5381319726563
+      }
+    },
+    {
+      "key": "Gas",
+      "from": 880.3213313482544,
+      "mid": 787.9662079296876,
+      "line": {
+        "text": "Gaz",
+        "width": 59.52158203125,
+        "x": 1585.555314453125,
+        "y": 799.5516571484376
+      }
+    },
+    {
+      "key": "Nuclear",
+      "from": 762.6267820435514,
+      "mid": 744.9797331054689,
+      "line": {
+        "text": "Nucléaire",
+        "width": 157.6810546875,
+        "x": 1585.555314453125,
+        "y": 756.5651823242189
+      }
+    },
+    {
+      "key": "Bioenergy",
+      "from": 641.2012816081518,
+      "mid": 641.2012816081518,
+      "line": {
+        "text": "Bioénergie",
+        "width": 177.0890625,
+        "x": 1585.555314453125,
+        "y": 652.7867308269018
+      }
+    },
+    {
+      "key": "Other renewables",
+      "from": 631.122868164192,
+      "mid": 598.2148067839331,
+      "line": {
+        "text": "Autres renouv.",
+        "width": 244.55361328125,
+        "x": 1585.555314453125,
+        "y": 609.8002560026831
+      }
+    },
+    {
+      "key": "Hydropower",
+      "from": 408.33178635973593,
+      "mid": 408.33178635973593,
+      "line": {
+        "text": "Hydraulique",
+        "width": 202.86181640625,
+        "x": 1585.555314453125,
+        "y": 419.91723557848593
+      }
+    },
+    {
+      "key": "Solar",
+      "from": 163.15499777109994,
+      "mid": 196.48540189453126,
+      "line": {
+        "text": "Solaire",
+        "width": 112.56474609375,
+        "x": 1585.555314453125,
+        "y": 208.07085111328126
+      }
+    },
+    {
+      "key": "Wind",
+      "from": 134.85791387075145,
+      "mid": 153.4989270703125,
+      "line": {
+        "text": "Éolien",
+        "width": 98.63525390625,
+        "x": 1585.555314453125,
+        "y": 165.0843762890625
+      }
+    }
+  ],
+  "year": {
+    "text": "2024",
+    "width": 102.12890625,
+    "x": 1585.555314453125,
+    "y": 102.29736328125
+  },
+  "strokes": {
+    "hairline": 1.7999999999999998,
+    "rule": 3,
+    "ring": 4.199999999999999
+  },
+  "halo": {
+    "axis": 10.573535156250001
+  },
+  "states": [
+    {
+      "title": 1,
+      "furniture": 0,
+      "split": 0,
+      "fill": 0,
+      "key": 0,
+      "focus": 0,
+      "pour": 0,
+      "label": 0,
+      "ring": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "split": 1,
+      "fill": 0,
+      "key": 0,
+      "focus": 0,
+      "pour": 0,
+      "label": 0,
+      "ring": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "split": 1,
+      "fill": 1,
+      "key": 1,
+      "focus": 0,
+      "pour": 0,
+      "label": 0,
+      "ring": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "split": 1,
+      "fill": 1,
+      "key": 1,
+      "focus": 1,
+      "pour": 1,
+      "label": 1,
+      "ring": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "split": 1,
+      "fill": 1,
+      "key": 1,
+      "focus": 0,
+      "pour": 0,
+      "label": 0,
+      "ring": 1,
+      "source": 1
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "split": 1,
+      "fill": 1,
+      "key": 1,
+      "focus": 0,
+      "pour": 0,
+      "label": 0,
+      "ring": 1,
+      "source": 1
+    }
+  ],
+  "timing": {
+    "fps": 30,
+    "total": 600,
+    "establish": {
+      "start": 0,
+      "duration": 45
+    },
+    "reference": {
+      "start": 45,
+      "duration": 105
+    },
+    "reveal": {
+      "start": 150,
+      "duration": 120
+    },
+    "subject": {
+      "start": 270,
+      "duration": 180
+    },
+    "conclusion": {
+      "start": 450,
+      "duration": 90
+    },
+    "hold": {
+      "start": 540,
+      "duration": 60
+    }
+  },
+  "fontFamily": null,
+  "faces": [
+    {
+      "family": "Merriweather",
+      "style": "normal",
+      "weight": 700,
+      "weightTo": 700,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Open Sans",
+      "style": "normal",
+      "weight": 600,
+      "weightTo": 600,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Open Sans",
+      "style": "normal",
+      "weight": 500,
+      "weightTo": 500,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    }
+  ]
+}

@@ -38,6 +38,8 @@ import {
   useVideoConfig,
   Easing,
 } from "remotion";
+import { useEmbeddedFaces } from "../../skills/chart-video/assets/embedded-faces";
+import type { EmbeddedFace } from "../../skills/chart-video/assets/face-coverage";
 // A story consumes the root it lives in — `#shared/*`, not a relative path into the skill.
 import {
   progressOf,
@@ -50,7 +52,10 @@ import {
 } from "#shared/chart-video/sizes.mjs";
 import { LIFE_EXPECTANCY_TIMING } from "./timing-contract";
 
-export const FONT_FAMILY = "Helvetica, Arial, sans-serif";
+/** The stack in force. The render script reads `TYPEFACE.md` and hands the stack and its bytes in as
+ *  props (`skills/chart-video/scripts/video-faces.mjs`); the component replaces this before anything is
+ *  measured. It used to be a Helvetica literal nothing loaded, drawn in whatever the machine had. */
+export let FONT_FAMILY = "Open Sans, Helvetica, Arial, sans-serif";
 
 /**
  * The rendered width of a string in the font it will really be drawn in. Chromium's own text
@@ -307,6 +312,11 @@ export function lifeExpectancyGeometry(
   };
 }
 
+/** Every weight this beat sets, read off its own type specs — what the render must embed. */
+export const FONT_WEIGHTS = [
+  ...new Set([BASE.TITLE, BASE.SOURCE, BASE.AXIS, BASE.LABEL, BASE.NOTE].map((spec) => spec.fontWeight)),
+];
+
 export type LifeExpectancyVideoProps = {
   data: Reading[];
   title: string;
@@ -325,6 +335,8 @@ export type LifeExpectancyVideoProps = {
    *  composition per row. Not a default: a video drawn at a scale nobody chose looks every bit as
    *  deliberate as one drawn in a colour nobody chose. */
   size: string;
+  fontFamily: string;
+  faces: EmbeddedFace[];
 };
 
 export function LifeExpectancyVideo({
@@ -342,9 +354,14 @@ export function LifeExpectancyVideo({
   recoveryYear,
   timing = LIFE_EXPECTANCY_TIMING,
   size,
+  fontFamily,
+  faces,
 }: LifeExpectancyVideoProps) {
   const frame = useCurrentFrame();
   const { fps, width, height } = useVideoConfig();
+  const { ready, ref } = useEmbeddedFaces<SVGSVGElement>(faces);
+  FONT_FAMILY = fontFamily;
+  if (!ready) return null;
   // THE TWO STATEMENTS OF THE FRAME, CHECKED AGAINST EACH OTHER. Remotion's is what will actually
   // be encoded; the row is what gate 2c pinned. They come from different places — the
   // `<Composition>` registration and `sizes.mjs` — so this is a reading the code that drew the
@@ -612,6 +629,7 @@ export function LifeExpectancyVideo({
 
   return (
     <svg
+      ref={ref}
       xmlns="http://www.w3.org/2000/svg"
       width={width}
       height={height}

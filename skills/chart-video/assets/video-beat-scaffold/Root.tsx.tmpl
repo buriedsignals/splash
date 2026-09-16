@@ -1,0 +1,26 @@
+// This beat's own Remotion root: one composition, sized from the video size table, timed from the contract.
+// No usable `defaultProps`: every real render goes through `render-directions-video.mjs`, and a render driven by the
+// faceless placeholder is refused rather than drawn in whatever this machine has.
+import { Composition } from "remotion";
+import { sizeFor } from "#shared/chart-video/sizes.mjs";
+import { Directed%%Name%%Video, type Directed%%Name%%VideoProps } from "./Directed%%Name%%Video";
+import { %%CONST%%_VIDEO_TIMING } from "./timing-contract";
+
+export const COMPOSITION_ID = "%%COMPOSITION%%";
+
+const PLACEHOLDER = { faces: [], timing: %%CONST%%_VIDEO_TIMING } as unknown as Directed%%Name%%VideoProps;
+
+export const RemotionRoot: React.FC = () => {
+  const { width, height } = sizeFor("landscape");
+  return (
+    <Composition
+      id={COMPOSITION_ID}
+      component={Directed%%Name%%Video}
+      durationInFrames={%%CONST%%_VIDEO_TIMING.total}
+      fps={%%CONST%%_VIDEO_TIMING.fps}
+      width={width}
+      height={height}
+      defaultProps={PLACEHOLDER}
+    />
+  );
+};

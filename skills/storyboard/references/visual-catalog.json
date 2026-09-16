@@ -824,6 +824,7 @@
       "proofFormats": [
         "static",
         "web",
+        "video",
         "scrolly"
       ]
     },
@@ -877,6 +878,7 @@
       "proofFormats": [
         "static",
         "web",
+        "video",
         "scrolly"
       ]
     },
@@ -931,6 +933,7 @@
       "proofFormats": [
         "static",
         "web",
+        "video",
         "scrolly"
       ]
     },
@@ -957,6 +960,7 @@
       "proofFormats": [
         "static",
         "web",
+        "video",
         "scrolly"
       ]
     },
@@ -1011,6 +1015,7 @@
       "proofFormats": [
         "static",
         "web",
+        "video",
         "scrolly"
       ]
     },
@@ -1038,6 +1043,7 @@
       "proofFormats": [
         "static",
         "web",
+        "video",
         "scrolly"
       ]
     },
@@ -1091,6 +1097,7 @@
       "proofFormats": [
         "static",
         "web",
+        "video",
         "scrolly"
       ]
     },
@@ -1253,6 +1260,7 @@
       "proofFormats": [
         "static",
         "web",
+        "video",
         "scrolly"
       ]
     },
@@ -1280,6 +1288,7 @@
       "proofFormats": [
         "static",
         "web",
+        "video",
         "scrolly"
       ]
     },
@@ -1306,6 +1315,7 @@
       "proofFormats": [
         "static",
         "web",
+        "video",
         "scrolly"
       ]
     },
@@ -1332,6 +1342,7 @@
       "proofFormats": [
         "static",
         "web",
+        "video",
         "scrolly"
       ]
     },
@@ -1386,6 +1397,7 @@
       "proofFormats": [
         "static",
         "web",
+        "video",
         "scrolly"
       ]
     },
@@ -1413,6 +1425,7 @@
       "proofFormats": [
         "static",
         "web",
+        "video",
         "scrolly"
       ]
     },
@@ -1550,6 +1563,7 @@
       "proofFormats": [
         "static",
         "web",
+        "video",
         "scrolly"
       ]
     },
@@ -1577,6 +1591,7 @@
       "proofFormats": [
         "static",
         "web",
+        "video",
         "scrolly"
       ]
     },
@@ -1630,6 +1645,7 @@
       "purpose": "A cartogram answers \"how big is this region's VALUE,\" honestly, by distorting each region's own area to be proportional to a number — trading recognisable geography for magnitude a reader can compare at a glance.",
       "proofFormats": [
         "static",
+        "video",
         "scrolly"
       ]
     },
@@ -1684,6 +1700,7 @@
       "proofFormats": [
         "static",
         "web",
+        "video",
         "scrolly"
       ]
     },
@@ -1738,6 +1755,7 @@
       "proofFormats": [
         "static",
         "web",
+        "video",
         "scrolly"
       ]
     },

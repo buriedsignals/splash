@@ -1,0 +1,677 @@
+{
+  "frame": {
+    "width": 1920,
+    "height": 1080
+  },
+  "registers": {
+    "display": {
+      "fontFamily": "Merriweather",
+      "fontSize": 90,
+      "fontWeight": 700,
+      "fontStyle": "normal",
+      "letterSpacing": -0.6,
+      "transform": "none",
+      "lead": 109.803978,
+      "fill": "#000000"
+    },
+    "eyebrow": {
+      "fontFamily": "Open Sans",
+      "fontSize": 30,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 5.7,
+      "transform": "uppercase",
+      "lead": 36.000978515625,
+      "fill": "#1757B6"
+    },
+    "axis": {
+      "fontFamily": "Open Sans",
+      "fontSize": 33,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 1.2000000000000002,
+      "transform": "none",
+      "lead": 39.6010763671875,
+      "fill": "#61605a"
+    },
+    "value": {
+      "fontFamily": "Open Sans",
+      "fontSize": 45,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 54.0014677734375,
+      "fill": "#1757B6"
+    },
+    "source": {
+      "fontFamily": "Open Sans",
+      "fontSize": 30,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 1.090909090909091,
+      "transform": "none",
+      "lead": 36.000978515625,
+      "fill": "#61605a"
+    }
+  },
+  "titleCard": {
+    "form": 0,
+    "register": {
+      "fontFamily": "Merriweather",
+      "fontSize": 90,
+      "fontWeight": 700,
+      "fontStyle": "normal",
+      "letterSpacing": -0.6,
+      "transform": "none",
+      "lead": 109.803978,
+      "fill": "#000000"
+    },
+    "eyebrow": {
+      "text": "SANTÉ · ESPÉRANCE DE VIE",
+      "x": 85,
+      "y": 374.1982421875,
+      "width": 512.19375
+    },
+    "title": [
+      {
+        "text": "La Pologne a gagné 5,0 ans",
+        "x": 85,
+        "y": 491.0419478759766,
+        "width": 1173.8550488948822
+      },
+      {
+        "text": "d’espérance de vie depuis",
+        "x": 85,
+        "y": 600.8459258759766,
+        "width": 1100.5200830459594
+      },
+      {
+        "text": "2000, les États-Unis 2,5",
+        "x": 85,
+        "y": 710.6499038759766,
+        "width": 1021.7400245189667
+      }
+    ]
+  },
+  "credit": {
+    "form": 0,
+    "lines": [
+      {
+        "text": "Source : Nations unies, World Population Prospects (2024), via Our World in Data",
+        "x": 4.80615234375,
+        "y": 27.59912109375,
+        "width": 1227.7199041193182
+      }
+    ],
+    "halo": 9.6123046875,
+    "width": 1262,
+    "height": 40,
+    "at": {
+      "x": 85,
+      "y": 980
+    }
+  },
+  "colours": {
+    "ground": "#FFFCEE",
+    "grid": "#d1cfc3",
+    "past": "#8293a9",
+    "present": "#1755b2",
+    "connector": "#5d89c7",
+    "guide": "#5f5e58",
+    "ring": "#1755b2",
+    "text": {
+      "eyebrow": "#1755b2",
+      "title": "#000000",
+      "name": "#000000",
+      "muted": "#5f5e58",
+      "pair": "#1755b2",
+      "count": "#000000"
+    }
+  },
+  "strokes": {
+    "connector": 15.444419783203125,
+    "axis": 1.7999999999999998,
+    "guide": 2.6999999999999997,
+    "ring": 3.5999999999999996
+  },
+  "plot": {
+    "left": 350.15959689648435,
+    "right": 1705.7803054472656,
+    "top": 128.948340703125,
+    "foot": 909.2927717187499,
+    "axisY": 917.2129869921874
+  },
+  "ring": {
+    "x": 85,
+    "width": 1750,
+    "height": 74.03444310156249,
+    "rx": 13.005740516927082
+  },
+  "ticks": [
+    {
+      "text": "74",
+      "width": 38.325,
+      "x": 435.27561293885213,
+      "y": 956.231835078125,
+      "at": 454.43811293885216
+    },
+    {
+      "text": "76",
+      "width": 37.47099609375,
+      "x": 644.2596469767127,
+      "y": 956.231835078125,
+      "at": 662.9951450235877
+    },
+    {
+      "text": "78",
+      "width": 37.358203125,
+      "x": 852.8730755458233,
+      "y": 956.231835078125,
+      "at": 871.5521771083233
+    },
+    {
+      "text": "80",
+      "width": 37.37431640625,
+      "x": 1061.422050989934,
+      "y": 956.231835078125,
+      "at": 1080.1092091930589
+    },
+    {
+      "text": "82",
+      "width": 37.30986328125,
+      "x": 1270.0113096371695,
+      "y": 956.231835078125,
+      "at": 1288.6662412777944
+    },
+    {
+      "text": "84",
+      "width": 38.325,
+      "x": 1478.0607733625302,
+      "y": 956.231835078125,
+      "at": 1497.22327336253
+    },
+    {
+      "text": "86 ans",
+      "width": 106.1279296875,
+      "x": 1597.5298171660156,
+      "y": 956.231835078125,
+      "at": 1705.7803054472656
+    }
+  ],
+  "rows": [
+    {
+      "key": "France",
+      "levelRank": 4,
+      "gainRank": 1,
+      "pair": false,
+      "subject": false,
+      "a": {
+        "x": 980.3980921533472
+      },
+      "b": {
+        "x": 1426.8665585887443
+      },
+      "name": {
+        "text": "France",
+        "width": 109.7373046875,
+        "x": 98.86037672851563,
+        "dy": 11.58544921875
+      },
+      "gain": {
+        "text": "+4,3",
+        "width": 87.20947265625,
+        "x": 1731.9170158496095,
+        "dy": 15.743408203125
+      }
+    },
+    {
+      "key": "Germany",
+      "levelRank": 6,
+      "gainRank": 8,
+      "pair": false,
+      "subject": false,
+      "a": {
+        "x": 877.4230575615079
+      },
+      "b": {
+        "x": 1223.7737207446294
+      },
+      "name": {
+        "text": "Allemagne",
+        "width": 172.84365234375,
+        "x": 98.86037672851563,
+        "dy": 11.58544921875
+      },
+      "gain": {
+        "text": "+3,3",
+        "width": 87.20947265625,
+        "x": 1731.9170158496095,
+        "dy": 15.743408203125
+      }
+    },
+    {
+      "key": "Italy",
+      "levelRank": 2,
+      "gainRank": 4,
+      "pair": false,
+      "subject": false,
+      "a": {
+        "x": 1039.1277523884082
+      },
+      "b": {
+        "x": 1467.5768912516846
+      },
+      "name": {
+        "text": "Italie",
+        "width": 81.45849609375,
+        "x": 98.86037672851563,
+        "dy": 11.58544921875
+      },
+      "gain": {
+        "text": "+4,1",
+        "width": 80.9033203125,
+        "x": 1731.9170158496095,
+        "dy": 15.743408203125
+      }
+    },
+    {
+      "key": "Japan",
+      "levelRank": 0,
+      "gainRank": 6,
+      "pair": false,
+      "subject": false,
+      "a": {
+        "x": 1203.0327239038015
+      },
+      "b": {
+        "x": 1571.5008603395086
+      },
+      "name": {
+        "text": "Japon",
+        "width": 91.24775390625,
+        "x": 98.86037672851563,
+        "dy": 11.58544921875
+      },
+      "gain": {
+        "text": "+3,5",
+        "width": 87.099609375,
+        "x": 1731.9170158496095,
+        "dy": 15.743408203125
+      }
+    },
+    {
+      "key": "Netherlands",
+      "levelRank": 5,
+      "gainRank": 5,
+      "pair": false,
+      "subject": false,
+      "a": {
+        "x": 885.1083841938306
+      },
+      "b": {
+        "x": 1305.1005354060717
+      },
+      "name": {
+        "text": "Pays-Bas",
+        "width": 145.57236328125,
+        "x": 98.86037672851563,
+        "dy": 11.58544921875
+      },
+      "gain": {
+        "text": "+4,0",
+        "width": 87.47314453125,
+        "x": 1731.9170158496095,
+        "dy": 15.743408203125
+      }
+    },
+    {
+      "key": "Poland",
+      "levelRank": 9,
+      "gainRank": 0,
+      "pair": true,
+      "subject": true,
+      "a": {
+        "x": 417.4505232986249
+      },
+      "b": {
+        "x": 937.5500499115386
+      },
+      "name": {
+        "text": "Pologne",
+        "width": 131.86845703125,
+        "x": 98.86037672851563,
+        "dy": 11.58544921875
+      },
+      "gain": {
+        "text": "+5,0",
+        "width": 87.47314453125,
+        "x": 1731.9170158496095,
+        "dy": 15.743408203125
+      }
+    },
+    {
+      "key": "Spain",
+      "levelRank": 3,
+      "gainRank": 2,
+      "pair": false,
+      "subject": false,
+      "a": {
+        "x": 1018.8247253149596
+      },
+      "b": {
+        "x": 1462.8426466233611
+      },
+      "name": {
+        "text": "Espagne",
+        "width": 136.41240234375,
+        "x": 98.86037672851563,
+        "dy": 11.58544921875
+      },
+      "gain": {
+        "text": "+4,3",
+        "width": 87.20947265625,
+        "x": 1731.9170158496095,
+        "dy": 15.743408203125
+      }
+    },
+    {
+      "key": "Switzerland",
+      "levelRank": 1,
+      "gainRank": 3,
+      "pair": false,
+      "subject": false,
+      "a": {
+        "x": 1062.7989755300262
+      },
+      "b": {
+        "x": 1492.3847502181636
+      },
+      "name": {
+        "text": "Suisse",
+        "width": 102.421875,
+        "x": 98.86037672851563,
+        "dy": 11.58544921875
+      },
+      "gain": {
+        "text": "+4,1",
+        "width": 80.9033203125,
+        "x": 1731.9170158496095,
+        "dy": 15.743408203125
+      }
+    },
+    {
+      "key": "United Kingdom",
+      "levelRank": 7,
+      "gainRank": 7,
+      "pair": false,
+      "subject": false,
+      "a": {
+        "x": 855.8165490375308
+      },
+      "b": {
+        "x": 1215.827697822201
+      },
+      "name": {
+        "text": "Royaume-Uni",
+        "width": 220.74755859375,
+        "x": 98.86037672851563,
+        "dy": 11.58544921875
+      },
+      "gain": {
+        "text": "+3,5",
+        "width": 87.099609375,
+        "x": 1731.9170158496095,
+        "dy": 15.743408203125
+      }
+    },
+    {
+      "key": "United States",
+      "levelRank": 8,
+      "gainRank": 9,
+      "pair": true,
+      "subject": false,
+      "a": {
+        "x": 747.0227732505282
+      },
+      "b": {
+        "x": 1007.5626455823833
+      },
+      "name": {
+        "text": "États-Unis",
+        "width": 167.37275390625,
+        "x": 98.86037672851563,
+        "dy": 11.58544921875
+      },
+      "gain": {
+        "text": "+2,5",
+        "width": 87.099609375,
+        "x": 1731.9170158496095,
+        "dy": 15.743408203125
+      }
+    }
+  ],
+  "slots": [
+    167.96556225390626,
+    246.00000535546874,
+    324.0344484570312,
+    402.0688915585937,
+    480.1033346601562,
+    558.1377777617187,
+    636.1722208632812,
+    714.2066639648438,
+    792.2411070664061,
+    870.2755501679687
+  ],
+  "start": 417.4505232986249,
+  "legend": {
+    "dots": [
+      {
+        "x": 360.4558767519531,
+        "y": 90.7119140625
+      },
+      {
+        "x": 499.71136634570314,
+        "y": 90.7119140625
+      }
+    ],
+    "labels": [
+      {
+        "text": "2000",
+        "width": 77.51162109375,
+        "x": 378.6723718808594,
+        "y": 102.29736328125
+      },
+      {
+        "text": "2023",
+        "width": 77.28603515625,
+        "x": 517.9278614746094,
+        "y": 102.29736328125
+      }
+    ]
+  },
+  "counter": {
+    "0": {
+      "text": "0 en hausse",
+      "width": 254.50927734375,
+      "x": 1561.5401603808596,
+      "y": 102.29736328125
+    },
+    "1": {
+      "text": "1 en hausse",
+      "width": 254.50927734375,
+      "x": 1561.5401603808596,
+      "y": 102.29736328125
+    },
+    "2": {
+      "text": "2 en hausse",
+      "width": 254.50927734375,
+      "x": 1561.5401603808596,
+      "y": 102.29736328125
+    },
+    "3": {
+      "text": "3 en hausse",
+      "width": 254.50927734375,
+      "x": 1561.5401603808596,
+      "y": 102.29736328125
+    },
+    "4": {
+      "text": "4 en hausse",
+      "width": 254.50927734375,
+      "x": 1561.5401603808596,
+      "y": 102.29736328125
+    },
+    "5": {
+      "text": "5 en hausse",
+      "width": 254.50927734375,
+      "x": 1561.5401603808596,
+      "y": 102.29736328125
+    },
+    "6": {
+      "text": "6 en hausse",
+      "width": 254.50927734375,
+      "x": 1561.5401603808596,
+      "y": 102.29736328125
+    },
+    "7": {
+      "text": "7 en hausse",
+      "width": 254.50927734375,
+      "x": 1561.5401603808596,
+      "y": 102.29736328125
+    },
+    "8": {
+      "text": "8 en hausse",
+      "width": 254.50927734375,
+      "x": 1561.5401603808596,
+      "y": 102.29736328125
+    },
+    "9": {
+      "text": "9 en hausse",
+      "width": 254.50927734375,
+      "x": 1561.5401603808596,
+      "y": 102.29736328125
+    },
+    "10": {
+      "text": "10 en hausse",
+      "width": 280.2392578125,
+      "x": 1535.2955803027344,
+      "y": 102.29736328125
+    }
+  },
+  "dotR": 10.29627985546875,
+  "halo": 10.573535156250001,
+  "states": [
+    {
+      "title": 1,
+      "furniture": 0,
+      "travel": 0,
+      "reorder": 0,
+      "detach": 0,
+      "ring": 0,
+      "settle": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "travel": 0,
+      "reorder": 0,
+      "detach": 0,
+      "ring": 0,
+      "settle": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "travel": 1,
+      "reorder": 0,
+      "detach": 0,
+      "ring": 0,
+      "settle": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "travel": 1,
+      "reorder": 1,
+      "detach": 1,
+      "ring": 1,
+      "settle": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "travel": 1,
+      "reorder": 1,
+      "detach": 1,
+      "ring": 1,
+      "settle": 1,
+      "source": 1
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "travel": 1,
+      "reorder": 1,
+      "detach": 1,
+      "ring": 1,
+      "settle": 1,
+      "source": 1
+    }
+  ],
+  "timing": {
+    "fps": 30,
+    "total": 570,
+    "establish": {
+      "start": 0,
+      "duration": 45
+    },
+    "reference": {
+      "start": 51,
+      "duration": 54
+    },
+    "reveal": {
+      "start": 105,
+      "duration": 120
+    },
+    "subject": {
+      "start": 225,
+      "duration": 210
+    },
+    "conclusion": {
+      "start": 435,
+      "duration": 75
+    },
+    "hold": {
+      "start": 510,
+      "duration": 60
+    }
+  },
+  "fontFamily": null,
+  "faces": [
+    {
+      "family": "Merriweather",
+      "style": "normal",
+      "weight": 700,
+      "weightTo": 700,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Open Sans",
+      "style": "normal",
+      "weight": 600,
+      "weightTo": 600,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Open Sans",
+      "style": "normal",
+      "weight": 500,
+      "weightTo": 500,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    }
+  ]
+}

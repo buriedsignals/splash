@@ -1,0 +1,836 @@
+{
+  "frame": {
+    "width": 1920,
+    "height": 1080
+  },
+  "registers": {
+    "display": {
+      "fontFamily": "Merriweather",
+      "fontSize": 86,
+      "fontWeight": 700,
+      "fontStyle": "normal",
+      "letterSpacing": -0.5733333333333334,
+      "transform": "none",
+      "lead": 104.9238012,
+      "fill": "#000000"
+    },
+    "eyebrow": {
+      "fontFamily": "Open Sans",
+      "fontSize": 30,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 5.7,
+      "transform": "uppercase",
+      "lead": 36.000978515625,
+      "fill": "#1757B6"
+    },
+    "axis": {
+      "fontFamily": "Open Sans",
+      "fontSize": 33,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 1.2000000000000002,
+      "transform": "none",
+      "lead": 39.6010763671875,
+      "fill": "#61605a"
+    },
+    "value": {
+      "fontFamily": "Open Sans",
+      "fontSize": 45,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 54.0014677734375,
+      "fill": "#1757B6"
+    },
+    "source": {
+      "fontFamily": "Open Sans",
+      "fontSize": 30,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 1.090909090909091,
+      "transform": "none",
+      "lead": 36.000978515625,
+      "fill": "#61605a"
+    }
+  },
+  "titleCard": {
+    "form": 0,
+    "register": {
+      "fontFamily": "Merriweather",
+      "fontSize": 86,
+      "fontWeight": 700,
+      "fontStyle": "normal",
+      "letterSpacing": -0.5733333333333334,
+      "transform": "none",
+      "lead": 104.9238012,
+      "fill": "#000000"
+    },
+    "eyebrow": {
+      "text": "ÉNERGIE · EUROPE",
+      "x": 85,
+      "y": 385.1982421875,
+      "width": 348.29296875
+    },
+    "title": [
+      {
+        "text": "Les seize pays ont tous gagné",
+        "x": 85,
+        "y": 489.07495263671876,
+        "width": 1228.5387351004283
+      },
+      {
+        "text": "du bas-carbone depuis 2000",
+        "x": 85,
+        "y": 593.9987538367187,
+        "width": 1181.625910917918
+      },
+      {
+        "text": "— un seul a doublé la France",
+        "x": 85,
+        "y": 698.9225550367188,
+        "width": 1186.0261135292053
+      }
+    ]
+  },
+  "credit": {
+    "form": 0,
+    "lines": [
+      {
+        "text": "Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data",
+        "x": 4.80615234375,
+        "y": 27.76025390625,
+        "width": 1485.839754971591
+      }
+    ],
+    "halo": 9.6123046875,
+    "width": 1526,
+    "height": 40,
+    "at": {
+      "x": 85,
+      "y": 980
+    }
+  },
+  "colours": {
+    "ground": "#FFFCEE",
+    "rail": "#d1cfc3",
+    "line": "#6f6e67",
+    "lit": "#000000",
+    "pair": "#1755b2",
+    "text": {
+      "eyebrow": "#1755b2",
+      "title": "#000000",
+      "label": "#5f5e58",
+      "pair": "#1755b2",
+      "rail": "#5f5e58",
+      "count": "#000000"
+    }
+  },
+  "strokes": {
+    "line": 4.800000000000001,
+    "pair": 8.399999999999999,
+    "rail": 1.7999999999999998,
+    "connector": 1.7999999999999998
+  },
+  "rail": {
+    "left": 427.4252655625,
+    "right": 1575.1044883437498,
+    "top": 106.94658246093748,
+    "foot": 948.31913890625
+  },
+  "railLabels": [
+    {
+      "text": "2000",
+      "width": 77.51162109375,
+      "x": 388.669455015625,
+      "y": 91.0986328125
+    },
+    {
+      "text": "2024",
+      "width": 78.4623046875,
+      "x": 1535.8733359999999,
+      "y": 91.0986328125
+    }
+  ],
+  "lines": [
+    {
+      "key": "Austria",
+      "travelRank": 13,
+      "testRank": 11,
+      "passes": false,
+      "pair": false,
+      "a": {
+        "x": 427.4252655625,
+        "y": 358.17386162055095
+      },
+      "b": {
+        "x": 1575.1044883437498,
+        "y": 248.72032431841888
+      },
+      "left": {
+        "text": "Autriche 72,8",
+        "width": 219.23203125,
+        "x": 181.26450238281248,
+        "y": 369.75931083930095,
+        "cy": 358.17386162055095
+      },
+      "right": {
+        "text": "86,2",
+        "width": 67.344140625,
+        "x": 1602.0332202734373,
+        "y": 326.14478601562496,
+        "cy": 314.55933679687496
+      }
+    },
+    {
+      "key": "Belgium",
+      "travelRank": 12,
+      "testRank": 8,
+      "passes": false,
+      "pair": false,
+      "a": {
+        "x": 427.4252655625,
+        "y": 467.712951689467
+      },
+      "b": {
+        "x": 1575.1044883437498,
+        "y": 329.49050771385487
+      },
+      "left": {
+        "text": "Belgique 59,4",
+        "width": 223.40537109375,
+        "x": 177.09116253906248,
+        "y": 479.298400908217,
+        "cy": 467.712951689467
+      },
+      "right": {
+        "text": "76,3",
+        "width": 67.1830078125,
+        "x": 1602.0332202734373,
+        "y": 452.5902157031249,
+        "cy": 441.0047664843749
+      }
+    },
+    {
+      "key": "Czechia",
+      "travelRank": 6,
+      "testRank": 5,
+      "passes": false,
+      "pair": false,
+      "a": {
+        "x": 427.4252655625,
+        "y": 775.706581949947
+      },
+      "b": {
+        "x": 1575.1044883437498,
+        "y": 482.0633282149559
+      },
+      "left": {
+        "text": "Tchéquie 21,8",
+        "width": 229.17392578125,
+        "x": 171.32260785156248,
+        "y": 699.0859943749998,
+        "cy": 687.5005451562498
+      },
+      "right": {
+        "text": "57,7",
+        "width": 67.45693359375,
+        "x": 1602.0332202734373,
+        "y": 579.035645390625,
+        "cy": 567.450196171875
+      }
+    },
+    {
+      "key": "Denmark",
+      "travelRank": 0,
+      "testRank": 12,
+      "passes": false,
+      "pair": false,
+      "a": {
+        "x": 427.4252655625,
+        "y": 826.6648354505724
+      },
+      "b": {
+        "x": 1575.1044883437498,
+        "y": 224.47062512090565
+      },
+      "left": {
+        "text": "Danemark 15,5",
+        "width": 250.47568359375,
+        "x": 150.02085003906248,
+        "y": 783.3829474999999,
+        "cy": 771.7974982812499
+      },
+      "right": {
+        "text": "89,2",
+        "width": 67.344140625,
+        "x": 1602.0332202734373,
+        "y": 283.996309453125,
+        "cy": 272.410860234375
+      }
+    },
+    {
+      "key": "Finland",
+      "travelRank": 9,
+      "testRank": 13,
+      "passes": true,
+      "pair": true,
+      "a": {
+        "x": 427.4252655625,
+        "y": 417.8156149256397
+      },
+      "b": {
+        "x": 1575.1044883437498,
+        "y": 174.11964372658042
+      },
+      "left": {
+        "text": "Finlande 65,5",
+        "width": 220.47275390625,
+        "x": 180.02377972656248,
+        "y": 429.4010641443897,
+        "cy": 417.8156149256397
+      },
+      "right": {
+        "text": "95,3 Finlande",
+        "width": 220.63388671875,
+        "x": 1602.0332202734373,
+        "y": 199.69935632812496,
+        "cy": 188.11390710937496
+      }
+    },
+    {
+      "key": "France",
+      "travelRank": 14,
+      "testRank": null,
+      "passes": false,
+      "pair": true,
+      "a": {
+        "x": 427.4252655625,
+        "y": 212.1887468789513
+      },
+      "b": {
+        "x": 1575.1044883437498,
+        "y": 177.79819310562107
+      },
+      "left": {
+        "text": "France 90,7",
+        "width": 189.81005859375,
+        "x": 210.6864750390625,
+        "y": 223.7741960977013,
+        "cy": 212.1887468789513
+      },
+      "right": {
+        "text": "94,9 France",
+        "width": 189.68115234375,
+        "x": 1602.0332202734373,
+        "y": 241.84783289062497,
+        "cy": 230.26238367187497
+      }
+    },
+    {
+      "key": "Germany",
+      "travelRank": 11,
+      "testRank": 6,
+      "passes": false,
+      "pair": false,
+      "a": {
+        "x": 427.4252655625,
+        "y": 659.072458679651
+      },
+      "b": {
+        "x": 1575.1044883437498,
+        "y": 474.23121975719516
+      },
+      "left": {
+        "text": "Allemagne 36,0",
+        "width": 252.86806640625,
+        "x": 147.6284672265625,
+        "y": 572.6405646874997,
+        "cy": 561.0551154687497
+      },
+      "right": {
+        "text": "58,6",
+        "width": 67.5052734375,
+        "x": 1602.0332202734373,
+        "y": 536.8871688281249,
+        "cy": 525.3017196093749
+      }
+    },
+    {
+      "key": "Greece",
+      "travelRank": 4,
+      "testRank": 2,
+      "passes": false,
+      "pair": false,
+      "a": {
+        "x": 427.4252655625,
+        "y": 889.7580384675432
+      },
+      "b": {
+        "x": 1575.1044883437498,
+        "y": 551.194140119921
+      },
+      "left": {
+        "text": "Grèce 7,8",
+        "width": 154.57119140625,
+        "x": 245.9253422265625,
+        "y": 867.679900625,
+        "cy": 856.09445140625
+      },
+      "right": {
+        "text": "49,2",
+        "width": 67.344140625,
+        "x": 1602.0332202734373,
+        "y": 705.4810750781251,
+        "cy": 693.8956258593751
+      }
+    },
+    {
+      "key": "Ireland",
+      "travelRank": 3,
+      "testRank": 1,
+      "passes": false,
+      "pair": false,
+      "a": {
+        "x": 427.4252655625,
+        "y": 912.5219537115509
+      },
+      "b": {
+        "x": 1575.1044883437498,
+        "y": 573.3027654376749
+      },
+      "left": {
+        "text": "Irlande 5,0",
+        "width": 176.27490234375,
+        "x": 224.2216312890625,
+        "y": 909.8283771875,
+        "cy": 898.24292796875
+      },
+      "right": {
+        "text": "46,5",
+        "width": 67.16689453125,
+        "x": 1602.0332202734373,
+        "y": 747.6295516406251,
+        "cy": 736.0441024218751
+      }
+    },
+    {
+      "key": "Italy",
+      "travelRank": 8,
+      "testRank": 3,
+      "passes": false,
+      "pair": false,
+      "a": {
+        "x": 427.4252655625,
+        "y": 799.6185544426537
+      },
+      "b": {
+        "x": 1575.1044883437498,
+        "y": 543.4859431917433
+      },
+      "left": {
+        "text": "Italie 18,8",
+        "width": 161.466796875,
+        "x": 239.0297367578125,
+        "y": 741.2344709374999,
+        "cy": 729.6490217187499
+      },
+      "right": {
+        "text": "50,2",
+        "width": 67.344140625,
+        "x": 1602.0332202734373,
+        "y": 663.332598515625,
+        "cy": 651.747149296875
+      }
+    },
+    {
+      "key": "Netherlands",
+      "travelRank": 2,
+      "testRank": 4,
+      "passes": false,
+      "pair": false,
+      "a": {
+        "x": 427.4252655625,
+        "y": 889.632184780391
+      },
+      "b": {
+        "x": 1575.1044883437498,
+        "y": 514.9823149173659
+      },
+      "left": {
+        "text": "Pays-Bas 7,8",
+        "width": 205.3025390625,
+        "x": 195.1939945703125,
+        "y": 825.5314240624999,
+        "cy": 813.9459748437499
+      },
+      "right": {
+        "text": "53,7",
+        "width": 67.45693359375,
+        "x": 1602.0332202734373,
+        "y": 621.184121953125,
+        "cy": 609.598672734375
+      }
+    },
+    {
+      "key": "Poland",
+      "travelRank": 10,
+      "testRank": 0,
+      "passes": false,
+      "pair": false,
+      "a": {
+        "x": 427.4252655625,
+        "y": 940.39140453125
+      },
+      "b": {
+        "x": 1575.1044883437498,
+        "y": 699.0366301844426
+      },
+      "left": {
+        "text": "Pologne 1,6",
+        "width": 191.9208984375,
+        "x": 208.5756351953125,
+        "y": 951.97685375,
+        "cy": 940.39140453125
+      },
+      "right": {
+        "text": "31,1",
+        "width": 62.20400390625,
+        "x": 1602.0332202734373,
+        "y": 789.7780282031251,
+        "cy": 778.1925789843751
+      }
+    },
+    {
+      "key": "Portugal",
+      "travelRank": 1,
+      "testRank": 10,
+      "passes": false,
+      "pair": false,
+      "a": {
+        "x": 427.4252655625,
+        "y": 710.1733126169764
+      },
+      "b": {
+        "x": 1575.1044883437498,
+        "y": 257.1628111436768
+      },
+      "left": {
+        "text": "Portugal 29,8",
+        "width": 219.31259765625,
+        "x": 181.18393597656248,
+        "y": 614.7890412499997,
+        "cy": 603.2035920312497
+      },
+      "right": {
+        "text": "85,2",
+        "width": 67.344140625,
+        "x": 1602.0332202734373,
+        "y": 368.29326257812494,
+        "cy": 356.70781335937494
+      }
+    },
+    {
+      "key": "Spain",
+      "travelRank": 7,
+      "testRank": 9,
+      "passes": false,
+      "pair": false,
+      "a": {
+        "x": 427.4252655625,
+        "y": 595.8164345851841
+      },
+      "b": {
+        "x": 1575.1044883437498,
+        "y": 326.2142904476656
+      },
+      "left": {
+        "text": "Espagne 43,8",
+        "width": 216.420703125,
+        "x": 184.0758305078125,
+        "y": 530.4920881249997,
+        "cy": 518.9066389062497
+      },
+      "right": {
+        "text": "76,7",
+        "width": 67.45693359375,
+        "x": 1602.0332202734373,
+        "y": 410.4417391406249,
+        "cy": 398.8562899218749
+      }
+    },
+    {
+      "key": "Sweden",
+      "travelRank": 15,
+      "testRank": null,
+      "passes": false,
+      "pair": false,
+      "a": {
+        "x": 427.4252655625,
+        "y": 162.94062027279801
+      },
+      "b": {
+        "x": 1575.1044883437498,
+        "y": 145.96543054687493
+      },
+      "left": {
+        "text": "Suède 96,7",
+        "width": 179.860546875,
+        "x": 220.63598675781247,
+        "y": 174.52606949154801,
+        "cy": 162.94062027279801
+      },
+      "right": {
+        "text": "98,8",
+        "width": 67.39248046875,
+        "x": 1602.0332202734373,
+        "y": 157.55087976562496,
+        "cy": 145.96543054687496
+      }
+    },
+    {
+      "key": "United Kingdom",
+      "travelRank": 5,
+      "testRank": 7,
+      "passes": false,
+      "pair": false,
+      "a": {
+        "x": 427.4252655625,
+        "y": 747.7653727883501
+      },
+      "b": {
+        "x": 1575.1044883437498,
+        "y": 422.80832268752147
+      },
+      "left": {
+        "text": "Royaume-Uni 25,2",
+        "width": 301.54541015625,
+        "x": 98.95112347656249,
+        "y": 656.9375178124998,
+        "cy": 645.3520685937498
+      },
+      "right": {
+        "text": "64,9",
+        "width": 67.344140625,
+        "x": 1602.0332202734373,
+        "y": 494.7386922656249,
+        "cy": 483.1532430468749
+      }
+    }
+  ],
+  "held": "France",
+  "climber": "Finland",
+  "counters": {
+    "rose": {
+      "0": {
+        "text": "0 en hausse",
+        "width": 254.50927734375
+      },
+      "1": {
+        "text": "1 en hausse",
+        "width": 254.50927734375
+      },
+      "2": {
+        "text": "2 en hausse",
+        "width": 254.50927734375
+      },
+      "3": {
+        "text": "3 en hausse",
+        "width": 254.50927734375
+      },
+      "4": {
+        "text": "4 en hausse",
+        "width": 254.50927734375
+      },
+      "5": {
+        "text": "5 en hausse",
+        "width": 254.50927734375
+      },
+      "6": {
+        "text": "6 en hausse",
+        "width": 254.50927734375
+      },
+      "7": {
+        "text": "7 en hausse",
+        "width": 254.50927734375
+      },
+      "8": {
+        "text": "8 en hausse",
+        "width": 254.50927734375
+      },
+      "9": {
+        "text": "9 en hausse",
+        "width": 254.50927734375
+      },
+      "10": {
+        "text": "10 en hausse",
+        "width": 280.2392578125
+      },
+      "11": {
+        "text": "11 en hausse",
+        "width": 280.2392578125
+      },
+      "12": {
+        "text": "12 en hausse",
+        "width": 280.2392578125
+      },
+      "13": {
+        "text": "13 en hausse",
+        "width": 280.2392578125
+      },
+      "14": {
+        "text": "14 en hausse",
+        "width": 280.2392578125
+      },
+      "15": {
+        "text": "15 en hausse",
+        "width": 280.2392578125
+      },
+      "16": {
+        "text": "16 en hausse",
+        "width": 280.2392578125
+      }
+    },
+    "passed": {
+      "0": {
+        "text": "0 dépasse la France",
+        "width": 421.4794921875
+      },
+      "1": {
+        "text": "1 dépasse la France",
+        "width": 421.4794921875
+      }
+    },
+    "x": 786.3103359375,
+    "y": 102.29736328125,
+    "value": {
+      "fontFamily": "Open Sans",
+      "fontSize": 45,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 54.0014677734375,
+      "fill": "#1757B6"
+    }
+  },
+  "cross": {
+    "x": 1554.933989442077,
+    "y": 178.40260818375748
+  },
+  "dotR": 5.544150691406251,
+  "halo": 10.573535156250001,
+  "layoutInset": {
+    "x": 85,
+    "y": 60
+  },
+  "states": [
+    {
+      "title": 1,
+      "furniture": 0,
+      "travel": 0,
+      "france": 0,
+      "check": 0,
+      "release": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "travel": 0,
+      "france": 0,
+      "check": 0,
+      "release": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "travel": 1,
+      "france": 0,
+      "check": 0,
+      "release": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "travel": 1,
+      "france": 1,
+      "check": 1,
+      "release": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "travel": 1,
+      "france": 1,
+      "check": 1,
+      "release": 1,
+      "source": 1
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "travel": 1,
+      "france": 1,
+      "check": 1,
+      "release": 1,
+      "source": 1
+    }
+  ],
+  "timing": {
+    "fps": 30,
+    "total": 576,
+    "establish": {
+      "start": 0,
+      "duration": 45
+    },
+    "reference": {
+      "start": 51,
+      "duration": 60
+    },
+    "reveal": {
+      "start": 111,
+      "duration": 150
+    },
+    "subject": {
+      "start": 261,
+      "duration": 180
+    },
+    "conclusion": {
+      "start": 441,
+      "duration": 75
+    },
+    "hold": {
+      "start": 516,
+      "duration": 60
+    }
+  },
+  "fontFamily": null,
+  "faces": [
+    {
+      "family": "Merriweather",
+      "style": "normal",
+      "weight": 700,
+      "weightTo": 700,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Open Sans",
+      "style": "normal",
+      "weight": 600,
+      "weightTo": 600,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Open Sans",
+      "style": "normal",
+      "weight": 500,
+      "weightTo": 500,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    }
+  ]
+}

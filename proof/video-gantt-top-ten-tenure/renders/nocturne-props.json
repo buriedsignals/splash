@@ -1,0 +1,866 @@
+{
+  "frame": {
+    "width": 1920,
+    "height": 1080
+  },
+  "registers": {
+    "display": {
+      "fontFamily": "Montserrat",
+      "fontSize": 82,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 8.7125,
+      "transform": "uppercase",
+      "lead": 100.03796639999999,
+      "fill": "#FFFFFF"
+    },
+    "eyebrow": {
+      "fontFamily": "Montserrat",
+      "fontSize": 30,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 8.210526315789474,
+      "transform": "uppercase",
+      "lead": 35.999508000000006,
+      "fill": "#4FE0C0"
+    },
+    "value": {
+      "fontFamily": "Montserrat",
+      "fontSize": 44.21,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 53.05127495600001,
+      "fill": "#4FE0C0"
+    },
+    "axis": {
+      "fontFamily": "Montserrat",
+      "fontSize": 31.58,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 3.789599999999999,
+      "transform": "none",
+      "lead": 37.895482088,
+      "fill": "#a5a4b8"
+    },
+    "source": {
+      "fontFamily": "Montserrat",
+      "fontSize": 30,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 3.599999999999999,
+      "transform": "none",
+      "lead": 35.999508000000006,
+      "fill": "#a5a4b8"
+    }
+  },
+  "titleCard": {
+    "form": 0,
+    "register": {
+      "fontFamily": "Montserrat",
+      "fontSize": 82,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 8.7125,
+      "transform": "uppercase",
+      "lead": 100.03796639999999,
+      "fill": "#FFFFFF"
+    },
+    "eyebrow": {
+      "text": "CLIMAT · MONDE",
+      "x": 85,
+      "y": 395.239990234375,
+      "width": 367.9468005393681
+    },
+    "title": [
+      {
+        "text": "SIX PAYS N’ONT JAMAIS",
+        "x": 85,
+        "y": 494.7216158632813,
+        "width": 1151.1159629821777
+      },
+      {
+        "text": "QUITTÉ LE TOP 10 DES",
+        "x": 85,
+        "y": 594.7595822632812,
+        "width": 1089.9234481811523
+      },
+      {
+        "text": "ÉMETTEURS DEPUIS 1990",
+        "x": 85,
+        "y": 694.7975486632813,
+        "width": 1230.4919214248657
+      }
+    ]
+  },
+  "credit": {
+    "form": 1,
+    "lines": [
+      {
+        "text": "Source : Global Carbon Budget (2025), via Our World in Data",
+        "x": 4.493098754882813,
+        "y": 26.753108520507812,
+        "width": 1101.899880337715
+      }
+    ],
+    "halo": 8.986197509765626,
+    "width": 1133,
+    "height": 38,
+    "at": {
+      "x": 85,
+      "y": 982
+    }
+  },
+  "colours": {
+    "ground": "#111044",
+    "track": "#1d1c4d",
+    "grid": "#3c3b66",
+    "bar": "#398b8e",
+    "kept": "#53e1c1",
+    "faded": "#373662",
+    "text": {
+      "eyebrow": "#53e1c1",
+      "title": "#ffffff",
+      "name": "#ffffff",
+      "kept": "#53e1c1",
+      "axis": "#a7a6b9",
+      "count": "#ffffff"
+    }
+  },
+  "plot": {
+    "left": 403.59146799011296,
+    "right": 1835,
+    "top": 132.3409269481125,
+    "bottom": 916.9140220444438
+  },
+  "first": 1990,
+  "last": 2024,
+  "yearWidth": 40.897386628853916,
+  "rows": [
+    {
+      "key": "United States",
+      "throughout": true,
+      "member": true,
+      "leftAt": null,
+      "runs": [
+        {
+          "from": 1990,
+          "to": 2024
+        }
+      ],
+      "y": 141.7,
+      "h": 30.4,
+      "trackY": 137.2,
+      "trackH": 39.2,
+      "name": {
+        "text": "États-Unis",
+        "width": 195.164421068573,
+        "x": 189.3655656649685,
+        "y": 167.2960309940916
+      }
+    },
+    {
+      "key": "Russia",
+      "throughout": true,
+      "member": true,
+      "leftAt": null,
+      "runs": [
+        {
+          "from": 1990,
+          "to": 2024
+        }
+      ],
+      "y": 190.7,
+      "h": 30.4,
+      "trackY": 186.3,
+      "trackH": 39.2,
+      "name": {
+        "text": "Russie",
+        "width": 119.94084315109252,
+        "x": 266.0936151407986,
+        "y": 216.3318494376123
+      }
+    },
+    {
+      "key": "China",
+      "throughout": true,
+      "member": true,
+      "leftAt": null,
+      "runs": [
+        {
+          "from": 1990,
+          "to": 2024
+        }
+      ],
+      "y": 239.7,
+      "h": 30.4,
+      "trackY": 235.3,
+      "trackH": 39.2,
+      "name": {
+        "text": "Chine",
+        "width": 106.36145025577545,
+        "x": 279.944595894022,
+        "y": 265.367667881133
+      }
+    },
+    {
+      "key": "Japan",
+      "throughout": true,
+      "member": true,
+      "leftAt": null,
+      "runs": [
+        {
+          "from": 1990,
+          "to": 2024
+        }
+      ],
+      "y": 288.8,
+      "h": 30.4,
+      "trackY": 284.4,
+      "trackH": 39.2,
+      "name": {
+        "text": "Japon",
+        "width": 109.23522025432587,
+        "x": 277.01335049550056,
+        "y": 314.4034863246537
+      }
+    },
+    {
+      "key": "Germany",
+      "throughout": true,
+      "member": true,
+      "leftAt": null,
+      "runs": [
+        {
+          "from": 1990,
+          "to": 2024
+        }
+      ],
+      "y": 337.8,
+      "h": 30.4,
+      "trackY": 333.4,
+      "trackH": 39.2,
+      "name": {
+        "text": "Allemagne",
+        "width": 201.7646493332863,
+        "x": 182.63333283496095,
+        "y": 363.4393047681744
+      }
+    },
+    {
+      "key": "India",
+      "throughout": true,
+      "member": true,
+      "leftAt": null,
+      "runs": [
+        {
+          "from": 1990,
+          "to": 2024
+        }
+      ],
+      "y": 386.8,
+      "h": 30.4,
+      "trackY": 382.4,
+      "trackH": 39.2,
+      "name": {
+        "text": "Inde",
+        "width": 81.28692849044799,
+        "x": 305.52060809465604,
+        "y": 412.4751232116951
+      }
+    },
+    {
+      "key": "Canada",
+      "throughout": false,
+      "member": true,
+      "leftAt": 2017,
+      "runs": [
+        {
+          "from": 1990,
+          "to": 2016
+        }
+      ],
+      "y": 435.9,
+      "h": 30.4,
+      "trackY": 431.5,
+      "trackH": 39.2,
+      "name": {
+        "text": "Canada",
+        "width": 136.77299086856843,
+        "x": 248.92482446897316,
+        "y": 461.51094165521585
+      }
+    },
+    {
+      "key": "United Kingdom",
+      "throughout": false,
+      "member": true,
+      "leftAt": 2009,
+      "runs": [
+        {
+          "from": 1990,
+          "to": 2008
+        }
+      ],
+      "y": 484.9,
+      "h": 30.4,
+      "trackY": 480.5,
+      "trackH": 39.2,
+      "name": {
+        "text": "Royaume-Uni",
+        "width": 253.6189685783386,
+        "x": 129.74192720500758,
+        "y": 510.5467600987365
+      }
+    },
+    {
+      "key": "Italy",
+      "throughout": false,
+      "member": true,
+      "leftAt": 1991,
+      "runs": [
+        {
+          "from": 1990,
+          "to": 1990
+        },
+        {
+          "from": 1992,
+          "to": 2005
+        }
+      ],
+      "y": 533.9,
+      "h": 30.4,
+      "trackY": 529.5,
+      "trackH": 39.2,
+      "name": {
+        "text": "Italie",
+        "width": 93.91891627120971,
+        "x": 292.6359805582791,
+        "y": 559.5825785422572
+      }
+    },
+    {
+      "key": "Ukraine",
+      "throughout": false,
+      "member": true,
+      "leftAt": 1996,
+      "runs": [
+        {
+          "from": 1990,
+          "to": 1995
+        }
+      ],
+      "y": 583,
+      "h": 30.4,
+      "trackY": 578.6,
+      "trackH": 39.2,
+      "name": {
+        "text": "Ukraine",
+        "width": 143.8469096733093,
+        "x": 241.70942728813745,
+        "y": 608.6183969857778
+      }
+    },
+    {
+      "key": "Kuwait",
+      "throughout": false,
+      "member": false,
+      "leftAt": null,
+      "runs": [
+        {
+          "from": 1991,
+          "to": 1991
+        }
+      ],
+      "y": 632,
+      "h": 30.4,
+      "trackY": 627.6,
+      "trackH": 39.2,
+      "name": {
+        "text": "Koweït",
+        "width": 126.41473536300659,
+        "x": 259.49024508464623,
+        "y": 657.6542154292986
+      }
+    },
+    {
+      "key": "South Korea",
+      "throughout": false,
+      "member": false,
+      "leftAt": null,
+      "runs": [
+        {
+          "from": 1996,
+          "to": 1997
+        },
+        {
+          "from": 2000,
+          "to": 2024
+        }
+      ],
+      "y": 681.1,
+      "h": 30.4,
+      "trackY": 676.6,
+      "trackH": 39.2,
+      "name": {
+        "text": "Corée du Sud",
+        "width": 251.66101201114654,
+        "x": 131.73904290354346,
+        "y": 706.6900338728193
+      }
+    },
+    {
+      "key": "France",
+      "throughout": false,
+      "member": false,
+      "leftAt": null,
+      "runs": [
+        {
+          "from": 1998,
+          "to": 1999
+        }
+      ],
+      "y": 730.1,
+      "h": 30.4,
+      "trackY": 725.7,
+      "trackH": 39.2,
+      "name": {
+        "text": "France",
+        "width": 125.08838801193237,
+        "x": 260.843119382742,
+        "y": 755.72585231634
+      }
+    },
+    {
+      "key": "Iran",
+      "throughout": false,
+      "member": false,
+      "leftAt": null,
+      "runs": [
+        {
+          "from": 2006,
+          "to": 2024
+        }
+      ],
+      "y": 779.1,
+      "h": 30.4,
+      "trackY": 774.7,
+      "trackH": 39.2,
+      "name": {
+        "text": "Iran",
+        "width": 69.31810219650268,
+        "x": 317.7288109144802,
+        "y": 804.7616707598607
+      }
+    },
+    {
+      "key": "Saudi Arabia",
+      "throughout": false,
+      "member": false,
+      "leftAt": null,
+      "runs": [
+        {
+          "from": 2009,
+          "to": 2024
+        }
+      ],
+      "y": 828.2,
+      "h": 30.4,
+      "trackY": 823.7,
+      "trackH": 39.2,
+      "name": {
+        "text": "Arabie saoudite",
+        "width": 297.4836030930519,
+        "x": 85,
+        "y": 853.7974892033814
+      }
+    },
+    {
+      "key": "Indonesia",
+      "throughout": false,
+      "member": false,
+      "leftAt": null,
+      "runs": [
+        {
+          "from": 2017,
+          "to": 2024
+        }
+      ],
+      "y": 877.2,
+      "h": 30.4,
+      "trackY": 872.8,
+      "trackH": 39.2,
+      "name": {
+        "text": "Indonésie",
+        "width": 184.36406362228394,
+        "x": 200.38193026018334,
+        "y": 902.8333076469021
+      }
+    }
+  ],
+  "ticks": [
+    {
+      "text": "1990",
+      "width": 80.52900420193671,
+      "x": 403.59146799011296,
+      "y": 959.8942058464406
+    },
+    {
+      "text": "1995",
+      "width": 77.87628661160468,
+      "x": 589.5889511430072,
+      "y": 959.8942058464406
+    },
+    {
+      "text": "2000",
+      "width": 90.3503793633461,
+      "x": 787.838837911406,
+      "y": 959.8942058464406
+    },
+    {
+      "text": "2005",
+      "width": 87.69766177301406,
+      "x": 993.6521298508416,
+      "y": 959.8942058464406
+    },
+    {
+      "text": "2010",
+      "width": 80.84480227594375,
+      "x": 1201.5654927436462,
+      "y": 959.8942058464406
+    },
+    {
+      "text": "2015",
+      "width": 78.19207705621719,
+      "x": 1407.3787884977792,
+      "y": 959.8942058464406
+    },
+    {
+      "text": "2020",
+      "width": 87.31870211725234,
+      "x": 1607.3024091115312,
+      "y": 959.8942058464406
+    },
+    {
+      "text": "2024",
+      "width": 87.79240359430312,
+      "x": 1745.4517483338109,
+      "y": 959.8942058464406
+    }
+  ],
+  "yearTexts": {
+    "1990": {
+      "text": "1990",
+      "width": 80.52900420193671
+    },
+    "1991": {
+      "text": "1991",
+      "width": 69.00230132107734
+    },
+    "1992": {
+      "text": "1992",
+      "width": 77.97102080349921
+    },
+    "1993": {
+      "text": "1993",
+      "width": 77.18152342801093
+    },
+    "1994": {
+      "text": "1994",
+      "width": 81.66588316922187
+    },
+    "1995": {
+      "text": "1995",
+      "width": 77.87628661160468
+    },
+    "1996": {
+      "text": "1996",
+      "width": 79.48686705594062
+    },
+    "1997": {
+      "text": "1997",
+      "width": 78.22366820340156
+    },
+    "1998": {
+      "text": "1998",
+      "width": 79.86582671170234
+    },
+    "1999": {
+      "text": "1999",
+      "width": 78.82368193631171
+    },
+    "2000": {
+      "text": "2000",
+      "width": 90.3503793633461
+    },
+    "2001": {
+      "text": "2001",
+      "width": 78.82367648248672
+    },
+    "2002": {
+      "text": "2002",
+      "width": 87.7923959649086
+    },
+    "2003": {
+      "text": "2003",
+      "width": 87.00289858942031
+    },
+    "2004": {
+      "text": "2004",
+      "width": 91.48725833063125
+    },
+    "2005": {
+      "text": "2005",
+      "width": 87.69766177301406
+    },
+    "2006": {
+      "text": "2006",
+      "width": 89.30824221735
+    },
+    "2007": {
+      "text": "2007",
+      "width": 88.04504336481094
+    },
+    "2008": {
+      "text": "2008",
+      "width": 89.68720187311172
+    },
+    "2009": {
+      "text": "2009",
+      "width": 88.6450570977211
+    },
+    "2010": {
+      "text": "2010",
+      "width": 80.84480227594375
+    },
+    "2011": {
+      "text": "2011",
+      "width": 69.31810320978164
+    },
+    "2012": {
+      "text": "2012",
+      "width": 78.28681887750625
+    },
+    "2013": {
+      "text": "2013",
+      "width": 77.81311740045547
+    },
+    "2014": {
+      "text": "2014",
+      "width": 81.9816812432289
+    },
+    "2015": {
+      "text": "2015",
+      "width": 78.19207705621719
+    },
+    "2016": {
+      "text": "2016",
+      "width": 79.80265750055312
+    },
+    "2017": {
+      "text": "2017",
+      "width": 78.79209841852187
+    },
+    "2018": {
+      "text": "2018",
+      "width": 80.18161715631484
+    },
+    "2019": {
+      "text": "2019",
+      "width": 79.13948001031875
+    },
+    "2020": {
+      "text": "2020",
+      "width": 87.31870211725234
+    },
+    "2021": {
+      "text": "2021",
+      "width": 75.85515917901992
+    },
+    "2022": {
+      "text": "2022",
+      "width": 84.82387484674453
+    },
+    "2023": {
+      "text": "2023",
+      "width": 84.35018099908828
+    },
+    "2024": {
+      "text": "2024",
+      "width": 87.79240359430312
+    }
+  },
+  "tickY": 959.8942058464406,
+  "neverLeft": [
+    10,
+    9,
+    9,
+    9,
+    9,
+    9,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    8,
+    7,
+    7,
+    7,
+    7,
+    7,
+    7,
+    7,
+    7,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6,
+    6
+  ],
+  "counts": {
+    "6": {
+      "text": "6 pays jamais sortis",
+      "width": 441.03895938396454
+    },
+    "7": {
+      "text": "7 pays jamais sortis",
+      "width": 440.198970079422
+    },
+    "8": {
+      "text": "8 pays jamais sortis",
+      "width": 442.14422392845154
+    },
+    "9": {
+      "text": "9 pays jamais sortis",
+      "width": 441.0389757156372
+    },
+    "10": {
+      "text": "10 pays jamais sortis",
+      "width": 459.91663774847984
+    }
+  },
+  "countAt": {
+    "x": 85,
+    "y": 99.52374267578125
+  },
+  "strokes": {
+    "grid": 1.5158399999999999
+  },
+  "halo": {
+    "value": 13.438072509765625
+  },
+  "states": [
+    {
+      "title": 1,
+      "furniture": 0,
+      "clock": 0,
+      "focus": 0,
+      "release": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "clock": 0,
+      "focus": 0,
+      "release": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "clock": 1,
+      "focus": 0,
+      "release": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "clock": 1,
+      "focus": 1,
+      "release": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "clock": 1,
+      "focus": 1,
+      "release": 1,
+      "source": 1
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "clock": 1,
+      "focus": 1,
+      "release": 1,
+      "source": 1
+    }
+  ],
+  "timing": {
+    "fps": 30,
+    "total": 531,
+    "establish": {
+      "start": 0,
+      "duration": 45
+    },
+    "reference": {
+      "start": 51,
+      "duration": 45
+    },
+    "reveal": {
+      "start": 96,
+      "duration": 240
+    },
+    "subject": {
+      "start": 336,
+      "duration": 75
+    },
+    "conclusion": {
+      "start": 411,
+      "duration": 60
+    },
+    "hold": {
+      "start": 471,
+      "duration": 60
+    }
+  },
+  "fontFamily": null,
+  "faces": [
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 400,
+      "weightTo": 400,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 500,
+      "weightTo": 500,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 600,
+      "weightTo": 600,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    }
+  ]
+}
