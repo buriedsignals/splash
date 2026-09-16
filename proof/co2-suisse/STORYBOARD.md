@@ -12,6 +12,7 @@ slots:
     medium: chart
     format: static
     candidates: ["ligne 1950–2024 avec trait de repère à 1967", "colonnes par décennie", "ligne 1950–2024 avec le pic de 1973 en accent"]
+    interaction: none
     chosen: "ligne 1950–2024 avec trait de repère à 1967"
 ---
 
