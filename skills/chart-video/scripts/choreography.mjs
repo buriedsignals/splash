@@ -10,6 +10,8 @@
 // would mean the hold is smuggling in a gesture the timing contract never named. A `hold` anywhere
 // but last carries no such exemption. The scrolly's `assertStates` is the same rule for a card.
 
+import { assertionId, parseGesture } from "#shared/editorial/frame.mjs";
+
 export function assertEventStates(states, events) {
   if (states.length !== events.length)
     throw new Error(`${states.length} states for ${events.length} events: one state closes each event`);
@@ -37,4 +39,224 @@ export function assertEventStates(states, events) {
     }
   });
   return states;
+}
+
+// ── WHAT A VIDEO BEAT DECLARES, READ — AND NOTHING GENERATED ──────────────────────────────────
+//
+// Ruling R-D (`docs/splash/2026-09-17-editorial-chain-spec.md`): the choreography is AUTHORED, per
+// subject. Everything below reads the six-row event table the beat's own `## The choreography`
+// already carries and joins it to the beat's own timing contract. There is no seed ladder, no
+// default gesture and no `derive*`; `checkChoreography` NEVER COMPARES `declared` TO ANOTHER
+// CHOREOGRAPHY, the worked example's included. The frame carries the worked example's NAME so a
+// caller can assert difference — never equality.
+//
+// THE SHAPE, transcribed from what 39 of the 40 video beats already write (spec §2.5):
+//   { kind: "time", fps, shots: [{ shot, gesture: string[], start, duration, asserts: string[] }] }
+// Columns two and four — "what the shot says", "what the viewer sees move" — are the journalist's
+// sentences and are dropped on the floor: a value block holds no prose (R-C).
+//
+// `start` AND `duration` ARE NOT IN THE TABLE. They are in the beat's own `timing-contract.ts`,
+// which all 40 beats carry, and they are joined in from the `BeatTiming` object the caller passes —
+// the same object `checkTiming` validates. Re-parsing the contract here would have given the chain
+// a second, weaker reader of a file that already has an exact one.
+
+
+/**
+ * The six events, in the one order a directed beat plays them.
+ *
+ * A DELIBERATE DUPLICATE of the timing contract's own `EVENT_ORDER`, because this module is carried
+ * verbatim into `map-beat`, where that contract lives under a different filename
+ * (`assets/timing-contract.ts`, not `assets/timing.ts`) — an import here could only be right in one
+ * of the two skills. `parse-the-declared-choreography.test.ts` asserts the two lists agree, so the
+ * duplicate cannot drift silently.
+ */
+export const EVENT_ORDER = Object.freeze([
+  "establish",
+  "reference",
+  "reveal",
+  "subject",
+  "conclusion",
+  "hold",
+]);
+
+/** The two events that legitimately play no gesture: the title card, and the frame held at the end. */
+const GESTURELESS = Object.freeze(["establish", "hold"]);
+
+/** The prohibition a middle event with no gesture breaks, in every one of the 40 video sheets. */
+export const TIMER_PROHIBITION = "no-replay-static-plate";
+/** The prohibition a final hold that smuggles in a gesture breaks. */
+export const HOLD_PROHIBITION = "no-hold-event-computed";
+
+const CHOREOGRAPHY_HEADING = /^##\s+The choreography\b/i;
+
+/** The rows of the first table under `## The choreography` whose first column is `event`. */
+function eventTableRows(briefText) {
+  const lines = String(briefText).split(/\r?\n/);
+  let inside = false;
+  let header = null;
+  const rows = [];
+  for (const line of lines) {
+    if (/^##\s/.test(line)) {
+      if (header) break;
+      inside = CHOREOGRAPHY_HEADING.test(line);
+      continue;
+    }
+    if (!inside) continue;
+    if (!line.trim().startsWith("|")) {
+      if (header) break;
+      continue;
+    }
+    const cells = line
+      .trim()
+      .replace(/^\|/, "")
+      .replace(/\|$/, "")
+      .split("|")
+      .map((c) => c.trim());
+    if (/^-+$/.test(cells[0].replace(/[:\s]/g, ""))) continue;
+    if (!header) {
+      if (/^event$/i.test(cells[0].replace(/[`*]/g, ""))) header = cells;
+      continue;
+    }
+    rows.push(cells);
+  }
+  return rows;
+}
+
+/**
+ * THE DERIVED VALUES A SHOT ASSERTS, as ids — the beat's own column five, slugged.
+ *
+ * Column five is written in the beat's own words and its own language ("the five, 11,7 < 12,3"),
+ * which is a sentence and may not enter a value block (R-C). Splitting on the cell's own clause
+ * separators and slugging each clause gives a STABLE HANDLE for the same assertion without either
+ * inventing an id the beat never wrote or smuggling the sentence through. The em dash the corpus
+ * writes for "nothing asserted here" gives `[]`.
+ */
+export function parseAsserts(cell) {
+  const plain = String(cell ?? "").replace(/[*`]/g, "").trim();
+  if (plain === "" || /^[—–-]+$/.test(plain)) return [];
+  return plain
+    .split(/[;,]\s+/)
+    .map((clause) => assertionId(clause))
+    .filter(Boolean);
+}
+
+/**
+ * The beat's declared unfolding in time.
+ *
+ * @param {string} briefText the beat's own `BRIEF.md`, unmodified
+ * @param {{ timing: { fps: number, [event: string]: { start: number, duration: number } } }} ctx
+ *   the beat's own timing contract — the object `checkTiming` validates, not a re-parse of the file
+ */
+export function parseChoreography(briefText, ctx = {}) {
+  const rows = eventTableRows(briefText);
+  if (rows.length === 0)
+    throw new Error(
+      "this beat declares no choreography: `## The choreography` carries no `| event |` table. " +
+        "Nothing here writes one — a video's shot ladder is authored, per subject.",
+    );
+  const timing = ctx.timing;
+  if (!timing || typeof timing.fps !== "number")
+    throw new Error(
+      "parseChoreography needs the beat's own timing contract: `start` and `duration` are not in " +
+        "the table, they are in `timing-contract.ts`, and they are joined in rather than re-parsed.",
+    );
+
+  const shots = rows.map((cells) => {
+    const shot = String(cells[0]).replace(/[`*]/g, "").trim();
+    const event = timing[shot];
+    if (!event)
+      throw new Error(
+        `the table declares the shot ${JSON.stringify(shot)}, which the beat's timing contract ` +
+          `does not time. The contract's events are ${EVENT_ORDER.join(", ")}.`,
+      );
+    return {
+      shot,
+      gesture: parseGesture(cells[2] ?? ""),
+      start: event.start,
+      duration: event.duration,
+      asserts: parseAsserts(cells[4] ?? ""),
+    };
+  });
+  return { kind: "time", fps: timing.fps, shots };
+}
+
+/**
+ * Does this declaration honour its type's frame, and the export's own shape?
+ *
+ * Returns `[{ id, severity, says }]`, empty when it does. Two severities, and two kinds of id:
+ *   ids beginning `no-`  — a prohibition the TYPE SHEET states, cited by the sheet's own id;
+ *   ids not beginning `no-` — a rule of the EXPORT'S SHAPE, which no sheet states because every
+ *                             type of this export owes it (here: the shot ladder).
+ * `severity: "note"` is a gesture atom the sheet has not recorded yet; the vocabulary is OPEN
+ * (spec §2.2) and the corpus extended it subject by subject.
+ *
+ * IT NEVER COMPARES AGAINST AN EXPECTED CHOREOGRAPHY. See the header.
+ */
+export function checkChoreography(declared, frame = {}) {
+  const out = [];
+  const stated = new Map((frame.prohibitions ?? []).map((p) => [p.id, p.says ?? ""]));
+  const shots = declared.shots ?? [];
+
+  // The shape: the six events of `EVENT_ORDER`, in that order, and no shot beginning before the
+  // one before it has finished — `checkTiming`'s own rule, asked of the DECLARATION this time.
+  const played = shots.map((s) => s.shot);
+  if (played.join(">") !== EVENT_ORDER.join(">"))
+    out.push({
+      id: "shot-ladder",
+      severity: "violation",
+      says:
+        `the ladder is ${played.join(" → ") || "empty"}; a directed beat plays ` +
+        `${EVENT_ORDER.join(" → ")}, all six, in that order`,
+    });
+  for (let i = 1; i < shots.length; i++) {
+    const previous = shots[i - 1];
+    if (shots[i].start < previous.start + previous.duration)
+      out.push({
+        id: "shot-ladder",
+        severity: "violation",
+        says:
+          `${shots[i].shot} starts at ${shots[i].start}, before ${previous.shot} finishes at ` +
+          `${previous.start + previous.duration}`,
+      });
+  }
+
+  // Every middle event owes a transformation of the picture before it: an event with no gesture is
+  // the static plate switched on on a timer.
+  const idle = shots.filter(
+    (s) => !GESTURELESS.includes(s.shot) && (s.gesture ?? []).length === 0,
+  );
+  if (idle.length && stated.has(TIMER_PROHIBITION))
+    out.push({
+      id: TIMER_PROHIBITION,
+      severity: "violation",
+      says: `${idle.map((s) => s.shot).join(", ")} declare no gesture — ${stated.get(TIMER_PROHIBITION)}`,
+    });
+
+  // The last event of a beat plays no gesture of its own: it is the frame a viewer reads, held.
+  const last = shots[shots.length - 1];
+  if (last && last.shot === "hold" && (last.gesture ?? []).length && stated.has(HOLD_PROHIBITION))
+    out.push({
+      id: HOLD_PROHIBITION,
+      severity: "violation",
+      says: `the hold declares \`${last.gesture.join(" + ")}\` — ${stated.get(HOLD_PROHIBITION)}`,
+    });
+
+  const vocabulary = new Set(
+    (frame.vocabulary ?? []).flatMap((entry) =>
+      String(entry).toLowerCase().split("/").map((atom) => atom.trim()).filter(Boolean),
+    ),
+  );
+  const known = (atom) =>
+    [...vocabulary].some(
+      (entry) => entry === atom || entry.startsWith(`${atom} `) || atom.startsWith(`${entry} `),
+    );
+  for (const atom of new Set(shots.flatMap((s) => (s.gesture ?? []).map((g) => g.toLowerCase()))))
+    if (!known(atom))
+      out.push({
+        id: "vocabulary-addition",
+        severity: "note",
+        says: `\`${atom}\` is not in this type's \`## Shot gestures\` yet — the sheet owes the entry`,
+      });
+
+  return out;
 }
