@@ -20,6 +20,6 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 - a gap in the series breaks the line rather than being bridged across missing readings
 
 ## Worked example
-`proof/scrolly-line-swiss-co2/BRIEF.md` — read its choreography table and precision section before writing a new one.
+`proof/scrolly-line-swiss-co2/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedLineScrolly.tsx` (the marks) and `line-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type line --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 
 **Start from the validated video when one exists.** `/Users/rmdms/Sites/Professional/splash/video/skills/chart-video/references/types/line.md` (read-only, other worktree) and its `proof/video-line-*` — the same subject's build order is often the scrolly's own card order, adapted to be scroll-driven rather than timed.

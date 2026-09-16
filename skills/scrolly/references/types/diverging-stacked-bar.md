@@ -21,6 +21,6 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 - segment shares sum to the same asserted total in every card
 
 ## Worked example
-`proof/scrolly-diverging-stacked-electricity/BRIEF.md` — read its choreography table and precision section before writing a new one.
+`proof/scrolly-diverging-stacked-electricity/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedDivergingStackScrolly.tsx` (the marks) and `diverging-stack-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type diverging-stacked-bar --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 
 **Start from the validated video when one exists.** `/Users/rmdms/Sites/Professional/splash/video/skills/chart-video/references/types/diverging-stacked-bar.md` (read-only, other worktree) and its `proof/video-diverging-stacked-bar-*` — the same subject's build order is often the scrolly's own card order, adapted to be scroll-driven rather than timed.

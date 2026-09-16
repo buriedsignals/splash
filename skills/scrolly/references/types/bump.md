@@ -21,6 +21,6 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 - rank at each step is computed from the frozen data, asserted strictly ordered with no ties silently dropped
 
 ## Worked example
-`proof/scrolly-bump-emitter-rank/BRIEF.md` — read its choreography table and precision section before writing a new one.
+`proof/scrolly-bump-emitter-rank/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedBumpScrolly.tsx` (the marks) and `bump-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type bump --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 
 **Start from the validated video when one exists.** `/Users/rmdms/Sites/Professional/splash/video/skills/chart-video/references/types/bump.md` (read-only, other worktree) and its `proof/video-bump-*` — the same subject's build order is often the scrolly's own card order, adapted to be scroll-driven rather than timed.

@@ -22,6 +22,6 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 - a regrouped bar's length is a real computed sum, asserted in the runner, not a visual approximation
 
 ## Worked example
-`proof/scrolly-bar-top-emitters-2024/BRIEF.md` — read its choreography table and precision section before writing a new one.
+`proof/scrolly-bar-top-emitters-2024/` — the reference implementation of this type's picture; read its CODE, not only its BRIEF.md. `render-directions-scrolly.mjs` (data, assertions, words), `DirectedBarScrolly.tsx` (the marks) and `bar-drive.mjs` (the paint). `BRIEF.md` records the choreography table and precision section, not the shape. `skills/scrolly/scripts/scaffold-scrolly-beat.mjs --type bar-and-column --beat <new-beat>` copies this beat's own code by default, marked `SCAFFOLD:` over what is its subject rather than this type's.
 
 **Start from the validated video when one exists.** `/Users/rmdms/Sites/Professional/splash/video/skills/chart-video/references/types/bar.md` (read-only, other worktree) and its `proof/video-bar-*` — the same subject's build order is often the scrolly's own card order, adapted to be scroll-driven rather than timed.
