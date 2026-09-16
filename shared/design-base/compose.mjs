@@ -34,6 +34,7 @@ import { missingGlyphs } from "#shared/chart-beat/glyph-coverage.mjs";
 import { LADDERS } from "./resolve-families.mjs";
 import {
   hsl,
+  hexFromHsl,
   hueGap,
   SAME_POLE_DEGREES,
   CHROMATIC_MIN_CHROMA,
@@ -81,8 +82,164 @@ export function distinguishableRegisters(direction) {
   return { count: names.length, worstPairAxes: worst === Infinity ? 0 : worst };
 }
 
-/** Every guard a filed direction faces, run on a candidate before it may be offered. */
-export function guardDirection(direction, textPerRegister) {
+/**
+ * A GROUND A MARK IS ACTUALLY DRAWN ON, AND THE PIGMENT IT WAS PAINTED WITH.
+ *
+ * A direction's `ground` is the paper. It is not the only thing a mark sits on: a map beat paints a
+ * basemap over that paper, and a river is drawn on WATER, not on the page. Those grounds are tinted
+ * — a little of some pigment mixed into the paper — and a caller that knows it drew one says so:
+ *
+ *     { name: "the basemap's water", colour: "#CEDDE1", pigment: "#1F6FB2" }
+ *
+ * `colour` is what the pixel ends up being and is what the contrast floors are measured against.
+ * `pigment` is the colour that ground was TINTED WITH, and it is a different fact: a ground mixed
+ * only from the direction's own paper and ink carries no pigment at all, because paper has no
+ * convention a reader could confuse a mark with.
+ */
+
+/**
+ * A MARK MUST NOT BE DRAWN IN THE HUE OF THE GROUND IT SITS ON.
+ *
+ * THE DEFECT, MEASURED. `proof/web-flow-map-danube` rendered a BLUE Danube on BLUE water — 1.4° of
+ * hue between the river and the sea on `rapport`, 19.5° on `creme` — and nothing anywhere refused
+ * it, because it is not a legibility failure: the river reads 5.55:1 on that water and clears every
+ * floor in this file. The beat's own `PALETTE.md` argues against that render in writing, at length,
+ * and records an amber the renderer never drew.
+ *
+ * WHY IT IS MEASURED ON THE PIGMENT AND NOT ON THE PIXEL. A tinted ground is mostly paper: the
+ * water above has a CHROMA of 0.043, below `CHROMATIC_MIN_CHROMA`, and ABC's cream paper has 0.067
+ * — MORE. So no chroma floor can tell a conventional ground from a sheet of paper, and a rule read
+ * off the pixel either misses the blue-on-blue or refuses an amber mark on cream. The pigment is
+ * the fact that actually distinguishes them: water was painted with a water colour, paper was not
+ * painted at all.
+ *
+ * AND IT IS WHY THE DEFECT WAS STRUCTURAL RATHER THAN UNLUCKY. That water was `mix(ground, accent,
+ * 0.16)` — tinted with the very accent the river was drawn in. Under this measurement all three
+ * directions read 0.0°, including the one whose pixel hue happened to land 51.6° away: a mark can
+ * never be picked out of a ground that was painted with it, and no choice of accent escapes,
+ * because the ground follows the accent wherever it goes.
+ *
+ * The threshold is the corpus's own `SAME_POLE_DEGREES` — the width at which `readPixelPalette`
+ * counts two colours in one graphic as one pole. Two colours a harvester would report as the same
+ * pole are two colours a reader sees as one.
+ */
+export function groundHueProblems(accent, grounds = []) {
+  const problems = [];
+  for (const ground of grounds) {
+    if (!ground?.pigment) continue;
+    const gap = hueGap(toHsl(accent).h, toHsl(ground.pigment).h);
+    if (gap < SAME_POLE_DEGREES)
+      problems.push(
+        `the accent ${accent} is ${gap.toFixed(1)}° of hue from ${ground.pigment}, the pigment ` +
+          `${ground.name} is painted in — inside the ${SAME_POLE_DEGREES}° this corpus counts as ONE ` +
+          `pole, so the mark is drawn in the colour of the ground it sits on`,
+      );
+  }
+  return problems;
+}
+
+/** The floor the accent owes the page: the strictest of the registers that set TEXT in it, and the
+ *  non-text floor in any case, because the accent is also a mark. */
+function accentFloorOnGround(registers = {}) {
+  let floor = NON_TEXT_CONTRAST_MIN;
+  for (const name of REGISTERS) {
+    const r = registers[name];
+    if (r?.ink === "accent") floor = Math.max(floor, textFloor(r.size, r.weight));
+  }
+  return floor;
+}
+
+/** Lightnesses to try, nearest to the direction's own first: a composition moves the value as
+ *  little as the floors allow, so the accent stays in the key its direction set. */
+function* lightnessesAround(l) {
+  yield l;
+  for (let step = 1; step <= 100; step += 1) {
+    const down = l - step / 100;
+    const up = l + step / 100;
+    if (down >= 0) yield down;
+    if (up <= 1) yield up;
+  }
+}
+
+/**
+ * THE BEAT'S COLOUR AND ITS DIRECTION ARE ONE SYSTEM, COMPOSED — NEVER TWO SOURCES COMPETING.
+ *
+ * The owner, asked to rule between a beat's recorded colour and a direction's accent: « pour
+ * couleur du sujet et direction ce sont censé être la même chose dans l'idée, la direction
+ * artistique va avec la couleur, c'est un ensemble commun. » So this does not choose between them
+ * and there is no precedence rule anywhere below. Each contributes the axis it owns:
+ *
+ *   - THE RECORD OWNS THE HUE. A subject convention IS a hue — the blue a reader already holds for
+ *     water, the amber this Danube is deliberately NOT drawn in the water's blue. Lightness is not
+ *     part of that claim; `PALETTE.md` records one only because a hex has to have one.
+ *   - THE DIRECTION OWNS THE VALUE. What separates `creme`'s accent from `nocturne`'s is not which
+ *     colour they mean, it is how deep and how saturated a mark is allowed to be on that paper. A
+ *     pale mint on navy and a deep blue on cream are the same decision made twice.
+ *
+ * So the composed accent is the record's hue set in the direction's own saturation and lightness,
+ * then walked along lightness ALONE — the hue is the argument and is never rotated — until it
+ * clears the floors on the paper and on every ground the mark is actually drawn on. Neither input
+ * survives as a hex value, which is what makes this a composition rather than a selection, and
+ * nothing here is hand-picked per beat: a second subject with a second hue walks the same walk.
+ *
+ * A beat with no recorded colour keeps the direction's accent untouched.
+ *
+ * @param {object}        args
+ * @param {string|null}   args.subject    the hue-carrier: the accent recorded in `PALETTE.md`
+ * @param {string}        args.key        the value-carrier: the direction's / palette's own accent
+ * @param {string}        args.ground     the paper, which the text in the accent is read on
+ * @param {object}        args.registers  the direction's registers, to know what sets text in it
+ * @param {Array<object>} [args.grounds]  the other grounds the mark sits on
+ */
+export function composeAccent({ subject, key, ground, registers = {}, grounds = [] }) {
+  if (!subject || subject === key) return { accent: key, seed: key, walked: 0, composed: false };
+  const recorded = toHsl(subject);
+  const value = toHsl(key);
+  const hue = recorded.h;
+  // A RECORD MAY DECIDE TO HAVE NO HUE AT ALL, and that decision is as real as any other.
+  // `proof/web-heatmap-coal-share-europe` records `#3A3A3A` — coal, drawn in greys on purpose. Its
+  // chroma is 0, so it has no hue to lend: reading one off it would hand this beat the direction's
+  // saturation at hue 0 and paint a grey subject RED. What the record owns is the hue AND whether
+  // there is one; the direction owns the value either way, so a neutral record composes as a
+  // neutral at this direction's own lightness.
+  const saturation = recorded.chroma < CHROMATIC_MIN_CHROMA ? 0 : value.s;
+  const seed = hexFromHsl(hue, saturation, value.l);
+  const floor = accentFloorOnGround(registers);
+
+  for (const l of lightnessesAround(value.l)) {
+    const candidate = hexFromHsl(hue, saturation, l);
+    if (contrast(candidate, ground) < floor) continue;
+    if (grounds.some((g) => contrast(candidate, g.colour) < NON_TEXT_CONTRAST_MIN)) continue;
+    return {
+      accent: candidate,
+      seed,
+      walked: Number(Math.abs(l - value.l).toFixed(2)),
+      composed: true,
+    };
+  }
+
+  const worst = [
+    `${contrast(seed, ground).toFixed(2)}:1 on the ground ${ground}, floor ${floor}`,
+    ...grounds.map((g) => `${contrast(seed, g.colour).toFixed(2)}:1 on ${g.name}, floor ${NON_TEXT_CONTRAST_MIN}`),
+  ];
+  return {
+    accent: null,
+    seed,
+    walked: null,
+    composed: true,
+    problems: [
+      `no lightness of the recorded hue (${subject}, set in this direction's own key as ${seed}) ` +
+        `clears every floor it is measured against — ${worst.join("; ")}`,
+    ],
+  };
+}
+
+/** Every guard a filed direction faces, run on a candidate before it may be offered.
+ *
+ *  `grounds` are the grounds BEYOND the paper that this beat's marks are drawn on — a basemap's
+ *  water and land, a plate's tints. A caller that draws nothing over the paper passes none, and the
+ *  guard is exactly what it was. */
+export function guardDirection(direction, textPerRegister, grounds = []) {
   const problems = [];
 
   for (const name of REGISTERS)
@@ -109,9 +266,42 @@ export function guardDirection(direction, textPerRegister) {
     }
   }
 
+  problems.push(...guardColour(direction, grounds));
+
+  return problems;
+}
+
+/**
+ * THE HALF OF THE GUARD THE COLOUR IS RESPONSIBLE FOR, on its own.
+ *
+ * Split out because the two halves answer to different moments. Whether six registers read as six
+ * voices is a property of the FILED RECORD, and it decides which directions are worth OFFERING a
+ * journalist. Whether the accent can be seen, and whether it is the colour of the ground under it,
+ * is a property of THIS BEAT'S COLOUR, and it decides whether a direction the journalist already
+ * chose may go to the paint at all.
+ *
+ * `composeDirection` refuses on this half alone: a beat whose direction was settled upstream cannot
+ * re-pick its registers, and refusing its render over the register table would be this repair
+ * breaking two beats it has no business touching. The register problems are still returned to the
+ * caller — reported, never swallowed.
+ */
+export function guardColour(direction, grounds = []) {
+  const problems = [];
+
   const accentRatio = contrast(direction.accent, direction.ground);
   if (accentRatio < NON_TEXT_CONTRAST_MIN)
     problems.push(`accent reads ${accentRatio.toFixed(2)}:1 as a mark, floor ${NON_TEXT_CONTRAST_MIN}`);
+
+  // THE GROUNDS THE MARKS ARE ACTUALLY ON, measured on the same floor and on one more rule: a mark
+  // may not be drawn in the hue of the ground it sits on.
+  for (const ground of grounds) {
+    const ratio = contrast(direction.accent, ground.colour);
+    if (ratio < NON_TEXT_CONTRAST_MIN)
+      problems.push(
+        `accent reads ${ratio.toFixed(2)}:1 on ${ground.name}, floor ${NON_TEXT_CONTRAST_MIN}`,
+      );
+  }
+  problems.push(...groundHueProblems(direction.accent, grounds));
 
   return problems;
 }
@@ -223,40 +413,87 @@ function toHsl(hex) {
 }
 
 /**
- * A short list of composed candidates for this beat, best first, each guarded.
+ * ONE CANDIDATE, BUILT IN ONE PLACE — the type of one direction, the space of another, the colour
+ * of a palette tempered by whatever this beat recorded.
  *
- * COLOUR IS AN AXIS LIKE THE OTHER TWO. The first version crossed type against space and took the
- * ground and accent wholesale from the type direction, so a palette could only ever appear beside
- * the type it was measured with. That is not composition, it is a menu of the pieces already
- * harvested — which is exactly what the owner said when he was shown three hex values to choose
- * between.
- *
- * Widening the search does not widen what passes: every candidate still faces the same three
- * guards a filed direction faces, on its own real ground.
- *
- * @param {{ground?: string, accent?: string}} newsroom  what the newsroom has recorded
- * @param {Array<object>} filed                          the filed directions
- * @param {Array<object>} [palettes]                     colour candidates; the filed ones by default
- * @param {{evidenceLevels?: number}} beat               the beat's own facts, from its BRIEF
- * @param {Record<string,string>} textPerRegister        what each register sets on this beat
+ * Extracted so the SHORT LIST a journalist reads and the DIRECTION a renderer paints with come out
+ * of the same construction. They used not to: `composeDirections` composed a colour and printed it,
+ * and every render read the filed record off disk and drew its own accent. Two resolutions of one
+ * decision, disagreeing in silence, and the one that reached the paint had never read `PALETTE.md`.
  */
-export function composeDirections({
-  newsroom,
-  filed,
-  palettes = palettesFrom(filed),
-  beat = {},
-  textPerRegister = {},
-  limit = OFFER_LIMIT,
-}) {
-  const wanted = beat.evidenceLevels ?? 4;
-  const offered = [];
-  const refused = [];
+function candidateOf({ type, space, palette, subject, grounds = [] }) {
+  const sameThroughout = type.id === space.id && palette.from === type.id;
+  // THREE SLOTS, ALWAYS, WHEN ANYTHING IS COMPOSED. A first version deduplicated the names, and
+  // `creme` type + `nocturne` space + `creme` palette collided with the same pair carrying
+  // `nocturne`'s palette: two different candidates, one id, and the second silently
+  // indistinguishable in the report the journalist reads.
+  const id = sameThroughout ? type.id : `${type.id}/${space.id}/${palette.from}`;
 
-  // The newsroom's recorded palette is not one candidate among many: where it exists it is THE
-  // palette, and the colour axis collapses to it. `PALETTE.md` already decides this for every beat,
-  // with its reasoning written out, and a wider search is not a licence to overrule a house.
+  const colour = composeAccent({
+    subject,
+    key: palette.accent,
+    ground: palette.ground,
+    registers: type.registers,
+    grounds,
+  });
+  if (!colour.accent) return { candidate: null, refusal: { id, problems: colour.problems } };
+
+  return {
+    candidate: {
+      id,
+      composed: !sameThroughout,
+      ground: palette.ground,
+      accent: colour.accent,
+      colour,
+      // `whole` travels with the palette: a ground and accent published together are evidence, a
+      // pair we put side by side is a proposal, and the ranking below keeps them apart.
+      palette: { from: palette.from, whole: Boolean(palette.whole) },
+      pad: space.pad,
+      header: space.header,
+      headRule: space.headRule,
+      stroke: space.stroke,
+      registers: type.registers,
+      provenance: {
+        ground:
+          palette.groundSource === "newsroom"
+            ? "the newsroom's recorded palette"
+            : provenanceOf(palette.ground, palette.groundSource, palette.from, palette.measuredFrom),
+        accent: colour.composed
+          ? `the hue recorded in PALETTE.md (${subject}), set in ${palette.from}'s own value — ` +
+            `${colour.seed}, walked ${colour.walked} in lightness to clear the floors here`
+          : palette.accentSource === "newsroom"
+            ? "the newsroom's recorded palette"
+            : provenanceOf(palette.accent, palette.accentSource, palette.from, palette.measuredFrom),
+        registers: `${type.id}, measured on ${type.measuredFrom}`,
+        space: `${space.id}, measured on ${space.measuredFrom}`,
+      },
+    },
+    refusal: null,
+  };
+}
+
+/**
+ * THE COLOUR AXIS AS THE RECORD DEFINES IT — read once, by everything that composes.
+ *
+ * `origin` has three legal values and they are not three names for one thing:
+ *
+ *   `newsroom` — the HOUSE palette. A newsroom's ground and accent are its identity, published on
+ *     everything it prints, and where they exist they are THE palette: the colour axis collapses to
+ *     them and a wider search is not a licence to overrule a house.
+ *
+ *   `subject` / `journalist` — a colour decided FOR THIS SUBJECT, against this subject's own
+ *     context. That is a claim about HUE and nothing else: a river drawn deliberately not in the
+ *     water's blue is the same decision on cream paper and on navy. It does not carry a ground with
+ *     it and it does not replace a direction — it TEMPERS every palette on the axis, lending its
+ *     hue to each and taking that palette's own value in return. See `composeAccent`.
+ *
+ * The distinction is READ from the record, never inferred: a record with no `origin` is a house
+ * palette, which is what every caller meant before the field was consulted.
+ */
+function colourAxis(newsroom, palettes) {
+  const house = (newsroom?.origin ?? "newsroom") === "newsroom";
   const housePalette =
-    newsroom?.ground || newsroom?.accent
+    house && (newsroom?.ground || newsroom?.accent)
       ? [
           {
             from: "the newsroom",
@@ -268,45 +505,54 @@ export function composeDirections({
           },
         ]
       : palettes;
+  /** The hue this beat's marks argue in, when the record carries one that is not a house palette. */
+  return { housePalette, subject: house ? null : (newsroom?.accent ?? null) };
+}
+
+/**
+ * A short list of composed candidates for this beat, best first, each guarded.
+ *
+ * COLOUR IS AN AXIS LIKE THE OTHER TWO. The first version crossed type against space and took the
+ * ground and accent wholesale from the type direction, so a palette could only ever appear beside
+ * the type it was measured with. That is not composition, it is a menu of the pieces already
+ * harvested — which is exactly what the owner said when he was shown three hex values to choose
+ * between.
+ *
+ * Widening the search does not widen what passes: every candidate still faces the same three
+ * guards a filed direction faces, on its own real ground.
+ *
+ * @param {{ground?: string, accent?: string, origin?: string}} newsroom  the `PALETTE.md` record
+ * @param {Array<object>} filed                          the filed directions
+ * @param {Array<object>} [palettes]                     colour candidates; the filed ones by default
+ * @param {{evidenceLevels?: number}} beat               the beat's own facts, from its BRIEF
+ * @param {Record<string,string>} textPerRegister        what each register sets on this beat
+ * @param {Array<object>} [grounds]                      the grounds this beat's marks sit on
+ */
+export function composeDirections({
+  newsroom,
+  filed,
+  palettes = palettesFrom(filed),
+  beat = {},
+  textPerRegister = {},
+  grounds = [],
+  limit = OFFER_LIMIT,
+}) {
+  const wanted = beat.evidenceLevels ?? 4;
+  const offered = [];
+  const refused = [];
+
+  const { housePalette, subject } = colourAxis(newsroom, palettes);
 
   for (const type of filed)
     for (const space of filed)
       for (const palette of housePalette) {
-        const sameThroughout = type.id === space.id && palette.from === type.id;
-        const candidate = {
-          // THREE SLOTS, ALWAYS, WHEN ANYTHING IS COMPOSED. A first version deduplicated the
-          // names, and `creme` type + `nocturne` space + `creme` palette collided with the same
-          // pair carrying `nocturne`'s palette: two different candidates, one id, and the second
-          // silently indistinguishable in the report the journalist reads.
-          id: sameThroughout
-            ? type.id
-            : `${type.id}/${space.id}/${palette.from}`,
-          composed: !sameThroughout,
-          ground: palette.ground,
-          accent: palette.accent,
-          // `whole` travels with the palette: a ground and accent published together are evidence,
-          // a pair we put side by side is a proposal, and the ranking below keeps them apart.
-          palette: { from: palette.from, whole: Boolean(palette.whole) },
-          pad: space.pad,
-          header: space.header,
-          headRule: space.headRule,
-          stroke: space.stroke,
-          registers: type.registers,
-          provenance: {
-            ground:
-              palette.groundSource === "newsroom"
-                ? "the newsroom's recorded palette"
-                : provenanceOf(palette.ground, palette.groundSource, palette.from, palette.measuredFrom),
-            accent:
-              palette.accentSource === "newsroom"
-                ? "the newsroom's recorded palette"
-                : provenanceOf(palette.accent, palette.accentSource, palette.from, palette.measuredFrom),
-            registers: `${type.id}, measured on ${type.measuredFrom}`,
-            space: `${space.id}, measured on ${space.measuredFrom}`,
-          },
-        };
+        const { candidate, refusal } = candidateOf({ type, space, palette, subject, grounds });
+        if (!candidate) {
+          refused.push(refusal);
+          continue;
+        }
 
-      const problems = guardDirection(candidate, textPerRegister);
+      const problems = guardDirection(candidate, textPerRegister, grounds);
       const separation = distinguishableRegisters(candidate);
       if (problems.length) {
         refused.push({ id: candidate.id, problems });
@@ -353,6 +599,60 @@ export function composeDirections({
     shortList.push(candidate);
   }
   return { offered: shortList, refused, held, alike };
+}
+
+/**
+ * THE ONE DIRECTION A BEAT IS ACTUALLY DRAWN IN, COLOUR AND ALL — what a renderer calls instead of
+ * taking `readDirection()`'s output to the paint.
+ *
+ * In production a beat has ONE direction, composed upstream in the editorial exchange. `proof/`
+ * renders three only as a bench, to show that a rule is not lucky on one palette; nothing here
+ * knows or cares how many there are.
+ *
+ * THE DEFECT THIS CLOSES. Every render in this tree read its direction off disk and drew
+ * `direction.accent`, while `composeDirections` — the only thing that had ever seen the beat's own
+ * `PALETTE.md` — composed a colour, printed it in a report, and dropped it. The two resolutions
+ * disagreed silently, and the one that reached the paint was the one that had never heard of the
+ * subject. Both now come out of this file, from the same call.
+ *
+ * It refuses LOUDLY rather than falling back to the filed accent: a beat drawn in a colour its own
+ * record argues against is exactly the failure that shipped, and it shipped looking fine.
+ *
+ * @param {object}        args
+ * @param {object}        args.direction        a filed direction, from `readDirection`
+ * @param {object}        args.palette          the `PALETTE.md` record, from `readPalette`
+ * @param {Array<object>} [args.grounds]        the grounds this beat's marks sit on
+ * @param {Record<string,string>} [args.textPerRegister]
+ */
+export function composeDirection({ direction, palette, grounds = [], textPerRegister = {} }) {
+  const { housePalette, subject } = colourAxis(palette, palettesFrom([direction]));
+  const [pair] = housePalette;
+  const { candidate, refusal } = candidateOf({
+    type: direction,
+    space: direction,
+    palette: pair,
+    subject,
+    grounds,
+  });
+  if (!candidate)
+    throw new Error(
+      `the ${direction.id} direction cannot carry this beat's recorded colour: ${refusal.problems.join("; ")}`,
+    );
+
+  // The candidate carries the composed colour and the type and space it was composed with; the
+  // filed record carries everything a renderer also needs and colour never touched.
+  const composed = { ...direction, ...candidate, id: direction.id };
+
+  const colourProblems = guardColour(composed, grounds);
+  if (colourProblems.length)
+    throw new Error(
+      `the ${direction.id} direction cannot carry this beat's recorded colour: ${colourProblems.join("; ")}`,
+    );
+
+  // Everything the OFFER-time guards say about the record itself, reported rather than thrown: a
+  // direction settled upstream cannot re-pick its own register table at render time, and refusing a
+  // render over it would be this repair breaking beats whose colour is fine.
+  return { ...composed, problems: guardDirection(composed, textPerRegister, grounds) };
 }
 
 /** What the journalist is shown: the short list, the provenance, and what was refused and why. */

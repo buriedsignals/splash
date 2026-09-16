@@ -40,7 +40,11 @@ export function plateTints(direction) {
     const water = mix(direction.ground, hue, dose);
     if (contrast(water, land) < SEA_LAND_MIN) continue;
     if (contrast(water, direction.ground) >= BASEMAP_MAX) break;
-    return { water, land, seaLandContrast: contrast(water, land) };
+    // THE PIGMENT TRAVELS WITH THE TINT. What a mark may not be drawn in is the hue this ground was
+    // PAINTED with, not the hue the diluted pixel ends up at — a 6 % dose of blue in cream is less
+    // chromatic than the cream, so the pixel cannot be asked. `land` declares none: it is the
+    // direction's own paper walked toward the direction's own ink, and paper carries no convention.
+    return { water, land, pigment: hue, seaLandContrast: contrast(water, land) };
   }
 
   throw new Error(
@@ -48,6 +52,24 @@ export function plateTints(direction) {
       `${direction.ground} while staying under ${BASEMAP_MAX}:1 against it — this direction and ` +
       `this hue are too close for a basemap, and the beat must be told rather than shown a flat map`,
   );
+}
+
+/**
+ * WHAT A MAP BEAT'S MARKS ARE ACTUALLY DRAWN ON, in the shape `composeDirection` reads.
+ *
+ * A chart's marks sit on the page. A map's marks sit on a BASEMAP over that page, and a river is
+ * drawn on water — so the colour a river may be is decided against the sea, never against the
+ * paper. Handing these to the composer is what lets one call resolve a beat's whole colour system:
+ * the floors are measured on the tints the style actually paints, and the water's own pigment is
+ * what the mark's hue is held apart from.
+ */
+export function plateGrounds(tints) {
+  return [
+    { name: "the basemap's water", colour: tints.water, pigment: tints.pigment ?? WATER_HUE },
+    // No pigment: the land is the direction's paper walked toward its ink, and carries no hue a
+    // reader could mistake a mark for.
+    { name: "the basemap's land", colour: tints.land },
+  ];
 }
 
 /** THE FLOOR A FRONTIER MUST CLEAR AGAINST THE LAND IT DIVIDES, and the ceiling it may not pass.

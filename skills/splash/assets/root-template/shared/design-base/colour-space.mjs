@@ -59,3 +59,39 @@ export function hueGap(a, b) {
   const d = Math.abs(a - b) % 360;
   return d > 180 ? 360 - d : d;
 }
+
+/**
+ * HSL BACK TO sRGB — the inverse of `hsl`, and the reason it exists.
+ *
+ * Composing a beat's colour keeps ONE axis of a recorded colour (its hue, which is what a subject's
+ * convention actually is) and takes the other two from the direction the beat is drawn in (its
+ * saturation and lightness, which are what a direction's accent actually is). That operation is not
+ * expressible as a mix of two hex values — a mix travels through the line between them and lands on
+ * neither hue — so the composer has to leave hex space, change one axis, and come back.
+ *
+ * @param {number} h  degrees, 0..360
+ * @param {number} s  0..1
+ * @param {number} l  0..1
+ */
+export function hexFromHsl(h, s, l) {
+  const H = ((h % 360) + 360) % 360;
+  const S = Math.min(1, Math.max(0, s));
+  const L = Math.min(1, Math.max(0, l));
+  const c = (1 - Math.abs(2 * L - 1)) * S;
+  const x = c * (1 - Math.abs(((H / 60) % 2) - 1));
+  const m = L - c / 2;
+  const [r, g, b] =
+    H < 60 ? [c, x, 0]
+    : H < 120 ? [x, c, 0]
+    : H < 180 ? [0, c, x]
+    : H < 240 ? [0, x, c]
+    : H < 300 ? [x, 0, c]
+    : [c, 0, x];
+  return (
+    "#" +
+    [r, g, b]
+      .map((v) => Math.round((v + m) * 255).toString(16).padStart(2, "0"))
+      .join("")
+      .toUpperCase()
+  );
+}

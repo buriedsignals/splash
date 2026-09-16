@@ -35,10 +35,10 @@ import { contrast, mix, readPalette } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
-import { composeDirections, report } from "#shared/design-base/compose.mjs";
+import { composeDirection, composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
-import { countryGround } from "#shared/map-beat/tints.mjs";
+import { countryGround, plateGrounds, plateTints } from "#shared/map-beat/tints.mjs";
 import { MAP_DRAWING_SHARE, renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import {
   assertMeasuresReachTheLayers,
@@ -415,13 +415,15 @@ function ensurePlate(id, water, land) {
   if (result.status !== 0) throw new Error(`bake.mjs exited with ${result.status} for ${id}`);
 }
 
-/** The two tints a basemap is allowed on a directed plate, both derived from the direction and
- *  neither invented: `water-is-a-tint-not-a-grey` says the sea takes a little of the accent, and the
- *  land takes a step off the ground toward the ink. Nothing else on the basemap carries colour. */
-const plateTints = (d) => ({
-  water: mix(d.ground, d.accent, 0.16),
-  land: mix(d.ground, deriveFurniture(d.ground).ink, 0.07),
-});
+/** THE TWO TINTS A BASEMAP IS ALLOWED, TAKEN FROM THE TRUNK RATHER THAN DERIVED AGAIN HERE.
+ *
+ *  What this beat used to do: `water: mix(d.ground, d.accent, 0.16)` — the sea tinted with the very
+ *  accent the RIVER is drawn in. That is why this page shipped a blue Danube on blue water, and why
+ *  it was structural rather than unlucky: a mark cannot be picked out of a ground that follows it,
+ *  whatever accent is chosen. `shared/map-beat/tints.mjs` paints water in the filed WATER
+ *  CONVENTION instead, searches the smallest dose that still separates sea from land, and hands
+ *  back the pigment it used — which is what `composeDirection` holds this beat's mark apart from.
+ */
 
 const DIRECTION_FILES = readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md")).sort();
 for (const file of DIRECTION_FILES) {
@@ -789,11 +791,37 @@ async function bakeFallback(pagePath, outFile, id) {
 const refused = [];
 for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const id = file.replace(/\.md$/, "");
-  const base = readDirection(join(DIRECTIONS, file));
+  const filedBase = readDirection(join(DIRECTIONS, file));
+  // The colour the plate's LAND and WATER are painted in — what the page actually paints behind
+  // every mark, and the only honest thing to measure the river against. Read BEFORE the colour is
+  // composed, because these tints no longer depend on the accent: the water takes the filed water
+  // convention, so the ground under the river cannot follow the river.
+  const tints = plateTints(filedBase);
+  // ONE RESOLUTION OF THIS BEAT'S COLOUR, and it is the one that reaches the paint. The direction
+  // and `PALETTE.md` are not two sources competing for the accent slot — the record owns the hue
+  // the Danube argues in, this direction owns the value a mark may carry on its paper, and
+  // `composeDirection` returns the single colour that is both, measured against the water and the
+  // land the river actually runs through. It refuses rather than falling back.
+  let base;
+  try {
+    base = composeDirection({
+      direction: filedBase,
+      palette: newsroom,
+      grounds: plateGrounds(tints),
+      textPerRegister,
+    });
+  } catch (error) {
+    // A COLOUR REFUSAL IS A REFUSAL LIKE THE OTHERS, and takes the same path: named on the console,
+    // counted at the end, and the previous render removed so it cannot be mistaken for this one.
+    // Thrown past this it would abort the whole run on the first direction, leaving the other two
+    // unrendered and the stale pages on disk — which is how a beat ships a colour it refused.
+    refused.push({ id, why: error.message });
+    console.log(`${id} REFUSED — ${error.message}`);
+    await rm(join(OUT, `${id}.html`), { force: true });
+    await rm(localPageOf(join(OUT, `${id}.html`)), { force: true });
+    continue;
+  }
   const direction = resolveDirectionFamilies(base, textPerRegister);
-  // The colour the plate's LAND was baked in — what the page actually paints behind every mark, and
-  // the only honest thing to measure the river against.
-  const tints = plateTints(base);
   const furniture = deriveFurniture(base.ground);
   // ONE DERIVATION OF THE INKS, READ BY BOTH HALVES. The component paints the table's samples from it
   // and this file builds the live map's line paint from the SAME call — a second derivation is
