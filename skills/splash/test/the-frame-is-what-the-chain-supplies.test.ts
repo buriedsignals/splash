@@ -248,9 +248,15 @@ describe("parseTypeSheet", () => {
   });
 
   it("should read a prohibition's checkable id where the sheet files one, and no id where it does not", () => {
-    expect(parseTypeSheet(text).prohibitions.every((p) => p.id === null)).toBe(
+    // All 160 sheets file ids now; `every-prohibition-carries-a-checkable-id.test.ts` is the census.
+    // What is asserted here is the READER: an id where the sheet writes one, `null` where it does not.
+    expect(parseTypeSheet(text).prohibitions.every((p) => p.id !== null)).toBe(
       true,
     );
+    expect(
+      parseTypeSheet("## A choreography must NOT\n- overlap two pictures\n")
+        .prohibitions,
+    ).toEqual([{ id: null, says: "overlap two pictures" }]);
     const withIds = parseTypeSheet(
       "## Scroll gestures\n- **Pull back** — the whole stands\n\n" +
         "## A choreography must NOT\n- `no-slideshow` — replay the static plate's states\n" +
