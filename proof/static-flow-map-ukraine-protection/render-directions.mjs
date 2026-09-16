@@ -20,9 +20,10 @@ import { readFile, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
-import { renderStill, deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { readPalette, mix } from "#shared/chart-beat/colour.mjs";
+import { renderStill } from "#shared/chart-beat/render-still.mjs";
+import { readPalette } from "#shared/chart-beat/colour.mjs";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
+import { plateTints } from "#shared/map-beat/tints.mjs";
 import { readDirection } from "../../scripts/design-base/read-direction.mjs";
 import { composeDirections, report } from "../../scripts/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "../../scripts/design-base/resolve-families.mjs";
@@ -157,14 +158,15 @@ function ensurePlate(id, water, land) {
   );
   if (result.status !== 0) throw new Error(`bake.mjs exited with ${result.status} for ${id}`);
 }
-const plateTints = (d) => ({
-  water: mix(d.ground, d.accent, 0.16),
-  land: mix(d.ground, deriveFurniture(d.ground).ink, 0.07),
-});
+// THE PAIR COMES FROM THE TRUNK, AND THE WATER IS NOT THIS BEAT'S TO CHOOSE. What stood here was
+// `water: mix(d.ground, d.accent, 0.16)` — the sea tinted with the very accent this beat's marks are
+// drawn in, so the ground followed the mark and no accent could be picked out of it. Only the LAND's
+// weight is measured per beat; the water is the filed convention, once, in `shared/map-beat/tints.mjs`.
+const LAND_DOSE = 0.07;
 const DIRECTION_FILES = readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md")).sort();
 for (const file of DIRECTION_FILES) {
   const id = file.replace(/\.md$/, "");
-  const t = plateTints(readDirection(join(DIRECTIONS, file)));
+  const t = plateTints(readDirection(join(DIRECTIONS, file)), { landDose: LAND_DOSE });
   ensurePlate(id, t.water, t.land);
 }
 const factsOf = async (id) => JSON.parse(await readFile(join(plateDir(id), "geometry.json"), "utf8"));

@@ -31,9 +31,29 @@ export const BASEMAP_MAX = 1.6;
  *  the two in step. */
 export const WATER_HUE = "#1F6FB2";
 
-export function plateTints(direction) {
+/** THE DEFAULT WEIGHT OF THE LAND against the page, in ink. A beat that measured another one for
+ *  its own marks passes it; nothing else about the pair is a beat's to choose. */
+export const LAND_INK_DOSE = 0.045;
+
+/**
+ * THE PAIR, AND THE ONE THING A BEAT MAY NOT DECIDE ABOUT IT.
+ *
+ * `landDose` is a beat's to pass, because how much weight the continent carries is measured against
+ * what that beat's own marks sit on — `proof/static-dot-density-europe-stations` measured 0.16
+ * against 0.045 and wrote down why: its dots are all on land, and at the lighter dose the sea read
+ * as figure and the continent as ground.
+ *
+ * THE WATER IS NOT. It is the filed water convention, always, and it is the whole reason this
+ * function exists rather than three lines in each beat. Twelve beats carried
+ * `water: mix(ground, accent, 0.16)` — the sea tinted with the very accent the marks are drawn in,
+ * so the ground followed the mark and no accent could ever be picked out of it (0.0° of pigment
+ * separation, by construction, in every direction). That is not a dose a beat gets to tune; it is a
+ * defect, and it can only stop recurring by there being ONE definition of the pair and no local
+ * copy of it. `a-basemap-s-water-is-never-the-beat-s-accent.test.ts` holds the corpus to that.
+ */
+export function plateTints(direction, { landDose = LAND_INK_DOSE } = {}) {
   const { ink } = deriveFurniture(direction.ground);
-  const land = mix(direction.ground, ink, 0.045);
+  const land = mix(direction.ground, ink, landDose);
   const hue = WATER_HUE;
 
   for (let dose = 0.06; dose <= 0.7; dose += 0.02) {

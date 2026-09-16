@@ -553,7 +553,7 @@ export function areaScaleCss(
     `   cx/cy changes in any state and no circle can become an ellipse. */`,
     `${scope} [data-symbol] { transform-box: fill-box; transform-origin: 50% 50%; }`,
     `${scope} [data-key-symbol] { transform-box: fill-box; transform-origin: 50% 50%; }`,
-    `${scope} [data-stack-note] { display: none; }`,
+    `${scope} [data-stack-note] { visibility: hidden; }`,
     `${scope} [data-symbol] { transform: scale(1); }`,
     `${scope} [data-key-symbol] { transform: scale(1); }`,
     `@media (prefers-reduced-motion: no-preference) {`,
@@ -580,7 +580,7 @@ export function areaScaleCss(
       if (Math.abs(factor - 1) > 1e-9)
         lines.push(`${at} [data-key-symbol="${key}"] { transform: scale(${round(factor)}); }`);
     }
-    if (option.note) lines.push(`${at} [data-stack-note="${slug}"] { display: revert; }`);
+    if (option.note) lines.push(`${at} [data-stack-note="${slug}"] { visibility: visible; }`);
   }
   return lines.join("\n");
 }
@@ -654,7 +654,7 @@ export function assertOneAreaScale(
     "[data-symbol] { transform-box: fill-box; transform-origin: 50% 50%; }",
     "a mark would scale about the SVG's own origin instead of its own centre, which moves every place on the map",
   );
-  need("[data-stack-note] { display: none; }", "every law's sentence would print at once");
+  need("[data-stack-note] { visibility: hidden; }", "every law's sentence would print at once");
 
   // AND THE BLANKETS MUST COME FIRST, which is a separate fact from their being present. Two
   // attribute selectors score identically; source order is the entire mechanism.
@@ -717,18 +717,17 @@ export function assertOneAreaScale(
 export function areaScaleChromeSpec(): {
   name: string;
   rail: "wrap";
-  notes: { reserve: string; why: string; stacked: true };
 } {
   return {
     name: "area-scale",
     rail: "wrap",
-    notes: {
-      reserve: "4.5em",
-      why:
-        "Three lines. This control's sentences carry two derived ratios and an erased count, and the " +
-        "longest of them wraps to three lines at 375px — measured on the rendered page rather than " +
-        "estimated. Reserved whether or not a law is chosen, so choosing one never moves the map.",
-      stacked: true,
-    },
+    // NOTHING TO HAND OVER ABOUT THE ROW, AND THAT IS THE REPAIR. This spec carried
+    // `notes: { reserve: "4.5em", why, stacked: true }` — a hand-authored three-line height,
+    // measured once at 375px. `control-chrome.ts` retired all three keys and now REFUSES a call
+    // that still passes one, which is why this beat stopped rendering at all: every direction came
+    // back `control chrome (area-scale): notes.reserve no longer exists`. The row is reserved by
+    // stacking every sentence in one grid cell, so it is as deep as its own deepest sentence at
+    // whatever width the reader's window happens to be, and there is no number here to carry to the
+    // next subject.
   };
 }

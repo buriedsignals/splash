@@ -29,7 +29,7 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import puppeteer from "puppeteer";
 import { fileURLToPath } from "node:url";
-import { contrast, mix, readPalette } from "#shared/chart-beat/colour.mjs";
+import { contrast, readPalette } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
@@ -37,6 +37,7 @@ import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
 import { countryGround } from "#shared/map-beat/tints.mjs";
+import { plateTints } from "#shared/map-beat/tints.mjs";
 import { MAP_DRAWING_SHARE, renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import {
   assertMeasuresReachTheLayers,
@@ -417,15 +418,16 @@ function ensurePlate(id, water, land) {
 /** The two tints a basemap is allowed on a directed plate, both derived from the direction and
  *  neither invented: `water-is-a-tint-not-a-grey` says the sea takes a little of the accent, and the
  *  land takes a step off the ground toward the ink. Nothing else on the basemap carries colour. */
-const plateTints = (d) => ({
-  water: mix(d.ground, d.accent, 0.16),
-  land: mix(d.ground, deriveFurniture(d.ground).ink, 0.07),
-});
+// THE PAIR COMES FROM THE TRUNK, AND THE WATER IS NOT THIS BEAT'S TO CHOOSE. What stood here was
+// `water: mix(d.ground, d.accent, 0.16)` — the sea tinted with the very accent this beat's marks are
+// drawn in, so the ground followed the mark and no accent could be picked out of it. Only the LAND's
+// weight is measured per beat; the water is the filed convention, once, in `shared/map-beat/tints.mjs`.
+const LAND_DOSE = 0.07;
 
 const DIRECTION_FILES = readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md")).sort();
 for (const file of DIRECTION_FILES) {
   const id = file.replace(/\.md$/, "");
-  const t = plateTints(readDirection(join(DIRECTIONS, file)));
+  const t = plateTints(readDirection(join(DIRECTIONS, file)), { landDose: LAND_DOSE });
   ensurePlate(id, t.water, t.land);
 }
 const factsOf = async (id) => JSON.parse(await readFile(join(plateDir(id), "geometry.json"), "utf8"));
@@ -787,7 +789,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const id = file.replace(/\.md$/, "");
   const base = readDirection(join(DIRECTIONS, file));
   const direction = resolveDirectionFamilies(base, textPerRegister);
-  const tints = plateTints(base);
+  const tints = plateTints(base, { landDose: LAND_DOSE });
   const furniture = deriveFurniture(base.ground);
   const RIBBON_OPACITY = 0.55;
   // ONE DERIVATION OF THE INKS, READ BY BOTH HALVES. The component paints the table's samples from

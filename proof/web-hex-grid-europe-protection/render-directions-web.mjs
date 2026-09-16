@@ -27,13 +27,14 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer";
-import { mix, readPalette } from "#shared/chart-beat/colour.mjs";
+import { readPalette } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture, measureText } from "#shared/chart-beat/render-still.mjs";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
+import { plateTints } from "#shared/map-beat/tints.mjs";
 import { MAP_DRAWING_SHARE, renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import {
   assertOnePool,
@@ -745,10 +746,11 @@ async function bakeFallback(pagePath, outFile, id) {
 
 /** The two tints a basemap is allowed on a directed page, neither invented: the sea takes a little
  *  of the accent, the land takes a step off the ground toward the ink. */
-const plateTints = (d) => ({
-  water: mix(d.ground, d.accent, 0.16),
-  land: mix(d.ground, deriveFurniture(d.ground).ink, 0.07),
-});
+// THE PAIR COMES FROM THE TRUNK, AND THE WATER IS NOT THIS BEAT'S TO CHOOSE. What stood here was
+// `water: mix(d.ground, d.accent, 0.16)` — the sea tinted with the very accent this beat's marks are
+// drawn in, so the ground followed the mark and no accent could be picked out of it. Only the LAND's
+// weight is measured per beat; the water is the filed convention, once, in `shared/map-beat/tints.mjs`.
+const LAND_DOSE = 0.07;
 
 const refused = [];
 for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
@@ -756,7 +758,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const base = readDirection(join(DIRECTIONS, file));
   const direction = resolveDirectionFamilies(base, textPerRegister);
   try {
-    const tints = plateTints(base);
+    const tints = plateTints(base, { landDose: LAND_DOSE });
     const furniture = deriveFurniture(base.ground);
     // ONE DERIVATION OF THE RAMP, READ BY BOTH HALVES: the component draws the table's swatches from
     // it and this file builds the live map's per-grain expressions from the SAME arrays.

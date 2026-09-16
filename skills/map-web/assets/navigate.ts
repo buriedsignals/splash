@@ -237,12 +237,11 @@ export function navigateControlsForMarkup(
   }));
 }
 
-/** The chrome spec this vocabulary hands `control-chrome.ts`. One class stem, one measured reserve;
+/** The chrome spec this vocabulary hands `control-chrome.ts`. One class stem and one rail;
  *  everything else about the drawing belongs to that file and is not decided here. */
 export function navigateChromeSpec(): {
   name: string;
   rail: "wrap";
-  notes: { reserve: null };
 } {
   return {
     name: "navigate",
@@ -252,7 +251,10 @@ export function navigateChromeSpec(): {
     // that grew would push the plot down. This one's sentence is on the page in every state; the
     // only part of it that ever changes is the magnification, one figure set in tabular numerals,
     // so the row cannot change height and there is nothing for a reserve to hold open.
-    notes: { reserve: null },
+    //
+    // It said that with `notes: { reserve: null }`, and `control-chrome.ts` now refuses the KEY
+    // rather than the value — `"reserve" in notes` is true of a null too — so the sentence above is
+    // the whole statement and no `notes` object is handed over at all.
   };
 }
 

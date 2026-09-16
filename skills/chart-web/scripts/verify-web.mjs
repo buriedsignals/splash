@@ -45,9 +45,9 @@
 // with both numbers, and exits 1.
 
 import { existsSync, readdirSync } from "node:fs";
-import { mkdir } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import { homedir } from "node:os";
-import { dirname, join, resolve } from "node:path";
+import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
 import { render } from "./render-web.mjs";
@@ -861,6 +861,127 @@ async function comparePixels(darkroom, a, b) {
   );
 }
 
+/** THE DELIVERY PLACEHOLDER, ASSEMBLED RATHER THAN WRITTEN WHOLE — the same discipline
+ *  `live-map.mjs` keeps, and for the same reason: nothing that carries this string may be
+ *  substitutable by a key. */
+const KEY_SENTINEL = "__MAPTILER" + "_KEY__";
+
+/**
+ * WHETHER THIS PAGE'S MARKS ARE A LIVE LAYER, AND WHETHER THAT LAYER IS UP.
+ *
+ * A map × web beat draws its marks as MapLibre layers over a provider's tiles, with the SSR'd
+ * fallback underneath — and its control drives the layer, not an SVG. Three states, and telling
+ * them apart is the whole point of this function:
+ *
+ *   - the page declares no live plan → an ordinary beat, nothing here applies;
+ *   - it declares one whose style URL still carries the delivery placeholder → the layer CANNOT
+ *     boot. `live-map.mjs` says so in writing: the committed artifact is always in this state, so a
+ *     proof page does not spend a newsroom's tile quota. A frame comparison taken here measures the
+ *     frozen fallback and nothing else;
+ *   - it declares a keyed one → the layer boots asynchronously and the page states it itself, by
+ *     putting `mw-live` on the root element inside `map.on("load")`.
+ *
+ * MEASURED, 2026-09-16, and this is why the function exists. Five committed map beats reported
+ * `choosing "X" repaints the drawing — 0 of 828768 pixels differ`. On their keyed copies, driven in
+ * a real browser with time for the layer to come up, every option moves 13 796 to 227 225 pixels.
+ * The control was never dead; the verifier was reading a page whose marks had not been drawn yet.
+ * An unknown reported as a defect is the same failure as an unknown reported as a pass.
+ */
+async function liveLayerState(page) {
+  return page.evaluate((sentinel) => {
+    const el = document.getElementById("mw-live-plan");
+    if (!el) return { declares: false, keyed: null, up: false };
+    let plan = null;
+    try {
+      plan = JSON.parse(el.textContent);
+    } catch (err) {
+      plan = null;
+    }
+    const url = plan && plan.styleUrl ? plan.styleUrl : "";
+    return {
+      declares: true,
+      keyed: !!url && url.indexOf(sentinel) < 0,
+      up: document.documentElement.classList.contains("mw-live"),
+      layers: plan && plan.layers ? plan.layers.length : 0,
+    };
+  }, KEY_SENTINEL);
+}
+
+/** How long a keyed live layer is given to come up before its absence is reported as a measurement
+ *  that could not be taken. Twelve seconds: the slowest of the five beats measured here reached
+ *  `mw-live` at 6.1 s over a cold tile cache. */
+const LIVE_LAYER_TIMEOUT_MS = 12000;
+/** Once the layer is up its tiles keep arriving, so the rectangle is still moving. Two idle frames
+ *  are taken until they agree to within this many pixels, or until the window closes — and whatever
+ *  they still disagree about becomes the noise floor the existing jitter check reports. */
+const LIVE_SETTLE_MS = 10000;
+
+/**
+ * WAIT FOR THE PAGE'S MARKS TO EXIST BEFORE MEASURING THEM, and say so when they never do.
+ *
+ * Returns the state the rest of the run has to reason with. It never makes anything green: a layer
+ * that does not come up is reported, and a control that drives a layer which is not up is reported
+ * in those words rather than as "this option changes nothing a reader can see".
+ */
+async function settleLiveLayer(page, darkroom, { scripting = true, tag = "" } = {}) {
+  const first = await liveLayerState(page);
+  if (!first.declares) return { ...first, required: false };
+
+  if (!scripting) {
+    // The honest statement of what a reader with scripting off is looking at: one frozen frame.
+    // Not a pass — the control is still on the page and still does nothing for them.
+    return { ...first, required: true, up: false, why: "scripting is off, so no live layer is ever mounted" };
+  }
+  if (!first.keyed)
+    return {
+      ...first,
+      required: true,
+      up: false,
+      why: "this page's style URL still carries the delivery placeholder, so its live layer cannot boot",
+    };
+
+  const deadline = Date.now() + LIVE_LAYER_TIMEOUT_MS;
+  let state = first;
+  while (!state.up && Date.now() < deadline) {
+    await sleep(200);
+    state = await liveLayerState(page);
+  }
+  if (!state.up)
+    return {
+      ...state,
+      required: true,
+      why: `the page never put \`mw-live\` on its root element within ${LIVE_LAYER_TIMEOUT_MS} ms, so its ${state.layers} declared layers were never mounted`,
+    };
+
+  // The layer is up and its tiles are still arriving. Settle on the plot rather than on a timer.
+  const clip = await page.evaluate(() => {
+    const el = document.querySelector(".chart-plot");
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    return {
+      x: Math.max(0, Math.floor(r.left)),
+      y: Math.max(0, Math.floor(r.top)),
+      width: Math.ceil(r.width),
+      height: Math.ceil(r.height),
+    };
+  });
+  let settledAt = null;
+  if (clip && clip.width > 0 && clip.height > 0) {
+    const stop = Date.now() + LIVE_SETTLE_MS;
+    while (Date.now() < stop) {
+      const a = await page.screenshot({ clip, encoding: "binary" });
+      await sleep(250);
+      const b = await page.screenshot({ clip, encoding: "binary" });
+      const { diffPixels, totalPixels } = await comparePixels(darkroom, a, b);
+      if (diffPixels * 200 <= totalPixels) {
+        settledAt = diffPixels;
+        break;
+      }
+    }
+  }
+  return { ...state, required: true, settledAt };
+}
+
 /** A rectangle, its settled frame, and the jitter THAT rectangle actually shows on THIS page.
  *
  *  The floor is measured rather than chosen: two frames of the same idle rectangle, back to back,
@@ -1067,6 +1188,22 @@ async function checkControlSurface(page, darkroom, vp, { scripting = true } = {}
     controls.map((c) => c.stem).filter(Boolean),
   );
 
+  // WHAT THIS BEAT'S MARKS ARE, BEFORE ANY FRAME IS COMPARED. On a map beat the marks are MapLibre
+  // layers; until they are mounted, every rectangle on this page shows the frozen fallback and a
+  // comparison over it measures the checker's own timing.
+  const live = await settleLiveLayer(page, darkroom, { scripting, tag });
+  if (live.declares)
+    check(
+      live.up,
+      `${tag}: this beat's marks are a live layer, and the layer is up`,
+      live.up
+        ? `mw-live is set, ${live.layers} layers mounted` +
+          (live.settledAt === null
+            ? " — the plot was still moving when the settle window closed"
+            : `, the plot settled to ${live.settledAt} moving pixels`)
+        : live.why,
+    );
+
   // A beat with no control is a fact about the beat, not a check the runner could not perform —
   // and `SKILL.md`'s own three-part test says most beats should not have one. Announced as a
   // measurement, so the summary can never show a run that verified nothing as a clean run.
@@ -1147,6 +1284,78 @@ async function checkControlSurface(page, darkroom, vp, { scripting = true } = {}
     const plotBox = await boxOf(".chart-plot");
     check(!!plotBox && plotBox.width > 0 && plotBox.height > 0, `${who}: the plot it operates has a box`, plotBox ? `${plotBox.width}x${plotBox.height}` : "no .chart-plot");
     if (!plotBox) continue;
+
+    // ── THE RESERVED NOTE ROW, MEASURED RATHER THAN INFERRED ─────────────────────────────────────
+    //
+    // This is the cause behind `choosing "X" does not move the drawing`, and it is checked
+    // separately because that check's own message — two rectangles — never names it. Measured on
+    // the corpus the day this was written: the note row was reserved by a hand-authored
+    // `min-height` (1.5em, one line) while the sentence wrapped to three or four at a narrow width,
+    // so 34 of 58 committed beats lost up to 53px of plot the moment a reader chose an option.
+    //
+    // The row can only be as deep as a sentence it can SEE. A sentence hidden by its display is out
+    // of the container's flow and contributes no height, so a row holding four sentences that way
+    // is as deep as whichever one happens to be showing — which is the jump, not a reservation.
+    // `control-chrome.ts` stacks every sentence in one grid cell for exactly this reason, and that
+    // only reserves anything if the unchosen sentences stay in flow (`visibility: hidden`).
+    const noteRowOf = async (selector) =>
+      page.evaluate((sel) => {
+        const box = document.querySelector(sel);
+        if (!box) return null;
+        const isNote = (el) =>
+          Array.prototype.find.call(el.attributes, (a) => /^data-[a-z0-9-]+-note$/.test(a.name));
+        const sentences = Array.prototype.filter
+          .call(box.querySelectorAll("*"), isNote)
+          .map((el) => {
+            const cs = getComputedStyle(el);
+            return {
+              key: isNote(el).value,
+              height: Math.round(el.getBoundingClientRect().height),
+              inFlow: cs.display !== "none",
+              text: el.textContent.trim().slice(0, 48),
+            };
+          });
+        return { height: Math.round(box.getBoundingClientRect().height), sentences };
+      }, selector);
+
+    const noteRowAtLanding = control.notesSelector ? await noteRowOf(control.notesSelector) : null;
+    if (noteRowAtLanding && noteRowAtLanding.sentences.length) {
+      const outOfFlow = noteRowAtLanding.sentences.filter((n) => !n.inFlow);
+      check(
+        outOfFlow.length === 0,
+        `${who}: every sentence the note row reserves for is IN FLOW where the row can measure it`,
+        outOfFlow.length
+          ? `${outOfFlow.length} of ${noteRowAtLanding.sentences.length} sentences are taken out of the row's flow by their display (${outOfFlow
+              .map((n) => n.key)
+              .slice(0, 4)
+              .join(", ")}) — the row cannot reserve depth for a sentence it cannot see. Hide them with \`visibility: hidden\` and reveal one with \`visibility: visible\`, so control-chrome's grid cell can stack them and take the depth of the deepest.`
+          : `${noteRowAtLanding.sentences.length} sentences, all measurable`,
+      );
+      const deepest = noteRowAtLanding.sentences.reduce(
+        (worst, n) => (n.height > worst.height ? n : worst),
+        noteRowAtLanding.sentences[0],
+      );
+      const total = noteRowAtLanding.sentences.reduce((sum, n) => sum + n.height, 0);
+      // BOTH SIDES, because both are defects and only one of them is visible as a jump. Too shallow
+      // and the sentence pushes the drawing; too deep and the row is charging the plot for space no
+      // sentence occupies — which is what a stack of in-flow sentences that are NOT in one grid cell
+      // costs: measured on web-heatmap-europe-electricity at 375px, 270px of row for a 90px
+      // sentence. The slack is for the paragraphs' own margins, which a vocabulary may set.
+      const SLACK = 12;
+      const tooShallow = noteRowAtLanding.height + 1 < deepest.height;
+      const tooDeep = noteRowAtLanding.height > deepest.height + SLACK;
+      check(
+        !tooShallow && !tooDeep,
+        `${who}: the note row is exactly as deep as its deepest sentence`,
+        `${control.notesSelector} is ${noteRowAtLanding.height}px; its deepest of ${noteRowAtLanding.sentences.length} sentences needs ${deepest.height}px ("${deepest.text}")` +
+          (tooShallow
+            ? ` — the row is shallower than the sentence it has to hold, so the sentence pushes the drawing`
+            : "") +
+          (tooDeep
+            ? ` — the row is charging the plot for ${noteRowAtLanding.height - deepest.height}px no sentence occupies. All ${noteRowAtLanding.sentences.length} together are ${total}px, which is what they cost when they are in flow but NOT in one grid cell: control-chrome.ts puts them in one (grid-area: 1 / 1) so the row is the deepest rather than the sum.`
+            : ""),
+      );
+    }
 
     const pillBox = async (id) =>
       page.evaluate((radioId) => {
@@ -1253,13 +1462,37 @@ async function checkControlSurface(page, darkroom, vp, { scripting = true } = {}
         `${plotBox.x},${plotBox.y} ${plotBox.width}x${plotBox.height} → ${movedTo.x},${movedTo.y} ${movedTo.width}x${movedTo.height}`,
       );
 
+      // AND THE ROW THAT IS SUPPOSED TO HAVE PAID FOR IT. When the check above is red this is
+      // almost always why, and this is the message that says so in the row's own units.
+      if (noteRowAtLanding) {
+        const rowNow = await noteRowOf(control.notesSelector);
+        const grew = rowNow ? Math.abs(rowNow.height - noteRowAtLanding.height) > 1 : false;
+        check(
+          !grew,
+          `${who}: choosing "${option.key}" does not change the note row's depth`,
+          `${control.notesSelector} ${noteRowAtLanding.height}px → ${rowNow ? rowNow.height : "?"}px` +
+            (grew
+              ? ` — the row is reserved for one sentence and this one needs more. Reserve it by stacking every sentence in one grid cell (control-chrome.ts does this for every control) rather than by a min-height: the depth a sentence needs is a function of the READER'S width, so no build-time number is right at 1600 and at 375 at once.`
+              : ""),
+        );
+      }
+
       // (1) THE PICTURE REALLY CHANGED. The one check a control wired to nothing cannot pass.
       const plotNow = await shot(plotClip);
       const plotMoved = await apart(plotNow, plotAtRest);
       check(
         plotMoved > plotBase.floor,
         `${who}: choosing "${option.key}" repaints the drawing`,
-        `${plotMoved} of ${plotBase.totalPixels} pixels differ from the landing view, against this rectangle's own ${plotBase.floor}-pixel noise floor${plotMoved > plotBase.floor ? "" : " — this option changes nothing a reader can see"}` +
+        `${plotMoved} of ${plotBase.totalPixels} pixels differ from the landing view, against this rectangle's own ${plotBase.floor}-pixel noise floor${
+          plotMoved > plotBase.floor
+            ? ""
+            : live.declares && !live.up
+              ? // NOT "this option changes nothing a reader can see". The marks this option drives
+                // were never drawn, so what was compared is the frozen fallback against itself —
+                // which says nothing about the control and everything about the page's state.
+                ` — but this beat's marks are a live layer and the layer is NOT up (${live.why}), so both frames are the frozen fallback and this comparison cannot see the control at all`
+              : " — this option changes nothing a reader can see"
+        }` +
           // SAID OUT LOUD RATHER THAN QUIETLY BANKED. The clip is the landing rectangle; if the
           // drawing moved out from under it, this comparison is between two different pieces of
           // the page and its green means nothing. The check above is the one to fix first.
@@ -1642,6 +1875,46 @@ if (!filePath) {
 }
 filePath = resolve(filePath);
 if (!existsSync(filePath)) throw new Error(`no such beat: ${filePath}`);
+
+/**
+ * A MAP BEAT IS VERIFIED IN THE STATE PRODUCTION SHIPS IT, WHICH IS NOT THE STATE IT IS COMMITTED
+ * IN.
+ *
+ * `live-map.mjs` keeps the real key out of the repository, so a committed map × web page always
+ * carries the delivery placeholder and its live layer never boots. Its marks are those layers. A
+ * run over that file measures the frozen fallback and reports a working control as dead — measured
+ * on five beats on 2026-09-16, all five green the moment their keyed copy was driven instead.
+ *
+ * The renderer writes that keyed copy beside the committed one as `<direction>.local.html`, and
+ * `.gitignore` keeps it out of the tree. So: a page whose live layer cannot boot is redirected to
+ * the keyed copy standing next to it, out loud. If there is none, the run continues on the
+ * placeholder page and every check that depends on the layer reports that it could not be taken —
+ * never a skip, and never a quiet green.
+ */
+{
+  const sentinel = "__MAPTILER" + "_KEY__";
+  const page = await readFile(filePath, "utf8");
+  const declaresLive = page.includes('id="mw-live-plan"');
+  if (declaresLive && page.includes(sentinel)) {
+    const keyed = filePath.replace(/\.html$/, ".local.html");
+    if (existsSync(keyed) && !(await readFile(keyed, "utf8")).includes(sentinel)) {
+      console.log(
+        `this beat's marks are a live layer and ${basename(filePath)} carries the delivery ` +
+          `placeholder instead of a key, so its layer cannot boot. Verifying the keyed copy that ` +
+          `stands beside it — ${basename(keyed)} — which is the page a reader is actually served.`,
+      );
+      filePath = keyed;
+    } else {
+      console.log(
+        `WARNING: this beat's marks are a live layer, ${basename(filePath)} carries the delivery ` +
+          `placeholder instead of a key, and no keyed copy stands beside it. Its layers will never ` +
+          `mount, and every check below that depends on them reports a measurement that could not ` +
+          `be taken rather than a result.`,
+      );
+    }
+  }
+}
+
 if (wantShots) await mkdir(outDir, { recursive: true });
 
 const browser = await puppeteer.launch({ headless: true, executablePath: resolveChrome() });

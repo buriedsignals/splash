@@ -29,6 +29,7 @@ import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
+import { plateTints } from "#shared/map-beat/tints.mjs";
 import { MAP_DRAWING_SHARE, renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 import {
   assertOneClassing,
@@ -427,15 +428,16 @@ function ensurePlate(id, water, land) {
 /** The two tints a basemap is allowed on a directed plate, both derived from the direction and
  *  neither invented: `water-is-a-tint-not-a-grey` says the sea takes a little of the accent, and the
  *  land takes a step off the ground toward the ink. Nothing else on the basemap carries colour. */
-const plateTints = (d) => ({
-  water: mix(d.ground, d.accent, 0.16),
-  land: mix(d.ground, deriveFurniture(d.ground).ink, 0.07),
-});
+// THE PAIR COMES FROM THE TRUNK, AND THE WATER IS NOT THIS BEAT'S TO CHOOSE. What stood here was
+// `water: mix(d.ground, d.accent, 0.16)` — the sea tinted with the very accent this beat's marks are
+// drawn in, so the ground followed the mark and no accent could be picked out of it. Only the LAND's
+// weight is measured per beat; the water is the filed convention, once, in `shared/map-beat/tints.mjs`.
+const LAND_DOSE = 0.07;
 
 const DIRECTION_FILES = readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md")).sort();
 for (const file of DIRECTION_FILES) {
   const id = file.replace(/\.md$/, "");
-  const t = plateTints(readDirection(join(DIRECTIONS, file)));
+  const t = plateTints(readDirection(join(DIRECTIONS, file)), { landDose: LAND_DOSE });
   ensurePlate(id, t.water, t.land);
 }
 const factsOf = async (id) => JSON.parse(await readFile(join(plateDir(id), "geometry.json"), "utf8"));
@@ -876,7 +878,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const direction = resolveDirectionFamilies(base, textPerRegister);
   // The colour the plate's LAND was baked in — what the page actually paints behind every country,
   // and the only honest thing to measure the lightest class against.
-  const tints = plateTints(base);
+  const tints = plateTints(base, { landDose: LAND_DOSE });
   const furniture = deriveFurniture(base.ground);
   // ONE DERIVATION OF THE RAMP, READ BY BOTH HALVES. The component draws the table's swatches from
   // it and this file builds the live map's per-rule fill expressions from the SAME array — a second

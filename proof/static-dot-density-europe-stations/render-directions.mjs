@@ -20,9 +20,10 @@ import { readFile, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
-import { renderStill, deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { readPalette, mix } from "#shared/chart-beat/colour.mjs";
+import { renderStill } from "#shared/chart-beat/render-still.mjs";
+import { readPalette } from "#shared/chart-beat/colour.mjs";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
+import { plateTints } from "#shared/map-beat/tints.mjs";
 import { readDirection } from "../../scripts/design-base/read-direction.mjs";
 import { composeDirections, report } from "../../scripts/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "../../scripts/design-base/resolve-families.mjs";
@@ -144,21 +145,24 @@ function ensurePlate(id, water, land) {
   );
   if (result.status !== 0) throw new Error(`bake.mjs exited with ${result.status} for ${id}`);
 }
-const plateTints = (d) => ({
-  /** LA TERRE PASSE DEVANT L'EAU, et c'est la mesure qui l'a décidé, pas le goût. Aux premiers
-   *  réglages — eau à 16 % d'accent, terre à 7 % d'encre — l'eau était à 1,38 du fond sur `nocturne`
-   *  et la terre à 1,19 : la mer lisait comme figure et le continent comme fond, l'œil suivait les
-   *  bassins au lieu des côtes, et sur ce beat les marques sont TOUTES sur la terre. Le fond
-   *  abandonnait bien son contraste (la marque est à 10,8) — la garde était verte et l'image fausse.
-   *  Ici : terre 1,45 à 1,58 du fond, eau 1,15 à 1,18, côte lisible à 1,26–1,34 entre les deux, et
-   *  la marque reste quatre à sept fois au-dessus de tout le fond. */
-  water: mix(d.ground, d.accent, 0.09),
-  land: mix(d.ground, deriveFurniture(d.ground).ink, 0.16),
-});
+// THE PAIR COMES FROM THE TRUNK, AND THE WATER IS NOT THIS BEAT'S TO CHOOSE. What stood here was
+// `water: mix(d.ground, d.accent, 0.09)` — the sea tinted with the very accent this beat's marks are
+// drawn in, so the ground followed the mark and no accent could be picked out of it. Only the LAND's
+// weight is measured per beat; the water is the filed convention, once, in `shared/map-beat/tints.mjs`.
+/** LA TERRE PASSE DEVANT L'EAU, et c'est la mesure qui l'a décidé, pas le goût. Aux premiers
+ *  réglages — eau à 16 % d'accent, terre à 7 % d'encre — l'eau était à 1,38 du fond sur `nocturne`
+ *  et la terre à 1,19 : la mer lisait comme figure et le continent comme fond, l'œil suivait les
+ *  bassins au lieu des côtes, et sur ce beat les marques sont TOUTES sur la terre. Le fond
+ *  abandonnait bien son contraste (la marque est à 10,8) — la garde était verte et l'image fausse.
+ *
+ *  Ce qui reste vrai avec l'eau de convention, remesuré : terre 1,45 à 1,58 du fond, eau 1,05 à
+ *  1,09, côte 1,34 à 1,50 entre les deux. La mer est plus pâle qu'avant (elle ne prend plus
+ *  l'accent) et la terre passe toujours devant elle, ce qui était la décision. */
+const LAND_DOSE = 0.16;
 const DIRECTION_FILES = readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md")).sort();
 for (const file of DIRECTION_FILES) {
   const id = file.replace(/\.md$/, "");
-  const t = plateTints(readDirection(join(DIRECTIONS, file)));
+  const t = plateTints(readDirection(join(DIRECTIONS, file)), { landDose: LAND_DOSE });
   ensurePlate(id, t.water, t.land);
 }
 const factsOf = async (id) => JSON.parse(await readFile(join(plateDir(id), "geometry.json"), "utf8"));

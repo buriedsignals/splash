@@ -35,6 +35,7 @@ import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.m
 import { plainSpaces } from "#shared/design-base/web.mjs";
 import { assertNotFallback, maptilerGlyphs } from "#shared/map-beat/glyphs.mjs";
 import { countryGround } from "#shared/map-beat/tints.mjs";
+import { plateTints } from "#shared/map-beat/tints.mjs";
 import { MAP_DRAWING_SHARE, renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
 // The map skill's own symbol core, reused rather than repeated: the legend's magnitudes are its
 // nice-number ladder, not three fractions of a total. Its own header records why — a legend over
@@ -198,15 +199,16 @@ function ensurePlate(id, water, land) {
 /** The two tints a basemap is allowed on a directed map, both derived from the direction and neither
  *  invented: `water-is-a-tint-not-a-grey` says the sea takes a little of the accent, and the land
  *  takes a step off the ground toward the ink. Nothing else on the basemap carries colour. */
-const plateTints = (d) => ({
-  water: mix(d.ground, d.accent, 0.16),
-  land: mix(d.ground, deriveFurniture(d.ground).ink, 0.07),
-});
+// THE PAIR COMES FROM THE TRUNK, AND THE WATER IS NOT THIS BEAT'S TO CHOOSE. What stood here was
+// `water: mix(d.ground, d.accent, 0.16)` — the sea tinted with the very accent this beat's marks are
+// drawn in, so the ground followed the mark and no accent could be picked out of it. Only the LAND's
+// weight is measured per beat; the water is the filed convention, once, in `shared/map-beat/tints.mjs`.
+const LAND_DOSE = 0.07;
 
 const DIRECTION_FILES = readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md")).sort();
 for (const file of DIRECTION_FILES) {
   const id = file.replace(/\.md$/, "");
-  const t = plateTints(readDirection(join(DIRECTIONS, file)));
+  const t = plateTints(readDirection(join(DIRECTIONS, file)), { landDose: LAND_DOSE });
   ensurePlate(id, t.water, t.land);
 }
 const factsOf = async (id) => JSON.parse(await readFile(join(plateDir(id), "geometry.json"), "utf8"));
@@ -796,7 +798,7 @@ for (const file of DIRECTION_FILES) {
   // baked tint; the LAND is the 10 % step off the ground that every symbol's contrast on this page
   // was measured against — the component asserts it, and a land painted at some other step would
   // move every one of those measurements without moving the numbers that record them.
-  const tints = { water: plateTints(base).water, land: mix(base.ground, furniture.ink, 0.1) };
+  const tints = { water: plateTints(base, { landDose: LAND_DOSE }).water, land: mix(base.ground, furniture.ink, 0.1) };
   // THE PAINT IS THE COMPONENT'S OWN, not a second set. `symbolPaint` searches the dose that moves a
   // pointed-at mark off its own fill THROUGH the 50 % opacity, and refuses a direction whose ring
   // stops clearing the non-text floor against the land the live style is about to paint. The live
