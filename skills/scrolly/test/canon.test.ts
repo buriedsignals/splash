@@ -115,7 +115,11 @@ describe("scrolly — a vehicle, not a new format of chart", () => {
     const offenders: string[] = [];
     for await (const file of glob.scan({ cwd: SKILL_ROOT })) {
       if (file.startsWith("test/")) continue;
-      const src = await readFile(join(SKILL_ROOT, file), "utf8");
+      // Comments are stripped first: this skill's own scripts document the relative-path trap they
+      // exist to solve, and an illustrative specifier inside a comment crosses no boundary.
+      const src = (await readFile(join(SKILL_ROOT, file), "utf8"))
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/(^|[^:])\/\/.*$/gm, "$1");
       // A cheap, narrow probe (not the full literal/escape-aware scan the shared guard runs): an
       // import or export specifier that climbs above this skill's own root. Only specifiers count —
       // a filesystem path handed to join()/readFile() crosses no module boundary.
