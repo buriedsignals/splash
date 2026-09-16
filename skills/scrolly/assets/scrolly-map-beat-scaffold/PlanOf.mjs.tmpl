@@ -1,5 +1,7 @@
 // SCAFFOLD — %%Name%%'s own live-map plan (shared/map-beat's own contract: `shared/map-beat/mount.mjs`,
-// `shared/map-beat/scrolly.mjs`). Read skills/scrolly/references/types/%%TYPE%%.md before filling this in.
+// `shared/map-beat/scrolly.mjs`). Read skills/scrolly/references/types/%%TYPE%%.md and
+// skills/scrolly/references/map-scrolly-state-binding.md (the `$state` binding contract — what `bindings`
+// may and may not read, and how buckets replace a feature-driven paint value) before filling this in.
 //
 // FLAT WEB MERCATOR, no `pitch`/`bearing` unless the type sheet asks for one. Every bound paint is
 // DATA-CONSTANT (`validateScrollyPlan` in the runner refuses one that is not): MapLibre relays out a whole
@@ -7,12 +9,34 @@
 // EXPRESSION bound to one of this beat's own STATES fields, never through per-feature data that changes between
 // cards. A layer that fills from MapTiler's own Countries tileset and wants the finer basemap coast to show
 // through goes `beneath: "water"` (`mountPlan`, `beforeIdFor`) — most types never need it.
+//
+// BELOW IS A SMALL, REAL, WORKING PLAN — not a stub to write from nothing. It renders as-is: the whole-map
+// land base, and one bucketed fill layer revealed between the two scaffold cards. Edit it, don't restart it —
+// replace BUCKET_MEMBERS with the codes this beat's subject actually names, add one more layer per class this
+// type's choreography needs, and this type's own marks (points, lines, symbols) beyond the fill. Parts marked
+// SCAFFOLD are this beat's own work; the rest (the base land layer, the source, the tileset join) is the same
+// for every Countries-tileset plan and rarely needs to change.
 
 const KEY = "__MAPTILER" + "_KEY__";
 
-/** SCAFFOLD: this beat's own layers — each `{ id, type, data, paint, bindings, beneath? }`; `bindings` are the
- *  `{ $state: "…" }` expressions the plan APPLIES onto `paint` at each card, never raw feature data. */
-export function %%name%%PlanOf({ tints, cameras, statesForCards, referenceWidth, referenceHeight }) {
+// THE TILESET (measured 2026-09-15, `https://api.maptiler.com/tiles/countries/tiles.json`): maxzoom 11,
+// source layer `administrative` with `level` (0 = country … 4) and `iso_a2`. A level-0 filter alone drops a
+// handful of small states not present as a level-0 polygon below zoom 4 (Malta among them) — see the
+// choropleth type sheet and worked example for the below-zoom-4 fallback this scaffold does not need yet.
+const COUNTRIES = { type: "vector", url: `https://api.maptiler.com/tiles/countries/tiles.json?key=${KEY}` };
+const LAYER = "administrative";
+const LEVEL = "level";
+const ISO = "iso_a2";
+
+// SCAFFOLD — subject-specific: the countries this beat's bucket layer highlights. Replace with the codes
+// `subject` (render-directions-scrolly.mjs, `loadSubject`) actually names, and split into more buckets — one
+// fill layer per group of countries that move together across cards — for more than one class.
+const BUCKET_MEMBERS = ["FR", "DE", "ES", "IT", "PL"];
+
+/** SCAFFOLD: this beat's own layers, beyond the base land and its one worked bucket below — each
+ *  `{ id, type, data, paint, bindings, beneath? }`; `bindings` are the `{ $state: "…" }` expressions the
+ *  plan APPLIES onto `paint` at each card, never raw feature data. */
+export function %%name%%PlanOf({ tints, colours, cameras, statesForCards, referenceWidth, referenceHeight }) {
   return {
     styleUrl: `https://api.maptiler.com/maps/dataviz/style.json?key=${KEY}`,
     styleName: "dataviz",
@@ -23,9 +47,32 @@ export function %%name%%PlanOf({ tints, cameras, statesForCards, referenceWidth,
     referenceHeight,
     warmSamples: 3,
     degreesPerPixel: 1,
-    // SCAFFOLD: this type's own layers. Example shape (delete once real layers are written):
-    //   { id: "mark", type: "circle", data: geojsonOf(subject), paint: { "circle-color": colours.accent,
-    //     "circle-radius": 4, "circle-opacity": 0 }, bindings: { "circle-opacity": { $state: "arrive" } } }
-    layers: [],
+    layers: [
+      // FIXED — every Countries-tileset plan needs this base: level-0 land, beneath the basemap's own water
+      // so its finer coast draws over Countries' coarser one (the choropleth type sheet's "two coastlines").
+      {
+        id: "land",
+        type: "fill",
+        beneath: "water",
+        source: COUNTRIES,
+        sourceLayer: LAYER,
+        filter: ["==", ["get", LEVEL], 0],
+        paint: { "fill-color": tints.land },
+      },
+      // SCAFFOLD — one worked bucket, to edit rather than write from nothing: BUCKET_MEMBERS decides
+      // membership ONCE, in JS (the static `filter`); the scroll only ever rewrites `fill-opacity`, bound
+      // to `reveal` (0 on card 1, 1 on card 2 — render-directions-scrolly.mjs's own STATES).
+      {
+        id: "bucket-1",
+        type: "fill",
+        beneath: "water",
+        source: COUNTRIES,
+        sourceLayer: LAYER,
+        filter: ["all", ["==", ["get", LEVEL], 0], ["match", ["get", ISO], BUCKET_MEMBERS, true, false]],
+        paint: { "fill-color": colours.accent, "fill-opacity": 0 },
+        bindings: { "fill-opacity": { $state: "reveal" } },
+      },
+      // SCAFFOLD: this type's own further layers (more buckets, points, lines, symbols).
+    ],
   };
 }

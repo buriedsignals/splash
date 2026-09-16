@@ -67,7 +67,7 @@ const EYEBROW = `${SCAFFOLD_MARK} eyebrow`;
 const title = [`${SCAFFOLD_MARK} the title, its longest form`, `${SCAFFOLD_MARK} a shorter title`];
 const prose = [[`${SCAFFOLD_MARK} card 1's prose`], [`${SCAFFOLD_MARK} card 2's prose`]];
 const source = `${SCAFFOLD_MARK} Source : … · fond de carte © MapTiler © OpenStreetMap`;
-const words = { unit: `${SCAFFOLD_MARK} unit` };
+const words = { unit: `${SCAFFOLD_MARK} unit`, note: `${SCAFFOLD_MARK} note` };
 const alt = `${SCAFFOLD_MARK} the alt text a reader without the picture gets`;
 if ([title.join(""), prose.flat().join(""), source, JSON.stringify(words), alt].some((s) => s.includes(SCAFFOLD_MARK)))
   throw new Error(`${SCAFFOLD_MARK}: %%BEAT%% still carries placeholder copy — write the title, prose, source, words and alt before rendering (render-directions-scrolly.mjs)`);
@@ -78,12 +78,20 @@ const newsroom = readPalette(HERE);
 
 const subject = loadSubject();
 
-/** SCAFFOLD: one camera per card — `cameraFields({ center, zoom, alignY })`, `#shared/map-beat/scrolly.mjs`. */
-const CAMERAS = prose.map(() => cameraFields({ center: [0, 0], zoom: 3, alignY: 0.5 }));
+// SCAFFOLD — subject-specific: replace with the cameras this beat's own subject earns. A generic Europe-wide
+// view sweeping into a closer one, so the unedited scaffold already shows a camera move across the cards —
+// `cameraFields({ center: [lon, lat], zoom, alignY })`, `#shared/map-beat/scrolly.mjs`.
+const CAMERA_SWEEP = [
+  { center: [10, 50], zoom: 3 },
+  { center: [15, 48], zoom: 4.3 },
+];
+const CAMERAS = prose.map((_, k) => cameraFields({ ...CAMERA_SWEEP[k % CAMERA_SWEEP.length], alignY: 0.5 }));
 if (CAMERAS.length !== prose.length) throw new Error(`${SCAFFOLD_MARK}: CAMERAS carries ${CAMERAS.length} cameras for ${prose.length} cards of prose — one per card`);
 
-/** SCAFFOLD: one state per card, its own camera merged in — see %%TYPE%%-drive.mjs for what each field paints. */
-const STATES = prose.map((_, k) => ({ note: 0, ...CAMERAS[k], card: k }));
+// `reveal` walks 0 -> 1 across the cards, bound onto %%TYPE%%-plan.mjs's own bucket layer's opacity (see
+// references/map-scrolly-state-binding.md) — SCAFFOLD: this beat's own choreography likely wants more than
+// one field; add them here and give each its own layer binding or driver-painted label.
+const STATES = prose.map((_, k) => ({ note: 0, reveal: prose.length > 1 ? k / (prose.length - 1) : 1, ...CAMERAS[k], card: k }));
 
 // ── only past this point is the heavy machinery (the rasteriser, puppeteer, renderScrolly) loaded — a beat
 // still carrying placeholder copy refuses above, without ever touching any of it or the network. ────────────
@@ -142,6 +150,7 @@ try {
       const colours = { land: tints.land, accent: walked(direction.accent, tints.land, NON_TEXT_CONTRAST_MIN) };
       const plan = %%name%%PlanOf({
         tints: { water: tints.water, land: tints.land },
+        colours,
         cameras: CAMERAS,
         statesForCards: STATES,
         referenceWidth: 1280,

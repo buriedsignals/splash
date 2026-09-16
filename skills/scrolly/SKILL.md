@@ -307,17 +307,24 @@ the journalist first (once `NEWSROOM.md` is resolved), then scaffold.
    measured copying ~400-500 identical lines per beat. `bun skills/scrolly/scripts/scaffold-scrolly-beat.mjs
    --type <type> --beat proof/scrolly-<subject>` for a chart type;
    `bun skills/scrolly/scripts/scaffold-scrolly-map-beat.mjs --type <type> --beat proof/scrolly-<subject>`
-   for a map type. Both take `--component <PascalName>` and work into a beat folder that already exists
-   (analyst's own `data.json`/`DATA-NOTES.md`, written first in a Splash run) — they refuse only a
-   `--type` with no sheet, a `--beat` not directly under `proof/` (or a story's own `beats/`), or a real
-   collision with a file the scaffold would itself write. Every file it writes carries `SCAFFOLD` markers
-   for the beat's own work: the data and its assertions, the claim, the copy, the choreography
-   (`STATES`), the marks and the paint.
+   for a map type. Both take `--component <PascalName>` (never end it in `Scrolly` yourself — the templates
+   already append it) and work into a beat folder that already exists (analyst's own
+   `data.json`/`DATA-NOTES.md`, written first in a Splash run) — they refuse only a `--type` with no sheet, a
+   `--beat` not directly under `proof/` (or a story's own `beats/`), or a real collision with a file the
+   scaffold would itself write. Every file it writes carries `SCAFFOLD` markers for the beat's own work: the
+   data and its assertions, the claim, the copy, the choreography (`STATES`), the marks and the paint. A map
+   type's `<type>-plan.mjs` is NOT an empty skeleton: it scaffolds a small, real, WORKING plan (Countries
+   level 0 beneath water, one bucketed fill layer bound to the scroll, a camera move across the two cards)
+   that renders as-is — edit it, don't restart it. Read `references/map-scrolly-state-binding.md` for the
+   `$state` binding contract it is written against before changing its layers.
 3. **Write the claim/assertions/choreography/marks** the scaffold marked — `grep -rn SCAFFOLD <beat>` finds
    every stub. The runner throws a named error while any copy is still a placeholder, so it refuses to
    render rather than shipping a stub.
 4. **Fast loop**: render with the live composed direction (`.local.html` for a map beat, so it opens
-   directly against MapTiler with no proxy) and look at it in a browser before driving anything.
+   directly against MapTiler with no proxy) and look at it in a browser before driving anything. For a map
+   beat, tuning after that first render can add `--no-bake` to reuse the fallback images already on disk
+   instead of re-baking every time — a map beat's own FIRST render has no `fallback/` yet and `--no-bake`
+   correctly refuses on it (bake once without the flag first).
 5. **Owner review**: drive it continuously (`scripts/verify-scrolly.mjs`, and
    `scripts/verify-live-map-scrolly.mjs` for a map beat) — see "The one gotcha" above — and get the owner's
    read on the choreography.
@@ -421,8 +428,12 @@ example. Read the type's sheet before writing its choreography.
 - `scripts/scaffold-scrolly-beat.mjs` — scaffolds a chart scrolly's plumbing (the runner, the directed
   component, the driver, `BRIEF.md`) from `assets/scrolly-beat-scaffold/`, the beat's own work left as
   `SCAFFOLD` stubs. See "Producing a scrolly in a run" above.
-- `scripts/scaffold-scrolly-map-beat.mjs` — the map sibling: the same plumbing plus the live-map plan
-  skeleton, from `assets/scrolly-map-beat-scaffold/`.
+- `scripts/scaffold-scrolly-map-beat.mjs` — the map sibling: the same plumbing plus a small working
+  live-map plan (not an empty skeleton), from `assets/scrolly-map-beat-scaffold/`.
+- `references/map-scrolly-state-binding.md` — the `$state` binding contract every map type's plan is
+  written against: the `{ $state: "field" }` token, what `bindState`/`validateScrollyPlan` accept and
+  refuse, and how buckets (one static-filtered layer per group of features) replace a feature-driven paint
+  value.
 - `scripts/bake-plate.mjs` — the map track's bake. Run once; re-run only if the camera or the
   station changes.
 - `scripts/render-preview.mjs` — renders `DrawnGraphicFrame` standalone to `assets/preview.png` or

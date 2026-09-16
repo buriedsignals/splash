@@ -19,8 +19,14 @@ Owner rules that apply here: this is not a static replay; the scroll's transitio
 ## Precision to assert
 - fills come from MapTiler Countries joined by ISO A2, every country present at the whole-map camera
 - a country with no reported value carries the neutral no-data fill and no in-map label
+- **the join-against-real-tiles check is NOT skippable in fast mode.** `assertJoin` in the worked example
+  (`proof/scrolly-choropleth-europe-lowcarbon/render-directions-scrolly.mjs`) queries MapTiler Countries once,
+  before any card renders, and throws by name if a studied country has no polygon at the whole-map camera —
+  a dropped join otherwise shows bare land where the data has a value, with nothing saying so. It runs
+  unconditionally, `--no-bake` included: it is one query against already-open tiles (`cards.mapPage()`), not
+  part of the bake, so there is no fast-mode cut that removes it.
 
 ## Worked example
 `proof/scrolly-choropleth-europe-lowcarbon/BRIEF.md` — read its choreography table and precision section before writing a new one.
 
-**Live MapTiler contract.** A live MapTiler map, flat Web Mercator (`dataviz` style, no controls, `interactive: false`); the scroll owns time, each card carries its own camera and every paint is bound to the card's state. Fills come from MapTiler Countries joined by ISO A2, drawn beneath the basemap's own water (`beneath: "water"`) so the coast a reader sees is the basemap's; every country is present, painted by the basemap even where the study has no data for it. No feature-data bindings — a binding that reads a per-feature property on every frame reloads every tile (`validateScrollyPlan` refuses it); paint is split into layers so every bound opacity is data-constant. A country with no reported value carries the neutral no-data fill and **no in-map label**. `renders/<id>.local.html` inlines the MapTiler key from the environment for local preview (git-ignored); the committed page keeps the placeholder.
+**Live MapTiler contract.** A live MapTiler map, flat Web Mercator (`dataviz` style, no controls, `interactive: false`); the scroll owns time, each card carries its own camera and every paint is bound to the card's state. Fills come from MapTiler Countries joined by ISO A2, drawn beneath the basemap's own water (`beneath: "water"`) so the coast a reader sees is the basemap's; every country is present, painted by the basemap even where the study has no data for it. No feature-data bindings — a binding that reads a per-feature property on every frame reloads every tile (`validateScrollyPlan` refuses it); paint is split into layers so every bound opacity is data-constant. A country with no reported value carries the neutral no-data fill and **no in-map label**. `renders/<id>.local.html` inlines the MapTiler key from the environment for local preview (git-ignored); the committed page keeps the placeholder. Read `references/map-scrolly-state-binding.md` for the `$state` binding contract — what a plan's `bindings` may and may not read, and how buckets replace a feature-driven paint value — before writing this type's own layers.
