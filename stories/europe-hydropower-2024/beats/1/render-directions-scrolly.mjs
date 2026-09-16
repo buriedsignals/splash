@@ -14,7 +14,7 @@
 //
 // Usage:  set -a && . ./.env && set +a && bun stories/europe-hydropower-2024/beats/1/render-directions-scrolly.mjs [--only creme] [--no-bake]
 
-import { readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { readFile, rm } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -29,17 +29,40 @@ import { EYEBROW_TO_DISPLAY, gapOf, registerOf } from "#shared/design-base/regis
 import { validateExpressions } from "#shared/map-beat/mount.mjs";
 import { validateScrollyPlan } from "#shared/map-beat/scrolly.mjs";
 import { plateTints } from "#shared/map-beat/tints.mjs";
-import { renderScrolly } from "../../../../skills/scrolly/scripts/render-scrolly.mjs";
-import { openLiveMapCards, renderWithCardImages } from "../../../../skills/scrolly/scripts/live-map-cards-bake.mjs";
 import { cartogramGeometry, cartogramMapPlan, fitCamera, iso2Of, projectorOf, withWidestName } from "./plan.mjs";
 import { DirectedEuropeHydroScrolly } from "./DirectedEuropeHydroScrolly.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+
+/** The Splash repo root — the nearest ancestor whose package.json declares the "#shared/*" import — found by
+ *  walking up rather than counting levels, so this runner works unchanged from proof/<beat>/ or a story's own
+ *  stories/<slug>/beats/<id>/. */
+function splashRoot(startDir) {
+  const looked = [];
+  for (let dir = startDir; ; ) {
+    looked.push(dir);
+    const manifest = join(dir, "package.json");
+    if (existsSync(manifest)) {
+      try {
+        if (JSON.parse(readFileSync(manifest, "utf8"))?.imports?.["#shared/*"]) return dir;
+      } catch {
+        // an unparsable package.json is not this function's business — keep walking
+      }
+    }
+    const parent = dirname(dir);
+    if (parent === dir) throw new Error(`no Splash root above ${startDir} — looked in:\n  ${looked.join("\n  ")}`);
+    dir = parent;
+  }
+}
+
+const ROOT = splashRoot(HERE);
+const { renderScrolly } = await import(join(ROOT, "skills", "scrolly", "scripts", "render-scrolly.mjs"));
+const { openLiveMapCards, renderWithCardImages } = await import(join(ROOT, "skills", "scrolly", "scripts", "live-map-cards-bake.mjs"));
 // FIX (not in the scaffold): a story beat sits four levels below repo root (stories/<story>/beats/<n>/),
 // not two (proof/<name>/, the worked example's own depth) — the scaffolded two-".." path resolved to a
 // directory that does not exist and `readdirSync` threw. `stories/europe-coal-electricity-2024/beats/1/`
 // carries the same unfixed bug.
-const DIRECTIONS = join(HERE, "..", "..", "..", "..", "docs", "design-base", "directions");
+const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
 const OUT = join(HERE, "renders");
 const FALLBACK = join(HERE, "fallback");
 const YEAR = 2024;

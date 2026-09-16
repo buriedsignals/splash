@@ -23,11 +23,36 @@
  */
 
 import type { CSSProperties } from "react";
-import {
-  CardImages,
-  noScriptCss,
-  shapeSelectionCss,
-} from "../../../../skills/scrolly/scripts/live-map-cards.mjs";
+import { existsSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+
+/** The Splash repo root — the nearest ancestor whose package.json declares the "#shared/*" import — found by
+ *  walking up rather than counting levels, so this runner works unchanged from proof/<beat>/ or a story's own
+ *  stories/<slug>/beats/<id>/. */
+function splashRoot(startDir) {
+  const looked = [];
+  for (let dir = startDir; ; ) {
+    looked.push(dir);
+    const manifest = join(dir, "package.json");
+    if (existsSync(manifest)) {
+      try {
+        if (JSON.parse(readFileSync(manifest, "utf8"))?.imports?.["#shared/*"]) return dir;
+      } catch {
+        // an unparsable package.json is not this function's business — keep walking
+      }
+    }
+    const parent = dirname(dir);
+    if (parent === dir) throw new Error(`no Splash root above ${startDir} — looked in:\n  ${looked.join("\n  ")}`);
+    dir = parent;
+  }
+}
+
+const ROOT = splashRoot(HERE);
+const { CardImages, noScriptCss, shapeSelectionCss } = await import(join(ROOT, "skills", "scrolly", "scripts", "live-map-cards.mjs"));
+
 
 export type Country = {
   iso: string;
