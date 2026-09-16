@@ -115,6 +115,15 @@ const padX = (bx1 - bx0) * FOCUS_PAD_X;
 const padY = (by1 - by0) * FOCUS_PAD_Y;
 const [fx0, fx1, fy0, fy1] = [bx0 - padX, bx1 + padX, by0 - padY, by1 + padY];
 const REFERENCE = { width: 1280, height: Math.round((1280 * (fy1 - fy0)) / (fx1 - fx0)) };
+// Floored: the tight focus box (Ukraine and ten hosts, not the whole window every other map in this batch
+// fits) makes the reference noticeably wider than the measured 1280 × 800 stage's own aspect (the header
+// takes part of the 800). `shapeSelectionCss` picks a shape by comparing the stage's aspect with this one, so
+// a reference this wide put the PHONE-baked "tall" image (330 px, its own `alignY:-1` top anchor) under the
+// desktop breakpoint, stretched by a centred `object-fit: cover` that lands well south of the frame — measured
+// 2026-09-16, 36.6 % of the wide stage's pixels differed from the live map. The floor costs the mobile bake a
+// few px less "spare" for the same top anchor (`stageViewOf`'s alignY shift); the camera's own zoom and centre
+// are unchanged, since neither depends on the reference's height.
+REFERENCE.height = Math.max(REFERENCE.height, Math.ceil(REFERENCE.width / 1.95));
 const ZOOM = Math.log2(REFERENCE.width / ((fx1 - fx0) * 512));
 const CENTER = lonLatOf([(fx0 + fx1) / 2, (fy0 + fy1) / 2]);
 // The fan sits in the upper part of the stage on a phone (a stage taller than the reference), above the resting card.

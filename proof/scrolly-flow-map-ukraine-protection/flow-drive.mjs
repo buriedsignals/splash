@@ -41,7 +41,7 @@ export function applyFlowState(root, state) {
   applyScrollyMap(c.handle, state);
   const clamp = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
-  const map = c.handle.map;
+  const map = c.handle && c.handle.map;
   const shown = Boolean(map && c.handle.ready);
   const card = Math.max(0, Math.min(c.cards - 1, Math.round(state.card)));
   c.fallbacks.forEach((img) => {
@@ -63,7 +63,7 @@ export function applyFlowState(root, state) {
       people += b.people;
     }
     const cut = arcAt(b.coordinates, b.cumulative, t);
-    for (const m of c.handle.maps) {
+    for (const m of c.handle ? c.handle.maps : []) {
       const source = m.getSource(`band-${b.code}`);
       if (source) source.setData({ type: "FeatureCollection", features: [{ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: cut } }] });
     }

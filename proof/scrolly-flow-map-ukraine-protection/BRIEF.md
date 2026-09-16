@@ -37,6 +37,14 @@ they carry (`skills/scrolly/references/directed-type-choreography.md`):
   sits in the upper part of the stage above the resting card.
 - **Every sentence is asserted**: Germany the largest host, the two largest between 45 and 55 %, a total over four
   million, one month in the file.
+- **Batch pass (2026-09-16)**: all three directions baked and rendered. The reference box (fitted to the
+  origin and ten hosts, not the whole window every other map in this batch uses) came out wider than the
+  measured 1280×800 stage, so `shapeSelectionCss` picked the phone-baked "tall" image at the desktop
+  breakpoint — its own top anchor lost under a centred `object-fit: cover`, 36.6 % of the wide stage's pixels
+  off from the live map. Fixed by flooring the reference height so "wide" always covers the measured wide
+  viewport (`render-directions-scrolly.mjs`); the camera's own zoom and centre are unchanged, since neither
+  depends on the reference's height. `verify-scrolly.mjs` and `verify-live-map-scrolly.mjs` clean on all
+  three; the swap check on `creme` now reads 0.33 % (wide) and 0.11 % (tall), labels only.
 
 ## Directions
 
