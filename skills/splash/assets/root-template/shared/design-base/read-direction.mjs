@@ -96,6 +96,36 @@ export function deriveStrokes(filed) {
 }
 
 /**
+ * The ninth cell of a register row, for a writer that RECORDS a direction — the inverse of the
+ * refusal `readDirectionFromMarkdown` makes on the way in, made on the way out instead.
+ *
+ * A writer that formatted the cell itself would read `.leading` off a register it did not own, and
+ * the one value the field can hold that is not a leading — `null`, which `resolveRegister` hands
+ * back for a direction built in code — would print as an empty cell. The record would be written
+ * without complaint and refused later, by the reader, naming the reader's own file. So the refusal
+ * belongs here, at the moment the row is composed, naming the direction and the register.
+ *
+ * @param {object} spec      the resolved register
+ * @param {string} id        the direction's id, for the message
+ * @param {string} name      the register's name, for the message
+ */
+export function leadingCell(spec, id, name) {
+  const line = spec?.leading;
+  if (typeof line !== "number")
+    throw new Error(
+      `direction ${id} files no leading for its ${name} register, so its record cannot be ` +
+        `written — the register table's ninth column is the line as a multiple of the face's own ` +
+        `declared line height, and an empty cell is refused rather than written and read back`,
+    );
+  if (line < LEADING_RANGE[0] || line > LEADING_RANGE[1])
+    throw new Error(
+      `direction ${id} files a leading of ${line} for its ${name} register, outside ` +
+        `${LEADING_RANGE.join("..")} — a multiple of the face's own line, so 1.45 rather than 145`,
+    );
+  return String(line);
+}
+
+/**
  * @param {string} text  a direction record's Markdown
  * @param {string} [id]  the record's own id, for messages
  */

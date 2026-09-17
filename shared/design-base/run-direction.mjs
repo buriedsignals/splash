@@ -20,7 +20,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { composeDirections } from "./compose.mjs";
-import { readDirectionFromMarkdown } from "./read-direction.mjs";
+import { leadingCell, readDirectionFromMarkdown } from "./read-direction.mjs";
 
 /**
  * @typedef {{ id: string, origin: string, ground: string, accent: string,
@@ -125,7 +125,7 @@ export function renderRunDirection(chosen) {
     lines.push(
       `| ${name} | ${CELL(spec.family)} | ${CELL(spec.size)} | ${CELL(spec.weight)} | ` +
         `${spec.italic ? "yes" : "no"} | ${CELL(spec.tracking)} | ${CELL(spec.transform)} | ` +
-        `${CELL(spec.ink)} | ${CELL(spec.leading)} |`,
+        `${CELL(spec.ink)} | ${leadingCell(spec, chosen.id, name)} |`,
     );
   return lines.join("\n") + "\n";
 }

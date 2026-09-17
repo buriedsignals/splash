@@ -127,6 +127,29 @@ describe("one direction per production run", () => {
     expect(text).toContain("- origin:");
     expect(text).toContain("| register |");
   });
+
+  // A direction built in code carries `leading: null` legally — `resolveRegister` hands it back
+  // that way for a direction that never went through the parser. Written as an empty ninth cell
+  // the record looks fine and is refused on the way back IN, by the reader, naming the reader's
+  // own file; the writer that produced it is nowhere in the message. The refusal is the writer's.
+  it("should refuse to record a register whose direction files no leading", () => {
+    const { chosen } = composeRunDirection({
+      newsroom: { ground: "#FFFCEE", accent: "#1757B6", origin: "newsroom" },
+      filed: filedDirections(),
+      subject: "a subject",
+    });
+    const [name] = Object.keys(chosen.registers);
+    const unled = {
+      ...chosen,
+      registers: {
+        ...chosen.registers,
+        [name]: { ...chosen.registers[name], leading: null },
+      },
+    };
+    expect(() => renderRunDirection(unled)).toThrow(
+      new RegExp(`files no leading for its ${name} register`),
+    );
+  });
 });
 
 // ── the corpus rule ──────────────────────────────────────────────────────────────────────────
