@@ -1,5 +1,7 @@
 ---
+size: landscape
 format: static
+medium: chart
 type: histogram
 grounding: supported
 derived: v1
