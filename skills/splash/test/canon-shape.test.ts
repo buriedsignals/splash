@@ -1,14 +1,32 @@
 import { describe, it, expect } from "bun:test";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join } from "node:path";
 
 const SKILLS = join(import.meta.dirname, "..", "..");
-const CRAFT = [
-  "chart-beat",
-  "chart-web",
-  "chart-video",
-  "map-beat",
-];
+
+/**
+ * THE POPULATION IS DISCOVERED, NOT LISTED. This file used to name four craft skills by hand, and
+ * the tree grew three more that render a seed of their own — image-beat, map-web, scrolly — none of
+ * which the list knew about. Two of those three were carrying a stale `output-proof/preview.png`
+ * the whole time, invisible because they were outside a frozen population.
+ *
+ * The key is `scripts/render-preview.mjs`: a skill that renders its OWN seed is a craft skill, and
+ * the canon's three assets are what it owes. Keying on the script rather than on the assets matters
+ * — a skill that loses its `preview.png` stays in the population and fails here, where keying on
+ * the preview itself would have let it drop out silently. `dw-beat` ships no seed (it delegates
+ * every render to Datawrapper) and is correctly outside.
+ */
+const CRAFT = readdirSync(SKILLS, { withFileTypes: true })
+  .filter((e) => e.isDirectory())
+  .map((e) => e.name)
+  .filter((s) => existsSync(join(SKILLS, s, "scripts", "render-preview.mjs")))
+  .sort();
+
+describe("the canon's population is discovered from the tree", () => {
+  it("should find craft skills to check at all", () => {
+    expect(CRAFT.length).toBeGreaterThan(0);
+  });
+});
 
 describe("every craft skill carries the canon's four assets", () => {
   for (const s of CRAFT) {
