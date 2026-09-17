@@ -362,18 +362,33 @@ svg.chart { display: block; }
 .chart-figure .chart-withdraw label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
 .chart-figure .chart-withdraw input { cursor: pointer; margin: 0; }
 
-/* THE SENTENCE THE CONTROL OWES THE READER. Its row is reserved whether or not an option is
-   chosen, so choosing one never moves the plot underneath it. role="status" belongs on the
-   container rather than on each note: the notes come and go by display, and a live region that
-   itself comes and goes announces nothing. */
+/* THE SENTENCE THE CONTROL OWES THE READER, AND THE ROW THAT HOLDS IT WITHOUT ANYBODY TYPING A
+   NUMBER. The row is reserved whether or not an option is chosen, so choosing one never moves the
+   plot underneath it. It used to be reserved by a hand-authored min-height — 1.5em by default, one
+   line — and that was measured wrong on 34 of 58 committed beats: a sentence that wraps to three
+   or four lines at a narrow width does not fit in a row reserved for one, so the plot lost up to
+   53px the moment a reader touched the control. Seven of the 34 were wrong at 1600px too, and this
+   skill's own seed was one of them. A per-beat floor could not have closed it either: the depth a
+   sentence needs is a function of the READER'S width, which no build-time number knows. */
+/* SO THE BROWSER MEASURES IT. Every sentence sits in ONE grid cell, all of them in flow at once,
+   so the cell — and the row — is exactly as deep as the DEEPEST sentence at whatever width the
+   window happens to be, in every direction, on every viewport, with JavaScript off. Nothing is
+   authored and nothing transfers to the next subject. */
+/* WHAT THIS ASKS OF THE VOCABULARY, and it is the whole contract: the sentences that are not
+   showing must stay IN FLOW. Hide them with `visibility: hidden` and show one with `visibility:
+   visible`. Hiding a sentence by its DISPLAY takes it out of the grid cell entirely, the cell
+   collapses to whichever one is showing, and this reservation becomes a no-op — which is exactly
+   what "stacked" was, as an opt-in, on the three vocabularies that asked for it while still hiding
+   by display. A live region announces the change either way: both spellings remove the sentence
+   from the accessibility tree, and role="status" is on the CONTAINER, which never comes and goes. */
 .chart-figure .withdraw-notes {
   flex: 0 0 auto;
   margin: 4px 0 0;
-  min-height: 1.5em;
+  display: grid;
   font-size: var(--source-size);
   color: var(--muted);
 }
-.chart-figure .withdraw-notes p { margin: 0; }
+.chart-figure .withdraw-notes p { grid-area: 1 / 1; margin: 0; }
 
 @supports selector(:has(*)) {
   .chart-figure .chart-withdraw .options {
@@ -445,7 +460,7 @@ svg.chart { display: block; }
    Radios plus :checked/:has(), generated once at build time — the same mechanism filter.ts
    narrows with and stack.ts moves with, and the reason this control needs no script and
    survives one being blocked. */
-.chart-figure [data-withdraw-note] { display: none; }
+.chart-figure [data-withdraw-note] { visibility: hidden; }
 .chart-figure [data-restated] { display: none; }
 .chart-figure [data-span] { opacity: 0; }
 @media (prefers-reduced-motion: no-preference) {
@@ -470,7 +485,7 @@ svg.chart { display: block; }
 .chart-figure:has(#chart-withdraw-fossil:checked) [data-value="end"] { opacity: 0; }
 .chart-figure:has(#chart-withdraw-fossil:checked) [data-span="fossil"] { opacity: 1; }
 .chart-figure:has(#chart-withdraw-fossil:checked) [data-restated="fossil"] { display: revert; }
-.chart-figure:has(#chart-withdraw-fossil:checked) [data-withdraw-note="fossil"] { display: revert; }
+.chart-figure:has(#chart-withdraw-fossil:checked) [data-withdraw-note="fossil"] { visibility: visible; }
 .chart-figure:has(#chart-withdraw-nuclear:checked) [data-step="nuclear"] { fill: transparent; stroke: #7d7d7d; stroke-width: 1; stroke-dasharray: 5 4; }
 .chart-figure:has(#chart-withdraw-nuclear:checked) [data-step="nuclear"].mark-active { fill: transparent; stroke: #585858; stroke-width: 2; }
 .chart-figure:has(#chart-withdraw-nuclear:checked) [data-value="nuclear"] { color: #383838; text-decoration: line-through; }
@@ -484,7 +499,7 @@ svg.chart { display: block; }
 .chart-figure:has(#chart-withdraw-nuclear:checked) [data-value="end"] { opacity: 0; }
 .chart-figure:has(#chart-withdraw-nuclear:checked) [data-span="nuclear"] { opacity: 1; }
 .chart-figure:has(#chart-withdraw-nuclear:checked) [data-restated="nuclear"] { display: revert; }
-.chart-figure:has(#chart-withdraw-nuclear:checked) [data-withdraw-note="nuclear"] { display: revert; }
+.chart-figure:has(#chart-withdraw-nuclear:checked) [data-withdraw-note="nuclear"] { visibility: visible; }
 .chart-figure:has(#chart-withdraw-renewables:checked) [data-step="renewables"] { fill: transparent; stroke: #7d7d7d; stroke-width: 1; stroke-dasharray: 5 4; }
 .chart-figure:has(#chart-withdraw-renewables:checked) [data-step="renewables"].mark-active { fill: transparent; stroke: #585858; stroke-width: 2; }
 .chart-figure:has(#chart-withdraw-renewables:checked) [data-value="renewables"] { color: #383838; text-decoration: line-through; }
@@ -496,7 +511,7 @@ svg.chart { display: block; }
 .chart-figure:has(#chart-withdraw-renewables:checked) [data-value="end"] { opacity: 0; }
 .chart-figure:has(#chart-withdraw-renewables:checked) [data-span="renewables"] { opacity: 1; }
 .chart-figure:has(#chart-withdraw-renewables:checked) [data-restated="renewables"] { display: revert; }
-.chart-figure:has(#chart-withdraw-renewables:checked) [data-withdraw-note="renewables"] { display: revert; }</style><div class="chart-header"><p class="chart-eyebrow" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:700;font-style:normal;line-height:1.2000326171875;letter-spacing:1.6px;text-transform:uppercase;color:#1F5C8B;margin:0 0 6px">Énergie · Allemagne</p><h2 class="chart-title" style="font-family:&quot;Merriweather&quot;, Georgia, serif;font-size:27px;font-weight:700;font-style:normal;line-height:1.2200442;letter-spacing:-0.3px;text-transform:none;color:#000000;margin:0 0 6px">L&#x27;électricité allemande a perdu 143 TWh entre 2015 et 2024 : nucléaire −92, fossile −154 contre renouvelables +103</h2><p class="chart-caveat" style="font-family:&quot;Merriweather&quot;, Georgia, serif;font-size:13px;font-weight:400;font-style:italic;line-height:1.4499494999999998;letter-spacing:0px;text-transform:none;color:#616161;margin:0">Un pont entre DEUX NIVEAUX NOMMÉS : la production totale de 2015 à gauche, celle de 2024 à droite, les mouvements par groupe de sources entre les deux. Le SENS d&#x27;une marche porte le signe ; la couleur le répète. Les marches se somment exactement à l&#x27;écart entre les niveaux — vérifié pour les quatre ponts de cette page.</p></div><fieldset class="chart-withdraw"><legend>Retirer une marche</legend><div class="options"><label><input id="chart-withdraw-none" type="radio" aria-label="Aucune" name="chart-withdraw" checked="" value="none"/>Aucune</label><label><input id="chart-withdraw-fossil" type="radio" aria-label="Sans le fossile : 2024 arrive à 650 TWh au lieu de 496" name="chart-withdraw" value="fossil"/>fossile</label><label><input id="chart-withdraw-nuclear" type="radio" aria-label="Sans le nucléaire : 2024 arrive à 588 TWh au lieu de 496" name="chart-withdraw" value="nuclear"/>nucléaire</label><label><input id="chart-withdraw-renewables" type="radio" aria-label="Sans les renouvelables : 2024 arrive à 393 TWh au lieu de 496" name="chart-withdraw" value="renewables"/>renouvelables</label></div></fieldset><div class="withdraw-notes" role="status"><p data-withdraw-note="fossil">Sans le fossile (−154 TWh), 2024 arrive à 650 TWh — +11 depuis 2015 au lieu de −143. Les 2 marches suivantes repartent du nouveau niveau ; le fossile reste dessiné en creux.</p><p data-withdraw-note="nuclear">Sans le nucléaire (−92 TWh), 2024 arrive à 588 TWh — −51 depuis 2015 au lieu de −143. La marche suivante repart du nouveau niveau ; le nucléaire reste dessiné en creux.</p><p data-withdraw-note="renewables">Sans les renouvelables (+103 TWh), 2024 arrive à 393 TWh — −246 depuis 2015 au lieu de −143. C&#x27;était la dernière marche : seul le niveau d&#x27;arrivée change ; les renouvelables restent dessinées en creux.</p></div><div class="chart-plot" style="--y-gutter:44px;--x-axis-h:48px;aspect-ratio:904 / 428"><div class="y-axis" style="pointer-events:none"><span class="axis-label y" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;line-height:1.2000326171875;letter-spacing:0.5px;text-transform:none;color:#616161;top:100%">0</span><span class="axis-label y" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;line-height:1.2000326171875;letter-spacing:0.5px;text-transform:none;color:#616161;top:87.24489795918367%">100</span><span class="axis-label y" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;line-height:1.2000326171875;letter-spacing:0.5px;text-transform:none;color:#616161;top:74.48979591836734%">200</span><span class="axis-label y" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;line-height:1.2000326171875;letter-spacing:0.5px;text-transform:none;color:#616161;top:61.73469387755103%">300</span><span class="axis-label y" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;line-height:1.2000326171875;letter-spacing:0.5px;text-transform:none;color:#616161;top:48.979591836734706%">400</span><span class="axis-label y" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;line-height:1.2000326171875;letter-spacing:0.5px;text-transform:none;color:#616161;top:36.22448979591838%">500</span><span class="axis-label y" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;line-height:1.2000326171875;letter-spacing:0.5px;text-transform:none;color:#616161;top:23.46938775510206%">600</span><span class="axis-label y" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;line-height:1.2000326171875;letter-spacing:0.5px;text-transform:none;color:#616161;top:10.714285714285731%">700</span></div><svg role="group" aria-label="L&#x27;électricité allemande a perdu 143 TWh entre 2015 et 2024 : nucléaire −92, fossile −154 contre renouvelables +103" xmlns="http://www.w3.org/2000/svg" class="chart" viewBox="0 0 860 380" preserveAspectRatio="none"><desc>Un pont : une barre pleine à 639 TWh pour 2015, puis trois marches — renouvelables +103, nucléaire −92, fossile −154 — et une barre pleine à 496 TWh pour 2024. Les marches descendantes sont plus longues que la montante, et le pont arrive 143 TWh plus bas qu&#x27;il n&#x27;était parti. Un choix au-dessus du graphique retire une des trois marches : elle se vide, les suivantes repartent du nouveau niveau et la barre de 2024 se redessine.</desc><rect x="0" y="0" width="860" height="380" fill="#FFFFFF"></rect><line x1="0" x2="860" y1="331.53061224489795" y2="331.53061224489795" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="860" y1="283.0612244897959" y2="283.0612244897959" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="860" y1="234.5918367346939" y2="234.5918367346939" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="860" y1="186.12244897959187" y2="186.12244897959187" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="860" y1="137.65306122448985" y2="137.65306122448985" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="860" y1="89.18367346938783" y2="89.18367346938783" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="860" y1="40.71428571428578" y2="40.71428571428578" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line data-link="start" x1="135.88" x2="208.12" y1="70.1982142857143" y2="70.1982142857143" stroke="#999999" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><line data-link="fossil" x1="307.88" x2="380.12" y1="144.89438775510203" y2="144.89438775510203" stroke="#999999" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><line data-link="nuclear" x1="479.88" x2="552.12" y1="189.38443877551023" y2="189.38443877551023" stroke="#999999" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><line data-link="renewables" x1="651.88" x2="724.12" y1="139.5966836734694" y2="139.5966836734694" stroke="#999999" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><line data-span="fossil" x1="135.88" x2="380.12" y1="70.1982142857143" y2="70.1982142857143" stroke="#999999" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><line data-span="nuclear" x1="307.88" x2="552.12" y1="144.89438775510203" y2="144.89438775510203" stroke="#999999" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><line data-span="renewables" x1="479.88" x2="724.12" y1="189.38443877551023" y2="189.38443877551023" stroke="#999999" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><rect data-step="start" data-mark="start" data-role="level" x="36.120000000000005" y="70.1982142857143" width="99.75999999999999" height="309.8017857142857" fill="#737373" stroke="none" vector-effect="non-scaling-stroke"></rect><rect data-step="fossil" data-mark="fossil" data-role="down" x="208.12" y="70.1982142857143" width="99.75999999999999" height="74.69617346938773" fill="#939393" stroke="none" vector-effect="non-scaling-stroke"></rect><rect data-step="nuclear" data-mark="nuclear" data-role="down" x="380.12" y="144.89438775510203" width="99.75999999999999" height="44.4900510204082" fill="#939393" stroke="none" vector-effect="non-scaling-stroke"></rect><rect data-step="renewables" data-mark="renewables" data-role="up" x="552.12" y="139.5966836734694" width="99.75999999999999" height="49.78775510204082" fill="#1e5a88" stroke="none" vector-effect="non-scaling-stroke"></rect><rect data-step="end" data-mark="end" data-role="level" x="724.12" y="139.5966836734694" width="99.75999999999999" height="240.4033163265306" fill="#737373" stroke="none" vector-effect="non-scaling-stroke"></rect><line x1="0" x2="860" y1="380" y2="380" stroke="#404040" stroke-width="1" vector-effect="non-scaling-stroke"></line><circle class="pt" data-pt="start" data-mark-ref="start" cx="86" cy="70.1982142857143" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2015 · niveau de départ · 639 TWh produits" data-detail="2015 · niveau de départ · 639 TWh produits"></circle><circle class="pt" data-pt="fossil" data-mark-ref="fossil" cx="258" cy="70.1982142857143" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="fossile · −154 TWh entre 2015 et 2024 · 44 % de l&#x27;ensemble des mouvements · retirez-la du pont et 2024 arrive à 650 TWh au lieu de 496" data-detail="fossile · −154 TWh entre 2015 et 2024 · 44 % de l&#x27;ensemble des mouvements · retirez-la du pont et 2024 arrive à 650 TWh au lieu de 496"></circle><circle class="pt" data-pt="nuclear" data-mark-ref="nuclear" cx="430" cy="144.89438775510203" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · −92 TWh entre 2015 et 2024 · 26 % de l&#x27;ensemble des mouvements · retirez-la du pont et 2024 arrive à 588 TWh au lieu de 496" data-detail="nucléaire · −92 TWh entre 2015 et 2024 · 26 % de l&#x27;ensemble des mouvements · retirez-la du pont et 2024 arrive à 588 TWh au lieu de 496"></circle><circle class="pt" data-pt="renewables" data-mark-ref="renewables" cx="602" cy="139.5966836734694" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="renouvelables · +103 TWh entre 2015 et 2024 · 29 % de l&#x27;ensemble des mouvements · retirez-la du pont et 2024 arrive à 393 TWh au lieu de 496" data-detail="renouvelables · +103 TWh entre 2015 et 2024 · 29 % de l&#x27;ensemble des mouvements · retirez-la du pont et 2024 arrive à 393 TWh au lieu de 496"></circle><circle class="pt" data-pt="end" data-mark-ref="end" cx="774" cy="139.5966836734694" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2024 · niveau d&#x27;arrivée · 496 TWh produits, soit −143 depuis 2015 · retirez une marche et cette barre se recalcule" data-detail="2024 · niveau d&#x27;arrivée · 496 TWh produits, soit −143 depuis 2015 · retirez une marche et cette barre se recalcule"></circle><rect class="hit-area" x="0" y="0" width="860" height="380" fill="transparent" pointer-events="all"></rect></svg><div class="overlay" aria-hidden="true"><span class="end-label" data-value="start" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:14.5px;font-weight:700;font-style:normal;line-height:1.2000326171875;letter-spacing:0px;text-transform:none;--value-ink:#FFFFFF;left:10%;top:calc(18.473214285714292% + var(--restep-dy, 0%));transform:translate(-50%, 0) translateY(6px);background:transparent;padding:0">639</span><span class="end-label" data-value="fossil" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:14.5px;font-weight:700;font-style:normal;line-height:1.2000326171875;letter-spacing:0px;text-transform:none;--value-ink:#000000;left:30%;top:calc(18.473214285714292% + var(--restep-dy, 0%));transform:translate(-50%, 0) translateY(6px);background:transparent;padding:0">−154</span><span class="end-label" data-value="nuclear" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:14.5px;font-weight:700;font-style:normal;line-height:1.2000326171875;letter-spacing:0px;text-transform:none;--value-ink:#000000;left:50%;top:calc(38.13010204081632% + var(--restep-dy, 0%));transform:translate(-50%, -100%) translateY(-5px)">−92</span><span class="end-label" data-value="renewables" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:14.5px;font-weight:700;font-style:normal;line-height:1.2000326171875;letter-spacing:0px;text-transform:none;--value-ink:#FFFFFF;left:70%;top:calc(36.735969387755105% + var(--restep-dy, 0%));transform:translate(-50%, 0) translateY(6px);background:transparent;padding:0">+103</span><span class="end-label" data-value="end" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:14.5px;font-weight:700;font-style:normal;line-height:1.2000326171875;letter-spacing:0px;text-transform:none;--value-ink:#FFFFFF;left:90%;top:calc(36.735969387755105% + var(--restep-dy, 0%));transform:translate(-50%, 0) translateY(6px);background:transparent;padding:0">496</span></div><div class="option-layer" aria-hidden="true"><span class="end-label" data-restated="fossil" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:14.5px;font-weight:700;font-style:normal;line-height:1.2000326171875;letter-spacing:0px;text-transform:none;color:#000000;left:90%;top:17.079081632653057%;transform:translate(-50%, -100%) translateY(-5px)">650</span><span class="end-label" data-restated="nuclear" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:14.5px;font-weight:700;font-style:normal;line-height:1.2000326171875;letter-spacing:0px;text-transform:none;color:#000000;left:90%;top:25.0280612244898%;transform:translate(-50%, -100%) translateY(-5px)">588</span><span class="end-label" data-restated="renewables" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:14.5px;font-weight:700;font-style:normal;line-height:1.2000326171875;letter-spacing:0px;text-transform:none;color:#000000;left:90%;top:49.83801020408164%;transform:translate(-50%, -100%) translateY(-5px)">393</span></div><div class="x-axis" style="pointer-events:none"><span class="axis-label x" data-axis="start" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-style:normal;line-height:1.1;letter-spacing:0.5px;text-transform:none;left:10%;text-align:center;white-space:normal;max-width:20%;font-weight:700">2015</span><span class="axis-label x" data-axis="fossil" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-style:normal;line-height:1.1;letter-spacing:0.5px;text-transform:none;left:30%;text-align:center;white-space:normal;max-width:20%;font-weight:400">fossile</span><span class="axis-label x" data-axis="nuclear" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-style:normal;line-height:1.1;letter-spacing:0.5px;text-transform:none;left:50%;text-align:center;white-space:normal;max-width:20%;font-weight:400">nucléaire</span><span class="axis-label x" data-axis="renewables" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-style:normal;line-height:1.1;letter-spacing:0.5px;text-transform:none;left:70%;text-align:center;white-space:normal;max-width:20%;font-weight:400">renouvelables</span><span class="axis-label x" data-axis="end" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-style:normal;line-height:1.1;letter-spacing:0.5px;text-transform:none;left:90%;text-align:center;white-space:normal;max-width:20%;font-weight:700">2024</span></div></div><p class="chart-reading" style="font-family:&quot;Merriweather&quot;, Georgia, serif;font-size:13px;font-weight:400;font-style:italic;line-height:1.4499494999999998;letter-spacing:0px;text-transform:none;color:#616161;margin:10px 0 0">Lecture : retirez une marche, le pont se recalcule. Survolez ou tabulez une marche pour sa valeur et le total qu&#x27;elle laisserait.</p><p class="chart-source" style="font-family:&quot;Merriweather&quot;, Georgia, serif;font-size:13px;font-weight:400;font-style:italic;line-height:1.4499494999999998;letter-spacing:0px;text-transform:none;color:#616161;margin:6px 0 0">Source : Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · Allemagne, 2015 et 2024 · TWh</p></figure>
+.chart-figure:has(#chart-withdraw-renewables:checked) [data-withdraw-note="renewables"] { visibility: visible; }</style><div class="chart-header"><p class="chart-eyebrow" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:9.5px;font-weight:700;font-style:normal;line-height:1.2000326171875;letter-spacing:1.6px;text-transform:uppercase;color:#1F5C8B;margin:0 0 6px">Énergie · Allemagne</p><h2 class="chart-title" style="font-family:&quot;Merriweather&quot;, Georgia, serif;font-size:27px;font-weight:700;font-style:normal;line-height:1.2200442;letter-spacing:-0.3px;text-transform:none;color:#000000;margin:0 0 6px">L&#x27;électricité allemande a perdu 143 TWh entre 2015 et 2024 : nucléaire −92, fossile −154 contre renouvelables +103</h2><p class="chart-caveat" style="font-family:&quot;Merriweather&quot;, Georgia, serif;font-size:13px;font-weight:400;font-style:italic;line-height:1.4499494999999998;letter-spacing:0px;text-transform:none;color:#616161;margin:0">Un pont entre DEUX NIVEAUX NOMMÉS : la production totale de 2015 à gauche, celle de 2024 à droite, les mouvements par groupe de sources entre les deux. Le SENS d&#x27;une marche porte le signe ; la couleur le répète. Les marches se somment exactement à l&#x27;écart entre les niveaux — vérifié pour les quatre ponts de cette page.</p></div><fieldset class="chart-withdraw"><legend>Retirer une marche</legend><div class="options"><label><input id="chart-withdraw-none" type="radio" aria-label="Aucune" name="chart-withdraw" checked="" value="none"/>Aucune</label><label><input id="chart-withdraw-fossil" type="radio" aria-label="Sans le fossile : 2024 arrive à 650 TWh au lieu de 496" name="chart-withdraw" value="fossil"/>fossile</label><label><input id="chart-withdraw-nuclear" type="radio" aria-label="Sans le nucléaire : 2024 arrive à 588 TWh au lieu de 496" name="chart-withdraw" value="nuclear"/>nucléaire</label><label><input id="chart-withdraw-renewables" type="radio" aria-label="Sans les renouvelables : 2024 arrive à 393 TWh au lieu de 496" name="chart-withdraw" value="renewables"/>renouvelables</label></div></fieldset><div class="withdraw-notes" role="status"><p data-withdraw-note="fossil">Sans le fossile (−154 TWh), 2024 arrive à 650 TWh — +11 depuis 2015 au lieu de −143. Les 2 marches suivantes repartent du nouveau niveau ; le fossile reste dessiné en creux.</p><p data-withdraw-note="nuclear">Sans le nucléaire (−92 TWh), 2024 arrive à 588 TWh — −51 depuis 2015 au lieu de −143. La marche suivante repart du nouveau niveau ; le nucléaire reste dessiné en creux.</p><p data-withdraw-note="renewables">Sans les renouvelables (+103 TWh), 2024 arrive à 393 TWh — −246 depuis 2015 au lieu de −143. C&#x27;était la dernière marche : seul le niveau d&#x27;arrivée change ; les renouvelables restent dessinées en creux.</p></div><div class="chart-plot" style="--y-gutter:44px;--x-axis-h:48px;aspect-ratio:904 / 428"><div class="y-axis" style="pointer-events:none"><span class="axis-label y" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;line-height:1.2000326171875;letter-spacing:0.5px;text-transform:none;color:#616161;top:100%">0</span><span class="axis-label y" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;line-height:1.2000326171875;letter-spacing:0.5px;text-transform:none;color:#616161;top:87.24489795918367%">100</span><span class="axis-label y" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;line-height:1.2000326171875;letter-spacing:0.5px;text-transform:none;color:#616161;top:74.48979591836734%">200</span><span class="axis-label y" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;line-height:1.2000326171875;letter-spacing:0.5px;text-transform:none;color:#616161;top:61.73469387755103%">300</span><span class="axis-label y" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;line-height:1.2000326171875;letter-spacing:0.5px;text-transform:none;color:#616161;top:48.979591836734706%">400</span><span class="axis-label y" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;line-height:1.2000326171875;letter-spacing:0.5px;text-transform:none;color:#616161;top:36.22448979591838%">500</span><span class="axis-label y" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;line-height:1.2000326171875;letter-spacing:0.5px;text-transform:none;color:#616161;top:23.46938775510206%">600</span><span class="axis-label y" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-weight:400;font-style:normal;line-height:1.2000326171875;letter-spacing:0.5px;text-transform:none;color:#616161;top:10.714285714285731%">700</span></div><svg role="group" aria-label="L&#x27;électricité allemande a perdu 143 TWh entre 2015 et 2024 : nucléaire −92, fossile −154 contre renouvelables +103" xmlns="http://www.w3.org/2000/svg" class="chart" viewBox="0 0 860 380" preserveAspectRatio="none"><desc>Un pont : une barre pleine à 639 TWh pour 2015, puis trois marches — renouvelables +103, nucléaire −92, fossile −154 — et une barre pleine à 496 TWh pour 2024. Les marches descendantes sont plus longues que la montante, et le pont arrive 143 TWh plus bas qu&#x27;il n&#x27;était parti. Un choix au-dessus du graphique retire une des trois marches : elle se vide, les suivantes repartent du nouveau niveau et la barre de 2024 se redessine.</desc><rect x="0" y="0" width="860" height="380" fill="#FFFFFF"></rect><line x1="0" x2="860" y1="331.53061224489795" y2="331.53061224489795" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="860" y1="283.0612244897959" y2="283.0612244897959" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="860" y1="234.5918367346939" y2="234.5918367346939" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="860" y1="186.12244897959187" y2="186.12244897959187" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="860" y1="137.65306122448985" y2="137.65306122448985" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="860" y1="89.18367346938783" y2="89.18367346938783" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line x1="0" x2="860" y1="40.71428571428578" y2="40.71428571428578" stroke="#d1d1d1" stroke-width="1" vector-effect="non-scaling-stroke"></line><line data-link="start" x1="135.88" x2="208.12" y1="70.1982142857143" y2="70.1982142857143" stroke="#999999" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><line data-link="fossil" x1="307.88" x2="380.12" y1="144.89438775510203" y2="144.89438775510203" stroke="#999999" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><line data-link="nuclear" x1="479.88" x2="552.12" y1="189.38443877551023" y2="189.38443877551023" stroke="#999999" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><line data-link="renewables" x1="651.88" x2="724.12" y1="139.5966836734694" y2="139.5966836734694" stroke="#999999" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><line data-span="fossil" x1="135.88" x2="380.12" y1="70.1982142857143" y2="70.1982142857143" stroke="#999999" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><line data-span="nuclear" x1="307.88" x2="552.12" y1="144.89438775510203" y2="144.89438775510203" stroke="#999999" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><line data-span="renewables" x1="479.88" x2="724.12" y1="189.38443877551023" y2="189.38443877551023" stroke="#999999" stroke-width="1" stroke-dasharray="3 3" vector-effect="non-scaling-stroke"></line><rect data-step="start" data-mark="start" data-role="level" x="36.120000000000005" y="70.1982142857143" width="99.75999999999999" height="309.8017857142857" fill="#737373" stroke="none" vector-effect="non-scaling-stroke"></rect><rect data-step="fossil" data-mark="fossil" data-role="down" x="208.12" y="70.1982142857143" width="99.75999999999999" height="74.69617346938773" fill="#939393" stroke="none" vector-effect="non-scaling-stroke"></rect><rect data-step="nuclear" data-mark="nuclear" data-role="down" x="380.12" y="144.89438775510203" width="99.75999999999999" height="44.4900510204082" fill="#939393" stroke="none" vector-effect="non-scaling-stroke"></rect><rect data-step="renewables" data-mark="renewables" data-role="up" x="552.12" y="139.5966836734694" width="99.75999999999999" height="49.78775510204082" fill="#1e5a88" stroke="none" vector-effect="non-scaling-stroke"></rect><rect data-step="end" data-mark="end" data-role="level" x="724.12" y="139.5966836734694" width="99.75999999999999" height="240.4033163265306" fill="#737373" stroke="none" vector-effect="non-scaling-stroke"></rect><line x1="0" x2="860" y1="380" y2="380" stroke="#404040" stroke-width="1" vector-effect="non-scaling-stroke"></line><circle class="pt" data-pt="start" data-mark-ref="start" cx="86" cy="70.1982142857143" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2015 · niveau de départ · 639 TWh produits" data-detail="2015 · niveau de départ · 639 TWh produits"></circle><circle class="pt" data-pt="fossil" data-mark-ref="fossil" cx="258" cy="70.1982142857143" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="fossile · −154 TWh entre 2015 et 2024 · 44 % de l&#x27;ensemble des mouvements · retirez-la du pont et 2024 arrive à 650 TWh au lieu de 496" data-detail="fossile · −154 TWh entre 2015 et 2024 · 44 % de l&#x27;ensemble des mouvements · retirez-la du pont et 2024 arrive à 650 TWh au lieu de 496"></circle><circle class="pt" data-pt="nuclear" data-mark-ref="nuclear" cx="430" cy="144.89438775510203" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="nucléaire · −92 TWh entre 2015 et 2024 · 26 % de l&#x27;ensemble des mouvements · retirez-la du pont et 2024 arrive à 588 TWh au lieu de 496" data-detail="nucléaire · −92 TWh entre 2015 et 2024 · 26 % de l&#x27;ensemble des mouvements · retirez-la du pont et 2024 arrive à 588 TWh au lieu de 496"></circle><circle class="pt" data-pt="renewables" data-mark-ref="renewables" cx="602" cy="139.5966836734694" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="renouvelables · +103 TWh entre 2015 et 2024 · 29 % de l&#x27;ensemble des mouvements · retirez-la du pont et 2024 arrive à 393 TWh au lieu de 496" data-detail="renouvelables · +103 TWh entre 2015 et 2024 · 29 % de l&#x27;ensemble des mouvements · retirez-la du pont et 2024 arrive à 393 TWh au lieu de 496"></circle><circle class="pt" data-pt="end" data-mark-ref="end" cx="774" cy="139.5966836734694" r="7" fill="transparent" stroke="none" tabindex="0" role="img" aria-label="2024 · niveau d&#x27;arrivée · 496 TWh produits, soit −143 depuis 2015 · retirez une marche et cette barre se recalcule" data-detail="2024 · niveau d&#x27;arrivée · 496 TWh produits, soit −143 depuis 2015 · retirez une marche et cette barre se recalcule"></circle><rect class="hit-area" x="0" y="0" width="860" height="380" fill="transparent" pointer-events="all"></rect></svg><div class="overlay" aria-hidden="true"><span class="end-label" data-value="start" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:14.5px;font-weight:700;font-style:normal;line-height:1.2000326171875;letter-spacing:0px;text-transform:none;--value-ink:#FFFFFF;left:10%;top:calc(18.473214285714292% + var(--restep-dy, 0%));transform:translate(-50%, 0) translateY(6px);background:transparent;padding:0">639</span><span class="end-label" data-value="fossil" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:14.5px;font-weight:700;font-style:normal;line-height:1.2000326171875;letter-spacing:0px;text-transform:none;--value-ink:#000000;left:30%;top:calc(18.473214285714292% + var(--restep-dy, 0%));transform:translate(-50%, 0) translateY(6px);background:transparent;padding:0">−154</span><span class="end-label" data-value="nuclear" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:14.5px;font-weight:700;font-style:normal;line-height:1.2000326171875;letter-spacing:0px;text-transform:none;--value-ink:#000000;left:50%;top:calc(38.13010204081632% + var(--restep-dy, 0%));transform:translate(-50%, -100%) translateY(-5px)">−92</span><span class="end-label" data-value="renewables" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:14.5px;font-weight:700;font-style:normal;line-height:1.2000326171875;letter-spacing:0px;text-transform:none;--value-ink:#FFFFFF;left:70%;top:calc(36.735969387755105% + var(--restep-dy, 0%));transform:translate(-50%, 0) translateY(6px);background:transparent;padding:0">+103</span><span class="end-label" data-value="end" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:14.5px;font-weight:700;font-style:normal;line-height:1.2000326171875;letter-spacing:0px;text-transform:none;--value-ink:#FFFFFF;left:90%;top:calc(36.735969387755105% + var(--restep-dy, 0%));transform:translate(-50%, 0) translateY(6px);background:transparent;padding:0">496</span></div><div class="option-layer" aria-hidden="true"><span class="end-label" data-restated="fossil" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:14.5px;font-weight:700;font-style:normal;line-height:1.2000326171875;letter-spacing:0px;text-transform:none;color:#000000;left:90%;top:17.079081632653057%;transform:translate(-50%, -100%) translateY(-5px)">650</span><span class="end-label" data-restated="nuclear" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:14.5px;font-weight:700;font-style:normal;line-height:1.2000326171875;letter-spacing:0px;text-transform:none;color:#000000;left:90%;top:25.0280612244898%;transform:translate(-50%, -100%) translateY(-5px)">588</span><span class="end-label" data-restated="renewables" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:14.5px;font-weight:700;font-style:normal;line-height:1.2000326171875;letter-spacing:0px;text-transform:none;color:#000000;left:90%;top:49.83801020408164%;transform:translate(-50%, -100%) translateY(-5px)">393</span></div><div class="x-axis" style="pointer-events:none"><span class="axis-label x" data-axis="start" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-style:normal;line-height:1.1;letter-spacing:0.5px;text-transform:none;left:10%;text-align:center;white-space:normal;max-width:20%;font-weight:700">2015</span><span class="axis-label x" data-axis="fossil" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-style:normal;line-height:1.1;letter-spacing:0.5px;text-transform:none;left:30%;text-align:center;white-space:normal;max-width:20%;font-weight:400">fossile</span><span class="axis-label x" data-axis="nuclear" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-style:normal;line-height:1.1;letter-spacing:0.5px;text-transform:none;left:50%;text-align:center;white-space:normal;max-width:20%;font-weight:400">nucléaire</span><span class="axis-label x" data-axis="renewables" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-style:normal;line-height:1.1;letter-spacing:0.5px;text-transform:none;left:70%;text-align:center;white-space:normal;max-width:20%;font-weight:400">renouvelables</span><span class="axis-label x" data-axis="end" style="font-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;font-size:11px;font-style:normal;line-height:1.1;letter-spacing:0.5px;text-transform:none;left:90%;text-align:center;white-space:normal;max-width:20%;font-weight:700">2024</span></div></div><p class="chart-reading" style="font-family:&quot;Merriweather&quot;, Georgia, serif;font-size:13px;font-weight:400;font-style:italic;line-height:1.4499494999999998;letter-spacing:0px;text-transform:none;color:#616161;margin:10px 0 0">Lecture : retirez une marche, le pont se recalcule. Survolez ou tabulez une marche pour sa valeur et le total qu&#x27;elle laisserait.</p><p class="chart-source" style="font-family:&quot;Merriweather&quot;, Georgia, serif;font-size:13px;font-weight:400;font-style:italic;line-height:1.4499494999999998;letter-spacing:0px;text-transform:none;color:#616161;margin:6px 0 0">Source : Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · Allemagne, 2015 et 2024 · TWh</p></figure>
 <div id="tooltip" role="status" aria-live="polite" hidden></div>
 <script>
 // twin/skills/chart-web/assets/interaction.mjs
@@ -561,6 +576,48 @@ function nearestCell(cxs, cys, x, y) {
   return best;
 }
 
+/**
+ * TRUE WHEN A `pointerleave` REALLY MEANS THE READER LOOKED AWAY.
+ *
+ * A mouse or a pen leaves a target because the hand moved off it: the reading is no longer being
+ * asked for, and clearing it is right. A FINGER NEVER LEAVES — it lifts. The browser destroys a
+ * touch pointer at `pointerup` and fires `pointerout`/`pointerleave` immediately after, so binding
+ * `pointerleave` straight to the clear handler made the answer appear under the finger and vanish
+ * the instant it lifted, inside one gesture. Measured 2026-09-17 on
+ * `proof/web-sankey-electricity-sources` at 390x844 with touch: "during tap: SHOWN … after lift:
+ * hidden …", while the page's own prose promises « Survolez, touchez ou tabulez … ». That is the
+ * promise `splash/test/interaction-promises-are-kept.test.ts` exists to hold, and it was false on
+ * five delivered beats.
+ *
+ * So a touch pointer's leave is IGNORED and the reading persists, which is what a tap means on a
+ * phone: it selects. What un-selects it is already wired and needs nothing new — the document-level
+ * `pointerdown` below clears as soon as the reader touches anywhere outside the chart, and the next
+ * tap inside it resolves a new reading. Mouse and pen are untouched.
+ */
+function leaveEndsTheReading(evt) {
+  return !evt || evt.pointerType !== "touch";
+}
+
+/**
+ * TRUE WHEN A POINTER LANDED ON SOME CHART OF THIS PAGE — any of them, not this one.
+ *
+ * ONE TOOLTIP, SEVERAL CHARTS. The format ships a single `#tooltip` per page and wires every
+ * `svg.chart` on it independently, so each chart also registers its own document-level "the reader
+ * touched something else, give the answer back". That handler asked `svg.contains(evt.target)` —
+ * ITS OWN svg — so on a page carrying more than one chart, a tap inside chart A was read by charts
+ * B and C as a tap outside, and the reading A had just opened was wiped by its neighbours before
+ * the finger left the glass. Measured 2026-09-17 on `proof/web-cartogram-europe-lowcarbon`, which
+ * wires three 41-mark charts: tap answered nothing on any mark in any direction while hover
+ * answered every one, because hover fires no `pointerdown` and never woke the neighbours.
+ *
+ * The reading a neighbour opened is therefore left alone; only the marks THIS chart lit are given
+ * back, which is what keeps two charts from looking selected at once.
+ */
+function insideSomeChart(evt) {
+  const target = evt && evt.target;
+  return !!(target && target.closest && target.closest("svg.chart"));
+}
+
 /** Wires one `<svg class="chart">` — its `.pt` points, its `.hit-area` overlay, and the shared
  *  tooltip element — to hover, tap and keyboard. Every point already carries its own `data-detail`
  *  string and its own `aria-label`; this function never invents either. */
@@ -603,10 +660,19 @@ function initChart(svg, tooltip) {
   );
   const byCell = svg.getAttribute("data-hit") === "cell";
 
-  function clear() {
+  /** Give back the marks this chart lit, and nothing that belongs to a neighbour. */
+  function clearMarks() {
     points.forEach((p) => p.classList.remove("pt-active"));
     allMarks.forEach((m) => m.classList.remove("mark-active"));
+  }
+
+  function clear() {
+    clearMarks();
     tooltip.hidden = true;
+  }
+
+  function clearUnlessTouch(evt) {
+    if (leaveEndsTheReading(evt)) clear();
   }
 
   function show(point, clientX, clientY) {
@@ -667,7 +733,62 @@ function initChart(svg, tooltip) {
   if (hitArea) {
     hitArea.addEventListener("pointermove", fromPointer);
     hitArea.addEventListener("pointerdown", fromPointer);
-    hitArea.addEventListener("pointerleave", clear);
+    hitArea.addEventListener("pointerleave", clearUnlessTouch);
+  }
+
+  /**
+   * THE MARKS DRAWN ON THE PLOT'S OWN EDGE, which the hit area cannot reach BY CONSTRUCTION.
+   *
+   * `.hit-area` covers the whole viewBox, so "the overlay covers the plot" reads as complete — and
+   * it is not. A series puts its FIRST reading at x=0 and its LAST at x=width, so those two marks
+   * are centred exactly ON the svg element's own border box. Half of each circle is outside it and
+   * clipped, and a pointer at the mark's centre is not over the svg at all: measured on
+   * `proof/web-area-swiss-co2` at 1200x900, the last year's centre lands on `FIGURE.chart-figure`
+   * and the first year's on the `DIV.x-axis` painted over the baseline. Both were silent while the
+   * page's prose promises « Survolez … n'importe quelle année », and the same class was measured on
+   * `web-streamgraph-swiss-electricity` and `web-line-swiss-co2`. It is structural to the format,
+   * not a defect of one beat's scale, which is why it is repaired here and not in a component.
+   *
+   * SO THE CHART LISTENS ON ITS OWN STAGE AS WELL, and answers a pointer that is within one mark's
+   * REACH of the plot — the half-width of the drawn mark itself, read off the page rather than
+   * guessed, so a beat that changes its radius changes this in the same direction. Nothing about
+   * the picture moves: this is reach, not geometry.
+   *
+   * IT NEVER STEALS A POINTER ANOTHER CHART OWNS. A stage may hold several charts (three on
+   * `web-cartogram-europe-lowcarbon`), so a pointer that landed on ANY `svg.chart` belongs to that
+   * chart's own hit area and this path stands down.
+   */
+  const stage = svg.closest ? svg.closest(".chart-figure") : null;
+
+  /** Half the drawn mark's own width, in CSS pixels. Measured, never a constant. */
+  function markReach() {
+    const r = points[0].getBoundingClientRect();
+    return Math.max(r.width, r.height) / 2;
+  }
+
+  /** Is the pointer on this chart's plot, or within one mark of it? */
+  function withinReach(evt) {
+    if (!stage) return false;
+    const box = svg.getBoundingClientRect();
+    const reach = markReach();
+    return (
+      evt.clientX >= box.left - reach &&
+      evt.clientX <= box.right + reach &&
+      evt.clientY >= box.top - reach &&
+      evt.clientY <= box.bottom + reach
+    );
+  }
+
+  function fromStage(evt) {
+    if (insideSomeChart(evt)) return;
+    if (withinReach(evt)) fromPointer(evt);
+    else clearUnlessTouch(evt);
+  }
+
+  if (stage) {
+    stage.addEventListener("pointermove", fromStage);
+    stage.addEventListener("pointerdown", fromStage);
+    stage.addEventListener("pointerleave", clearUnlessTouch);
   }
 
   // Keyboard: every point is already `tabIndex={0}` at build time (works with this script absent
@@ -698,6 +819,15 @@ function initChart(svg, tooltip) {
 
   document.addEventListener("pointerdown", function (evt) {
     if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    // See `insideSomeChart`: a neighbour's reading is not this chart's to wipe.
+    if (insideSomeChart(evt)) {
+      clearMarks();
+      return;
+    }
+    // A mark drawn on the plot's own edge is answered by `fromStage` from OUTSIDE the svg — the
+    // first year of `web-area-swiss-co2` lands on the axis row painted over the baseline — so a
+    // tap this chart just answered must not read here as a tap somewhere else.
+    if (withinReach(evt)) return;
     clear();
   });
 }
@@ -778,6 +908,10 @@ function initLines(root, tooltip) {
     tooltip.hidden = true;
   }
 
+  function clearUnlessTouch(evt) {
+    if (leaveEndsTheReading(evt)) clear();
+  }
+
   function show(line, clientX, clientY) {
     lines.forEach(function (l) {
       l.classList.toggle("line-active", l === line);
@@ -804,7 +938,7 @@ function initLines(root, tooltip) {
     line.addEventListener("pointerenter", fromPointer);
     line.addEventListener("pointermove", fromPointer);
     line.addEventListener("pointerdown", fromPointer);
-    line.addEventListener("pointerleave", clear);
+    line.addEventListener("pointerleave", clearUnlessTouch);
     // Keyboard parity: the twin is focusable at build time, so Tab reaches every line and its
     // `aria-label` is read with this script absent. Focus is unambiguous about which line was
     // addressed, so it never goes through `nearest`.
@@ -823,6 +957,14 @@ function initLines(root, tooltip) {
     if (evt.target && evt.target.closest && evt.target.closest(".line-hit"))
       return;
     if (tooltip.contains(evt.target)) return;
+    // See `insideSomeChart`: the points layer answers taps inside a chart, and its reading is not
+    // this layer's to wipe. Only the lines this layer lit are given back.
+    if (insideSomeChart(evt)) {
+      lines.forEach(function (l) {
+        l.classList.remove("line-active");
+      });
+      return;
+    }
     clear();
   });
 }

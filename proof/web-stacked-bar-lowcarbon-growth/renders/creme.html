@@ -359,21 +359,31 @@ svg.chart { display: block; }
 .chart-figure .chart-rebase label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
 .chart-figure .chart-rebase input { cursor: pointer; margin: 0; }
 
-/* THE SENTENCE THE CONTROL OWES THE READER. Its row is reserved whether or not an option is
-   chosen, so choosing one never moves the plot underneath it. role="status" belongs on the
-   container rather than on each note: the notes come and go by display, and a live region that
-   itself comes and goes announces nothing. */
+/* THE SENTENCE THE CONTROL OWES THE READER, AND THE ROW THAT HOLDS IT WITHOUT ANYBODY TYPING A
+   NUMBER. The row is reserved whether or not an option is chosen, so choosing one never moves the
+   plot underneath it. It used to be reserved by a hand-authored min-height — 1.5em by default, one
+   line — and that was measured wrong on 34 of 58 committed beats: a sentence that wraps to three
+   or four lines at a narrow width does not fit in a row reserved for one, so the plot lost up to
+   53px the moment a reader touched the control. Seven of the 34 were wrong at 1600px too, and this
+   skill's own seed was one of them. A per-beat floor could not have closed it either: the depth a
+   sentence needs is a function of the READER'S width, which no build-time number knows. */
+/* SO THE BROWSER MEASURES IT. Every sentence sits in ONE grid cell, all of them in flow at once,
+   so the cell — and the row — is exactly as deep as the DEEPEST sentence at whatever width the
+   window happens to be, in every direction, on every viewport, with JavaScript off. Nothing is
+   authored and nothing transfers to the next subject. */
+/* WHAT THIS ASKS OF THE VOCABULARY, and it is the whole contract: the sentences that are not
+   showing must stay IN FLOW. Hide them with `visibility: hidden` and show one with `visibility:
+   visible`. Hiding a sentence by its DISPLAY takes it out of the grid cell entirely, the cell
+   collapses to whichever one is showing, and this reservation becomes a no-op — which is exactly
+   what "stacked" was, as an opt-in, on the three vocabularies that asked for it while still hiding
+   by display. A live region announces the change either way: both spellings remove the sentence
+   from the accessibility tree, and role="status" is on the CONTAINER, which never comes and goes. */
 .chart-figure .rebase-notes {
   flex: 0 0 auto;
   margin: 4px 0 0;
-  /* three lines: the longest of this control's sentences at the narrowest verified width */
-  min-height: 3em;
+  display: grid;
   font-size: var(--source-size);
   color: var(--muted);
-  /* EVERY SENTENCE IN ONE GRID CELL. These sentences wrap to different heights, so revealing one
-     with display grew the row and pushed the drawing down. Stacked in one cell the container is
-     always as tall as the LONGEST sentence, whichever is showing, and the plot never moves. */
-  display: grid;
 }
 .chart-figure .rebase-notes p { grid-area: 1 / 1; margin: 0; }
 
@@ -450,7 +460,7 @@ svg.chart { display: block; }
    from the common zero, over "Mesurer une source depuis zéro". Radios plus :checked/:has(),
    generated once at build time — the same mechanism filter.ts narrows with, and the reason this
    control needs no script and survives one being blocked. */
-.chart-figure [data-stack-note] { display: none; }
+.chart-figure [data-stack-note] { visibility: hidden; }
 .chart-figure [data-rebase-rail] { left: 0; width: 0%; }
 @media (prefers-reduced-motion: no-preference) {
   .chart-figure [data-rebase-rail] { transition: width 260ms cubic-bezier(0.4, 0, 0.2, 1), background-color 260ms ease; }
@@ -474,7 +484,7 @@ svg.chart { display: block; }
 .chart-figure:has(#chart-stack-hydro:checked) [data-rebase-rail="DNK"] { width: 0.004%; }
 .chart-figure:has(#chart-stack-hydro:checked) [data-rebase-rail="GRC"] { width: 0.651%; }
 .chart-figure:has(#chart-stack-hydro:checked) [data-rebase-rail="IRL"] { width: 0.14%; }
-.chart-figure:has(#chart-stack-hydro:checked) [data-stack-note="hydro"] { display: revert; }
+.chart-figure:has(#chart-stack-hydro:checked) [data-stack-note="hydro"] { visibility: visible; }
 .chart-figure:has(#chart-stack-wind:checked) [data-rebase-rail] { width: 0%; }
 .chart-figure:has(#chart-stack-wind:checked) [data-rebase-rail] { background: #4175c0; }
 .chart-figure:has(#chart-stack-wind:checked) [data-rebase-rail="FRA"] { width: 8.26%; }
@@ -493,7 +503,7 @@ svg.chart { display: block; }
 .chart-figure:has(#chart-stack-wind:checked) [data-rebase-rail="DNK"] { width: 3.711%; }
 .chart-figure:has(#chart-stack-wind:checked) [data-rebase-rail="GRC"] { width: 2.282%; }
 .chart-figure:has(#chart-stack-wind:checked) [data-rebase-rail="IRL"] { width: 2.109%; }
-.chart-figure:has(#chart-stack-wind:checked) [data-stack-note="wind"] { display: revert; }
+.chart-figure:has(#chart-stack-wind:checked) [data-stack-note="wind"] { visibility: visible; }
 .chart-figure:has(#chart-stack-solar:checked) [data-rebase-rail] { width: 0%; }
 .chart-figure:has(#chart-stack-solar:checked) [data-rebase-rail] { background: #5785c6; }
 .chart-figure:has(#chart-stack-solar:checked) [data-rebase-rail="FRA"] { width: 4.522%; }
@@ -512,7 +522,7 @@ svg.chart { display: block; }
 .chart-figure:has(#chart-stack-solar:checked) [data-rebase-rail="DNK"] { width: 0.687%; }
 .chart-figure:has(#chart-stack-solar:checked) [data-rebase-rail="GRC"] { width: 2.047%; }
 .chart-figure:has(#chart-stack-solar:checked) [data-rebase-rail="IRL"] { width: 0.198%; }
-.chart-figure:has(#chart-stack-solar:checked) [data-stack-note="solar"] { display: revert; }
+.chart-figure:has(#chart-stack-solar:checked) [data-stack-note="solar"] { visibility: visible; }
 .chart-figure:has(#chart-stack-other:checked) [data-rebase-rail] { width: 0%; }
 .chart-figure:has(#chart-stack-other:checked) [data-rebase-rail] { background: #6d94cb; }
 .chart-figure:has(#chart-stack-other:checked) [data-rebase-rail="FRA"] { width: 2.045%; }
@@ -531,7 +541,7 @@ svg.chart { display: block; }
 .chart-figure:has(#chart-stack-other:checked) [data-rebase-rail="DNK"] { width: 1.284%; }
 .chart-figure:has(#chart-stack-other:checked) [data-rebase-rail="GRC"] { width: 0.129%; }
 .chart-figure:has(#chart-stack-other:checked) [data-rebase-rail="IRL"] { width: 0.182%; }
-.chart-figure:has(#chart-stack-other:checked) [data-stack-note="other"] { display: revert; }
+.chart-figure:has(#chart-stack-other:checked) [data-stack-note="other"] { visibility: visible; }
 
 .chart-figure .chart-plot .end-axis .end-label { background: none; padding: 0; white-space: nowrap; }
 
@@ -602,6 +612,48 @@ function nearestCell(cxs, cys, x, y) {
   return best;
 }
 
+/**
+ * TRUE WHEN A `pointerleave` REALLY MEANS THE READER LOOKED AWAY.
+ *
+ * A mouse or a pen leaves a target because the hand moved off it: the reading is no longer being
+ * asked for, and clearing it is right. A FINGER NEVER LEAVES — it lifts. The browser destroys a
+ * touch pointer at `pointerup` and fires `pointerout`/`pointerleave` immediately after, so binding
+ * `pointerleave` straight to the clear handler made the answer appear under the finger and vanish
+ * the instant it lifted, inside one gesture. Measured 2026-09-17 on
+ * `proof/web-sankey-electricity-sources` at 390x844 with touch: "during tap: SHOWN … after lift:
+ * hidden …", while the page's own prose promises « Survolez, touchez ou tabulez … ». That is the
+ * promise `splash/test/interaction-promises-are-kept.test.ts` exists to hold, and it was false on
+ * five delivered beats.
+ *
+ * So a touch pointer's leave is IGNORED and the reading persists, which is what a tap means on a
+ * phone: it selects. What un-selects it is already wired and needs nothing new — the document-level
+ * `pointerdown` below clears as soon as the reader touches anywhere outside the chart, and the next
+ * tap inside it resolves a new reading. Mouse and pen are untouched.
+ */
+function leaveEndsTheReading(evt) {
+  return !evt || evt.pointerType !== "touch";
+}
+
+/**
+ * TRUE WHEN A POINTER LANDED ON SOME CHART OF THIS PAGE — any of them, not this one.
+ *
+ * ONE TOOLTIP, SEVERAL CHARTS. The format ships a single `#tooltip` per page and wires every
+ * `svg.chart` on it independently, so each chart also registers its own document-level "the reader
+ * touched something else, give the answer back". That handler asked `svg.contains(evt.target)` —
+ * ITS OWN svg — so on a page carrying more than one chart, a tap inside chart A was read by charts
+ * B and C as a tap outside, and the reading A had just opened was wiped by its neighbours before
+ * the finger left the glass. Measured 2026-09-17 on `proof/web-cartogram-europe-lowcarbon`, which
+ * wires three 41-mark charts: tap answered nothing on any mark in any direction while hover
+ * answered every one, because hover fires no `pointerdown` and never woke the neighbours.
+ *
+ * The reading a neighbour opened is therefore left alone; only the marks THIS chart lit are given
+ * back, which is what keeps two charts from looking selected at once.
+ */
+function insideSomeChart(evt) {
+  const target = evt && evt.target;
+  return !!(target && target.closest && target.closest("svg.chart"));
+}
+
 /** Wires one `<svg class="chart">` — its `.pt` points, its `.hit-area` overlay, and the shared
  *  tooltip element — to hover, tap and keyboard. Every point already carries its own `data-detail`
  *  string and its own `aria-label`; this function never invents either. */
@@ -644,10 +696,19 @@ function initChart(svg, tooltip) {
   );
   const byCell = svg.getAttribute("data-hit") === "cell";
 
-  function clear() {
+  /** Give back the marks this chart lit, and nothing that belongs to a neighbour. */
+  function clearMarks() {
     points.forEach((p) => p.classList.remove("pt-active"));
     allMarks.forEach((m) => m.classList.remove("mark-active"));
+  }
+
+  function clear() {
+    clearMarks();
     tooltip.hidden = true;
+  }
+
+  function clearUnlessTouch(evt) {
+    if (leaveEndsTheReading(evt)) clear();
   }
 
   function show(point, clientX, clientY) {
@@ -708,7 +769,62 @@ function initChart(svg, tooltip) {
   if (hitArea) {
     hitArea.addEventListener("pointermove", fromPointer);
     hitArea.addEventListener("pointerdown", fromPointer);
-    hitArea.addEventListener("pointerleave", clear);
+    hitArea.addEventListener("pointerleave", clearUnlessTouch);
+  }
+
+  /**
+   * THE MARKS DRAWN ON THE PLOT'S OWN EDGE, which the hit area cannot reach BY CONSTRUCTION.
+   *
+   * `.hit-area` covers the whole viewBox, so "the overlay covers the plot" reads as complete — and
+   * it is not. A series puts its FIRST reading at x=0 and its LAST at x=width, so those two marks
+   * are centred exactly ON the svg element's own border box. Half of each circle is outside it and
+   * clipped, and a pointer at the mark's centre is not over the svg at all: measured on
+   * `proof/web-area-swiss-co2` at 1200x900, the last year's centre lands on `FIGURE.chart-figure`
+   * and the first year's on the `DIV.x-axis` painted over the baseline. Both were silent while the
+   * page's prose promises « Survolez … n'importe quelle année », and the same class was measured on
+   * `web-streamgraph-swiss-electricity` and `web-line-swiss-co2`. It is structural to the format,
+   * not a defect of one beat's scale, which is why it is repaired here and not in a component.
+   *
+   * SO THE CHART LISTENS ON ITS OWN STAGE AS WELL, and answers a pointer that is within one mark's
+   * REACH of the plot — the half-width of the drawn mark itself, read off the page rather than
+   * guessed, so a beat that changes its radius changes this in the same direction. Nothing about
+   * the picture moves: this is reach, not geometry.
+   *
+   * IT NEVER STEALS A POINTER ANOTHER CHART OWNS. A stage may hold several charts (three on
+   * `web-cartogram-europe-lowcarbon`), so a pointer that landed on ANY `svg.chart` belongs to that
+   * chart's own hit area and this path stands down.
+   */
+  const stage = svg.closest ? svg.closest(".chart-figure") : null;
+
+  /** Half the drawn mark's own width, in CSS pixels. Measured, never a constant. */
+  function markReach() {
+    const r = points[0].getBoundingClientRect();
+    return Math.max(r.width, r.height) / 2;
+  }
+
+  /** Is the pointer on this chart's plot, or within one mark of it? */
+  function withinReach(evt) {
+    if (!stage) return false;
+    const box = svg.getBoundingClientRect();
+    const reach = markReach();
+    return (
+      evt.clientX >= box.left - reach &&
+      evt.clientX <= box.right + reach &&
+      evt.clientY >= box.top - reach &&
+      evt.clientY <= box.bottom + reach
+    );
+  }
+
+  function fromStage(evt) {
+    if (insideSomeChart(evt)) return;
+    if (withinReach(evt)) fromPointer(evt);
+    else clearUnlessTouch(evt);
+  }
+
+  if (stage) {
+    stage.addEventListener("pointermove", fromStage);
+    stage.addEventListener("pointerdown", fromStage);
+    stage.addEventListener("pointerleave", clearUnlessTouch);
   }
 
   // Keyboard: every point is already `tabIndex={0}` at build time (works with this script absent
@@ -739,6 +855,15 @@ function initChart(svg, tooltip) {
 
   document.addEventListener("pointerdown", function (evt) {
     if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    // See `insideSomeChart`: a neighbour's reading is not this chart's to wipe.
+    if (insideSomeChart(evt)) {
+      clearMarks();
+      return;
+    }
+    // A mark drawn on the plot's own edge is answered by `fromStage` from OUTSIDE the svg — the
+    // first year of `web-area-swiss-co2` lands on the axis row painted over the baseline — so a
+    // tap this chart just answered must not read here as a tap somewhere else.
+    if (withinReach(evt)) return;
     clear();
   });
 }
@@ -819,6 +944,10 @@ function initLines(root, tooltip) {
     tooltip.hidden = true;
   }
 
+  function clearUnlessTouch(evt) {
+    if (leaveEndsTheReading(evt)) clear();
+  }
+
   function show(line, clientX, clientY) {
     lines.forEach(function (l) {
       l.classList.toggle("line-active", l === line);
@@ -845,7 +974,7 @@ function initLines(root, tooltip) {
     line.addEventListener("pointerenter", fromPointer);
     line.addEventListener("pointermove", fromPointer);
     line.addEventListener("pointerdown", fromPointer);
-    line.addEventListener("pointerleave", clear);
+    line.addEventListener("pointerleave", clearUnlessTouch);
     // Keyboard parity: the twin is focusable at build time, so Tab reaches every line and its
     // `aria-label` is read with this script absent. Focus is unambiguous about which line was
     // addressed, so it never goes through `nearest`.
@@ -864,6 +993,14 @@ function initLines(root, tooltip) {
     if (evt.target && evt.target.closest && evt.target.closest(".line-hit"))
       return;
     if (tooltip.contains(evt.target)) return;
+    // See `insideSomeChart`: the points layer answers taps inside a chart, and its reading is not
+    // this layer's to wipe. Only the lines this layer lit are given back.
+    if (insideSomeChart(evt)) {
+      lines.forEach(function (l) {
+        l.classList.remove("line-active");
+      });
+      return;
+    }
     clear();
   });
 }

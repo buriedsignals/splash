@@ -421,18 +421,33 @@ svg.chart { display: block; }
 .chart-figure .chart-stack label { position: relative; display: inline-flex; align-items: center; gap: 4px; cursor: pointer; color: var(--muted); }
 .chart-figure .chart-stack input { cursor: pointer; margin: 0; }
 
-/* THE SENTENCE THE CONTROL OWES THE READER. Its row is reserved whether or not an option is
-   chosen, so choosing one never moves the plot underneath it. role="status" belongs on the
-   container rather than on each note: the notes come and go by display, and a live region that
-   itself comes and goes announces nothing. */
+/* THE SENTENCE THE CONTROL OWES THE READER, AND THE ROW THAT HOLDS IT WITHOUT ANYBODY TYPING A
+   NUMBER. The row is reserved whether or not an option is chosen, so choosing one never moves the
+   plot underneath it. It used to be reserved by a hand-authored min-height — 1.5em by default, one
+   line — and that was measured wrong on 34 of 58 committed beats: a sentence that wraps to three
+   or four lines at a narrow width does not fit in a row reserved for one, so the plot lost up to
+   53px the moment a reader touched the control. Seven of the 34 were wrong at 1600px too, and this
+   skill's own seed was one of them. A per-beat floor could not have closed it either: the depth a
+   sentence needs is a function of the READER'S width, which no build-time number knows. */
+/* SO THE BROWSER MEASURES IT. Every sentence sits in ONE grid cell, all of them in flow at once,
+   so the cell — and the row — is exactly as deep as the DEEPEST sentence at whatever width the
+   window happens to be, in every direction, on every viewport, with JavaScript off. Nothing is
+   authored and nothing transfers to the next subject. */
+/* WHAT THIS ASKS OF THE VOCABULARY, and it is the whole contract: the sentences that are not
+   showing must stay IN FLOW. Hide them with `visibility: hidden` and show one with `visibility:
+   visible`. Hiding a sentence by its DISPLAY takes it out of the grid cell entirely, the cell
+   collapses to whichever one is showing, and this reservation becomes a no-op — which is exactly
+   what "stacked" was, as an opt-in, on the three vocabularies that asked for it while still hiding
+   by display. A live region announces the change either way: both spellings remove the sentence
+   from the accessibility tree, and role="status" is on the CONTAINER, which never comes and goes. */
 .chart-figure .stack-notes {
   flex: 0 0 auto;
   margin: 4px 0 0;
-  min-height: 1.5em;
+  display: grid;
   font-size: var(--source-size);
   color: var(--muted);
 }
-.chart-figure .stack-notes p { margin: 0; }
+.chart-figure .stack-notes p { grid-area: 1 / 1; margin: 0; }
 
 @supports selector(:has(*)) {
   .chart-figure .chart-stack .options {
@@ -503,7 +518,7 @@ svg.chart { display: block; }
 /* The stack this beat declared: 8 options over "Empiler contre".
    Radios plus :checked/:has(), generated once at build time — the same mechanism filter.ts
    narrows with, and the reason this control needs no script and survives one being blocked. */
-.chart-figure [data-stack-note] { display: none; }
+.chart-figure [data-stack-note] { visibility: hidden; }
 .chart-figure [data-stack-total] { display: none; }
 @media (prefers-reduced-motion: no-preference) {
   .chart-figure [data-col] { transition: transform 420ms cubic-bezier(0.4, 0, 0.2, 1), fill 210ms ease; }
@@ -519,7 +534,7 @@ svg.chart { display: block; }
 .chart-figure:has(#chart-stack-chn:checked) [data-value="CHN"] { color: var(--accent); }
 .chart-figure:has(#chart-stack-chn:checked) [data-axis="CHN"], .chart-figure:has(#chart-stack-chn:checked) [data-axis="USA"], .chart-figure:has(#chart-stack-chn:checked) [data-axis="IND"], .chart-figure:has(#chart-stack-chn:checked) [data-axis="RUS"], .chart-figure:has(#chart-stack-chn:checked) [data-axis="JPN"], .chart-figure:has(#chart-stack-chn:checked) [data-axis="IDN"], .chart-figure:has(#chart-stack-chn:checked) [data-axis="IRN"] { color: var(--accent); }
 .chart-figure:has(#chart-stack-chn:checked) [data-value="USA"], .chart-figure:has(#chart-stack-chn:checked) [data-value="IND"], .chart-figure:has(#chart-stack-chn:checked) [data-value="RUS"], .chart-figure:has(#chart-stack-chn:checked) [data-value="JPN"], .chart-figure:has(#chart-stack-chn:checked) [data-value="IDN"], .chart-figure:has(#chart-stack-chn:checked) [data-value="IRN"] { --stack-carried: 1; }
-.chart-figure:has(#chart-stack-chn:checked) [data-stack-note="chn"] { display: revert; }
+.chart-figure:has(#chart-stack-chn:checked) [data-stack-note="chn"] { visibility: visible; }
 .chart-figure:has(#chart-stack-chn:checked) [data-stack-total="chn"] { display: revert; }
 .chart-figure:has(#chart-stack-chn:checked) [data-col="USA"], .chart-figure:has(#chart-stack-chn:checked) [data-col="IND"], .chart-figure:has(#chart-stack-chn:checked) [data-col="RUS"], .chart-figure:has(#chart-stack-chn:checked) [data-col="JPN"], .chart-figure:has(#chart-stack-chn:checked) [data-col="IDN"], .chart-figure:has(#chart-stack-chn:checked) [data-col="IRN"] { stroke: var(--ground); stroke-width: 2; }
 .chart-figure:has(#chart-stack-chn:checked) [data-col="USA"] { transform: translate(0px, 0px); }
@@ -543,7 +558,7 @@ svg.chart { display: block; }
 .chart-figure:has(#chart-stack-usa:checked) [data-value="USA"] { color: var(--accent); }
 .chart-figure:has(#chart-stack-usa:checked) [data-axis="USA"], .chart-figure:has(#chart-stack-usa:checked) [data-axis="IND"], .chart-figure:has(#chart-stack-usa:checked) [data-axis="RUS"] { color: var(--accent); }
 .chart-figure:has(#chart-stack-usa:checked) [data-value="IND"], .chart-figure:has(#chart-stack-usa:checked) [data-value="RUS"] { --stack-carried: 1; }
-.chart-figure:has(#chart-stack-usa:checked) [data-stack-note="usa"] { display: revert; }
+.chart-figure:has(#chart-stack-usa:checked) [data-stack-note="usa"] { visibility: visible; }
 .chart-figure:has(#chart-stack-usa:checked) [data-stack-total="usa"] { display: revert; }
 .chart-figure:has(#chart-stack-usa:checked) [data-col="IND"], .chart-figure:has(#chart-stack-usa:checked) [data-col="RUS"] { stroke: var(--ground); stroke-width: 2; }
 .chart-figure:has(#chart-stack-usa:checked) [data-col="IND"] { transform: translate(0px, 0px); }
@@ -559,7 +574,7 @@ svg.chart { display: block; }
 .chart-figure:has(#chart-stack-ind:checked) [data-value="IND"] { color: var(--accent); }
 .chart-figure:has(#chart-stack-ind:checked) [data-axis="IND"], .chart-figure:has(#chart-stack-ind:checked) [data-axis="RUS"], .chart-figure:has(#chart-stack-ind:checked) [data-axis="JPN"], .chart-figure:has(#chart-stack-ind:checked) [data-axis="IDN"] { color: var(--accent); }
 .chart-figure:has(#chart-stack-ind:checked) [data-value="RUS"], .chart-figure:has(#chart-stack-ind:checked) [data-value="JPN"], .chart-figure:has(#chart-stack-ind:checked) [data-value="IDN"] { --stack-carried: 1; }
-.chart-figure:has(#chart-stack-ind:checked) [data-stack-note="ind"] { display: revert; }
+.chart-figure:has(#chart-stack-ind:checked) [data-stack-note="ind"] { visibility: visible; }
 .chart-figure:has(#chart-stack-ind:checked) [data-stack-total="ind"] { display: revert; }
 .chart-figure:has(#chart-stack-ind:checked) [data-col="RUS"], .chart-figure:has(#chart-stack-ind:checked) [data-col="JPN"], .chart-figure:has(#chart-stack-ind:checked) [data-col="IDN"] { stroke: var(--ground); stroke-width: 2; }
 .chart-figure:has(#chart-stack-ind:checked) [data-col="RUS"] { transform: translate(0px, 0px); }
@@ -577,7 +592,7 @@ svg.chart { display: block; }
 .chart-figure:has(#chart-stack-rus:checked) [data-value="RUS"] { color: var(--accent); }
 .chart-figure:has(#chart-stack-rus:checked) [data-axis="RUS"], .chart-figure:has(#chart-stack-rus:checked) [data-axis="JPN"], .chart-figure:has(#chart-stack-rus:checked) [data-axis="IDN"], .chart-figure:has(#chart-stack-rus:checked) [data-axis="IRN"] { color: var(--accent); }
 .chart-figure:has(#chart-stack-rus:checked) [data-value="JPN"], .chart-figure:has(#chart-stack-rus:checked) [data-value="IDN"], .chart-figure:has(#chart-stack-rus:checked) [data-value="IRN"] { --stack-carried: 1; }
-.chart-figure:has(#chart-stack-rus:checked) [data-stack-note="rus"] { display: revert; }
+.chart-figure:has(#chart-stack-rus:checked) [data-stack-note="rus"] { visibility: visible; }
 .chart-figure:has(#chart-stack-rus:checked) [data-stack-total="rus"] { display: revert; }
 .chart-figure:has(#chart-stack-rus:checked) [data-col="JPN"], .chart-figure:has(#chart-stack-rus:checked) [data-col="IDN"], .chart-figure:has(#chart-stack-rus:checked) [data-col="IRN"] { stroke: var(--ground); stroke-width: 2; }
 .chart-figure:has(#chart-stack-rus:checked) [data-col="JPN"] { transform: translate(0px, 0px); }
@@ -595,7 +610,7 @@ svg.chart { display: block; }
 .chart-figure:has(#chart-stack-jpn:checked) [data-value="JPN"] { color: var(--accent); }
 .chart-figure:has(#chart-stack-jpn:checked) [data-axis="JPN"], .chart-figure:has(#chart-stack-jpn:checked) [data-axis="IDN"], .chart-figure:has(#chart-stack-jpn:checked) [data-axis="IRN"] { color: var(--accent); }
 .chart-figure:has(#chart-stack-jpn:checked) [data-value="IDN"], .chart-figure:has(#chart-stack-jpn:checked) [data-value="IRN"] { --stack-carried: 1; }
-.chart-figure:has(#chart-stack-jpn:checked) [data-stack-note="jpn"] { display: revert; }
+.chart-figure:has(#chart-stack-jpn:checked) [data-stack-note="jpn"] { visibility: visible; }
 .chart-figure:has(#chart-stack-jpn:checked) [data-stack-total="jpn"] { display: revert; }
 .chart-figure:has(#chart-stack-jpn:checked) [data-col="IDN"], .chart-figure:has(#chart-stack-jpn:checked) [data-col="IRN"] { stroke: var(--ground); stroke-width: 2; }
 .chart-figure:has(#chart-stack-jpn:checked) [data-col="IDN"] { transform: translate(0px, 0px); }
@@ -611,7 +626,7 @@ svg.chart { display: block; }
 .chart-figure:has(#chart-stack-idn:checked) [data-value="IDN"] { color: var(--accent); }
 .chart-figure:has(#chart-stack-idn:checked) [data-axis="IDN"], .chart-figure:has(#chart-stack-idn:checked) [data-axis="IRN"], .chart-figure:has(#chart-stack-idn:checked) [data-axis="SAU"] { color: var(--accent); }
 .chart-figure:has(#chart-stack-idn:checked) [data-value="IRN"], .chart-figure:has(#chart-stack-idn:checked) [data-value="SAU"] { --stack-carried: 1; }
-.chart-figure:has(#chart-stack-idn:checked) [data-stack-note="idn"] { display: revert; }
+.chart-figure:has(#chart-stack-idn:checked) [data-stack-note="idn"] { visibility: visible; }
 .chart-figure:has(#chart-stack-idn:checked) [data-stack-total="idn"] { display: revert; }
 .chart-figure:has(#chart-stack-idn:checked) [data-col="IRN"], .chart-figure:has(#chart-stack-idn:checked) [data-col="SAU"] { stroke: var(--ground); stroke-width: 2; }
 .chart-figure:has(#chart-stack-idn:checked) [data-col="IRN"] { transform: translate(0px, 0px); }
@@ -627,7 +642,7 @@ svg.chart { display: block; }
 .chart-figure:has(#chart-stack-irn:checked) [data-value="IRN"] { color: var(--accent); }
 .chart-figure:has(#chart-stack-irn:checked) [data-axis="IRN"], .chart-figure:has(#chart-stack-irn:checked) [data-axis="SAU"], .chart-figure:has(#chart-stack-irn:checked) [data-axis="KOR"] { color: var(--accent); }
 .chart-figure:has(#chart-stack-irn:checked) [data-value="SAU"], .chart-figure:has(#chart-stack-irn:checked) [data-value="KOR"] { --stack-carried: 1; }
-.chart-figure:has(#chart-stack-irn:checked) [data-stack-note="irn"] { display: revert; }
+.chart-figure:has(#chart-stack-irn:checked) [data-stack-note="irn"] { visibility: visible; }
 .chart-figure:has(#chart-stack-irn:checked) [data-stack-total="irn"] { display: revert; }
 .chart-figure:has(#chart-stack-irn:checked) [data-col="SAU"], .chart-figure:has(#chart-stack-irn:checked) [data-col="KOR"] { stroke: var(--ground); stroke-width: 2; }
 .chart-figure:has(#chart-stack-irn:checked) [data-col="SAU"] { transform: translate(0px, 0px); }
@@ -643,7 +658,7 @@ svg.chart { display: block; }
 .chart-figure:has(#chart-stack-sau:checked) [data-value="SAU"] { color: var(--accent); }
 .chart-figure:has(#chart-stack-sau:checked) [data-axis="SAU"], .chart-figure:has(#chart-stack-sau:checked) [data-axis="KOR"], .chart-figure:has(#chart-stack-sau:checked) [data-axis="DEU"] { color: var(--accent); }
 .chart-figure:has(#chart-stack-sau:checked) [data-value="KOR"], .chart-figure:has(#chart-stack-sau:checked) [data-value="DEU"] { --stack-carried: 1; }
-.chart-figure:has(#chart-stack-sau:checked) [data-stack-note="sau"] { display: revert; }
+.chart-figure:has(#chart-stack-sau:checked) [data-stack-note="sau"] { visibility: visible; }
 .chart-figure:has(#chart-stack-sau:checked) [data-stack-total="sau"] { display: revert; }
 .chart-figure:has(#chart-stack-sau:checked) [data-col="KOR"], .chart-figure:has(#chart-stack-sau:checked) [data-col="DEU"] { stroke: var(--ground); stroke-width: 2; }
 .chart-figure:has(#chart-stack-sau:checked) [data-col="KOR"] { transform: translate(0px, 0px); }
@@ -714,6 +729,48 @@ function nearestCell(cxs, cys, x, y) {
   return best;
 }
 
+/**
+ * TRUE WHEN A `pointerleave` REALLY MEANS THE READER LOOKED AWAY.
+ *
+ * A mouse or a pen leaves a target because the hand moved off it: the reading is no longer being
+ * asked for, and clearing it is right. A FINGER NEVER LEAVES — it lifts. The browser destroys a
+ * touch pointer at `pointerup` and fires `pointerout`/`pointerleave` immediately after, so binding
+ * `pointerleave` straight to the clear handler made the answer appear under the finger and vanish
+ * the instant it lifted, inside one gesture. Measured 2026-09-17 on
+ * `proof/web-sankey-electricity-sources` at 390x844 with touch: "during tap: SHOWN … after lift:
+ * hidden …", while the page's own prose promises « Survolez, touchez ou tabulez … ». That is the
+ * promise `splash/test/interaction-promises-are-kept.test.ts` exists to hold, and it was false on
+ * five delivered beats.
+ *
+ * So a touch pointer's leave is IGNORED and the reading persists, which is what a tap means on a
+ * phone: it selects. What un-selects it is already wired and needs nothing new — the document-level
+ * `pointerdown` below clears as soon as the reader touches anywhere outside the chart, and the next
+ * tap inside it resolves a new reading. Mouse and pen are untouched.
+ */
+function leaveEndsTheReading(evt) {
+  return !evt || evt.pointerType !== "touch";
+}
+
+/**
+ * TRUE WHEN A POINTER LANDED ON SOME CHART OF THIS PAGE — any of them, not this one.
+ *
+ * ONE TOOLTIP, SEVERAL CHARTS. The format ships a single `#tooltip` per page and wires every
+ * `svg.chart` on it independently, so each chart also registers its own document-level "the reader
+ * touched something else, give the answer back". That handler asked `svg.contains(evt.target)` —
+ * ITS OWN svg — so on a page carrying more than one chart, a tap inside chart A was read by charts
+ * B and C as a tap outside, and the reading A had just opened was wiped by its neighbours before
+ * the finger left the glass. Measured 2026-09-17 on `proof/web-cartogram-europe-lowcarbon`, which
+ * wires three 41-mark charts: tap answered nothing on any mark in any direction while hover
+ * answered every one, because hover fires no `pointerdown` and never woke the neighbours.
+ *
+ * The reading a neighbour opened is therefore left alone; only the marks THIS chart lit are given
+ * back, which is what keeps two charts from looking selected at once.
+ */
+function insideSomeChart(evt) {
+  const target = evt && evt.target;
+  return !!(target && target.closest && target.closest("svg.chart"));
+}
+
 /** Wires one `<svg class="chart">` — its `.pt` points, its `.hit-area` overlay, and the shared
  *  tooltip element — to hover, tap and keyboard. Every point already carries its own `data-detail`
  *  string and its own `aria-label`; this function never invents either. */
@@ -756,10 +813,19 @@ function initChart(svg, tooltip) {
   );
   const byCell = svg.getAttribute("data-hit") === "cell";
 
-  function clear() {
+  /** Give back the marks this chart lit, and nothing that belongs to a neighbour. */
+  function clearMarks() {
     points.forEach((p) => p.classList.remove("pt-active"));
     allMarks.forEach((m) => m.classList.remove("mark-active"));
+  }
+
+  function clear() {
+    clearMarks();
     tooltip.hidden = true;
+  }
+
+  function clearUnlessTouch(evt) {
+    if (leaveEndsTheReading(evt)) clear();
   }
 
   function show(point, clientX, clientY) {
@@ -820,11 +886,62 @@ function initChart(svg, tooltip) {
   if (hitArea) {
     hitArea.addEventListener("pointermove", fromPointer);
     hitArea.addEventListener("pointerdown", fromPointer);
-    hitArea.addEventListener("pointerleave", function (evt) {
-      // Mouse and pen only — see this beat's render-directions-web.mjs for the measurement.
-      if (evt.pointerType === "touch") return;
-      clear();
-    });
+    hitArea.addEventListener("pointerleave", clearUnlessTouch);
+  }
+
+  /**
+   * THE MARKS DRAWN ON THE PLOT'S OWN EDGE, which the hit area cannot reach BY CONSTRUCTION.
+   *
+   * `.hit-area` covers the whole viewBox, so "the overlay covers the plot" reads as complete — and
+   * it is not. A series puts its FIRST reading at x=0 and its LAST at x=width, so those two marks
+   * are centred exactly ON the svg element's own border box. Half of each circle is outside it and
+   * clipped, and a pointer at the mark's centre is not over the svg at all: measured on
+   * `proof/web-area-swiss-co2` at 1200x900, the last year's centre lands on `FIGURE.chart-figure`
+   * and the first year's on the `DIV.x-axis` painted over the baseline. Both were silent while the
+   * page's prose promises « Survolez … n'importe quelle année », and the same class was measured on
+   * `web-streamgraph-swiss-electricity` and `web-line-swiss-co2`. It is structural to the format,
+   * not a defect of one beat's scale, which is why it is repaired here and not in a component.
+   *
+   * SO THE CHART LISTENS ON ITS OWN STAGE AS WELL, and answers a pointer that is within one mark's
+   * REACH of the plot — the half-width of the drawn mark itself, read off the page rather than
+   * guessed, so a beat that changes its radius changes this in the same direction. Nothing about
+   * the picture moves: this is reach, not geometry.
+   *
+   * IT NEVER STEALS A POINTER ANOTHER CHART OWNS. A stage may hold several charts (three on
+   * `web-cartogram-europe-lowcarbon`), so a pointer that landed on ANY `svg.chart` belongs to that
+   * chart's own hit area and this path stands down.
+   */
+  const stage = svg.closest ? svg.closest(".chart-figure") : null;
+
+  /** Half the drawn mark's own width, in CSS pixels. Measured, never a constant. */
+  function markReach() {
+    const r = points[0].getBoundingClientRect();
+    return Math.max(r.width, r.height) / 2;
+  }
+
+  /** Is the pointer on this chart's plot, or within one mark of it? */
+  function withinReach(evt) {
+    if (!stage) return false;
+    const box = svg.getBoundingClientRect();
+    const reach = markReach();
+    return (
+      evt.clientX >= box.left - reach &&
+      evt.clientX <= box.right + reach &&
+      evt.clientY >= box.top - reach &&
+      evt.clientY <= box.bottom + reach
+    );
+  }
+
+  function fromStage(evt) {
+    if (insideSomeChart(evt)) return;
+    if (withinReach(evt)) fromPointer(evt);
+    else clearUnlessTouch(evt);
+  }
+
+  if (stage) {
+    stage.addEventListener("pointermove", fromStage);
+    stage.addEventListener("pointerdown", fromStage);
+    stage.addEventListener("pointerleave", clearUnlessTouch);
   }
 
   // Keyboard: every point is already `tabIndex={0}` at build time (works with this script absent
@@ -855,6 +972,15 @@ function initChart(svg, tooltip) {
 
   document.addEventListener("pointerdown", function (evt) {
     if (svg.contains(evt.target) || tooltip.contains(evt.target)) return;
+    // See `insideSomeChart`: a neighbour's reading is not this chart's to wipe.
+    if (insideSomeChart(evt)) {
+      clearMarks();
+      return;
+    }
+    // A mark drawn on the plot's own edge is answered by `fromStage` from OUTSIDE the svg — the
+    // first year of `web-area-swiss-co2` lands on the axis row painted over the baseline — so a
+    // tap this chart just answered must not read here as a tap somewhere else.
+    if (withinReach(evt)) return;
     clear();
   });
 }
@@ -935,6 +1061,10 @@ function initLines(root, tooltip) {
     tooltip.hidden = true;
   }
 
+  function clearUnlessTouch(evt) {
+    if (leaveEndsTheReading(evt)) clear();
+  }
+
   function show(line, clientX, clientY) {
     lines.forEach(function (l) {
       l.classList.toggle("line-active", l === line);
@@ -961,7 +1091,7 @@ function initLines(root, tooltip) {
     line.addEventListener("pointerenter", fromPointer);
     line.addEventListener("pointermove", fromPointer);
     line.addEventListener("pointerdown", fromPointer);
-    line.addEventListener("pointerleave", clear);
+    line.addEventListener("pointerleave", clearUnlessTouch);
     // Keyboard parity: the twin is focusable at build time, so Tab reaches every line and its
     // `aria-label` is read with this script absent. Focus is unambiguous about which line was
     // addressed, so it never goes through `nearest`.
@@ -980,6 +1110,14 @@ function initLines(root, tooltip) {
     if (evt.target && evt.target.closest && evt.target.closest(".line-hit"))
       return;
     if (tooltip.contains(evt.target)) return;
+    // See `insideSomeChart`: the points layer answers taps inside a chart, and its reading is not
+    // this layer's to wipe. Only the lines this layer lit are given back.
+    if (insideSomeChart(evt)) {
+      lines.forEach(function (l) {
+        l.classList.remove("line-active");
+      });
+      return;
+    }
     clear();
   });
 }
