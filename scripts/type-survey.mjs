@@ -95,18 +95,32 @@ function flatten(text) {
 function purposeSentence(text, file) {
   // Measured across the 40 sheets, the purpose paragraph sits in three shapes: under a heading
   // spelled "What it is for" (22), under one spelled "What it's for" (12), and — in six sheets
-  // written as flat prose with no `##` headings at all — as the first paragraph under the title.
+  // written with no such heading — as the first paragraph of prose under the title.
   // All three are read. A sheet in a fourth shape fails loudly rather than being skipped, because
   // a type silently missing from the survey is the defect this file exists to end.
   return firstSentence(purposeParagraph(text, file));
 }
 
+// A LABEL IS NOT PROSE. Every sheet now opens with a one-line `**Argues:** …` summary above its
+// body, a convention the scrolly sheets carried and `38cefe70` gave the rest. The 33 sheets that
+// head their prose "What it is for" were unaffected — the label sits above that heading — but in
+// the sheets read by the fallback the label became the first paragraph under the title, and the
+// purpose silently turned into a shortened restatement wearing the word "Argues:". The survey
+// promises each sheet's OWN prose sentence, so the fallback steps over a bolded-label lead the
+// way the headed shape does.
+const LABEL_LEAD = /^\*\*[^*\n]+:\*\*/;
+
 function purposeParagraph(text, file) {
-  const section =
-    /##\s*What it(?: is|'s) for\s*\r?\n+([\s\S]*?)(?:\r?\n\s*\r?\n|\r?\n##)/.exec(text) ??
-    /^#[^\n]*\r?\n\s*\r?\n([\s\S]*?)(?:\r?\n\s*\r?\n|\r?\n##|$)/.exec(text);
-  if (!section) throw new Error(`${file}: could not find the paragraph saying what this type is for`);
-  return flatten(section[1]);
+  const headed =
+    /##\s*What it(?: is|'s) for\s*\r?\n+([\s\S]*?)(?:\r?\n\s*\r?\n|\r?\n##)/.exec(text);
+  if (headed) return flatten(headed[1]);
+  const body = /^#[^\n]*\r?\n([\s\S]*?)(?:\r?\n##|$)/.exec(text);
+  for (const paragraph of body ? body[1].split(/\r?\n\s*\r?\n/) : []) {
+    if (LABEL_LEAD.test(paragraph.trim())) continue;
+    const flat = flatten(paragraph);
+    if (flat) return flat;
+  }
+  throw new Error(`${file}: could not find the paragraph saying what this type is for`);
 }
 
 // ---------------------------------------------------------------------------------------------

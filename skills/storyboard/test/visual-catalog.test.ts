@@ -1,5 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   STORYBOARD_VISUAL_CATALOG_PATH,
   VISUAL_CATALOG_PATH,
@@ -99,6 +100,28 @@ function buildSyntheticCatalog() {
     ],
   };
 }
+
+// THE DERIVATIVE IS GENERATED, SO SOMETHING A TEST RUN EXECUTES HAS TO REGENERATE IT. Every other
+// assertion in this file reads the authored source and rebuilds the derivative in memory, so all of
+// them stayed green while the committed copy under `references/` said something else — which is how
+// six treatment purposes turned into a shortened restatement of themselves and nobody saw it. Only
+// `bun run catalog:check` compared the two, and that lives in CI alone. `type-survey.test.ts`
+// already spawns its own generator's `--check`; this is the same guard for the catalogue.
+describe("the Storyboard copy of the visual catalogue", () => {
+  it("should regenerate byte-identically from the authored source and the tree", () => {
+    const run = Bun.spawnSync({
+      cmd: ["bun", "scripts/visual-catalog.mjs", "--check"],
+      cwd: join(import.meta.dirname, "..", "..", ".."),
+      stdout: "pipe",
+      stderr: "pipe",
+    });
+    const decode = new TextDecoder();
+    expect(
+      (decode.decode(run.stdout) + decode.decode(run.stderr)).trim(),
+    ).toContain("Storyboard derivative pass");
+    expect(run.exitCode).toBe(0);
+  });
+});
 
 describe("the canonical visual catalogue", () => {
   it("validates the authored source, covers every type sheet, and expands to stable unique options", () => {
