@@ -46,6 +46,9 @@ jobs:
       - name: Verify the landing inventory
         run: bun run landing:check
 
+      - name: Verify the design-base indexes
+        run: bun run indexes:check
+
       - name: Journalist install CTAs (join, no curl)
         run: bash tests/journalist-install-cta-check.sh
 

@@ -17,7 +17,9 @@
     "survey": "bun scripts/type-survey.mjs",
     "survey:check": "bun scripts/type-survey.mjs --check",
     "catalog": "bun scripts/visual-catalog.mjs",
-    "catalog:check": "bun scripts/visual-catalog.mjs --check"
+    "catalog:check": "bun scripts/visual-catalog.mjs --check",
+    "indexes": "bun scripts/design-base/build-indexes.mjs",
+    "indexes:check": "bun scripts/design-base/build-indexes.mjs --check"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.30.0",

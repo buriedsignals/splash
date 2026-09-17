@@ -10,7 +10,16 @@
 // Generated rather than written because the methodology explicitly allows two families to be
 // harvested in parallel, and two agents editing one index by hand is a conflict on every run.
 //
-// Usage:  bun scripts/design-base/build-indexes.mjs
+// Usage:  bun scripts/design-base/build-indexes.mjs           rewrite both indexes
+//         bun scripts/design-base/build-indexes.mjs --check   fail if either has drifted
+//
+// The `--check` mode exists because "never hand-edited" was the only thing anybody verified:
+// `design-base-records-are-complete.test.ts` asserts the marker is present, which a file that has
+// not been rebuilt since thirteen levers were filed still carries. Measured on 2026-09-17 from a
+// clean checkout of `main`: the committed pair claimed 175 references and 69 levers against a
+// corpus of 179 and 82. Drift in a derivative is invisible in a working tree where the generator
+// has just been run, so it is checked the same way `matrix`, `type-survey`, `visual-catalog` and
+// `landing` are checked — from the tree, in CI.
 
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { writeFile } from "node:fs/promises";
@@ -151,8 +160,30 @@ ${rows || "| — | — | — | — | *nothing filed yet* |"}
 
 const references = readReferences();
 const levers = readLevers();
-await writeFile(join(BASE, "INDEX-BY-ARTIFACT.md"), byArtifact(references));
-await writeFile(join(BASE, "INDEX-BY-LEVER.md"), byLever(levers, references));
-console.log(
-  `indexes rebuilt: ${references.length} reference(s), ${levers.length} lever(s)`,
-);
+const built = [
+  ["INDEX-BY-ARTIFACT.md", byArtifact(references)],
+  ["INDEX-BY-LEVER.md", byLever(levers, references)],
+];
+
+if (process.argv.includes("--check")) {
+  const drifted = built.filter(([name, text]) => {
+    const path = join(BASE, name);
+    return !existsSync(path) || readFileSync(path, "utf8") !== text;
+  });
+  if (drifted.length > 0) {
+    console.error(
+      `${drifted.map(([name]) => `docs/design-base/${name}`).join(" and ")} ` +
+        `${drifted.length === 1 ? "has" : "have"} drifted from the corpus. ` +
+        `Run: bun scripts/design-base/build-indexes.mjs`,
+    );
+    process.exit(1);
+  }
+  console.log(
+    `both design-base indexes match the corpus: ${references.length} reference(s), ${levers.length} lever(s).`,
+  );
+} else {
+  for (const [name, text] of built) await writeFile(join(BASE, name), text);
+  console.log(
+    `indexes rebuilt: ${references.length} reference(s), ${levers.length} lever(s)`,
+  );
+}

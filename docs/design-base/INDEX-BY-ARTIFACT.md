@@ -7,7 +7,7 @@ What real work looks like for a given kind of graphic and a given export. The **
 structure the pixel route measured, in `100.datavizproject.com`'s own SHAPE vocabulary where it
 applies.
 
-175 references.
+179 references.
 
 | family | type | export | archive | palette shape | ground | reference |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -92,9 +92,12 @@ applies.
 | line | unit grid (waffle), scrollytelling | scrolly | url-list | sequential | `#E1E4E6` | [projects-propublica-org-california-farmers-colorado-river](references/line/projects-propublica-org-california-farmers-colorado-river/NOTES.md) |
 | line | deviation stems off a diagonal reference | web | url-list | diverging | `#FFFFFF` | [pudding-cool-2017-03-redraft](references/line/pudding-cool-2017-03-redraft/NOTES.md) |
 | line | explanatory diagram, scrollytelling | scrolly | url-list | categorical | `#111044` | [pudding-cool-2022-06-streaming](references/line/pudding-cool-2022-06-streaming/NOTES.md) |
+| map | flow map — banded routes whose width is the quantity, converging on one named place | static | search | sequential | `#EEE9D7` | [data-europa-eu-apps-data-visualisation-guide-flow-maps](references/map/data-europa-eu-apps-data-visualisation-guide-flow-maps/NOTES.md) |
 | map | proportional-symbol map | web | buried-signals | sequential | `#DEEBED` | [gaza-nine-vercel-app](references/map/gaza-nine-vercel-app/NOTES.md) |
 | map | dot-density map, reader-located | web | url-list | categorical | `#FDFDFD` | [lanacion-com-ar-seguridad-mapa-del-delito-te-sentis-inseguro-en-la-ciu](references/map/lanacion-com-ar-seguridad-mapa-del-delito-te-sentis-inseguro-en-la-ciu/NOTES.md) |
 | map | locator map with named hydrography | web | url-list | diverging | `#FFFFFF` | [multimedia-scmp-com-infographics-news-china-article-3094790-china-floo](references/map/multimedia-scmp-com-infographics-news-china-article-3094790-china-floo/NOTES.md) |
+| map | hex grid, filled live as results arrive, with the undeclared cells left empty | static | search | diverging | `#EEEEEE` | [open-innovations-org-blog-2017-06-09-election-hex-map](references/map/open-innovations-org-blog-2017-06-09-election-hex-map/NOTES.md) |
+| map | hex grid — one hexagon per unit, arranged to hold the country's shape | static | search | categorical | `#EFEFEF` | [open-innovations-org-projects-hexmaps-constituencies-index-html](references/map/open-innovations-org-projects-hexmaps-constituencies-index-html/NOTES.md) |
 | map | dot map with annotated absences | static | url-list | monochrome | `#FFFFFF` | [projects-propublica-org-graphics-hatecrime-map](references/map/projects-propublica-org-graphics-hatecrime-map/NOTES.md) |
 | map | dot-density map, scrollytelling | scrolly | url-list | sequential | `#020201` | [projects-propublica-org-louisiana-toxic-air](references/map/projects-propublica-org-louisiana-toxic-air/NOTES.md) |
 | map | risk-surface map with named facilities | web | url-list | sequential | `#333333` | [projects-propublica-org-toxmap](references/map/projects-propublica-org-toxmap/NOTES.md) |
@@ -114,7 +117,7 @@ applies.
 | paired | three-column table with a ribbon between the two state columns | static | datavizproject | diverging | `#FFFFFF` | [100-datavizproject-com-data-type-viz36](references/paired/100-datavizproject-com-data-type-viz36/NOTES.md) |
 | paired | slope chart (two dated rails, one line per entity) | static | datavizproject | diverging | `#FFFFFF` | [100-datavizproject-com-data-type-viz54](references/paired/100-datavizproject-com-data-type-viz54/NOTES.md) |
 | paired | single bar per entity, marked at the earlier value (a "two-stop" bar) | static | datavizproject | diverging | `#FFFFFF` | [100-datavizproject-com-data-type-viz6](references/paired/100-datavizproject-com-data-type-viz6/NOTES.md) |
-| paired | two parallel number lines, one per date, with travel leaders between them | static | datavizproject | diverging | `#FFFFFF` | [100-datavizproject-com-data-type-viz85](references/paired/100-datavizproject-com-data-type-viz85/NOTES.md) |
+| paired | dot strip — one ruled axis per date, entities pinned on it, with travel leaders between | static | datavizproject | diverging | `#FFFFFF` | [100-datavizproject-com-data-type-viz85](references/paired/100-datavizproject-com-data-type-viz85/NOTES.md) |
 | paired | a page of slope charts, two dated rails, two series each | interactive (an age-band selector, `0-10` … `70+`, changes which slopes are shown) | url-list | diverging | `#175482` | [abc-net-au-news-2018-12-13-how-life-has-changed-for-people-your-age-10](references/paired/abc-net-au-news-2018-12-13-how-life-has-changed-for-people-your-age-10/NOTES.md) |
 | paired | grouped paired bars — two measures per entity, one hue at two lightnesses | interactive scrollytelling (a searchable "how your school rates" section further down) | url-list | categorical | `#FEFEFE` | [abc-net-au-news-2019-08-13-rich-school-poor-school-australias-great-ed](references/paired/abc-net-au-news-2019-08-13-rich-school-poor-school-australias-great-ed/NOTES.md) |
 | paired | paired-argument layout — two mirrored columns about a shared centre, with a shared graphic in | static poster | informationisbeautiful | categorical | `#231F20` | [informationisbeautiful-net-visualizations-climate-change-deniers-vs-th](references/paired/informationisbeautiful-net-visualizations-climate-change-deniers-vs-th/NOTES.md) |
@@ -161,6 +164,7 @@ applies.
 | scatter | scatter — two quantitative axes, both **derived** from the same underlying variable | static | datavizproject | diverging | `#FFFFFF` | [100-datavizproject-com-data-type-viz72](references/scatter/100-datavizproject-com-data-type-viz72/NOTES.md) |
 | scatter | scatter — two quantitative axes, the mark carrying a third, part-to-whole reading | static | datavizproject | diverging | `#FFFFFF` | [100-datavizproject-com-data-type-viz93](references/scatter/100-datavizproject-com-data-type-viz93/NOTES.md) |
 | scatter | bubble column / beeswarm — one positional quantitative axis, area and colour channels | scrolly | url-list | categorical | `#FEFEFE` | [abc-net-au-news-2019-08-13-rich-school-poor-school-australias-great-ed](references/scatter/abc-net-au-news-2019-08-13-rich-school-poor-school-australias-great-ed/NOTES.md) |
+| scatter | parallel coordinates — one vertical axis per variable, one polyline per entity | static | search | diverging | `#FFFFFF` | [data-europa-eu-apps-data-visualisation-guide-visualising-many-dimensio](references/scatter/data-europa-eu-apps-data-visualisation-guide-visualising-many-dimensio/NOTES.md) |
 | scatter | scatter — two quantitative axes crossing at the origin, four named quadrants, depicting marks | static | informationisbeautiful | categorical | `#F7F1E1` | [informationisbeautiful-net-visualizations-best-in-show-whats-the-top-d](references/scatter/informationisbeautiful-net-visualizations-best-in-show-whats-the-top-d/NOTES.md) |
 | scatter | scatter — two quantitative axes, depicting marks, value axis running through the cloud | static | informationisbeautiful | monochrome | `#FDFDFC` | [informationisbeautiful-net-visualizations-caffeine-and-calories](references/scatter/informationisbeautiful-net-visualizations-caffeine-and-calories/NOTES.md) |
 | scatter | scatter — two quantitative axes, size and colour channels, two verbal threshold lines | web | informationisbeautiful | diverging | `#FFF0F0` | [informationisbeautiful-net-visualizations-hollywood-2023-hits-flops](references/scatter/informationisbeautiful-net-visualizations-hollywood-2023-hits-flops/NOTES.md) |
