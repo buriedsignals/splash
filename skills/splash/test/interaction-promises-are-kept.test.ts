@@ -53,11 +53,11 @@
  * and been unable to tell a contract from a comment. It is also never read from a MARK's own
  * `aria-label`/`data-detail`/`<title>` — those carry the reading itself ("Germany, 1987: 13.2 t"),
  * which is data, not a claim about inputs.
- *   Within that text, a SENTENCE is a promise only if it names an input word AND a reveal word:
- *   - input:  `hover`/`hovering`, `tap`/`tapping`, `keyboard`, `focus`/`focusing`, `tab`/`tabbing`,
- *             `pointing at`
- *   - reveal: `available`, `reachable`, `reveal(s)`, `show(s)`, `names`, `for its`, `has its own`,
- *             `prints`
+ *   Within that text, a SENTENCE is a promise only if it names an input word AND a reveal word,
+ *   IN THE LANGUAGE THE PAGE DECLARES. Which words those are is not written in this file: it is a
+ *   resource per language under `interaction-vocabulary/`, selected from the language the beat
+ *   actually declared, and a beat in a language with no resource fails by name rather than passing
+ *   quietly. See the vocabulary section below, and that directory's own README.
  *   Both halves are required because either alone produces false positives in this corpus's real
  *   prose. Measured phrasings that this two-sided rule correctly reads as promises, all different:
  *   "…has its own exact value on hover, tap or keyboard focus", "…is available on hover, tap or
@@ -109,9 +109,11 @@
  *   1. IT CANNOT INVENT A PROMISE. If a beat's alt text words its contract in phrasing outside the
  *      vocabulary above ("tooltips throughout", "interrogate any mark"), the promise is not seen and
  *      the mode is never enforced. The two-sided input+reveal rule buys precision at exactly this
- *      cost. The mitigation is the report this file prints on failure and the roster below: it lists
- *      every artifact and every promise it FOUND, so a beat missing from that list is visible to a
- *      person reading, which is not the same as being guarded.
+ *      cost. The mitigation is MEASURED rather than read: `PROMISE_CENSUS` pins how many pages this
+ *      guard reads a promise off, per declared language, so a wording that drifts out of its
+ *      vocabulary lowers the number and appears in a diff instead of switching the file off in
+ *      silence. 54 of the 241 delivered pages carry a promise this guard can read today; the other
+ *      187 word their contract outside it or make none, and are driven but not held to one.
  *   2. IT DOES NOT CHECK WHICH mark a POINTER resolved to. Measured, exact-match holds on 23 of 24
  *      artifacts but not on `mapgen-dot-web`, where hovering a dot's own centre legitimately
  *      resolves to a neighbouring dot 2px away — the map formats resolve by nearest mark, and dots
@@ -237,8 +239,12 @@
  *
  *   1. THE PROMISE VOCABULARY WAS ENGLISH ONLY, and every beat in the corpus writes its prose in
  *      FRENCH. Every page read `promises [none]`, so assertions 1, 2 and 3 — the whole reason this
- *      file exists — were enforced on nothing at all, and the file was green about it. The
- *      vocabulary is now bilingual; see `INPUT_WORDS`.
+ *      file exists — were enforced on nothing at all, and the file was green about it. Making the
+ *      list bilingual bought one corpus and would have gone blind again on the first German
+ *      production, so the words are now a resource per language, discovered off
+ *      `interaction-vocabulary/`, chosen by the language the beat DECLARES, and a language with no
+ *      resource is a named failure. A pinned census keeps the switch visible; see `VOCABULARIES`,
+ *      `declaredLanguage` and `PROMISE_CENSUS`.
  *   2. THE CONTRACT MOVED OUT OF THE ELEMENTS IT READ. The current renderer puts the reading
  *      contract in `<p class="chart-reading">` ("Lecture : …"), which `accessibleProse` did not
  *      read. 120 of 120 web pages carry one. Reading it is what turned the vocabulary fix into
@@ -246,22 +252,28 @@
  *   3. THE EDGE CENSUS WAS A ROW PER PAGE, hand-written, four rows against 241 pages. Replaced by
  *      a measured pin plus a three-directions-agree check; see `EDGE_UNMEASURABLE_ARTIFACTS`.
  *
- * WHAT (1) AND (2) TOGETHER FOUND, the first time this guard could read its own corpus: **six
- * beats break a promise their own prose makes** — `web-area-swiss-co2` (hover 1 of 3 marks silent,
- * tap 3 of 3), `web-cartogram-europe-lowcarbon`, `web-population-pyramid-switzerland` and
- * `web-sankey-electricity-sources` (tap 3 of 3), `web-streamgraph-swiss-electricity` (hover 1 of
- * 3), across all three directions each. The tap class was reproduced by hand outside this file on
- * `web-sankey`: the reading appears during the gesture and is gone the instant the finger lifts,
- * which is the original defect this guard was built for, and its mechanism is
- * `chart-web/assets/interaction.mjs` clearing on `pointerleave` without asking the pointer's type.
- * Repairing it is a renderer change plus a re-render of the web corpus; the beats are listed in
- * `docs/splash/2026-09-17-interaction-promises-owed.md` and those assertions are RED until then.
- * They are left red deliberately: the alternative is a guard that cannot read French.
+ * WHAT (1) AND (2) TOGETHER FOUND, the first time this guard could read its own corpus: five beats
+ * broke a promise their own prose makes — `web-area-swiss-co2` (hover and tap),
+ * `web-cartogram-europe-lowcarbon`, `web-population-pyramid-switzerland` and
+ * `web-sankey-electricity-sources` (tap), `web-streamgraph-swiss-electricity` (hover), across all
+ * three directions each: 18 red assertions. ALL EIGHTEEN ARE CLOSED, by three repairs in
+ * `chart-web/assets/interaction.mjs` and a re-render of those five beats — not by this file
+ * softening anything. Each is written up where it lives, and the summary is:
+ *
+ *   - `pointerleave` was bound straight to the clear handler, and a touch pointer fires it as the
+ *     finger LIFTS, so a tap opened a reading and wiped it inside one gesture. This is the original
+ *     defect the guard was built for. See `leaveEndsTheReading`.
+ *   - A page wires every `svg.chart` on it independently against ONE shared tooltip, and each
+ *     chart's "the reader touched something else" handler asked about its OWN svg only — so on a
+ *     three-chart page every tap was wiped by the neighbours. See `insideSomeChart`.
+ *   - A series draws its first and last readings ON the plot's own border box, where the hit area
+ *     cannot reach them: the pointer at those marks' centres is not over the svg at all. See the
+ *     stage listener and `withinReach`.
  *
  * RUNTIME, and why it is where it is — see the note beside `CONCURRENCY`.
  */
 import { describe, it, expect, setDefaultTimeout } from "bun:test";
-import { existsSync, readdirSync, statSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, relative, resolve } from "node:path";
 import puppeteer, { type Browser } from "puppeteer";
@@ -341,6 +353,13 @@ type ArtifactReport = {
   file: string;
   marks: number;
   hasTooltip: boolean;
+  /** The language this page DECLARES, and where that declaration was read — see
+   *  `declaredLanguage`. Empty when the page declares nothing anywhere. */
+  language: string;
+  languageSource: string;
+  /** True when no `interaction-vocabulary/` resource answers for `language`, which is a red on its
+   *  own: the promise this page makes was not read, and silence is exactly the defect. */
+  vocabularyMissing: boolean;
   promises: Mode[];
   promiseSentences: string[];
   probes: Record<Mode, Probe[]>;
@@ -548,31 +567,128 @@ function accessibleProse(): string[] {
 // ── promise reading ───────────────────────────────────────────────────────────────────────────
 
 /**
- * THE VOCABULARY IS BILINGUAL, because the corpus is. Measured 2026-09-17: 41 of the 80 delivered
- * beats carry an interaction sentence in their accessible text and every one of them is in FRENCH
- * — "Survolez, touchez ou tabulez n'importe quelle année pour son chiffre" — while this list held
- * English only. Every page in the corpus therefore read `promises [none]`, and assertions 1, 2 and
- * 3, which are the whole point of this file, were enforced on NOTHING. The guard was green because
- * it could not read the language its own artifacts are written in.
+ * THE VOCABULARY IS A PER-LANGUAGE RESOURCE, AND THIS FILE HOLDS NO LIST OF LANGUAGES.
  *
- * `touche` is deliberately NOT a tap word: in French it is the noun for a keyboard KEY as often as
- * the verb for a finger, so only the inflections that can only be the gesture are listed
- * (`touchez`, `toucher`, `au toucher`, `tactile`). Same discipline as `\btab\b` being
- * word-bounded so an accessible TABLE never reads as a keyboard promise.
+ * What the words were before, and what it cost. `INPUT_WORDS`/`REVEAL_WORDS` were two constants in
+ * this file, written in English, held against a corpus that is French from end to end. Every page
+ * read `promises [none]`; assertions 1, 2 and 3 — the whole reason the file exists — were enforced
+ * on nothing, and the file was green about it. Adding French beside English would have bought one
+ * corpus and gone blind again the first time a newsroom files `languages: de`.
+ *
+ * THE RULE INSTEAD. Everything that IS the tool is written in English — code, comments, tests,
+ * sheets. Everything the tool PRODUCES adapts to the language the journalist declared. A promise
+ * sentence is produced. So its words are data, per language, discovered off the tree:
+ * `interaction-vocabulary/<bcp47>.ts`, one file per language, and adding a language is adding one
+ * file rather than editing this guard. `interaction-vocabulary/README.md` states what a file owes.
+ *
+ * AND A LANGUAGE WITH NO RESOURCE IS LOUD, NOT QUIET. `should be written in a language this guard
+ * can read` fails per beat, naming the beat, the language it declared, and where that declaration
+ * was read — because the failure mode being repaired here is precisely a guard that reads nothing
+ * and reports success.
  */
-const INPUT_WORDS: Record<Mode, RegExp> = {
-  hover: /\bhover(s|ing)?\b|\bpointing at\b|\bsurvol\w*\b|\bpointe[rz]\b/i,
-  tap: /\btap(s|ping)?\b|\btouche[rz]\b|\bau toucher\b|\btactile\b/i,
-  // `\btab\b` is word-bounded so the two map beats' accessible TABLE never reads as a keyboard
-  // promise.
-  keyboard:
-    /\bkeyboard\b|\bfocus(es|ing)?\b|\btab(s|bing)?\b|\bclavier\b|\btabul\w*\b/i,
+type Vocabulary = {
+  name: string;
+  input: Record<Mode, RegExp>;
+  reveal: RegExp;
 };
 
-const REVEAL_WORDS =
-  /\bavailable\b|\breachable\b|\breveals?\b|\bshows?\b|\bnames\b|\bfor its\b|\bhas its own\b|\bprints\b|\baffich\w*\b|\br[ée]v[èe]l\w*\b|\bmontre\w*\b|\bindique\w*\b|\bnomme\w*\b|\bimprime\w*\b|\bdisponible\w*\b|\baccessible\w*\b|\bpour (son|sa|ses|leur|leurs)\b|\bdonne\w*\b/i;
+const VOCABULARY_DIR = join(import.meta.dirname, "interaction-vocabulary");
 
-export function promisesIn(prose: string[]): {
+/** BCP 47 as a filename: `fr.ts`, `pt-BR.ts`. Anything else in the directory (the README) is not a
+ *  resource and is not guessed at. */
+const VOCABULARY_FILE = /^([A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*)\.ts$/;
+
+const VOCABULARIES = new Map<string, Vocabulary>();
+for (const entry of readdirSync(VOCABULARY_DIR).sort()) {
+  const named = VOCABULARY_FILE.exec(entry);
+  if (!named) continue;
+  const loaded = (await import(join(VOCABULARY_DIR, entry))).default as
+    | Vocabulary
+    | undefined;
+  // A malformed resource is a broken guard, and a broken guard may not be a quiet one.
+  if (
+    !loaded ||
+    typeof loaded.name !== "string" ||
+    !(loaded.reveal instanceof RegExp) ||
+    !loaded.input ||
+    (["hover", "tap", "keyboard"] as Mode[]).some(
+      (m) => !(loaded.input[m] instanceof RegExp),
+    )
+  )
+    throw new Error(
+      `interaction-vocabulary/${entry} does not export { name, input: { hover, tap, keyboard }, reveal } — see that directory's README.md`,
+    );
+  VOCABULARIES.set(named[1].toLowerCase(), loaded);
+}
+
+/** The tags this guard can read, for a failure message that tells a reader what to add. */
+const VOCABULARY_TAGS = [...VOCABULARIES.keys()].sort();
+
+/** `fr-CH` is French for this purpose: a region does not change which word promises a hover. The
+ *  exact tag wins when a resource for it exists, so `pt-BR.ts` can differ from `pt.ts`. */
+function vocabularyFor(language: string): Vocabulary | undefined {
+  const tag = language.trim().toLowerCase();
+  return VOCABULARIES.get(tag) ?? VOCABULARIES.get(tag.split("-")[0] ?? "");
+}
+
+/**
+ * WHICH LANGUAGE A BEAT IS WRITTEN IN, read rather than assumed, in the order the declarations
+ * actually bind.
+ *
+ *   1. THE PAGE'S OWN `<html lang>`. The most authoritative thing there is: it is the declaration
+ *      the delivered artifact makes, to the same screen reader this guard reads its promise out
+ *      of, and it is per page rather than per tree. 241 of the 241 delivered pages carry one.
+ *   2. THE BEAT'S OWN FRONT MATTER. `proof/<beat>/BRIEF.md` carries a front-matter block on all
+ *      160 beats; none names a language today, and a `language:` key there is read the moment one
+ *      does — which is what a beat produced in a second language will carry.
+ *   3. THE NEWSROOM PROFILE. `NEWSROOM.md`'s `languages:` (most-used first) or the older singular
+ *      `language:`. This is the ladder that file's own prose already states for deciding a copy's
+ *      language, read back here rather than re-invented.
+ *
+ * Nothing defaults. A page that answers none of the three is named by the same assertion that names
+ * a language with no vocabulary, because "we could not tell" and "we cannot read it" are the same
+ * failure from a reader's side.
+ */
+const NEWSROOM_LANGUAGE = (() => {
+  const path = join(TWIN, "NEWSROOM.md");
+  if (!existsSync(path)) return "";
+  const front = /^---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(path, "utf8"));
+  if (!front) return "";
+  const plural = /^languages:\s*(.+)$/m.exec(front[1]);
+  if (plural)
+    return (plural[1].split(",")[0] ?? "").replace(/["']/g, "").trim();
+  const singular = /^language:\s*(.+)$/m.exec(front[1]);
+  return singular ? singular[1].replace(/["']/g, "").trim() : "";
+})();
+
+function briefLanguage(file: string): string {
+  const beat = relative(PROOF, file).split("/")[0];
+  if (!beat) return "";
+  const path = join(PROOF, beat, "BRIEF.md");
+  if (!existsSync(path)) return "";
+  const front = /^---\r?\n([\s\S]*?)\r?\n---/.exec(readFileSync(path, "utf8"));
+  const named = front && /^language:\s*(.+)$/m.exec(front[1]);
+  return named ? named[1].replace(/["']/g, "").trim() : "";
+}
+
+function declaredLanguage(
+  file: string,
+  pageLang: string,
+): { language: string; source: string } {
+  if (pageLang.trim())
+    return { language: pageLang.trim(), source: "the page's own <html lang>" };
+  const brief = briefLanguage(file);
+  if (brief)
+    return { language: brief, source: "the beat's BRIEF.md front matter" };
+  if (NEWSROOM_LANGUAGE)
+    return { language: NEWSROOM_LANGUAGE, source: "NEWSROOM.md" };
+  return { language: "", source: "nothing — no declaration was found" };
+}
+
+export function promisesIn(
+  prose: string[],
+  vocabulary: Vocabulary,
+): {
   modes: Mode[];
   sentences: string[];
 } {
@@ -580,9 +696,9 @@ export function promisesIn(prose: string[]): {
   const sentences: string[] = [];
   for (const block of prose)
     for (const sentence of block.split(/(?<=[.;])\s+/)) {
-      if (!REVEAL_WORDS.test(sentence)) continue;
-      const found = (Object.keys(INPUT_WORDS) as Mode[]).filter((m) =>
-        INPUT_WORDS[m].test(sentence),
+      if (!vocabulary.reveal.test(sentence)) continue;
+      const found = (Object.keys(vocabulary.input) as Mode[]).filter((m) =>
+        vocabulary.input[m].test(sentence),
       );
       if (found.length === 0) continue;
       found.forEach((m) => modes.add(m));
@@ -615,6 +731,9 @@ async function driveArtifact(
     file: relative(TWIN, file),
     marks: 0,
     hasTooltip: false,
+    language: "",
+    languageSource: "",
+    vocabularyMissing: false,
     promises: [],
     promiseSentences: [],
     probes: { hover: [], tap: [], keyboard: [] },
@@ -632,9 +751,23 @@ async function driveArtifact(
     report.marks = census.count;
     report.hasTooltip = census.hasTooltip;
     const known = new Set(census.details);
-    const { modes, sentences } = promisesIn(
-      await desktop.evaluate(accessibleProse),
+    // THE LANGUAGE IS READ OFF THE PAGE BEFORE ITS PROMISE IS. Which words promise a hover is a
+    // fact about the language the artifact was produced in, so the vocabulary is selected per page
+    // and never assumed; a page whose language has no resource records that and promises nothing,
+    // which its own assertion below turns into a named failure rather than a quiet pass.
+    const { language, source } = declaredLanguage(
+      file,
+      (await desktop.evaluate(
+        () => document.documentElement.getAttribute("lang") ?? "",
+      )) as string,
     );
+    report.language = language;
+    report.languageSource = source;
+    const vocabulary = language ? vocabularyFor(language) : undefined;
+    report.vocabularyMissing = !vocabulary;
+    const { modes, sentences } = vocabulary
+      ? promisesIn(await desktop.evaluate(accessibleProse), vocabulary)
+      : { modes: [] as Mode[], sentences: [] as string[] };
     report.promises = modes;
     report.promiseSentences = sentences;
     if (census.count === 0 || !census.hasTooltip) return report;
@@ -818,6 +951,7 @@ function summary(r: ArtifactReport): string {
   return [
     r.file,
     `marks ${r.marks}`,
+    `lang ${r.language || "undeclared"}`,
     `promises [${r.promises.join(", ") || "none"}]`,
     mode("hover"),
     mode("tap"),
@@ -870,6 +1004,29 @@ function summary(r: ArtifactReport): string {
  *      each owes, is written down in `docs/splash/2026-09-17-edge-measurability-owed.md`.
  */
 const EDGE_UNMEASURABLE_ARTIFACTS = 97;
+
+/**
+ * HOW MANY PAGES THIS GUARD CAN ACTUALLY READ A PROMISE OUT OF, one row per DECLARED language.
+ *
+ * Every behavioural assertion in this file is conditional on a promise having been read — `if
+ * (!report.promises.includes(mode)) return;` — so the vocabulary is the switch the whole file runs
+ * through, and a vocabulary that matches nothing turns it off silently. That is not hypothetical:
+ * it is what the English-only list did to an all-French corpus for as long as both existed, and
+ * the file reported success the entire time. A count is the only thing that makes a switch
+ * visible, so the count is written down.
+ *
+ * It is pinned rather than a floor for the same reason the edge vacuum is: a page whose prose stops
+ * matching its language's vocabulary — a reworded reading contract, a resource edited wrong —
+ * lowers the number and appears in a diff, and a page that starts making a promise raises it and
+ * appears too. A beat delivered in a language nobody has written a resource for arrives as its own
+ * row here AND as a named failure on that beat's `should be written in a language this guard can
+ * read`.
+ *
+ * `undeclared` would be a row for pages carrying no `<html lang>`, no `language:` in their
+ * `BRIEF.md` front matter and no `languages:` in `NEWSROOM.md`. There are none, and the row is
+ * absent rather than zero so that one appearing is a change in this list.
+ */
+const PROMISE_CENSUS = ["fr: 54 of 241 pages"];
 
 /**
  * A BEAT NOBODY HAS COMMITTED YET IS NOT CENSUSED. Seven sessions share this worktree, and an
@@ -941,6 +1098,29 @@ describe("every delivered interactive artifact keeps the promise its own alt tex
     expect(disagreeing).toEqual([]);
   });
 
+  it("should read a promise off as many pages as it is written down here", () => {
+    // THE CENSUS THAT MAKES THE VOCABULARY LOAD-BEARING. Every behavioural assertion below is
+    // conditional on a promise having been READ, so a vocabulary that matches nothing switches the
+    // whole file off and reports success — which is exactly what happened for the life of the
+    // English-only list. The count of pages whose prose this guard can actually read a promise out
+    // of is therefore pinned, per declared language, in the same spirit as the edge vacuum above:
+    // a page whose wording drifts out of its language's vocabulary drops the number and this line
+    // moves in a diff, and a beat delivered in a new language appears here as its own row.
+    const counted = new Map<string, { read: number; pages: number }>();
+    for (const r of REPORTS) {
+      if (inUntrackedBeat(r.file)) continue;
+      const key = (r.language || "undeclared").toLowerCase();
+      const row = counted.get(key) ?? { read: 0, pages: 0 };
+      row.pages += 1;
+      if (r.promises.length > 0) row.read += 1;
+      counted.set(key, row);
+    }
+    const measured = [...counted.entries()]
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([tag, row]) => `${tag}: ${row.read} of ${row.pages} pages`);
+    expect(measured.join("\n")).toBe(PROMISE_CENSUS.join("\n"));
+  });
+
   it("should find delivered HTML to drive at all", () => {
     // Assertion 5's first half: a run that found nothing must be loud, not vacuously green.
     expect(`${FILES.length} delivered .html found under proof/`).toBe(
@@ -952,6 +1132,20 @@ describe("every delivered interactive artifact keeps the promise its own alt tex
   for (const report of REPORTS) {
     describe(report.file, () => {
       const interactive = report.marks > 0 && report.hasTooltip;
+
+      it("should be written in a language this guard can read", () => {
+        // NEVER QUIET. A beat in a language with no `interaction-vocabulary/` resource has its
+        // promise unread, and every assertion below it is conditional on a promise — so without
+        // this line the next production in German would go green having verified nothing, which is
+        // the defect the per-language resources exist to close. The message names the beat, its
+        // language, where that language was declared, and what to add.
+        expect(
+          `${report.file}: declared language "${report.language || "(none)"}" (from ${report.languageSource}) — ` +
+            (report.vocabularyMissing
+              ? `no promise vocabulary. Add skills/splash/test/interaction-vocabulary/${(report.language || "<tag>").toLowerCase()}.ts; this guard reads [${VOCABULARY_TAGS.join(", ")}]`
+              : "vocabulary found"),
+        ).toEndWith("vocabulary found");
+      });
 
       it("should ship the marks and tooltip any interaction promise needs", () => {
         if (report.promises.length === 0) return;
