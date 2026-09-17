@@ -57,6 +57,7 @@ export type Subject = { name: string; x: number; y: number; lines: string[] };
 
 export function DirectedLocator({
   plate,
+  tints,
   shapes,
   areas,
   places,
@@ -75,6 +76,13 @@ export function DirectedLocator({
 }: {
   /** The baked MapTiler basemap for THIS direction, already a data URI. */
   plate: string;
+  /** THE TINTS THAT PLATE WAS ACTUALLY PAINTED WITH, from `plateTints` — handed in, never
+   *  re-derived here. A second copy of the pair is what this file used to hold, and the two
+   *  disagreed: the plate was baked at the measured water dose and a land dose of 0.07, while this
+   *  component mixed its own water at a flat 0.16 and its own land at 0.05. The water label's ink
+   *  was then lifted to 4.5:1 against a tint no pixel on the page carried, and measured against the
+   *  plate it fell to 4.06:1 (3.89:1 in nocturne). The plate's paint is a fact of the render. */
+  tints: { water: string; land: string };
   shapes: Shape[];
   areas: string[];
   places: Place[];
@@ -160,12 +168,20 @@ export function DirectedLocator({
   const annotBand = bandOf(annot);
   const axisBand = bandOf(axis);
 
-  const land = mix(direction.ground, ink, 0.05);
+  const land = tints.land;
   const coast = mix(direction.ground, ink, 0.2);
   const border = mix(direction.ground, ink, 0.12);
   const waterHue = matchConvention("water")!.accent;
-  const water = mix(direction.ground, waterHue, 0.16);
+  const water = tints.water;
   const waterInk = adjustToContrast(waterHue, water, TEXT_CONTRAST_MIN);
+  /** THE SUBJECT'S OWN SENTENCE IS TEXT, AND IT SITS ON THE LAND. `accentInk` is the accent lifted
+   *  against the PAGE, and `composeDirection` measures the accent against the basemap's grounds at
+   *  the non-text floor, because the accent is carried by a dot and a ring. The two lines beside
+   *  that ring are words: they were drawn at 4.14:1 on rapport's land and 4.00:1 on creme's, under
+   *  the 4.5 text floor. The mark keeps the accent; the sentence takes it lifted to the text floor
+   *  against the land it is read on, the same two steps every settlement name here already takes. */
+  const subjectInk =
+    adjustToContrast(accentInk, land, TEXT_CONTRAST_MIN) ?? accentInk;
   if (contrast(water, direction.ground) > 1.6)
     throw new Error(
       `the water tint measures ${contrast(water, direction.ground).toFixed(2)}:1 against the ground`,
@@ -555,7 +571,7 @@ export function DirectedLocator({
                 (subject.lines.length - 1 - i) * annotLead
               }
               {...line(annot)}
-              fill={accentInk}
+              fill={subjectInk}
               fontWeight={i === 0 ? 700 : annot.fontWeight}
             >
               {l}

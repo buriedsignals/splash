@@ -361,6 +361,8 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
     await renderStill({
       element: createElement(DirectedLocator, {
         plate: `data:image/png;base64,${(await readFile(join(plateDir(id), "plate.png"))).toString("base64")}`,
+        // The pair this plate was BAKED with, not a second derivation of it — see the prop's own note.
+        tints: plateTints(readDirection(join(DIRECTIONS, file)), { landDose: LAND_DOSE }),
         shapes,
         areas: AREAS,
         places,

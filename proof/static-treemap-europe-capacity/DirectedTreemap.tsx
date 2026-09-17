@@ -88,8 +88,20 @@ function squarify(values: number[], box: Rect): Rect[] {
       );
       cursor += length;
     }
-    if (horizontal) free = { x: free.x + thickness, y: free.y, w: free.w - thickness, h: free.h };
-    else free = { x: free.x, y: free.y + thickness, w: free.w, h: free.h - thickness };
+    if (horizontal)
+      free = {
+        x: free.x + thickness,
+        y: free.y,
+        w: free.w - thickness,
+        h: free.h,
+      };
+    else
+      free = {
+        x: free.x,
+        y: free.y + thickness,
+        w: free.w,
+        h: free.h - thickness,
+      };
   };
   let row: number[] = [];
   while (queue.length) {
@@ -148,14 +160,16 @@ export function DirectedTreemap({
   const annot = reg("annot");
   const value = reg("value");
 
-  const set = (text: string, r: { transform: string }) => applyCase(text, r.transform);
+  const set = (text: string, r: { transform: string }) =>
+    applyCase(text, r.transform);
   const sizeOf = (r: any) => ({
     fontSize: r.fontSize,
     fontWeight: r.fontWeight,
     fontFamily: r.fontFamily,
   });
   const widthOf = (text: string, r: any) =>
-    measureText(text, sizeOf(r)) + Number(r.letterSpacing ?? 0) * Math.max(0, text.length - 1);
+    measureText(text, sizeOf(r)) +
+    Number(r.letterSpacing ?? 0) * Math.max(0, text.length - 1);
   const bandOf = (r: any) => measureTextBand("Hxpg1,", sizeOf(r));
 
   function wrap(text: string, maxWidth: number, r: any): string[] {
@@ -180,7 +194,11 @@ export function DirectedTreemap({
     letterSpacing: r.letterSpacing,
     fill: r.fill,
   });
-  const accentInk = adjustToContrast(direction.accent, direction.ground, TEXT_CONTRAST_MIN);
+  const accentInk = adjustToContrast(
+    direction.accent,
+    direction.ground,
+    TEXT_CONTRAST_MIN,
+  );
   const mutedInk = adjustToContrast(muted, direction.ground, TEXT_CONTRAST_MIN);
   const annotBand = bandOf(annot);
   const axisBand = bandOf(axis);
@@ -193,7 +211,9 @@ export function DirectedTreemap({
   const thread = direction.accent;
   const edge = direction.ground;
   const legibleOn = (fill: string) =>
-    contrast(ink, fill) >= contrast(direction.ground, fill) ? ink : direction.ground;
+    contrast(ink, fill) >= contrast(direction.ground, fill)
+      ? ink
+      : direction.ground;
 
   // ── the ladder ────────────────────────────────────────────────────────────
   const column = width - PAD * 2;
@@ -204,16 +224,30 @@ export function DirectedTreemap({
   const layoutFor = (t: number, l: number, r: number) => {
     const titleLines = wrap(set(title[t], display), column, display);
     const limitLines = wrap(set(limits[l], body), column, body);
-    const readingLines = r < 0 ? [] : wrap(set(reading[r], annot), column, annot);
+    const readingLines =
+      r < 0 ? [] : wrap(set(reading[r], annot), column, annot);
     const sourceLines = wrap(set(source, body), column, body);
     const eyebrowBaseline = PAD + eyebrowReg.fontSize;
-    const titleTop = eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
-    const limitsTop = titleTop + titleLines.length * titleLead + gapOf(body, 0.5517);
+    const titleTop =
+      eyebrowBaseline +
+      gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) +
+      display.fontSize;
+    const limitsTop =
+      titleTop + titleLines.length * titleLead + gapOf(body, 0.5517);
     const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
-    const readingTop = sourceTop - bodyLead * 1.1 - Math.max(0, readingLines.length - 1) * annotLead;
-    const boxTop = limitsTop + limitLines.length * bodyLead + annotBand.ascent * 1.3 + axisBand.ascent;
+    const readingTop =
+      sourceTop -
+      bodyLead * 1.1 -
+      Math.max(0, readingLines.length - 1) * annotLead;
+    const boxTop =
+      limitsTop +
+      limitLines.length * bodyLead +
+      annotBand.ascent * 1.3 +
+      axisBand.ascent;
     const boxBottom =
-      (readingLines.length ? readingTop - annotBand.ascent - gapOf(annot, 0.6429) : sourceTop - bodyLead * 1.2) -
+      (readingLines.length
+        ? readingTop - annotBand.ascent - gapOf(annot, 0.6429)
+        : sourceTop - bodyLead * 1.2) -
       axisBand.ascent -
       axisBand.descent -
       8;
@@ -236,7 +270,8 @@ export function DirectedTreemap({
   const rungs: Array<{ title: number; limit: number; reading: number }> = [];
   for (let t = 0; t < title.length; t++)
     for (let l = 0; l < limits.length; l++) {
-      for (let r = 0; r < reading.length; r++) rungs.push({ title: t, limit: l, reading: r });
+      for (let r = 0; r < reading.length; r++)
+        rungs.push({ title: t, limit: l, reading: r });
       rungs.push({ title: t, limit: l, reading: -1 });
     }
 
@@ -244,7 +279,8 @@ export function DirectedTreemap({
   const INSET = 4;
   /** French thousands, with an ordinary space: `toLocaleString("fr-FR")` emits U+202F, which no face
    *  on this base's family ladders covers, and one uncovered glyph refuses every family. */
-  const grouped = (n: number) => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  const grouped = (n: number) =>
+    String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
   /** HOW MANY CELLS THE PLATE DRAWS IS A MEASUREMENT. Every drawn cell has to hold its own figure —
    *  that is this form's repair for the fact that area does not compare across distance — so the
@@ -273,11 +309,18 @@ export function DirectedTreemap({
     const tailThread = tail.filter((c) => c.tipped);
     const tailField = tail.filter((c) => !c.tipped);
     const remainders = [
-      ...(tailThread.length ? [groupOf(tailThread, "pays basculés", true)] : []),
+      ...(tailThread.length
+        ? [groupOf(tailThread, "pays basculés", true)]
+        : []),
       ...(tailField.length ? [groupOf(tailField, restLabel, false)] : []),
     ];
     const drawn = [...head, ...remainders].sort((a, b) => b.mw - a.mw);
-    const box = { x: PAD, y: layout_.boxTop, w: width - PAD * 2, h: layout_.box };
+    const box = {
+      x: PAD,
+      y: layout_.boxTop,
+      w: width - PAD * 2,
+      h: layout_.box,
+    };
     const area = box.w * box.h;
     const rects = squarify(
       drawn.map((c) => (c.mw / totalMw) * area),
@@ -300,7 +343,12 @@ export function DirectedTreemap({
         inner.w >= widthOf(set(c.value, value), value) &&
         inner.h >= valueBand.ascent + valueBand.descent;
       const fitsName =
-        nameFits && inner.h >= valueBand.ascent + valueBand.descent + nameLines.length * nameLead + 2;
+        nameFits &&
+        inner.h >=
+          valueBand.ascent +
+            valueBand.descent +
+            nameLines.length * nameLead +
+            2;
       const fitsBasis =
         inner.w >= widthOf(set(c.basis, axis), axis) &&
         inner.h >=
@@ -339,7 +387,12 @@ export function DirectedTreemap({
     for (const count of COUNTS) {
       const got = attempt(layout_, Math.min(count, cells.length));
       if (got) {
-        fits = { rung, layout: layout_, got, count: Math.min(count, cells.length) };
+        fits = {
+          rung,
+          layout: layout_,
+          got,
+          count: Math.min(count, cells.length),
+        };
         break outer;
       }
     }
@@ -377,24 +430,46 @@ export function DirectedTreemap({
         {set(eyebrow, eyebrowReg)}
       </text>
       {layout.titleLines.map((l, i) => (
-        <text key={l + i} x={PAD} y={layout.titleTop + i * titleLead} {...line(display)}>
+        <text
+          key={l + i}
+          x={PAD}
+          y={layout.titleTop + i * titleLead}
+          {...line(display)}
+        >
           {l}
         </text>
       ))}
       {layout.limitLines.map((l, i) => (
-        <text key={l + i} x={PAD} y={layout.limitsTop + i * bodyLead} {...line(body)}>
+        <text
+          key={l + i}
+          x={PAD}
+          y={layout.limitsTop + i * bodyLead}
+          {...line(body)}
+        >
           {l}
         </text>
       ))}
 
-      <text x={PAD} y={layout.boxTop - axisBand.descent - 4} {...line(axis)} fontWeight={700} fill={mutedInk}>
+      <text
+        x={PAD}
+        y={layout.boxTop - axisBand.descent - 4}
+        {...line(axis)}
+        fontWeight={700}
+        fill={mutedInk}
+      >
         {set(unit, axis)}
       </text>
 
       {got.placed.map(({ c, r, nameLines, fitsName, fitsBasis }) => {
         const fill = c.tipped ? thread : field;
         const on = legibleOn(fill);
-        const quiet = mix(on, fill, 0.35);
+        // The basis line is QUIETER than the value above it, never fainter than a reader can
+        // read: mixing 35% toward the fill took "2 309 centrales" to 4.02:1 on the thread's own
+        // accent (3.75:1 in rapport), under the 4.5 text floor. Quieten, then lift the result back
+        // to the floor against the fill it actually sits on — the same two steps `mutedInk` takes
+        // against the ground.
+        const quiet =
+          adjustToContrast(mix(on, fill, 0.35), fill, TEXT_CONTRAST_MIN) ?? on;
         const top = r.y + INSET + valueBand.ascent;
         return (
           <g key={c.key}>
@@ -415,7 +490,13 @@ export function DirectedTreemap({
                 <text
                   key={`n${i}`}
                   x={r.x + INSET}
-                  y={top + valueBand.descent + annotBand.ascent + 2 + i * (annotBand.ascent + annotBand.descent)}
+                  y={
+                    top +
+                    valueBand.descent +
+                    annotBand.ascent +
+                    2 +
+                    i * (annotBand.ascent + annotBand.descent)
+                  }
                   {...line(annot)}
                   fill={on}
                 >
@@ -447,12 +528,23 @@ export function DirectedTreemap({
       </text>
 
       {layout.readingLines.map((l, i) => (
-        <text key={`r${i}`} x={PAD} y={layout.readingTop + i * annotLead} {...line(annot)} fill={mutedInk}>
+        <text
+          key={`r${i}`}
+          x={PAD}
+          y={layout.readingTop + i * annotLead}
+          {...line(annot)}
+          fill={mutedInk}
+        >
           {l}
         </text>
       ))}
       {layout.sourceLines.map((l, i) => (
-        <text key={`s${i}`} x={PAD} y={layout.sourceTop + i * bodyLead} {...line(body)}>
+        <text
+          key={`s${i}`}
+          x={PAD}
+          y={layout.sourceTop + i * bodyLead}
+          {...line(body)}
+        >
           {l}
         </text>
       ))}
