@@ -202,7 +202,7 @@
  *      working, and the fix is to re-run the beat's own `render.mjs`, never to add it to a list.
  */
 import { describe, expect, it } from "bun:test";
-import { join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { verifyAll } from "../scripts/verify-scrolly.mjs";
@@ -221,25 +221,74 @@ const PROOF = join(SKILL, "..", "..", "proof");
 // checks only its own beat. Unset — the CI default — sweeps every proof/scrolly-* beat, unchanged.
 const SCOPED_DIR = scopedBeatDir(PROOF);
 
+// ONE TEST PER BEAT, NOT ONE TEST FOR THE CORPUS. This used to be a single `it` that drove every
+// page on disk — 120 renders at three widths, 40 beats — under one 600 000 ms ceiling. Measured on
+// this corpus, one beat's three renders cost ~81 s, so the sweep needs about three quarters of an
+// hour and the single test could never reach its assertion: it timed out, reported no beat, and
+// nothing it would have caught was being caught. That is the defect, and a bigger number on the
+// same monolith would only move it.
+//
+// So the population is unchanged — every beat still runs, and the guard is not scoped, sampled or
+// sharded away — and only the granularity moved: each beat is its own named test with its own
+// ceiling, so a run terminates, a failure says which beat failed in its own title, and a beat that
+// hangs costs that beat rather than the sweep. `SCROLL_INTEGRITY_BEAT` still narrows the run to one
+// beat while a journalist is working on it (see scroll-integrity-scope.mjs, and SKILL.md step 6).
+const PAGES = scrolliesUnder(PROOF, SCOPED_DIR);
+const BY_BEAT = new Map<string, string[]>();
+for (const page of PAGES) {
+  const beat = basename(dirname(dirname(page)));
+  if (!BY_BEAT.has(beat)) BY_BEAT.set(beat, []);
+  BY_BEAT.get(beat)!.push(page);
+}
+
+// A beat's three renders measured ~81 s cold, including the browser launch this now pays per beat.
+// The ceiling is a hang detector with room for a slow machine, not a budget anything runs close to.
+const PER_BEAT_MS = 300_000;
+
+/** Drive one beat's pages and assert the vehicle's contract across them. */
+async function driveAndAssert(label: string, files: string[]) {
+  const { failures, notes } = await verifyAll(files);
+  // Printed whether or not anything failed: the residues this guard deliberately does not assert
+  // are only useful if a person reads them, and a note nobody prints is a note nobody has.
+  for (const note of notes) console.log(`  note  ${note}`);
+  expect(
+    failures,
+    `driven across ${files.length} ${label} scrollies at three widths:\n  ${failures.join("\n  ")}`,
+  ).toEqual([]);
+}
+
 describe(
   SCOPED_DIR
     ? `only ${process.env[SCOPE_ENV_VAR]} survives a continuous scroll`
     : "every scrolly on disk survives a continuous scroll",
   () => {
-    it("should hold the whole vehicle's contract on a real, driven, uninterrupted scroll", async () => {
-      const seedDir = await mkdtemp(join(tmpdir(), "scrolly-integrity-"));
-      const { outPath } = await render({ outDir: seedDir });
-      const files = [outPath, ...scrolliesUnder(PROOF, SCOPED_DIR)];
-      expect(files.length).toBeGreaterThanOrEqual(2);
+    // The discovery itself is an assertion: a scan that silently found nothing would turn every
+    // test below into a vacuous pass, which is the shape this whole pass exists to end.
+    it("should find scrollies on disk to drive", () => {
+      expect(BY_BEAT.size).toBeGreaterThanOrEqual(1);
+      expect(PAGES.length).toBeGreaterThanOrEqual(1);
+    });
 
-      const { failures, notes } = await verifyAll(files);
-      // Printed whether or not anything failed: the residues this guard deliberately does not assert
-      // are only useful if a person reads them, and a note nobody prints is a note nobody has.
-      for (const note of notes) console.log(`  note  ${note}`);
-      expect(
-        failures,
-        `driven across ${files.length} scrollies at three widths:\n  ${failures.join("\n  ")}`,
-      ).toEqual([]);
-    }, 600_000);
+    it(
+      "should hold the contract on the scaffold's own freshly rendered seed",
+      async () => {
+        const seedDir = await mkdtemp(join(tmpdir(), "scrolly-integrity-"));
+        const { outPath } = await render({ outDir: seedDir });
+        await driveAndAssert("seed", [outPath]);
+      },
+      PER_BEAT_MS,
+    );
+
+    for (const [beat, files] of [...BY_BEAT].sort(([a], [b]) =>
+      a.localeCompare(b),
+    )) {
+      it(
+        `should hold the contract on ${beat}'s own renders, on a real, driven, uninterrupted scroll`,
+        async () => {
+          await driveAndAssert(beat, files);
+        },
+        PER_BEAT_MS,
+      );
+    }
   },
 );
