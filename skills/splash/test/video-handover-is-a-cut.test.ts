@@ -214,6 +214,32 @@ mock.module("remotion", () => ({
   Sequence: (props: any) => React.createElement("div", {}, props.children),
 }));
 
+// ---------------------------------------------------------------------------------------------
+// The embedded-faces stub, and why this guard needs one.
+//
+// Every directed composition in this corpus now opens `ready ? <Frame …/> : null`, where `ready`
+// comes from `useEmbeddedFaces`: nothing is drawn until the faces have decoded, because a chart
+// that lays itself out with `measureText` in the fallback face clips in silence (that module's own
+// header). `ready` is flipped from a `useEffect`, and `renderToStaticMarkup` runs no effects — so
+// under this guard every one of the forty beats rendered `null`, and every assertion below walked
+// an EMPTY document. It was not failing; it was not looking. All forty reported the same single
+// line — "frame 0 paints 0 text node(s) at full opacity" — which is assertion 3 catching the
+// instrument, not the beats.
+//
+// So `ready` is stubbed true here, exactly as `useCurrentFrame` is: the render is what the beat's
+// own arithmetic draws. The face checks the real hook performs (coverage, fallback probing, the
+// width agreement) need Chrome's own metrics and were never in reach of a static render; they are
+// asserted where they run, in the beat's own Remotion render.
+// ---------------------------------------------------------------------------------------------
+const embeddedFacesStub = () => ({
+  useEmbeddedFaces: () => ({ ready: true, ref: { current: null } }),
+});
+for (const module of [
+  "skills/chart-video/assets/embedded-faces",
+  "skills/map-beat/assets/embedded-faces",
+])
+  mock.module(join(TWIN_ROOT, module), embeddedFacesStub);
+
 const { renderToStaticMarkup } = await import("react-dom/server");
 
 // ---------------------------------------------------------------------------------------------
