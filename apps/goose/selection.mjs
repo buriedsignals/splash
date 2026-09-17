@@ -226,7 +226,7 @@ const DECISION_PREREQUISITES = REQUIRED_SCALARS.filter(
   (field) => field !== "reference",
 );
 
-function deriveCurrentDecision(state, parsed) {
+function deriveCurrentDecision(state, parsed, catalogue) {
   if (
     state.phase !== "storyboard" ||
     DECISION_PREREQUISITES.some((field) => !parsed.meta[field])
@@ -242,7 +242,15 @@ function deriveCurrentDecision(state, parsed) {
     if (!slot.proves) return { id: "G2a", awaiting: "proves", slotId };
     if (!slot.medium) return { id: "G2a", awaiting: "medium", slotId };
     if (!slot.format) return { id: "G2b", awaiting: "format", slotId };
-    if (slot.reachable !== "yes") {
+    // The interaction kind is the OTHER half of the format decision — implied by the pair, printed
+    // beside it as the promise the beat makes a reader, and CONFIRMED by accepting the format
+    // (`REQUIRED_SLOT_FIELDS`, `skills/storyboard/scripts/gate-contract.mjs`). A slot recording the
+    // format without it never closes gate 2, so the format is asked again here rather than the
+    // journalist being walked on to a treatment the storyboard will refuse three movements later.
+    const pair = (catalogue?.formatPairs ?? []).find(
+      (row) => row.medium === slot.medium && row.format === slot.format,
+    );
+    if (slot.reachable !== "yes" || slot.interaction !== pair?.interaction?.kind) {
       return { id: "G2b", awaiting: "reachability", slotId };
     }
     if (SIZED_FORMATS.includes(slot.format) && !slot.size) {
@@ -462,6 +470,7 @@ function publicSlot(slot) {
       "format",
       "size",
       "reachable",
+      "interaction",
       "candidates",
       "chosen",
       "producer",
@@ -518,12 +527,22 @@ function mutationFor(model, choice) {
             format: null,
             size: null,
             reachable: null,
+            interaction: null,
             candidates: null,
             chosen: null,
           },
         },
       };
-    case "format":
+    case "format": {
+      // Accepting the format accepts its promise, so the same write records both. The kind is the
+      // catalogue's, carried on the option the journalist actually saw it printed on; a row that
+      // files none is a catalogue defect and is refused rather than written as an absence.
+      const kind = choice.interaction?.kind;
+      if (!kind)
+        throw new Error(
+          `the catalogue files no interaction kind for ${slot.medium}/${choice.value}, so the ` +
+            "promise this beat makes a reader cannot be recorded with the format",
+        );
       return {
         slot: {
           id: slot.id,
@@ -531,11 +550,13 @@ function mutationFor(model, choice) {
             format: choice.value,
             size: null,
             reachable: "yes",
+            interaction: kind,
             candidates: null,
             chosen: null,
           },
         },
       };
+    }
     case "size":
       return { slot: { id: slot.id, fields: { size: choice.value } } };
     case "treatment": {
@@ -605,7 +626,7 @@ export function createSelectionService({
       throw new Error("the bound story returned no canonical phase state");
     const parsed = parseStoryboard(after.text);
     const capabilities = normalizeCapabilities(providedCapabilities);
-    const decision = deriveCurrentDecision(state, parsed);
+    const decision = deriveCurrentDecision(state, parsed, providedCatalogue);
     const slot = activeSlot(parsed, decision);
     const model = {
       schemaVersion: SELECTION_SCHEMA_VERSION,
@@ -690,6 +711,7 @@ export function createSelectionService({
                 format: null,
                 size: null,
                 reachable: null,
+                interaction: null,
                 candidates: null,
                 chosen: null,
               },

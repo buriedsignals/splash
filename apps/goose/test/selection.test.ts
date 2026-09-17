@@ -49,6 +49,20 @@ function formatGate(medium = "chart") {
     medium: ${medium}`);
 }
 
+/**
+ * The kind the catalogue files for a pair, read from the catalogue rather than spelled here: a
+ * fixture that means "past the format gate" has to carry what the format gate writes, and
+ * `interaction` joined that set when it became a required slot field. Spelled as a literal it
+ * would be one more thing to remember on the day a pair's promise changes.
+ */
+function interactionKind(medium: string, format: string): string {
+  const pair = (visualCatalog as any).formatPairs.find(
+    (row: any) => row.medium === medium && row.format === format,
+  );
+  if (!pair) throw new Error(`the catalogue files no ${medium}/${format} pair`);
+  return pair.interaction.kind;
+}
+
 function treatmentGate({ chosen = false } = {}) {
   return storyboard(
     `  - id: 1
@@ -57,6 +71,7 @@ function treatmentGate({ chosen = false } = {}) {
     format: web
     reachable: yes
     intent: "show a trend over time"
+    interaction: ${interactionKind("chart", "web")}
     candidates: [Line, "Slope (slopegraph)"]${chosen ? '\n    chosen: "Slope (slopegraph)"' : ""}`,
     { reference: true },
   );
@@ -147,25 +162,47 @@ describe("shared revision-safe selection domain", () => {
     ['  - proves: "Adoption rose."', "id"],
     ["  - id: 1", "proves"],
     ['  - id: 1\n    proves: "Adoption rose."', "medium"],
-  ])("shows graphical controls only once the real early storyboard has a visual and takeaway: %s", async (slot, awaiting) => {
-    const before = storyboard(slot);
-    await writeFile(join(storyPath, "STORYBOARD.md"), before);
-    const selection = createSelectionService({ storyBinding: binding, capabilityProvider: async () => capabilityState, stateProvider: async () => ({ phase: "storyboard" }) });
-    const model = await selection.read({ bindingContext });
-    expect(model.gate).toEqual({ id: "G2a", awaiting });
-    expect(selectionView(model).choosing).toBe(awaiting === "medium");
-    expect(model.choices.length > 0).toBe(awaiting === "medium");
-    expect(await readFile(join(storyPath, "STORYBOARD.md"), "utf8")).toBe(before);
-  });
+  ])(
+    "shows graphical controls only once the real early storyboard has a visual and takeaway: %s",
+    async (slot, awaiting) => {
+      const before = storyboard(slot);
+      await writeFile(join(storyPath, "STORYBOARD.md"), before);
+      const selection = createSelectionService({
+        storyBinding: binding,
+        capabilityProvider: async () => capabilityState,
+        stateProvider: async () => ({ phase: "storyboard" }),
+      });
+      const model = await selection.read({ bindingContext });
+      expect(model.gate).toEqual({ id: "G2a", awaiting });
+      expect(selectionView(model).choosing).toBe(awaiting === "medium");
+      expect(model.choices.length > 0).toBe(awaiting === "medium");
+      expect(await readFile(join(storyPath, "STORYBOARD.md"), "utf8")).toBe(
+        before,
+      );
+    },
+  );
 
   it("reports intake before a storyboard exists and never offers a graphical mutation", async () => {
     await rm(join(storyPath, "STORYBOARD.md"));
-    const service = createSelectionService({ storyBinding: binding, capabilityProvider: async () => capabilityState, stateProvider: async () => ({ phase: "intake", missing: ["source/profile.json"] }) });
+    const service = createSelectionService({
+      storyBinding: binding,
+      capabilityProvider: async () => capabilityState,
+      stateProvider: async () => ({
+        phase: "intake",
+        missing: ["source/profile.json"],
+      }),
+    });
     const model = await service.read({ bindingContext });
     expect(model.phase).toBe("intake");
     expect(model.gate).toBeNull();
     expect(model.choices).toEqual([]);
-    await expect(service.confirm({ bindingContext, expected: expected(model), optionId: "format.web" })).rejects.toThrow("does not belong");
+    await expect(
+      service.confirm({
+        bindingContext,
+        expected: expected(model),
+        optionId: "format.web",
+      }),
+    ).rejects.toThrow("does not belong");
   });
 
   it("loads the bound active gate without writing on read, focus, details, or cancellation", async () => {
@@ -236,6 +273,7 @@ describe("shared revision-safe selection domain", () => {
           format: "web",
           size: null,
           reachable: "yes",
+          interaction: interactionKind("chart", "web"),
           candidates: null,
           chosen: null,
         },
@@ -304,6 +342,39 @@ describe("shared revision-safe selection domain", () => {
     expect(await readFile(join(storyPath, "STORYBOARD.md"), "utf8")).toBe(
       before,
     );
+  });
+
+  // Accepting a format accepts the promise printed beside it, and that promise is a REQUIRED slot
+  // field. The graphical path wrote the format and the reachability and left `interaction` unset,
+  // so a storyboard driven entirely through this service could never close gate 2 — every
+  // confirmation succeeded and `whereIs` stayed in `storyboard` with nothing in the model saying
+  // why. A slot that records the format without the kind is asked for the format again.
+  it("records the interaction the catalogue promises when the format is confirmed", async () => {
+    const selection = service();
+    const model = await selection.read({ bindingContext });
+    const web = model.choices.find((row: any) => row.id === "format.web");
+    expect(web.interaction.kind).toBe(interactionKind("chart", "web"));
+    await selection.confirm({
+      bindingContext,
+      expected: expected(model),
+      optionId: "format.web",
+    });
+    expect(
+      parseStoryboard(await readFile(join(storyPath, "STORYBOARD.md"), "utf8"))
+        .meta.slots[0].interaction,
+    ).toBe(interactionKind("chart", "web"));
+  });
+
+  it("asks for the format again when a slot records no interaction", async () => {
+    await writeFile(
+      join(storyPath, "STORYBOARD.md"),
+      treatmentGate({ chosen: true }).replace(
+        `    interaction: ${interactionKind("chart", "web")}\n`,
+        "",
+      ),
+    );
+    const model = await service().read({ bindingContext });
+    expect(model.gate).toEqual({ id: "G2b", awaiting: "reachability" });
   });
 
   it("keeps an optional delivery capability separate from format reachability", async () => {
