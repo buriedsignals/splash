@@ -48,16 +48,76 @@ import { dirname, join, resolve, sep } from "node:path";
 const SKILLS = join(import.meta.dirname, "..", "..");
 const TWIN = resolve(SKILLS, "..");
 const PROOF = join(TWIN, "proof");
-const CRAFT = [
-  "chart-beat",
-  "chart-web",
-  "chart-video",
-  "map-beat",
-];
+
+/**
+ * SHIPS A SEED, AND IS THEREFORE MAKING THE CLAIM — discovered, not listed.
+ *
+ * This was a fixed array of the four ORIGINAL craft skills, and it stayed four while the tree grew
+ * to seven. `map-web/test/standalone.test.ts` says so in its own header: it exists because "its own
+ * `CRAFT` list is a fixed array in a file this skill may not touch". Nobody wrote that second copy
+ * for `image-beat` or `scrolly`, so two skills claimed in their `SKILL.md` that their seed renders
+ * alone and nothing anywhere tested it — and `image-beat`'s committed `assets/preview.png` was five
+ * weeks stale when this was measured, which is exactly what this file would have caught.
+ *
+ * The population is now the tree's own answer to the question the file asks: a skill SHIPS A SEED
+ * when it carries both `scripts/render-preview.mjs` and `assets/preview.png`. A new craft skill
+ * joins by existing.
+ */
+function shipsASeed(): string[] {
+  return readdirSync(SKILLS, { withFileTypes: true })
+    .filter((e) => e.isDirectory())
+    .map((e) => e.name)
+    .filter(
+      (skill) =>
+        existsSync(join(SKILLS, skill, "scripts", "render-preview.mjs")) &&
+        existsSync(join(SKILLS, skill, "assets", "preview.png")),
+    )
+    .sort();
+}
+
+/**
+ * `map-web` is proven by `skills/map-web/test/standalone.test.ts` instead of here, and that is a
+ * DIFFERENT PROOF rather than a pass: its preview is compared tolerantly, by decoded pixel, because
+ * two Chrome launches of that page are not reliably byte-identical. Running it here as well would
+ * assert byte-parity this project has already decided it cannot hold — so it is checked there and
+ * named here, and the census below still reddens if it ever stops being checked at all.
+ */
+const PROVEN_ELSEWHERE = new Map([
+  ["map-web", join(SKILLS, "map-web", "test", "standalone.test.ts")],
+]);
+
+const SEEDED = shipsASeed();
+const CRAFT = SEEDED.filter((skill) => !PROVEN_ELSEWHERE.has(skill));
 
 // A remotion still (chart-video) and a plate-backed map render (map-beat) both run real
 // renderers here, and the map's bake path is minutes on a cold cache.
 setDefaultTimeout(300000);
+
+describe("every craft skill that ships a seed is proven by somebody", () => {
+  // ANTI-VACUITY. A walk that finds nothing passes every assertion below it, and a walk that finds
+  // four out of seven passes them too while three skills go unchecked — which is the state this
+  // file was in. The floor is the number of craft skills that ship a seed today, read off the same
+  // tree `seed-reads-a-recorded-palette.test.ts` reads: seven, on 2026-09-17.
+  it("should discover every skill that ships a seed, not a remembered subset", () => {
+    expect(SEEDED.length).toBeGreaterThanOrEqual(7);
+    for (const skill of SEEDED)
+      expect([skill, existsSync(join(SKILLS, skill, "SKILL.md"))]).toEqual([
+        skill,
+        true,
+      ]);
+  });
+
+  // A skill excused from the loop below must be proven somewhere that still exists. Deleting
+  // `map-web/test/standalone.test.ts` reddens here rather than silently removing a skill from the
+  // census — an excuse that points at nothing is the exemption this guard refuses to become.
+  it("should have a live proof on file for every skill it excuses", () => {
+    for (const [skill, proof] of PROVEN_ELSEWHERE) {
+      expect([skill, SEEDED.includes(skill)]).toEqual([skill, true]);
+      expect([skill, existsSync(proof)]).toEqual([skill, true]);
+    }
+    expect(CRAFT.length).toBe(SEEDED.length - PROVEN_ELSEWHERE.size);
+  });
+});
 
 /** Every string literal in `src`, comments removed first — the same single-pass scanner
  *  `no-cross-skill-imports.test.ts` carries, duplicated rather than imported because that is this
