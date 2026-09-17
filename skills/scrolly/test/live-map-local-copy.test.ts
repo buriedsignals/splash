@@ -11,12 +11,33 @@ import {
 // `renders/<id>.local.html`, git-ignored, while the committed page keeps the placeholder (owner, 2026-09-15).
 
 const ROOT = join(import.meta.dirname, "../../..");
-const LIVE_PAGES = [
-  "proof/scrolly-choropleth-europe-lowcarbon/renders/creme.html",
-  "proof/scrolly-choropleth-europe-lowcarbon/renders/nocturne.html",
-  "proof/scrolly-choropleth-europe-lowcarbon/renders/rapport.html",
-  "proof/scrolly-proportional-symbol-europe-capacity/renders/creme.html",
-];
+
+/**
+ * EVERY COMMITTED PAGE THAT REACHES MAPTILER, DISCOVERED FROM THE TREE.
+ *
+ * This was four paths typed by hand — three directions of one beat and one direction of another —
+ * while the corpus held twenty-four such pages. A frozen sample of a corpus that grows is a guard
+ * that covers less of it every week, and the thing it guards is the one that must never be wrong:
+ * the committed page keeps the placeholder, the keyed copy stays out of the repository.
+ *
+ * The population is every TRACKED `renders/*.html` that reaches a MapTiler style URL — asked of
+ * git rather than of a directory walk, because an untracked in-flight page is not yet committed
+ * and is not this guard's business. `no-key-in-the-repository.test.ts` scans every committable
+ * file for a real key value; this file is the other half, and says the placeholder is what is
+ * there in its place.
+ */
+const MAPTILER_STYLE = "api.maptiler.com/maps/";
+const LIVE_PAGES = Bun.spawnSync(
+  ["git", "ls-files", "-z", "--", "*/renders/*.html"],
+  { cwd: ROOT },
+)
+  .stdout.toString()
+  .split("\0")
+  .filter(Boolean)
+  .filter((rel) =>
+    readFileSync(join(ROOT, rel), "utf8").includes(MAPTILER_STYLE),
+  )
+  .sort();
 
 describe("the local copy of a live map page", () => {
   it("should live beside the page as <id>.local.html", () => {
@@ -55,6 +76,14 @@ describe("the local copy of a live map page", () => {
 });
 
 describe("a committed live map page", () => {
+  // ANTI-VACUITY. A `git ls-files` that matches nothing — a renamed `renders/` directory, a
+  // pathspec that stops applying — makes every assertion below it disappear rather than fail.
+  // Measured 2026-09-17 on a clean checkout of `main`: twenty-four committed pages reach a
+  // MapTiler style, where the hand-written list named four.
+  it("should discover the committed live map pages, not a sample of them", () => {
+    expect(LIVE_PAGES.length).toBeGreaterThanOrEqual(24);
+  });
+
   for (const page of LIVE_PAGES) {
     it(`should carry the placeholder and no key-like string: ${page}`, () => {
       const html = readFileSync(join(ROOT, page), "utf8");
