@@ -4,6 +4,7 @@ type: radar
 format: static
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — France and Germany make nearly the same electricity from opposite mixes
@@ -58,3 +59,83 @@ Ember, Energy Institute — Statistical Review of World Energy (2025), via Our W
 electricity generation by source, TWh, frozen beside this beat as `data.csv` (a copy of the file
 `proof/static-wind-vs-solar` uses, per this corpus's "duplicate, do not link" ruling, so this beat
 can be rendered and audited on its own).
+
+## The choreography
+
+Two outlines on one circle, and the reading is that they barely touch. France is a single spike
+running almost to the ceiling on one spoke and flat everywhere else; Germany is a squat cluster
+spread over wind, solar, coal and gas. The spoke the claim turns on is nuclear, where the two
+numbers at its end are 67,7 and 0,0. The order of the spokes is the editorial decision this type
+usually hides, and it is said out loud here: renewables, then nuclear, then fossils, clockwise by
+family. Every spoke carries both shares at its own end, so the opposition can be checked spoke by
+spoke rather than taken on the shape.
+
+**The eye enters at** `the two outlines`. **The claim lands at** `establish`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the two outlines` | — |
+| reference | `the nuclear spoke` | `the two outlines` |
+| reveal | `the family order` | `the two outlines` |
+| conclusion | `the paired spoke values` | `the two outlines` |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the two outlines",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the two outlines",
+      "subordinateTo": null
+    },
+    {
+      "station": "reference",
+      "carries": "the nuclear spoke",
+      "subordinateTo": "the two outlines"
+    },
+    {
+      "station": "reveal",
+      "carries": "the family order",
+      "subordinateTo": "the two outlines"
+    },
+    {
+      "station": "conclusion",
+      "carries": "the paired spoke values",
+      "subordinateTo": "the two outlines"
+    }
+  ],
+  "claimLands": "establish"
+}
+```
+
+## Precision
+
+- **Almost the same total, opposite mixes** — 561,8 TWh against 496,0 TWh, and the nine paired shares behind the word "opposés", are all read off the frozen file.
+- **One radial scale on every spoke** — every spoke keeps the same radial scale and each polygon's nine shares sum to its stated whole, or the two shapes would not be comparable.
+- **The 70 % ceiling is the next round step** — the outer ring is the next round step above the largest share on the plate, and it is stated rather than left to be inferred from the rings.
+- **Both totals and the gap are asserted** — the two national totals and the gap between them are checked before the render, because "presque autant" is half the headline.
+- **Eighteen shares printed round one circle** — both values sit at each spoke's own end in the one frame, so the claim is checkable without a legend and without a second plate.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "almost-the-same-total-opposite-mixes",
+    "one-radial-scale-on-every-spoke",
+    "the-70-ceiling-is-the-next",
+    "both-totals-and-the-gap-are",
+    "eighteen-shares-printed-round-one-circle"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "almost-the-same-total-opposite-mixes",
+    "every-spoke-keeps-the-same-radial": "one-radial-scale-on-every-spoke",
+    "the-ceiling-is-the-next-round": "the-70-ceiling-is-the-next",
+    "the-totals-and-the-headline-gap": "both-totals-and-the-gap-are",
+    "asserted-in-the-one-frame": "eighteen-shares-printed-round-one-circle"
+  }
+}
+```

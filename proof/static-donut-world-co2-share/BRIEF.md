@@ -4,6 +4,7 @@ type: donut
 format: static
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — En 2000 les États-Unis émettaient un quart du CO₂ mondial et la Chine un septième ; en 2023, c'est l'inverse
@@ -91,3 +92,83 @@ form files **no family rules of its own**.
 Global Carbon Budget 2025 (CO₂ per person, 2000 and 2023) and Our World in Data's population series
 (both years), frozen beside this beat as `data.csv` — 213 countries. Every total on the plate,
 including the world's, is summed from that file rather than quoted.
+
+## The choreography
+
+Each country is one ring carrying two concentric arcs a few pixels apart, so the change reads as a
+GAP rather than as a second mark. The eye enters on China, whose inner arc overshoots its outer
+one by a long way and whose hole carries the accent. The exchange the headline claims is only
+readable across two rings: the United States sits immediately to its right with the opposite gap,
+outer arc longer than inner. Under every ring the tonnes are printed for both dates, and the world
+total under the row — without them a shrinking share reads as a falling number, which is the trap
+the reading line names on Russia.
+
+**The eye enters at** `the China ring`. **The claim lands at** `subject`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the six rings` | `the China ring` |
+| reference | `the United States ring` | `the China ring` |
+| subject | `the China ring` | — |
+| conclusion | `the tonnes under each` | `the China ring` |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the China ring",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the six rings",
+      "subordinateTo": "the China ring"
+    },
+    {
+      "station": "reference",
+      "carries": "the United States ring",
+      "subordinateTo": "the China ring"
+    },
+    {
+      "station": "subject",
+      "carries": "the China ring",
+      "subordinateTo": null
+    },
+    {
+      "station": "conclusion",
+      "carries": "the tonnes under each",
+      "subordinateTo": "the China ring"
+    }
+  ],
+  "claimLands": "subject"
+}
+```
+
+## Precision
+
+- **The swap is computed, both ways** — 14,7 to 32,9 % and 24,4 to 13,3 % are read off the frozen file, and the headline's "l'inverse" is asserted as an actual exchange of order.
+- **A full turn is 100 % on every ring** — wedge angles sum to the same asserted whole on all six rings and on both arcs, so two rings are comparable at a glance.
+- **Two floors are measured before drawing** — the shortest arc must clear a stated drawn length — an arc a reader cannot see is not a share but a gap in the ring — and the hole must hold its own number.
+- **The plate refuses without the swap** — it throws if the two named cases did not exchange order, if the world total did not grow by at least the stated fraction, or if no case falls into the share-versus-absolute trap the reading line warns about.
+- **Shares and tonnes on the same plate** — every ring carries its two shares and its two absolute values at once, because the claim is about shares and the honesty of it is in the tonnes.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "the-swap-is-computed-both-ways",
+    "a-full-turn-is-100-on",
+    "two-floors-are-measured-before-drawing",
+    "the-plate-refuses-without-the-swap",
+    "shares-and-tonnes-on-the-same"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "the-swap-is-computed-both-ways",
+    "wedge-angles-sum-to-the-same": "a-full-turn-is-100-on",
+    "two-floors-are-measured-before-the": "two-floors-are-measured-before-drawing",
+    "the-plate-refuses-if-the-two": "the-plate-refuses-without-the-swap",
+    "asserted-in-the-one-frame": "shares-and-tonnes-on-the-same"
+  }
+}
+```

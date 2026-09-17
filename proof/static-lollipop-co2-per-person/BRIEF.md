@@ -4,6 +4,7 @@ type: lollipop
 format: static
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — La Chine a triplé son CO₂ par personne ; l'écart avec l'Américain moyen est passé de 7,5 à 1,7
@@ -86,3 +87,89 @@ it shares with two other desks is the one that was already filed.
 Global Carbon Budget 2025 (CO₂ per person, 2000 and 2023) joined to Our World in Data's population
 series (2023) on the ISO code, frozen beside this beat as `data.csv` — 213 countries, of which the
 plate draws the six the rule selects.
+
+## The choreography
+
+Heads first: what separates this from a dumbbell is that the height of each head from zero is the
+reading, not the distance between the pair. So the eye runs along the row of heads before it reads
+a single pair, and what it sees is that the tallest head in the plate belongs to the United States
+in 2000 and no longer to anyone in 2023. Each pair is one subject in two states, the earlier head
+a lighter tint of the later one's own hue. Under the baseline the direction gets a glyph before it
+gets a number, so the sign survives a glance; China's ringed head and accented name are the one
+accent spent.
+
+**The eye enters at** `the heads`. **The claim lands at** `conclusion`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the heads` | `the China pair` |
+| reference | `the paired stems` | `the heads` |
+| reveal | `the change glyphs` | `the heads` |
+| subject | `the China pair` | — |
+| conclusion | `the 2023 head values` | `the China pair` |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the heads",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the heads",
+      "subordinateTo": "the China pair"
+    },
+    {
+      "station": "reference",
+      "carries": "the paired stems",
+      "subordinateTo": "the heads"
+    },
+    {
+      "station": "reveal",
+      "carries": "the change glyphs",
+      "subordinateTo": "the heads"
+    },
+    {
+      "station": "subject",
+      "carries": "the China pair",
+      "subordinateTo": null
+    },
+    {
+      "station": "conclusion",
+      "carries": "the 2023 head values",
+      "subordinateTo": "the China pair"
+    }
+  ],
+  "claimLands": "conclusion"
+}
+```
+
+## Precision
+
+- **Tripled, and 1,7 times, are ratios** — 2,9 to 8,6 and 21,4 to 14,3 are read off the frozen file; "tripled" and "1,7 times" are the two ratios those four numbers give.
+- **One zero-based scale for every stem** — all twelve stems start at zero on the same scale, because the whole difference between this and a dumbbell is that the level is the reading.
+- **The six are a computed rule** — the set is the six largest 2023 totals, and the plate refuses if the subject did not move as claimed, if the ratio fell outside its stated band, or if the six do not carry most of the whole.
+- **Six value-bands of room for the stems** — the tallest stem, the number above its head and enough space between pairs to rank them by eye are budgeted before the copy is set, and the ladder spends until they fit.
+- **Twelve levels and six changes at once** — every head value and every change is printed at rest, because the claim is a ratio between two of them and a reader must be able to take it.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "tripled-and-1-7-times-are",
+    "one-zero-based-scale-for-every",
+    "the-six-are-a-computed-rule",
+    "six-value-bands-of-room-for",
+    "twelve-levels-and-six-changes-at"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "tripled-and-1-7-times-are",
+    "one-zero-based-value-scale-for": "one-zero-based-scale-for-every",
+    "the-cases-are-a-computed-rule": "the-six-are-a-computed-rule",
+    "the-stems-owe-six-value-bands": "six-value-bands-of-room-for",
+    "asserted-in-the-one-frame": "twelve-levels-and-six-changes-at"
+  }
+}
+```

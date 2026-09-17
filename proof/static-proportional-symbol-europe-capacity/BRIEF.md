@@ -4,6 +4,7 @@ type: proportional-symbol
 format: static
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — A hundredth of the sites carries a third of the power
@@ -98,3 +99,83 @@ symboles est la famille qui s'en moque : l'aire d'un cercle encode la DONNÉE, p
 donc une Norvège étirée laisse au cercle norvégien exactement la taille que ses mégawatts lui valent.
 Ce qui bouge est le SIÈGE du symbole — toujours le centre pondéré des centrales du pays, projeté
 comme la plaque sous lui.
+
+## The choreography
+
+Area is the quantity, so the eye goes to the biggest rings first — the scatter of wide circles
+across France, the Rhine, the Baltic and the Volga — and that concentration IS the claim: the
+power sits in very few places. Every circle is hollow, so where they pile up the overlap
+accumulates instead of hiding one station behind another. The key's two circles are named at
+stated megawatts and computed by the same function as the marks. The plate then says what it does
+not draw: below 200 MW the field closes up at 8 900 circles, and the cut is printed with its
+reason rather than left as a silent omission.
+
+**The eye enters at** `the largest circles`. **The claim lands at** `establish`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the largest circles` | — |
+| reference | `the hollow field` | `the largest circles` |
+| reveal | `the named key circles` | `the largest circles` |
+| conclusion | `the printed cut` | `the largest circles` |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the largest circles",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the largest circles",
+      "subordinateTo": null
+    },
+    {
+      "station": "reference",
+      "carries": "the hollow field",
+      "subordinateTo": "the largest circles"
+    },
+    {
+      "station": "reveal",
+      "carries": "the named key circles",
+      "subordinateTo": "the largest circles"
+    },
+    {
+      "station": "conclusion",
+      "carries": "the printed cut",
+      "subordinateTo": "the largest circles"
+    }
+  ],
+  "claimLands": "establish"
+}
+```
+
+## Precision
+
+- **A hundredth and a third are computed** — the share of sites drawn and the share of installed power they carry are both derived from the frozen database, so a refresh that overturned either would change the sentence.
+- **Area, never radius, is the value** — symbol area is proportional to the asserted megawatts, and the same function computes the marks and the key's two named circles.
+- **The density floor is measured on the worst cell** — the floor is measured on the worst cell of a grid over the camera rather than on an average, and the component enforces it again at the camera it actually got.
+- **The 200 MW cut is printed, with its reason** — the threshold that cut the field is on the plate, and so is why: at 8 900 circles the field closes up and stops being readable.
+- **What is drawn and what is not** — the drawn count, the cut and its consequence are in the one frame, because a proportional-symbol map without its residue overstates what it shows.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "a-hundredth-and-a-third-are",
+    "area-never-radius-is-the-value",
+    "the-density-floor-is-measured-on",
+    "the-200-mw-cut-is-printed",
+    "what-is-drawn-and-what-is"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "a-hundredth-and-a-third-are",
+    "symbol-area-never-radius-alone-is": "area-never-radius-is-the-value",
+    "the-density-floor-is-measured-on": "the-density-floor-is-measured-on",
+    "the-threshold-that-cut-the-field": "the-200-mw-cut-is-printed",
+    "asserted-in-the-one-frame": "what-is-drawn-and-what-is"
+  }
+}
+```

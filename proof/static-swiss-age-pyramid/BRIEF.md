@@ -4,6 +4,7 @@ type: population-pyramid
 format: static
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Switzerland's population bulges at ages 55-59
@@ -76,3 +77,82 @@ to a carried file that other lots hold, so it is reported, not made.
    drawn. The chart still reads — the label column IS the axis — but a rule this component's own
    comment calls "a continuous zero" disappearing without a word is the silent loss this project
    keeps finding, so it goes into the artifact's `data-ladder` beside R4.
+
+## The choreography
+
+The silhouette is read at once, and it is not a pyramid: it bulges at 55-59 and tapers below as
+much as above. But the sentence this plate makes is about the moment the two halves change places,
+and that is drawn — one black rule laid across both halves at 60-64, the band where the female side
+becomes the longer of the two, with a short ink annotation at its right end. The widest band is
+the reference the crossover is read against, not the subject: the spine never moves, both sides
+keep the same mirrored zero-anchored scale, and the rule is the only mark that crosses it.
+
+**The eye enters at** `the silhouette`. **The claim lands at** `reveal`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the silhouette` | `the crossover rule` |
+| reference | `the widest band` | `the silhouette` |
+| reveal | `the crossover rule` | — |
+| conclusion | `the crossover note` | `the crossover rule` |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the silhouette",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the silhouette",
+      "subordinateTo": "the crossover rule"
+    },
+    {
+      "station": "reference",
+      "carries": "the widest band",
+      "subordinateTo": "the silhouette"
+    },
+    {
+      "station": "reveal",
+      "carries": "the crossover rule",
+      "subordinateTo": null
+    },
+    {
+      "station": "conclusion",
+      "carries": "the crossover note",
+      "subordinateTo": "the crossover rule"
+    }
+  ],
+  "claimLands": "reveal"
+}
+```
+
+## Precision
+
+- **The crossover band is found** — 60-64 is the lowest band at which the female count passes the male one, searched in the frozen file rather than typed into the title.
+- **The spine never moves** — the shared centre is fixed and both sides keep the same mirrored, zero-anchored magnitude scale, so a longer bar is always more people.
+- **The widest band is found by the script** — 55-59 is returned by the render script, not asserted, which is why the annotation can sit on it without a second source of truth.
+- **The bands sum to the two totals** — the male bands sum to 4 405 220 and the female bands to 4 465 340, asserted before the silhouette is drawn.
+- **Both halves in one mirrored frame** — the crossover is a comparison between two halves at one band, so both must be on the plate against the same scale at the same instant.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "the-crossover-band-is-found",
+    "the-spine-never-moves",
+    "the-widest-band-is-found-by",
+    "the-bands-sum-to-the-two",
+    "both-halves-in-one-mirrored-frame"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "the-crossover-band-is-found",
+    "the-shared-centre-never-moves-and": "the-spine-never-moves",
+    "the-widest-band-is-found-by": "the-widest-band-is-found-by",
+    "the-bands-sum-to-the-asserted": "the-bands-sum-to-the-two",
+    "asserted-in-the-one-frame": "both-halves-in-one-mirrored-frame"
+  }
+}
+```

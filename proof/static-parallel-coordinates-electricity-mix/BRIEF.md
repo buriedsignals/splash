@@ -4,6 +4,7 @@ type: parallel-coordinates
 format: static
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — 2 pays sur 16 font les deux : plus de 25 % de nucléaire et plus de 20 % d'éolien
@@ -87,3 +88,82 @@ Ember / Energy Institute – Statistical Review of World Energy (2025), via Our 
 beside this beat as `data.csv` — a duplicate of the file three sibling beats carry. Each axis is the
 source's share of that country's own total generation, the total taken over all nine columns the file
 reports, so the seven axes do not sum to 100 and are not meant to.
+
+## The choreography
+
+Only two ADJACENT axes can be compared, so the claim's two sources are put first and next to each
+other, and that is where the eye is meant to enter. Between the nuclear rail and the wind rail the
+sixteen lines mostly fall, and two of them do not: Finland and Sweden, accented, are the only
+polylines high on both. The seven ceilings printed at the axis heads are the only numbers the
+scale gives — each rail is fitted to its own column, which is the price of putting seven sources
+on one plate. Every other line is one neutral, named once at its own highest vertex.
+
+**The eye enters at** `the first two axes`. **The claim lands at** `subject`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the first two axes` | `the two accented lines` |
+| reference | `the axis ceilings` | `the first two axes` |
+| reveal | `the fourteen grey lines` | `the two accented lines` |
+| subject | `the two accented lines` | — |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the first two axes",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the first two axes",
+      "subordinateTo": "the two accented lines"
+    },
+    {
+      "station": "reference",
+      "carries": "the axis ceilings",
+      "subordinateTo": "the first two axes"
+    },
+    {
+      "station": "reveal",
+      "carries": "the fourteen grey lines",
+      "subordinateTo": "the two accented lines"
+    },
+    {
+      "station": "subject",
+      "carries": "the two accented lines",
+      "subordinateTo": null
+    }
+  ],
+  "claimLands": "subject"
+}
+```
+
+## Precision
+
+- **Five, ten and two are counts** — five countries above 25 % nuclear, ten above 20 % wind, and the two in both are counted in the frozen file, not read off the picture.
+- **Each axis keeps its own stated ceiling** — every rail has its own fixed scale and prints it, because a shared scale would flatten six of the seven sources into the floor.
+- **The correlation is computed here** — the −0,4 between the two leading shares is computed in this beat from this beat's own file, never carried in from a sibling.
+- **Both thresholds and their intersection counted** — the two threshold counts and the size of their intersection are derived together, so the headline's "2 sur 16" cannot drift from the two numbers it sits between.
+- **Sixteen mixes across seven axes, once** — the whole field is on the plate at rest; the trade-off is only legible because both rails and all sixteen lines are visible at the same instant.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "five-ten-and-two-are-counts",
+    "each-axis-keeps-its-own-stated",
+    "the-correlation-is-computed-here",
+    "both-thresholds-and-their-intersection-counted",
+    "sixteen-mixes-across-seven-axes-once"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "five-ten-and-two-are-counts",
+    "each-axis-keeps-its-own-fixed": "each-axis-keeps-its-own-stated",
+    "the-correlation-the-claim-reports-is": "the-correlation-is-computed-here",
+    "the-counts-at-each-threshold-and": "both-thresholds-and-their-intersection-counted",
+    "asserted-in-the-one-frame": "sixteen-mixes-across-seven-axes-once"
+  }
+}
+```
