@@ -46,8 +46,11 @@
 // Usage:  bun skills/chart-web/scripts/render-web.mjs [outDir] [--data <json>]
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { existsSync, readdirSync } from "node:fs";
+import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import puppeteer from "puppeteer-core";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { deriveFurniture, measureText, readPalette } from "./render-still.mjs";
@@ -563,6 +566,36 @@ function foldProseIntoDisclosure(markup, where) {
   return out.replace(summary[0], `${summary[0]}${prose.join("")}`);
 }
 
+/** Same shape as the copy in every other script in this repository that drives Chrome — duplicated,
+ *  not imported, because nothing in a skill may import out of it. `puppeteer-core` is what the
+ *  journalist's root declares; `puppeteer` is a development-only package of THIS repository, so a
+ *  page rendered from an install that reached for it died at module load. */
+function resolveChrome() {
+  const candidates = [];
+  if (process.env.CHROME_PATH) candidates.push(process.env.CHROME_PATH);
+  const cache = join(homedir(), ".cache/puppeteer/chrome");
+  if (existsSync(cache))
+    for (const build of readdirSync(cache).sort().reverse())
+      candidates.push(
+        join(
+          cache,
+          build,
+          "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+        ),
+        join(
+          cache,
+          build,
+          "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
+        ),
+        join(cache, build, "chrome-linux64/chrome"),
+      );
+  candidates.push("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome");
+  const found = candidates.find((path) => existsSync(path));
+  if (!found)
+    throw new Error(`no Chrome to drive. Looked in:\n  ${candidates.join("\n  ")}`);
+  return found;
+}
+
 /**
  * THE REFUSAL. The page is opened at the review window and the drawing is MEASURED against the
  * share it declared. A floor written in CSS is a promise; this is the reading that holds it — and
@@ -573,9 +606,9 @@ function foldProseIntoDisclosure(markup, where) {
  * frozen fallback is what paints, and neither changes the height of a single row in the column.
  */
 async function assertDrawingShare(outPath, share, where) {
-  const { default: puppeteer } = await import("puppeteer");
   const browser = await puppeteer.launch({
     headless: "new",
+    executablePath: resolveChrome(),
     args: ["--no-sandbox", "--use-gl=swiftshader", "--enable-unsafe-swiftshader"],
   });
   try {
