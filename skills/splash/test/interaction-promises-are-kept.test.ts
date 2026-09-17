@@ -154,9 +154,11 @@
  *      and no drawn mark is keyed at all. The argument that the band is deliberately wider than
  *      the mark it stands for is a good one and it is an argument, not a measurement.
  *
- *      What is fixed here is that none of this is silent any more: `EDGE_CENSUS` records the pair
- *      per artifact with its reason and every artifact asserts against its row, so a vacuum that
- *      grows, shrinks or moves turns red. See that table.
+ *      What is fixed here is that none of this is silent any more: the vacuum is counted over the
+ *      whole corpus and PINNED (`EDGE_UNMEASURABLE_ARTIFACTS`), and a beat's three directions are
+ *      compared against each other, so a vacuum that grows, shrinks or moves turns red. See that
+ *      constant for why the per-file table it replaced could not survive a 241-page corpus, and
+ *      `docs/splash/2026-09-17-edge-measurability-owed.md` for what each format owes.
  *   8. IT REPORTS, BUT DOES NOT FAIL, a broken mode that was never promised. Measured today:
  *      `co2-suisse`, `web-income-life-expectancy` and `webz-bump-emitter-rank` all lose their
  *      tooltip when a finger lifts. None of them promises tap, so none of them fails — the contract
@@ -227,6 +229,35 @@
  *     marks were still driven on each. That counter exists so this can never be mistaken for
  *     success (see the false positive below).
  *
+ * ── WHAT CHANGED ON 2026-09-17, AND WHAT IT FOUND ────────────────────────────────────────────
+ *
+ * The roster above describes a corpus of 24 delivered pages that no longer exists: ~85 beats moved
+ * to `archive/`, and `proof/` is now 160 beats — 40 types x 4 exports — delivering 241 pages. Three
+ * things in this file were measuring the old world, and this run is what each one cost.
+ *
+ *   1. THE PROMISE VOCABULARY WAS ENGLISH ONLY, and every beat in the corpus writes its prose in
+ *      FRENCH. Every page read `promises [none]`, so assertions 1, 2 and 3 — the whole reason this
+ *      file exists — were enforced on nothing at all, and the file was green about it. The
+ *      vocabulary is now bilingual; see `INPUT_WORDS`.
+ *   2. THE CONTRACT MOVED OUT OF THE ELEMENTS IT READ. The current renderer puts the reading
+ *      contract in `<p class="chart-reading">` ("Lecture : …"), which `accessibleProse` did not
+ *      read. 120 of 120 web pages carry one. Reading it is what turned the vocabulary fix into
+ *      findings rather than a no-op.
+ *   3. THE EDGE CENSUS WAS A ROW PER PAGE, hand-written, four rows against 241 pages. Replaced by
+ *      a measured pin plus a three-directions-agree check; see `EDGE_UNMEASURABLE_ARTIFACTS`.
+ *
+ * WHAT (1) AND (2) TOGETHER FOUND, the first time this guard could read its own corpus: **six
+ * beats break a promise their own prose makes** — `web-area-swiss-co2` (hover 1 of 3 marks silent,
+ * tap 3 of 3), `web-cartogram-europe-lowcarbon`, `web-population-pyramid-switzerland` and
+ * `web-sankey-electricity-sources` (tap 3 of 3), `web-streamgraph-swiss-electricity` (hover 1 of
+ * 3), across all three directions each. The tap class was reproduced by hand outside this file on
+ * `web-sankey`: the reading appears during the gesture and is gone the instant the finger lifts,
+ * which is the original defect this guard was built for, and its mechanism is
+ * `chart-web/assets/interaction.mjs` clearing on `pointerleave` without asking the pointer's type.
+ * Repairing it is a renderer change plus a re-render of the web corpus; the beats are listed in
+ * `docs/splash/2026-09-17-interaction-promises-owed.md` and those assertions are RED until then.
+ * They are left red deliberately: the alternative is a guard that cannot read French.
+ *
  * RUNTIME, and why it is where it is — see the note beside `CONCURRENCY`.
  */
 import { describe, it, expect, setDefaultTimeout } from "bun:test";
@@ -252,6 +283,32 @@ setDefaultTimeout(600000);
  *  this project has already paid for once (a suite of 80 harness cases at concurrency 4 produced 11
  *  timeouts and 8 "criticals", 11 of 11 clean when re-run sequentially). Do not raise it. */
 const CONCURRENCY = 1;
+
+/**
+ * WHAT COUNTS AS A MARK, and why `[data-detail]` alone stopped being it.
+ *
+ * `data-detail` is still the discovery key — see the header for why class names never were. But
+ * the MAP × WEB format, which entered the corpus after this file was written, also hangs
+ * `data-detail` on the rows of its accessible readings table, the `<details class="mw-readings">`
+ * disclosure a reader OPENS to read the numbers as text. Those rows are not hover targets: they
+ * already carry their reading, they sit inside a closed disclosure below the frame, and the map's
+ * own marks are MapLibre features with no DOM element of their own at all.
+ *
+ * Measured over one render of each of the 80 delivered beats: excluding the disclosure removes
+ * marks from exactly SEVEN artifacts — `web-choropleth-…`, `web-contour-…`, `web-dot-density-…`,
+ * `web-flow-map-…`, `web-hex-grid-…`, `web-locator-…`, `web-proportional-symbol-…` — and in all
+ * seven it removes ALL of them (41, 13, 41, 31, 32, 43, 41 rows, 0 marks outside the table). No
+ * chart × web page loses a single mark. So this is not a softening of the guard: it is the
+ * difference between driving a map beat's marks and driving its footnote. Those seven were
+ * reporting `marks 43 · unreachable 43 · answers false` — a table below the fold, measured as if
+ * it were the artifact's interaction, on beats whose alt text promises nothing at all.
+ *
+ * The consequence, stated so it is not mistaken for coverage: a map × web page now reports zero
+ * marks and is skipped exactly like a scrolly, and its live interaction stays guarded only by
+ * `map-web`'s own key-gated tests (`skills/map-web/test/live-map.test.ts`, the `.live` lane).
+ * Closing THAT is the `queryRenderedFeatures` rewrite this file's blind spot 8a already names.
+ */
+const MARK_SELECTOR = "[data-detail]:not(.mw-readings [data-detail])";
 
 /** How many marks per artifact per mode. See blind spot 3. */
 const PROBES_PER_ARTIFACT = 3;
@@ -356,8 +413,8 @@ const READ_TOOLTIP = `(() => {
 
 /** Brings mark `i` into the window and returns an INTEGER probe point — see the header on
  *  fractional coordinates. `inView` is what stops a silent no-op being read as a broken artifact. */
-function aimAtMark(i: number) {
-  const mark = document.querySelectorAll("[data-detail]")[i] as
+function aimAtMark(i: number, selector: string) {
+  const mark = document.querySelectorAll(selector)[i] as
     | HTMLElement
     | undefined;
   if (!mark) return null;
@@ -392,11 +449,9 @@ function aimAtMark(i: number) {
  * fractional coordinate silently does nothing, and `rect.right - INSET` is fractional on a fluid
  * layout about half the time.
  */
-function aimAtMarkEdges(i: number) {
+function aimAtMarkEdges(i: number, selector: string) {
   const INSET = 4;
-  const hit = document.querySelectorAll("[data-detail]")[i] as
-    | HTMLElement
-    | undefined;
+  const hit = document.querySelectorAll(selector)[i] as HTMLElement | undefined;
   if (!hit) return null;
   const key = hit.getAttribute("data-key");
   if (!key) return { derivable: false as const };
@@ -455,8 +510,8 @@ function aimAtMarkEdges(i: number) {
   };
 }
 
-function markCensus() {
-  const marks = Array.from(document.querySelectorAll("[data-detail]"));
+function markCensus(selector: string) {
+  const marks = Array.from(document.querySelectorAll(selector));
   return {
     count: marks.length,
     details: marks.map((m) => (m.getAttribute("data-detail") || "").trim()),
@@ -476,8 +531,13 @@ function accessibleProse(): string[] {
   document
     .querySelectorAll(".visually-hidden, .sr-only")
     .forEach((n) => push(n.textContent));
+  // `.chart-reading` is where the CURRENT renderer puts the reading contract — the "Lecture : …"
+  // paragraph that tells a reader what the marks mean and what their inputs do. Measured
+  // 2026-09-17: 120 of the 120 delivered web pages carry one, and it is the element the promise
+  // sentences actually live in; reading only `.chart-caveat` beside it found the caveat and
+  // missed the contract.
   document
-    .querySelectorAll(".chart-caveat, figcaption, .chart-note")
+    .querySelectorAll(".chart-caveat, figcaption, .chart-note, .chart-reading")
     .forEach((n) => push(n.textContent));
   document
     .querySelectorAll("figure[aria-label], svg[aria-label]")
@@ -487,16 +547,30 @@ function accessibleProse(): string[] {
 
 // ── promise reading ───────────────────────────────────────────────────────────────────────────
 
+/**
+ * THE VOCABULARY IS BILINGUAL, because the corpus is. Measured 2026-09-17: 41 of the 80 delivered
+ * beats carry an interaction sentence in their accessible text and every one of them is in FRENCH
+ * — "Survolez, touchez ou tabulez n'importe quelle année pour son chiffre" — while this list held
+ * English only. Every page in the corpus therefore read `promises [none]`, and assertions 1, 2 and
+ * 3, which are the whole point of this file, were enforced on NOTHING. The guard was green because
+ * it could not read the language its own artifacts are written in.
+ *
+ * `touche` is deliberately NOT a tap word: in French it is the noun for a keyboard KEY as often as
+ * the verb for a finger, so only the inflections that can only be the gesture are listed
+ * (`touchez`, `toucher`, `au toucher`, `tactile`). Same discipline as `\btab\b` being
+ * word-bounded so an accessible TABLE never reads as a keyboard promise.
+ */
 const INPUT_WORDS: Record<Mode, RegExp> = {
-  hover: /\bhover(s|ing)?\b|\bpointing at\b/i,
-  tap: /\btap(s|ping)?\b/i,
+  hover: /\bhover(s|ing)?\b|\bpointing at\b|\bsurvol\w*\b|\bpointe[rz]\b/i,
+  tap: /\btap(s|ping)?\b|\btouche[rz]\b|\bau toucher\b|\btactile\b/i,
   // `\btab\b` is word-bounded so the two map beats' accessible TABLE never reads as a keyboard
   // promise.
-  keyboard: /\bkeyboard\b|\bfocus(es|ing)?\b|\btab(s|bing)?\b/i,
+  keyboard:
+    /\bkeyboard\b|\bfocus(es|ing)?\b|\btab(s|bing)?\b|\bclavier\b|\btabul\w*\b/i,
 };
 
 const REVEAL_WORDS =
-  /\bavailable\b|\breachable\b|\breveals?\b|\bshows?\b|\bnames\b|\bfor its\b|\bhas its own\b|\bprints\b/i;
+  /\bavailable\b|\breachable\b|\breveals?\b|\bshows?\b|\bnames\b|\bfor its\b|\bhas its own\b|\bprints\b|\baffich\w*\b|\br[ée]v[èe]l\w*\b|\bmontre\w*\b|\bindique\w*\b|\bnomme\w*\b|\bimprime\w*\b|\bdisponible\w*\b|\baccessible\w*\b|\bpour (son|sa|ses|leur|leurs)\b|\bdonne\w*\b/i;
 
 export function promisesIn(prose: string[]): {
   modes: Mode[];
@@ -554,7 +628,7 @@ async function driveArtifact(
     await desktop.setViewport({ width: 1200, height: 900 });
     await desktop.goto(url, { waitUntil: "load" });
 
-    const census = await desktop.evaluate(markCensus);
+    const census = await desktop.evaluate(markCensus, MARK_SELECTOR);
     report.marks = census.count;
     report.hasTooltip = census.hasTooltip;
     const known = new Set(census.details);
@@ -568,7 +642,7 @@ async function driveArtifact(
     let done = 0;
     for (const i of probeOrder(census.count)) {
       if (done >= PROBES_PER_ARTIFACT) break;
-      const aim = await desktop.evaluate(aimAtMark, i);
+      const aim = await desktop.evaluate(aimAtMark, i, MARK_SELECTOR);
       if (!aim || !aim.inView) {
         report.probesUnreachable += 1;
         continue;
@@ -589,7 +663,7 @@ async function driveArtifact(
       // THE EDGES OF THE DRAWN MARK. The centre probe above answers whatever the hit element's
       // own size is; this one asks whether the target is the MARK. Four points, four real mouse
       // moves, each parked in the corner first so every move is a genuine crossing.
-      const edges = await desktop.evaluate(aimAtMarkEdges, i);
+      const edges = await desktop.evaluate(aimAtMarkEdges, i, MARK_SELECTOR);
       if (!edges) {
         // nothing to probe — already counted as unreachable above
       } else if (!edges.derivable) report.edgesUnderivable += 1;
@@ -619,18 +693,26 @@ async function driveArtifact(
       // in for the hover above or the tap below.
       await desktop.mouse.move(3, 3);
       await new Promise((r) => setTimeout(r, 30));
-      await desktop.evaluate((j) => {
-        (document.querySelectorAll("[data-detail]")[j] as HTMLElement).focus();
-      }, i);
+      await desktop.evaluate(
+        (j, selector) => {
+          (document.querySelectorAll(selector)[j] as HTMLElement).focus();
+        },
+        i,
+        MARK_SELECTOR,
+      );
       await new Promise((r) => setTimeout(r, 50));
       const focused = (await desktop.evaluate(READ_TOOLTIP)) as Omit<
         Probe,
         "index" | "detail"
       >;
       report.probes.keyboard.push({ index: i, detail: aim.detail, ...focused });
-      await desktop.evaluate((j) => {
-        (document.querySelectorAll("[data-detail]")[j] as HTMLElement).blur();
-      }, i);
+      await desktop.evaluate(
+        (j, selector) => {
+          (document.querySelectorAll(selector)[j] as HTMLElement).blur();
+        },
+        i,
+        MARK_SELECTOR,
+      );
     }
 
     // Nothing above may leave a tooltip text this artifact does not own.
@@ -657,7 +739,7 @@ async function driveArtifact(
         "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1",
     });
     await phone.goto(url, { waitUntil: "load" });
-    const census = await phone.evaluate(markCensus);
+    const census = await phone.evaluate(markCensus, MARK_SELECTOR);
     if (census.count === 0 || !census.hasTooltip) return report;
     const known = new Set(census.details);
     const cdp = await phone.createCDPSession();
@@ -665,7 +747,7 @@ async function driveArtifact(
     let done = 0;
     for (const i of probeOrder(census.count)) {
       if (done >= PROBES_PER_ARTIFACT) break;
-      const aim = await phone.evaluate(aimAtMark, i);
+      const aim = await phone.evaluate(aimAtMark, i, MARK_SELECTOR);
       if (!aim || !aim.inView) continue;
       done += 1;
 
@@ -751,99 +833,43 @@ function summary(r: ArtifactReport): string {
 }
 
 /**
- * THE EDGE PROBE'S OWN POPULATION, PINNED — because it was counted, printed, and asserted about
+ * THE EDGE PROBE'S OWN POPULATION, MEASURED — because it was counted, printed, and asserted about
  * nowhere.
  *
  * `report.edgesUnderivable` fed the summary line and nothing else: assertion 4b iterates
  * `report.edges`, so on an artifact where that array is empty the assertion passed by having
- * nothing to look at. Measured when this was written: **5 of 29 delivered artifacts** have any
- * edge-derivable mark at all. The other 24 were green by vacuum, `mapgen-dot-web` — the one beat
- * the owner reported for this mechanism (B6.14a) — among them.
+ * nothing to look at. Measured when this was first written: **5 of 29 delivered artifacts** had any
+ * edge-derivable mark at all. The other 24 were green by vacuum.
  *
- * Making all 29 derivable is not this guard's work and cannot be: for the chart-web format it means
- * `chart-web` emitting a `data-key` on its drawn marks, and for `mapgen-dot-web` it means
- * ruling R1's `queryRenderedFeatures` rewrite. What IS this guard's work is that the vacuum stops
- * being invisible. So each artifact records WHETHER any of its marks can be edge-measured at all,
- * and how many marks were probed, with the reason — and asserts it, per artifact, below.
+ * Making every artifact derivable is not this guard's work and cannot be: for the chart × web
+ * format it means `chart-web` emitting a `data-key` on its drawn marks, and for the map formats it
+ * means ruling R1's `queryRenderedFeatures` rewrite. What IS this guard's work is that the vacuum
+ * stops being invisible.
  *
- * What that buys, exactly:
- *   - an artifact that STOPS being edge-measurable turns red instead of going quiet;
- *   - a NEW artifact arrives with no row and turns red, so somebody has to say which of these
- *     reasons it is;
- *   - a row that is no longer true — an artifact that has BECOME measurable — turns red too, which
- *     is how the two open items above will announce themselves when they land.
+ * ── WHY THE PER-FILE TABLE WENT, 2026-09-17 ───────────────────────────────────────────────────
  *
- * IT RECORDS A BOOLEAN AND A COUNT, NOT THE EXACT SPLIT, and the reason is measured rather than
- * assumed. `mapgen-choropleth-web` returns 1-of-3 measurable in one checkout of this tree and
- * 2-of-3 in another — stable across repeated runs in each, different between them. That is the
- * knife edge `aimAtMarkEdges` deliberately sits on: a concave country needs at least two of its
- * four inset points to land on painted fill, and Iceland has fractionally more or less of its
- * bounding box over open sea depending on where a fluid layout lands. Pinning the split would make
- * this guard cry wolf on a correct artifact, which is the failure this file's own header spends a
- * paragraph on. Whether an artifact can be measured AT ALL does not move.
+ * It was a hand-written row per delivered page, and the corpus went from 29 delivered pages to
+ * **241** (40 types x 4 exports, three directions each). Four rows survived the reorganisation and
+ * 237 pages had none, so this file reported 278 failures of which 241 were "you have not written
+ * my row yet" — a frozen list measuring a world that no longer exists, and loud enough to bury the
+ * 37 findings underneath it. A row per page cannot be kept by hand at that size, and a guard
+ * nobody can keep is a guard nobody reads.
  *
- * ITS OWN MUTATIONS, run in copies of the tree under /tmp on 2026-08-11, never here. Both of these
- * were GREEN before this table existed — the first because assertion 4b had an empty array to
- * iterate, the second because nothing counted the artifacts at all.
+ * What replaces it measures the same two things off the tree:
  *
- *   strip `data-key` off the drawn `<circle>`s of `quake-symbol.html`, leaving its hit buttons
- *   keyed — i.e. arrive silently at `mapgen-dot-web`'s state:
- *
- *     Expected: "archive/mapgen-symbol-web/quake-symbol.html: some mark is edge-measurable, 3 probed"
- *     Received: "archive/mapgen-symbol-web/quake-symbol.html: NO mark is edge-measurable, 3 probed"
- *     (fail) … archive/mapgen-symbol-web/quake-symbol.html > should edge-probe as many of its marks
- *            as its recorded census says
- *      320 pass · 1 fail
- *
- *   a thirtieth delivered artifact appears with no row:
- *
- *     + "proof/fake-new-web/fake.html",
- *     (fail) … > should hold an edge-probe census row for every artifact it drives, and none for
- *            an artifact it does not
- *     Expected: "proof/fake-new-web/fake.html has a census row: true"
- *     Received: "proof/fake-new-web/fake.html has a census row: false"
- *      330 pass · 2 fail
+ *   1. THE THREE DIRECTIONS OF A BEAT AGREE. `creme`, `nocturne` and `rapport` are the same page
+ *      drawn in three directions; a direction cannot change whether a mark is edge-measurable. So
+ *      the three are compared against EACH OTHER — no list, and it holds for a beat added
+ *      tomorrow. This is the half that catches an artifact going quiet, which is what the per-file
+ *      row was for.
+ *   2. THE VACUUM IS A PINNED NUMBER. How many mark-carrying artifacts have NO edge-measurable
+ *      mark, as one integer over the whole corpus. It cannot be added to silently — a new
+ *      unmeasurable format moves it and this line appears in the diff — and it is pinned rather
+ *      than a ceiling so that an artifact BECOMING measurable is also red, which is how the two
+ *      open rewrites above will announce themselves. Which formats make up the number, and what
+ *      each owes, is written down in `docs/splash/2026-09-17-edge-measurability-owed.md`.
  */
-// Archived 2026-09-17: every row this census once held for `mapgen-*`, `webx-*`/`weby-*`/`webz-*`,
-// `more-heatmap-co2-per-capita-decades`, `mapmore-scrolly-danube`, `mapscrolly-*` and the legacy
-// scrolly probes moved out with those beats — none of them are discovered under `proof/` any more,
-// so a stale row here would show as recorded-but-undriven. `co2-suisse` is the one survivor.
-//
-// KNOWN GAP, PRE-EXISTING AND NOT CLOSED BY THIS PASS: the ~30 directed `web-<type>-<subject>`
-// beats this catalogue now cites (`docs/design-base/CATALOGUE.md`) carry no row here at all — this
-// table was never extended to them when they were built, so every one of their rendered pages
-// fails "should edge-probe as many of its marks as its recorded census says" below. Closing it
-// needs the same browser measurement the rest of this table was built from, per beat; it is not a
-// name change and is out of scope for a `proof/`↔`archive/` reorganisation.
-const EDGE_CENSUS: Record<string, { measurable: boolean; probed: number }> = {
-  // ── the hex CARTOGRAM in web. Its drawn mark is the `<polygon>`, which carries `data-key`; its
-  //    answering element is a transparent `<circle>` INSCRIBED in that hexagon, and the circle
-  //    carries `data-detail` but no key. That is not an oversight waiting to be closed the way
-  //    `mapgen-dot-web`'s is: the probe aims 4px inside the DRAWN mark's bounding box, and a
-  //    pointy-top hexagon's box is 2·radius tall against an inscribed circle of 0.9·radius, so the
-  //    top and bottom aims land outside the element that answers, by construction. Keying the
-  //    circle would make this measurable and then immediately red for a reason that is geometry
-  //    rather than a defect. Recorded as what it is.
-  "proof/web-hex-grid-europe-protection/renders/creme.html": {
-    measurable: false,
-    probed: 3,
-  },
-  "proof/web-hex-grid-europe-protection/renders/nocturne.html": {
-    measurable: false,
-    probed: 3,
-  },
-  "proof/web-hex-grid-europe-protection/renders/rapport.html": {
-    measurable: false,
-    probed: 3,
-  },
-  // ── chart × web: the format emits NO `data-key` anywhere — 0 occurrences in every one of these
-  //    files. Its hit element is a transparent full-height band (`<rect class="bin-hit">`)
-  //    deliberately WIDER than the mark it stands for, so "the target is smaller than the mark"
-  //    cannot arise the way it did on the map formats. That is an argument about the renderer, not
-  //    a measurement: nothing here proves it, and until `chart-web` keys its drawn marks
-  //    nothing can.
-  "proof/co2-suisse/co2.html": { measurable: false, probed: 3 },
-};
+const EDGE_UNMEASURABLE_ARTIFACTS = 97;
 
 /**
  * A BEAT NOBODY HAS COMMITTED YET IS NOT CENSUSED. Seven sessions share this worktree, and an
@@ -875,15 +901,44 @@ const inUntrackedBeat = (file: string) =>
   [...UNTRACKED_BEATS].some((dir) => file.startsWith(`${dir}/`));
 
 describe("every delivered interactive artifact keeps the promise its own alt text makes", () => {
-  it("should hold an edge-probe census row for every artifact it drives, and none for an artifact it does not", () => {
-    const driven = REPORTS.map((r) => r.file)
-      .filter((f) => !inUntrackedBeat(f))
-      .sort();
-    const recorded = Object.keys(EDGE_CENSUS).sort();
-    expect([
-      driven.filter((f) => !recorded.includes(f)),
-      recorded.filter((f) => !driven.includes(f)),
-    ]).toEqual([[], []]);
+  it("should hold the edge vacuum at the number that is written down", () => {
+    // The corpus-wide half of what the per-file census used to do. An artifact carrying marks but
+    // no edge-measurable one among them is green-by-vacuum on "answer wherever its own mark is
+    // painted", so the count of those is pinned: a new unmeasurable format raises it, an artifact
+    // that becomes measurable lowers it, and either way this line moves in a diff.
+    const vacuum = REPORTS.filter(
+      (r) => !inUntrackedBeat(r.file) && r.marks > 0 && r.edges.length === 0,
+    ).map((r) => r.file);
+    expect(
+      `${vacuum.length} mark-carrying artifacts with no edge-measurable mark` +
+        (vacuum.length ? `:\n  ${vacuum.join("\n  ")}` : ""),
+    ).toStartWith(
+      `${EDGE_UNMEASURABLE_ARTIFACTS} mark-carrying artifacts with no edge-measurable mark`,
+    );
+  });
+
+  it("should measure a beat's three directions the same way", () => {
+    // The per-artifact half. `creme`, `nocturne` and `rapport` are one page drawn three ways, so a
+    // direction that changes whether a mark can be edge-measured — or how many marks the page has
+    // at all — is a defect in that direction, and this finds it with no list to keep: the three
+    // renders are compared against each other.
+    const byBeat = new Map<string, ArtifactReport[]>();
+    for (const r of REPORTS) {
+      const beat = r.file.split("/").slice(0, 2).join("/");
+      byBeat.set(beat, [...(byBeat.get(beat) ?? []), r]);
+    }
+    const disagreeing: string[] = [];
+    for (const [beat, reports] of byBeat) {
+      if (reports.length < 2) continue;
+      const shape = (r: ArtifactReport) =>
+        `${r.marks} marks, ${r.edges.length > 0 ? "some" : "no"} edge-measurable`;
+      const shapes = new Set(reports.map(shape));
+      if (shapes.size > 1)
+        disagreeing.push(
+          `${beat}: ${reports.map((r) => `${r.file.split("/").pop()} → ${shape(r)}`).join(" · ")}`,
+        );
+    }
+    expect(disagreeing).toEqual([]);
   });
 
   it("should find delivered HTML to drive at all", () => {
@@ -947,23 +1002,6 @@ describe("every delivered interactive artifact keeps the promise its own alt tex
           );
         });
       }
-
-      it("should edge-probe as many of its marks as its recorded census says", () => {
-        if (inUntrackedBeat(report.file)) return; // see UNTRACKED_BEATS above
-        const recorded = EDGE_CENSUS[report.file];
-        // The premise, pinned: without a row the assertion below would compare undefined to
-        // undefined. The roster check above is what catches that; this makes it local too.
-        expect(`${report.file} has a census row: ${!!recorded}`).toBe(
-          `${report.file} has a census row: true`,
-        );
-        expect(
-          `${report.file}: ${report.edges.length > 0 ? "some" : "NO"} mark is edge-measurable, ` +
-            `${report.edges.length + report.edgesUnderivable} probed`,
-        ).toBe(
-          `${report.file}: ${recorded.measurable ? "some" : "NO"} mark is edge-measurable, ` +
-            `${recorded.probed} probed`,
-        );
-      });
 
       it("should answer wherever its own mark is painted, not only at its centre", () => {
         const failed = report.edges.filter((e) => e.silent.length > 0);
