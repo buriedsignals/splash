@@ -230,6 +230,8 @@ function parse(svg: string) {
   const rules: Rule[] = [];
   const strokes: Rule[] = [];
   const texts: Text[] = [];
+  /** `x|y|content` of every halo twin seen so far — see the note where they are recorded. */
+  const haloTwins = new Set<string>();
   let raster = false;
   let order = 0;
   const scan =
@@ -281,6 +283,19 @@ function parse(svg: string) {
     const a = attributes(`<text ${m[3]}>`);
     const fill = normaliseColour(a.fill);
     const content = decodeEntities(m[4]);
+    // THE HALO TWIN — the other spelling of the same mechanism. `paint-order="stroke"` puts the
+    // halo and the glyphs on ONE element; four beats here instead draw the halo as its OWN
+    // `<text>`, identical in place and content, `fill="none"` with a wide stroke, immediately
+    // before the filled one. It is the same ground-coloured ring under the same glyphs and it
+    // occludes the same rule; recognising only the first spelling reported
+    // `static-diverging-stacked-electricity`, `static-connected-scatter-lowcarbon`,
+    // `static-dot-strip-lowcarbon-spread` and `more-boxplot-france-co2-decades` as struck through
+    // by rules their haloes already hold off. A twin is recorded, not scanned — it paints no ink
+    // of its own to read anything against.
+    if (!fill && a.fill === "none" && normaliseColour(a.stroke) && content.trim()) {
+      haloTwins.add(`${a.x}|${a.y}|${content}`);
+      continue;
+    }
     if (!fill || !content.trim()) continue;
     texts.push({
       order,
@@ -292,8 +307,9 @@ function parse(svg: string) {
       // actually sits on would pass here and still look ragged, which is a defect that has shipped
       // in this very beat and was caught by a person looking, not by a scan.
       haloed:
-        (a["paint-order"] || "").trim().startsWith("stroke") &&
-        !!normaliseColour(a.stroke),
+        ((a["paint-order"] || "").trim().startsWith("stroke") &&
+          !!normaliseColour(a.stroke)) ||
+        haloTwins.has(`${a.x}|${a.y}|${content}`),
       content,
       fill,
       x: +a.x,

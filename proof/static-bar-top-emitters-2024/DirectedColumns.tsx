@@ -205,7 +205,12 @@ export function DirectedColumns({
    *  the frame edge it crosses four columns that are in no sum the headline makes, and a rule over
    *  a column says the column is being compared. */
   const ruleY = magnitude(subjectColumn.value);
-  const ruleFrom = subjectColumn.x;
+  /** It LEAVES the subject's column rather than lying along its top. Drawn from `subjectColumn.x`
+   *  the accent rule spent its first 13% inside the accent-filled column it levels from, measuring
+   *  1.00:1 against it — an annotation invisible over precisely the mark it is drawn for, in all
+   *  three directions, because the fault is the geometry and not the palette. The rule still starts
+   *  at the subject and ends where the set ends; it just starts at the column's edge. */
+  const ruleFrom = subjectColumn.x + subjectColumn.w;
   const ruleTo = bracketed
     ? Math.max(...setColumns.map((c) => c.x + c.w))
     : width - PAD;
