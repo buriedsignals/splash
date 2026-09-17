@@ -65,14 +65,50 @@ describe("formatGap", () => {
 });
 
 describe("formatsFor", () => {
-  it("should list every format reachable for a medium, and nothing from another medium", () => {
-    // No `scrolly` for chart — issue #39. It was advertised with the promise "an opaque prose card
-    // advances a fixed chart through explicit steps", which is the one thing the scrolly skill says
-    // it does not do. Absent rather than unreachable, so `formatGap` names it at the gate.
-    expect(formatsFor("chart").sort()).toEqual(["static", "video", "web"]);
-    // image/web and image/video are deliberately absent — no producer exists, and the journalist
-    // is told so AT THE FORMAT GATE rather than at the last phase.
-    expect(formatsFor("image").sort()).toEqual(["scrolly", "static"]);
+  // THE POPULATION IS THE CATALOGUE'S, NOT A LIST WRITTEN HERE. This used to assert
+  // `chart` reaches exactly static/video/web, because issue #39 had withdrawn `chart/scrolly`: it
+  // was advertised with the promise "an opaque prose card advances a fixed chart through explicit
+  // steps", the one thing the scrolly skill says it does not do. The owner restored it on
+  // 2026-09-16 with a promise the skill keeps, 40 scrolly beats shipped, and this test went on
+  // measuring the withdrawn world. A frozen list cannot tell a regression from a decision; the
+  // rows can, so the expectation is grouped out of `FORMAT_CATALOG` by a reading independent of
+  // the `startsWith`/`slice` one `formatsFor` uses, and the deliberate absences are asserted as
+  // absences rather than as the shape of what remains.
+  const byMedium = new Map<string, string[]>();
+  for (const pair of Object.keys(FORMAT_CATALOG)) {
+    const [medium, format] = pair.split("/");
+    byMedium.set(medium, [...(byMedium.get(medium) ?? []), format]);
+  }
+
+  it("should list every format the catalogue reaches for a medium", () => {
+    expect(byMedium.size).toBeGreaterThan(1);
+    for (const [medium, formats] of byMedium)
+      expect([medium, formatsFor(medium).sort()]).toEqual([
+        medium,
+        [...formats].sort(),
+      ]);
+  });
+
+  it("should never report a format reachable only for another medium", () => {
+    const everyFormat = new Set([...byMedium.values()].flat());
+    for (const [medium, formats] of byMedium) {
+      const foreign = [...everyFormat].filter((f) => !formats.includes(f));
+      expect([
+        medium,
+        formatsFor(medium).filter((f) => foreign.includes(f)),
+      ]).toEqual([medium, []]);
+    }
+  });
+
+  // image/web and image/video have no producer, and an ABSENT row is the point: the journalist is
+  // told so AT THE FORMAT GATE rather than at the last phase. Held as the absence itself, so
+  // adding a fourth image format does not fail this while adding an image producer still does.
+  it("should not reach a format for image that no producer draws", () => {
+    expect(formatsFor("image")).not.toContain("web");
+    expect(formatsFor("image")).not.toContain("video");
+  });
+
+  it("should reach nothing at all for a medium the catalogue does not carry", () => {
     expect(formatsFor("hologram")).toEqual([]);
   });
 });
@@ -85,12 +121,22 @@ describe("the catalogue's sizeRule and the gate's sizeGap are one rule", () => {
   it("should require a size exactly where the gate refuses a missing one, for every pair", async () => {
     const { sizeGap } = await import("../scripts/storyboard.mjs");
     const { proposeSizes } = await import("../scripts/propose.mjs");
-    for (const [pair, row] of Object.entries(FORMAT_CATALOG as Record<string, any>)) {
+    for (const [pair, row] of Object.entries(
+      FORMAT_CATALOG as Record<string, any>,
+    )) {
       const [medium, format] = pair.split("/");
       const gateWantsOne = sizeGap(medium, format, undefined, 1) !== null;
-      expect([pair, "takes a size", row.sizeRule.kind === "required"]).toEqual([pair, "takes a size", gateWantsOne]);
+      expect([pair, "takes a size", row.sizeRule.kind === "required"]).toEqual([
+        pair,
+        "takes a size",
+        gateWantsOne,
+      ]);
       for (const size of proposeSizes(medium, format)) {
-        expect([pair, size, sizeGap(medium, format, size, 1)]).toEqual([pair, size, null]);
+        expect([pair, size, sizeGap(medium, format, size, 1)]).toEqual([
+          pair,
+          size,
+          null,
+        ]);
       }
     }
   });
