@@ -59,18 +59,20 @@ const PROOF = join(TWIN, "proof");
  * alone and nothing anywhere tested it — and `image-beat`'s committed `assets/preview.png` was five
  * weeks stale when this was measured, which is exactly what this file would have caught.
  *
- * The population is now the tree's own answer to the question the file asks: a skill SHIPS A SEED
- * when it carries both `scripts/render-preview.mjs` and `assets/preview.png`. A new craft skill
- * joins by existing.
+ * The population is now the tree's own answer to the question the file asks, keyed the same way
+ * `canon-shape.test.ts` keys its own discovery: a skill that carries `scripts/render-preview.mjs`
+ * renders its own seed and is therefore making this claim. Keyed on the SCRIPT rather than on the
+ * preview, for the reason that file already gives — a skill that loses its `preview.png` must stay
+ * in the population and fail here, not drop out of it silently. `dw-beat` ships no seed (it
+ * delegates every render to Datawrapper) and is correctly outside. A new craft skill joins by
+ * existing.
  */
 function shipsASeed(): string[] {
   return readdirSync(SKILLS, { withFileTypes: true })
     .filter((e) => e.isDirectory())
     .map((e) => e.name)
-    .filter(
-      (skill) =>
-        existsSync(join(SKILLS, skill, "scripts", "render-preview.mjs")) &&
-        existsSync(join(SKILLS, skill, "assets", "preview.png")),
+    .filter((skill) =>
+      existsSync(join(SKILLS, skill, "scripts", "render-preview.mjs")),
     )
     .sort();
 }
