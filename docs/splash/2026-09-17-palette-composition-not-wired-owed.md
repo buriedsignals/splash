@@ -1,66 +1,51 @@
-# Palette composition not wired owed — the accent recorded in PALETTE.md never reaches most renders
+# Palette composition owed — four video final frames, not 155 beats
 
-Measured 2026-09-17 over `proof/` (161 beats), by the same walk
-`skills/splash/test/the-palette-reaches-the-pixels.test.ts` runs: for every beat, ask
-`composeDirection` (`shared/design-base/compose.mjs`) what accent that beat's own `PALETTE.md`
-composes to on the filed direction it actually shipped a render for, then read the pixels of the
-COMMITTED render — a PNG or video final frame already in the repo, or a screenshot of the committed
-HTML for a scrolly/web beat — and ask whether that exact colour is in the picture.
+Superseded same day. The first version of this note, and the test that produced it
+(`skills/splash/test/the-palette-reaches-the-pixels.test.ts`), asserted a PRODUCTION promise — the
+accent `composeDirection` composes from `PALETTE.md` — over the whole `proof/` CATALOGUE, including
+its FILED-direction bench renders. `composeDirection`'s own doc says a filed-direction bench is not
+that promise: "`proof/` renders three only as a bench, to show that a rule is not lucky on one
+palette" — a bench of a filed direction, not a composed one. Confirmed against
+`skills/chart-beat/scripts/static-plumbing.mjs` ("`--filed` for every filed demo direction — a
+catalogue or demo proof, never a production render") and against
+`proof/static-histogram-europe-solar-spread/render-directions.mjs`, which renders BOTH modes off one
+flag and defaults to composed. The test was rewritten to hold two separate promises against two
+discovered, disjoint populations. That test now measures the real debt:
 
-**6 of 161 beats draw the accent their own record composes to. 155 do not.**
+**Of 161 beats: 5 are composed (all 5 carry the composed accent). 156 are filed — 152 carry their
+own filed direction's own accent; 4 do not.**
 
-| genre | beats | draw the composed accent | owed |
-| --- | --- | --- | --- |
-| static | 38 | 3 | 35 |
-| scrolly | 40 | 1 | 39 |
-| video | 40 | 0 | 40 |
-| web | 40 | 2 | 38 |
-| more / co2-suisse | 3 | 0 | 3 |
-| **total** | **161** | **6** | **155** |
+## What is owed
 
-## What passes, and why
+All four are video beats whose chart type draws its accent only through a mixed ramp
+(`mix(accent, ink, …)` / `mix(accent, ground, …)` — see `CalendarFrame.tsx`'s `blend(...,
+colours.ramp[d.bin], ...)`), never as a solid fill of the pure accent:
 
-`static-flow-map-ukraine-protection`, `static-locator-zaporizhzhia`, `web-flow-map-ukraine-protection`,
-`web-hex-grid-europe-protection`, `static-histogram-europe-solar-spread`, `scrolly-heatmap-coal-share-europe`.
+- `video-calendar-heatmap-geneva`
+- `video-hex-grid-europe-protection`
+- `video-marimekko-electricity-mix`
+- `video-proportional-symbol-europe-capacity`
 
-Every one of these six is a runner whose `render-directions*.mjs` calls `composeDirection` (singular)
-and threads its `.accent` into the component. That call is the only place in this codebase that turns
-a beat's recorded hue into the accent hex a renderer should paint with — `composeAccent`'s own
-comment: "the record owns the hue, the direction owns the value."
+The SAME chart types in the static genre (`static-calendar-heatmap-geneva`,
+`static-hex-grid-europe-protection`, `static-marimekko-electricity-mix`,
+`static-proportional-symbol-europe-capacity`) all carry the pure filed accent somewhere in their
+committed PNG (a legend swatch or a tracked-element stroke, distinct from the ramp fill) — so the
+ramp itself is not the defect. What differs is specific to the video genre's own
+`renders/creme-final-frame.png`: measured directly, its top chromatic pixels are desaturated/darker
+than the filed accent by tens of RGB units per channel (e.g. `video-marimekko-electricity-mix`'s
+`creme-final-frame.png` tops out at `#4F637F`/`#092145` against a filed accent of `#1757B6` — not an
+anti-aliasing gap), which reads as the frame Remotion actually exports not being the fully-settled
+one the static genre's own render reaches. Not diagnosed further here — that is Remotion
+timeline/opacity work (`states.mjs`, `scene.mjs`) in these four beats' own video pipeline, not a
+palette-composition question, and not fixed blind in this pass.
 
-## What is owed, and why it is not fixed here
+It leaves the ratchet by being diagnosed and fixed in the four beats' own video timing, not by the
+number moving on its own:
 
-The other 155 runners call `composeDirections` (PLURAL) only to print an offer report to the
-console, then draw with:
-
-```js
-const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, file)), textPerRegister);
-```
-
-— the raw filed direction, straight off disk, carrying whatever accent that direction's own record
-holds (a generic corpus blue, roughly 206-216° of hue on `creme`/`nocturne`), never composed against
-the beat's own `PALETTE.md`. `compose.mjs`'s own docstring names this defect and says it is closed
-("both now come out of this file, from the same call"); the wiring inside `proof/`'s 155 other
-runners never took up the fix. A beat recording a teal `#0B7A75` and a beat recording a green
-`#1B7F4B` both ship a render in the same corpus blue.
-
-This is a rewiring project across the catalogue's own runners — swapping
-`resolveDirectionFamilies(readDirection(...))` for a `composeDirection({ direction, palette, ... })`
-call in each of 155 `render-directions*.mjs` files, then re-rendering every one of them (video beats
-through Remotion) — not a beat-level colour mistake fixable in the scope of one small job. It is
-recorded here rather than fixed.
-
-It leaves the ratchet by being rewired and re-rendered, not by the number moving:
-
-1. pick one genre (static is smallest at 35 owed) and change its `render-directions.mjs` template
-   (`skills/chart-beat/assets/static-beat-scaffold/render-directions.mjs.tmpl`, mirrored across the
-   craft skills) to call `composeDirection` per filed direction instead of
-   `resolveDirectionFamilies(readDirection(...))` directly;
-2. apply the same change to each of that genre's already-shipped runners under `proof/`;
-3. re-render every changed beat and commit the new PNGs/HTML/MP4s;
-4. re-run `the-palette-reaches-the-pixels.test.ts` for that genre's beats and confirm they move from
-   red to green;
-5. repeat per genre until the table above reads 0 owed.
-
-No test's assertion should be weakened to absorb this count in the meantime — the 155 failing named
-tests are that debt, made visible.
+1. for one of the four, compare `renders/creme-final-frame.png` against a frame extracted a beat
+   later in the same `.mp4` and confirm the accent settles by then;
+2. if it does, the final frame is being captured before the last interpolation resolves — move the
+   export point in that beat's `states.mjs`/`scene.mjs`;
+3. re-render, re-check with
+   `bun test skills/splash/test/the-palette-reaches-the-pixels.test.ts -t "<beat> (filed)"`;
+4. repeat for the other three.
