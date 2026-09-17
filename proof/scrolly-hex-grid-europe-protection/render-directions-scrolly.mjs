@@ -145,6 +145,8 @@ const words = {
   pairNote: `${one(rate(top))} contre ${one(rate(largest))} pour 1${NB}000`,
   originNote: `L’Ukraine est sur la grille et hors du compte : c’est d’elle que viennent les personnes que les autres cases comptent.`,
 };
+// grounded-by-hand: alt:1000 — the denominator of the rate the stage draws, declared by the beat
+// and printed in its own unit line; it is not a reading from either frozen file.
 const alt =
   `Grille d’hexagones, un par pays européen. Par nombre, ${NAMES[largest][1]} accueille le plus d’Ukrainiens sous protection temporaire ; ` +
   `pour 1 000 habitants, ${NAMES[top][1]} est en tête avec ${one(rate(top))}, ${NAMES[largest][1]} est ${largestRank}e avec ${one(rate(largest))}.`;

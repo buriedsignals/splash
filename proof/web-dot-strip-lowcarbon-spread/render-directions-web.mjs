@@ -324,6 +324,8 @@ const readingLine =
   `les sources retirées lui valent.`;
 const source = `Source : Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · ${FROM} et ${TO}`;
 const xTicks = [0, 25, 50, 75, 100];
+// grounded-by-hand: alt:100 — the axis domain, declared by the component and printed on the
+// page as its own scale note; it is not a reading from the data.
 const alt =
   `Deux rails horizontaux gradués de 0 à 100 %. Sur celui de ${FROM}, ${codes.length} pastilles ` +
   `s'étalent de ${fr(before.floor.value)} % à ${fr(before.ceiling.value)} % ; sur celui de ${TO}, ` +

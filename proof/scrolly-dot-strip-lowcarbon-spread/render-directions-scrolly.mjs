@@ -123,6 +123,8 @@ const words = {
   spreadAfter: `${TO}${NB}: ${one(spreadAfter)} points`,
   medianLabel: `médiane {v}${NB}%`,
 };
+// grounded-by-hand: alt:100 — the axis domain, declared by the component and printed on the
+// stage as its own scale note; it is not a reading from the data.
 const alt =
   `Seize épingles, une par pays, sur un axe de 0 à 100 % : la part de bas-carbone dans l’électricité de chaque pays, en ${FROM} puis en ${TO}. ` +
   `Le plancher passe de ${one(f.floorBefore)} à ${one(f.floorAfter)} % (${F[1]}), le plafond de ${one(f.ceilBefore)} à ${one(f.ceilAfter)} % (${C[1]}) ; ` +

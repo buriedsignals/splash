@@ -61,12 +61,15 @@
  * so the ratio, not the count, is what this file's own `describe` block asserts.
  *
  * WHAT IS SCANNED, AND WHAT IS NOT.
- *   - Files: `proof/<beat>/render.mjs`, `render-web.mjs`, `render-map.mjs`. Nothing else. In
- *     particular `proof/<beat>/render-still.mjs` is EXCLUDED and is not a beat script at all —
- *     all 11 copies in this corpus are byte-identical vendored copies of a skill's shared
- *     rasteriser (`skills/map-web/scripts/render-still.mjs` and one variant), checked by
- *     hash before this exclusion was written. Scanning them would read the renderer's own prose,
- *     not any beat's claim.
+ *   - Files: every `proof/<beat>/render*.mjs`, recognised by shape rather than by a list of names
+ *     kept here — see `isBeatScript`. The list this replaced named three scripts and was already
+ *     wrong: `render-directions.mjs` had grown three siblings (`-web`, `-video`, `-scrolly`), 120
+ *     of the corpus's 160 beats render through one of them, and not one of their claim strings
+ *     was ever read. `proof/<beat>/render-still.mjs` stays EXCLUDED and is not a beat script at
+ *     all — every copy in this corpus is a byte-identical vendored copy of a skill's shared
+ *     rasteriser (`skills/map-web/scripts/render-still.mjs` and one variant), checked by hash
+ *     before this exclusion was written. Scanning them would read the renderer's own prose, not
+ *     any beat's claim.
  *   - Props: `title`, `subtitle`, `alt`, `caveat`, `limits`, `caption` — the strings a reader or a
  *     screen reader actually receives.
  *   - Props are read both as `prop:` in an object and as a `const`/`let` whose own NAME is a
@@ -131,13 +134,19 @@
  *      Richter scale's "roughly 32× the energy release" is a constant of the scale, not a reading
  *      from `quakes-symbol.csv`, and no amount of deriving will ever produce it.
  *
- *      **Four waivers exist as of 2026-08-09**, each re-verified as a non-datum before being
- *      granted: that Richter constant in `map-quake-symbol`, and three `100`s describing a
- *      100%-stacked chart's own normalisation (`static-electricity-mix-source` ×2,
- *      `webx-electricity-mix`). This paragraph previously said no beat carried one — written while
- *      that was true and left standing after it stopped being. That is precisely the class this
- *      file exists to mechanize, arriving in the file's own prose; the count is stated here so the
- *      next reader can check it, and it is asserted below so it cannot rot again unnoticed.
+ *      **Seven waivers stand in the current corpus as of 2026-09-17**, each re-verified as a
+ *      non-datum before being granted: three `0 à 100 %` axis domains on the dot-strip beat's
+ *      static, web and scrolly exports, and four `pour 1 000 habitants` rate denominators across
+ *      the hex-grid beat's three exports. The four the earlier count named — the Richter constant
+ *      in `map-quake-symbol` and three `100`s describing a 100%-stacked chart's own normalisation
+ *      — all sit under `archive/` now and are no longer scanned. Five of the seven were granted
+ *      the day the scanned population stopped being a list of three script names: the same
+ *      non-datum a static export already waived was flagged again in its web and scrolly
+ *      siblings, which is what an export merging in looks like from here. This paragraph once said
+ *      no beat carried a waiver at all — written while that was true and left standing after it
+ *      stopped being, which is precisely the class this file exists to mechanize arriving in the
+ *      file's own prose. The count is stated so the next reader can check it:
+ *      `grep -rc grounded-by-hand proof/`.
  *
  *      A waiver is keyed by **value AND the prop it appears in**, not by value alone. Keyed by
  *      value, waiving `100` in a beat's `limits` string would silence every future `100` anywhere
@@ -183,19 +192,25 @@
  *
  *   B1. EVERY RENDERED ARTIFACT SITS BESIDE THE SCRIPT THAT MADE IT. For every `.png`, `.html` and
  *   `.mp4` anywhere under `proof/`, walk up to `proof/` looking for a directory that holds a beat
- *   script. Measured today: **120 artifacts, 21 with no script in any ancestor** — 18 in
- *   `proof/comparison/`, 3 in `proof/trial/`. Those 21 are exactly the class-2 population: images
- *   nothing committed can regenerate, eight of them carrying an invented series under a real
+ *   script. Measured when this was written: **120 artifacts, 21 with no script in any ancestor** —
+ *   18 in `proof/comparison/`, 3 in `proof/trial/`. Those 21 are exactly the class-2 population:
+ *   images nothing committed can regenerate, eight of them carrying an invented series under a real
  *   institution's name. The exemption is deliberate and narrow: a `SUPERSEDED.md` in the artifact's
  *   own directory that NAMES the file, either literally or by a `prefix*` glob. That file already
  *   exists in both directories — another agent wrote it while this guard was being built — so B1 is
- *   GREEN today and turns red the moment an undocumented artifact is dropped into an evidence
- *   folder. A green B1 is not a claim that those 21 images are sound; it is a claim that their
- *   standing is written down where a reader will find it.
+ *   GREEN and turns red the moment an undocumented artifact is dropped into an evidence folder. A
+ *   green B1 is not a claim that those 21 images are sound; it is a claim that their standing is
+ *   written down where a reader will find it. Measured again 2026-09-17, on a corpus of 649
+ *   artifacts across 160 beats: **500 of them had no script in any ancestor**, not because anything
+ *   moved but because the SCRIPT LIST here had stopped naming the scripts the corpus renders
+ *   through. A recogniser that reads the tree cannot fail that way, and that is now what B1 uses.
  *
  *   B2. A BEAT SCRIPT READS ONLY FILES COMMITTED WITH IT. Every quoted filename appearing inside a
- *   `readFile`/`readFileSync` call must resolve to a file that exists somewhere under the beat's own
- *   directory. Measured today: **11 of 65 beat scripts fail**, every one of them a map beat reading
+ *   `readFile`/`readFileSync` call must resolve to a file this repository holds — beside the beat
+ *   when the call stays inside it, tracked by git when it reaches out through `..`, and a declared
+ *   dependency in `package.json` when it goes through `.resolve()`. See `readFilenames` for why the
+ *   three reaches are judged separately. Measured when this was written: **11 of 65 beat scripts
+ *   fail**, every one of them a map beat reading
  *   `plate.png` and `geometry.json` — a baked basemap that defaults to `/tmp/map-twin/…` and that
  *   `find proof -name plate.png` shows is committed **zero** times. Those eleven delivered map
  *   artifacts cannot be regenerated from this repository; reproducing one needs a MapTiler key, a
@@ -255,21 +270,25 @@ const ARCHIVE_ROOT = join(import.meta.dirname, "..", "..", "..", "archive");
 const NOT_A_BEAT = new Set(["comparison", "seance", "trial"]);
 
 /**
- * The beat scripts. `render-still.mjs` is excluded on purpose — all 11 copies under proof/ are
- * vendored copies of a skill's shared rasteriser, verified by hash.
+ * A BEAT SCRIPT IS RECOGNISED BY ITS NAME, NOT BY A LIST KEPT HERE.
+ *
+ * This was four names — `render.mjs`, `render-web.mjs`, `render-map.mjs`, `render-directions.mjs`
+ * — and the list was already wrong when the web export merged in. `render-directions.mjs` gained
+ * three siblings (`-web`, `-video`, `-scrolly`), 120 of the corpus's 160 beats render through one
+ * of them, and every artifact those beats produced became an orphan this guard could trace to
+ * nothing while their claim strings went unscanned entirely: the very condition B1's message
+ * describes as how an invented series survived here. Meanwhile `render-map.mjs` names a script
+ * the corpus no longer holds. A list of names cannot tell a new producer from a missing one, so
+ * the shape does the recognising and a beat that renders through a script nobody anticipated is
+ * scanned the day it lands.
+ *
+ * `render-still.mjs` stays excluded on purpose — the copies under proof/ are vendored copies of a
+ * skill's shared rasteriser, verified by hash, not a beat's own render.
  */
-const BEAT_SCRIPTS = new Set([
-  "render.mjs",
-  "render-web.mjs",
-  "render-map.mjs",
-  // `render-directions.mjs` draws a beat once per filed art direction, through the design base. It
-  // is a beat script by every test this file applies: it reads the frozen data, computes the
-  // claims, and writes the artifacts under `renders/`. It was added when the first beat that has
-  // ONLY a directed render — `static-radar-electricity-mix` — landed three PNGs this guard could
-  // not trace to any script. The effect is not merely to admit them: every directed beat's claim
-  // strings are now scanned and grounded like every other beat's.
-  "render-directions.mjs",
-]);
+const BEAT_SCRIPT = /^render(?:-[a-z0-9]+)*\.mjs$/;
+const VENDORED = new Set(["render-still.mjs"]);
+const isBeatScript = (name: string) =>
+  BEAT_SCRIPT.test(name) && !VENDORED.has(name);
 
 /** The strings a reader receives. `source` is excluded — see the header. */
 const CLAIM_PROPS = ["title", "subtitle", "alt", "caveat", "limits", "caption"];
@@ -585,7 +604,7 @@ type BeatScan = {
 
 function scanBeat(beat: string): BeatScan[] {
   const beatDir = join(PROOF_ROOT, beat);
-  const scripts = readdirSync(beatDir).filter((f) => BEAT_SCRIPTS.has(f));
+  const scripts = readdirSync(beatDir).filter(isBeatScript);
   if (!scripts.length) return [];
   const { values, files } = groundSet(beatDir);
   return scripts.map((script) => {
@@ -624,9 +643,7 @@ function scanBeat(beat: string): BeatScan[] {
 const beats = readdirSync(PROOF_ROOT, { withFileTypes: true })
   .filter((e) => e.isDirectory() && !NOT_A_BEAT.has(e.name))
   .map((e) => e.name)
-  .filter((name) =>
-    readdirSync(join(PROOF_ROOT, name)).some((f) => BEAT_SCRIPTS.has(f)),
-  )
+  .filter((name) => readdirSync(join(PROOF_ROOT, name)).some(isBeatScript))
   .sort();
 
 const scans = beats.flatMap(scanBeat);
@@ -680,7 +697,7 @@ function walkFiles(dir: string): string[] {
 
 /** A production render or an explicitly named measurement probe that writes its own artifacts. */
 function isArtifactScript(name: string): boolean {
-  return BEAT_SCRIPTS.has(name) || /-probe\.mjs$/.test(name);
+  return isBeatScript(name) || /-probe\.mjs$/.test(name);
 }
 
 /** The nearest ancestor directory (up to proof/) that holds the artifact's own script. */
@@ -719,10 +736,68 @@ const orphanArtifacts = walkFiles(PROOF_ROOT)
   .filter((f) => !documentedAsSuperseded(f))
   .map((f) => f.slice(PROOF_ROOT.length + 1));
 
-/** Quoted filenames appearing inside a `readFile`/`readFileSync` call. */
-function readFilenames(src: string): string[] {
+/**
+ * EVERY FILE THIS REPOSITORY TRACKS, BY BASENAME — `git ls-files`, so the question B2 asks in its
+ * own words ("an input this repository does not hold") is answered by git rather than guessed.
+ */
+const TRACKED_BASENAMES = new Set(
+  new TextDecoder()
+    .decode(
+      Bun.spawnSync({
+        cmd: ["git", "ls-files"],
+        cwd: join(PROOF_ROOT, ".."),
+        stdout: "pipe",
+      }).stdout,
+    )
+    .split("\n")
+    .filter(Boolean)
+    .map((path) => path.slice(path.lastIndexOf("/") + 1)),
+);
+
+/**
+ * Quoted filenames appearing inside a `readFile`/`readFileSync` call, each with WHERE the call is
+ * reaching — the two are judged differently, and conflating them is what made this check unusable
+ * the moment the web export's beats were scanned.
+ *
+ * A read that stays inside the beat must be satisfied BESIDE THE BEAT. That is the strong
+ * guarantee, and the class-2 defect this guard exists for — a render drawing over a CSV that lives
+ * somewhere else and no longer exists — is exactly a read that is not. Two other reaches exist in
+ * this corpus and neither is that defect, so each is judged by what would actually prove it:
+ *
+ *   - THROUGH A `..` SEGMENT, out of the beat and into the repository. B2's own message names the
+ *     yardstick — "an input this repository does not hold" — so the file must be TRACKED BY GIT.
+ *     `render-directions-web.mjs` reads `skills/map-web/assets/style.mjs` that way, and demanding
+ *     a copy of it beside each of nine beats is not provenance.
+ *   - THROUGH `.resolve()`, which takes a module specifier and not a path. The file lands in
+ *     `node_modules`, which nothing commits; what makes it reproducible is that the PACKAGE is a
+ *     pinned dependency, so the specifier's package name must appear in `package.json`. The same
+ *     seven beats read `maplibre-gl/dist/maplibre-gl.js` this way. An undeclared package still
+ *     fails, which is the whole content of the check for this shape.
+ *
+ * A name built by interpolation (`` `${id}.html` ``) names no file at all until the script runs,
+ * and is left alone for the same reason the claim scan replaces an interpolation with a HOLE.
+ */
+const DECLARED_PACKAGES = (() => {
+  const manifest = JSON.parse(
+    readFileSync(join(PROOF_ROOT, "..", "package.json"), "utf8"),
+  );
+  return new Set([
+    ...Object.keys(manifest.dependencies ?? {}),
+    ...Object.keys(manifest.devDependencies ?? {}),
+  ]);
+})();
+
+/** `maplibre-gl/dist/maplibre-gl.js` → `maplibre-gl`; `@scope/pkg/x.js` → `@scope/pkg`. */
+function packageNameOf(specifier: string): string {
+  const parts = specifier.split("/");
+  return specifier.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
+}
+
+type ReadInput = { name: string; reach: "beat" | "repository" | "package" };
+
+function readFilenames(src: string): ReadInput[] {
   const text = stripComments(src);
-  const out: string[] = [];
+  const out = new Map<string, ReadInput>();
   for (const m of text.matchAll(/\breadFile(?:Sync)?\s*\(/g)) {
     let i = (m.index ?? 0) + m[0].length;
     let depth = 1;
@@ -736,13 +811,23 @@ function readFilenames(src: string): string[] {
       args += text[i];
       i++;
     }
+    const reach = /\.resolve\s*\(/.test(args)
+      ? "package"
+      : /\.\./.test(args)
+        ? "repository"
+        : "beat";
     for (const q of args.matchAll(/["'`]([^"'`]*\.[A-Za-z0-9]{2,6})["'`]/g)) {
-      const name = q[1];
-      if (name === "utf8") continue;
-      out.push(name.slice(name.lastIndexOf("/") + 1));
+      const quoted = q[1];
+      if (quoted === "utf8" || quoted.includes("${")) continue;
+      const name =
+        reach === "package"
+          ? quoted
+          : quoted.slice(quoted.lastIndexOf("/") + 1);
+      // A name reached two ways is judged by the strictest of them.
+      if (!out.has(name) || reach === "beat") out.set(name, { name, reach });
     }
   }
-  return [...new Set(out)];
+  return [...out.values()];
 }
 
 const uncommittedInputs = scans
@@ -752,7 +837,15 @@ const uncommittedInputs = scans
       walkFiles(beatDir).map((f) => f.slice(f.lastIndexOf("/") + 1)),
     );
     const src = readFileSync(join(beatDir, scan.script), "utf8");
-    const missing = readFilenames(src).filter((n) => !present.has(n));
+    const held = (input: ReadInput) => {
+      if (input.reach === "package")
+        return DECLARED_PACKAGES.has(packageNameOf(input.name));
+      if (present.has(input.name)) return true;
+      return input.reach === "repository" && TRACKED_BASENAMES.has(input.name);
+    };
+    const missing = readFilenames(src)
+      .filter((input) => !held(input))
+      .map((input) => input.name);
     return { beat: scan.beat, script: scan.script, missing };
   })
   .filter((r) => r.missing.length);

@@ -518,6 +518,8 @@ const offered = applicableTreatments(facts);
 console.log(`treatments applicable: ${offered.map((t) => t.id).join(", ") || "(none)"}\n`);
 
 // ── the words ─────────────────────────────────────────────────────────────────────────────────
+// grounded-by-hand: title:1000 — the denominator of the rate the page draws, declared by the beat
+// and printed in its own unit line; it is not a reading from either frozen file.
 const title = `Par habitant, ce n'est pas l'${NAMES[biggest]} : la ${NAMES[subject]} accueille ${fr(rate(subject))} Ukrainiens pour 1 000 habitants`;
 const caveat =
   `Une case par pays d'accueil, toutes de la même taille : la carte abandonne la surface et achète ` +
@@ -540,6 +542,8 @@ const liveHint = plain(
     `lire. Le tableau sous la carte porte les mêmes lectures, et il change de grain sans JavaScript.`,
 );
 const source = `Source : Eurostat, migr_asytpsm — bénéficiaires de la protection temporaire, ${month} · population 2023, via Our World in Data · fond de carte MapTiler`;
+// grounded-by-hand: alt:1000 — the denominator of the rate the page draws, declared by the beat
+// and printed in its own unit line; it is not a reading from either frozen file.
 const alt =
   `Une grille d'hexagones disposés à peu près comme l'Europe, posée sur un fond de carte MapTiler ` +
   `où l'on voit les vraies côtes autour d'elle. Un hexagone par pays d'accueil, tous de la même ` +
