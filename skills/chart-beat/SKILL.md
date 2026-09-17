@@ -222,6 +222,9 @@ implements and the worked example's own CODE.
 ## How it works (the shape)
 
 1. **The brief names the subject, the accent and the source.** The component is written from it.
+   A valid `PALETTE.md` (`ground`/`accent`/`origin: newsroom|subject|journalist`, `skills/palette/SKILL.md`)
+   must already be reachable at or above the beat before scaffolding — the scaffold refuses before
+   writing anything otherwise.
 2. **Geometry first, and pure.** Data to coordinates, nothing else — no colour, no font, no label.
    That boundary is testable and it is the part worth keeping when the drawing is rewritten.
 3. **Furniture derived from the ground.** `deriveFurniture(ground)` gives ink, muted and grid. The

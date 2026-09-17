@@ -214,7 +214,15 @@ export function adaptFromBeat({ root, fromBeat, beatPath, component }) {
   // name verbatim rather than recomputing it from the target type — the two are the same type in the
   // ordinary case, and recomputing risks dropping a suffix the worked example carries (ChoroplethMap).
   const name = component ?? sourceName;
-  const rename = (text) => text.split(sourceName).join(name).split(oldPath).join(beatPath);
+  // Renames the component IDENTIFIER, never bare prose that happens to share its letters — every
+  // worked static beat spells its component only as `Directed<sourceName>` (the filename, the
+  // import, the JSX tag), so matching that whole compound is enough to reach every real occurrence
+  // and none of the French/English prose or sibling file names that merely start with the same
+  // word (`Histogram` inside a copied beat's own "Histogramme" alt text, or its unrelated sibling
+  // `CarbonFootprintHistogram.tsx`, must both survive untouched).
+  const identifier = `Directed${sourceName}`;
+  const renamedIdentifier = `Directed${name}`;
+  const rename = (text) => text.split(identifier).join(renamedIdentifier).split(oldPath).join(beatPath);
   const read = (name2) => rename(readFileSync(join(sourceDir, name2), "utf8"));
 
   let runner = markDividers(read(runnerFile));

@@ -65,13 +65,23 @@ export function paletteRefusalMessage({ root, relBeatDir }) {
   ].join("\n\n");
 }
 
-/** Whether `readPalette` (walked from `beatDir` to the filesystem root) would find one. */
+/** The exact message `readPalette` throws when no `PALETTE.md` exists anywhere up the tree — the
+ *  ONLY case `paletteReachable` reports as "not reachable" (`paletteRefusalMessage` then names the
+ *  command that produces one). Any other failure (a `PALETTE.md` that exists but is wrong — a bad
+ *  `origin`, a bad hex, an accent that fails contrast) is a different fault with its own real
+ *  reason, and is left to propagate rather than being flattened into this generic refusal. */
+const NOT_FOUND = "No PALETTE.md found for ";
+
+/** Whether `readPalette` (walked from `beatDir` to the filesystem root) would find one. Rethrows
+ *  any error that is not "none found" — a `PALETTE.md` that exists but fails to parse or measure
+ *  legible is refused with ITS OWN message, not swallowed into "not reachable". */
 export function paletteReachable(beatDir) {
   try {
     readPalette(beatDir);
     return true;
-  } catch {
-    return false;
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith(NOT_FOUND)) return false;
+    throw error;
   }
 }
 

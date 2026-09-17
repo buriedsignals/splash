@@ -203,7 +203,13 @@ export function adaptFromBeat({ root, fromBeat, beatPath, component }) {
   const sourceName = /^Directed([A-Za-z0-9]+)\.tsx$/.exec(tsxNames[0])[1];
   const oldPath = relative(root, sourceDir).split(sep).join("/");
   const name = component ?? sourceName;
-  const rename = (text) => text.split(sourceName).join(name).split(oldPath).join(beatPath);
+  // Renames the component IDENTIFIER, never bare prose that happens to share its letters — every
+  // worked static beat spells its component only as `Directed<sourceName>` (the filename, the
+  // import, the JSX tag), so matching that whole compound is enough to reach every real occurrence
+  // and none of the prose or sibling file names that merely start with the same word.
+  const identifier = `Directed${sourceName}`;
+  const renamedIdentifier = `Directed${name}`;
+  const rename = (text) => text.split(identifier).join(renamedIdentifier).split(oldPath).join(beatPath);
   const read = (fname) => rename(readFileSync(join(sourceDir, fname), "utf8"));
 
   const rawRunner = readFileSync(join(sourceDir, runnerFile), "utf8");

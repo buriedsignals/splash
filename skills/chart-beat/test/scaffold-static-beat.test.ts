@@ -185,4 +185,122 @@ describe("scaffold-static-beat (default --from)", () => {
       rmSync(dir3, { recursive: true, force: true });
     }
   });
+
+  it("should refuse naming the actual fault when PALETTE.md exists but its origin is not one of the accepted values", () => {
+    const dir4 = join(
+      ROOT,
+      "proof",
+      `.scaffold-test-static-badorigin-${STAMP}`,
+    );
+    mkdirSync(dir4, { recursive: true });
+    Bun.write(
+      join(dir4, "PALETTE.md"),
+      '---\nground: "#FFFFFF"\naccent: "#0B7A75"\norigin: subject-convention\n---\n',
+    );
+    Bun.write(
+      join(dir4, "data.csv"),
+      readFileSync(
+        join(ROOT, "proof", "static-heatmap-europe-electricity", "data.csv"),
+      ),
+    );
+    try {
+      const result = run([
+        "--type",
+        "heatmap",
+        "--beat",
+        `proof/.scaffold-test-static-badorigin-${STAMP}`,
+        "--component",
+        "ScaffoldProbeBadOrigin",
+      ]);
+      expect(result.status).not.toBe(0);
+      // The real cause — the invalid `origin` value and the accepted ones — not the generic
+      // "no PALETTE.md reachable" message a wrong-but-present file used to be flattened into.
+      expect(result.stderr).toContain(
+        "origin must be newsroom, subject or journalist",
+      );
+      expect(result.stderr).toContain('"subject-convention"');
+      expect(result.stderr).not.toContain("has no PALETTE.md reachable");
+      expect(existsSync(join(dir4, "render-directions.mjs"))).toBe(false);
+    } finally {
+      rmSync(dir4, { recursive: true, force: true });
+    }
+  });
+
+  it("should document grounding in the generated BRIEF.md's own front matter, as a comment naming what it is for", () => {
+    const dir5 = join(
+      ROOT,
+      "proof",
+      `.scaffold-test-static-grounding-${STAMP}`,
+    );
+    seedPalette(dir5);
+    Bun.write(
+      join(dir5, "data.csv"),
+      readFileSync(
+        join(ROOT, "proof", "static-heatmap-europe-electricity", "data.csv"),
+      ),
+    );
+    try {
+      const result = run([
+        "--type",
+        "heatmap",
+        "--beat",
+        `proof/.scaffold-test-static-grounding-${STAMP}`,
+        "--component",
+        "ScaffoldProbeGrounding",
+      ]);
+      expect(result.status).toBe(0);
+      const brief = readFileSync(join(dir5, "BRIEF.md"), "utf8");
+      const frontMatter = /^---\r?\n([\s\S]*?)\r?\n---/.exec(brief)?.[1] ?? "";
+      expect(frontMatter).toContain("# grounding:");
+      expect(frontMatter).toContain("G1 verdict");
+    } finally {
+      rmSync(dir5, { recursive: true, force: true });
+    }
+  });
+
+  it("should rename only the component identifier, never a copied beat's own prose or an unrelated sibling file name", () => {
+    const dir6 = join(
+      ROOT,
+      "proof",
+      `.scaffold-test-static-frenchprose-${STAMP}`,
+    );
+    seedPalette(dir6);
+    Bun.write(
+      join(dir6, "data.csv"),
+      readFileSync(
+        join(ROOT, "proof", "static-carbon-footprint-spread", "data.csv"),
+      ),
+    );
+    try {
+      const result = run([
+        "--type",
+        "histogram",
+        "--beat",
+        `proof/.scaffold-test-static-frenchprose-${STAMP}`,
+        "--from",
+        "proof/static-carbon-footprint-spread",
+        "--component",
+        "SolarSpreadHistogram",
+      ]);
+      expect(result.status).toBe(0);
+      const runner = readFileSync(join(dir6, "render-directions.mjs"), "utf8");
+      // The identifier is renamed everywhere it is actually used.
+      expect(runner).toContain("DirectedSolarSpreadHistogram");
+      expect(runner).not.toContain("DirectedHistogram,");
+      // The French prose survives verbatim — "Histogramme" is not "Histogram" with a suffix glued on.
+      expect(runner).toContain("Histogramme des émissions");
+      expect(runner).not.toContain("SolarSpreadHistogramme");
+
+      const tsx = readFileSync(
+        join(dir6, "DirectedSolarSpreadHistogram.tsx"),
+        "utf8",
+      );
+      // The sibling file name mentioned in the copied beat's own header comment is untouched —
+      // it names a real file that was never part of this adaptation.
+      expect(tsx).toContain("CarbonFootprintHistogram.tsx");
+      expect(tsx).not.toContain("CarbonFootprintSolarSpreadHistogram.tsx");
+    } finally {
+      rmSync(dir6, { recursive: true, force: true });
+    }
+  });
 });
