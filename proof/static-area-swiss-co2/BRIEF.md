@@ -4,6 +4,7 @@ type: area
 format: static
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — La moitié du CO₂ suisse depuis 1858 a été émise après 1986
@@ -83,3 +84,81 @@ record for the same reason.
 Global Carbon Budget 2025, via Our World in Data, territorial emissions, frozen beside this beat as
 `data.csv` — a duplicate of the file the line beat carries, copied rather than linked, because a beat
 that reads across a folder boundary cannot be re-rendered on its own.
+
+## The choreography
+
+The surface is the only mark, so the eye lands on it before it lands on anything else — one
+silhouette, two tints, cut once. The cut is what turns a shape into an argument: the pale side is
+the 129 years before 1986, the accented side the 38 after, and the two italic labels seated inside
+them are the reading the whole plate exists for. The `32,1 Mt` at the end of the curve is the
+last height, not the claim; it is read after the shares, not before them.
+
+**The eye enters at** `the filled surface`. **The claim lands at** `conclusion`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the filled surface` | `the 1987–2024 area` |
+| reference | `the 1986 cut` | `the 1987–2024 area` |
+| subject | `the 1987–2024 area` | — |
+| conclusion | `the two share labels` | `the 1987–2024 area` |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the filled surface",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the filled surface",
+      "subordinateTo": "the 1987–2024 area"
+    },
+    {
+      "station": "reference",
+      "carries": "the 1986 cut",
+      "subordinateTo": "the 1987–2024 area"
+    },
+    {
+      "station": "subject",
+      "carries": "the 1987–2024 area",
+      "subordinateTo": null
+    },
+    {
+      "station": "conclusion",
+      "carries": "the two share labels",
+      "subordinateTo": "the 1987–2024 area"
+    }
+  ],
+  "claimLands": "conclusion"
+}
+```
+
+## Precision
+
+- **1986 is found, not typed** — the split year is the year at which the cumulated stock passes half, searched in the frozen series; the title's 38 years and 167 years are counted off it.
+- **The years are consecutive before anything is drawn** — 1858 to 2024 with no hole, asserted before the surface exists — an area bridged over a missing year would draw a stock nobody measured.
+- **Every printed share is the integral** — 50,1 % and 49,9 % are integrals of the same readings the surface is drawn from, never a ratio of two heights.
+- **The plate refuses a split off the claim** — if the measured halves are not the halves the headline states, the beat throws rather than render a near miss.
+- **The one frame carries every number** — both shares, the cut year and the last height are on the plate at once; nothing here is held back for a second reading.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "1986-is-found-not-typed",
+    "the-years-are-consecutive-before-anything",
+    "every-printed-share-is-the-integral",
+    "the-plate-refuses-a-split-off",
+    "the-one-frame-carries-every-number"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "1986-is-found-not-typed",
+    "the-years-are-asserted-consecutive-before": "the-years-are-consecutive-before-anything",
+    "every-printed-number-is-the-integral": "every-printed-share-is-the-integral",
+    "the-plate-refuses-to-render-if": "the-plate-refuses-a-split-off",
+    "asserted-in-the-one-frame": "the-one-frame-carries-every-number"
+  }
+}
+```

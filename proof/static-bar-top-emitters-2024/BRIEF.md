@@ -4,6 +4,7 @@ type: column
 format: static
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — China emitted more CO₂ in 2024 than the next five countries put together
@@ -152,3 +153,87 @@ plot where the standfirst used to be; and the unit — "billion tonnes", the onl
 the numbers ARE — gone with R7. The picture that just clears the floor is not a picture worth
 shipping, so it is not committed (the precedent is the square render this corpus already refused).
 The beat ships landscape and says so.
+
+## The choreography
+
+One column is twice the height of its neighbour and in the accent, so the eye has no choice: it
+enters on China. What it does next is the whole beat. The dashed rule leaves China's own top and
+runs right across the field; under it the bracket gathers exactly five columns; the caption on the
+bracket prints their sum. The argument is arithmetic, and it is DRAWN — a reader who cannot see
+the accent still reads 11,7 stopping short of 12,3.
+
+**The eye enters at** `the China column`. **The claim lands at** `conclusion`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the ten columns` | `the China column` |
+| reference | `the dashed rule` | `the China column` |
+| reveal | `the five-country bracket` | `the dashed rule` |
+| subject | `the China column` | — |
+| conclusion | `the bracket caption` | `the five-country bracket` |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the China column",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the ten columns",
+      "subordinateTo": "the China column"
+    },
+    {
+      "station": "reference",
+      "carries": "the dashed rule",
+      "subordinateTo": "the China column"
+    },
+    {
+      "station": "reveal",
+      "carries": "the five-country bracket",
+      "subordinateTo": "the dashed rule"
+    },
+    {
+      "station": "subject",
+      "carries": "the China column",
+      "subordinateTo": null
+    },
+    {
+      "station": "conclusion",
+      "carries": "the bracket caption",
+      "subordinateTo": "the five-country bracket"
+    }
+  ],
+  "claimLands": "conclusion"
+}
+```
+
+## Precision
+
+- **The comparison is computed, not typed** — 12,3 against 11,7 is the subject's own value against the summed next five, both read off the frozen file.
+- **The ten are ranked from the frozen file** — membership and order come from a rank of the file with the aggregate rows dropped, and both counts are printed.
+- **"The next five" is a search** — how far the bracket reaches is where the running sum stops crossing the subject, not a phrase chosen for the title.
+- **No two ranks print the same figure** — the number format is widened until every one of the ten prints a distinct figure, because the plate's whole job is a ranking.
+- **Every figure is on the plate at once** — ten values, the sum and the rule are all in the one frame; the bracket caption is the last thing read, not a second view.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "the-comparison-is-computed-not-typed",
+    "the-ten-are-ranked-from-the",
+    "the-next-five-is-a-search",
+    "no-two-ranks-print-the-same",
+    "every-figure-is-on-the-plate"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "the-comparison-is-computed-not-typed",
+    "the-members-and-their-order-are": "the-ten-are-ranked-from-the",
+    "the-next-five-is-a-search": "the-next-five-is-a-search",
+    "the-number-format-is-chosen-so": "no-two-ranks-print-the-same",
+    "asserted-in-the-one-frame": "every-figure-is-on-the-plate"
+  }
+}
+```

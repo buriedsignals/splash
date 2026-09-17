@@ -4,6 +4,7 @@ type: boxplot
 format: static
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — France's per-capita CO₂ emissions peaked in the 1970s
@@ -108,3 +109,88 @@ is exactly on the floor.
 The credit also WRAPS now (one 900 px line, several at a wider frame's type scale), and the
 two-line category band under the plot is derived from where the credit sits rather than from a
 literal, so the `n=` row cannot land on the source.
+
+## The choreography
+
+Read the medians alone and the beat is already made: a staircase up to the 1970s, then eight
+decades down. That row of thick strokes is where the eye enters, and every other mark on the plate
+is there to keep it honest — the raw years stacked beside each box so the reader can see what the
+summary summarises, and the one 1980s outlier drawn as its own ringed dot rather than swallowed by
+a whisker. The accent sits on the 1970s box with its 10,0; the 4,3 at the far right is the size of
+the fall, read last.
+
+**The eye enters at** `the row of medians`. **The claim lands at** `subject`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the row of medians` | `the 1970s box` |
+| reference | `the year dots` | `the row of medians` |
+| reveal | `the 1980s outlier` | `the row of medians` |
+| subject | `the 1970s box` | — |
+| conclusion | `the 2020s median label` | `the 1970s box` |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the row of medians",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the row of medians",
+      "subordinateTo": "the 1970s box"
+    },
+    {
+      "station": "reference",
+      "carries": "the year dots",
+      "subordinateTo": "the row of medians"
+    },
+    {
+      "station": "reveal",
+      "carries": "the 1980s outlier",
+      "subordinateTo": "the row of medians"
+    },
+    {
+      "station": "subject",
+      "carries": "the 1970s box",
+      "subordinateTo": null
+    },
+    {
+      "station": "conclusion",
+      "carries": "the 2020s median label",
+      "subordinateTo": "the 1970s box"
+    }
+  ],
+  "claimLands": "subject"
+}
+```
+
+## Precision
+
+- **The peak decade is computed** — which decade is highest is a search over the computed medians, and the beat throws rather than draw a peak its own numbers do not give.
+- **Every summary comes from the frozen file** — median, quartiles and fences are computed per decade from the 1950-2024 series, never carried over from the sibling line beat.
+- **The outlier is counted, not asserted** — the 1980s dot is what falls outside the computed fence; the partial 2020s states its n=5 under its own label.
+- **Nothing sits under the type floor** — the n row and the outlier's own value were the two smallest tokens here, and both were raised rather than the size table's floor lowered.
+- **Nine decades stand in one frame** — the peak and the whole fall after it are readable at once, off the medians alone, without a second panel.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "the-peak-decade-is-computed",
+    "every-summary-comes-from-the-frozen",
+    "the-outlier-is-counted-not-asserted",
+    "nothing-sits-under-the-type-floor",
+    "nine-decades-stand-in-one-frame"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "the-peak-decade-is-computed",
+    "every-summary-is-computed-from-the": "every-summary-comes-from-the-frozen",
+    "outliers-are-counted-from-the-computed": "the-outlier-is-counted-not-asserted",
+    "no-token-may-sit-under-the": "nothing-sits-under-the-type-floor",
+    "asserted-in-the-one-frame": "nine-decades-stand-in-one-frame"
+  }
+}
+```

@@ -4,6 +4,7 @@ type: calendar-heatmap
 format: static
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Geneva held 31 days in a row at or above 20 °C in 2024
@@ -54,3 +55,76 @@ curl --get https://archive-api.open-meteo.com/v1/archive \
 
 The API answers for the nearest grid cell, which it reports as 46.221 N, 6.172 E at 368 m — a
 kilometre or two from the point asked for, and that is the reading this beat draws.
+
+## The choreography
+
+Three stations, and the plate honestly has no fourth: there is no direct label anywhere on the
+grid. A run is a SHAPE here, and the eye finds it before it reads anything — the dark block that
+fills the right of July and the left of August. The heavy outline is the only accent on the plate
+and it does one job, saying which cells the headline counted, across the row break. The key is
+read after, not before, and only because no single cell can be read exactly; the two dates live in
+the standfirst, not on the outline.
+
+**The eye enters at** `the dark block`. **The claim lands at** `subject`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the year grid` | `the run outline` |
+| reference | `the binned key` | `the run outline` |
+| subject | `the run outline` | — |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the dark block",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the year grid",
+      "subordinateTo": "the run outline"
+    },
+    {
+      "station": "reference",
+      "carries": "the binned key",
+      "subordinateTo": "the run outline"
+    },
+    {
+      "station": "subject",
+      "carries": "the run outline",
+      "subordinateTo": null
+    }
+  ],
+  "claimLands": "subject"
+}
+```
+
+## Precision
+
+- **The 31-day run is counted** — the longest streak at or above 20 °C is searched in the frozen daily series, and the headline's 31 is asserted before the render.
+- **Every day of 2024 is present** — the days are checked present and in order and the cell count is asserted, because a calendar with a hole silently shortens a run.
+- **Run, dates, means and extremes computed** — 18 July, 17 August, the monthly means behind "August not July", and the two day extremes are all computed from the same file.
+- **The six bins are fixed once** — the classes are fixed once from the frozen series and the key prints their breaks in °C; the no-value swatch is named beside them.
+- **The whole year is on one plate** — 365 readings and the run they contain are in the one frame, which is the only reason the run can be read as a block at all.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "the-31-day-run-is-counted",
+    "every-day-of-2024-is-present",
+    "run-dates-means-and-extremes-computed",
+    "the-six-bins-are-fixed-once",
+    "the-whole-year-is-on-one"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "the-31-day-run-is-counted",
+    "every-day-is-present-and-in": "every-day-of-2024-is-present",
+    "the-run-its-length-its-two": "run-dates-means-and-extremes-computed",
+    "the-bins-are-fixed-once-from": "the-six-bins-are-fixed-once",
+    "asserted-in-the-one-frame": "the-whole-year-is-on-one"
+  }
+}
+```

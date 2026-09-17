@@ -4,6 +4,7 @@ type: bump
 format: static
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — India has risen from eighth to third among the world's biggest CO₂ emitters
@@ -152,3 +153,87 @@ at 1920 they read as hairlines around specks. The beat also gained a rank-pitch 
 carry NAMES at both ends, so below one line of name type per rank row the terminal labels print
 through each other, and neither `assertTypeFloor` (which measures the type) nor `assertPlotAspect`
 (which never clamps an unmeasured type) can see that.
+
+## The choreography
+
+A bump chart is a tangle until one line is lifted out of it. India is drawn on top, heavier and in
+the accent, so the eye picks it up at the left edge and never loses it. A still has no reveal, so
+both ends carry a full name column — 1990 on the left, 2024 on the right — and the crossings
+between them are what a reader actually follows. The sentence is settled by the two ranks printed
+at India's own ends: 8 there, 3 here.
+
+**The eye enters at** `the India line`. **The claim lands at** `conclusion`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `both name columns` | `the India line` |
+| reference | `the background lines` | `the India line` |
+| reveal | `the crossings` | `the India line` |
+| subject | `the India line` | — |
+| conclusion | `the two India labels` | `the India line` |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the India line",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "both name columns",
+      "subordinateTo": "the India line"
+    },
+    {
+      "station": "reference",
+      "carries": "the background lines",
+      "subordinateTo": "the India line"
+    },
+    {
+      "station": "reveal",
+      "carries": "the crossings",
+      "subordinateTo": "the India line"
+    },
+    {
+      "station": "subject",
+      "carries": "the India line",
+      "subordinateTo": null
+    },
+    {
+      "station": "conclusion",
+      "carries": "the two India labels",
+      "subordinateTo": "the India line"
+    }
+  ],
+  "claimLands": "conclusion"
+}
+```
+
+## Precision
+
+- **Eighth and third are positions in a sort** — both ranks are India's place in a sort of every ISO-coded entity for that year, computed at render time.
+- **No rank is typed anywhere** — the frozen file holds emissions, not ranks; a rank typed into this beat would be a number nobody can check.
+- **Sixteen lines is a computed answer** — which competitors are drawn is the rule "every country that held a top-ten place at least once", and the beat throws if that set grows past what this form can carry legibly.
+- **The label columns cannot collide** — distinct ranks in one period cannot share a row, and the check runs on the real ranks at both ends rather than on a layout pass.
+- **Both ends are named in the still** — the start rank and the end rank are printed at their own ends of the one frame, because a still cannot animate the journey between them.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "eighth-and-third-are-positions-in",
+    "no-rank-is-typed-anywhere",
+    "sixteen-lines-is-a-computed-answer",
+    "the-label-columns-cannot-collide",
+    "both-ends-are-named-in-the"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "eighth-and-third-are-positions-in",
+    "there-is-no-rank-column-in": "no-rank-is-typed-anywhere",
+    "which-competitors-are-drawn-is-a": "sixteen-lines-is-a-computed-answer",
+    "the-two-label-columns-are-collision": "the-label-columns-cannot-collide",
+    "asserted-in-the-one-frame": "both-ends-are-named-in-the"
+  }
+}
+```

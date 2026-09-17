@@ -4,6 +4,7 @@ type: cartogram
 format: static
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — Compté par pays 65,1 % ; compté au kilomètre carré 44,9 %
@@ -102,3 +103,82 @@ Ce que la grille garde de la géographie est la disposition APPROXIMATIVE, dessi
 déclarée comme telle. C'est exactement ce qui la sépare du pictogramme, où les mêmes pays sont triés
 par valeur et la carte a disparu. Un fond réel sous une disposition approximative n'est ni l'un ni
 l'autre.
+
+## The choreography
+
+The subject of this plate is the grid itself. Every country is one tile of one size, which is the
+whole argument: the 65,1 % in the headline is an average over countries, and only a drawing that
+gives each country equal ink can show it. So the eye enters on the field of equal tiles, reads the
+classes across it against the key, and passes the one dashed empty tile — Ukraine, unreported,
+drawn rather than dropped. What the reading resolves into is the pair of averages in the headline,
+the second of which this form exists to make sayable.
+
+**The eye enters at** `the tile grid`. **The claim lands at** `conclusion`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the tile grid` | `the headline averages` |
+| reference | `the class key` | `the headline averages` |
+| reveal | `the no-data tile` | `the tile grid` |
+| conclusion | `the headline averages` | — |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the tile grid",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the tile grid",
+      "subordinateTo": "the headline averages"
+    },
+    {
+      "station": "reference",
+      "carries": "the class key",
+      "subordinateTo": "the headline averages"
+    },
+    {
+      "station": "reveal",
+      "carries": "the no-data tile",
+      "subordinateTo": "the tile grid"
+    },
+    {
+      "station": "conclusion",
+      "carries": "the headline averages",
+      "subordinateTo": null
+    }
+  ],
+  "claimLands": "conclusion"
+}
+```
+
+## Precision
+
+- **Both averages carry the headline** — 65,1 % by country and 44,9 % by square kilometre are both computed here, and the headline states the pair rather than picking one.
+- **The grid is checked both ways** — every code in the hand-drawn grid has a row in the data and every row has a tile; a renamed country fails loudly instead of vanishing.
+- **The two averages share one projection** — both are computed from the same frozen shapes in the same equal-area projection the sibling choropleth uses, so the comparison is between two drawings of one dataset.
+- **The ramp floor is measured** — the bottom class is floored at 3:1 against this direction's own ground, and the plate refuses when the direction's colours cannot reach it.
+- **Both readings print in the one frame** — the country average and the territory average are in the same frame as the tiles that justify the first of them.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "both-averages-carry-the-headline",
+    "the-grid-is-checked-both-ways",
+    "the-two-averages-share-one-projection",
+    "the-ramp-floor-is-measured",
+    "both-readings-print-in-the-one"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "both-averages-carry-the-headline",
+    "the-designed-grid-is-checked-both": "the-grid-is-checked-both-ways",
+    "both-averages-are-computed-from-the": "the-two-averages-share-one-projection",
+    "the-bottom-of-the-ramp-is": "the-ramp-floor-is-measured",
+    "asserted-in-the-one-frame": "both-readings-print-in-the-one"
+  }
+}
+```

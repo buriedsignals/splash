@@ -4,6 +4,7 @@ type: beeswarm
 format: static
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Les 6 pays au-dessus de 20 t de CO₂ par personne pèsent 0,6 % de l'humanité
@@ -92,3 +93,82 @@ about.
 Global Carbon Budget 2025 (CO₂ per person, 2023) joined to Our World in Data's population series
 (2023) on the ISO code, frozen beside this beat as `data.csv`. All 213 countries in the emissions
 file matched a population row; none was dropped.
+
+## The choreography
+
+Nothing in this picture is accented, and that is deliberate: the first statement is the SHAPE of
+the swarm — a dense wall against the left edge and a tail that thins to nothing by 40 t. The
+world-average rule cuts that wall near its right shoulder, which is already the argument. The two
+cards seated above the field then name the two ends of it, each on a hairline leader: India, huge
+and low; Qatar, a ring you have to be told about. Position is the rate, area is the people, and
+the sentence is only readable when both are read on the same two circles.
+
+**The eye enters at** `the swarm`. **The claim lands at** `subject`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the swarm` | `the named cases` |
+| reference | `the world-average rule` | `the named cases` |
+| reveal | `the thin right tail` | `the swarm` |
+| subject | `the named cases` | — |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the swarm",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the swarm",
+      "subordinateTo": "the named cases"
+    },
+    {
+      "station": "reference",
+      "carries": "the world-average rule",
+      "subordinateTo": "the named cases"
+    },
+    {
+      "station": "reveal",
+      "carries": "the thin right tail",
+      "subordinateTo": "the swarm"
+    },
+    {
+      "station": "subject",
+      "carries": "the named cases",
+      "subordinateTo": null
+    }
+  ],
+  "claimLands": "subject"
+}
+```
+
+## Precision
+
+- **The six above 20 t are counted** — the headline's set and its 0,6 % of world population are counted off the frozen file, never read off the picture.
+- **The radius ladder is walked and printed** — the ladder runs generous to mean and stops at the first rung whose packed swarm still fits the band; the floor under the smallest marks is printed, not hidden.
+- **Both callouts are derived, never chosen** — one card is the biggest circle in the field, the other the farthest out — a search, so the plate cannot flatter itself.
+- **The plate refuses three ways** — it throws if the claim's set holds more than its stated share, if the average sits above less than its stated share of the weight, or if the largest circle is not below the median.
+- **One frame carries rate and weight** — both readings of each named case are printed on its own card, in the one frame, because neither half of the sentence survives alone.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "the-six-above-20-t-are",
+    "the-radius-ladder-is-walked-and",
+    "both-callouts-are-derived-never-chosen",
+    "the-plate-refuses-three-ways",
+    "one-frame-carries-rate-and-weight"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "the-six-above-20-t-are",
+    "the-radius-ladder-is-walked-from": "the-radius-ladder-is-walked-and",
+    "both-callouts-are-derived-the-biggest": "both-callouts-are-derived-never-chosen",
+    "the-plate-refuses-to-render-if": "the-plate-refuses-three-ways",
+    "asserted-in-the-one-frame": "one-frame-carries-rate-and-weight"
+  }
+}
+```
