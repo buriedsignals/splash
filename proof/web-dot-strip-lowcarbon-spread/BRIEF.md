@@ -3,6 +3,7 @@ format: web
 type: dot-strip
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Le plancher européen est monté de 30 points, le plafond de 2 (web)
@@ -377,3 +378,82 @@ Ember, Energy Institute — Statistical Review of World Energy (2025), via Our W
 2024. `data.csv` is a byte-for-byte copy of `proof/static-dot-strip-lowcarbon-spread/data.csv`. Every
 rung's numerator is a sum over the file's own generation columns and every rung's denominator is the
 sum over all nine, which is what makes a position on this rail a share of the same total in all four.
+
+## The choreography
+
+The declaration below is this beat's own `const interaction`, in the shape
+`chart-web/scripts/choreography.mjs` cuts out of a source. It lives here rather than in
+`render-directions-web.mjs` because this beat's controls are built by a vocabulary of its own that
+`shippedControls` cannot see, so no plan travels with the render — the reason the section above
+already records. The block under it is what the parser reads out of it.
+
+```js
+const interaction = {
+  earns:
+    "Whether Europe converged or came apart depends entirely on which sources you agree to count, " +
+    "and a still can only agree once. A video or a scrolly walks the four rungs on the author's " +
+    "clock; the reading here is a back-and-forth, because the spread closes by 27,4 points on the " +
+    "first rung and opens by 60,6 on the third.",
+  controls: [
+    {
+      question: "Le bas-carbone, ça compte quoi au juste — et si on enlevait le nucléaire ?",
+      gesture: "toggle-a-comparison",
+      changes:
+        "Each rung takes one more source out of the numerator and never out of the denominator, so " +
+        "every dot moves LEFT or stays put on the same rail and no mark ever leaves its lane or its " +
+        "own jitter. What travels is the span bar under each rail, from that rung's floor to its " +
+        "ceiling: the 2000 and 2024 bars swap relative lengths between the first rung and the third.",
+    },
+    {
+      question: "Ce point-là, c'est quel pays, et cette définition lui coûte combien ?",
+      gesture: "ask-a-mark",
+      changes:
+        "The dot under the pointer answers with the country, its share under THIS definition on this " +
+        "rail, its share on the other rail, and how many points the sources this rung has taken out " +
+        "are worth to it — 82,4 for France under the last rung, the largest fall of the sixteen.",
+    },
+  ],
+};
+```
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "the-runner-refuses-to-render-if": null,
+    "one-scale-for-both-lanes-over": null,
+    "every-rung-floor-ceiling-spread-and": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```

@@ -3,6 +3,7 @@ format: web
 type: beeswarm
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Les 6 pays au-dessus de 20 t de CO₂ par personne pèsent 0,6 % de l'humanité (web)
@@ -331,3 +332,83 @@ byte-for-byte copy of `proof/static-beeswarm-co2-per-person/data.csv`, re-parsed
 The country names on this page are the **source's own**, and the page says so: 213 hand-filed French
 names is far past the point where a wrong translation inside a tooltip would be caught. Only the two
 derived callouts, which also appear in the headline's prose and in the alt text, are named in French.
+
+## The choreography
+
+The declaration below is this beat's own `const interaction`, in the shape
+`chart-web/scripts/choreography.mjs` cuts out of a source. It lives here rather than in
+`render-directions-web.mjs` because this beat's controls are built by a vocabulary of its own that
+`shippedControls` cannot see, so no plan travels with the render — the reason the section above
+already records. The block under it is what the parser reads out of it.
+
+```js
+const interaction = {
+  earns:
+    "A still picks one weighting of the swarm and the reader cannot even know there was a choice; " +
+    "a video or a scrolly morphs through the three on the author's clock, once. Here the reader " +
+    "goes back and forth between them and reads the half-way point swing 3,3× along a fixed " +
+    "axis while not one of the 213 marks changes its value.",
+  controls: [
+    {
+      question: "L'essaim est épais ici. Épais de quoi — des habitants, des pays ou du CO₂ ?",
+      gesture: "toggle-a-comparison",
+      changes:
+        "The same 213 circles stay at the same 213 positions on the same axis; what changes is what " +
+        "a mark is WORTH, so each one's area is re-read as its population, as one country, or as its " +
+        "own tonnes, and the swarm thickens somewhere else. The median of the chosen weight travels " +
+        "from 2,60 t to 3,14 t to 8,56 t against the world average rule the plate draws in every state.",
+    },
+    {
+      question: "Ce cercle-là, il vaut combien, et combien de monde y a-t-il en dessous de lui ?",
+      gesture: "ask-a-mark",
+      changes:
+        "The circle under the pointer answers with its own figure and with the reading the current " +
+        "weighting makes of it — the share of humanity that emits less, its rank among the 213, or " +
+        "its own total in Mt and its share of the world's CO₂ — so the answer changes with the " +
+        "question the swarm is being asked.",
+    },
+  ],
+};
+```
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "the-packing-is-re-derived-per": null,
+    "the-runner-refuses-to-render-if": null,
+    "both-callouts-are-derived-the-biggest": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```

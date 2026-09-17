@@ -3,6 +3,7 @@ format: web
 type: population-pyramid
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — La tranche la plus large de la Suisse est celle des 55-59 ans (web)
@@ -133,3 +134,82 @@ it holds identically with the script disabled, which is the whole claim of the m
 
 Office fédéral de la statistique · permanent resident population, 2023, 21 five-year bands.
 `data.csv` is a byte-for-byte copy of `proof/static-swiss-age-pyramid/data.csv`.
+
+## The choreography
+
+The declaration below is this beat's own `const interaction`, in the shape
+`chart-web/scripts/choreography.mjs` cuts out of a source. It lives here rather than in
+`render-directions-web.mjs` because this beat's controls are built by a vocabulary of its own that
+`shippedControls` cannot see, so no plan travels with the render — the reason the section above
+already records. The block under it is what the parser reads out of it.
+
+```js
+const interaction = {
+  earns:
+    "Two lengths measured in opposite directions from a shared centre is the worst arrangement for " +
+    "a difference, and it is the arrangement this type is defined by. A still draws the pyramid or " +
+    "the fold, never both; what the reader needs is to hold one state, go back, and run the fold " +
+    "the other way to check the crossing is not an artefact of which half was laid over which.",
+  controls: [
+    {
+      question: "À quel âge les femmes passent-elles devant les hommes — et si je regardais dans l'autre sens ?",
+      gesture: "toggle-a-comparison",
+      changes:
+        "Nothing moves and nothing is re-ordered: the 21 bands stay in sequence and both halves stay " +
+        "drawn at full length on their own side. One half's silhouette is ADDED over the other as a " +
+        "continuous staircase at its own measured values, so where it juts past the bar the folded " +
+        "sex leads and where it falls inside the host sex does; one sentence names the crossing band.",
+    },
+    {
+      question: "Cette tranche-là, elle pèse combien de personnes, et l'écart y est de combien ?",
+      gesture: "ask-a-mark",
+      changes:
+        "The band under the pointer returns both counts, the total, the difference between the sexes " +
+        "and the band's share of the whole population — the share is what turns a silhouette into a " +
+        "claim about how many people are where.",
+    },
+  ],
+};
+```
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "the-shared-centre-never-moves-and": null,
+    "the-widest-band-is-found-not": null,
+    "foldpath-builds-the-staircase-in-the": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```

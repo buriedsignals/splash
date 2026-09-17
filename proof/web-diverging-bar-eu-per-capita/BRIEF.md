@@ -3,6 +3,7 @@ format: web
 type: diverging-bar
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — La Croatie est le seul pays de l'Union à émettre plus de CO₂ par personne qu'en 1990 (web)
@@ -268,3 +269,82 @@ number in this brief is computed from that file in the runner and asserted there
 the median of the 27 members' own values, named as the level of the MEDIAN MEMBER rather than as
 "the Union's", because an unweighted median of per-capita figures is not the Union's per-capita
 figure and this page does not carry the populations that would make it one.
+
+## The choreography
+
+The declaration below is this beat's own `const interaction`, in the shape
+`chart-web/scripts/choreography.mjs` cuts out of a source. It lives here rather than in
+`render-directions-web.mjs` because this beat's controls are built by a vocabulary of its own that
+`shippedControls` cannot see, so no plan travels with the render — the reason the section above
+already records. The block under it is what the parser reads out of it.
+
+```js
+const interaction = {
+  earns:
+    "A diverging bar puts a baseline inside the data, and that zero is a choice somebody made. A " +
+    "still commits to one reference for ever; a video and a scrolly step through references in the " +
+    "author's order. Here the reader picks the level the twenty-seven countries are measured from " +
+    "and watches a bar collapse into the rule and grow out the far side.",
+  controls: [
+    {
+      question: "Au-dessus de quoi ? Si on mesurait depuis autre chose, qui serait encore du bon côté ?",
+      gesture: "toggle-a-comparison",
+      changes:
+        "All twenty-seven bars re-aim over 620 ms on the one scale, each repainting into its new " +
+        "sign's colour as it passes through the rule, its value label carried to the new tip and " +
+        "its figure swapped. Nothing else moves: not a country name, not a graduation, not the zero " +
+        "rule, not the note on Croatia, which is worded to be true under all three references.",
+    },
+    {
+      question: "Ce pays-là, il est à combien exactement, et par rapport à quoi ?",
+      gesture: "ask-a-mark",
+      changes:
+        "The bar under the pointer answers with the country's own level, the signed distance the " +
+        "current reference gives it and the figures behind that subtraction — readings the plate " +
+        "prints for no row but the two it names.",
+    },
+  ],
+};
+```
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "the-shared-zero-baseline-never-moves": null,
+    "every-category-is-asserted-to-carry": null,
+    "the-count-of-risers-is-asserted": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```

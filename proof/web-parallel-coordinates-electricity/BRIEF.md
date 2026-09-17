@@ -3,6 +3,7 @@ format: web
 type: parallel-coordinates
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — 5 pays sur 16 tirent plus de 25 % de leur électricité du nucléaire, 10 plus de 20 % de l'éolien (web)
@@ -311,3 +312,81 @@ mutation that was exiting 0 exits 1.
 Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · 2024.
 `data.csv` is a byte-for-byte copy of
 `proof/static-parallel-coordinates-electricity-mix/data.csv`.
+
+## The choreography
+
+The declaration below is this beat's own `const interaction`, in the shape
+`chart-web/scripts/choreography.mjs` cuts out of a source. It lives here rather than in
+`render-directions-web.mjs` because this beat's controls are built by a vocabulary of its own that
+`shippedControls` cannot see, so no plan travels with the render — the reason the section above
+already records. The block under it is what the parser reads out of it.
+
+```js
+const interaction = {
+  earns:
+    "A still can draw the nuclear/wind trade-off once, for the one pair its axis order allows; a " +
+    "video and a scrolly brush for the reader, at the band the author picked. This is the only one " +
+    "of the three where the reader picks the band, on any of three axes, and two of the five bands " +
+    "ask about a non-adjacent pair the plate cannot put side by side.",
+  controls: [
+    {
+      question: "Cette ligne, c'est quel pays, et elle vaut combien sur les sept sources ?",
+      gesture: "ask-a-mark",
+      changes:
+        "The vertex under the pointer answers for its whole country — the name, the seven shares " +
+        "and the total generation, eight readings the plate prints nowhere — and sixteen lines over " +
+        "seven axes stop being a tangle a reader has to trace through fifteen crossings.",
+    },
+    {
+      question: "Les pays qui misent gros sur cette source-là, ils sont où sur les autres ?",
+      gesture: "brush-a-range",
+      changes:
+        "The chosen band is drawn on the axis it cuts, as a filled span between its two bounds, so " +
+        "the reader sees where they cut and on which of the seven rails; every line inside it comes " +
+        "forward and the rest steps back without leaving, because this control does not narrow.",
+    },
+  ],
+};
+```
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    },
+    {
+      "order": 2,
+      "gesture": "brush-a-range",
+      "input": "tap"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "each-axis-keeps-its-own-fixed": null,
+    "the-correlation-the-claim-reports-is": null,
+    "each-band-membership-and-what-that": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```

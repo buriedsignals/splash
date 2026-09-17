@@ -3,6 +3,7 @@ format: web
 type: bullet
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Six pays, six barres, et le verdict change avec la cible (web)
@@ -178,3 +179,82 @@ mutation that passes, so it was re-run at 99,5 %, where it refuses properly.
 
 Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · 2015
 and 2024. `data.csv` is a byte-for-byte copy of `proof/static-bullet-low-carbon-share/data.csv`.
+
+## The choreography
+
+The declaration below is this beat's own `const interaction`, in the shape
+`chart-web/scripts/choreography.mjs` cuts out of a source. It lives here rather than in
+`render-directions-web.mjs` because this beat's controls are built by a vocabulary of its own that
+`shippedControls` cannot see, so no plan travels with the render — the reason the section above
+already records. The block under it is what the parser reads out of it.
+
+```js
+const interaction = {
+  earns:
+    "A bullet's reading is a verdict, and a verdict is a function of a target somebody chose. A " +
+    "still has to pick one target, print it and ask to be trusted; a video and a scrolly step " +
+    "through targets on the author's clock. This page hands the yardstick over, and the six bars " +
+    "never move while it changes.",
+  controls: [
+    {
+      question: "Cette part-là, elle est faite de quoi — quelles sources, et dans quel ordre ?",
+      gesture: "ask-a-mark",
+      changes:
+        "The row under the pointer darkens off its own fill, by a hunted dose and never a dot, and " +
+        "answers with the nine source columns the share was computed FROM, each with its own " +
+        "percentage — Poland's 31,1 % almost all wind and biomass, Sweden's 98,8 % hydro plus nuclear.",
+    },
+    {
+      question: "Par rapport à quoi ? Qui passe si la barre est mise ailleurs ?",
+      gesture: "toggle-a-comparison",
+      changes:
+        "The six bars stay exactly where they are and the apparatus of judgement moves: the target " +
+        "tick slides across every row to the chosen benchmark, the gap redraws as surplus beyond it " +
+        "and as a ground-coloured void short of it, the pass band behind each bar slides with the " +
+        "tick, and each row's verdict cross-fades to the new signed figure at the bar's own end.",
+    },
+  ],
+};
+```
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    },
+    {
+      "order": 2,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "the-target-marker-position-is-computed": null,
+    "the-share-is-computed-from-the": null,
+    "both-halves-of-the-claim-furthest": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```

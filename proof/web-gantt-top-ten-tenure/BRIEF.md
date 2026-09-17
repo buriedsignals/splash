@@ -3,6 +3,7 @@ format: web
 type: gantt
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — 16 pays sont passés par le top 10 mondial des émetteurs, 6 n'en sont jamais sortis (web)
@@ -369,3 +370,83 @@ instruction is desktop first and mobile once the desktop is validated.
 Global Carbon Budget (2025), via Our World in Data · 1990–2024, ranking computed over the 215
 countries in the file. `data.csv` is a byte-for-byte copy of
 `proof/static-gantt-top-ten-tenure/data.csv`, per this corpus's "duplicate, do not link" ruling.
+
+## The choreography
+
+The declaration below is this beat's own `const interaction`, in the shape
+`chart-web/scripts/choreography.mjs` cuts out of a source. It lives here rather than in
+`render-directions-web.mjs` because this beat's controls are built by a vocabulary of its own that
+`shippedControls` cannot see, so no plan travels with the render — the reason the section above
+already records. The block under it is what the parser reads out of it.
+
+```js
+const interaction = {
+  earns:
+    "A calendar answers who was there at the same time and hides how long each one stayed; lengths " +
+    "measured from sixteen different starting years cannot be compared by eye. A still fixes one " +
+    "origin. Here the reader moves every interval's own zero while one unit of length stays one " +
+    "year in all three states.",
+  controls: [
+    {
+      question: "Ils ont tenu combien de temps, eux — et ça fait quoi si on les aligne tous sur leur entrée ?",
+      gesture: "toggle-a-comparison",
+      changes:
+        "Every bar slides to its new origin on a scale that is never recomputed — 22,29 geometry " +
+        "units per year throughout — so the seven graduations stay at the same pixels and only " +
+        "their words change, from calendar years to years elapsed to years actually held. The rows " +
+        "do not re-rank, and closing the interruptions makes Korea and Canada the same bar.",
+    },
+    {
+      question: "Cette barre-là, elle vaut quoi, et où se place-t-elle dans l'ordre des durées ?",
+      gesture: "ask-a-mark",
+      changes:
+        "Both spans of an interrupted row light together, because a country with a gap is still one " +
+        "country, and the row answers with seven readings — its years held out of the years open, " +
+        "its rank in the tenure order, its blocks, its absences, how long after the record opened it " +
+        "arrived, its best rank, and whether it is still there.",
+    },
+  ],
+};
+```
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "spans-are-computed-in-the-runner": null,
+    "no-span-may-be-inverted-and": null,
+    "the-printed-figure-at-a-bar": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
