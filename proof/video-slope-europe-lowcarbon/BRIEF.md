@@ -9,7 +9,7 @@ derived: v1
 
 # Beat — Les seize pays ont tous gagné du bas-carbone depuis 2000 ; un seul a doublé la France (video)
 
-**Type:** slope chart (two dated rails). **Medium/format:** chart / **video**. **Size:** landscape (1920 × 1080).
+**Type:** slope (two dated rails). **Medium/format:** chart / **video**. **Size:** landscape (1920 × 1080).
 
 Same subject, same frozen file (`../static-slope-europe-lowcarbon/data.csv`) and the same assertions as
 `proof/static-slope-europe-lowcarbon`, against all sixteen: every country rose between 2000 and 2024, Finland was under

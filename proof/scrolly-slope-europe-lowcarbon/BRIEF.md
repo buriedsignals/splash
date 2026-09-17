@@ -8,7 +8,7 @@ derived: v1
 
 # Beat — Les seize pays ont tous gagné du bas-carbone depuis 2000 — un seul a doublé la France (scrolly)
 
-**Type:** slope chart (two dated rails). **Medium/format:** chart / **scrolly**. **Frame:** the whole graphic, from a
+**Type:** slope (two dated rails). **Medium/format:** chart / **scrolly**. **Frame:** the whole graphic, from a
 phone to a wide desktop.
 
 The `slope` type in the scrolly format, drawn once per filed direction from the same data, claim and assertions as

@@ -21,7 +21,7 @@
 // own `Medium/format:` line says so.
 //
 // A scrolly is detected by reading the page, not by its folder name — the scroll scaffold leaves
-// `data-step`/`step-panel` in the delivered HTML.
+// `step-panel` in the delivered HTML.
 //
 // WHAT IT PROVABLY DOES NOT TELL YOU. That the artifact is CORRECT. A beat appears here because a
 // file exists and its brief names a type; whether the chart is right, its claims true, or its
@@ -84,7 +84,12 @@ export function readBeats() {
     // Baked basemap plates are inputs, not artifacts.
     const files = walk(dir).filter((f) => !f.includes("/plate"));
     const html = files.filter((f) => f.endsWith(".html"));
-    const scrolly = html.some((f) => /data-step|step-panel/.test(readFileSync(f, "utf8")));
+    // `.step-panel` — the opaque prose card every scrolly step's text sits in — is the one marker
+    // only a scrolly carries. `data-step` used to be read as a second marker and is not one: it is
+    // an ordinary mark key, and a waterfall's own steps wear it on every `<rect>`, so
+    // `web-waterfall-germany-bridge` was filed as a scrolly and the waterfall row lost the web
+    // artifact sitting on disk. A generated table lies more convincingly than a hand-written one.
+    const scrolly = html.some((f) => /step-panel/.test(readFileSync(f, "utf8")));
 
     const formats = new Set();
     const declaresStatic = /static/.test(medium);

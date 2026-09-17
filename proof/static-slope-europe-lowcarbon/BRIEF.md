@@ -9,7 +9,7 @@ derived: v1
 
 # Beat — All sixteen rose, and one country overtook France
 
-**Type:** slope chart (two dated rails). **Medium/format:** chart / **static**. **Size:** landscape
+**Type:** slope (two dated rails). **Medium/format:** chart / **static**. **Size:** landscape
 (1920 x 1080), pinned in the front matter above, which is the statement that counts.
 
 The first `slope` beat in this tree. The `paired` family holds nineteen references and only the

@@ -11,9 +11,9 @@ it is a by-product of that beat's reveal, not a chart framed to be read at rest.
 This is a coverage map, never a quality one. Correctness is established separately by the
 test suite and direct review of the rendered artifacts.
 
-## Charts — 41 types, 137 beats
+## Charts — 40 types, 138 beats
 
-29 of 41 are proven in all three of static, web and video.
+31 of 40 are proven in all three of static, web and video.
 
 | type | static | web | video | scrolly |
 |---|---|---|---|---|
@@ -38,7 +38,7 @@ test suite and direct review of the rendered artifacts.
 | **grouped bar** | static-wind-vs-solar | web-grouped-bar-wind-vs-solar | video-grouped-bar-wind-vs-solar | scrolly-wind-vs-solar |
 | **heatmap** | static-heatmap-europe-electricity | web-heatmap-europe-electricity | video-heatmap-europe-electricity | scrolly-heatmap-coal-share-europe |
 | **hex grid** | static-hex-grid-europe-protection | — | — | — |
-| **histogram** | static-carbon-footprint-spread | web-histogram-carbon-footprint | video-histogram-carbon-footprint-spread | scrolly-carbon-footprint-spread |
+| **histogram** | static-carbon-footprint-spread<br>static-histogram-europe-solar-spread | web-histogram-carbon-footprint | video-histogram-carbon-footprint-spread | scrolly-carbon-footprint-spread |
 | **line** | — | web-line-swiss-co2 | video-line-swiss-co2 | scrolly-line-swiss-co2 |
 | **locator** | static-locator-zaporizhzhia | — | — | — |
 | **lollipop** | static-lollipop-co2-per-person | web-lollipop-co2-per-person | video-lollipop-co2-per-person | scrolly-lollipop-co2-per-person |
@@ -51,13 +51,12 @@ test suite and direct review of the rendered artifacts.
 | **radar** | static-radar-electricity-mix | web-radar-electricity-mix | video-radar-electricity-mix | scrolly-radar-electricity-mix |
 | **sankey** | static-sankey-electricity-sources | web-sankey-electricity-sources | video-sankey-electricity-sources | scrolly-sankey-electricity-sources |
 | **scatter** | static-income-life-expectancy | web-scatter-income-life-expectancy | video-scatter-income-life-expectancy | scrolly-scatter-income-life-expectancy |
-| **slope** | — | web-slope-europe-lowcarbon | — | — |
-| **slope chart** | static-slope-europe-lowcarbon | — | video-slope-europe-lowcarbon | scrolly-slope-europe-lowcarbon |
+| **slope** | static-slope-europe-lowcarbon | web-slope-europe-lowcarbon | video-slope-europe-lowcarbon | scrolly-slope-europe-lowcarbon |
 | **small multiples** | static-small-multiples-lowcarbon | web-small-multiples-solar-eu-six | video-small-multiples-lowcarbon | scrolly-small-multiples-lowcarbon |
 | **stacked bar** | static-stacked-bar-lowcarbon-growth | web-stacked-bar-lowcarbon-growth | video-stacked-bar-lowcarbon-growth | scrolly-stacked-bar-lowcarbon-growth |
 | **streamgraph** | static-streamgraph-swiss-electricity | web-streamgraph-swiss-electricity | video-streamgraph-swiss-electricity | scrolly-streamgraph-swiss-electricity |
 | **treemap** | static-treemap-europe-capacity | web-treemap-europe-capacity | video-treemap-europe-capacity | scrolly-treemap-europe-capacity |
-| **waterfall** | static-germany-electricity-bridge | — | video-waterfall-germany-electricity-bridge | scrolly-germany-electricity-bridge<br>web-waterfall-germany-bridge |
+| **waterfall** | static-germany-electricity-bridge | web-waterfall-germany-bridge | video-waterfall-germany-electricity-bridge | scrolly-germany-electricity-bridge |
 
 ## Maps — 8 types, 22 beats
 
