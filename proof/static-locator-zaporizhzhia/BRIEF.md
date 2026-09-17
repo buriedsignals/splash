@@ -4,6 +4,7 @@ type: locator
 format: static
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — Where Europe's largest low-carbon power station is
@@ -89,3 +90,83 @@ que les cartes continentales doivent tenir ne se pose pas ici. Ce que la plaque 
 est exactement ce dont un locator vit : un lecteur qui ne reconnaît pas la côte n'a rien appris, et
 les bornes de la caméra viennent toujours du sujet — la plus grosse centrale du fichier gelé — et
 sont passées au bake plutôt qu'à une projection écrite ici.
+
+## The choreography
+
+A locator has one job and this one does it with a single ring. The three classes of place are
+separated by typography alone — countries uppercased and tracked in muted ink, settlements mixed
+case on their own open dots, water in italic in the water tint — so the map can be read without a
+key. The Black Sea and the Sea of Azov are what make the frame recognisable at a glance, and the
+Dnipro is what puts the subject somewhere rather than anywhere. The ring is placed first and every
+other label is seated around it; the figure sits directly under the name, in the accent, so the
+what and the how-much arrive together.
+
+**The eye enters at** `the ringed subject`. **The claim lands at** `conclusion`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the three place classes` | `the ringed subject` |
+| reference | `the water names` | `the ringed subject` |
+| subject | `the ringed subject` | — |
+| conclusion | `the capacity label` | `the ringed subject` |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the ringed subject",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the three place classes",
+      "subordinateTo": "the ringed subject"
+    },
+    {
+      "station": "reference",
+      "carries": "the water names",
+      "subordinateTo": "the ringed subject"
+    },
+    {
+      "station": "subject",
+      "carries": "the ringed subject",
+      "subordinateTo": null
+    },
+    {
+      "station": "conclusion",
+      "carries": "the capacity label",
+      "subordinateTo": "the ringed subject"
+    }
+  ],
+  "claimLands": "conclusion"
+}
+```
+
+## Precision
+
+- **The largest is a search over the base** — which low-carbon station is Europe's biggest is a search in the frozen database; Zaporizhzhia is its answer, and the standfirst states the one caveat the source carries.
+- **A label is pushed, never dropped** — each label takes the first of six offsets that clears every box already placed and stays inside the camera; the subject is placed first because it may not move, and the plate reports anything it could not seat.
+- **The camera is framed on the subject** — the bounds come from the subject's own position, so the ring can never be the thing a crop cuts.
+- **The projection's cost is measured** — the distortion at this scale is measured and shown to be a fraction of a per cent across the frame, rather than assumed negligible.
+- **Place and figure in the one frame** — the ring, the name and the 6 000 MW are read together; a locator that made the reader look elsewhere for the number would be a decoration.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "the-largest-is-a-search-over",
+    "a-label-is-pushed-never-dropped",
+    "the-camera-is-framed-on-the",
+    "the-projection-cost-is-measured",
+    "place-and-figure-in-the-one"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "the-largest-is-a-search-over",
+    "a-label-may-be-pushed-never": "a-label-is-pushed-never-dropped",
+    "the-camera-bounds-always-come-from": "the-camera-is-framed-on-the",
+    "the-projection-cost-is-stated-and": "the-projection-cost-is-measured",
+    "asserted-in-the-one-frame": "place-and-figure-in-the-one"
+  }
+}
+```

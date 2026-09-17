@@ -4,6 +4,7 @@ type: histogram
 format: static
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — six in ten countries emit under 4 tonnes of CO2 per person
@@ -55,3 +56,82 @@ Second, the alt text I first wrote hard-coded "a dashed median line sits at 3.7 
 same wrong number — caught by reading the rendered `<desc>` against the visible on-chart label
 ("Median: 3.1 t"), which disagreed with each other; the alt text now interpolates the script's own
 computed value instead of a typed guess.
+
+## The choreography
+
+The distribution states itself: a wall at the left, then a long thin tail that runs almost to the
+right edge without ever rising off the floor. No bar is the subject here — the single accent on the
+plate is a vertical rule, and it is spent on the threshold the headline counts, landing exactly on
+a bin edge so a reader can see that nothing has been split. The annotation beside the rule prints
+the count and the denominator together, which is the only way "six in ten" is checkable. The bars
+stay in the page's muted tone throughout.
+
+**The eye enters at** `the overall shape`. **The claim lands at** `reveal`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the overall shape` | `the threshold line` |
+| reference | `the long tail` | `the overall shape` |
+| reveal | `the threshold line` | — |
+| conclusion | `the count annotation` | `the threshold line` |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the overall shape",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the overall shape",
+      "subordinateTo": "the threshold line"
+    },
+    {
+      "station": "reference",
+      "carries": "the long tail",
+      "subordinateTo": "the overall shape"
+    },
+    {
+      "station": "reveal",
+      "carries": "the threshold line",
+      "subordinateTo": null
+    },
+    {
+      "station": "conclusion",
+      "carries": "the count annotation",
+      "subordinateTo": "the threshold line"
+    }
+  ],
+  "claimLands": "reveal"
+}
+```
+
+## Precision
+
+- **127 of 213 is counted** — the headline's "six in ten" is 127 countries out of 213 below 4 tonnes, counted in the frozen file and printed in full beside the rule.
+- **Every country falls in one bin** — the bins are half-open and cover the whole range, so every observation lands in exactly one and the counts sum to 213.
+- **One count scale from zero** — the vertical scale starts at zero and stays there, because a histogram is a count and a clipped count exaggerates the mode.
+- **The 4 t bin width is chosen by rule** — the 4-tonne width is chosen by a stated rule over the series rather than picked to make the threshold fall on an edge — and the threshold then does fall on one.
+- **The count and the shape at once** — the mode, the tail and the counted threshold are read in the same instant; separating them would leave "six in ten" unsupported by the picture.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "127-of-213-is-counted",
+    "every-country-falls-in-one-bin",
+    "one-count-scale-from-zero",
+    "the-4-t-bin-width-is",
+    "the-count-and-the-shape-at"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "127-of-213-is-counted",
+    "every-observation-falls-in-exactly-one": "every-country-falls-in-one-bin",
+    "one-count-scale-from-zero": "one-count-scale-from-zero",
+    "the-bin-width-is-chosen-by": "the-4-t-bin-width-is",
+    "asserted-in-the-one-frame": "the-count-and-the-shape-at"
+  }
+}
+```

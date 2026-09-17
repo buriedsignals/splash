@@ -4,6 +4,7 @@ type: hex-grid
 format: static
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — Par habitant, ce n'est pas l'Allemagne : la Tchéquie accueille 36,1 Ukrainiens pour 1 000 habitants
@@ -94,3 +95,82 @@ Ce que la grille garde de la géographie est la disposition APPROXIMATIVE, dessi
 déclarée comme telle. C'est exactement ce qui la sépare du pictogramme, où les mêmes pays sont triés
 par valeur et la carte a disparu. Un fond réel sous une disposition approximative n'est ni l'un ni
 l'autre.
+
+## The choreography
+
+The cells are separated by a stroke in the ground's own colour, so the grid reads as one surface
+rather than as thirty scattered marks — and that surface, classed, is what the eye takes in first.
+One cell is darker than every other and carries its code in bold: Czechia, which is not the answer
+a reader arrives with. Germany is on the same surface, mid-ramp, which is the whole point of
+drawing per-capita rather than totals. Ukraine sits in the grid and outside the count, in a
+neutral off the ramp, and the note under the plate says why.
+
+**The eye enters at** `the tiled surface`. **The claim lands at** `subject`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the tiled surface` | `the Czech cell` |
+| reference | `the key's two rows` | `the Czech cell` |
+| reveal | `the Ukraine cell` | `the tiled surface` |
+| subject | `the Czech cell` | — |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the tiled surface",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the tiled surface",
+      "subordinateTo": "the Czech cell"
+    },
+    {
+      "station": "reference",
+      "carries": "the key's two rows",
+      "subordinateTo": "the Czech cell"
+    },
+    {
+      "station": "reveal",
+      "carries": "the Ukraine cell",
+      "subordinateTo": "the tiled surface"
+    },
+    {
+      "station": "subject",
+      "carries": "the Czech cell",
+      "subordinateTo": null
+    }
+  ],
+  "claimLands": "subject"
+}
+```
+
+## Precision
+
+- **36,1 per thousand is computed** — the headline's rate is the protection count over the 2023 population, computed per country, and Czechia is the maximum of that computation.
+- **The hand-drawn grid is checked both ways** — every code in the designed layout has a reading and every reading has a cell; a country added to the source without a cell fails the build.
+- **The beat refuses a shared leader** — if the same country led both this per-capita ranking and the sibling flow map's absolute one, the pair would have nothing to show, and the beat refuses.
+- **The code floor is measured on the drawn cell** — the three-letter code is sized against the hexagon as drawn, and a hexagon too narrow to hold it fails rather than clipping the code.
+- **Every country's rate in one frame** — the leader, the country a reader expected and the origin are all on the same surface at once; a ranked list would lose the last of those.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "36-1-per-thousand-is-computed",
+    "the-hand-drawn-grid-is-checked",
+    "the-beat-refuses-a-shared-leader",
+    "the-code-floor-is-measured-on",
+    "every-country-rate-in-one-frame"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "36-1-per-thousand-is-computed",
+    "the-designed-grid-is-checked-both": "the-hand-drawn-grid-is-checked",
+    "the-beat-refuses-to-render-if": "the-beat-refuses-a-shared-leader",
+    "the-code-floor-is-measured-on": "the-code-floor-is-measured-on",
+    "asserted-in-the-one-frame": "every-country-rate-in-one-frame"
+  }
+}
+```

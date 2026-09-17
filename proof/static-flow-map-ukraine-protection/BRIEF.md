@@ -4,6 +4,7 @@ type: flow-map
 format: static
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — 4,5 millions d'Ukrainiens sous protection temporaire ; l'Allemagne et la Pologne en accueillent la moitié
@@ -144,3 +145,82 @@ de la partie du pays réellement DANS LE CADRE, la correction que ce beat portai
 élargi à 48°E dans la même passe : chaque ruban part d'un seul point, et une caméra qui s'arrête
 juste après lui écrase l'éventail contre la marge et pose le nom de l'origine sur celui de la
 destination la plus proche.
+
+## The choreography
+
+Everything on this map leaves from one place, so the crop is built to keep that place whole: the
+white circle on the eastern edge is where the eye starts, and the ten ribbons fan west from it.
+Width is people, and two of the ten are wide enough to be read as a pair before any name — Germany
+in the accent, Poland beside it. The key in the left column is what turns a width back into a
+number, and it is measured on the plate that was actually drawn, not declared in advance. The
+names and figures sit at each band's own end, so no ribbon needs a legend.
+
+**The eye enters at** `the origin node`. **The claim lands at** `subject`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the origin node` | `the two widest bands` |
+| reference | `the width key` | `the two widest bands` |
+| reveal | `the ten end labels` | `the origin node` |
+| subject | `the two widest bands` | — |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the origin node",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the origin node",
+      "subordinateTo": "the two widest bands"
+    },
+    {
+      "station": "reference",
+      "carries": "the width key",
+      "subordinateTo": "the two widest bands"
+    },
+    {
+      "station": "reveal",
+      "carries": "the ten end labels",
+      "subordinateTo": "the origin node"
+    },
+    {
+      "station": "subject",
+      "carries": "the two widest bands",
+      "subordinateTo": null
+    }
+  ],
+  "claimLands": "subject"
+}
+```
+
+## Precision
+
+- **Half is the two widest, summed** — Germany's 1 251 000 and Poland's 959 000 against the 4 504 080 total is a sum over the frozen file, and the headline's "half" is what that sum gives.
+- **Width is people, on one measured scale** — one stated scale for every band, and the scale is measured on the drawn plate rather than asserted before the render.
+- **Three refusals before the render** — the plate throws if the subject is not the largest, if the two largest do not take about the claimed share, or if the total falls under its stated floor.
+- **The widest band is capped** — the widest ribbon is capped at a share of the map and every other width follows from it, so this stays a map and does not become a ribbon diagram over a faint basemap.
+- **Ten bands, their total and their share** — the ten drawn, the 81 % they cover and the 19 % they do not are all stated in the one frame, because a flow map that hides its residue lies by omission.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "half-is-the-two-widest-summed",
+    "width-is-people-on-one-measured",
+    "three-refusals-before-the-render",
+    "the-widest-band-is-capped",
+    "ten-bands-their-total-and-their"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "half-is-the-two-widest-summed",
+    "width-is-the-quantity-on-one": "width-is-people-on-one-measured",
+    "the-plate-refuses-to-render-if": "three-refusals-before-the-render",
+    "the-widest-band-is-capped-at": "the-widest-band-is-capped",
+    "asserted-in-the-one-frame": "ten-bands-their-total-and-their"
+  }
+}
+```

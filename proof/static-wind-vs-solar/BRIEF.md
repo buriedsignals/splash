@@ -4,6 +4,7 @@ type: grouped-bar
 format: static
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Switzerland is the outlier: solar beats wind
@@ -78,3 +79,82 @@ Nothing in the toolchain could have caught this on its own: `assertPlotAspect` o
 that HAVE a measured aspect range, and a band-scale type has none — its answer is the twin form.
 The twin form is right and it is still not enough, which is a fact about twelve marks and a phone,
 not about the transpose.
+
+## The choreography
+
+Six pairs, separated by hairline rules, and the rules are what the eye reads first: they make the
+comparison a within-group one rather than a twelve-bar ranking. Five pairs have the same silhouette
+— tall blue, short grey — and the sixth does not. Switzerland is named in ink with a short
+annotation above it, because the exception is the claim and a colour alone would not carry it. The
+legend at the top left is this type's own carve-out: with two series interleaved, nothing
+positional says which bar is which.
+
+**The eye enters at** `the group boundaries`. **The claim lands at** `subject`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the group boundaries` | `the Switzerland group` |
+| reference | `the series legend` | `the Switzerland group` |
+| subject | `the Switzerland group` | — |
+| conclusion | `the reversal note` | `the Switzerland group` |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the group boundaries",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the group boundaries",
+      "subordinateTo": "the Switzerland group"
+    },
+    {
+      "station": "reference",
+      "carries": "the series legend",
+      "subordinateTo": "the Switzerland group"
+    },
+    {
+      "station": "subject",
+      "carries": "the Switzerland group",
+      "subordinateTo": null
+    },
+    {
+      "station": "conclusion",
+      "carries": "the reversal note",
+      "subordinateTo": "the Switzerland group"
+    }
+  ],
+  "claimLands": "subject"
+}
+```
+
+## Precision
+
+- **Five and one is a count** — which countries put wind ahead of solar is computed pair by pair, and the headline's five and its one exception are that count.
+- **One zero-based scale across six groups** — every bar in every group is measured from the same zero, because a group that rescaled itself would make its own pair look decisive.
+- **The beat throws on a wrong count** — if the number of countries where wind leads is not what the title says, the render is refused rather than corrected in the caption.
+- **Each share comes from national production** — wind and solar are shares of each country's own 2024 generation, computed from the frozen file, never of a European total.
+- **Twelve values printed beside their bars** — every figure is on the plate at rest; the ordering by gap is stated in the standfirst because a reader cannot see a sort key.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "five-and-one-is-a-count",
+    "one-zero-based-scale-across-six",
+    "the-beat-throws-on-a-wrong",
+    "each-share-comes-from-national-production",
+    "twelve-values-printed-beside-their-bars"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "five-and-one-is-a-count",
+    "one-shared-value-scale-from-zero": "one-zero-based-scale-across-six",
+    "the-beat-throws-if-the-number": "the-beat-throws-on-a-wrong",
+    "the-shares-are-computed-from-the": "each-share-comes-from-national-production",
+    "asserted-in-the-one-frame": "twelve-values-printed-beside-their-bars"
+  }
+}
+```

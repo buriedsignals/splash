@@ -4,6 +4,7 @@ type: gantt
 format: static
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Six countries have never left the world's top ten emitters since 1990
@@ -45,3 +46,82 @@ label carries a trailing dash.
 Global Carbon Budget (2025), via Our World in Data · annual CO₂ emissions by country, fossil fuels
 and industry, frozen beside this beat as `data.csv` (a copy of the file
 `proof/static-bump-emitter-rank` uses, per this corpus's "duplicate, do not link" ruling).
+
+## The choreography
+
+The six accented rows at the top are a block before they are six rows, and that block IS the
+claim — it can be counted off the picture without reading a single date. Everything below it is
+there to make the block mean something: rows that arrive, rows that leave, and two rows with a
+real hole in them, drawn as a hole rather than closed over. Kuwait's single year is what makes
+"at least once" concrete, a bar barely wider than the stroke around it. The dates are written into
+the row labels, so the axis is only ever a check.
+
+**The eye enters at** `the unbroken block`. **The claim lands at** `establish`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the unbroken block` | — |
+| reference | `the interrupted rows` | `the unbroken block` |
+| reveal | `the single-year row` | `the unbroken block` |
+| conclusion | `the span labels` | `the unbroken block` |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the unbroken block",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the unbroken block",
+      "subordinateTo": null
+    },
+    {
+      "station": "reference",
+      "carries": "the interrupted rows",
+      "subordinateTo": "the unbroken block"
+    },
+    {
+      "station": "reveal",
+      "carries": "the single-year row",
+      "subordinateTo": "the unbroken block"
+    },
+    {
+      "station": "conclusion",
+      "carries": "the span labels",
+      "subordinateTo": "the unbroken block"
+    }
+  ],
+  "claimLands": "establish"
+}
+```
+
+## Precision
+
+- **Six is a count off the spans** — how many countries never left is the number of rows whose span covers every year from 1990 to 2024, computed from the yearly ranks.
+- **Every span is computed from the ranks** — no start and no end is typed: a span is a maximal run of years in which the country sat in the top ten.
+- **The two holes are found, not listed** — Italy's 1991 and South Korea's 1998-99 are gaps the search returned, and the reading line says the holes are real.
+- **No span may run backwards** — a span whose end precedes its start throws rather than drawing as a zero-width bar nobody would notice.
+- **Thirty-five years on one axis** — every row is read against the same date axis in the same frame, which is the only way the top block reads as continuous.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "six-is-a-count-off-the",
+    "every-span-is-computed-from-the",
+    "the-two-holes-are-found-not",
+    "no-span-may-run-backwards",
+    "thirty-five-years-on-one-axis"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "six-is-a-count-off-the",
+    "every-span-is-computed-from-the": "every-span-is-computed-from-the",
+    "interruptions-are-found-not-listed-and": "the-two-holes-are-found-not",
+    "no-span-may-be-inverted": "no-span-may-run-backwards",
+    "asserted-in-the-one-frame": "thirty-five-years-on-one-axis"
+  }
+}
+```

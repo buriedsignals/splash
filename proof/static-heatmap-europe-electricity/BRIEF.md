@@ -4,6 +4,7 @@ type: heatmap
 format: static
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Three routes to low-carbon electricity, 12 European countries × 9 sources
@@ -88,3 +89,83 @@ curl -sS -L --get "https://ourworldindata.org/grapher/electricity-prod-source-st
 
 10 581 rows returned, 1900–2025. Frozen beside this beat as `data.csv`: the 18 European countries of
 the plate, year **2024** — the last complete year in the file, 2025 being partial.
+
+## The choreography
+
+The finding here is a block, not a cell. The top seven rows are dark somewhere, and WHERE they are
+dark differs — hydro on the left for Iceland, Albania and Norway; nuclear in the middle for France;
+both for Sweden, Switzerland and Finland. That partition is the claim, and it is read off the
+shape of the darkness before any number. The families named above the drawn rule tell the reader
+what the three zones of columns are; the bracket at the right, in ink and outside the ramp so it
+can never be read as a value, says how far the block extends; the sorted share column prints the
+quantity the rows are ordered on, because an order is a claim too.
+
+**The eye enters at** `the top block`. **The claim lands at** `establish`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the top block` | — |
+| reference | `the column families` | `the top block` |
+| reveal | `the route bracket` | `the top block` |
+| conclusion | `the sorted share column` | `the top block` |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the top block",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the top block",
+      "subordinateTo": null
+    },
+    {
+      "station": "reference",
+      "carries": "the column families",
+      "subordinateTo": "the top block"
+    },
+    {
+      "station": "reveal",
+      "carries": "the route bracket",
+      "subordinateTo": "the top block"
+    },
+    {
+      "station": "conclusion",
+      "carries": "the sorted share column",
+      "subordinateTo": "the top block"
+    }
+  ],
+  "claimLands": "establish"
+}
+```
+
+## Precision
+
+- **Seven above 94 % is a count** — which countries clear the threshold is computed from the low-carbon share, and the bracket is drawn around whatever that count returns.
+- **The colour domain is fixed once** — one domain for all 108 cells, fixed from the frozen file, so a dark cell means the same share in every row and every column.
+- **The three routes are derived** — hydro-led, nuclear-led and both are read off each row's own dark columns, not assigned from what is known about the countries.
+- **The row count is measured against the frame** — how many rows this plate can carry at a legible row height is measured, and the set is cut to it rather than squeezed.
+- **Nine sources, twelve countries, one frame** — the whole matrix and the ordering quantity are on the plate at once; the partition is only visible because no row is off-screen.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "seven-above-94-is-a-count",
+    "the-colour-domain-is-fixed-once",
+    "the-three-routes-are-derived",
+    "the-row-count-is-measured-against",
+    "nine-sources-twelve-countries-one-frame"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "seven-above-94-is-a-count",
+    "the-colour-scale-domain-is-fixed": "the-colour-domain-is-fixed-once",
+    "the-routes-the-claim-names-are": "the-three-routes-are-derived",
+    "the-row-count-is-measured-against": "the-row-count-is-measured-against",
+    "asserted-in-the-one-frame": "nine-sources-twelve-countries-one-frame"
+  }
+}
+```
