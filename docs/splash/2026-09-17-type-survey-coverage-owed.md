@@ -47,7 +47,24 @@ Loosening the alias join instead — substring matching, or dropping a trailing 
 tempting one-line version and is the wrong one: the join is token-exact so that a beat declaring a
 type nobody wrote a sheet for fails loudly rather than being silently absorbed into a neighbour.
 
-## Why it is recorded rather than done
+## Closed — 2026-09-17, same day
+
+Done, with one thing the note did not predict. The three `**Type:**` lines now read `slope (two
+dated rails)`, which `typeName` reads as `slope`, the spelling the fourth export and the sheet use.
+
+Step 3 caught a THIRD cause of a lost column, beside the archive move and the alias miss:
+`readBeats` treated `data-step` as a scrolly marker. It is an ordinary mark key, and a waterfall's
+own steps carry it on every `<rect>`, so `web-waterfall-germany-bridge` was filed as a scrolly and
+the waterfall row lost the web artifact sitting on disk. `.step-panel` — the opaque prose card
+doctrine gives every scrolly step — is the marker only a scrolly carries, and across the 160 beats
+it is the only one that ever diverges. With that fixed, the two remaining column losses are the
+archive move exactly as predicted: **line** loses static and **photograph sequence** loses scrolly,
+both verified against `archive/`.
+
+`survey:check`, `matrix:check` and `catalog:check` are green, and
+`skills/storyboard/test/type-survey.test.ts` passes.
+
+## Why it was recorded rather than done
 
 It was found while fixing four unrelated failures and the catalogue's own drift; it is corpus
 work with a judgement call in step 3, not a test fix. `skills/storyboard/test/type-survey.test.ts`
