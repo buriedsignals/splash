@@ -4,6 +4,7 @@ type: dot-strip
 format: static
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Le plancher européen est monté de 30 points, le plafond de 2
@@ -88,3 +89,83 @@ correction 55, on the delivered plate.
 Ember / Energy Institute – Statistical Review of World Energy (2025), via Our World in Data, frozen
 beside this beat as `data.csv` — a duplicate of the file
 `proof/static-stacked-bar-lowcarbon-growth` carries, copied rather than linked.
+
+## The choreography
+
+Two lanes, the same scale twice, and the reading is the change in SHAPE between them: in 2000 the
+pins crowd the left half and thin out towards 100; in 2024 the crowd has moved right and the left
+half is empty. The accent is spent once, on Poland, which is the floor in both lanes — its
+leader is the only drawn line that carries a number, +30. The ceiling's own move is not labelled:
+Sweden's two pins sit two points apart at the right edge, and the second half of the headline is
+read off them against the accented leader. That asymmetry is the beat's editorial choice, not an
+oversight.
+
+**The eye enters at** `the two lanes`. **The claim lands at** `subject`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the two lanes` | `the Poland leader` |
+| reference | `the shared scale` | `the two lanes` |
+| reveal | `the ceiling pins` | `the Poland leader` |
+| subject | `the Poland leader` | — |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the two lanes",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the two lanes",
+      "subordinateTo": "the Poland leader"
+    },
+    {
+      "station": "reference",
+      "carries": "the shared scale",
+      "subordinateTo": "the two lanes"
+    },
+    {
+      "station": "reveal",
+      "carries": "the ceiling pins",
+      "subordinateTo": "the Poland leader"
+    },
+    {
+      "station": "subject",
+      "carries": "the Poland leader",
+      "subordinateTo": null
+    }
+  ],
+  "claimLands": "subject"
+}
+```
+
+## Precision
+
+- **The thirty points are a difference** — Poland's 2000 and 2024 shares are read off the frozen file and the +30 on the leader is their difference, rounded once.
+- **One scale, 0 to 100, both lanes** — the two lanes carry the same scale over the same domain, because a distribution that moved is only readable when the ruler did not.
+- **The plate refuses a crowded lane** — if the labels in either lane cannot be seated without collision at the chosen size, the beat throws rather than overlap two codes.
+- **Floor, ceiling and spread all asserted** — the lowest, the highest and the distance between them are computed per lane, and the 27,4-point closing is their difference.
+- **Two lanes, one frame, one instant** — before and after are on the plate at once; a reader compares two shapes rather than remembering one.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "the-thirty-points-are-a-difference",
+    "one-scale-0-to-100-both",
+    "the-plate-refuses-a-crowded-lane",
+    "floor-ceiling-and-spread-all-asserted",
+    "two-lanes-one-frame-one-instant"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "the-thirty-points-are-a-difference",
+    "one-scale-for-both-lanes-over": "one-scale-0-to-100-both",
+    "the-plate-refuses-to-render-if": "the-plate-refuses-a-crowded-lane",
+    "the-floor-the-ceiling-the-spread": "floor-ceiling-and-spread-all-asserted",
+    "asserted-in-the-one-frame": "two-lanes-one-frame-one-instant"
+  }
+}
+```

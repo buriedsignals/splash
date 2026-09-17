@@ -4,6 +4,7 @@ type: connected-scatter
 format: static
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Tous plus propres chez eux, cinq plus légers en Europe
@@ -84,3 +85,82 @@ Ember / Energy Institute – Statistical Review of World Energy (2025), via Our 
 beside this beat as `data.csv` — a duplicate of the file `proof/static-stacked-bar-lowcarbon-growth`
 carries, copied rather than linked. Low-carbon is the sum of the file's own six low-carbon columns;
 the country's own mix is that sum over all nine generation columns.
+
+## The choreography
+
+Sixteen small arcs, each a hollow ring joined to a filled disc, and the field reads as one
+statement before any country is named: everything leans upward. The direction of the moves IS the
+claim, which is why the eye is meant to stay on the field rather than hunt a label. France is the
+exception the accent is spent on — the only long arc, and it runs the other way across the page,
+up a little and a long way left. Names sit on the 2024 disc only; the ring carries nothing,
+because a reader looks for a country where it is now.
+
+**The eye enters at** `the field of links`. **The claim lands at** `reveal`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the field of links` | `the France pair` |
+| reveal | `the move directions` | `the field of links` |
+| subject | `the France pair` | — |
+| conclusion | `the 2024 labels` | `the field of links` |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the field of links",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the field of links",
+      "subordinateTo": "the France pair"
+    },
+    {
+      "station": "reveal",
+      "carries": "the move directions",
+      "subordinateTo": "the field of links"
+    },
+    {
+      "station": "subject",
+      "carries": "the France pair",
+      "subordinateTo": null
+    },
+    {
+      "station": "conclusion",
+      "carries": "the 2024 labels",
+      "subordinateTo": "the field of links"
+    }
+  ],
+  "claimLands": "reveal"
+}
+```
+
+## Precision
+
+- **All sixteen and the five are counted** — that every one of the sixteen rose at home, and that five of them lost European weight, are two counts over the frozen file.
+- **The link runs 2000 to 2024** — the drawn order of each arc is the order of the two states, so a reader reading left to right is not reading the move backwards.
+- **The plate refuses a field that disagrees** — if the measured moves do not give the headline's two counts, the beat throws instead of rendering a near miss.
+- **Each size rung is tried whole** — the label pass is re-run entire at every rung of the size ladder, so a name that fits at one size is never assumed to fit at the next.
+- **Both movements read in one frame** — the home share and the European weight are two axes of the same still; separating them would lose the sentence's "pourtant".
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "all-sixteen-and-the-five-are",
+    "the-link-runs-2000-to-2024",
+    "the-plate-refuses-a-field-that",
+    "each-size-rung-is-tried-whole",
+    "both-movements-read-in-one-frame"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "all-sixteen-and-the-five-are",
+    "the-path-drawn-order-matches-the": "the-link-runs-2000-to-2024",
+    "the-plate-refuses-to-render-if": "the-plate-refuses-a-field-that",
+    "every-size-rung-is-tried-whole": "each-size-rung-is-tried-whole",
+    "asserted-in-the-one-frame": "both-movements-read-in-one-frame"
+  }
+}
+```

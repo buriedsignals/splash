@@ -4,6 +4,7 @@ type: choropleth
 format: static
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — The low-carbon block is the north-west, and Albania
@@ -109,3 +110,82 @@ en mer du Nord, deux lignes au-dessus de « Mer du Nord » : les deux lisibles, 
 les deux dégagées l'une de l'autre, et l'une des deux nommant la mauvaise mer. La spirale a
 maintenant une laisse — un dixième du cadre — et au-delà, c'est la forme PLUS COURTE de la même mer
 qui est essayée. Les trois directions nomment désormais « Balt. » ou « Baltique » sur la Baltique.
+
+## The choreography
+
+The eye reads the north-west as one dark mass — Iceland, Norway, Sweden, Finland, then France and
+Switzerland — before it reads a single country name. What breaks that mass is one cell far to the
+south-east, as dark as the north and surrounded by pale neighbours, and it is ringed so a reader
+cannot mistake it for a fill. That adjacency is the whole reason this is a map and not a ranked
+list: Albania's neighbours are the argument, and only a map puts them beside it. The note in the
+left column counts them afterwards.
+
+**The eye enters at** `the dark block`. **The claim lands at** `reveal`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the dark block` | `the ringed Albania` |
+| reference | `the class key` | `the ringed Albania` |
+| reveal | `the ringed Albania` | — |
+| conclusion | `the exception note` | `the ringed Albania` |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the dark block",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the dark block",
+      "subordinateTo": "the ringed Albania"
+    },
+    {
+      "station": "reference",
+      "carries": "the class key",
+      "subordinateTo": "the ringed Albania"
+    },
+    {
+      "station": "reveal",
+      "carries": "the ringed Albania",
+      "subordinateTo": null
+    },
+    {
+      "station": "conclusion",
+      "carries": "the exception note",
+      "subordinateTo": "the ringed Albania"
+    }
+  ],
+  "claimLands": "reveal"
+}
+```
+
+## Precision
+
+- **The exception is a search, not a pick** — the one country in the top class outside the north-west is found by measurement; Albania is the answer, not the premise.
+- **The join fails loud** — every studied country is asserted to have a row; a dropped region throws at build time rather than rendering as a quiet no-data class.
+- **The north-west is a computed set** — "north or west" is a measurement on the projected anchors, and the three neighbours are derived from the frozen rings by a test coarse in the safe direction.
+- **The basemap is a baked MapTiler plate** — baked once per direction, repainted in the direction's own two tints before the capture, and the three plates verified identical in camera.
+- **Forty countries in the one frame** — the block, the exception and the classes it is read against are all on the plate at once; nothing is deferred to a second view.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "the-exception-is-a-search-not",
+    "the-join-fails-loud",
+    "the-north-west-is-a-computed",
+    "the-basemap-is-a-baked-maptiler",
+    "forty-countries-in-the-one-frame"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "the-exception-is-a-search-not",
+    "the-join-is-asserted-and-a": "the-join-fails-loud",
+    "the-geography-in-the-claim-is": "the-north-west-is-a-computed",
+    "the-basemap-is-a-maptiler-plate": "the-basemap-is-a-baked-maptiler",
+    "asserted-in-the-one-frame": "forty-countries-in-the-one-frame"
+  }
+}
+```

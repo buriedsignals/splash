@@ -4,6 +4,7 @@ type: contour
 format: static
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — La moitié de l'Europe est à moins de 132 km de la mer
@@ -139,3 +140,82 @@ L'IMAGE, elle, est dessinée sur la plaque : chaque sommet tracé est porté gri
 MapTiler par une inverse LAEA écrite en toutes lettres, parce qu'une approximation linéaire dérive de
 dizaines de kilomètres sur une fenêtre de 70°. La projection change où une ligne est dessinée ; elle
 ne peut pas changer ce qu'elle veut dire, car le niveau qu'elle trace a été mesuré avant.
+
+## The choreography
+
+One mark and one mark only: a nest of lines, each carrying its own number ON itself, so there is
+no key to look away to. The reader enters on the nest, reads the 100 km line hugging every coast,
+and follows it inward to the 200 km line — and the headline's 132 km, which is a median and not a
+contour, is read as sitting inside that second line rather than drawn as a third. The one label
+that may not move is the spot mark at the far end of the field, 682 km from any sea; every contour
+label is placed around it.
+
+**The eye enters at** `the nest of lines`. **The claim lands at** `reveal`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the nest of lines` | `the deepest point` |
+| reference | `the 100 km line` | `the nest of lines` |
+| reveal | `the 200 km line` | `the nest of lines` |
+| subject | `the deepest point` | — |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the nest of lines",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the nest of lines",
+      "subordinateTo": "the deepest point"
+    },
+    {
+      "station": "reference",
+      "carries": "the 100 km line",
+      "subordinateTo": "the nest of lines"
+    },
+    {
+      "station": "reveal",
+      "carries": "the 200 km line",
+      "subordinateTo": "the nest of lines"
+    },
+    {
+      "station": "subject",
+      "carries": "the deepest point",
+      "subordinateTo": null
+    }
+  ],
+  "claimLands": "reveal"
+}
+```
+
+## Precision
+
+- **132 km is a measured median** — the headline's number is the median of the distance field over the study area, and the beat throws if it is not under the 200 km line the plate draws.
+- **The field is an exact distance transform** — measured on a stated 6 km grid in an equal-area projection; an isoline drawn from a rounded field wanders, and a wandering line labelled 200 km is a false precision.
+- **Russia is excluded, and it says so** — the frame cuts its territory, so it is left out of the measurement rather than measured to a coastline that stops at the edge of the paper — and the left column prints that.
+- **Each number takes the farthest clear seat** — among the seats still clear, a contour label takes the one farthest from every number already placed; the spot mark is seated first.
+- **The median and the deepest point together** — the claim's half and the field's far end are asserted in the same frame, which is what makes 132 legible as small.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "132-km-is-a-measured-median",
+    "the-field-is-an-exact-distance",
+    "russia-is-excluded-and-it-says",
+    "each-number-takes-the-farthest-clear",
+    "the-median-and-the-deepest-point"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "132-km-is-a-measured-median",
+    "the-field-is-an-exact-distance": "the-field-is-an-exact-distance",
+    "the-study-area-is-stated-and": "russia-is-excluded-and-it-says",
+    "among-the-clear-seats-a-number": "each-number-takes-the-farthest-clear",
+    "asserted-in-the-one-frame": "the-median-and-the-deepest-point"
+  }
+}
+```

@@ -4,6 +4,7 @@ type: dot-density
 format: static
 medium: map
 grounding: supported
+derived: v1
 ---
 
 # Beat — 72 reactors among 8,900 low-carbon power stations
@@ -93,3 +94,82 @@ que les marques posées dessus. Les trois plaques sont vérifiées identiques en
 **Le coût, énoncé.** Web Mercator gonfle le nord. Ce beat COMPTE des lieux et compare une puissance
 par site ; aucune de ces deux lectures n'est une surface, donc aucune n'est touchée. Ce qui bouge est
 l'endroit où un point est dessiné — et il est désormais dessiné là où la plaque met sa propre côte.
+
+## The choreography
+
+Nine thousand dots make a texture before they make a map: dense across England, the Rhine and the
+Po, bare across the east. That texture is the count of PLACES, and it is the first thing read. The
+weight half of the claim is carried by a second mark entirely — seventy-two ringed dots, scattered
+thin through the same field — and the two-row key is what tells a reader the ring is a different
+question, not a bigger dot. The arithmetic that makes the pair worth drawing, 0,8 % of the sites
+and 34,4 % of the power, is printed in the left column and read last.
+
+**The eye enters at** `the dot texture`. **The claim lands at** `conclusion`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the dot texture` | `the ringed reactors` |
+| reference | `the two-row key` | `the ringed reactors` |
+| subject | `the ringed reactors` | — |
+| conclusion | `the capacity share` | `the ringed reactors` |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the dot texture",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the dot texture",
+      "subordinateTo": "the ringed reactors"
+    },
+    {
+      "station": "reference",
+      "carries": "the two-row key",
+      "subordinateTo": "the ringed reactors"
+    },
+    {
+      "station": "subject",
+      "carries": "the ringed reactors",
+      "subordinateTo": null
+    },
+    {
+      "station": "conclusion",
+      "carries": "the capacity share",
+      "subordinateTo": "the ringed reactors"
+    }
+  ],
+  "claimLands": "conclusion"
+}
+```
+
+## Precision
+
+- **Both counts are read off the base** — the 72 reactors and the 8 900 low-carbon stations are counted in the frozen database, and the caveat about small solar and small wind is printed rather than implied.
+- **One dot is one real station** — each point sits at the coordinates the source records for it; no dot is a jitter, a cluster or a rounded position.
+- **Count, share and capacity all computed** — the site count, the site share and the capacity share are all derived, so a data refresh that overturned one would change the sentence.
+- **Every run is measured, not declared** — each line of the left column is measured and wrapped at the direction's own type rather than assumed short.
+- **Places and power in one frame** — the texture and the rings are the same still, because the claim is the gap between what a place counts for and what it produces.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "both-counts-are-read-off-the",
+    "one-dot-is-one-real-station",
+    "count-share-and-capacity-all-computed",
+    "every-run-is-measured-not-declared",
+    "places-and-power-in-one-frame"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "both-counts-are-read-off-the",
+    "one-dot-is-one-real-thing": "one-dot-is-one-real-station",
+    "the-count-the-share-and-the": "count-share-and-capacity-all-computed",
+    "every-panel-run-is-measured-and": "every-run-is-measured-not-declared",
+    "asserted-in-the-one-frame": "places-and-power-in-one-frame"
+  }
+}
+```

@@ -4,6 +4,7 @@ type: diverging-bar
 format: static
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Croatia is the only EU country emitting more CO₂ per person than in 1990
@@ -212,3 +213,83 @@ out of the markup rather than recomputing them, so the record and the drawing ca
 **Square and portrait: REFUSED at R9.** Both are 1080 wide, and at a 36 px type floor one column's
 gutters alone cost 473 px of it (a 282 px name gutter plus two 161 px value gutters). There is no
 width left to spend on the height, which is the whole mechanism this beat depends on.
+
+## The choreography
+
+Two zero rules, drawn on top of the bars so nothing can cover them, and twenty-seven bars hanging
+to the left of them. The eye enters on the rules because they are the only vertical ink, and the
+first reading is that every bar but one is on the same side. The exception is a 1,3 px sliver on
+the right of the first rule — the value it is, not a value made visible — so the plate does the
+work with a pale band across the row, an accented figure and a short annotation beside it. This
+beat draws no average rule: the mean of the 26 falls lives in the standfirst, where it cannot be
+mistaken for a mark.
+
+**The eye enters at** `the zero rule`. **The claim lands at** `subject`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the zero rule` | `the Croatia row` |
+| reference | `the twenty-six fallers` | `the Croatia row` |
+| subject | `the Croatia row` | — |
+| conclusion | `the exception note` | `the Croatia row` |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the zero rule",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the zero rule",
+      "subordinateTo": "the Croatia row"
+    },
+    {
+      "station": "reference",
+      "carries": "the twenty-six fallers",
+      "subordinateTo": "the Croatia row"
+    },
+    {
+      "station": "subject",
+      "carries": "the Croatia row",
+      "subordinateTo": null
+    },
+    {
+      "station": "conclusion",
+      "carries": "the exception note",
+      "subordinateTo": "the Croatia row"
+    }
+  ],
+  "claimLands": "subject"
+}
+```
+
+## Precision
+
+- **The only riser is a search** — which member state is above zero is computed from the 1990-2024 change; the headline states the answer, never chooses it.
+- **All 27 member states carry a value** — every category is asserted to hold a reading for both years before a single bar is drawn.
+- **One riser, 26 fallers, both counted** — the two counts are derived from the same computed changes as the bars, and the standfirst's mean is the mean of the 26.
+- **Every claim string lives in one place** — the reader-facing sentences are written once and reused by the title, the annotation and the alt, so the three cannot drift apart.
+- **All 27 values print at once** — every figure is on the plate at rest — a still has one instant and has to hold every word simultaneously.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "the-only-riser-is-a-search",
+    "all-27-member-states-carry-a",
+    "one-riser-26-fallers-both-counted",
+    "every-claim-string-lives-in-one",
+    "all-27-values-print-at-once"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "the-only-riser-is-a-search",
+    "all-categories-are-asserted-to-carry": "all-27-member-states-carry-a",
+    "the-count-of-risers-and-fallers": "one-riser-26-fallers-both-counted",
+    "every-reader-facing-claim-string-lives": "every-claim-string-lives-in-one",
+    "asserted-in-the-one-frame": "all-27-values-print-at-once"
+  }
+}
+```

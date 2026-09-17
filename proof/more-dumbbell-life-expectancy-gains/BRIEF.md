@@ -4,6 +4,7 @@ type: dumbbell
 format: static
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Life expectancy gains, ten countries, 2000-2023
@@ -83,3 +84,88 @@ frame: the credit now WRAPS (one 900 px line became three at a phone's scale and
 and the legend's second entry is laid out from the measured width of the first instead of the
 literal `PAD + 90`, which was the width of the word "2000" at 13 px and overlapped once that word
 was 39 px tall.
+
+## The choreography
+
+The rows are sorted by gap, descending, so the sort is already the ranking the headline makes and
+the eye enters at the top of it — Poland, outlined in the accent. From there the reading runs down
+the column of bars: length is the gain, and the two dots are only its ends. The legend at the top
+is the one place this discipline's rule against legends is deliberately broken, because nothing
+positional says which dot is 2000 and which is 2023. The gains are printed in their own column at
+the right, and the claim closes on the two ends of it, +5,0 against +2,5.
+
+**The eye enters at** `the Poland row`. **The claim lands at** `conclusion`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the sorted column` | `the Poland row` |
+| reference | `the two-series legend` | `the sorted column` |
+| reveal | `the connecting bars` | `the sorted column` |
+| subject | `the Poland row` | — |
+| conclusion | `the gain column` | `the Poland row` |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the Poland row",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the sorted column",
+      "subordinateTo": "the Poland row"
+    },
+    {
+      "station": "reference",
+      "carries": "the two-series legend",
+      "subordinateTo": "the sorted column"
+    },
+    {
+      "station": "reveal",
+      "carries": "the connecting bars",
+      "subordinateTo": "the sorted column"
+    },
+    {
+      "station": "subject",
+      "carries": "the Poland row",
+      "subordinateTo": null
+    },
+    {
+      "station": "conclusion",
+      "carries": "the gain column",
+      "subordinateTo": "the Poland row"
+    }
+  ],
+  "claimLands": "conclusion"
+}
+```
+
+## Precision
+
+- **Both ends of the sort are named** — +5,0 for Poland and +2,5 for the United States are the first and last rows of the computed sort, and the headline names both.
+- **Bar length is the gain itself** — the drawn length equals the difference between the two dots; no bar is scaled, padded or given a minimum.
+- **The sort is the gain, computed** — the row order is the ranking by change, not by level, and the standfirst says so because the two orders differ here.
+- **A country missing either year throws** — the beat refuses to draw a row that has no 2000 or no 2023 reading rather than shorten its bar to what it has.
+- **Ten gains stand in one frame** — every gain is printed at rest beside its own bar, so the ranking and the sizes are read in the same glance.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "both-ends-of-the-sort-are",
+    "bar-length-is-the-gain-itself",
+    "the-sort-is-the-gain-computed",
+    "a-country-missing-either-year-throws",
+    "ten-gains-stand-in-one-frame"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "both-ends-of-the-sort-are",
+    "the-drawn-bar-length-equals-the": "bar-length-is-the-gain-itself",
+    "the-rows-order-is-the-computed": "the-sort-is-the-gain-computed",
+    "the-beat-throws-if-any-category": "a-country-missing-either-year-throws",
+    "asserted-in-the-one-frame": "ten-gains-stand-in-one-frame"
+  }
+}
+```
