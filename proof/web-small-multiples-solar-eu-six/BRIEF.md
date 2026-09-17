@@ -3,6 +3,7 @@ format: web
 type: small-multiples
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — La France a multiplié sa part solaire par 40 et reste la courbe la plus plate des six (web)
@@ -248,3 +249,82 @@ never the mountain, which is the whole of ruling 6.
 Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data ·
 2010–2024, solar's share of electricity generation. `data.csv` is a byte-for-byte copy of
 `proof/static-small-multiples-solar-eu-six/data.csv`.
+
+## The choreography
+
+The declaration below is this beat's own `const interaction`, in the shape
+`chart-web/scripts/choreography.mjs` cuts out of a source. It lives here rather than in
+`render-directions-web.mjs` because this beat's controls are built by a vocabulary of its own that
+`shippedControls` cannot see, so no plan travels with the render — the reason the section above
+already records. The block under it is what the parser reads out of it.
+
+```js
+const interaction = {
+  earns:
+    "Six panels hide fifteen comparisons and drawing them all would take thirty-six frames. A still " +
+    "can draw one at a time; a video and a scrolly choose which one and when. Here the reader lays " +
+    "any of the six into all six frames at once, on the shared scale and without anything moving, " +
+    "and reads the year the order changed.",
+  controls: [
+    {
+      question: "Cette courbe-là, elle passe devant les autres à quel moment ?",
+      gesture: "toggle-a-comparison",
+      changes:
+        "The chosen country's curve appears as a filled silhouette inside all six panels over 520 ms " +
+        "while each panel's own wash fades out so the two shapes are never read through each other; " +
+        "each panel gains under its baseline the verdict it earns against the carried country, and " +
+        "one sentence under the pills gives the crossings, the longest run and the counts.",
+    },
+    {
+      question: "Ce pays-là, il est parti d'où, et il vaut combien aujourd'hui ?",
+      gesture: "ask-a-mark",
+      changes:
+        "The panel's own line lifts off its own ink by a searched dose, never a ring or a dot laid on " +
+        "top, and the panel answers with both ends, the factor it grew by, its rank among the six and " +
+        "the year it first passed 1 % — fifteen years of readings a 240-unit panel cannot carry.",
+    },
+  ],
+};
+```
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "every-panel-keeps-the-same-axis": null,
+    "the-unit-printed-on-every-panel": null,
+    "the-frozen-file-is-the-static": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```

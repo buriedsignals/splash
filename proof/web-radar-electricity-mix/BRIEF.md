@@ -3,6 +3,7 @@ format: web
 type: radar
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — France et Allemagne produisent presque autant d'électricité et n'ont presque aucune source en commun (web)
@@ -319,3 +320,82 @@ Changes the renders forced, in order:
 
 Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · 2024.
 `data.csv` is a byte-for-byte copy of `proof/static-radar-electricity-mix/data.csv`.
+
+## The choreography
+
+The declaration below is this beat's own `const interaction`, in the shape
+`chart-web/scripts/choreography.mjs` cuts out of a source. It lives here rather than in
+`render-directions-web.mjs` because this beat's controls are built by a vocabulary of its own that
+`shippedControls` cannot see, so no plan travels with the render — the reason the section above
+already records. The block under it is what the parser reads out of it.
+
+```js
+const interaction = {
+  earns:
+    "A radar's only real question is who covers more of the circle, and the answer depends on which " +
+    "sources were counted — a choice made in an editorial meeting, not by a layout engine. In 12 " +
+    "of the 37 counts that drop at most two of the eight, the eye's answer is the other country, and " +
+    "a still can only ever draw one of them.",
+  controls: [
+    {
+      question: "Si on ne comptait pas cette source-là, est-ce que je lirais la même chose ?",
+      gesture: "toggle-a-comparison",
+      changes:
+        "A source set aside stays drawn and stays named: its spoke goes dashed, its name to a " +
+        "measured fade, its two vertices to open rings at the same coordinates on the same readings, " +
+        "and both outlines travel off those vertices and close over them. The readout states the two " +
+        "enclosed areas this count produces and the ratio between them, against the plate's 1,45×.",
+    },
+    {
+      question: "Cette pointe, elle vaut combien exactement ?",
+      gesture: "ask-a-mark",
+      changes:
+        "The vertex answers with the country, the source, its share to one decimal, the TWh behind it " +
+        "and what the other country has on the same axis — sixteen readings identical in every " +
+        "count, except that a set-aside vertex adds that the shape no longer passes through it.",
+    },
+  ],
+};
+```
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "every-axis-keeps-the-same-fixed": null,
+    "the-beat-throws-if-the-two": null,
+    "the-page-prints-the-measured-span": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```

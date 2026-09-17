@@ -3,6 +3,7 @@ format: web
 type: sankey
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Le lecteur suit UNE source d'un bout à l'autre, et l'arithmétique du trajet est écrite (web)
@@ -139,3 +140,82 @@ Trois directions rendues, capturées avec le contrôle opéré (`Page.captureScr
 
 Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · 2024.
 `data.csv` is a byte-for-byte copy of `proof/static-sankey-electricity-sources/data.csv`.
+
+## The choreography
+
+The declaration below is this beat's own `const interaction`, in the shape
+`chart-web/scripts/choreography.mjs` cuts out of a source. It lives here rather than in
+`render-directions-web.mjs` because this beat's controls are built by a vocabulary of its own that
+`shippedControls` cannot see, so no plan travels with the render — the reason the section above
+already records. The block under it is what the parser reads out of it.
+
+```js
+const interaction = {
+  earns:
+    "Un sankey dessine cinquante rubans qui se croisent, et la difficulté propre à la forme est de " +
+    "suivre un trajet. Une plaque fixe choisit une source pour le lecteur et les huit autres restent " +
+    "un enchevêtrement ; une vidéo choisirait l'ordre, un scrolly le nombre. Ici neuf trajets sont " +
+    "disponibles, un seul à la fois, choisi par le lecteur et dessiné chaque fois pareil.",
+  controls: [
+    {
+      question: "Le nucléaire — ou le charbon, ou le solaire — il part où, au juste ?",
+      gesture: "find-your-own-case",
+      changes:
+        "Le nœud de la source choisie passe à l'accent et ses rubans au premier plan ; les " +
+        "nœuds-pays qui ne reçoivent rien d'elle deviennent creux, contour pointillé et fond vide ; " +
+        "les pays atteints portent sous leur étiquette la part de leur propre électricité que cette " +
+        "source fournit, et une phrase écrit combien part, combien arrive, et combien n'est pas dessiné.",
+    },
+    {
+      question: "Ce ruban-là, il porte combien, et ça fait quelle part chez celui qui le reçoit ?",
+      gesture: "ask-a-line",
+      changes:
+        "Le ruban interrogé répond avec ce qui le relie à ses deux bouts et non avec l'un des deux : " +
+        "les TWh qu'il porte, sa part de toute cette source chez les six, et la part de l'électricité " +
+        "du pays d'arrivée qu'il représente.",
+    },
+  ],
+};
+```
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "find-your-own-case",
+      "input": "hover"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-line",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "every-node-total-equals-the-sum": null,
+    "the-undrawn-residue-per-node-is": null,
+    "every-revealed-reading-along-a-traced": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```

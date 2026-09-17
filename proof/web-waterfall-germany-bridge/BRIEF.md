@@ -3,6 +3,7 @@ format: web
 type: waterfall
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — L'électricité allemande a perdu 143 TWh entre 2015 et 2024 (web)
@@ -166,3 +167,82 @@ Both are named rather than worked around, because both are a LIST in a file this
 Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · Germany,
 2015 and 2024. `data.csv` is a byte-for-byte copy of
 `proof/static-germany-electricity-bridge/data.csv`.
+
+## The choreography
+
+The declaration below is this beat's own `const interaction`, in the shape
+`chart-web/scripts/choreography.mjs` cuts out of a source. It lives here rather than in
+`render-directions-web.mjs` because this beat's controls are built by a vocabulary of its own that
+`shippedControls` cannot see, so no plan travels with the render — the reason the section above
+already records. The block under it is what the parser reads out of it.
+
+```js
+const interaction = {
+  earns:
+    "A reader who accepts a bridge's arithmetic immediately wants to run it again with one term " +
+    "taken out, and the answer depends on which term they pick — so it is not a number an author " +
+    "can pre-draw. A video and a scrolly are sequences the author chose; this is three different " +
+    "arithmetics, one per reader.",
+  controls: [
+    {
+      question: "Et sans le nucléaire, l'Allemagne aurait produit combien ?",
+      gesture: "toggle-a-comparison",
+      changes:
+        "The chosen bar empties to a dashed outline in its own band, still measurable against the " +
+        "axis, and its name and signed value are struck through; every later step slides vertically " +
+        "by exactly the withdrawn value while keeping its own length, the connectors travelling with " +
+        "them; the 2024 bar recomputes to the counterfactual total, which is printed above it.",
+    },
+    {
+      question: "Cette marche-là, elle pèse combien dans le mouvement total ?",
+      gesture: "ask-a-mark",
+      changes:
+        "The step answers with its own value, its share of all movement and the counterfactual it " +
+        "would produce — the same number the control draws, so a keyboard reader who never operates " +
+        "the radios still gets all three answers, and every one of them is true in every state.",
+    },
+  ],
+};
+```
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "opening-plus-every-step-equals-the": null,
+    "one-scale-from-zero-for-the": null,
+    "where-the-format-census-cannot-see": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```

@@ -3,6 +3,7 @@ format: web
 type: treemap
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — L'Europe compte 453 GW bas-carbone, et l'eau et l'atome en portent encore 79 % (web)
@@ -243,3 +244,83 @@ to `min(440px, 100vw - 32px)` in this beat's own stylesheet — two lines instea
 
 Global Power Plant Database (WRI) · installed capacity per station, aggregated by country and by
 fuel. `stations.csv` is a byte-for-byte copy of `proof/static-treemap-europe-capacity/stations.csv`.
+
+## The choreography
+
+The declaration below is this beat's own `const interaction`, in the shape
+`chart-web/scripts/choreography.mjs` cuts out of a source. It lives here rather than in
+`render-directions-web.mjs` because this beat's controls are built by a vocabulary of its own that
+`shippedControls` cannot see, so no plan travels with the render — the reason the section above
+already records. The block under it is what the parser reads out of it.
+
+```js
+const interaction = {
+  earns:
+    "A treemap buys density and sells comparability: of 41 countries the root view names 23 at " +
+    "1440 px, 21 at 1280 and 3 on a phone, and the rest stay anonymous for ever on a still. A video " +
+    "or a scrolly descends into the author's branch, on the author's clock, once. Here the reader " +
+    "picks the branch, stays as long as they want, and climbs back out.",
+  controls: [
+    {
+      question: "Qu'est-ce qu'il y a VRAIMENT dans ce pavé, et qui possède le vent ?",
+      gesture: "zoom-and-pan",
+      changes:
+        "The frame is thrown away and re-squarified over the chosen source alone, so cells too small " +
+        "to hold a line at the root come apart and are named — nine countries at 1440 px, eleven at " +
+        "1280, driven in a browser rather than computed. The accent keeps marking the tipped eight " +
+        "through the descent: 6 % of the atom, 6 % of the water, 55 % of the wind, 31 % of the sun.",
+    },
+    {
+      question: "Ce pavé-là vaut combien, et il pèse quoi là où il est ?",
+      gesture: "ask-a-mark",
+      changes:
+        "The cell under the pointer takes a measured lift off its own fill and answers differently in " +
+        "each view: at the root its GW, its share of Europe, its rank among 41, its station count and " +
+        "the water-and-atom against wind-and-sun split; inside a branch its GW of that source, its " +
+        "rank among the countries that have it, and what share of its own fleet that source is.",
+    },
+  ],
+};
+```
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "zoom-and-pan",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "tile-area-stays-proportional-to-the": null,
+    "how-many-cells-can-carry-their": null,
+    "where-the-format-own-census-cannot": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```

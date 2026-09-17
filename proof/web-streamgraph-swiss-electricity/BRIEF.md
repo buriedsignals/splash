@@ -3,6 +3,7 @@ format: web
 type: streamgraph
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Le solaire suisse est passé de 0,01 à 7,89 TWh, troisième source depuis 2016 (web)
@@ -193,3 +194,82 @@ whose shear is constant end to end is the default under a second name, and it th
 Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data ·
 Switzerland, 2000–2025. `data.csv` is a byte-for-byte copy of
 `proof/static-streamgraph-swiss-electricity/data.csv`.
+
+## The choreography
+
+The declaration below is this beat's own `const interaction`, in the shape
+`chart-web/scripts/choreography.mjs` cuts out of a source. It lives here rather than in
+`render-directions-web.mjs` because this beat's controls are built by a vocabulary of its own that
+`shippedControls` cannot see, so no plan travels with the render — the reason the section above
+already records. The block under it is what the parser reads out of it.
+
+```js
+const interaction = {
+  earns:
+    "A free baseline is what makes a streamgraph readable and it is also why no band can be measured: " +
+    "the static sibling's own confessed debt is that a value axis would be a lie. A still cannot pay " +
+    "that debt back. Here the reader lays one band flat, its floor becomes a real zero, and the page " +
+    "hands back the TWh axis the type forbids.",
+  controls: [
+    {
+      question: "Cette bande-là, elle vaut combien — et depuis quoi je la mesure ?",
+      gesture: "toggle-a-comparison",
+      changes:
+        "The whole stream shears vertically until the chosen band's own bottom edge is a straight " +
+        "rule; every band keeps its exact shape and its exact place in the order and nothing is " +
+        "repainted. A solid ground-cased floor rule goes under the band, dashed graduations cross the " +
+        "plot, the gutter opens with TWh labels, and the three in-band names move rather than hide.",
+    },
+    {
+      question: "Cette année-là, le total était de combien, et les neuf sources se rangeaient comment ?",
+      gesture: "ask-a-mark",
+      changes:
+        "One point per year, at an x no option ever moves, lights a full-height guide across the whole " +
+        "stream and answers with the year, the year's total and all nine sources in rank order — " +
+        "which is where the claim itself is read: solar fourth in 2015, third in 2016, and it stays.",
+    },
+  ],
+};
+```
+
+```json splash:choreography
+{
+  "kind": "pointer",
+  "promiseSource": "slot",
+  "controls": [
+    {
+      "order": 1,
+      "gesture": "toggle-a-comparison",
+      "input": "tap"
+    },
+    {
+      "order": 2,
+      "gesture": "ask-a-mark",
+      "input": "hover"
+    }
+  ],
+  "keyboard": true,
+  "degradesTo": "static-frame"
+}
+```
+
+## Precision
+
+```json splash:precision
+{
+  "kind": "pointer",
+  "rounding": null,
+  "asserts": [],
+  "values": {},
+  "staticFloor": [],
+  "onDemand": [],
+  "unfound": [],
+  "covers": {
+    "claim-datum": null,
+    "the-wiggle-baseline-is-computed-once": null,
+    "which-bands-may-be-offered-is": null,
+    "the-rank-the-period-it-was": null,
+    "asserted-in-the-js-off-floor": null
+  }
+}
+```
