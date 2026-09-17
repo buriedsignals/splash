@@ -29,9 +29,16 @@ const CANONICAL_DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
 
 describe("the design base ships", () => {
   it("should carry its readers and its filed directions under shared/", () => {
-    for (const file of ["index.mjs", "read-direction.mjs", "resolve-families.mjs", "compose.mjs"])
+    for (const file of [
+      "index.mjs",
+      "read-direction.mjs",
+      "resolve-families.mjs",
+      "compose.mjs",
+    ])
       expect([file, existsSync(join(SHIPPED, file))]).toEqual([file, true]);
-    const directions = readdirSync(join(SHIPPED, "directions")).filter((f) => f.endsWith(".md"));
+    const directions = readdirSync(join(SHIPPED, "directions")).filter((f) =>
+      f.endsWith(".md"),
+    );
     expect(directions.length).toBeGreaterThanOrEqual(3);
   });
 
@@ -41,16 +48,34 @@ describe("the design base ships", () => {
    *  place a beat reads them from and the template an installed root is built out of. */
   const DIRECTION_COPIES = [
     join(SHIPPED, "directions"),
-    join(ROOT, "skills", "splash", "assets", "root-template", "shared", "design-base", "directions"),
+    join(
+      ROOT,
+      "skills",
+      "splash",
+      "assets",
+      "root-template",
+      "shared",
+      "design-base",
+      "directions",
+    ),
   ];
 
   it("should ship directions byte-identical to the records they were copied from", () => {
-    for (const name of readdirSync(CANONICAL_DIRECTIONS).filter((f) => f.endsWith(".md"))) {
+    for (const name of readdirSync(CANONICAL_DIRECTIONS).filter((f) =>
+      f.endsWith(".md"),
+    )) {
       const canonical = readFileSync(join(CANONICAL_DIRECTIONS, name), "utf8");
       for (const dir of DIRECTION_COPIES) {
         const shipped = join(dir, name);
-        expect([shipped, "shipped", existsSync(shipped)]).toEqual([shipped, "shipped", true]);
-        expect([shipped, readFileSync(shipped, "utf8")]).toEqual([shipped, canonical]);
+        expect([shipped, "shipped", existsSync(shipped)]).toEqual([
+          shipped,
+          "shipped",
+          true,
+        ]);
+        expect([shipped, readFileSync(shipped, "utf8")]).toEqual([
+          shipped,
+          canonical,
+        ]);
       }
     }
   });
@@ -72,7 +97,10 @@ describe("the design base ships", () => {
 describe("the producing skills route a writer to it", () => {
   for (const skill of PRODUCERS)
     it(`${skill}/SKILL.md should name the base and its entry points`, () => {
-      const text = readFileSync(join(ROOT, "skills", skill, "SKILL.md"), "utf8");
+      const text = readFileSync(
+        join(ROOT, "skills", skill, "SKILL.md"),
+        "utf8",
+      );
       for (const needle of [
         "## The design base",
         "#shared/design-base/",
@@ -82,7 +110,11 @@ describe("the producing skills route a writer to it", () => {
         "applicableTreatments",
         "renders in EVERY filed direction",
       ])
-        expect([skill, needle, text.includes(needle)]).toEqual([skill, needle, true]);
+        expect([skill, needle, text.includes(needle)]).toEqual([
+          skill,
+          needle,
+          true,
+        ]);
     });
 });
 
@@ -103,15 +135,34 @@ describe("every type sheet points at its own directed beat", () => {
   for (const sheet of sheets)
     it(`${sheet.id} should name a beat that exists on disk`, () => {
       const text = readFileSync(sheet.path, "utf8");
-      expect([sheet.id, "has the section", text.includes("## The worked example in this tree")]).toEqual(
-        [sheet.id, "has the section", true],
+      // THE HEADING THE SHEETS ACTUALLY CARRY. This premise named `## The worked example in this
+      // tree`, a heading no type sheet has ever had — `git log -S` over `references/types` returns
+      // nothing for it — so all forty sheets failed on the premise and the three assertions under
+      // it, the ones that say the named beat EXISTS and is DIRECTED, had never run once. The
+      // section is `## Worked example`, written by `docs(static): … point type sheets at their
+      // worked example's CODE`. Corrected here rather than relaxed: the premise still has to hold
+      // for every sheet, and it is now a premise about the tree.
+      expect([
+        sheet.id,
+        "has the section",
+        text.includes("## Worked example"),
+      ]).toEqual([sheet.id, "has the section", true]);
+      const named = [...text.matchAll(/`(proof\/[a-z0-9-]+)`/g)].map(
+        (m) => m[1],
       );
-      const named = [...text.matchAll(/`(proof\/[a-z0-9-]+)`/g)].map((m) => m[1]);
-      expect([sheet.id, "names a beat", named.length > 0]).toEqual([sheet.id, "names a beat", true]);
+      expect([sheet.id, "names a beat", named.length > 0]).toEqual([
+        sheet.id,
+        "names a beat",
+        true,
+      ]);
       // Every beat a sheet names has to be on disk — a sheet pointing at a directory that is not
       // there is worse than one pointing nowhere.
       for (const beat of named)
-        expect([sheet.id, beat, existsSync(join(ROOT, beat))]).toEqual([sheet.id, beat, true]);
+        expect([sheet.id, beat, existsSync(join(ROOT, beat))]).toEqual([
+          sheet.id,
+          beat,
+          true,
+        ]);
       // And at least one of them is DIRECTED: `renders/` plural is where a beat that went through
       // the filed directions puts its plates, and it is what the worked example has to be. A sheet
       // may also name an older beat of the same form — `mapmore-flow-danube` writes to `render/` —
@@ -156,15 +207,21 @@ describe("a form with a directed beat is selectable", () => {
         "sheet exists",
         true,
       ]);
-      const named = [...readFileSync(sheet, "utf8").matchAll(/`(proof\/[a-z0-9-]+)`/g)].map(
-        (m) => m[1],
+      const named = [
+        ...readFileSync(sheet, "utf8").matchAll(/`(proof\/[a-z0-9-]+)`/g),
+      ].map((m) => m[1]);
+      const directed = named.filter((beat) =>
+        existsSync(join(ROOT, beat, "renders")),
       );
-      const directed = named.filter((beat) => existsSync(join(ROOT, beat, "renders")));
       if (directed.length === 0) return;
       expect([
         treatment.id,
         `has ${directed.length} directed beat(s)`,
         treatment.state,
-      ]).toEqual([treatment.id, `has ${directed.length} directed beat(s)`, "selectable"]);
+      ]).toEqual([
+        treatment.id,
+        `has ${directed.length} directed beat(s)`,
+        "selectable",
+      ]);
     });
 });
