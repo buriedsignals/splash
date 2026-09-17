@@ -277,6 +277,38 @@ export function DirectedArea({
     .map((r) => r.year)
     .filter((yr, i, all) => yr % 25 === 0 || i === 0 || i === all.length - 1);
 
+  /** THE LAST READING'S SEAT, measured HERE rather than where it is drawn, because the value axis
+   *  has to know about it. The seat clears the CURVE; nothing made it clear the axis's own
+   *  hairlines, which are drawn the full width of the plot and ran straight through « 32,1 Mt » in
+   *  nocturne. Lifting the label off the line is not available — above the 20 Mt rule there is no
+   *  room left under `plotTop` — and dropping it below puts it back inside the surface it is
+   *  labelling. So the LINE gives way: a gridline the label's band straddles stops short of it,
+   *  which is the same answer this component already gives the subject's own marker below. */
+  const endLabel = on("direct-end-label-in-the-series-colour")
+    ? (() => {
+        const label = `${last.mt.toFixed(1).replace(".", ",")} Mt`;
+        const w = widthOf(set(label, value), value);
+        const covered = readings.filter((r) => x(r.year) >= x(last.year) - w - 6);
+        const crest = Math.min(...covered.map((r) => y(r.mt)));
+        const above = crest - valueBand.descent - 7;
+        const clears = above - valueBand.ascent >= layout.plotTop;
+        return {
+          label,
+          clears,
+          baseline: clears ? above : y(last.mt) + valueBand.ascent + 9,
+          left: x(last.year) - w,
+        };
+      })()
+    : null;
+
+  /** Where a horizontal rule must stop so it does not cross that label. */
+  const ruleEnd = (at: number) =>
+    endLabel !== null &&
+    at > endLabel.baseline - valueBand.ascent - 2 &&
+    at < endLabel.baseline + valueBand.descent + 2
+      ? Math.max(PAD + gutter, endLabel.left - 6)
+      : width - PAD;
+
   onLadder?.(
     `ladder: headline ${fits.rung.title + 1}, standfirst ${fits.rung.limit + 1}, reading ` +
       (fits.rung.reading < 0 ? "dropped" : `form ${fits.rung.reading + 1}`) +
@@ -348,7 +380,7 @@ export function DirectedArea({
         <g key={`y${t}`}>
           <line
             x1={PAD + gutter}
-            x2={width - PAD}
+            x2={ruleEnd(y(t))}
             y1={y(t)}
             y2={y(t)}
             stroke={t === 0 ? baseline : mix(direction.ground, ink, 0.12)}
@@ -411,29 +443,29 @@ export function DirectedArea({
           CURVE over the label's own width, not against the endpoint: written at the endpoint's
           height the number lay inside the surface, where the series colour is the fill's colour and
           the number vanishes into what it labels. */}
-      {on("direct-end-label-in-the-series-colour") &&
-        (() => {
-          const label = `${last.mt.toFixed(1).replace(".", ",")} Mt`;
-          const w = widthOf(set(label, value), value);
-          const covered = readings.filter((r) => x(r.year) >= x(last.year) - w - 6);
-          const crest = Math.min(...covered.map((r) => y(r.mt)));
-          const above = crest - valueBand.descent - 7;
-          const clears = above - valueBand.ascent >= layout.plotTop;
-          return (
-            <g>
-              <circle cx={x(last.year)} cy={y(last.mt)} r={2.4} fill={clears ? accentInk : direction.ground} />
-              <text
-                x={x(last.year)}
-                y={clears ? above : y(last.mt) + valueBand.ascent + 9}
-                textAnchor="end"
-                {...line(value)}
-                fill={clears ? accentInk : adjustToContrast(direction.ground, full, TEXT_CONTRAST_MIN)}
-              >
-                {set(label, value)}
-              </text>
-            </g>
-          );
-        })()}
+      {endLabel !== null && (
+        <g>
+          <circle
+            cx={x(last.year)}
+            cy={y(last.mt)}
+            r={2.4}
+            fill={endLabel.clears ? accentInk : direction.ground}
+          />
+          <text
+            x={x(last.year)}
+            y={endLabel.baseline}
+            textAnchor="end"
+            {...line(value)}
+            fill={
+              endLabel.clears
+                ? accentInk
+                : adjustToContrast(direction.ground, full, TEXT_CONTRAST_MIN)
+            }
+          >
+            {set(endLabel.label, value)}
+          </text>
+        </g>
+      )}
 
       {xTicks.map((t) => (
         <text

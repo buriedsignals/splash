@@ -299,7 +299,12 @@ export function DirectedLollipops({
         </text>
       ))}
 
-      <text x={PAD} y={layout.plotTop - valueBand.ascent - 6} {...line(axis)} fontWeight={700} fill={mutedInk}>
+      {/* The 6px gap is to the TOP of the tallest value below, so the unit's own descenders have to
+          come off it as well — the ₂ in "CO₂" is the deepest thing this line draws. Without that
+          subtraction the unit ran into « 21,4 » by 3.2px in nocturne, whose axis face is the widest
+          of the three; the collision is vertical, and the wide face is only what put a value under
+          this line rather than beside it. */}
+      <text x={PAD} y={layout.plotTop - valueBand.ascent - 6 - axisBand.descent} {...line(axis)} fontWeight={700} fill={mutedInk}>
         {set(unit, axis)}
       </text>
 
