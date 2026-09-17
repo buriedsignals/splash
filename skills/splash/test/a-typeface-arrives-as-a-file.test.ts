@@ -110,7 +110,20 @@ describe("the typeface cache", () => {
   });
 
   it("should answer a second call from the cache, with no network at all", () => {
-    const path = typefaceFile("Merriweather", 700);
+    // BOTH calls out of process, and the FIRST one is what fills this suite's own cache
+    // directory. In process it does not: `typefaces.mjs` memoises by family|weight|style for the
+    // life of the process, and `bun test` loads every file of a lane into ONE process, so a
+    // sibling suite that has already asked for Merriweather leaves a memo pointing at the REAL
+    // cache under `~/.cache`. `typefaceFile` here then answered from that memo, this suite's
+    // temp directory stayed empty, and the no-network call below found nothing to read — the
+    // suite passed alone and failed in the lane. The memo is correct behaviour and is precisely
+    // what this test must not lean on.
+    const fill = outOfProcess("Merriweather", 700, {
+      cacheDir: cache,
+      network: true,
+    });
+    expect([fill.status, fill.stderr]).toEqual([0, ""]);
+    const path = fill.stdout;
     const before = statSync(path).mtimeMs;
 
     // A fresh process, so no in-memory memo can hide a fetch — and no `curl` on PATH, so a fetch
