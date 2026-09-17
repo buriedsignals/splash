@@ -246,8 +246,15 @@ describe("the credit is anchored to the frame's bottom, discovered rather than l
 const BOTTOM_EIGHTH = 0.875;
 
 /** A credit line, in any language this tree's beats are written in. The `<text>` content is the
- *  discriminator — never a class name, never a file name. */
-const CREDIT_OPENERS = /^\s*(Source|Sources|Quelle|Fonte|Fuente)\b/i;
+ *  discriminator — never a class name, never a file name.
+ *
+ *  THE COLON IS PART OF THE SHAPE, and it has to be. A credit names its source AFTER a colon —
+ *  `Source : Ember`, `Quelle: Destatis` — in every beat of this corpus. Matching the bare word
+ *  instead read `static-heatmap-europe-electricity`'s own subtitle, "sources bas-carbone — par
+ *  trois chemins différents", as a credit and reported it hanging at 0.230 down the frame, which
+ *  is exactly where a subtitle belongs. Measured across the 132 SVGs the beats ship: requiring the
+ *  colon drops that one line and not one genuine credit — no file loses the credit it had. */
+const CREDIT_OPENERS = /^\s*(Sources?|Quelle|Fonte|Fuente)\s*:/i;
 
 function* beatSvgs(dir: string): Generator<string> {
   if (!existsSync(dir)) return;
@@ -271,16 +278,72 @@ const BEAT_SVGS = (
   .map((path) => ({ path, label: relative(TWIN, path) }))
   .sort((a, b) => a.label.localeCompare(b.label));
 
-/** Every `<text …>…</text>` whose content opens with a credit word, with the `y` it is drawn at. */
-function creditTexts(svg: string): { y: number; text: string }[] {
-  const found: { y: number; text: string }[] = [];
+type DrawnLine = {
+  y: number;
+  x: number | null;
+  size: number | null;
+  fill: string | null;
+  text: string;
+};
+
+/** Every `<text …>…</text>` that carries a baseline, in document order, with the attributes a
+ *  continuation line shares with the line above it. */
+function drawnLines(svg: string): DrawnLine[] {
+  const lines: DrawnLine[] = [];
   for (const m of svg.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)) {
-    const y = /\by="([\d.]+)"/.exec(m[1]!);
+    const attrs = m[1]!;
+    const y = /\by="([\d.-]+)"/.exec(attrs);
     if (!y) continue;
-    const text = m[2]!.replace(/<[^>]*>/g, "").trim();
-    if (CREDIT_OPENERS.test(text)) found.push({ y: Number(y[1]), text });
+    const x = /\bx="([\d.-]+)"/.exec(attrs);
+    const size = /font-size="([\d.]+)"/.exec(attrs);
+    const fill = /fill="([^"]*)"/.exec(attrs);
+    lines.push({
+      y: Number(y[1]),
+      x: x ? Number(x[1]) : null,
+      size: size ? Number(size[1]) : null,
+      fill: fill ? fill[1]! : null,
+      text: m[2]!.replace(/<[^>]*>/g, "").trim(),
+    });
   }
-  return found;
+  return lines;
+}
+
+/**
+ * Every credit in the SVG, as the BLOCK it is drawn as: where its first line sits and where its
+ * LAST line sits.
+ *
+ * A credit is not one `<text>`. The renderer wraps it, and each wrapped line is its own sibling
+ * `<text>` at the same x, size and fill, one line-height further down — only the first of them
+ * opens with the credit word. `static-locator-zaporizhzhia` draws four: "Source : WRI Global Power
+ * Plant Database" at 0.799 down the frame, then three continuations, the last at y = 488 of 540,
+ * which is `height - PAD` exactly. Reading the opener's baseline alone reported that correctly
+ * anchored credit — and sixteen more like it, every one of them a credit long enough to wrap — as
+ * hanging in the middle of the frame. The block's own foot is what "the credit is at the bottom"
+ * means, and it is what is measured.
+ */
+function creditBlocks(svg: string): { y: number; end: number; text: string }[] {
+  const lines = drawnLines(svg);
+  const blocks: { y: number; end: number; text: string }[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const open = lines[i]!;
+    if (!CREDIT_OPENERS.test(open.text)) continue;
+    let end = open.y;
+    for (let j = i; j + 1 < lines.length; j++) {
+      const next = lines[j + 1]!;
+      const gap = next.y - lines[j]!.y;
+      if (
+        next.x !== open.x ||
+        next.size !== open.size ||
+        next.fill !== open.fill ||
+        gap <= 0 ||
+        gap > 1.8 * (open.size ?? 13)
+      )
+        break;
+      end = next.y;
+    }
+    blocks.push({ y: open.y, end, text: open.text });
+  }
+  return blocks;
 }
 
 describe("the credit LANDS at the frame's bottom in the committed artifact", () => {
@@ -291,7 +354,7 @@ describe("the credit LANDS at the frame's bottom in the committed artifact", () 
     // walk should.
     expect(BEAT_SVGS.length).toBeGreaterThanOrEqual(24);
     const withCredit = BEAT_SVGS.filter(
-      ({ path }) => creditTexts(readFileSync(path, "utf8")).length > 0,
+      ({ path }) => creditBlocks(readFileSync(path, "utf8")).length > 0,
     );
     expect(withCredit.length).toBeGreaterThanOrEqual(20);
   });
@@ -299,17 +362,18 @@ describe("the credit LANDS at the frame's bottom in the committed artifact", () 
   for (const { path, label } of BEAT_SVGS) {
     it(`${label} should draw its credit in the bottom eighth of its own viewBox`, () => {
       const svg = readFileSync(path, "utf8");
-      const credits = creditTexts(svg);
+      const credits = creditBlocks(svg);
       if (credits.length === 0) return; // a plate, a legend, a fragment: nothing to place
       const box = /viewBox="0 0 ([\d.]+) ([\d.]+)"/.exec(svg);
       expect([label, box === null]).toEqual([label, false]);
       const height = Number(box![2]);
       const offenders = credits
-        .filter(({ y }) => y < height * BOTTOM_EIGHTH)
+        .filter(({ end }) => end < height * BOTTOM_EIGHTH)
         .map(
-          ({ y, text }) =>
-            `"${text.slice(0, 40)}…" is drawn at y=${y} of a ${height}-high viewBox ` +
-            `(${(y / height).toFixed(3)} down the frame; the bottom eighth starts at ${BOTTOM_EIGHTH})`,
+          ({ y, end, text }) =>
+            `"${text.slice(0, 40)}…" opens at y=${y} and its block ends at y=${end} ` +
+            `of a ${height}-high viewBox (${(end / height).toFixed(3)} down the frame; ` +
+            `the bottom eighth starts at ${BOTTOM_EIGHTH})`,
         );
       expect([label, offenders]).toEqual([label, []]);
     });
