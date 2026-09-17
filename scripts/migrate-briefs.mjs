@@ -8,10 +8,10 @@
 //                    `requiredAssertions` refuses to guess. It edits the front-matter block and
 //                    nothing else.
 //   --harvest        parses each beat's OWN declaration — scrolly's card table, video's event
-//                    table, web's `const interaction` — into the two value blocks, inserts them
-//                    into the sections that already exist, and adds `derived: v1`. It writes no
-//                    row, no card, no shot and no assertion. A beat whose declaration does not
-//                    parse is named in the worklist, never written for.
+//                    table, web's `const interaction`, static's station table — into the two value
+//                    blocks, inserts them into the sections that already exist, and adds
+//                    `derived: v1`. It writes no row, no card, no shot and no assertion. A beat
+//                    whose declaration does not parse is named in the worklist, never written for.
 //
 // Usage
 //   bun scripts/migrate-briefs.mjs --front-matter [--dry-run]
@@ -29,12 +29,13 @@
 
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { renderDerivedBlock } from "#shared/editorial/derived.mjs";
+import { renderDerivedBlock, readDerivedBlock } from "#shared/editorial/derived.mjs";
 import { assertionId, requiredAssertions } from "#shared/editorial/frame.mjs";
 import { parseBriefFrontMatter } from "#shared/chart-beat/sizes.mjs";
 import {
   beatDirs,
   chainFor,
+  derivedBeats,
   mediumOfType,
   ROOT,
   TYPE_SHEET_DIRS,
@@ -48,6 +49,19 @@ import { parseChoreography as parseVideo } from "../skills/chart-video/scripts/c
 import { parsePrecision as precisionVideo } from "../skills/chart-video/scripts/precision.mjs";
 import { parseChoreography as parseWeb } from "../skills/chart-web/scripts/choreography.mjs";
 import { parsePrecision as precisionWeb } from "../skills/chart-web/scripts/precision.mjs";
+import { parseChoreography as parseStaticChart } from "../skills/chart-beat/scripts/choreography.mjs";
+import { parsePrecision as precisionStaticChart } from "../skills/chart-beat/scripts/precision.mjs";
+import { parseChoreography as parseStaticMap } from "../skills/map-beat/scripts/static-choreography.mjs";
+import { parsePrecision as precisionStaticMap } from "../skills/map-beat/scripts/static-precision.mjs";
+import { parseChoreography as parseStaticImage } from "../skills/image-beat/scripts/choreography.mjs";
+import { parsePrecision as precisionStaticImage } from "../skills/image-beat/scripts/precision.mjs";
+
+/** Static's own parser pair, per medium — `chart-beat`'s carried verbatim into `image-beat`. */
+const STATIC_PARSERS = {
+  chart: { choreography: parseStaticChart, precision: precisionStaticChart },
+  map: { choreography: parseStaticMap, precision: precisionStaticMap },
+  image: { choreography: parseStaticImage, precision: precisionStaticImage },
+};
 
 // ── pass one: the front matter ─────────────────────────────────────────────────────────────────
 
@@ -275,13 +289,26 @@ export async function harvest(beat, root = ROOT) {
     choreography = parseVideo(brief, { timing });
     precision = precisionVideo(brief, { declared: choreography });
   } else if (retained.format === "web") {
-    const source = readFileSync(join(beatDir, "render-directions-web.mjs"), "utf8");
+    // The declaration lives in the BRIEF for a beat whose controls are built by a vocabulary
+    // `shippedControls` cannot see (each such BRIEF's own "## The choreography" section records
+    // why) — read it there first; `render-directions-web.mjs` is the fallback for a beat that
+    // still declares it in the module, as `chart-web/scripts/choreography.mjs` was written to
+    // expect. Neither declaration moves; this only changes where the harvest looks.
+    const moduleSource = readFileSync(join(beatDir, "render-directions-web.mjs"), "utf8");
+    const source = /\nconst interaction = \{[\s\S]*?\n\};\n/.test(brief) ? brief : moduleSource;
     choreography = parseWeb(brief, { source, html: deliveredPage(beatDir) });
     precision = precisionWeb(brief, { html: deliveredPage(beatDir) });
   } else {
-    throw new Error(
-      "no static beat declares a reading order anywhere (spec §1.3), and nothing here may invent one",
-    );
+    // A static's own declaration is its `## The choreography` station table and `## Precision`
+    // bullets — no clock, no `ctx` needed to parse (role membership is only checked when a
+    // composition's roles are supplied, which the harvest does not have without rendering the
+    // beat). The parser pair is medium-specific; `chart-beat`'s is carried verbatim into
+    // `image-beat`, and `map-beat` keeps its own `static-*` pair beside the video one.
+    const parsers = STATIC_PARSERS[retained.medium];
+    if (!parsers)
+      throw new Error(`no static parser for medium ${JSON.stringify(retained.medium)}`);
+    choreography = parsers.choreography(brief, {});
+    precision = parsers.precision(brief, {});
   }
   // The chain's requirements, ENUMERATED and none of them answered. See
   // `skills/splash/test/precision-covers-what-the-chain-requires.test.ts` for why the answers are
@@ -402,6 +429,73 @@ export async function runHarvest({ root = ROOT, family = null, beat = null, dryR
 
 const WORKLIST = "docs/splash/2026-09-17-declarations-owed.md";
 
+/**
+ * The editorial work still open on an already-guarded beat: which `covers` keys its own
+ * `splash:precision` block still answers `null`, and whether its `values` is still empty.
+ *
+ * Read from the beat's OWN file, via `readDerivedBlock` — never from a fresh `harvest()`, which
+ * always rebuilds `covers` with every value `null` (see `harvest()`'s own comment on the field). A
+ * beat a person has since answered would otherwise be reported as owing what it no longer does.
+ */
+function remainingWork(root) {
+  const rows = [];
+  let valuesOwed = 0;
+  for (const beat of derivedBeats(root).filter((b) => b.startsWith(CATALOGUE_PREFIX))) {
+    const brief = readFileSync(join(root, beat, "BRIEF.md"), "utf8");
+    let precision;
+    try {
+      precision = readDerivedBlock(brief, "precision");
+    } catch {
+      continue; // no readable block — reported instead under "what each beat owes"
+    }
+    const openCovers = Object.entries(precision.covers ?? {})
+      .filter(([, answer]) => answer === null)
+      .map(([id]) => id);
+    const valuesEmpty = Object.keys(precision.values ?? {}).length === 0;
+    if (valuesEmpty) valuesOwed += 1;
+    if (openCovers.length || valuesEmpty) rows.push({ beat, openCovers, valuesEmpty });
+  }
+  return { rows: rows.sort((a, b) => (a.beat < b.beat ? -1 : 1)), valuesOwed };
+}
+
+/**
+ * Six disagreements the static authoring pass surfaced between a beat's own picture and its type
+ * sheet or its BRIEF title — named here rather than derived, because deciding which is wrong is a
+ * person's call, not this script's. Nothing here writes to any beat.
+ */
+const DISAGREEMENTS = [
+  {
+    beat: "proof/static-swiss-age-pyramid",
+    says: "the sheet and the BRIEF title treat the 55–64 bulge as the subject",
+    shows: "the plate argues the 60–64 crossover instead",
+  },
+  {
+    beat: "proof/static-bullet-low-carbon-share",
+    says: "the sheet describes a target marker",
+    shows: "none is drawn — the 2015 bar plays it",
+  },
+  {
+    beat: "proof/static-diverging-bar-eu-per-capita",
+    says: "the sheet's dashed average rule",
+    shows: "is not on the plate — the mean lives in the standfirst",
+  },
+  {
+    beat: "proof/static-contour-europe-distance",
+    says: "the headline's 132 km median",
+    shows: "is not drawn — the contours are 100/200/400/500",
+  },
+  {
+    beat: "proof/static-dot-strip-lowcarbon-spread",
+    says: "the claim makes two moves",
+    shows: "only one of them is labelled",
+  },
+  {
+    beat: "proof/static-calendar-heatmap-geneva",
+    says: "the claim's two dates live in the standfirst",
+    shows: "no direct label anywhere on the grid names them off the stations",
+  },
+];
+
 /** The named worklist: who owes what, per export and per type, with what the chain already requires. */
 export async function runWorklist({ root = ROOT, out = WORKLIST } = {}) {
   const { migrated, owed } = await runHarvest({ root, dryRun: true });
@@ -458,20 +552,43 @@ export async function runWorklist({ root = ROOT, out = WORKLIST } = {}) {
       );
     lines.push("");
   }
+  const { rows: openRows, valuesOwed } = remainingWork(root);
   lines.push(
     "## The third column of the work, on every beat",
     "",
-    "Every migrated beat's `splash:precision` block carries `covers` — one key per requirement the",
-    "chain makes of it, every value `null`. The harvest enumerated the keys and answered none: an",
-    "answer is one of the beat's own assert ids, and it is the journalist's. `values` is empty on all",
-    "of them for the same reason — the corpus declares its numbers in sentences, and a value block",
-    "holds none. A beat is finished when every `covers` entry names an assert the block carries and",
-    "every number the beat puts in front of a reader is in `values`, keyed",
-    "`<first column's value>-<column name>` against its own `data.csv`.",
+    "Every guarded beat's `splash:precision` block carries `covers` — one key per requirement the",
+    "chain makes of it — and `values`. An answer is one of the beat's own assert ids, and it is the",
+    "journalist's; a value is keyed `<first column's value>-<column name>` against the beat's own",
+    "`data.csv`. Read from each beat's OWN file, not re-derived, so an answer already written here",
+    "is not reported as still owed.",
+    "",
+    `**${openRows.length} beat(s) still owe a \`covers\` answer, a \`values\` entry, or both. ` +
+      `${valuesOwed} of the ${migrated.length} guarded beats carry an empty \`values\`.**`,
+    "",
+  );
+  if (openRows.length) {
+    lines.push("| beat | open `covers` keys | `values` |");
+    lines.push("| --- | --- | --- |");
+    for (const row of openRows)
+      lines.push(
+        `| \`${row.beat}\` | ${row.openCovers.map((id) => `\`${id}\``).join(", ") || "—"} | ${row.valuesEmpty ? "empty" : "filled"} |`,
+      );
+    lines.push("");
+  }
+  lines.push(
+    "## Disagreements a person must resolve",
+    "",
+    "Six of the static authoring pass's own beats found their picture arguing something other than",
+    "what their type sheet or their BRIEF's own title says. Nothing here decides which is wrong —",
+    "that is an editorial call.",
+    "",
+    "| beat | what the sheet or title says | what the plate actually shows |",
+    "| --- | --- | --- |",
+    ...DISAGREEMENTS.map((d) => `| \`${d.beat}\` | ${d.says} | ${d.shows} |`),
     "",
   );
   writeFileSync(join(root, out), `${lines.join("\n")}`);
-  return { out, migrated: migrated.length, owed: rows.length };
+  return { out, migrated: migrated.length, owed: rows.length, openRows: openRows.length };
 }
 
 if (import.meta.main) {
