@@ -5,8 +5,18 @@ import { inspectSvg } from "../scripts/inspect-render.mjs";
 // width/height/positioning matter now: this file measures rendered PIXELS, so every fragment
 // below needs its text actually visible inside the canvas (an SVG text baseline at y=0 draws
 // mostly off the top edge and would be clipped, measuring nothing).
+//
+// AND SO DOES THE FAMILY. `inspectSvg` rasterises with `loadSystemFonts: false` and only the files
+// `fontFilesForSvg` reads off the markup itself, so a fragment that declares no `font-family` is
+// handed no face, draws no glyph, and reports no measured run at all — the fixtures said nothing
+// about a typeface because they were written for the structural era, when nothing was rasterised.
+// It is set on the root, where it cascades to every `<text>` and `<tspan>` below, and it is the
+// same house stack `render-still.mjs` ships (`FONT_FAMILY`), so what is measured here is the face
+// a delivered beat is actually drawn in.
+const FIXTURE_FAMILY = "Open Sans, Helvetica, Arial, sans-serif";
 const svg = (body: string) =>
-  `<svg role="img" xmlns="http://www.w3.org/2000/svg" width="400" height="100">${body}</svg>`;
+  `<svg role="img" xmlns="http://www.w3.org/2000/svg" width="400" height="100"` +
+  ` font-family="${FIXTURE_FAMILY}">${body}</svg>`;
 const text = (attrs: string, content: string) =>
   `<text x="10" y="50" ${attrs}>${content}</text>`;
 
@@ -301,10 +311,34 @@ describe("inspectSvg", () => {
     );
     const tiny = result.contrast.find((c) => c.fill !== "#000000" && !c.pass);
     expect(tiny).toBeDefined();
-    expect(tiny!.fill).toBe("#AAAAAA");
     // 2.32:1 is the true ink. A tiny run may conservatively report an anti-aliased edge below
     // that value, but must never improve it or inherit the dominant sibling's black paint.
+    //
+    // At 9px the stroke is thinner than two erosion passes, so `inspect-render.mjs` falls back to
+    // its coarser reading by design — measured here, #C9C9C9 at 1.66:1, WORSE than the true ink
+    // and never better, which is the direction that header promises and the only one that is safe.
+    // The exact-ink recovery this fixture cannot show at 9px is asserted at 12px below, where the
+    // stroke survives erosion; asserting it here instead only ever pinned the rasteriser's
+    // sub-pixel behaviour.
     expect(tiny!.ratio!).toBeLessThanOrEqual(2.32);
+    expect(tiny!.unresolved).toBe(false);
+  });
+
+  it("should recover the tiny run's exact ink once its stroke survives erosion", () => {
+    // Same fixture, same dominant sibling, one size up: the isolation is still structural, and at
+    // 12px there is real core ink to read, so the answer is the declared fill exactly.
+    const result = inspectSvg(
+      svg(
+        text(
+          'font-size="24" fill="#000000"',
+          'A big dominant run of text<tspan fill="#AAAAAA" font-size="12">tiny note</tspan>',
+        ),
+      ),
+      { ground: "#FFFFFF" },
+    );
+    const tiny = result.contrast.find((c) => c.fill !== "#000000" && !c.pass);
+    expect(tiny!.fill).toBe("#AAAAAA");
+    expect(tiny!.ratio!).toBeCloseTo(2.32, 1);
   });
 
   it("should isolate a tspan nested inside another tspan", () => {
@@ -329,7 +363,7 @@ describe("inspectSvg", () => {
     // hard grey-side half. The true worst-case answer, computed directly from the two fills, is
     // 1.5943:1 (fail); the easy white-only side alone would read 4.54:1 (pass).
     const result = inspectSvg(
-      `<svg role="img" xmlns="http://www.w3.org/2000/svg" width="500" height="100">` +
+      `<svg role="img" xmlns="http://www.w3.org/2000/svg" width="500" height="100" font-family="${FIXTURE_FAMILY}">` +
         `<rect x="0" y="0" width="200" height="100" fill="#FFFFFF"/>` +
         `<rect x="200" y="0" width="300" height="100" fill="#999999"/>` +
         `<text x="20" y="55" font-size="40" fill="#767676">Wide Enough Text</text>` +
@@ -351,7 +385,7 @@ describe("inspectSvg", () => {
   const LONG_LABEL =
     "A long axis label that keeps on running right across the whole chart area here";
   const wide = (body: string) =>
-    `<svg role="img" xmlns="http://www.w3.org/2000/svg" width="1800" height="100">` +
+    `<svg role="img" xmlns="http://www.w3.org/2000/svg" width="1800" height="100" font-family="${FIXTURE_FAMILY}">` +
     `<rect x="0" y="0" width="1800" height="100" fill="#FFFFFF"/>${body}</svg>`;
   const longLabel = `<text x="20" y="60" font-size="40" fill="#767676">${LONG_LABEL}</text>`;
 
@@ -406,7 +440,9 @@ describe("inspectSvg", () => {
     // Rasterisers differ on whether the upscaled tiny glyph leaves a fully-covered core. A
     // pessimistic residue is lower; recovering the true ink is equal. What uncertainty must never
     // produce is a ratio higher (more lenient) than the same paint at measurable size.
-    expect(tiny.contrast[0].ratio!).toBeLessThanOrEqual(measurable.contrast[0].ratio!);
+    expect(tiny.contrast[0].ratio!).toBeLessThanOrEqual(
+      measurable.contrast[0].ratio!,
+    );
   });
 
   it("should not let a dominant tspan's ink contaminate its parent's OWN separate measurement", () => {
