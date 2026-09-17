@@ -4,6 +4,7 @@ type: scatter
 format: static
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — beyond $30,000, income buys far less extra life expectancy
@@ -59,3 +60,83 @@ et al. §2.4.2), so it has no twin form; and what a phone frame runs out of budg
 - `Y_TICK_HINT` is a COUNT, and the first pass of this migration scaled it with everything else:
   five gridlines became eleven. It is deliberately outside the scaling helper now, with the reason
   written beside it.
+
+## The choreography
+
+No point is the subject here. The cloud's shape is — a steep climb across the first two decades of
+the log axis, then a flattening that runs to the right edge. The one accent on the plate is a
+vertical rule at $30 000, and it is placed where the flattening is declared to begin. To the right
+of it a pale band is drawn around the marks, fourteen years tall; to the left, no band is drawn at
+all, and the forty-one years are given as a number in the note above. That asymmetry is
+deliberate: the narrow band is the thing that has to be SEEN, and the wide one would have covered
+half the plate.
+
+**The eye enters at** `the cloud`. **The claim lands at** `subject`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the cloud` | `the 30 000 rule` |
+| reveal | `the 30 000 rule` | — |
+| subject | `the upper band` | `the 30 000 rule` |
+| conclusion | `the two band notes` | `the upper band` |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the cloud",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the cloud",
+      "subordinateTo": "the 30 000 rule"
+    },
+    {
+      "station": "reveal",
+      "carries": "the 30 000 rule",
+      "subordinateTo": null
+    },
+    {
+      "station": "subject",
+      "carries": "the upper band",
+      "subordinateTo": "the 30 000 rule"
+    },
+    {
+      "station": "conclusion",
+      "carries": "the two band notes",
+      "subordinateTo": "the upper band"
+    }
+  ],
+  "claimLands": "subject"
+}
+```
+
+## Precision
+
+- **41 years against 14 is the ratio** — the two spreads are measured off the marks either side of the break, and the headline's "3 fois plus étroite" is what they give.
+- **Both axes are fixed, the income one log** — both scales are fixed for the plate and the log axis is declared as one in the axis name, because a log axis read as linear inverts the claim.
+- **Both bands are measured off the marks** — each band is measured from the data on its own side of the rule, and the beat throws if the upper one is not much narrower than the lower.
+- **Every figure is recomputed, not carried** — 165, 124, 41 and 14 are all recomputed from the frozen file rather than carried in from the prose around the visual.
+- **165 countries and both spreads at once** — the cloud, the break and both band figures are on the plate together, because the claim is a comparison of two widths.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "41-years-against-14-is-the",
+    "both-axes-are-fixed-the-income",
+    "both-bands-are-measured-off-the",
+    "every-figure-is-recomputed-not-carried",
+    "165-countries-and-both-spreads-at"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "41-years-against-14-is-the",
+    "both-axes-keep-the-same-fixed": "both-axes-are-fixed-the-income",
+    "both-bands-are-measured-off-the": "both-bands-are-measured-off-the",
+    "every-figure-in-the-claim-is": "every-figure-is-recomputed-not-carried",
+    "asserted-in-the-one-frame": "165-countries-and-both-spreads-at"
+  }
+}
+```

@@ -4,6 +4,7 @@ type: waterfall
 format: static
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — Germany generated 143 fewer terawatt-hours in 2024 than 2015
@@ -58,3 +59,83 @@ the Decrease swatch would have landed inside it. Each entry is measured off its 
 beat also gained a plot-and-bar floor of its own: a waterfall has no measured aspect range, so
 `assertPlotAspect` never clamps it, and a bar narrower than the value printed over it clears
 `assertTypeFloor` while being unreadable.
+
+## The choreography
+
+Two full-height bars stand at the two ends of the plate, and the bridge is what runs between them:
+the eye takes the opening and the closing first, because they are the only bars touching the
+baseline. Then the three steps, each in its role's own colour — one up, two down, three roles and
+three colours, deliberately not red and green. The dotted connectors carry the running level
+across each gap, which is the only thing that makes a floating bar readable. Under all of it, one
+black rule spans the two totals and prints the net: the closing is 143,2 TWh below the opening,
+and that is where the reading ends.
+
+**The eye enters at** `the two totals`. **The claim lands at** `conclusion`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the two totals` | `the net-change rule` |
+| reference | `the three steps` | `the two totals` |
+| reveal | `the connectors` | `the three steps` |
+| conclusion | `the net-change rule` | — |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the two totals",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the two totals",
+      "subordinateTo": "the net-change rule"
+    },
+    {
+      "station": "reference",
+      "carries": "the three steps",
+      "subordinateTo": "the two totals"
+    },
+    {
+      "station": "reveal",
+      "carries": "the connectors",
+      "subordinateTo": "the three steps"
+    },
+    {
+      "station": "conclusion",
+      "carries": "the net-change rule",
+      "subordinateTo": null
+    }
+  ],
+  "claimLands": "conclusion"
+}
+```
+
+## Precision
+
+- **143 TWh is the difference of two totals** — 639,2 minus 496,0 is computed from the frozen file; the headline rounds it once and the rule prints it to a tenth.
+- **Opening plus the three steps equals the close** — the bridge is asserted to balance to a stated precision before the render, because a waterfall that does not close is a stacked bar with gaps.
+- **One scale from zero for totals and steps** — the same zero-based scale carries the two full-height bars and the three floating ones, or a step's height would not be a quantity.
+- **Each step's from and to is computed** — every step's start and end level comes from the frozen file rather than being typed to make the bridge land.
+- **The bridge closes inside one frame** — opening, steps, connectors and closing are all at rest together; the net rule is only checkable because both totals are visible beside it.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "143-twh-is-the-difference-of",
+    "opening-plus-the-three-steps-equals",
+    "one-scale-from-zero-for-totals",
+    "each-step-from-and-to-is",
+    "the-bridge-closes-inside-one-frame"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "143-twh-is-the-difference-of",
+    "opening-plus-every-step-equals-the": "opening-plus-the-three-steps-equals",
+    "one-scale-from-zero-for-the": "one-scale-from-zero-for-totals",
+    "each-step-from-to-is-computed": "each-step-from-and-to-is",
+    "asserted-in-the-one-frame": "the-bridge-closes-inside-one-frame"
+  }
+}
+```

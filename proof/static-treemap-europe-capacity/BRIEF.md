@@ -4,6 +4,7 @@ type: treemap
 format: static
 medium: chart
 grounding: supported
+derived: v1
 ---
 
 # Beat — L'eau et l'atome portent encore 77 % du bas-carbone européen, mais dix pays ont basculé
@@ -87,3 +88,84 @@ WRI Global Power Plant Database v1.3.0, public domain, frozen beside this beat a
 the same file the dot-density and proportional-symbol beats carry, duplicated rather than linked.
 **Installed capacity, not output**: the plate says so in its source line, because the database records
 one and a reader will assume the other.
+
+## The choreography
+
+The eye lands on the biggest rectangle and then runs across the squarified rows in descending
+area, which is how this form is read whether or not a designer intends it. Every cell carries
+three registers in a fixed order — the value, then the country, then how many stations it is —
+so a figure never appears without the kind of figure it is. The accent is deliberately NOT on the
+largest cell: it runs as a thread through the field, picking out the ten countries where wind and
+solar already pass half, and one of those cells is a remainder carrying nine of them with its own
+number. France, the largest rectangle on the plate, is visibly outside the thread, and that is the
+second half of the headline.
+
+**The eye enters at** `the largest cell`. **The claim lands at** `subject`.
+
+| station | carries | subordinate to |
+| --- | --- | --- |
+| establish | `the largest cell` | `the accented thread` |
+| reference | `the squarified rows` | `the largest cell` |
+| reveal | `the two remainder cells` | `the accented thread` |
+| subject | `the accented thread` | — |
+
+```json splash:choreography
+{
+  "kind": "frame",
+  "entry": "the largest cell",
+  "stations": [
+    {
+      "station": "establish",
+      "carries": "the largest cell",
+      "subordinateTo": "the accented thread"
+    },
+    {
+      "station": "reference",
+      "carries": "the squarified rows",
+      "subordinateTo": "the largest cell"
+    },
+    {
+      "station": "reveal",
+      "carries": "the two remainder cells",
+      "subordinateTo": "the accented thread"
+    },
+    {
+      "station": "subject",
+      "carries": "the accented thread",
+      "subordinateTo": null
+    }
+  ],
+  "claimLands": "subject"
+}
+```
+
+## Precision
+
+- **77 % and ten are both computed** — the hydro-and-nuclear share of European low-carbon capacity and the count of countries past the halfway mark are both derived from the frozen database.
+- **Area stays proportional and the cells tile** — tile area is proportional to the asserted gigawatts and the cells tile the box exactly, so a remainder is a real area rather than leftover space.
+- **How many cells is a ladder rung** — the cell count is chosen off a ladder by whether every drawn cell can hold its own figure; what does not fit folds into a remainder that carries its own number and count.
+- **The basis goes first, the value last** — a cell too small for all three registers drops the station count first and the country second; a cell that cannot hold its value does not exist.
+- **Every cell carries its own figure** — the thread, the largest cell outside it and both remainders are all in the one frame with their numbers, which is what makes the share checkable.
+
+```json splash:precision
+{
+  "kind": "frame",
+  "rounding": null,
+  "asserts": [
+    "77-and-ten-are-both-computed",
+    "area-stays-proportional-and-the-cells",
+    "how-many-cells-is-a-ladder",
+    "the-basis-goes-first-the-value",
+    "every-cell-carries-its-own-figure"
+  ],
+  "values": {},
+  "labels": [],
+  "covers": {
+    "claim-datum": "77-and-ten-are-both-computed",
+    "tile-area-stays-proportional-to-the": "area-stays-proportional-and-the-cells",
+    "how-many-cells-are-drawn-is": "how-many-cells-is-a-ladder",
+    "a-cell-too-small-for-all": "the-basis-goes-first-the-value",
+    "asserted-in-the-one-frame": "every-cell-carries-its-own-figure"
+  }
+}
+```
