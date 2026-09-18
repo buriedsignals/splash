@@ -30,7 +30,6 @@ export const OPERATION_IDS = Object.freeze([
   "datawrapper-produce",
   "maptiler-delivery",
   "cloudflare-deploy",
-  "inspiration-search",
 ]);
 
 const SOURCE_ROOT = resolve(import.meta.dirname, "../../..");
@@ -582,17 +581,6 @@ export async function runOperation(
             mapTilerKey: process.env.MAPTILER_KEY,
           }),
       });
-    }
-    case "inspiration-search": {
-      const parameters = requireParameters(request, ["query"]);
-      const query = typeof parameters.query === "string" ? parameters.query.trim() : "";
-      if (!query || query.length > 1000)
-        throw new Error("inspiration search query must be 1 to 1000 characters");
-      return runSkillEntrypointFn(
-        runtimeEntrypoint("inspiration", "skills/inspiration/scripts/sealed-search.mjs"),
-        [],
-        { query },
-      );
     }
     case "datawrapper-produce": {
       const parameters = requireParameters(request, ["format", "size"]);

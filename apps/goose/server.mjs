@@ -314,10 +314,7 @@ export async function main() {
   const server = createServer({
     statusProvider: dependencies.statusProvider,
     studio: dependencies.studio,
-    inspiration: createInspirationService({
-      bsigPath: process.env.SPLASH_BSIG_PATH,
-      invokeEngineFn: invokeEngine,
-    }),
+    inspiration: createInspirationService(),
   });
   await server.connect(new StdioServerTransport());
   wireShutdown(server, dependencies.studio);

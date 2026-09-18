@@ -48,8 +48,6 @@ function formatFailure(result) {
       return `Keep the subject under ${result.limit} characters.`;
     case "invalid-token":
       return RECONNECT;
-    case "engine-failed":
-      return `Indicator Labs could not run the search (${result.detail}).`;
     case "limit-reached": {
       const perDay = result.quota?.limit ? ` (${result.quota.limit} searches a day)` : "";
       const reset = result.quota?.resetsAt ?? "midnight UTC";
