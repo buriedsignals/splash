@@ -58,6 +58,20 @@ describe("createInspirationService", () => {
     expect(calls).toEqual([{ query: "floods", token: "on_expired" }, { query: "floods" }]);
   });
 
+  it("should say the refusal once and stay anonymous for the rest of the server", async () => {
+    const { calls, searchFn } = recorder((options) =>
+      options.token ? { ok: false, reason: "invalid-token" } : ANON,
+    );
+    const service = createInspirationService({ token: "on_expired", searchFn });
+    await service.search("floods");
+    expect(await service.search("maps")).toEqual(ANON);
+    expect(calls).toEqual([
+      { query: "floods", token: "on_expired" },
+      { query: "floods" },
+      { query: "maps" },
+    ]);
+  });
+
   it("should not search again for any other failure", async () => {
     const limit = {
       ok: false,

@@ -1,4 +1,4 @@
-> **SUPERSEDED IN PART 2026-09-18** — no `INFOVIZ_TOKEN` credential is needed since 2026-09-18; Engine needs only the `inspiration-search` operation declaring the existing `OSINT_NAV_API_KEY` (see the spec's revision note). Kept for the record; do not execute as written.
+> **SUPERSEDED IN PART 2026-09-18** — no `INFOVIZ_TOKEN` credential and no sealed operation since 2026-09-18; Engine hands the Splash MCP server the existing `OSINT_NAV_API_KEY` in its environment instead (see the spec's revision note). Kept for the record; do not execute as written.
 
 # Inspiration 02a — Engine: INFOVIZ_TOKEN as a paste record, and the inspiration-search operation — Implementation Plan
 

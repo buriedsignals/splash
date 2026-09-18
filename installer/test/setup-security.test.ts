@@ -1591,6 +1591,8 @@ describe("Engine child environment", () => {
 
   test("keeps the inherited home when no handoff is present or it is not absolute", () => {
     expect(engineEnvironment({ HOME: "/Users/reporter" })).toEqual({ HOME: "/Users/reporter" });
+    // The Navigator key Engine hands the MCP server never reaches an Engine child.
+    expect(engineEnvironment({ HOME: "/Users/reporter", OSINT_NAV_API_KEY: "on_x" })).toEqual({ HOME: "/Users/reporter" });
     expect(engineEnvironment({ HOME: "/scratch/home", SPLASH_ENGINE_HOME: "relative/home" })).toEqual({ HOME: "/scratch/home" });
   });
 });

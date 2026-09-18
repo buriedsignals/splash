@@ -43,6 +43,8 @@ export function engineEnvironment(source = process.env) {
   const exact = new Set([
     "BASH_ENV", "ENV", "NODE_OPTIONS", "NODE_PATH", "BUN_OPTIONS", "BUN_INSTALL_CACHE_DIR",
     "LD_PRELOAD", "LD_LIBRARY_PATH", "DYLD_INSERT_LIBRARIES", "DYLD_LIBRARY_PATH", "SPLASH_ENGINE_HOME",
+    // The Navigator key Engine hands the MCP server: named, not only matched by shape.
+    "OSINT_NAV_API_KEY",
   ]);
   const env = {};
   for (const [name, value] of Object.entries(source)) {

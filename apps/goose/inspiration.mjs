@@ -1,12 +1,16 @@
 // The inspiration search the Splash MCP server offers the agent. Engine launches this server
-// itself — the agent never runs it and cannot read its environment — and, when a Navigator account
-// is connected in Indicator Labs, hands it the journalist's Navigator personal access token in
-// OSINT_NAV_API_KEY. The gallery takes that key as its Bearer: ten searches a day with it, five a
-// day per address without. The key stops here: the bridge and the setup session strip every
-// credential-shaped variable before spawning a child, and the skill's own command never sees it.
+// itself and, when a Navigator account is connected in Indicator Labs, hands it the journalist's
+// Navigator personal access token in OSINT_NAV_API_KEY, read once when the server starts. The
+// gallery takes that key as its Bearer: ten searches a day with it, five a day per address without.
+// The key is not passed to the agent: it is readable only by same-user processes, like every sealed
+// operation's environment, and the bridge and the setup session strip every credential-shaped
+// variable before spawning a child.
 //
-// A refused key is the one case that searches twice: the anonymous answer comes back flagged, so
-// the journalist learns the account needs reconnecting instead of silently losing their allowance.
+// A refused key is the one case that searches twice, and only once per server: the anonymous answer
+// comes back flagged so the journalist learns the account needs reconnecting, and every later search
+// in this server goes anonymous directly — a journalist who signed out of Navigator is not nagged
+// on every search, and the gallery is not asked twice each time. Connecting or disconnecting takes
+// effect at the next agent start, when Engine launches the server again.
 
 import { searchInspiration } from "../../skills/inspiration/scripts/search.mjs";
 import { formatInspiration } from "../../skills/inspiration/scripts/format.mjs";
@@ -20,12 +24,13 @@ export function createInspirationService({
   token = process.env[NAVIGATOR_KEY_ID],
   searchFn = searchInspiration,
 } = {}) {
-  const key = typeof token === "string" ? token.trim() : "";
+  let key = typeof token === "string" ? token.trim() : "";
 
   async function search(query) {
     if (!key) return searchFn({ query });
     const result = await searchFn({ query, token: key });
     if (result.reason !== "invalid-token") return result;
+    key = "";
     const anonymous = await searchFn({ query });
     return { ...anonymous, accountNeedsReconnect: true };
   }
