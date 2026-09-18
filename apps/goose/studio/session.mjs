@@ -24,6 +24,8 @@ function safeChildEnvironment(source = process.env) {
     "LD_LIBRARY_PATH",
     "DYLD_INSERT_LIBRARIES",
     "DYLD_LIBRARY_PATH",
+    // The Navigator key Engine hands the server: named, not only matched by shape.
+    "OSINT_NAV_API_KEY",
   ]);
   const env = {};
   for (const [name, value] of Object.entries(source)) {

@@ -14,7 +14,9 @@ async function realFile(path, label) {
 }
 
 function safeChildEnvironment(source = process.env) {
-  const blocked = new Set(["BASH_ENV", "ENV", "NODE_OPTIONS", "NODE_PATH", "BUN_OPTIONS", "LD_PRELOAD", "LD_LIBRARY_PATH", "DYLD_INSERT_LIBRARIES", "DYLD_LIBRARY_PATH"]);
+  // OSINT_NAV_API_KEY is named as well as matched by shape: the Navigator key Engine hands this
+  // server must never reach a child, whatever the broker id is called next.
+  const blocked = new Set(["BASH_ENV", "ENV", "NODE_OPTIONS", "NODE_PATH", "BUN_OPTIONS", "LD_PRELOAD", "LD_LIBRARY_PATH", "DYLD_INSERT_LIBRARIES", "DYLD_LIBRARY_PATH", "OSINT_NAV_API_KEY"]);
   const env = {};
   for (const [name, value] of Object.entries(source)) {
     const upper = name.toUpperCase();

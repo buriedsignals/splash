@@ -14,10 +14,13 @@ exchange and production.
 > sign-in are retired. What Engine does instead (PR prepared 2026-09-18, ships with the next Indicator
 > Labs release): `PrepareSplashMCP` hands the Splash MCP server — the one Splash process Engine
 > launches itself — the stored `OSINT_NAV_API_KEY` in its environment, read from the store and
-> registered for redaction; no sealed operation, no new credential. The MCP tool searches with it and
-> retries once anonymously, flagged, when the gallery refuses the key. The bridge and the setup
-> session already strip credential-shaped variables from every child they spawn, so the key stops at
-> the server. On an Engine from before that release the variable is absent and the search is
+> read without a prompt (the launch is unattended, at every agent start) and registered for
+> redaction; no sealed operation, no new credential. The key is not passed to the agent; it is
+> readable only by same-user processes, like every sealed operation's environment. The MCP tool
+> searches with it, retries once anonymously and flagged when the gallery refuses it, then stays
+> anonymous for that server; connecting or disconnecting takes effect at the next agent start. The
+> bridge and the setup session strip credential-shaped variables, the Navigator key by name, from
+> every child they spawn, so the key stops at the server. On an Engine from before that release the variable is absent and the search is
 > anonymous. `sealed-search.mjs` and the `inspiration-search` operation are removed.
 > The API itself lives in `buriedsignals/splash-inspiration` (the former infoviz repo).
 

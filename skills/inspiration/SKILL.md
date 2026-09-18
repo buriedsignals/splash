@@ -64,8 +64,9 @@ Five rules shape it:
 2. **Choose the path.** Under Indicator Labs the agent calls the Splash MCP tool `search_inspiration`.
    Engine launches that server itself and, when a Navigator account is connected, hands it the
    journalist's Navigator personal access token in `OSINT_NAV_API_KEY` (the key the Navigator CLI
-   uses); the tool searches with it, or anonymously when there is none. Nothing the agent runs
-   itself sees the key. Without that tool, `cli.mjs` searches anonymously.
+   uses), read once when the server starts; the tool searches with it, or anonymously when there is
+   none. The key is not passed to the agent, and nothing the agent runs itself receives it. Without
+   that tool, `cli.mjs` searches anonymously.
 3. **Ask once.** `POST https://splash-inspiration.buriedsignals.com/api/graphics/examples` with `{"query": subject}`, read
    `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`.
 4. **Keep what can be opened.** An item needs a title and an http(s) link; newsroom (`source`), date
@@ -99,7 +100,9 @@ instead of running a command: under Indicator Labs, with a Navigator account con
 searches a day instead of 5 — and it returns the same text. Nothing about the account is ever done
 or said in chat; if the account needs reconnecting, the text says so in its first line. The
 journalist connects the account once, outside chat: Indicator Labs → Connected services →
-Navigator → Connect. There is no separate gallery account and nothing to copy from the web page.
+Navigator → Connect; connecting or disconnecting takes effect at the next agent start. There is no
+separate gallery account and nothing to copy from the web page. When the gallery refuses the key,
+the reconnect sentence is said once and every later search in that session is anonymous.
 
 ```js
 import { searchInspiration } from "./scripts/search.mjs";
