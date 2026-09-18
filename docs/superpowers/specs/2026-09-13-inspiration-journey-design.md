@@ -11,12 +11,14 @@ exchange and production.
 > anonymous (five a day per address), has no sign-in and no token to copy. What this changes below:
 > D3, D4, D6, D7 and D9-D12 are superseded in part — Part 1's token sign-in, Part 2a's `INFOVIZ_TOKEN`
 > credential and validator, Part 2b's copy button and `INDICATOR_LABS_ACCEPTS_INFOVIZ`, and Part 4's
-> sign-in are retired. What remains for Engine: the `inspiration-search` operation declaring
-> `OSINT_NAV_API_KEY`, and a way for a closed operation to acquire that key — measured 2026-09-18,
-> `RecordBroker.AcquireForOperation` serves only record-backed credentials, and `OSINT_NAV_API_KEY`
-> is a raw one (Tom decides: make it a record, or let this operation read a raw key). Until then the
-> Splash side (`apps/goose/inspiration.mjs`, `sealed-search.mjs`) reads that key and falls back to the
-> anonymous search when Engine refuses the operation as unknown, so agent searches stay at five a day.
+> sign-in are retired. What Engine does instead (PR prepared 2026-09-18, ships with the next Indicator
+> Labs release): `PrepareSplashMCP` hands the Splash MCP server — the one Splash process Engine
+> launches itself — the stored `OSINT_NAV_API_KEY` in its environment, read from the store and
+> registered for redaction; no sealed operation, no new credential. The MCP tool searches with it and
+> retries once anonymously, flagged, when the gallery refuses the key. The bridge and the setup
+> session already strip credential-shaped variables from every child they spawn, so the key stops at
+> the server. On an Engine from before that release the variable is absent and the search is
+> anonymous. `sealed-search.mjs` and the `inspiration-search` operation are removed.
 > The API itself lives in `buriedsignals/splash-inspiration` (the former infoviz repo).
 
 ## Goal

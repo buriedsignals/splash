@@ -53,7 +53,7 @@ Five rules shape it:
 | Layer | File | Role |
 | --- | --- | --- |
 | Command | `scripts/cli.mjs` | the anonymous search for hosts without the Splash MCP tool: reads the subject (argv or `--stdin`), prints the markdown or `--json`; exit 1 when there is no list, 2 on a usage error |
-| Account entry | `scripts/sealed-search.mjs` | `sealedSearch(request, {searchFn, env})` — Engine's closed entry: searches with the injected Navigator key, one anonymous retry flagged `accountNeedsReconnect` when the key is refused |
+| Account | `apps/goose/inspiration.mjs` | `createInspirationService({token, searchFn})` — behind the Splash MCP tool: searches with the Navigator key Engine hands the server, one anonymous retry flagged `accountNeedsReconnect` when the key is refused |
 | Request | `scripts/search.mjs` | `searchInspiration({query, fetchFn, timeoutMs, apiBase, token})` — one POST under one deadline covering request and body; returns the list and quota, or the reason there is none; never throws |
 | Words | `scripts/format.mjs` | `formatInspiration(result)` — the numbered list, the quota line, the reconnect sentence, or the plain sentence for each failure |
 
@@ -61,10 +61,11 @@ Five rules shape it:
 
 1. **Check the subject.** Blank → `empty-query`; longer than Splash's own 1000-character cap (the
    gallery itself has no maximum) → `query-too-long`. Neither contacts the gallery.
-2. **Choose the path.** Under Indicator Labs the agent calls the Splash MCP tool `search_inspiration`,
-   which runs the search as `bsig run splash inspiration-search` when a Navigator account is
-   connected (Engine injects `OSINT_NAV_API_KEY`, the same key the Navigator CLI uses) and directly
-   otherwise; without that tool, `cli.mjs` searches anonymously.
+2. **Choose the path.** Under Indicator Labs the agent calls the Splash MCP tool `search_inspiration`.
+   Engine launches that server itself and, when a Navigator account is connected, hands it the
+   journalist's Navigator personal access token in `OSINT_NAV_API_KEY` (the key the Navigator CLI
+   uses); the tool searches with it, or anonymously when there is none. Nothing the agent runs
+   itself sees the key. Without that tool, `cli.mjs` searches anonymously.
 3. **Ask once.** `POST https://splash-inspiration.buriedsignals.com/api/graphics/examples` with `{"query": subject}`, read
    `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`.
 4. **Keep what can be opened.** An item needs a title and an http(s) link; newsroom (`source`), date
@@ -119,12 +120,10 @@ console.log(formatInspiration(result));
 ## Files
 
 - `scripts/cli.mjs` — the anonymous command for hosts without the Splash MCP tool.
-- `apps/goose/inspiration.mjs` — `createInspirationService` — the account-aware search behind the Splash MCP tool `search_inspiration`.
-- `scripts/sealed-search.mjs` — `sealedSearch` — Engine's closed entry for a search with the Navigator key.
+- `apps/goose/inspiration.mjs` — `createInspirationService` — the account-aware search behind the Splash MCP tool `search_inspiration` (its tests: `apps/goose/test/inspiration.test.ts`).
 - `scripts/search.mjs` — `searchInspiration`, `normaliseItems`, `parseArgs` — the one bounded request, the item
   filter and the command's argument reader.
 - `scripts/format.mjs` — `formatInspiration` — every sentence the journalist reads.
-- `test/sealed-search.test.ts` — the key, the single anonymous retry, the closed request.
 - `test/search.test.ts` — the request, the 429, the unexpected answers, the hung request, the
   stalled body, and `parseArgs`, against stubbed responses.
 - `test/format.test.ts` — the rendered list, the markdown escaping, and each failure sentence.

@@ -1,113 +1,33 @@
-// The inspiration search the Splash MCP server offers the agent. Engine gives this server — and
-// nothing the agent runs itself — the Engine path and the journalist's real home, so this is the one
-// place a search can use the Navigator account connected in Indicator Labs: the gallery takes the
-// Navigator personal access token as its Bearer, and Engine already keeps that key. With the key
-// stored, the search runs as the closed `inspiration-search` operation; otherwise it runs directly
-// and anonymously. Once the operation has run, a failure is reported and nothing searches again:
-// it may already have spent one of the day's searches. The one exception is an Engine that does
-// not know the operation yet — it refuses before anything runs, so the search goes anonymous.
+// The inspiration search the Splash MCP server offers the agent. Engine launches this server
+// itself — the agent never runs it and cannot read its environment — and, when a Navigator account
+// is connected in Indicator Labs, hands it the journalist's Navigator personal access token in
+// OSINT_NAV_API_KEY. The gallery takes that key as its Bearer: ten searches a day with it, five a
+// day per address without. The key stops here: the bridge and the setup session strip every
+// credential-shaped variable before spawning a child, and the skill's own command never sees it.
+//
+// A refused key is the one case that searches twice: the anonymous answer comes back flagged, so
+// the journalist learns the account needs reconnecting instead of silently losing their allowance.
 
-import { MAX_QUERY_LENGTH, searchInspiration } from "../../skills/inspiration/scripts/search.mjs";
+import { searchInspiration } from "../../skills/inspiration/scripts/search.mjs";
 import { formatInspiration } from "../../skills/inspiration/scripts/format.mjs";
 
-const CREDENTIAL_ID = "OSINT_NAV_API_KEY";
-const OPERATION_ID = "inspiration-search";
-
-// The 10 s status read matches the studio's own per-key budget; the 40 s run bound keeps a stalled
-// Engine from holding the tool call open indefinitely, and both together stay well under an MCP
-// client's 60 s. The search itself gives up after 15 s and retries at most once, so 40 s leaves room
-// for Engine's work before exec (hashing the runtime, reading the keychain). Engine's own 45 s
-// timeout fires later; either way the journalist reads "it took too long" and nothing searches again.
-export const KEY_STATUS_TIMEOUT_MS = 10_000;
-export const OPERATION_TIMEOUT_MS = 40_000;
-
-function terminal(outcome) {
-  const events = Array.isArray(outcome?.events) ? outcome.events : [];
-  return events.length ? events[events.length - 1] : null;
-}
-
-// Every `engine-failed` reaches the journalist as one of exactly two sentences — never Engine's own
-// raw text, which can carry a remedy meant for a shell, not for a reading journalist. The second
-// pattern matches execpolicy's own timeout wording (e.g. `exceeded its 45s timeout`).
-function engineFailureDetail(message) {
-  return typeof message === "string" &&
-    (/timed out/i.test(message) || /exceeded its .* timeout/i.test(message))
-    ? "it took too long"
-    : "Indicator Labs reported an error";
-}
-
-// An Engine from before the operation existed refuses it by name before touching the keychain or
-// the runtime (`splash: unknown operation "inspiration-search"; choose …`). Nothing has run and
-// nothing was spent, so this is the one refusal that may search anonymously instead.
-function operationUnknown(message) {
-  return typeof message === "string" && /unknown operation/i.test(message);
-}
+export const NAVIGATOR_KEY_ID = "OSINT_NAV_API_KEY";
 
 /**
  * Builds the search the `search_inspiration` tool calls.
  */
-export function createInspirationService({ bsigPath, invokeEngineFn, searchFn = searchInspiration }) {
-  async function accountStored() {
-    if (!bsigPath) return false;
-    try {
-      const outcome = await invokeEngineFn(bsigPath, ["keys", "status", CREDENTIAL_ID], "", {
-        timeoutMs: KEY_STATUS_TIMEOUT_MS,
-      });
-      const event = terminal(outcome);
-      return outcome.exitCode === 0 && event?.event === "result" && event.data?.stored === true;
-    } catch {
-      return false;
-    }
-  }
+export function createInspirationService({
+  token = process.env[NAVIGATOR_KEY_ID],
+  searchFn = searchInspiration,
+} = {}) {
+  const key = typeof token === "string" ? token.trim() : "";
 
   async function search(query) {
-    // Trimmed the way Go's strings.TrimSpace trims: JS whitespace plus U+0085 (NEL), which JS's own
-    // trim() leaves alone. A subject Engine would refuse — empty, too long, or carrying a NUL — never
-    // reaches Engine; it takes the same direct, anonymous path.
-    const subject =
-      typeof query === "string" ? query.replace(/^[\s\u0085]+|[\s\u0085]+$/g, "") : "";
-    if (!subject || subject.length > MAX_QUERY_LENGTH || subject.includes("\u0000")) {
-      return searchFn({ query });
-    }
-    if (!(await accountStored())) return searchFn({ query });
-
-    let outcome;
-    try {
-      outcome = await invokeEngineFn(
-        bsigPath,
-        ["run", "splash", OPERATION_ID],
-        `${JSON.stringify({ parameters: { query: subject } })}\n`,
-        { timeoutMs: OPERATION_TIMEOUT_MS },
-      );
-    } catch (error) {
-      const message = error instanceof Error ? error.message : null;
-      if (operationUnknown(message)) return searchFn({ query });
-      return { ok: false, reason: "engine-failed", detail: engineFailureDetail(message) };
-    }
-
-    const event = terminal(outcome);
-    if (outcome.exitCode !== 0 || event?.event !== "result" || typeof event.data?.stdout !== "string") {
-      if (operationUnknown(event?.message)) return searchFn({ query });
-      return { ok: false, reason: "engine-failed", detail: engineFailureDetail(event?.message) };
-    }
-    try {
-      const parsed = JSON.parse(event.data.stdout);
-      const decoded =
-        parsed && typeof parsed === "object" && typeof parsed.b64 === "string"
-          ? JSON.parse(Buffer.from(parsed.b64, "base64").toString("utf8"))
-          : null;
-      if (
-        decoded &&
-        typeof decoded === "object" &&
-        typeof decoded.ok === "boolean" &&
-        (decoded.ok ? Array.isArray(decoded.items) : typeof decoded.reason === "string")
-      ) {
-        return decoded;
-      }
-    } catch {
-      // reported as unreadable below
-    }
-    return { ok: false, reason: "engine-failed", detail: engineFailureDetail(null) };
+    if (!key) return searchFn({ query });
+    const result = await searchFn({ query, token: key });
+    if (result.reason !== "invalid-token") return result;
+    const anonymous = await searchFn({ query });
+    return { ...anonymous, accountNeedsReconnect: true };
   }
 
   return { search, format: formatInspiration };

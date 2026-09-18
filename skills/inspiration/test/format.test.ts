@@ -293,14 +293,4 @@ describe("formatInspiration and the Navigator account", () => {
       `${RECONNECT}\n\nThe gallery's daily limit is reached (5 searches a day). It resets at midnight UTC.`,
     );
   });
-
-  it("should say Indicator Labs could not run the search", () => {
-    expect(
-      formatInspiration({
-        ok: false,
-        reason: "engine-failed",
-        detail: "exit code 1",
-      }),
-    ).toBe("Indicator Labs could not run the search (exit code 1).");
-  });
 });
