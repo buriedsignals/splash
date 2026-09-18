@@ -1,0 +1,122 @@
+/* THE BAR — one stylesheet for every page of the site (index, inspiration,
+   docs). It reads the page's own tokens: --bar, --gut, --C, --D, --paper,
+   --ink, --amber, --amber-hi, --rad-s. The markup it dresses is
+   shared/header.html, and shared/header.js makes it move.
+
+   The bar has no ground of its own. It sits on whatever section passes
+   under it and reads that section's `data-ground` to pick its ink: paper
+   on dark grounds, ink on light ones. Each of its two groups — the wordmark
+   on the left, the nav on the right — reads the ground under ITSELF, so a
+   first screen split ink | paper, as on the inspiration page, gets a paper
+   wordmark and an ink nav at once. (`mix-blend-mode:difference` used to do
+   this and could not: it applies to the group, and a solid amber button
+   inside it turned blue over light sections.) */
+header{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;
+       justify-content:space-between;align-items:center;height:var(--bar);
+       padding:0 var(--gut);color:var(--paper);
+       font-family:var(--C);font-size:11px;font-weight:500;letter-spacing:.15em;
+       text-transform:uppercase;
+       transition:filter .34s ease,color .34s ease}
+header a{color:inherit;text-decoration:none;transition:opacity .25s ease}
+header a:hover{opacity:.62}
+header.onlight,header .onlight{color:var(--ink);transition:color .34s ease}
+
+/* THE WORDMARK IS THE POINT. "Splash" is set in the display face at 22px,
+   upper and lower case, while everything around it is 11px mono caps. It is
+   the one word on the site that is a name and not a label. */
+.wordmark{display:inline-flex;align-items:center;gap:.42em;
+          font-family:var(--D);font-weight:800;font-size:22px;
+          letter-spacing:-.035em;text-transform:none;line-height:1}
+.wordmark .rosette{width:.92em;height:.92em;flex:0 0 auto;display:block}
+
+header .hnav{display:flex;gap:26px;align-items:center}
+header .hnav a{white-space:nowrap}
+/* The repository keeps its outline — that is what set it apart from the two
+   bare links — and loses its arrow: the mark already says you are leaving. */
+header .hnav a.ghb{order:1;display:inline-flex;align-items:center;gap:8px;
+    padding:8px 13px;
+    border:1px solid color-mix(in srgb,currentColor 40%,transparent);
+    border-radius:var(--rad-s);background:transparent;
+    transition:background .2s ease,border-color .2s ease}
+header .hnav a.ghb:hover{border-color:currentColor;
+    background:color-mix(in srgb,currentColor 12%,transparent)}
+header .hnav a.ghb svg{width:13px;height:13px;flex:0 0 auto;fill:currentColor}
+header .hnav a.cta{order:2;margin-left:-13px;padding:8px 14px;
+    border:1px solid transparent;border-radius:var(--rad-s);
+    background:var(--amber);color:var(--ink);
+    transition:background .2s ease}
+header .hnav a.cta:hover{background:var(--amber-hi)}
+/* The bare links have only the underline to say the hover, AND THE ROOM IT
+   TAKES IS GIVEN BACK ON TOP: margin and rule exist only under the text, so
+   the link's box grows downward, and since the bar centres boxes the word
+   sat a pixel and a half above the two buttons. Three pixels above, and the
+   four words share one optical line, underline included. */
+header .hnav a:not(.cta):not(.ghb){text-decoration:none;
+                   border-bottom:1px solid transparent;
+                   padding:3px 0 2px;
+                   transition:border-color .2s ease}
+header .hnav a:not(.cta):not(.ghb):hover{border-bottom-color:currentColor}
+header .hnav a:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+
+/* ---- THE MENU ----------------------------------------------------------
+   The bar cannot hold four mentions and a 22px wordmark on a 390px frame.
+   Hiding them left the phone with no way to the rest of the site, so the
+   bar gets a control instead of a deletion, and the panel carries the four
+   destinations. The button lives INSIDE .hnav so the right-hand group stays
+   one object. The negative margin puts the WORD on the gutter, not the
+   padding that makes it a thumb-sized target. */
+.hmenu{display:none;background:none;border:0;cursor:pointer;color:inherit;
+       font:inherit;letter-spacing:inherit;text-transform:inherit;
+       padding:14px 3px;margin-right:-3px}
+
+/* The panel is its own fixed layer ABOVE the bar. */
+.menu{position:fixed;inset:0;z-index:90;background:var(--ink);color:var(--paper);
+      display:flex;flex-direction:column;justify-content:center;
+      gap:clamp(24px,4.4vh,44px);
+      padding:calc(var(--bar) + var(--vs-s,24px)) var(--gut) var(--vs-s,24px);
+      opacity:0;transition:opacity .3s ease}
+.menu:focus{outline:none}
+.menu.open{opacity:1}
+.menu nav{display:flex;flex-direction:column}
+.menu nav a{display:flex;align-items:center;gap:14px;
+            color:inherit;text-decoration:none;
+            font-family:var(--D);font-weight:300;letter-spacing:-.03em;
+            line-height:1.02;font-size:clamp(30px,9vw,54px);
+            padding:clamp(15px,2.6vh,22px) 0;
+            border-bottom:1px solid rgba(237,234,227,.14);
+            opacity:0;transform:translateY(26px)}
+.menu nav a:first-child{border-top:1px solid rgba(237,234,227,.14)}
+/* The square is the site's own eyebrow mark, reused: the current page is
+   said by the same sign here as everywhere else. header.js places it. */
+.menu nav a i{width:9px;height:9px;flex:0 0 auto;background:var(--amber)}
+/* The arrow is a MARK, not a word: at the link's own size it read as a
+   fourth letterform. It keeps its own scale and pulls back the flex gap. */
+.menu nav a em{font-style:normal;font-size:.44em;opacity:.55;margin-left:-5px}
+.menu.open nav a{opacity:1;transform:none;
+  transition:opacity .45s ease,transform .6s cubic-bezier(.16,.84,.3,1)}
+.menu.open nav a:nth-child(1){transition-delay:.06s}
+.menu.open nav a:nth-child(2){transition-delay:.13s}
+.menu.open nav a:nth-child(3){transition-delay:.2s}
+.menu.open nav a:nth-child(4){transition-delay:.27s}
+.mclose{position:absolute;top:0;right:var(--gut);height:var(--bar);
+        display:flex;align-items:center;padding:0 2px;
+        background:none;border:0;cursor:pointer;color:var(--paper);
+        font-family:var(--C);font-size:11px;font-weight:500;
+        letter-spacing:.15em;text-transform:uppercase;opacity:.6}
+.mclose:hover,.mclose:focus-visible{opacity:1}
+@media (prefers-reduced-motion:reduce){
+  .menu,.menu.open,.menu nav a{transition:none}
+  .menu nav a{opacity:1;transform:none}
+}
+
+/* The threshold is 860 and not 760: a tablet in portrait is 768, 820 or
+   834px wide and has exactly the phone's problem, a narrow tall frame. The
+   format decides, not the device. ALL the mentions go, the call included:
+   the panel carries all four, and leaving one outside would say the same
+   thing twice, two taps apart. The bar is a wordmark and a way in. */
+@media (max-width:860px){
+  header{font-size:10px;letter-spacing:.12em}
+  header .hnav a{display:none}
+  .hmenu{display:block}
+  .wordmark{font-size:19px}
+}

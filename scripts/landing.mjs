@@ -52,6 +52,34 @@ export function countsOnPage(html) {
   return counts;
 }
 
+const TWIN_OPEN = "<!-- twin/landing/shared/header.html -->";
+const TWIN_CLOSE = "<!-- /twin/landing/shared/header.html -->";
+
+/* The site's bar is one file, landing/shared/header.html, carried byte for
+   byte into every page between its twin markers (the same rule as the
+   skills' carried copies). A page whose copy drifts from the file, or that
+   has no copy at all, is reported here. */
+export function sharedHeaderDrift({ canonical, pages }) {
+  const drift = [];
+  if (!canonical.startsWith(TWIN_OPEN) || !canonical.trimEnd().endsWith(TWIN_CLOSE)) {
+    drift.push("shared/header.html must begin and end with its twin markers");
+    return drift;
+  }
+  const wanted = canonical.trimEnd();
+  for (const [name, html] of Object.entries(pages)) {
+    const open = html.indexOf(TWIN_OPEN);
+    const close = html.indexOf(TWIN_CLOSE, open);
+    if (open < 0 || close < 0) {
+      drift.push(`${name} carries no copy of shared/header.html`);
+      continue;
+    }
+    const carried = html.slice(open, close + TWIN_CLOSE.length);
+    if (carried !== wanted) drift.push(`${name} has drifted from shared/header.html`);
+    if (html.indexOf(TWIN_OPEN, close) >= 0) drift.push(`${name} carries the bar twice`);
+  }
+  return drift;
+}
+
 export function landingDrift({ html, catalogue }) {
   const drift = labelsThatDisagree(html).map(
     ({ form, text }) => `card reads "${text}" but declares "${form}"`,
@@ -118,4 +146,19 @@ if (import.meta.main) {
     process.exit(1);
   }
   console.log("landing/index.html matches the catalogues");
+
+  const read = (path) => readFileSync(join(ROOT, path), "utf8");
+  const headerDrift = sharedHeaderDrift({
+    canonical: read("landing/shared/header.html"),
+    pages: {
+      "landing/index.html": read("landing/index.html"),
+      "landing/inspiration.html": read("landing/inspiration.html"),
+      "landing/docs/index.html": read("landing/docs/index.html"),
+    },
+  });
+  if (headerDrift.length > 0) {
+    console.error(`the site's bar has drifted: ${headerDrift.join("; ")}`);
+    process.exit(1);
+  }
+  console.log("every page carries landing/shared/header.html");
 }
