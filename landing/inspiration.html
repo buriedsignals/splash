@@ -290,9 +290,8 @@
                 padding:0;border-radius:var(--rad-s)}
   .sform button svg{width:19px;height:19px}
 
-  /* The bar under the field: what is left of the day's quota on the left, the
-     way into the agent on the right. Both are mono caps — they are chrome,
-     and chrome does not use the display face. */
+  /* The bar under the field: what is left of the day's quota. Mono caps — it
+     is chrome, and chrome does not use the display face. */
   .hbar{display:flex;align-items:center;justify-content:space-between;
         gap:18px;flex-wrap:wrap}
   .quota{display:flex;align-items:center;gap:11px;min-width:0;flex:1 1 240px;
@@ -303,26 +302,27 @@
          transition:width .5s cubic-bezier(.16,.84,.3,1)}
   .quota span{flex:0 0 auto;font-size:11px;letter-spacing:.1em;opacity:.5;
               font-variant-numeric:tabular-nums;white-space:nowrap}
-  .quota button{background:none;border:0;padding:0;cursor:pointer;color:var(--amber);
-                font:inherit;font-size:11px;letter-spacing:.1em;text-decoration:underline;
-                text-underline-offset:3px}
-  /* `#acct` reuses `.quota` (max-width 360px) and its email can run long, so
-     the button must not shrink and the email must ellipsize instead of
-     wrapping onto it. Both are id selectors so they outrank `.quota span`
-     (flex:0 0 auto; white-space:nowrap) by specificity. */
-  #aout{flex:0 0 auto;white-space:nowrap}
-  #aemail{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
-  #acct{flex-wrap:wrap}
-  /* Pushed right by its own margin and not by `space-between`: the gauge only
-     exists once a search has been run, and before that the lone pill fell back
-     to the left. The way into the agent does not move when a search lands. */
-  .mcplink{margin-left:auto;display:inline-flex;align-items:center;gap:9px;text-decoration:none;
-           padding:9px 15px;border-radius:999px;color:var(--paper);
-           border:1px solid rgba(237,234,227,.22);
-           font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;
-           transition:border-color .25s ease,background .25s ease}
-  .mcplink:hover{border-color:var(--amber);background:rgba(242,177,60,.08)}
-  .mcplink svg{width:14px;height:14px;color:var(--amber)}
+
+  /* THE LIMIT — under the field, on the ink, in the hero's own type. It takes
+     the gauge's amber for its rule and its eyebrow: the same line, now a
+     sentence. The card rises like the rest of the masthead. */
+  .limit{margin-top:clamp(18px,2.6vh,28px);max-width:560px;
+         padding:clamp(18px,2.2vw,26px) clamp(20px,2.4vw,28px);
+         border-radius:var(--rad);border:1px solid rgba(242,177,60,.38);
+         background:linear-gradient(135deg,rgba(242,177,60,.11),rgba(242,177,60,.03));
+         animation:riseC .55s cubic-bezier(.16,.84,.3,1) both}
+  .leye{display:flex;align-items:center;gap:8px;font-size:10.5px;font-weight:500;
+        letter-spacing:.14em;text-transform:uppercase;color:var(--amber)}
+  .leye i{width:6px;height:6px;border-radius:50%;background:var(--amber)}
+  .limit h2{margin:12px 0 0;font-family:var(--D);font-weight:300;letter-spacing:-.02em;
+            line-height:1.12;font-size:clamp(21px,2.3vw,30px);max-width:24ch}
+  .limit p{margin:11px 0 0;font-size:13px;line-height:1.6;opacity:.62;max-width:46ch}
+  .lacts{display:flex;align-items:center;gap:18px;flex-wrap:wrap;margin-top:17px}
+  .limit .btn{background:var(--amber);color:var(--ink)}
+  .lmore{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--paper);
+         opacity:.6;text-decoration:underline;text-underline-offset:3px;
+         transition:opacity .2s ease}
+  .lmore:hover{opacity:1}
 
   /* ===================================================================
      THE FIRST SCREEN — the masthead and the index, side by side.
@@ -706,26 +706,6 @@
   @media (prefers-reduced-motion:reduce){ .bars i{animation:none} }
 
   /* ===================================================================
-     THE AGENT — ink.
-
-     The page's second argument: the same search, run from inside the
-     journalist's own agent by Splash's inspiration skill.
-     =================================================================== */
-  .mcp{padding:var(--vs) var(--gut)}
-  .mstage{max-width:var(--max);margin:0 auto;
-          display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
-          gap:clamp(30px,5vw,90px);align-items:start}
-  .mcp h2{margin:clamp(18px,2.6vh,30px) 0 0;font-size:clamp(28px,4.2vw,62px);max-width:15ch}
-  .mcp p.mlede{margin:clamp(16px,2.4vh,26px) 0 0;max-width:46ch;
-               font-size:clamp(13.5px,1.2vw,16px);line-height:1.6;opacity:.58}
-  .mhint{margin:14px 0 0;font-size:12px;line-height:1.6;opacity:.5}
-  .mcp .btn{margin-top:clamp(17px,2.4vh,25px)}
-  @media (max-width:900px){ .mstage{grid-template-columns:1fr} }
-  #agent .mstage{grid-template-columns:1fr}
-  #agent .mhint{max-width:46ch}
-
-
-  /* ===================================================================
      THE FOOT — ink, and COMMON to every page of the site.
 
      It carries no page-specific word, which is the whole point: the same
@@ -817,36 +797,6 @@
     .ffund{align-items:flex-start}
   }
 
-  /* ===================================================================
-     THE MODAL — the magic link. Ink on any ground, because it is a panel and
-     not a section: it belongs to the page's chrome.
-     =================================================================== */
-  .veil{position:fixed;inset:0;z-index:100;display:none;place-items:center;
-        padding:20px;background:rgba(10,10,14,.62);backdrop-filter:blur(3px)}
-  .veil[data-open]{display:grid}
-  .modal{width:min(400px,100%);background:#11121a;color:var(--paper);
-         border:1px solid rgba(237,234,227,.14);border-radius:var(--rad);
-         padding:clamp(20px,2.4vw,28px);
-         animation:riseC .4s cubic-bezier(.16,.84,.3,1) both}
-  .mtop{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
-  .mtop h3{font-size:19px}
-  .mx{background:transparent;border:0;cursor:pointer;color:var(--paper);opacity:.5;
-      padding:2px;line-height:0}
-  .mx:hover{opacity:1}
-  .mx svg{width:15px;height:15px}
-  .modal p{margin:12px 0 0;font-size:12.5px;line-height:1.6;opacity:.55}
-  .modal form{margin-top:18px;display:flex;flex-direction:column;gap:9px}
-  .modal input{padding:12px 15px;border-radius:var(--rad-s);background:#0d0e15;
-               border:1px solid rgba(237,234,227,.16);color:var(--paper);
-               font-family:var(--C);font-size:13px;outline:none;
-               transition:border-color .2s ease}
-  .modal input:focus{border-color:var(--amber)}
-  .modal input::placeholder{color:rgba(237,234,227,.34)}
-  .modal .btn{background:var(--amber);color:var(--ink);width:100%}
-  .mmsg{margin:12px 0 0;font-size:12px;font-weight:500;letter-spacing:.08em}
-  .mmsg.ok{color:var(--amber);opacity:1}
-  .mmsg.ko{color:#e8846f;opacity:1}
-
   .sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
       clip:rect(0 0 0 0);white-space:nowrap;border:0}
 
@@ -880,7 +830,6 @@
     .hlede{font-size:12.5px}
     .btn{padding:12px 15px;font-size:10px;letter-spacing:.1em}
     .rhead h2{font-size:clamp(26px,7.4vw,38px)}
-    .mcp h2{font-size:clamp(28px,8.4vw,44px)}
   }
 
   /* THE PHONE PROPER — 560px and under. The band above also covers tablets in
@@ -1029,7 +978,7 @@
      plupart de ces règles reprennent un sélecteur déjà posé plus haut, à
      spécificité égale, et à égalité c'est la dernière qui gagne. */
   @media (max-width:640px){
-    .hlede,.modal p{font-size:14px;line-height:1.55}
+    .hlede{font-size:14px;line-height:1.55}
     .btn{font-size:11px}
     header{font-size:10.5px}
     /* la source et la date sous chaque vignette, et le pied */
@@ -1048,7 +997,7 @@
   <a class="wordmark" href="./"><svg class="rosette" viewBox="0 0 64 64" aria-hidden="true"><path fill="currentColor" d="M51.043 32.561L42.02 51.064A11.148 11.148 0 1 1 30.616 35.116Z M17.9 41.122L6.387 24.057A11.148 11.148 0 1 1 25.9 22.154Z M27.057 8.139L47.593 6.701A11.148 11.148 0 1 1 39.484 24.551Z"/></svg><span>Splash</span></a>
   <span class="hnav">
     <a href="docs/">Docs</a>
-    <a href="inspiration.html" aria-current="page">Get inspiration</a>
+    <a href="inspiration.html" aria-current="page">Find inspiration</a>
     <a class="cta" href="https://buriedsignals.com/join" target="_blank" rel="noopener">Install</a>
     <a class="ghb" href="https://github.com/buriedsignals/splash" target="_blank" rel="noopener noreferrer">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .7a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2.02c-3.22.7-3.9-1.37-3.9-1.37-.52-1.34-1.28-1.7-1.28-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.57-.29-5.27-1.28-5.27-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.16 1.18a10.97 10.97 0 0 1 5.76 0c2.2-1.49 3.16-1.18 3.16-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.71 5.38-5.29 5.67.42.36.79 1.06.79 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .7Z"/></svg>GitHub</a>
@@ -1061,7 +1010,7 @@
   <button class="mclose" id="mclose" type="button">Close</button>
   <nav>
     <a href="docs/">Docs</a>
-    <a href="inspiration.html" aria-current="page"><i></i>Get inspiration</a>
+    <a href="inspiration.html" aria-current="page"><i></i>Find inspiration</a>
     <a href="https://github.com/buriedsignals/splash" target="_blank" rel="noopener noreferrer">GitHub <em>&nearr;</em></a>
     <a href="https://buriedsignals.com/join" target="_blank" rel="noopener">Install <em>&nearr;</em></a>
   </nav>
@@ -1076,8 +1025,8 @@
     <em class="rise" style="--d:.38s">from newsrooms worldwide</em>
   </h1>
   <p class="hlede rise" style="--d:.48s">A searchable gallery of exceptional data-driven visual journalism.
-  Look for a subject, read what the newsroom actually made of it — and hand the
-  same gallery to the agent that builds your own.</p>
+  Look for a subject, read what the newsroom actually made of it — the same
+  gallery Splash searches from inside your agent.</p>
 
   <form class="sform rise" style="--d:.58s" id="sform" autocomplete="off">
     <label class="sr" for="q">Search the gallery</label>
@@ -1094,19 +1043,23 @@
     <div class="quota" id="quota" hidden>
       <div class="qtrack" id="qtrack"><div class="qfill" id="qfill"></div></div>
       <span id="qtext"></span>
-      <button type="button" id="qsign" hidden>Sign in for more searches</button>
     </div>
-    <div class="quota" id="acct" hidden>
-      <span id="aemail"></span>
-      <button type="button" id="aout">Sign out</button>
+  </div>
+
+  <!-- THE LIMIT. It stands where the reader's eye already is, under the field,
+       and the gallery below stays exactly as it was: a search that cannot run
+       leaves nothing behind. Five a day from the browser; Splash searches the
+       same gallery from inside the agent, with the reader's Navigator account,
+       so that is where more lives. -->
+  <div class="limit" id="limit" hidden role="status">
+    <div class="leye"><i></i>Daily limit</div>
+    <h2 id="lhead">Five searches a day from the browser, and that was the fifth.</h2>
+    <p id="lbody">The count resets at midnight UTC. Splash runs this same search from
+    inside your agent, ten a day with your Navigator account.</p>
+    <div class="lacts">
+      <a class="btn" href="https://buriedsignals.com/join" target="_blank" rel="noopener">Install Splash</a>
+      <a class="lmore" href="docs/">How Splash works</a>
     </div>
-    <a class="mcplink" href="#agent">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-           stroke-linecap="round" aria-hidden="true">
-        <path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-7.07l-2.83 2.83M9.76 14.24l-2.83 2.83m12.14 0l-2.83-2.83M9.76 9.76L6.93 6.93"/>
-      </svg>
-      Use in Splash
-    </a>
   </div>
 </section>
 
@@ -1143,22 +1096,6 @@
 </section>
 
 </div><!-- /.top -->
-
-<!-- ===================== THE AGENT ===================== -->
-<section class="mcp on-ink arm" id="agent">
-  <div class="mstage">
-    <div class="up">
-      <div class="eye"><i></i>In Splash</div>
-      <h2>Ask your agent what newsrooms already made</h2>
-      <p class="mlede">Splash's inspiration skill runs this same search from inside
-      your agent. Name a subject and it brings back what newsrooms have published on
-      it — no story to open, nothing to produce.</p>
-      <p class="mhint">Install Splash, then ask your agent for inspiration on a subject.
-      Searches from the agent are limited too: five a day per address, without an account.</p>
-      <a class="btn" href="docs/">How Splash works</a>
-    </div>
-  </div>
-</section>
 
 <!-- ===================== THE NEWSLETTER ===================== -->
 <!-- L'OFFRE, REPRISE TELLE QUELLE DE LA LANDING. Le bloc « Buried Signals »
@@ -1234,7 +1171,10 @@
       publication.</p>
 
       <nav class="flinks" aria-label="Splash">
-        <a href="https://github.com/buriedsignals/splash" target="_blank" rel="noopener noreferrer">Skill files</a>
+        <a href="docs/">Docs</a>
+        <a href="inspiration.html">Find inspiration</a>
+        <a href="https://github.com/buriedsignals/splash" target="_blank" rel="noopener noreferrer">GitHub &nearr;</a>
+        <a href="https://buriedsignals.com/join" target="_blank" rel="noopener">Install &nearr;</a>
         <a href="https://buriedsignals.com" target="_blank" rel="noopener noreferrer">Buried Signals &nearr;</a>
       </nav>
     </div>
@@ -1254,26 +1194,6 @@
   </div>
 </footer>
 
-<!-- ===================== THE MODAL ===================== -->
-<div class="veil" id="veil" role="dialog" aria-modal="true" aria-labelledby="vh">
-  <div class="modal">
-    <div class="mtop">
-      <h3 id="vh">Sign in for more searches</h3>
-      <button class="mx" type="button" id="vx" aria-label="Close">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-             stroke-linecap="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
-      </button>
-    </div>
-    <p id="vsub">We&rsquo;ll email you a Connect link from Infoviz, the service behind this gallery. Press Connect in it and you&rsquo;ll come back here signed in.</p>
-    <form id="vform" autocomplete="off">
-      <label class="sr" for="vmail">Email address</label>
-      <input id="vmail" type="email" placeholder="your@email.com" required>
-      <button class="btn" type="submit" id="vbtn">Send sign-in link</button>
-    </form>
-    <p class="mmsg" id="vmsg" role="status" hidden></p>
-  </div>
-</div>
-
 <!-- Path data written once, drawn twice: the wordmark's second copy is the
      amber scan layer, and `use` costs nothing beyond a reference. -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
@@ -1288,38 +1208,22 @@
   /* ===================================================================== *
    * THE WIRING.
    *
-   * Every request to the Infoviz API goes to
-   * splash-inspiration.buriedsignals.com, cross-origin but SAME-SITE: this
-   * page is served from splash.buriedsignals.com, and both hosts sit under
-   * buriedsignals.com. Three things follow:
+   * Every search goes to splash-inspiration.buriedsignals.com. The page is
+   * anonymous: no account, no cookie, no token. The API counts searches per
+   * address, five a day, and says so in `X-RateLimit-*` headers the gauge
+   * reads off every answer and off `/auth/status` on load. When the day is
+   * spent the search does not leave the page: the notice stands under the
+   * field, and the gallery below stays as it was. More searches live in
+   * Splash, where the agent carries the reader's Navigator account.
    *
-   * 1. THE ACCOUNT IS A COOKIE THE PAGE NEVER SEES. Signing in emails a
-   *    link; its Connect button, on the API's own host, sets an HttpOnly
-   *    `SameSite=Lax` session cookie and redirects back here. Lax cookies
-   *    travel on same-site requests, so every `fetch(API…)` sends it with
-   *    `credentials: 'include'`. No token reaches this page, none is stored,
-   *    and no `Authorization` header is sent: the page learns who is signed
-   *    in only by asking `/auth/status`, on load and when the tab comes back
-   *    into view (Connect may have been pressed in another tab). Signing out
-   *    is `POST /auth/logout`, which clears the cookie. With ACCOUNT_SIGN_IN
-   *    false the status is never asked: no sign-in offer, anonymous
-   *    searches only.
-   *
-   * 2. THE QUOTA IS READABLE. The API answers this origin with credentials
-   *    allowed and exposes its `X-RateLimit-*` headers, so the gauge reads
-   *    them off every search, signed in or not.
-   *
-   * 3. THE FEATURED ROW COMES STRAIGHT FROM POSTGREST. One `fetch` with the
-   *    public anon key calls `get_random_posts`, without credentials. Its
-   *    `Authorization` header is that anon key, never anything of the
-   *    reader's.
+   * The featured row comes straight from PostgREST: one `fetch` with the
+   * public anon key calls `get_random_posts`. Its `Authorization` header is
+   * that anon key, never anything of the reader's.
    * ===================================================================== */
 
   const API   = 'https://splash-inspiration.buriedsignals.com';
   const SB    = 'https://towumekminbldlabbyss.supabase.co';
   const SBKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRvd3VtZWttaW5ibGRsYWJieXNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMjEyOTEsImV4cCI6MjA3Njc5NzI5MX0.lRh7eg8CwOQBd2Squ6wVt2Ko6Z6YgMIeE5tmOOqmIlI';
-
-  const ACCOUNT_SIGN_IN = true; // the sign-in for more searches the Infoviz gallery offers; false leaves the page anonymous
 
   const PER_PAGE = 10;
   /* SIX, NOT THREE. Three was the right number under a hero that took the
@@ -1338,42 +1242,41 @@
   let searched = false;  // featured, or a real result set
   let busy = false;
   let limit = 5, left = null;
-  let account = null;    // {email} while the API says this browser's session is signed in
-  let era = 0;           // bumps on sign-out, so a status answer already on its way is dropped
-
-  /* ---------------------------------------------------------- the account */
-  /* The account is whatever `/auth/status` last said about the session
-     cookie. The page keeps nothing of it between loads. */
-  const setAccount = (next) => {
-    account = next;
-    drawAccount();
-  };
-  const drawAccount = () => {
-    $('acct').hidden = !account;
-    $('aemail').textContent = account ? 'Signed in as ' + account.email : '';
-    $('aemail').title = account ? account.email : '';
-  };
 
   /* ------------------------------------------------------------ the quota */
+  const WORDS = ['no', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+  const ORDINALS = ['', 'first', 'second', 'third', 'fourth', 'fifth', 'sixth', 'seventh', 'eighth', 'ninth', 'tenth'];
+
+  /* At zero the gauge stops being a gauge: an empty track says nothing the
+     sentence does not. The line goes quiet and the notice under the field
+     says the rest. */
   const drawQuota = () => {
     const el = $('quota');
     if (left === null) { el.hidden = true; return; }
     el.hidden = false;
-    /* At zero the gauge stops being a gauge: an empty track says nothing the
-       sentence does not, and the only useful thing left on that line is the
-       way out. The track goes, the offer takes its place. */
     if (left <= 0) {
       $('qtrack').hidden = true;
-      const offer = ACCOUNT_SIGN_IN && !account;
-      $('qtext').textContent = offer ? 'Daily limit reached ·' : 'Daily limit reached';
-      $('qsign').hidden = !offer;
+      $('qtext').textContent = 'Daily limit reached';
       return;
     }
     $('qtrack').hidden = false;
-    $('qsign').hidden = true;
     $('qfill').style.width = Math.max(0, (left / limit) * 100) + '%';
     $('qtext').textContent = left + (left === 1 ? ' query left today' : ' queries left today');
   };
+
+  const spent = () => left !== null && left <= 0;
+
+  const showLimit = () => {
+    const n = WORDS[limit] || String(limit);
+    const nth = ORDINALS[limit] || 'last';
+    $('lhead').textContent = n.charAt(0).toUpperCase() + n.slice(1)
+      + ' searches a day from the browser, and that was the ' + nth + '.';
+    /* The notice says it all; the gauge's own "reached" line under it would
+       say it twice. */
+    $('quota').hidden = true;
+    $('limit').hidden = false;
+  };
+  const hideLimit = () => { $('limit').hidden = true; };
 
   const readLimits = (res) => {
     const l = res.headers.get('X-RateLimit-Limit');
@@ -1566,12 +1469,16 @@
   const ask = (q) => fetch(API + '/api/graphics/examples', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
     body: JSON.stringify({ query: q }),
   });
 
+  /* Returns true when the search ran, false when the day was already spent
+     and nothing left the page. */
   async function search(q) {
-    if (busy) return;
+    if (busy) return false;
+    /* The day is over: the notice, and not a request. The gallery below is
+       left exactly as it stands. */
+    if (spent()) { showLimit(); return false; }
     busy = true;
     $('sbtn').disabled = true;
     searched = true;
@@ -1586,32 +1493,14 @@
       readLimits(res);
 
       if (res.status === 429) {
+        /* The count here was stale — the address searched from another tab,
+           or the day ended between two answers. The gallery is put back as it
+           was and the notice says the rest. */
         const d = await res.json().catch(() => ({}));
         limit = Number(d.limit) || limit; left = 0; drawQuota();
-        all = [];
-        if (!ACCOUNT_SIGN_IN) {
-          box('ink', 'Limit reached',
-              limit + ' searches a day, and that was the ' + (limit === 5 ? 'fifth' : 'last') + '.',
-              'The count resets at midnight UTC.');
-          return;
-        }
-        if (account) {
-          box('ink', 'Limit reached',
-              limit + ' searches a day, and that was the last.',
-              'The count resets at midnight UTC.');
-          return;
-        }
-        box('ink', 'Limit reached',
-            limit + ' searches a day, and that was the ' + (limit === 5 ? 'fifth' : 'last') + '.',
-            'The count resets at midnight UTC. A free account raises it to '
-            + (limit === 5 ? 10 : limit) + ' a day.',
-            '<button class="btn" type="button" id="signin">Sign in for more</button>');
-        const s = $('signin');
-        if (s) s.addEventListener('click', () => openModal(
-          'Sign in for more searches',
-          'Get ' + (limit === 5 ? 10 : limit) + ' daily searches with a free account. '
-          + 'We\'ll email you a Connect link from Infoviz, the service behind this gallery.'));
-        return;
+        showLimit();
+        await featured();
+        return false;
       }
       if (!res.ok) {
         const d = await res.json().catch(() => ({}));
@@ -1621,13 +1510,15 @@
       const data = await res.json();
       all = Array.isArray(data.items) ? data.items : [];
       render();
+      return true;
     } catch (err) {
       all = [];
       box('ink', 'No answer', 'The gallery did not come back.',
-          esc(err.message || 'The request failed before it reached the Infoviz gallery.'),
+          esc(err.message || 'The request failed before it reached the gallery.'),
           '<button class="btn" type="button" id="retry">Try again</button>');
       const r = $('retry');
       if (r) r.addEventListener('click', () => search(q));
+      return true;
     } finally {
       busy = false;
       $('sbtn').disabled = false;
@@ -1714,9 +1605,6 @@
   const wide = matchMedia('(min-width:861px)');
   wide.addEventListener('change', (m) => { if (m.matches) closeMenu(); });
 
-  /* Its own listener rather than a branch in the sign-in panel's: that one is
-     declared further down and reading it from here would be a use before
-     initialisation. Two small listeners, no ordering to remember. */
   addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && !menu.hidden) closeMenu();
   });
@@ -1744,128 +1632,39 @@
     e.preventDefault();
     const q = $('q').value.trim();
     if (!q) return;
-    search(q);
     /* The results are below the fold by design; a search that leaves the
-       reader in the hero looks like a search that did nothing. */
+       reader in the hero looks like a search that did nothing. A search the
+       day no longer allows is the one case to stay: the notice is up here. */
+    if (spent()) { showLimit(); return; }
+    search(q);
     $('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
   $('more').addEventListener('click', () => { page += 1; render(); });
 
-  /* ------------------------------------------------------------ the modal */
-  const veil = $('veil');
-  const openModal = (heading, subtitle) => {
-    if (heading) $('vh').textContent = heading;
-    if (subtitle) $('vsub').textContent = subtitle;
-    veil.setAttribute('data-open', '');
-    $('vmail').focus();
-  };
-
-  $('qsign').addEventListener('click', () => openModal(
-    'Sign in for more searches',
-    'Get ' + (limit === 5 ? 10 : limit) + ' daily searches with a free account. '
-    + 'We\'ll email you a Connect link from Infoviz, the service behind this gallery.'));
-
-  /* Closing the panel does not stop a sign-in in progress: the reader may
-     close it, open the email, press Connect, and this page signs in when it
-     comes back into view. */
-  const closeModal = () => {
-    veil.removeAttribute('data-open');
-    $('vmsg').hidden = true;
-    $('vform').hidden = false;
-  };
-  $('vx').addEventListener('click', closeModal);
-  veil.addEventListener('click', (e) => { if (e.target === veil) closeModal(); });
-  addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && veil.hasAttribute('data-open')) closeModal();
-  });
-
-  const say = (kind, text) => {
-    const msg = $('vmsg');
-    msg.hidden = false;
-    msg.className = 'mmsg ' + kind;
-    msg.textContent = text;
-  };
-  $('vform').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const btn = $('vbtn');
-    btn.disabled = true; btn.textContent = 'Sending…';
-    try {
-      const res = await fetch(API + '/auth/send-link', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email: $('vmail').value }),
-      });
-      const d = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        say('ko', res.status === 422
-          ? 'That email address does not look right.'
-          : res.status === 429
-            ? 'Too many sign-in links for now. Please try again later.'
-            : (d.error || 'Something went wrong.'));
-        return;
-      }
-      $('vform').hidden = true;
-      say('ok', 'Check your email and press Connect. You\'ll come back here signed in.');
-    } catch {
-      say('ko', 'Network error. Please try again.');
-    } finally {
-      btn.disabled = false; btn.textContent = 'Send sign-in link';
-    }
-  });
-
-  $('aout').addEventListener('click', async () => {
-    era++;
-    try {
-      await fetch(API + '/auth/logout', { method: 'POST', credentials: 'include' });
-    } catch { /* offline: the next status probe says what the session really is */ }
-    era++;   // and again: a probe sent while the logout was on its way saw the old cookie
-    setAccount(null);
-    limit = 5; left = null; drawQuota();
-  });
-
-  /* ------------------------------------------------------- the auth probe */
-  /* One question about the session cookie: who, if anyone, is signed in, and
-     what that is worth today. Asked on load and each time the tab comes back
-     into view, never on a timer. */
+  /* ------------------------------------------------------- the quota probe */
+  /* One question: what is left of the day for this address. Asked on load,
+     so the gauge is right before the first search, and each time the tab
+     comes back into view, never on a timer. */
   let probing = false;
-  async function refreshAccount() {
-    if (!ACCOUNT_SIGN_IN || probing) return;
+  async function refreshQuota() {
+    if (probing) return;
     probing = true;
-    const run = era;
     try {
-      const res = await fetch(API + '/auth/status', { credentials: 'include' });
-      if (run !== era || !res.ok) return;
+      const res = await fetch(API + '/auth/status');
+      if (!res.ok) return;
       const d = await res.json();
-      if (run !== era) return;
-      if (!(d.authenticated === true && d.has_session === true
-            && typeof d.email === 'string' && d.email)) {
-        if (account) { setAccount(null); limit = 5; left = null; drawQuota(); }
-        return;
-      }
-      const arrived = !account;
-      setAccount({ email: d.email });
       limit = Number(d.daily_limit) || limit;
       if (typeof d.queries_remaining === 'number') left = d.queries_remaining;
       drawQuota();
-      if (!arrived) return;
-      /* The anonymous 429 box may still be on screen; a reader who just
-         signed in should not come back to a box that still says the day is
-         over. Nor to a panel still asking them to check their email. */
-      if ($('signin')) box('ink', 'Signed in', limit + ' searches a day now.', 'Search again to continue.');
-      if (veil.hasAttribute('data-open')) {
-        $('vform').hidden = true;
-        say('ok', 'Connected as ' + d.email + '.');
-        setTimeout(closeModal, 1500);
-      }
-    } catch { /* the gauge stays on what the last search said */ }
+      if (!spent()) hideLimit();
+    } catch { /* the gauge stays on what the last answer said */ }
     finally { probing = false; }
   }
 
-  addEventListener('focus', refreshAccount);
+  addEventListener('focus', refreshQuota);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') refreshAccount();
+    if (document.visibilityState === 'visible') refreshQuota();
   });
 
   /* ------------------------------------------------------- the arrival */
@@ -1892,7 +1691,7 @@
   }, { rootMargin: '0px 0px -14% 0px', threshold: 0.08 });
   for (const el of document.querySelectorAll('.up')) io.observe(el);
 
-  drawAccount(); featured(); refreshAccount();
+  featured(); refreshQuota();
 })();
 </script>
 
