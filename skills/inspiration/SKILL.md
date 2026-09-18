@@ -1,6 +1,6 @@
 ---
 name: inspiration
-description: Use when a journalist wants to see what newsrooms have already published on a subject — before a story exists, during one, or with no intention of producing anything — by searching the Infoviz gallery once and showing the raw list (title, newsroom, date, link) with the searches left today. Needs no story directory, opens no gate, produces nothing.
+description: Use when a journalist wants to see what newsrooms have already published on a subject — before a story exists, during one, or with no intention of producing anything — by searching the Splash inspiration gallery once and showing the raw list (title, newsroom, date, link) with the searches left today. Needs no story directory, opens no gate, produces nothing.
 ---
 
 # inspiration — what newsrooms already made of a subject
@@ -8,7 +8,7 @@ description: Use when a journalist wants to see what newsrooms have already publ
 ## Overview
 
 A journalist often wants to look before they build: how did other newsrooms show floods, an
-election night, a heatwave? The Infoviz gallery indexes thousands of published charts, maps
+election night, a heatwave? The Splash inspiration gallery indexes thousands of published charts, maps
 and interactives. This skill asks it once and puts the answer in front of the journalist as a
 plain numbered list — the title linked to the original, the newsroom, the date — followed by how
 many searches are left today.
@@ -19,8 +19,8 @@ treatment. What the journalist does with the list is theirs.
 
 Five rules shape it:
 
-1. **One search per request.** The gallery rations searches per address (five a day without an
-   account). The skill sends the journalist's own subject once. It never rephrases, never retries
+1. **One search per request.** The gallery rations searches: five a day per address anonymously,
+   ten a day with a Navigator account. The skill sends the journalist's own subject once. It never rephrases, never retries
    with other words, and never runs a second query to "improve" the list.
 2. **The raw list, unedited, shown whole.** No ranking, no summary, no grouping by technique, no
    truncating and no picking highlights — every item the gallery returned is shown, exactly as it
@@ -37,7 +37,7 @@ Five rules shape it:
 
 - If the host exposes the Splash MCP tool `search_inspiration`, call it with the journalist's
   subject and do not run `cli.mjs`. If it returns a failure, say it and stop — never run the search
-  again another way. The tool uses the journalist's Infoviz account only under Indicator Labs;
+  again another way. The tool uses the journalist's Navigator account only under Indicator Labs;
   elsewhere it searches anonymously, like the command.
 - The journalist asks what has already been done on a subject, wants examples, precedent or
   inspiration — with or without a story, with or without the intent to produce anything.
@@ -53,7 +53,7 @@ Five rules shape it:
 | Layer | File | Role |
 | --- | --- | --- |
 | Command | `scripts/cli.mjs` | the anonymous search for hosts without the Splash MCP tool: reads the subject (argv or `--stdin`), prints the markdown or `--json`; exit 1 when there is no list, 2 on a usage error |
-| Account entry | `scripts/sealed-search.mjs` | `sealedSearch(request, {searchFn, env})` — Engine's closed entry: searches with the injected token, one anonymous retry flagged `accountNeedsReconnect` when the token is refused |
+| Account entry | `scripts/sealed-search.mjs` | `sealedSearch(request, {searchFn, env})` — Engine's closed entry: searches with the injected Navigator key, one anonymous retry flagged `accountNeedsReconnect` when the key is refused |
 | Request | `scripts/search.mjs` | `searchInspiration({query, fetchFn, timeoutMs, apiBase, token})` — one POST under one deadline covering request and body; returns the list and quota, or the reason there is none; never throws |
 | Words | `scripts/format.mjs` | `formatInspiration(result)` — the numbered list, the quota line, the reconnect sentence, or the plain sentence for each failure |
 
@@ -62,8 +62,9 @@ Five rules shape it:
 1. **Check the subject.** Blank → `empty-query`; longer than Splash's own 1000-character cap (the
    gallery itself has no maximum) → `query-too-long`. Neither contacts the gallery.
 2. **Choose the path.** Under Indicator Labs the agent calls the Splash MCP tool `search_inspiration`,
-   which runs the search as `bsig run splash inspiration-search` when an Infoviz account is stored and
-   directly otherwise; without that tool, `cli.mjs` searches anonymously.
+   which runs the search as `bsig run splash inspiration-search` when a Navigator account is
+   connected (Engine injects `OSINT_NAV_API_KEY`, the same key the Navigator CLI uses) and directly
+   otherwise; without that tool, `cli.mjs` searches anonymously.
 3. **Ask once.** `POST https://splash-inspiration.buriedsignals.com/api/graphics/examples` with `{"query": subject}`, read
    `X-RateLimit-Limit`, `X-RateLimit-Remaining`, `X-RateLimit-Reset`.
 4. **Keep what can be opened.** An item needs a title and an http(s) link; newsroom (`source`), date
@@ -93,12 +94,11 @@ The markdown form is what the journalist reads; `--json` prints the structured r
 when code needs it — never both for the same search. Both exit with code 1 when there is no list.
 
 When the host exposes the Splash MCP tool `search_inspiration`, call it with the journalist's subject
-instead of running a command: under Indicator Labs, with an Infoviz account connected there, 10
+instead of running a command: under Indicator Labs, with a Navigator account connected there, 10
 searches a day instead of 5 — and it returns the same text. Nothing about the account is ever done
 or said in chat; if the account needs reconnecting, the text says so in its first line. The
-journalist connects the account once, outside chat: sign in on
-https://splash.buriedsignals.com/inspiration.html, press "Copy token for Indicator Labs", paste it in
-Indicator Labs → Connected services → Infoviz account → Enter token….
+journalist connects the account once, outside chat: Indicator Labs → Connected services →
+Navigator → Connect. There is no separate gallery account and nothing to copy from the web page.
 
 ```js
 import { searchInspiration } from "./scripts/search.mjs";
@@ -114,17 +114,17 @@ console.log(formatInspiration(result));
 | --- | --- | --- |
 | How long one search may run, request and body together | `15000` ms | `DEFAULT_TIMEOUT_MS`, `search.mjs` (override via `searchInspiration({timeoutMs})`) |
 | The longest subject sent to the gallery | `1000` characters | `MAX_QUERY_LENGTH`, `search.mjs` |
-| Which gallery is asked | `https://splash-inspiration.buriedsignals.com` | `INFOVIZ_API`, `search.mjs` (override via `searchInspiration({apiBase})`) |
+| Which gallery is asked | `https://splash-inspiration.buriedsignals.com` | `GALLERY_API`, `search.mjs` (override via `searchInspiration({apiBase})`) |
 
 ## Files
 
 - `scripts/cli.mjs` — the anonymous command for hosts without the Splash MCP tool.
 - `apps/goose/inspiration.mjs` — `createInspirationService` — the account-aware search behind the Splash MCP tool `search_inspiration`.
-- `scripts/sealed-search.mjs` — `sealedSearch` — Engine's closed entry for a search with the account token.
+- `scripts/sealed-search.mjs` — `sealedSearch` — Engine's closed entry for a search with the Navigator key.
 - `scripts/search.mjs` — `searchInspiration`, `normaliseItems`, `parseArgs` — the one bounded request, the item
   filter and the command's argument reader.
 - `scripts/format.mjs` — `formatInspiration` — every sentence the journalist reads.
-- `test/sealed-search.test.ts` — the token, the single anonymous retry, the closed request.
+- `test/sealed-search.test.ts` — the key, the single anonymous retry, the closed request.
 - `test/search.test.ts` — the request, the 429, the unexpected answers, the hung request, the
   stalled body, and `parseArgs`, against stubbed responses.
 - `test/format.test.ts` — the rendered list, the markdown escaping, and each failure sentence.

@@ -38,7 +38,7 @@ function quotaLine(quota) {
 }
 
 const RECONNECT =
-  "Your Infoviz account needs a new token: sign in on https://splash.buriedsignals.com/inspiration.html, copy the token, then Indicator Labs → Connected services → Infoviz account → Replace token…";
+  "Your Navigator account needs reconnecting: Indicator Labs → Connected services → Navigator → Connect.";
 
 function formatFailure(result) {
   switch (result.reason) {
@@ -56,9 +56,9 @@ function formatFailure(result) {
       return `The gallery's daily limit is reached${perDay}. It resets at ${reset}.`;
     }
     case "unexpected-response":
-      return `The Infoviz gallery answered with status ${result.status}, so there is no list to show.`;
+      return `The gallery answered with status ${result.status}, so there is no list to show.`;
     case "unreachable":
-      return `The Infoviz gallery could not be reached (${result.detail}).`;
+      return `The gallery could not be reached (${result.detail}).`;
     default:
       return "The search did not complete.";
   }

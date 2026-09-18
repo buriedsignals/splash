@@ -130,7 +130,7 @@ describe("formatInspiration", () => {
         reason: "unreachable",
         detail: "timed out after 15000ms",
       }),
-    ).toBe("The Infoviz gallery could not be reached (timed out after 15000ms).");
+    ).toBe("The gallery could not be reached (timed out after 15000ms).");
   });
 
   it("should report an unexpected answer with its status", () => {
@@ -141,7 +141,7 @@ describe("formatInspiration", () => {
         status: 503,
       }),
     ).toBe(
-      "The Infoviz gallery answered with status 503, so there is no list to show.",
+      "The gallery answered with status 503, so there is no list to show.",
     );
   });
 
@@ -259,9 +259,9 @@ describe("formatInspiration", () => {
 });
 
 const RECONNECT =
-  "Your Infoviz account needs a new token: sign in on https://splash.buriedsignals.com/inspiration.html, copy the token, then Indicator Labs → Connected services → Infoviz account → Replace token…";
+  "Your Navigator account needs reconnecting: Indicator Labs → Connected services → Navigator → Connect.";
 
-describe("formatInspiration and the Infoviz account", () => {
+describe("formatInspiration and the Navigator account", () => {
   it("should ask to reconnect when the token was refused", () => {
     expect(formatInspiration({ ok: false, reason: "invalid-token" })).toBe(
       RECONNECT,

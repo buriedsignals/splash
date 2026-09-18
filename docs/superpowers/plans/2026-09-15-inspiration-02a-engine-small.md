@@ -1,3 +1,5 @@
+> **SUPERSEDED IN PART 2026-09-18** — no `INFOVIZ_TOKEN` credential is needed since 2026-09-18; Engine needs only the `inspiration-search` operation declaring the existing `OSINT_NAV_API_KEY` (see the spec's revision note). Kept for the record; do not execute as written.
+
 # Inspiration 02a — Engine: INFOVIZ_TOKEN as a paste record, and the inspiration-search operation — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

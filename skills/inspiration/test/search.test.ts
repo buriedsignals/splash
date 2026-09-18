@@ -3,7 +3,7 @@ import {
   searchInspiration,
   normaliseItems,
   parseArgs,
-  INFOVIZ_API,
+  GALLERY_API,
   MAX_QUERY_LENGTH,
 } from "../scripts/search.mjs";
 
@@ -45,7 +45,7 @@ describe("searchInspiration", () => {
   });
 
   it("should ask the gallery at its Splash address", () => {
-    expect(INFOVIZ_API).toBe("https://splash-inspiration.buriedsignals.com");
+    expect(GALLERY_API).toBe("https://splash-inspiration.buriedsignals.com");
   });
 
   it("should send one POST with the trimmed subject and its own user agent", async () => {
@@ -56,7 +56,7 @@ describe("searchInspiration", () => {
     };
     await searchInspiration({ query: "  floods  ", fetchFn });
     expect(calls).toHaveLength(1);
-    expect(calls[0].url).toBe(`${INFOVIZ_API}/api/graphics/examples`);
+    expect(calls[0].url).toBe(`${GALLERY_API}/api/graphics/examples`);
     expect(calls[0].init.method).toBe("POST");
     expect(JSON.parse(calls[0].init.body)).toEqual({ query: "floods" });
     expect(calls[0].init.headers["user-agent"]).toStartWith(

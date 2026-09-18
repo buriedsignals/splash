@@ -24,11 +24,11 @@ function recorder(answers) {
 }
 
 describe("sealedSearch", () => {
-  it("should search once with the token Engine injected", async () => {
+  it("should search once with the Navigator key Engine injected", async () => {
     const { calls, searchFn } = recorder([LIST]);
     const result = await sealedSearch(
       { query: "floods" },
-      { searchFn, env: { INFOVIZ_TOKEN: "tok-123" } },
+      { searchFn, env: { OSINT_NAV_API_KEY: "tok-123" } },
     );
     expect(result).toEqual(LIST);
     expect(calls).toEqual([{ query: "floods", token: "tok-123" }]);
@@ -41,7 +41,7 @@ describe("sealedSearch", () => {
     ]);
     const result = await sealedSearch(
       { query: "floods" },
-      { searchFn, env: { INFOVIZ_TOKEN: "expired" } },
+      { searchFn, env: { OSINT_NAV_API_KEY: "expired" } },
     );
     expect(result).toEqual({ ...ANON, accountNeedsReconnect: true });
     expect(calls).toEqual([
@@ -61,7 +61,7 @@ describe("sealedSearch", () => {
     expect(
       await sealedSearch(
         { query: "floods" },
-        { searchFn, env: { INFOVIZ_TOKEN: "tok" } },
+        { searchFn, env: { OSINT_NAV_API_KEY: "tok" } },
       ),
     ).toEqual(limit);
     expect(calls).toHaveLength(1);

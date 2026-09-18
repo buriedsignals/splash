@@ -37,7 +37,7 @@ function fakes({ status, run }: { status?: any; run?: any }) {
 
 const stored = (value: boolean) => ({
   exitCode: 0,
-  events: [{ event: "result", data: { id: "INFOVIZ_TOKEN", stored: value } }],
+  events: [{ event: "result", data: { id: "OSINT_NAV_API_KEY", stored: value } }],
 });
 
 // Engine redacts every emitted NDJSON line with this same pattern before the caller ever sees it —
@@ -87,7 +87,7 @@ describe("createInspirationService", () => {
     });
     expect(await service.search("floods")).toEqual(DIRECT);
     expect(f.engineCalls.map((c) => c.args)).toEqual([
-      ["keys", "status", "INFOVIZ_TOKEN"],
+      ["keys", "status", "OSINT_NAV_API_KEY"],
     ]);
   });
 
@@ -104,6 +104,33 @@ describe("createInspirationService", () => {
       searchFn: f.searchFn,
     });
     expect(await service.search("floods")).toEqual(DIRECT);
+  });
+
+  it("should search anonymously when an older Engine does not know the operation", async () => {
+    const f = fakes({
+      status: stored(true),
+      run: {
+        exitCode: 1,
+        events: [
+          {
+            event: "error",
+            message:
+              'splash: unknown operation "inspiration-search"; choose cloudflare-deploy, datawrapper-produce, map-bake',
+          },
+        ],
+      },
+    });
+    const service = createInspirationService({
+      bsigPath: BSIG,
+      invokeEngineFn: f.invokeEngineFn,
+      searchFn: f.searchFn,
+    });
+    expect(await service.search("floods")).toEqual(DIRECT);
+    expect(f.engineCalls.map((c) => c.args)).toEqual([
+      ["keys", "status", "OSINT_NAV_API_KEY"],
+      ["run", "splash", "inspiration-search"],
+    ]);
+    expect(f.directCalls).toEqual([{ query: "floods" }]);
   });
 
   it("should search directly when the status check throws", async () => {
@@ -236,7 +263,7 @@ describe("createInspirationService", () => {
   it("should never put Engine's raw remedy text in the result", async () => {
     const f = fakes({
       status: stored(true),
-      run: new Error("run `bsig keys set INFOVIZ_TOKEN`, then retry"),
+      run: new Error("run `bsig keys set OSINT_NAV_API_KEY`, then retry"),
     });
     const service = createInspirationService({
       bsigPath: BSIG,
@@ -244,7 +271,7 @@ describe("createInspirationService", () => {
       searchFn: f.searchFn,
     });
     const result = await service.search("floods");
-    expect(JSON.stringify(result)).not.toContain("bsig keys set INFOVIZ_TOKEN");
+    expect(JSON.stringify(result)).not.toContain("bsig keys set OSINT_NAV_API_KEY");
     expect(result.detail).toBe("Indicator Labs reported an error");
   });
 

@@ -1,10 +1,11 @@
 #!/usr/bin/env bun
 
-// Engine's closed entry for an inspiration search made with the journalist's Infoviz account.
-// Engine injects INFOVIZ_TOKEN and passes only the subject on stdin; the token never reaches the
-// model, the command line or the output. A refused token is the one case that searches twice: the
-// anonymous answer comes back flagged, so the journalist learns the account needs reconnecting
-// instead of silently losing their allowance.
+// Engine's closed entry for an inspiration search made with the journalist's Navigator account.
+// Engine injects OSINT_NAV_API_KEY — the Navigator personal access token the gallery accepts as its
+// Bearer — and passes only the subject on stdin; the key never reaches the model, the command line
+// or the output. A refused key is the one case that searches twice: the anonymous answer comes back
+// flagged, so the journalist learns the account needs reconnecting instead of silently losing
+// their allowance.
 
 import { searchInspiration } from "./search.mjs";
 
@@ -19,11 +20,11 @@ function exactKeys(value, expected) {
 }
 
 /**
- * Searches with the injected account token; on a refused token, once more without it.
+ * Searches with the injected Navigator key; on a refused key, once more without it.
  */
 export async function sealedSearch(request, { searchFn = searchInspiration, env = process.env } = {}) {
   exactKeys(request, ["query"]);
-  const result = await searchFn({ query: request.query, token: env.INFOVIZ_TOKEN ?? "" });
+  const result = await searchFn({ query: request.query, token: env.OSINT_NAV_API_KEY ?? "" });
   if (result.reason !== "invalid-token") return result;
   const anonymous = await searchFn({ query: request.query });
   return { ...anonymous, accountNeedsReconnect: true };

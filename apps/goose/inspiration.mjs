@@ -1,14 +1,16 @@
 // The inspiration search the Splash MCP server offers the agent. Engine gives this server — and
 // nothing the agent runs itself — the Engine path and the journalist's real home, so this is the one
-// place a search can use the Infoviz account stored in Indicator Labs. With an account, the search
-// runs as the closed `inspiration-search` operation; otherwise it runs directly and anonymously.
-// Once the operation has been attempted, a failure is reported and nothing searches again: it may
-// already have spent one of the day's searches.
+// place a search can use the Navigator account connected in Indicator Labs: the gallery takes the
+// Navigator personal access token as its Bearer, and Engine already keeps that key. With the key
+// stored, the search runs as the closed `inspiration-search` operation; otherwise it runs directly
+// and anonymously. Once the operation has run, a failure is reported and nothing searches again:
+// it may already have spent one of the day's searches. The one exception is an Engine that does
+// not know the operation yet — it refuses before anything runs, so the search goes anonymous.
 
 import { MAX_QUERY_LENGTH, searchInspiration } from "../../skills/inspiration/scripts/search.mjs";
 import { formatInspiration } from "../../skills/inspiration/scripts/format.mjs";
 
-const CREDENTIAL_ID = "INFOVIZ_TOKEN";
+const CREDENTIAL_ID = "OSINT_NAV_API_KEY";
 const OPERATION_ID = "inspiration-search";
 
 // The 10 s status read matches the studio's own per-key budget; the 40 s run bound keeps a stalled
@@ -32,6 +34,13 @@ function engineFailureDetail(message) {
     (/timed out/i.test(message) || /exceeded its .* timeout/i.test(message))
     ? "it took too long"
     : "Indicator Labs reported an error";
+}
+
+// An Engine from before the operation existed refuses it by name before touching the keychain or
+// the runtime (`splash: unknown operation "inspiration-search"; choose …`). Nothing has run and
+// nothing was spent, so this is the one refusal that may search anonymously instead.
+function operationUnknown(message) {
+  return typeof message === "string" && /unknown operation/i.test(message);
 }
 
 /**
@@ -71,15 +80,14 @@ export function createInspirationService({ bsigPath, invokeEngineFn, searchFn = 
         { timeoutMs: OPERATION_TIMEOUT_MS },
       );
     } catch (error) {
-      return {
-        ok: false,
-        reason: "engine-failed",
-        detail: engineFailureDetail(error instanceof Error ? error.message : null),
-      };
+      const message = error instanceof Error ? error.message : null;
+      if (operationUnknown(message)) return searchFn({ query });
+      return { ok: false, reason: "engine-failed", detail: engineFailureDetail(message) };
     }
 
     const event = terminal(outcome);
     if (outcome.exitCode !== 0 || event?.event !== "result" || typeof event.data?.stdout !== "string") {
+      if (operationUnknown(event?.message)) return searchFn({ query });
       return { ok: false, reason: "engine-failed", detail: engineFailureDetail(event?.message) };
     }
     try {

@@ -1,3 +1,5 @@
+> **SUPERSEDED IN PART 2026-09-18** — the token sign-in it adds was removed on 2026-09-18; identity is the Navigator personal access token, checked by the API against Navigator (see the spec's revision note). Kept for the record; do not execute as written.
+
 # Inspiration 01 — infoviz back-end, API only + token sign-in — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

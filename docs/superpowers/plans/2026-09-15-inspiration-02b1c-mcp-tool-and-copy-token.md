@@ -1,3 +1,5 @@
+> **SUPERSEDED IN PART 2026-09-18** — the copy-token button is gone since 2026-09-18; the MCP tool gates on `OSINT_NAV_API_KEY` instead of `INFOVIZ_TOKEN` (see the spec's revision note). Kept for the record; do not execute as written.
+
 # Inspiration 02b-1c — Splash: the account path through the Splash MCP, and a token to copy for Indicator Labs — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.

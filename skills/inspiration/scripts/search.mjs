@@ -1,9 +1,9 @@
-// One search against the Infoviz gallery, served for Splash at splash-inspiration.buriedsignals.com,
+// One search against the Splash inspiration gallery at splash-inspiration.buriedsignals.com,
 // one honest answer. The gallery rations searches per address, so this file never retries and never
 // rephrases: it sends the journalist's subject once, under one deadline that covers the request and
 // its body, and returns either the list or the reason there is none. It never throws.
 
-export const INFOVIZ_API = "https://splash-inspiration.buriedsignals.com";
+export const GALLERY_API = "https://splash-inspiration.buriedsignals.com";
 export const DEFAULT_TIMEOUT_MS = 15_000;
 export const MAX_QUERY_LENGTH = 1000;
 
@@ -86,13 +86,13 @@ async function withDeadline(work, controller, timeoutMs) {
 }
 
 /**
- * Searches the gallery once for `query`, with the journalist's account when a `token` is given.
+ * Searches the gallery once for `query`, with the journalist's Navigator key when a `token` is given.
  */
 export async function searchInspiration({
   query,
   fetchFn = fetch,
   timeoutMs = DEFAULT_TIMEOUT_MS,
-  apiBase = INFOVIZ_API,
+  apiBase = GALLERY_API,
   token = "",
 } = {}) {
   const subject = typeof query === "string" ? query.trim() : "";

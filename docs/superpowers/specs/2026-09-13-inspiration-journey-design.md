@@ -5,6 +5,20 @@ Requested by Tom: move infoviz.design into Splash. Keep the infoviz back-end on 
 front-end and its MCP server, and give Splash a third journey — **inspiration** — next to the editorial
 exchange and production.
 
+> **Revised 2026-09-18 (Tom).** The gallery's own sign-in is gone. Identity is the **Navigator personal
+> access token** (`OSINT_NAV_API_KEY`), which Engine already keeps and the Navigator CLI already uses;
+> the API checks it against Navigator and counts ten searches a day per token. The web page is
+> anonymous (five a day per address), has no sign-in and no token to copy. What this changes below:
+> D3, D4, D6, D7 and D9-D12 are superseded in part — Part 1's token sign-in, Part 2a's `INFOVIZ_TOKEN`
+> credential and validator, Part 2b's copy button and `INDICATOR_LABS_ACCEPTS_INFOVIZ`, and Part 4's
+> sign-in are retired. What remains for Engine: the `inspiration-search` operation declaring
+> `OSINT_NAV_API_KEY`, and a way for a closed operation to acquire that key — measured 2026-09-18,
+> `RecordBroker.AcquireForOperation` serves only record-backed credentials, and `OSINT_NAV_API_KEY`
+> is a raw one (Tom decides: make it a record, or let this operation read a raw key). Until then the
+> Splash side (`apps/goose/inspiration.mjs`, `sealed-search.mjs`) reads that key and falls back to the
+> anonymous search when Engine refuses the operation as unknown, so agent searches stay at five a day.
+> The API itself lives in `buriedsignals/splash-inspiration` (the former infoviz repo).
+
 ## Goal
 
 A journalist names a subject and sees what newsrooms have already published on it. No story directory,

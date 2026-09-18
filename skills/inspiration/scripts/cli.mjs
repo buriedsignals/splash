@@ -3,7 +3,7 @@
 // The inspiration skill's command for hosts without the Splash MCP tool: it reads the subject (argv or
 // stdin), searches the gallery anonymously once, and prints what the journalist reads — or the
 // structured result with --json. Under Indicator Labs the agent uses the `search_inspiration` tool
-// instead, which can use the journalist's Infoviz account.
+// instead, which can use the journalist's Navigator account.
 
 import { formatInspiration } from "./format.mjs";
 import { parseArgs, searchInspiration } from "./search.mjs";
