@@ -3811,6 +3811,21 @@ export function resolveRecordedClaim(recorded, profile, takeaway) {
   if (shape === "total") {
     if (column.sum === null || column.sum === undefined)
       return say("unverifiable", `column "${column.name}" carries no sum in the frozen profile`);
+
+    // A COLUMN OF INDEPENDENT SHARES IS NOT A PARTITION OF ANYTHING — the same refusal
+    // `resolveComparison`'s own totality branch makes, and for the same reason. Recording the shape
+    // names the column; it does not make a panel's rows into the parts of one whole. Without this
+    // the journalist who ANSWERED the G1 shape question got `contradicted` where the one who
+    // declined got `unverifiable`, and `groundingScalar` will not close gate 2 on `contradicted`:
+    // answering honestly cost them the gate. A guard the guess meets and the answer walks around is
+    // worse than no guard, because it punishes the journalist for using the question.
+    const recordedPanel = panelShapeOf(columns, rows);
+    if (recordedPanel.isPanel)
+      return say(
+        "unverifiable",
+        `column "${column.name}" is a share measured once per "${recordedPanel.entityColumn?.name ?? "subject"}" per "${recordedPanel.periodColumn.name}", and this table carries ${recordedPanel.rowsPerPeriod} such rows for a single period — so its sum across all ${rows.length} rows (${column.sum}) is not a quantity anything is a part of, and a totality claim cannot be checked against it`,
+      );
+
     const totals = columnTotals(column, rows);
     const holds = Math.abs(column.sum - TOTALITY_WHOLE_VALUE) <= TOTALITY_TOLERANCE;
     // The SAME asymmetry `resolveComparison`'s own totality branch applies, and for the same

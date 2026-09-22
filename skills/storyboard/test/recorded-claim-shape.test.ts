@@ -25,7 +25,11 @@
  */
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
-import { groundTakeaway, resolveRecordedClaim, RECORDED_CLAIM_SHAPES } from "../scripts/ground-claim.mjs";
+import {
+  groundTakeaway,
+  resolveRecordedClaim,
+  RECORDED_CLAIM_SHAPES,
+} from "../scripts/ground-claim.mjs";
 import { resolveGrounding, groundingScalar } from "../scripts/propose.mjs";
 import { checkStoryboard, recordedClaimOf } from "../scripts/storyboard.mjs";
 
@@ -35,7 +39,9 @@ function frozen(slug: string) {
   const front = readFileSync(`${STORIES}/${slug}/STORYBOARD.md`, "utf8");
   return {
     takeaway: /^takeaway:\s*"([\s\S]*?)"\s*$/m.exec(front)![1],
-    profile: JSON.parse(readFileSync(`${STORIES}/${slug}/source/profile.json`, "utf8")),
+    profile: JSON.parse(
+      readFileSync(`${STORIES}/${slug}/source/profile.json`, "utf8"),
+    ),
     csv: readFileSync(`${STORIES}/${slug}/source/data.csv`, "utf8"),
   };
 }
@@ -44,7 +50,10 @@ describe("a journalist who answers nothing gets exactly today's behaviour", () =
   it("returns the same claims and the same coverage with no recorded answer", () => {
     const { takeaway, profile, csv } = frozen("stress-t-europe-recycling");
     const before = groundTakeaway(takeaway, profile, { csv });
-    const after = groundTakeaway(takeaway, profile, { csv, recorded: undefined });
+    const after = groundTakeaway(takeaway, profile, {
+      csv,
+      recorded: undefined,
+    });
     expect(after.claims.map((c: any) => `${c.verdict}: ${c.claim}`)).toEqual(
       before.claims.map((c: any) => `${c.verdict}: ${c.claim}`),
     );
@@ -53,11 +62,14 @@ describe("a journalist who answers nothing gets exactly today's behaviour", () =
   });
 
   it("leaves the two frozen verdicts where they were", () => {
-    for (const slug of ["stress-ad-polish-hospital-beds", "stress-x-tunisian-water"]) {
+    for (const slug of [
+      "stress-ad-polish-hospital-beds",
+      "stress-x-tunisian-water",
+    ]) {
       const { takeaway, profile, csv } = frozen(slug);
-      expect(`${slug}: ${groundingScalar(resolveGrounding(takeaway, profile, { csv }))}`).toBe(
-        `${slug}: unverifiable`,
-      );
+      expect(
+        `${slug}: ${groundingScalar(resolveGrounding(takeaway, profile, { csv }))}`,
+      ).toBe(`${slug}: unverifiable`);
     }
   });
 });
@@ -69,17 +81,27 @@ describe("a recorded shape makes a claim in an unread language checkable", () =>
     const { takeaway, profile, csv } = frozen("stress-ad-polish-hospital-beds");
     const resolved = resolveGrounding(takeaway, profile, {
       csv,
-      recorded: { shape: "maximum", column: "łóżka_szpitalne", entity: "Mazowieckie" },
+      recorded: {
+        shape: "maximum",
+        column: "łóżka_szpitalne",
+        entity: "Mazowieckie",
+      },
     });
     expect(groundingScalar(resolved)).toBe("supported");
-    expect(resolved.detail).toContain('"Mazowieckie"\'s own value in "łóżka_szpitalne" (21400) is the column\'s maximum (21400)');
+    expect(resolved.detail).toContain(
+      '"Mazowieckie"\'s own value in "łóżka_szpitalne" (21400) is the column\'s maximum (21400)',
+    );
   });
 
   it("refuses stress-ad's per-capita half by name, because no column carries it", () => {
     const { takeaway, profile, csv } = frozen("stress-ad-polish-hospital-beds");
     const resolved = resolveGrounding(takeaway, profile, {
       csv,
-      recorded: { shape: "minimum", column: "beds_per_10k", entity: "Mazowieckie" },
+      recorded: {
+        shape: "minimum",
+        column: "beds_per_10k",
+        entity: "Mazowieckie",
+      },
     });
     expect(groundingScalar(resolved)).toBe("unverifiable");
     expect(resolved.detail).toContain('no column named "beds_per_10k"');
@@ -93,11 +115,17 @@ describe("a recorded shape makes a claim in an unread language checkable", () =>
     const { takeaway, profile, csv } = frozen("stress-x-tunisian-water");
     const resolved = resolveGrounding(takeaway, profile, {
       csv,
-      recorded: { shape: "maximum", column: "استهلاك_المياه_م3", entity: "تونس" },
+      recorded: {
+        shape: "maximum",
+        column: "استهلاك_المياه_م3",
+        entity: "تونس",
+      },
     });
     expect(groundingScalar(resolved)).toBe("unverifiable");
     expect(resolved.detail).toContain("٨٩٠٠٠٠٠٠");
-    expect(resolved.detail).toContain('the journalist recorded this sentence\'s shape as "maximum"');
+    expect(resolved.detail).toContain(
+      'the journalist recorded this sentence\'s shape as "maximum"',
+    );
   });
 
   it("decides it against the one column the profiler DID type", () => {
@@ -122,8 +150,12 @@ describe("where the recorded shape and the parsed shape disagree", () => {
     const { takeaway, profile, csv } = frozen("stress-u-rhone-glacier");
     const guessed = groundTakeaway(takeaway, profile, { csv });
     const answered = groundTakeaway(takeaway, profile, { csv, recorded });
-    expect(guessed.claims.some((c: any) => c.shape === "comparison")).toBe(true);
-    expect(answered.claims.some((c: any) => c.shape === "comparison")).toBe(false);
+    expect(guessed.claims.some((c: any) => c.shape === "comparison")).toBe(
+      true,
+    );
+    expect(answered.claims.some((c: any) => c.shape === "comparison")).toBe(
+      false,
+    );
   });
 
   it("reports it whole, with the shape the parser thought it had found", () => {
@@ -132,7 +164,9 @@ describe("where the recorded shape and the parsed shape disagree", () => {
     expect(coverage.disagreements).toHaveLength(1);
     expect(coverage.disagreements[0].parsedShape).toBe("comparison");
     expect(coverage.disagreements[0].recordedShape).toBe("minimum");
-    expect(coverage.disagreements[0].claim).toBe("2025 is the lowest since 1990");
+    expect(coverage.disagreements[0].claim).toBe(
+      "2025 is the lowest since 1990",
+    );
     expect(coverage.disagreements[0].verdict).toBe("supported");
   });
 
@@ -141,14 +175,20 @@ describe("where the recorded shape and the parsed shape disagree", () => {
     const resolved = resolveGrounding(takeaway, profile, { csv, recorded });
     expect(resolved.detail).toContain("the recorded shape DECIDES it");
     expect(resolved.detail).toContain("was read as a comparison");
-    expect(resolved.detail).toContain("a defect in those patterns, not in the takeaway");
+    expect(resolved.detail).toContain(
+      "a defect in those patterns, not in the takeaway",
+    );
   });
 
   it("says so when the two agree, rather than saying nothing", () => {
     const { takeaway, profile, csv } = frozen("stress-t-europe-recycling");
     const resolved = resolveGrounding(takeaway, profile, {
       csv,
-      recorded: { shape: "maximum", column: "recycling_rate", entity: "Germany" },
+      recorded: {
+        shape: "maximum",
+        column: "recycling_rate",
+        entity: "Germany",
+      },
     });
     expect(resolved.detail).toContain("read nothing that disagreed with it");
   });
@@ -156,9 +196,16 @@ describe("where the recorded shape and the parsed shape disagree", () => {
   // "None of those" is an answer, and it is the one that catches a parser inventing a claim.
   it('treats "none" as a recorded answer that supersedes every shape the parser found', () => {
     const { takeaway, profile, csv } = frozen("stress-t-europe-recycling");
-    const { claims, coverage } = groundTakeaway(takeaway, profile, { csv, recorded: { shape: "none" } });
-    expect(claims.some((c: any) => c.shape === "maximum" || c.shape === "minimum")).toBe(false);
-    expect(coverage.disagreements.map((d: any) => d.parsedShape).sort()).toEqual(["maximum", "minimum"]);
+    const { claims, coverage } = groundTakeaway(takeaway, profile, {
+      csv,
+      recorded: { shape: "none" },
+    });
+    expect(
+      claims.some((c: any) => c.shape === "maximum" || c.shape === "minimum"),
+    ).toBe(false);
+    expect(
+      coverage.disagreements.map((d: any) => d.parsedShape).sort(),
+    ).toEqual(["maximum", "minimum"]);
   });
 });
 
@@ -176,38 +223,70 @@ describe("the recorded answer refuses by name rather than in silence", () => {
   };
 
   it("names the shapes it offers when handed one it does not know", () => {
-    const claim = resolveRecordedClaim({ shape: "biggest", column: "beds", entity: "Mazowieckie" }, profile, "x");
-    expect(claim.verdict).toBe("unverifiable");
-    for (const shape of RECORDED_CLAIM_SHAPES) expect(claim.detail).toContain(shape);
-  });
-
-  it("will not guess which way a comparison runs", () => {
     const claim = resolveRecordedClaim(
-      { shape: "comparison", column: "beds", entity: "Mazowieckie", versus: "Śląskie" },
+      { shape: "biggest", column: "beds", entity: "Mazowieckie" },
       profile,
       "x",
     );
     expect(claim.verdict).toBe("unverifiable");
-    expect(claim.detail).toContain('needs its direction recorded too');
+    for (const shape of RECORDED_CLAIM_SHAPES)
+      expect(claim.detail).toContain(shape);
+  });
+
+  it("will not guess which way a comparison runs", () => {
+    const claim = resolveRecordedClaim(
+      {
+        shape: "comparison",
+        column: "beds",
+        entity: "Mazowieckie",
+        versus: "Śląskie",
+      },
+      profile,
+      "x",
+    );
+    expect(claim.verdict).toBe("unverifiable");
+    expect(claim.detail).toContain("needs its direction recorded too");
   });
 
   it("decides a comparison once the direction is recorded, both ways", () => {
-    const base = { shape: "comparison", column: "beds", entity: "Mazowieckie", versus: "Śląskie" };
-    expect(resolveRecordedClaim({ ...base, direction: "greater" }, profile, "x").verdict).toBe("supported");
-    expect(resolveRecordedClaim({ ...base, direction: "less" }, profile, "x").verdict).toBe("contradicted");
+    const base = {
+      shape: "comparison",
+      column: "beds",
+      entity: "Mazowieckie",
+      versus: "Śląskie",
+    };
+    expect(
+      resolveRecordedClaim({ ...base, direction: "greater" }, profile, "x")
+        .verdict,
+    ).toBe("supported");
+    expect(
+      resolveRecordedClaim({ ...base, direction: "less" }, profile, "x")
+        .verdict,
+    ).toBe("contradicted");
   });
 
   it("refuses an entity that matches no row, and one that matches several", () => {
     expect(
-      resolveRecordedClaim({ shape: "maximum", column: "beds", entity: "Pomorskie" }, profile, "x").detail,
+      resolveRecordedClaim(
+        { shape: "maximum", column: "beds", entity: "Pomorskie" },
+        profile,
+        "x",
+      ).detail,
     ).toContain('"Pomorskie" matches no row');
-    const twice = { ...profile, rows: [...profile.rows, { region: "Mazowieckie", beds: 1 }] };
+    const twice = {
+      ...profile,
+      rows: [...profile.rows, { region: "Mazowieckie", beds: 1 }],
+    };
     expect(
-      resolveRecordedClaim({ shape: "maximum", column: "beds", entity: "Mazowieckie" }, twice, "x").detail,
+      resolveRecordedClaim(
+        { shape: "maximum", column: "beds", entity: "Mazowieckie" },
+        twice,
+        "x",
+      ).detail,
     ).toContain("matches 2 rows");
   });
 
-  it("returns null for \"none\", because saying there is no claim is not a claim", () => {
+  it('returns null for "none", because saying there is no claim is not a claim', () => {
     expect(resolveRecordedClaim({ shape: "none" }, profile, "x")).toBeNull();
   });
 });
@@ -247,7 +326,12 @@ describe("gate 2 refuses a half-recorded answer", () => {
   });
 
   it("closes on a complete one, and hands it over in the shape groundTakeaway takes", () => {
-    const answered = { ...meta, claimShape: "maximum", claimColumn: "beds", claimEntity: "Mazowieckie" };
+    const answered = {
+      ...meta,
+      claimShape: "maximum",
+      claimColumn: "beds",
+      claimEntity: "Mazowieckie",
+    };
     expect(checkStoryboard(answered)).toEqual([]);
     expect(recordedClaimOf(answered)).toEqual({
       shape: "maximum",
@@ -259,29 +343,89 @@ describe("gate 2 refuses a half-recorded answer", () => {
   });
 
   it("refuses a shape with no column, and a comparison with only one side", () => {
-    expect(checkStoryboard({ ...meta, claimShape: "maximum", claimEntity: "Mazowieckie" })[0]).toContain(
-      "without claimColumn",
-    );
     expect(
-      checkStoryboard({ ...meta, claimShape: "comparison", claimColumn: "beds", claimEntity: "Mazowieckie" }),
+      checkStoryboard({
+        ...meta,
+        claimShape: "maximum",
+        claimEntity: "Mazowieckie",
+      })[0],
+    ).toContain("without claimColumn");
+    expect(
+      checkStoryboard({
+        ...meta,
+        claimShape: "comparison",
+        claimColumn: "beds",
+        claimEntity: "Mazowieckie",
+      }),
     ).toEqual([
       'claimShape "comparison" was recorded without claimVersus — a comparison between two named things needs the second one',
       'claimDirection null is not "greater" or "less" — which of the two the takeaway puts ahead is the journalist\'s sentence, not a guess this toolchain makes',
     ]);
   });
 
-  it("refuses a shape it does not offer, and a leftover field beside \"none\"", () => {
-    expect(checkStoryboard({ ...meta, claimShape: "biggest", claimColumn: "beds" })[0]).toContain(
-      "is not one of the shapes G1 offers",
-    );
-    expect(checkStoryboard({ ...meta, claimShape: "none", claimColumn: "beds" })[0]).toContain(
-      "records no claim, so claimColumn should be left out",
-    );
+  it('refuses a shape it does not offer, and a leftover field beside "none"', () => {
+    expect(
+      checkStoryboard({
+        ...meta,
+        claimShape: "biggest",
+        claimColumn: "beds",
+      })[0],
+    ).toContain("is not one of the shapes G1 offers");
+    expect(
+      checkStoryboard({ ...meta, claimShape: "none", claimColumn: "beds" })[0],
+    ).toContain("records no claim, so claimColumn should be left out");
   });
 
   it("reads the answer back out of the front matter, which is the later caller", () => {
     const { takeaway, profile, csv } = frozen("stress-ad-polish-hospital-beds");
-    const storyboard = { claimShape: "maximum", claimColumn: "łóżka_szpitalne", claimEntity: "Mazowieckie" };
-    expect(groundingScalar(resolveGrounding(takeaway, profile, { csv, storyboard }))).toBe("supported");
+    const storyboard = {
+      claimShape: "maximum",
+      claimColumn: "łóżka_szpitalne",
+      claimEntity: "Mazowieckie",
+    };
+    expect(
+      groundingScalar(resolveGrounding(takeaway, profile, { csv, storyboard })),
+    ).toBe("supported");
+  });
+});
+
+/**
+ * RULE 4 — THE RECORDED ANSWER MEETS THE GUARDS THE GUESS MEETS.
+ *
+ * A totality claim can only be checked where a column's rows ARE the parts of one whole, and a
+ * panel's are not: the same subject appears once per period. The inferred branch refuses that by
+ * name. This branch copied that branch's cancellation asymmetry and not its panel guard, so a
+ * journalist who ANSWERED the shape question got `contradicted` where one who declined got
+ * `unverifiable` — and `groundingScalar` will not close gate 2 on `contradicted`. Answering
+ * honestly cost them the gate.
+ */
+describe("a recorded shape is not a way around a guard", () => {
+  const panel = {
+    columns: [
+      { name: "country", type: "text" },
+      // `findYearColumn` holds a numeric period column to its own values: integers inside
+      // [1500, 2100]. A column named "year" carrying no range is not one.
+      { name: "year", type: "number", min: 2023, max: 2024 },
+      { name: "share_pct", type: "number", sum: 400, min: 10, max: 60 },
+    ],
+    // Rows are keyed by column NAME, the way `panelShapeOf` reads them: two entities, two
+    // periods, every pair unique — a panel by its own definition.
+    rows: [
+      { country: "FR", year: 2023, share_pct: 40 },
+      { country: "DE", year: 2023, share_pct: 60 },
+      { country: "FR", year: 2024, share_pct: 45 },
+      { country: "DE", year: 2024, share_pct: 55 },
+    ],
+  };
+
+  it("refuses a recorded total on a panel, as the inferred path already does", () => {
+    const claim = resolveRecordedClaim(
+      { shape: "total", column: "share_pct", entity: "FR" },
+      panel,
+      "These shares account for 100% of the total.",
+    );
+    expect(claim.verdict).toBe("unverifiable");
+    expect(claim.detail).toContain("is a share measured once per");
+    expect(claim.detail).not.toContain("not 100");
   });
 });
