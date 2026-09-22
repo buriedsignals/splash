@@ -223,3 +223,24 @@ describe("the positions an article offers", () => {
     expect(position.opening.endsWith("…")).toBe(true);
   });
 });
+
+describe("what is not a position", () => {
+  it("does not offer the front matter as the article's first paragraph", () => {
+    // Every frozen article opens with one — source, url, byline, published — and it is metadata
+    // the journalist never places a graphic after. Its own first sweep offered it as `p1`.
+    const article = [
+      "---",
+      "source: The Guardian",
+      "url: https://example.org/x",
+      "---",
+      "",
+      "# Three towns carry the outage",
+      "",
+      "The first real paragraph of the piece.",
+      "",
+    ].join("\n");
+    const positions = articlePositions(article);
+    expect(positions).toHaveLength(1);
+    expect(positions[0].opening).toBe("The first real paragraph of the piece.");
+  });
+});

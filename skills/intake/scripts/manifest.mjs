@@ -132,7 +132,16 @@ export function articleSections(text) {
  */
 export function articlePositions(text) {
   const OPENING = 79;
-  const lines = String(text ?? "").split(/\r?\n/);
+  const all = String(text ?? "").split(/\r?\n/);
+  // THE FRONT MATTER IS NOT A PARAGRAPH. Every frozen article opens with one — source, url,
+  // byline, published — and a journalist never places a graphic after it. The first sweep of this
+  // function offered it as `p1` on the Guardian piece, which is how it was caught.
+  let from = 0;
+  if (all[0]?.trim() === "---") {
+    const closes = all.findIndex((line, index) => index > 0 && line.trim() === "---");
+    if (closes > 0) from = closes + 1;
+  }
+  const lines = all.slice(from);
   const positions = [];
   let buffer = [];
   let startLine = 0;
@@ -164,7 +173,7 @@ export function articlePositions(text) {
       flush();
       return;
     }
-    if (buffer.length === 0) startLine = index + 1;
+    if (buffer.length === 0) startLine = from + index + 1;
     buffer.push(line.trim());
   });
   flush();
