@@ -75,7 +75,24 @@ import { choreographyFrame, parseTypeSheet } from "#shared/editorial/frame.mjs";
 import { replaceSection } from "#shared/editorial/derived.mjs";
 import { directionReachable, directionRefusalMessage } from "#shared/design-base/run-direction.mjs";
 import { checkChoreography, renderChoreographySection } from "./choreography.mjs";
+import { readPalette } from "./colour.mjs";
 import { checkPrecision, renderPrecisionSection, scaffoldRequirements } from "./precision.mjs";
+
+// THE PALETTE IS REACHED, NOT NECESSARILY CARRIED. `readPalette` walks up from a beat to the
+// filesystem root, so a story records one answer at its own root and every beat under it reads the
+// same colours. The catalogue's flow puts one in each beat directory, and copying the static
+// sibling's was the same thing there — but it refused every story beat, whose palette is one level
+// up and perfectly reachable. So: reach first, copy only when the new beat cannot reach one.
+const PALETTE_NOT_FOUND = "No PALETTE.md found for ";
+function paletteReachableFrom(dir) {
+  try {
+    readPalette(dir);
+    return true;
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith(PALETTE_NOT_FOUND)) return false;
+    throw error;
+  }
+}
 
 export { checkChoreography, checkPrecision };
 
@@ -172,12 +189,15 @@ export function dataFileOf(staticDir) {
   return files.find((f) => /\.csv$/i.test(f)) ?? files.find((f) => /\.(geo)?json$/i.test(f)) ?? null;
 }
 
-/** A path given on the command line, resolved and held to one directory directly under `<root>/proof/`. */
+/** A path given on the command line, resolved and held to one folder directly under `<root>/proof/` —
+ *  the catalogue's own place for a beat — or under a story's own `beats/`. A producer that only
+ *  reaches the catalogue is not a producer a journalist has: without a scaffold there is no
+ *  `BRIEF.md`, and without a brief gate G3 can never close on the beat. */
 function proofDirOf(root, given, flag) {
-  if (typeof given !== "string" || given === "") throw new Error(`${flag} takes a path under proof/`);
-  const proof = join(root, "proof");
+  if (typeof given !== "string" || given === "") throw new Error(`${flag} takes a path under proof/, or a story's beats/`);
   const dir = resolve(root, given);
-  if (dirname(dir) !== proof) throw new Error(`${flag} must name a folder directly under proof/, got ${JSON.stringify(given)}`);
+  const parent = basename(dirname(dir));
+  if (parent !== "proof" && parent !== "beats") throw new Error(`${flag} must name a folder directly under proof/ or a story's beats/, got ${JSON.stringify(given)}`);
   if (!BEAT_NAME.test(basename(dir))) throw new Error(`${flag} must be a kebab-case folder name, got ${JSON.stringify(basename(dir))}`);
   return dir;
 }
@@ -187,9 +207,14 @@ export function tokensFor({ root, skill, medium, type, beat, staticBeat, compone
   if (!KEBAB.test(type ?? "")) throw new Error(`--type must be a kebab-case map type, got ${JSON.stringify(type)}`);
   const beatDir = proofDirOf(root, beat, "--beat");
   const staticDir = proofDirOf(root, staticBeat, "--static");
-  if (existsSync(beatDir)) throw new Error(`${relative(root, beatDir)} already exists — the scaffold never overwrites a beat`);
   if (!existsSync(staticDir) || !statSync(staticDir).isDirectory()) throw new Error(`--static names no beat: ${relative(root, staticDir)} does not exist`);
-  if (!existsSync(join(staticDir, "PALETTE.md"))) throw new Error(`${relative(root, staticDir)} carries no PALETTE.md to copy`);
+  const paletteCarried = existsSync(join(staticDir, "PALETTE.md"));
+  const paletteReached = paletteReachableFrom(beatDir);
+  if (!paletteCarried && !paletteReached) {
+    throw new Error(
+      `${relative(root, beatDir)} has no PALETTE.md reachable (readPalette walks up from the beat and found none), and ${relative(root, staticDir)} carries none to copy. A beat's colours are a journalist's decision, never scaffolded silently — record one at the beat, or at the story root where every beat under it reads the same answer.`,
+    );
+  }
   const dataFile = dataFileOf(staticDir);
   if (!dataFile) throw new Error(`${relative(root, staticDir)} carries no frozen data (.csv or .json) at its top level`);
   const name = component ?? componentNameOf(basename(beatDir), type);
@@ -238,9 +263,22 @@ export function scaffoldBeat({ root = DEFAULT_ROOT, templates, files, skill, med
   if (briefAt >= 0)
     planned[briefAt] = ["BRIEF.md", withChainSections(planned[briefAt][1], type, scaffoldedFrom)];
   assertRunDirection(root, beatDir, filed);
-  mkdirSync(beatDir);
+  // PER FILE, NOT PER DIRECTORY. The catalogue's own flow creates the beat here, so refusing an
+  // existing directory was the same thing; a story's does not — the analyst writes the data
+  // contract into `beats/<id>/` before any producer is dispatched, so a directory check refused
+  // every story beat outright. What must not be overwritten is a file somebody wrote.
+  const collisions = planned
+    .map(([target]) => target)
+    .filter((target) => existsSync(join(beatDir, target)))
+    .sort();
+  if (collisions.length) {
+    throw new Error(
+      `${relative(root, beatDir)} already has ${collisions.join(", ")} — the scaffold never overwrites a file`,
+    );
+  }
+  mkdirSync(beatDir, { recursive: true });
   for (const [target, content] of planned) writeFileSync(join(beatDir, target), content, { flag: "wx" });
-  copyFileSync(join(staticDir, "PALETTE.md"), join(beatDir, "PALETTE.md"), 1 /* COPYFILE_EXCL */);
+  if (!paletteReached) copyFileSync(join(staticDir, "PALETTE.md"), join(beatDir, "PALETTE.md"), 1 /* COPYFILE_EXCL */);
   return [...planned.map(([target]) => target), "PALETTE.md"].sort();
 }
 
