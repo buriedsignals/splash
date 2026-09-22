@@ -362,6 +362,8 @@ for (const file of filedFiles) {
   console.log(`${id}: ground on the ramp, worst of nine = ${worst.toFixed(2)}:1`);
   try {
     await renderWeb({
+      // This catalogue is written in French; the renderer defaults to English and never guesses.
+      lang: "fr",
       component: DirectedStreamWeb,
       props: {
         plates, axes, floor, geometry, marks, xTicks,

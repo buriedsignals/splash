@@ -241,7 +241,7 @@ const RUNNER = `// %%BEAT_PATH%%/render-directions-web.mjs
 //
 // Usage:  bun %%BEAT_PATH%%/render-directions-web.mjs
 
-import { readdirSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -257,6 +257,16 @@ import { Directed%%Name%%Web, FRAME } from "./Directed%%Name%%Web.tsx";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
 const OUT = join(HERE, "renders");
+
+// THE LANGUAGE THIS PAGE DECLARES, read from the story that owns this beat — never guessed from its
+// words. \`STORYBOARD.md\` records \`language:\`, confirmed with the journalist against the article
+// (ruling R4), and \`<html lang>\` is what a screen reader pronounces the page with: a page that says
+// the wrong one is unreadable in the one way a screenshot of it can never show. A beat scaffolded
+// outside a story has no storyboard, and the renderer's own English default stands.
+const STORYBOARD = join(HERE, "..", "..", "STORYBOARD.md");
+const LANGUAGE = existsSync(STORYBOARD)
+  ? readFileSync(STORYBOARD, "utf8").match(/^\s*language:\s*"?([A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*)"?\s*$/m)?.[1] ?? "en"
+  : "en";
 
 // SCAFFOLD — THE EYEBROW is this beat's own: the desk and the geography, in the newsroom's words.
 const EYEBROW = "SCAFFOLD";
@@ -325,6 +335,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const name = \`\${id}.html\`;
   try {
     await renderWeb({
+      lang: LANGUAGE,
       component: Directed%%Name%%Web,
       props: {
         // SCAFFOLD — the beat's own shaped data and its gesture declaration go here.

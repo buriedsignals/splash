@@ -340,6 +340,8 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, file)), textPerRegister);
   try {
     await renderWeb({
+      // This catalogue is written in French; the renderer defaults to English and never guesses.
+      lang: "fr",
       component: DirectedGanttWeb,
       props: {
         rows: shapedWithDetail,

@@ -144,7 +144,8 @@ const OUTPUT_NAME = "rainfall.html";
  * composition — so every web beat shares one implementation of the colour rule and the
  * text-measurement rule, never a copy per story.
  */
-async function renderWeb({ component, props, outDir, name, frame = null, drawing = null }) {
+async function renderWeb({ component, props, outDir, name, frame = null, drawing = null, lang = "en" }) {
+  assertLanguageTag(lang);
   const furniture = deriveFurniture(props.ground);
 
   // THE FILTER, IF THIS BEAT DECLARED ONE. `props.filter` is the beat's own declaration
@@ -226,25 +227,8 @@ async function renderWeb({ component, props, outDir, name, frame = null, drawing
     fontStack: stack,
     drawing,
   });
-  const page = (css) => `<!doctype html>
-<html lang="fr">
-<head>
-<meta charset="utf-8">
-<title>${escapeHtml(props.title)}</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-${css}
-</style>
-</head>
-<body>
-${markup}
-<div id="tooltip" role="status" aria-live="polite" hidden></div>
-<script>
-${inlineScript}
-</script>
-</body>
-</html>
-`;
+  const page = (css) =>
+    webDocument({ lang, title: props.title, css, markup, script: inlineScript });
 
   const draft = page(baseCss);
 
@@ -269,6 +253,58 @@ ${inlineScript}
   // MEASURED ON THE FILE A READER OPENS, not on the string this function happened to build.
   if (drawing) await assertDrawingShare(outPath, drawing.share, name ?? "this beat");
   return { outPath };
+}
+
+/**
+ * THE PAGE SAYS WHICH LANGUAGE ITS WORDS ARE IN, AND IT IS THE CALLER WHO KNOWS.
+ *
+ * `<html lang>` was a literal `fr` here from the day this renderer was written. It was never wrong
+ * in the catalogue — every proof beat in this tree is written in French, so the literal and the
+ * words agreed by accident — and that is exactly why it survived: the first page it can mislabel is
+ * the first page written in something else, which is a journalist's story and not ours. A screen
+ * reader takes the attribute literally and pronounces the words with that language's phonetics, so
+ * a mislabelled page is unreadable in the one way a picture of it can never show.
+ *
+ * `STORYBOARD.md` has recorded `language:` per story all along (`analyst/scripts/gate-contract.mjs`
+ * makes it a required scalar, confirmed with the journalist against the article, ruling R4). A
+ * beat's own runner passes it here. The default is English rather than French because a default is
+ * the thing nobody chose, and the catalogue — which did choose — now says `lang: "fr"` out loud at
+ * each of its own call sites. Same shape as `scrolly/scripts/render-scrolly.mjs`, which has carried
+ * a `lang` parameter since it was written.
+ */
+function assertLanguageTag(lang) {
+  if (!/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(String(lang ?? "")))
+    throw new Error(
+      `lang must be a BCP 47 tag such as "fr" or "en-GB"; got ${JSON.stringify(lang)}. ` +
+        `A beat takes it from its story's own STORYBOARD.md \`language:\` field — the code, never the language's name.`,
+    );
+}
+
+/** The one shape of the document every web beat is written into. Exported so the language it
+ *  declares can be pinned without fetching a typeface: `renderWeb` assembles the page twice (once
+ *  to read which faces its own words need, once with those faces in it) and both passes come
+ *  through here. */
+function webDocument({ lang = "en", title, css, markup, script }) {
+  assertLanguageTag(lang);
+  return `<!doctype html>
+<html lang="${lang}">
+<head>
+<meta charset="utf-8">
+<title>${escapeHtml(title)}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+${css}
+</style>
+</head>
+<body>
+${markup}
+<div id="tooltip" role="status" aria-live="polite" hidden></div>
+<script>
+${script}
+</script>
+</body>
+</html>
+`;
 }
 
 /** Strips the `export` keyword from each top-level declaration so `interaction.mjs` — authored as
@@ -1209,6 +1245,7 @@ if (import.meta.main) {
 export {
   render,
   renderWeb,
+  webDocument,
   MAP_DRAWING_SHARE,
   foldProseIntoDisclosure,
   assertDrawingShare,

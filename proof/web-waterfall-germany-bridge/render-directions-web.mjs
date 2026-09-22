@@ -258,6 +258,8 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   let outPath = null;
   try {
     ({ outPath } = await renderWeb({
+      // This catalogue is written in French; the renderer defaults to English and never guesses.
+      lang: "fr",
       component: DirectedWaterfallWeb,
       props: {
         steps, withdrawPlan, yTicks, unit: UNIT,

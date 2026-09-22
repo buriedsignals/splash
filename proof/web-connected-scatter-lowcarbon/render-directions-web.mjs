@@ -462,6 +462,8 @@ for (const file of filedFiles) {
   );
   try {
     await renderWeb({
+      // This catalogue is written in French; the renderer defaults to English and never guesses.
+      lang: "fr",
       component: DirectedConnectedScatterWeb,
       props: {
         arrows, anchors, names, aim, xTicks, yTicks, xTitle, yTitle,

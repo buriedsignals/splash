@@ -105,6 +105,8 @@ export async function render({ dataPath, outDir, name = OUTPUT_NAME }) {
     throw new Error(`need at least two readings, got ${data.length}`);
 
   const { outPath } = await renderWeb({
+    // This catalogue is written in French; the renderer defaults to English and never guesses.
+    lang: "fr",
     component: EmissionsWeb,
     props: {
       data,

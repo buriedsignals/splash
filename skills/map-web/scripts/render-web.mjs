@@ -315,7 +315,12 @@ export function discloseTable(tableHtml, rowNoun) {
   );
 }
 
-async function renderMapWeb({ component, table, props, outDir, name, regionTable = false, tableRowNoun = null, live = false, plan = null }) {
+async function renderMapWeb({ component, table, props, outDir, name, regionTable = false, tableRowNoun = null, live = false, plan = null, lang = "en" }) {
+  // THE PAGE SAYS WHICH LANGUAGE ITS WORDS ARE IN — see the same parameter in
+  // `chart-web/scripts/render-web.mjs`. It was a literal here too; a beat takes the value from its
+  // story's own STORYBOARD.md `language:` field and never guesses it from the text.
+  if (!/^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$/.test(String(lang ?? "")))
+    throw new Error(`lang must be a BCP 47 tag such as "fr" or "en-GB"; got ${JSON.stringify(lang)}`);
   const furniture = deriveFurniture(props.ground);
   const mapHtml = renderToStaticMarkup(createElement(component, { ...props, ...furniture }));
   const tableHtml = regionTable
@@ -363,7 +368,7 @@ async function renderMapWeb({ component, table, props, outDir, name, regionTable
   const stack = dominantFontStack(mapHtml + tableHtml);
   const baseCss = buildCss({ ...props, ...furniture, groups, frame: props.geometry.frame, fontStack: stack });
   const page = (css) => `<!doctype html>
-<html lang="en">
+<html lang="${lang}">
 <head>
 <meta charset="utf-8">
 <title>${escapeHtml(props.title)}</title>

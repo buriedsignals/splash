@@ -979,6 +979,8 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   // frozen picture. Measured on the delivered page, which is how it was found.
   const pageOf = (plate, box) =>
     renderWeb({
+      // This catalogue is written in French; the renderer defaults to English and never guesses.
+      lang: "fr",
       // A MAP BEAT'S DRAWING KEEPS ITS SHARE OF THE WINDOW AND THE WORDS GIVE WAY — the share is
       // declared once, in the trunk, and refused there on the file this call writes.
       drawing: { share: MAP_DRAWING_SHARE },

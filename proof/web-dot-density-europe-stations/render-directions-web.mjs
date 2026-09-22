@@ -1060,6 +1060,8 @@ for (const file of DIRECTION_FILES) {
   // so a viewBox of some other ratio crops the image rather than the stage.
   const pageOf = (plate, box) =>
     renderWeb({
+      // This catalogue is written in French; the renderer defaults to English and never guesses.
+      lang: "fr",
       // A MAP BEAT'S DRAWING KEEPS ITS SHARE OF THE WINDOW AND THE WORDS GIVE WAY — the share is
       // declared once, in the trunk, and refused there on the file this call writes.
       drawing: { share: MAP_DRAWING_SHARE },

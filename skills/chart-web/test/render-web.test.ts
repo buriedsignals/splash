@@ -53,6 +53,8 @@
  * This file protects the structure so the mechanism cannot be silently deleted.
  */
 import { describe, it, expect, setDefaultTimeout } from "bun:test";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 // THIS skill's own copy of the rasteriser helpers, not `chart-beat`'s (which the previous
@@ -60,6 +62,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 // `splash/test/helper-parity.test.ts`; using the local one keeps this file's own dependency
 // inside the skill it tests.
 import { deriveFurniture, measureText } from "../scripts/render-still.mjs";
+import { webDocument } from "../scripts/render-web.mjs";
 import {
   EmissionsWeb,
   FRAME,
@@ -562,5 +565,47 @@ describe("crossingGeometry reuse (one geometry, three outputs)", () => {
       expect(d.x).toBeCloseTo(g.points[i].x, 6);
       expect(d.y).toBeCloseTo(g.points[i].y, 6);
     });
+  });
+});
+
+/**
+ * THE PAGE DECLARES THE LANGUAGE IT IS WRITTEN IN.
+ *
+ * `<html lang="fr">` was a literal in `render-web.mjs`. It was never wrong on anything shipped —
+ * all 241 pages under `proof/` are written in French, so the literal and the words agreed — which
+ * is why nothing caught it: the first page it can mislabel is the first page written in something
+ * else, and that is a journalist's story, not the catalogue. A screen reader takes the attribute
+ * literally and pronounces English words with French phonetics; a screenshot of the page cannot
+ * show it.
+ *
+ * `STORYBOARD.md` records `language:` per story (`gate-contract.mjs` makes it a required scalar),
+ * so the value existed all along and only this seam ignored it. Pinned on `webDocument`, the shape
+ * both of `renderWeb`'s assembly passes go through, so the assertion costs no typeface fetch.
+ */
+describe("the language a web page declares", () => {
+  const parts = { title: "Ranking", css: "figure{}", markup: "<figure></figure>", script: "" };
+
+  it("writes the one it was given", () => {
+    expect(webDocument({ ...parts, lang: "ro" })).toContain('<html lang="ro">');
+    expect(webDocument({ ...parts, lang: "de-CH" })).toContain('<html lang="de-CH">');
+  });
+
+  it("falls back to English rather than to French, which no page ever passed", () => {
+    const html = webDocument(parts);
+    expect(html).toContain('<html lang="en">');
+    expect(html).not.toContain('<html lang="fr">');
+  });
+
+  it("refuses a language's name where its code belongs", () => {
+    expect(() => webDocument({ ...parts, lang: "Romanian" })).toThrow("BCP 47 tag");
+    expect(() => webDocument({ ...parts, lang: "" })).toThrow("BCP 47 tag");
+  });
+
+  it("is the only place this format writes the attribute, so a second literal cannot creep back", async () => {
+    const source = await readFile(
+      join(import.meta.dirname, "../scripts/render-web.mjs"),
+      "utf8",
+    );
+    expect([...source.matchAll(/<html lang=/g)].length).toBe(1);
   });
 });

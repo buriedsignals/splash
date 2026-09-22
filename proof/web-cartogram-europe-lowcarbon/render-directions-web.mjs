@@ -571,6 +571,8 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
     const restore = declarationFor(direction);
     assertRestoreDeclaration(restore, id);
     await renderWeb({
+      // This catalogue is written in French; the renderer defaults to English and never guesses.
+      lang: "fr",
       component: DirectedCartogramWeb,
       props: {
         restore,
