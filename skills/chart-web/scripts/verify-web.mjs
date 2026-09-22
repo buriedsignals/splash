@@ -507,6 +507,101 @@ async function checkHover(page, vp) {
       `${vp.label}: where the answer is drawn`,
       "no mark reports itself active on hover, so there is nothing to measure it against",
     );
+
+  /**
+   * R6, ON THE HOVER AXIS — because most web beats have no `<fieldset>` at all.
+   *
+   * The control surface runs `heldStill` across the values of a fieldset's parameter, which is the
+   * right axis for a filter, a level or a toggle and does not exist for an `ask-a-mark` beat. Its
+   * parameter is WHICH MARK IS IN QUESTION, and its values are the marks — so the declaration is
+   * measured here, where the pointer already visits every one of them. Measured across the
+   * catalogue: 25 of the 27 declaring beats spend `ask-a-mark`, so without this the clause would be
+   * declared by almost everyone and checked for almost nobody.
+   *
+   * WHAT A SELECTOR CAN MEAN HERE, and it is a real limit rather than a detail. A screenshot is a
+   * RECTANGLE of the rendered page, so naming an element measures its box and everything drawn
+   * inside it. A selector whose box overlaps the marks therefore always moves, however still the
+   * element's own paint is: `.overlay` on a ranking is a transparent layer the size of the whole
+   * plot, and measuring it measures the bars behind it. So `heldStill` names things whose rectangle
+   * EXCLUDES what changes — the header, the axis row, the source line, a legend beside the plot —
+   * and a beat that wants to promise something inside the plot has to give it a box of its own.
+   *
+   * And the answer box is not part of what moved: `#tooltip` is drawn over the page, so any clip
+   * under it comes back different by exactly the box's own pixels. Every frame below is taken with
+   * it hidden and the mark still lit.
+   */
+  const heldOnHover = await page.evaluate(() => {
+    const figure = document.querySelector(".chart-figure[data-held-still]");
+    const raw = figure ? figure.getAttribute("data-held-still") : "";
+    return raw ? raw.split("|").filter(Boolean) : [];
+  });
+  if (heldOnHover.length === 0)
+    skip(
+      `${vp.label}: what this beat holds still while a mark answers`,
+      "the beat declares no `heldStill` selectors, so there is nothing it promised to hold",
+    );
+  else {
+    /**
+     * THE ANSWER BOX ITSELF IS NOT PART OF WHAT MOVED, and measuring it as if it were made this
+     * check report every selector as broken: `#tooltip` is drawn over the page, so any clip under
+     * it comes back different by exactly the box's own pixels. The question here is whether what the
+     * beat PROMISED to hold moved — the axis, the names, the ranking — not whether an answer was
+     * drawn on top of it. So the frame is taken with the box hidden and the mark still lit.
+     */
+    const withoutTheBox = async (clip) => {
+      await page.evaluate(() => {
+        const t = document.getElementById("tooltip");
+        if (t) t.style.visibility = "hidden";
+      });
+      const frame = await page.screenshot({ clip, encoding: "binary" });
+      await page.evaluate(() => {
+        const t = document.getElementById("tooltip");
+        if (t) t.style.visibility = "";
+      });
+      return frame;
+    };
+
+    await page.mouse.move(4, 4);
+    await sleep(40);
+    const restFrames = new Map();
+    for (const selector of heldOnHover) {
+      const box = await page.evaluate((sel) => {
+        const el = document.querySelector(sel);
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        return r.width >= 1 && r.height >= 1 ? { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) } : null;
+      }, selector);
+      if (box) restFrames.set(selector, { clip: box, frame: await withoutTheBox(box) });
+    }
+    const broke = [];
+    for (const r of readings.slice(0, 8)) {
+      const own = probe(r.cx, r.cy);
+      if (!(await expectedAt(own))) continue;
+      await page.mouse.move(own.x, own.y);
+      await sleep(25);
+      for (const [selector, rest] of restFrames) {
+        const moved = (await comparePixels(darkroom, await withoutTheBox(rest.clip), rest.frame)).diffPixels;
+        if (moved > 8) broke.push(`${selector} moved by ${moved}px while ${r.name} answered`);
+      }
+    }
+    await page.mouse.move(4, 4);
+    if (restFrames.size === 0)
+      skip(
+        `${vp.label}: what this beat holds still while a mark answers`,
+        `none of ${heldOnHover.join(", ")} is drawn at this width`,
+      );
+    else
+      check(
+        broke.length === 0,
+        `${vp.label}: everything this beat holds still, holds while a mark answers`,
+        broke.length === 0
+          ? `${restFrames.size} selector(s) identical across the marks probed: ${[...restFrames.keys()].join(", ")}`
+          : `${broke.slice(0, 4).join(", ")}${broke.length > 4 ? `, and ${broke.length - 4} more` : ""}` +
+            " — a selector is measured as its RECTANGLE, so one whose box overlaps the marks always" +
+            " moves; name something whose box excludes them (the header, the axis row, the source" +
+            " line, a legend beside the plot)",
+      );
+  }
   if (inColumnExpected > 0)
     check(
       inColumn === inColumnExpected,
