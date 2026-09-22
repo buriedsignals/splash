@@ -268,6 +268,12 @@ const interaction = {
         "des deux axes, le " +
         "nombre de pays plus riches qui vivent moins longtemps et le nombre de pays plus pauvres qui " +
         "vivent plus longtemps.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "le pays à l'aune duquel le nuage est lu",
+      authorPicked: "none",
+      readerPicks: ["none", "nga", "bra", "chn", "rus", "aus", "usa"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: "Lequel est-ce, et combien de gens vivent là ?",
@@ -276,6 +282,12 @@ const interaction = {
         "Le point répond avec son pays, ses deux valeurs, sa région et sa population — la " +
         "population n'étant plus encodée nulle part sur la plaque, c'est le seul endroit de la page " +
         "où cette quantité existe.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quel point est en question",
+      authorPicked: "le Nigeria",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

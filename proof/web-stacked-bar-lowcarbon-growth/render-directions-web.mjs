@@ -274,6 +274,12 @@ const interaction = {
       changes:
         "Un rail se déploie sous chaque barre, de l'origine à la valeur de sa bande pour la source " +
         "choisie, sur l'échelle de la planche ; l'empilement lui-même ne bouge pas d'un pixel.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "la bande dont la ligne de base est ramenée à zéro",
+      authorPicked: "none",
+      readerPicks: ["none", "hydro", "wind", "solar", "other"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: "Cette bande-là, elle vaut combien, et elle est où en Europe ?",
@@ -281,6 +287,12 @@ const interaction = {
       changes:
         "La bande pointée s'assombrit depuis son propre remplissage et répond avec sa source, ses " +
         "TWh, son rang sur seize, sa part du bas-carbone du pays et sa valeur en 2000.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quelle bande est en question",
+      authorPicked: "l'hydraulique",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

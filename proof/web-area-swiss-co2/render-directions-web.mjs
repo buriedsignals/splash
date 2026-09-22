@@ -239,6 +239,12 @@ const interaction = {
         "anonymes ; et une phrase donne quatre lectures qu'aucun axe de cette plaque ne porte — le " +
         "nombre d'années vécues, la part du TEMPS que cela représente, les Mt et la part du STOCK " +
         "émis depuis, et le débit moyen de ces années contre celui de toutes les années d'avant.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "l'année à laquelle la surface est coupée",
+      authorPicked: "none",
+      readerPicks: ["none", "1950", "1965", "1980", "1995", "2005"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: "Cette année-là vaut combien, et quelle part du total était déjà derrière ?",
@@ -246,6 +252,12 @@ const interaction = {
       changes:
         "L'année répond avec son chiffre annuel et avec la part de toute la surface qui se trouve " +
         "à sa gauche — les 167 lectures dont la plaque n'a pu en écrire que six.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quelle année est en question",
+      authorPicked: "1950",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

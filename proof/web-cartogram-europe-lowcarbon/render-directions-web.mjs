@@ -450,6 +450,12 @@ const interaction = {
           "les noms voyagent avec leur case, à taille constante, et s'éteignent quand la case ne peut " +
           "plus les porter ; la ligne de moyenne se réécrit et une phrase nomme ce que l'étape rend.",
       ),
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "ce que la carte rend : le lieu, la surface, ou ni l'un ni l'autre",
+      authorPicked: "pays",
+      readerPicks: ["pays", "lieu", "surface"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: "Qu'est-ce que cette case-là a perdu ?",
@@ -459,6 +465,12 @@ const interaction = {
           "faute d'encre à assombrir — et répond avec le pays, sa part exacte, les bornes de son " +
           "palier, ses TWh, son rang, et ce que l'étape choisie vient de lui rendre.",
       ),
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quelle tuile est en question",
+      authorPicked: "la France",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

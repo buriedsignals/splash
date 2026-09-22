@@ -627,6 +627,12 @@ const interaction = {
         `bouge, le plus gros cercle reste au même rayon dans les trois états, la légende de taille ` +
         `se remet à l'échelle avec les marques, et la phrase révélée chiffre le rapport de surfaces ` +
         `montré, le rapport réel des capacités, et le nombre de pays que la loi efface.`,
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "l'exposant de l'échelle des aires",
+      authorPicked: "proportionnelle",
+      readerPicks: ["proportionnelle", "proportionnel", "aplatie"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: `Et si je veux les quarante et un, sans la carte — ou sans JavaScript ?`,
@@ -636,6 +642,12 @@ const interaction = {
         `pastille. Cette pastille suit la loi choisie en CSS pur : c'est là que le geste éditorial ` +
         `survit quand la carte, elle, ne peut pas — aucune feuille de style n'atteint une couche ` +
         `MapLibre, donc la moitié carte du geste est du script et la moitié tableau n'en est pas.`,
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "sous quelle forme les lectures sont lues",
+      authorPicked: "l'image",
+      readerPicks: ["l'image", "la table"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: `Que vaut ce cercle-là, et de quoi est-il fait ?`,
@@ -645,6 +657,12 @@ const interaction = {
         `translucidité, et répond avec le pays, ses GW, sa part de l'Europe, son nombre de ` +
         `centrales et le partage entre eau-et-atome et vent-et-soleil. Dans un amas, c'est le plus ` +
         `PETIT cercle sous le pointeur qui répond : c'est celui dont on voit le bord.`,
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quel cercle est en question",
+      authorPicked: "l'Allemagne",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: `Où exactement, dans son propre pays, ce cercle est-il posé ?`,
@@ -654,6 +672,12 @@ const interaction = {
         `molette, pincement, clavier. Les cercles gardent leur taille à l'écran — une capacité ne ` +
         `peut pas valoir deux cercles à deux zooms — donc la légende de taille dit toujours vrai. On ` +
         `ne peut ni dézoomer sous le cadrage publié ni s'approcher au point de perdre la France de vue.`,
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "le recul de la caméra",
+      authorPicked: "le cadrage d'ensemble",
+      readerPicks: ["le cadrage d'ensemble", "n'importe quelle part, de plus près"],
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

@@ -524,6 +524,12 @@ const interaction = {
         "recul, la règle de dessin et le recensement se réécrivent sur place, la barre d'échelle " +
         "reprend sa longueur, et une phrase dit quelle est la plus grosse voisine à cette distance " +
         "et ce qu'elle vaut en pourcentage du sujet.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "la distance d'où la carte est regardée",
+      authorPicked: "region",
+      readerPicks: ["site", "region", "voisinage", "europe"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: "Ce point-là, c'est quoi, et à combien de kilomètres du sujet ?",
@@ -532,6 +538,12 @@ const interaction = {
         "La marque pointée se recolore depuis son propre remplissage, dans une couche dessinée " +
         "au-dessus de ses voisines, et répond avec ce qu'elle est, sa puissance ou sa population, " +
         "son pays et sa distance à Zaporijjia mesurée sur la sphère.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quel repère est en question",
+      authorPicked: "le site",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: "Et tout ce que la carte ne dessine pas à ce recul-là ?",
@@ -540,6 +552,12 @@ const interaction = {
         "Les marques s'ouvrent sous la carte, par distance croissante, chacune avec sa distance et " +
         "un mot qui dit si le recul en cours la dessine ou la laisse hors du cadre. Cette dernière " +
         "colonne suit le recul en CSS pur : le geste tient sans JavaScript.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "sous quelle forme les lectures sont lues",
+      authorPicked: "l'image",
+      readerPicks: ["l'image", "la table"],
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

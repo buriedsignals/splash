@@ -210,3 +210,28 @@ that is an editorial call.
 | `proof/static-contour-europe-distance` | the headline's 132 km median | is not drawn — the contours are 100/200/400/500 |
 | `proof/static-dot-strip-lowcarbon-spread` | the claim makes two moves | only one of them is labelled |
 | `proof/static-calendar-heatmap-geneva` | the claim's two dates live in the standfirst | no direct label anywhere on the grid names them off the stations |
+
+## The free parameter — web (added 2026-09-23)
+
+Ruling: a web beat names the free parameter it hands the reader — the decision a fixed frame is
+forced to settle on their behalf — what the fixed frame had to pick, what the reader can put it at,
+and what does not move while it moves. Spec:
+`docs/superpowers/specs/2026-09-23-web-free-parameter-design.md`.
+
+The 27 web beats that already declared an `interaction` block carry all four atoms as of this date.
+These thirteen declare no block at all and owe one:
+
+```
+web-diverging-bar-eu-per-capita        web-population-pyramid-switzerland
+web-streamgraph-swiss-electricity      web-sankey-electricity-sources
+web-waterfall-germany-bridge           web-gantt-top-ten-tenure
+web-beeswarm-co2-per-person            web-dot-strip-lowcarbon-spread
+web-small-multiples-solar-eu-six       web-radar-electricity-mix
+web-parallel-coordinates-electricity   web-treemap-europe-capacity
+web-bullet-low-carbon-share
+```
+
+**They are not swept.** G3 refuses each of them at its next approval, which is the correct moment:
+a migration pass over thirteen beats is how a catalogue of 160 pieces becomes 160 copies of one
+piece, and ruling R-D exists to prevent exactly that. Each one's free parameter is already argued in
+its own `earns`; whoever next approves it transcribes that sentence rather than inventing one.

@@ -88,6 +88,38 @@ describe("the free parameter", () => {
     );
   });
 
+  it("allows one mark several hit anchors, which is a design the catalogue already ships", () => {
+    // `proof/web-connected-scatter-lowcarbon` parks an anchor at every point its arrow occupies
+    // across four states, each carrying that country's whole answer, so a reader pointing at the
+    // arrow in ANY state is answered. They share a `data-mark-ref`; they are one mark.
+    const anchored = `<figure class="chart-figure"><svg class="chart">
+<circle class="pt" data-mark-ref="AUT" data-detail="Austria · 72,8 % · 43,4 TWh"></circle>
+<circle class="pt" data-mark-ref="AUT" data-detail="Austria · 72,8 % · 43,4 TWh"></circle>
+<circle class="pt" data-mark-ref="ITA" data-detail="Italy · 41,1 % · 22,0 TWh"></circle>
+</svg><p class="chart-reading">x</p></figure>`;
+    expect(() => assertInteractionPlan(anchored, plan(control()) as never, "the arrows")).not.toThrow();
+  });
+
+  it("still refuses two DIFFERENT marks that answer identically", () => {
+    const twins = `<figure class="chart-figure"><svg class="chart">
+<circle class="pt" data-mark-ref="AUT" data-detail="the same answer, twice"></circle>
+<circle class="pt" data-mark-ref="ITA" data-detail="the same answer, twice"></circle>
+</svg><p class="chart-reading">x</p></figure>`;
+    expect(() => assertInteractionPlan(twins, plan(control()) as never, "the arrows")).toThrow(
+      /"AUT" and "ITA"/,
+    );
+  });
+
+  it("does not let a beat that names no marks at all slip the rule", () => {
+    const twins = `<figure class="chart-figure"><svg class="chart">
+<circle class="pt" data-detail="the same answer, twice"></circle>
+<circle class="pt" data-detail="the same answer, twice"></circle>
+</svg><p class="chart-reading">x</p></figure>`;
+    expect(() => assertInteractionPlan(twins, plan(control()) as never, "the arrows")).toThrow(
+      /same reading/i,
+    );
+  });
+
   it("accepts a complete declaration", () => {
     expect(() => assertInteractionPlan(PAGE, plan(control()) as never, "the ranking")).not.toThrow();
   });

@@ -672,6 +672,12 @@ const interaction = {
         "extrémité ne bouge d'un pixel ; les trois échelons de la légende se réécrivent dans l'unité de " +
         "la mesure, le tableau renumérote ses rangs sur place, et une phrase dit qui passe en tête et " +
         "combien de destinations tombent sous le plancher de lisibilité.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "le dénominateur dans lequel la largeur d'une bande est lue",
+      authorPicked: "personnes",
+      readerPicks: ["personnes", "habitants", "surface"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: "Cette bande-là, elle vaut combien exactement, et où est-elle dans les trois classements ?",
@@ -680,6 +686,12 @@ const interaction = {
         "La bande pointée se redessine dans sa propre encre à pleine force, AU-DESSUS des vingt qu'elle " +
         "croise, et répond avec la destination, le nombre, sa part du total, ses trois rangs, la " +
         "population et la surface qui la divisent.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quelle bande est en question",
+      authorPicked: "l'Allemagne",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: "Et les trente-et-une, sans la carte — ou sans JavaScript ?",
@@ -690,6 +702,12 @@ const interaction = {
         "là que le geste survit quand la carte, elle, ne peut pas — une couche MapLibre n'est " +
         "atteignable par aucune feuille de style, donc la moitié carte du geste est du script et la " +
         "moitié tableau n'en est pas.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "sous quelle forme les lectures sont lues",
+      authorPicked: "l'image",
+      readerPicks: ["l'image", "la table"],
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

@@ -1123,8 +1123,19 @@ export function decodeEntities(text) {
 
 /** The attributes whose value a reader can end up SEEING — a tooltip's own text, an accessible
  *  name, an image's alternative. Everything else in a tag is geometry, class names or a data URI,
- *  and folding those into the page's character set would pull in subsets nothing ever sets. */
-const READABLE_ATTR = /\s(?:data-[a-z-]+|aria-label|aria-description|title|alt)="([^"]*)"/g;
+ *  and folding those into the page's character set would pull in subsets nothing ever sets.
+ *
+ *  `data-*` IS GENEROUS ON PURPOSE and two of them are excluded by name. `data-free-parameter` and
+ *  `data-held-still` are the beat's own interaction declaration, stamped on the figure so a driven
+ *  browser can read it back (`chart-web/scripts/render-web.mjs`, `stampFreeParameters`); no reader
+ *  ever sees either. Folding them in made every embedded face carry the `|` they are joined with
+ *  and whatever punctuation a parameter happens to be named with, which is the exact cost this
+ *  list exists to avoid. Excluded by NAME, not by a guess at which data attributes are metadata. */
+const NOT_READ_BY_ANYONE = ["data-free-parameter", "data-held-still"];
+const READABLE_ATTR = new RegExp(
+  `\\s(?!(?:${NOT_READ_BY_ANYONE.join("|")})=)(?:data-[a-z-]+|aria-label|aria-description|title|alt)="([^"]*)"`,
+  "g",
+);
 
 /** EVERY CHARACTER THIS PAGE WILL SET — its text nodes plus the attribute values that become text.
  *  The subsets are chosen against this and the coverage guard is measured against it, so the two

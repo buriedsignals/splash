@@ -301,6 +301,12 @@ const interaction = {
         "ne dit plus rien et la hauteur seule parle, soit en part du mix, soit en TWh absolus " +
         "depuis un sol commun. La tuile mesurée porte son chiffre et le rapport qu'elle vient de " +
         "rendre lisible, et une phrase sous le contrôle en donne les deux bouts.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "laquelle des deux dimensions est tenue immobile",
+      authorPicked: "none",
+      readerPicks: ["none", "parts", "twh"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: "Cette bande vaut combien de TWh, et quelle part des six pays ?",
@@ -309,6 +315,12 @@ const interaction = {
         "La bande répond avec son pays, sa source, sa part du mix au dixième, ses TWh et sa part " +
         "des 1 638 TWh des six — la quantité que la surface représente et qu'aucun œil ne sait " +
         "relever sur une aire.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quelle tuile est en question",
+      authorPicked: "le charbon allemand",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

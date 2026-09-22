@@ -199,6 +199,12 @@ const interaction = {
         "choisi, chacune dans l'encre de sa série ; le pays choisi prend un cerne et son nom passe " +
         "en encre pleine ; une phrase donne son rang sur chacune des deux séries et le rapport " +
         "entre les deux.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "le pays à l'aune duquel les six sont mesurés",
+      authorPicked: "none",
+      readerPicks: ["none", "deu", "swe", "pol", "fra", "nor", "che"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question:
@@ -209,6 +215,12 @@ const interaction = {
         "Le groupe répond avec les TWh derrière chacune de ses deux parts et la production totale " +
         "du pays pour l'année — les quantités que le pourcentage a divisées, qu'aucun axe de cette " +
         "plaque ne porte.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quelle colonne est en question",
+      authorPicked: "la Suisse",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

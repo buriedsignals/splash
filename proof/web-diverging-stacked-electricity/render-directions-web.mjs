@@ -372,6 +372,12 @@ const interaction = {
           "deux totaux de côté se réécrivent dans les gouttières, le repère de net glisse jusqu'à " +
           "sa nouvelle position et une phrase nomme ce que la nouvelle coupure renverse.",
       ),
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "où passe la coupure entre les deux camps",
+      authorPicked: "straddle",
+      readerPicks: ["straddle", "fossile", "renouvelable", "brule"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: "Qu'est-ce qu'il y a dans cette bande ?",
@@ -380,6 +386,12 @@ const interaction = {
         "La bande pointée s'assombrit depuis son propre remplissage et répond avec le pays, le " +
           "barreau, sa part, les sources qui le composent et le camp où cette coupure le range.",
       ),
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quelle bande est en question",
+      authorPicked: "le charbon",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

@@ -250,6 +250,12 @@ const interaction = {
         `Le connecteur répond avec ce qui relie ses deux bouts et que ni l'un ni l'autre ne porte : ` +
         `le gain en points, le rang de ce gain parmi les seize, et le nom de chaque pays dépassé en ` +
         `chemin.`,
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quelle ligne est en question",
+      authorPicked: "le Danemark",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question:
@@ -261,6 +267,12 @@ const interaction = {
         `choisi ; ses deux points prennent un cerne et son nom passe en encre pleine pendant que les ` +
         `quinze autres reculent ; une phrase donne son rang parmi les seize gains et nomme les pays ` +
         `qu'il a dépassés et ceux qui l'ont dépassé.`,
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "le pivot posé en travers des deux rails",
+      authorPicked: "none",
+      readerPicks: ["none", "dnk", "prt", "nld", "irl", "grc", "gbr", "cze", "esp", "ita", "fin", "pol", "deu", "bel", "aut", "fra", "swe"],
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

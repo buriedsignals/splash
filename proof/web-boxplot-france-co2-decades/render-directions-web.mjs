@@ -257,6 +257,12 @@ const interaction = {
         `tonnes, combien des sept autres boîtes la dépassent entièrement et combien passent ` +
         `entièrement dessous, laquelle la recoupe, et combien d'années d'autres décennies tombent ` +
         `dedans.`,
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "la décennie à l'aune de laquelle les huit sont lues",
+      authorPicked: "none",
+      readerPicks: ["none", "1950", "1960", "1970", "1980", "1990", "2000", "2010", "2020"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: "Cette année-là, elle vaut combien, et elle est où dans sa propre décennie ?",
@@ -267,6 +273,12 @@ const interaction = {
         `décennie, et s'il est au-dessus ou au-dessous de cette médiane, ou qu'il est la valeur ` +
         `aberrante de sa décennie au sens de Tukey. Une boîte résume dix lectures et n'en nomme ` +
         `aucune.`,
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quelle boîte est en question",
+      authorPicked: "la décennie 2020",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

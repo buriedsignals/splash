@@ -272,6 +272,12 @@ const interaction = {
         `and how many countries below it in the full ${countries.length}-country ranking must be ` +
         `added together before they match it — the headline's own arithmetic asked of every rank ` +
         `instead of only of the subject.`,
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quelle colonne est en question",
+      authorPicked: "la Chine",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question:
@@ -291,6 +297,12 @@ const interaction = {
         `${stackOptions[0].label} against ${columns[0].label} Gt — and one sentence appears under ` +
         `the control with the count and the running total. The fixed bracket this page used to ` +
         `draw is gone: it was that comparison made once, for the subject the author chose.`,
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "le pays contre lequel les suivants sont empilés",
+      authorPicked: "none",
+      readerPicks: ["none", "chn", "usa", "ind", "rus", "jpn", "idn", "irn", "sau"],
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

@@ -751,6 +751,12 @@ const interaction = {
         "ne bouge d'un pixel ; les quatre bornes de la légende se réécrivent sur place avec " +
         "l'effectif de chaque palier, et une phrase dit combien de pays entrent dans la bande la " +
         "plus foncée et combien des 40 ont changé de palier.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "la règle qui classe les quarante lectures",
+      authorPicked: "seuil",
+      readerPicks: ["seuil", "quantiles", "egaux", "jenks"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: "Et si je veux les quarante, sans la carte — ou sans JavaScript ?",
@@ -761,6 +767,12 @@ const interaction = {
         "survit quand la carte, elle, ne peut pas — un fond MapLibre n'est atteignable par aucune " +
         "feuille de style, donc la moitié carte du geste est du script et la moitié tableau n'en " +
         "est pas.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "sous quelle forme les lectures sont lues",
+      authorPicked: "l'image",
+      readerPicks: ["l'image", "la table"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: "Ce pays-là, il vaut combien exactement, et est-ce qu'il change de couleur selon la règle ?",
@@ -769,6 +781,12 @@ const interaction = {
         "Le pays pointé s'assombrit depuis son propre remplissage — celui du palier où la règle " +
         "courante l'a mis — et répond avec sa part exacte, ses TWh bas-carbone sur son total, son " +
         "rang sur 40 et le nombre de paliers différents qu'il occupe selon la règle.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quel pays est en question",
+      authorPicked: "la France",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

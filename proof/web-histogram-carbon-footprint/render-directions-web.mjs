@@ -237,6 +237,12 @@ const interaction = {
         `des ${rows.length} pays sont sous ce trait, son multiple de la médiane, et la part de la ` +
         `largeur du graphique que les pays au-delà occupent. Les deux paliers accentués, le titre, ` +
         `la médiane et l'axe sont dessinés dans tous les états de la page.`,
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "le quantile auquel la couverture est lue",
+      authorPicked: "none",
+      readerPicks: ["none", "4", "10", "24"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: "Combien sont tombés là — et QUI ?",
@@ -246,6 +252,12 @@ const interaction = {
         `sur son sommet — et répond avec son intervalle, son effectif, sa part du total, la part ` +
         `cumulée jusqu'à son bord haut et les pays qui s'y trouvent. Un histogramme dit « combien ` +
         `sont tombés là » et refuse de dire QUI.`,
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quel palier est en question",
+      authorPicked: "le palier modal",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

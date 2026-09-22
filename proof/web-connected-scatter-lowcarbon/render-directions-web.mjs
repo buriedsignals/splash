@@ -407,6 +407,12 @@ const interaction = {
           `flèches horizontales, ou seize verticales dont cinq vers le bas, ou seize rapportées au ` +
           `total européen de 2000, dont aucune ne descend.`,
       ),
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "laquelle des lectures la flèche montre",
+      authorPicked: "none",
+      readerPicks: ["none", "eux", "europe", "fige"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: plain("Ce pays-là, c'est lequel, et il vaut combien en TWh ?"),
@@ -416,6 +422,12 @@ const interaction = {
           `dose cherchée, et répond avec ses deux dates sur les deux axes, sa production absolue, ` +
           `sa croissance contre celle des seize et son poids à total figé.`,
       ),
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quelle flèche est en question",
+      authorPicked: "la Suisse",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

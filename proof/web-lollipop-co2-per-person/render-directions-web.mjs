@@ -228,6 +228,12 @@ const interaction = {
         `cinq autres reculent. Une phrase donne son rang de NIVEAU en ${FROM} et en ${TO}, combien ` +
         `de fois le plus haut des ${HOW_MANY} en émettait plus que lui à chaque date, et lesquels ` +
         `des cinq autres sont aujourd'hui entre ses deux niveaux.`,
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "le pays à l'aune duquel les cinq autres sont mesurés",
+      authorPicked: "none",
+      readerPicks: ["none", "chn", "usa", "ind", "rus", "jpn", "irn"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: `Une moyenne par personne, c'est une division. Combien de personnes ?`,
@@ -237,6 +243,12 @@ const interaction = {
         `question, qui gardent la couleur de leur date — et répond avec le POIDS derrière le ` +
         `rapport : la population par laquelle la division a été faite, le total du pays en ` +
         `gigatonnes et sa part du monde, qu'un encodage par personne ne peut pas dessiner.`,
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quel pays est en question",
+      authorPicked: "la Chine",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

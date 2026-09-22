@@ -776,21 +776,36 @@ export function assertInteractionPlan(
   // half of the same rule, over a control's options, is a frame comparison and lives in
   // `verify-web.mjs`.
   if (plan.controls.some((control) => control.readerPicks === "every mark")) {
-    // NOT `askAnswers`, which returns a Set: two marks carrying the SAME string collapse into one
+    // SCOPED TO ONE PLATE, and that scope is the whole precision of this check. Several beats draw
+    // one `<svg>` PER VALUE of another parameter — the diverging stack draws four, one per cut —
+    // and the same band then carries the same reading on more than one of them, which is right: it
+    // is one mark seen under two settings, not two marks. What is wrong is two marks answering
+    // identically SIDE BY SIDE, where a reader choosing between them learns nothing.
+    //
+    // NOT `askAnswers`, which returns a Set: two marks carrying the same string collapse into one
     // there, which is exactly the case this refusal exists to see.
-    const everyAnswer = [...String(html).matchAll(/\sdata-detail="([^"]*)"/g)].map((m) =>
-      decodeText(m[1]).trim(),
-    );
-    const seen = new Set<string>();
-    for (const answer of everyAnswer) {
-      if (!answer) continue;
-      if (seen.has(answer))
-        throw new Error(
-          `${where}: two marks answer with the same reading (${JSON.stringify(answer)}). Asking one ` +
-            `rather than the other tells the reader nothing, so this parameter has fewer values ` +
-            `than it appears to.`,
-        );
-      seen.add(answer);
+    // AND KEYED BY THE MARK, not by the element. A beat may give ONE mark several hit anchors —
+    // the connected scatter parks one at every point its arrow occupies across four states, so a
+    // reader pointing at that arrow in any state is answered — and those anchors carry the same
+    // reading by design, which its own comment says out loud. They also carry the same
+    // `data-mark-ref`. What is refused is two DIFFERENT marks answering identically.
+    for (const plate of String(html).matchAll(/<svg\b[\s\S]*?<\/svg>/g)) {
+      const byAnswer = new Map<string, string>();
+      let anonymous = 0;
+      for (const tag of plate[0].matchAll(/<[a-zA-Z][^>]*\sdata-detail="[^"]*"[^>]*>/g)) {
+        const answer = decodeText(/\sdata-detail="([^"]*)"/.exec(tag[0])![1]).trim();
+        if (!answer) continue;
+        const key = /\sdata-mark-ref="([^"]*)"/.exec(tag[0])?.[1] ?? `#${anonymous++}`;
+        const already = byAnswer.get(answer);
+        if (already !== undefined && already !== key)
+          throw new Error(
+            `${where}: two marks on one plate answer with the same reading ` +
+              `(${JSON.stringify(answer)}) — ${JSON.stringify(already)} and ${JSON.stringify(key)}. ` +
+              `Asking one rather than the other tells the reader nothing, so this parameter has ` +
+              `fewer values than it appears to.`,
+          );
+        if (already === undefined) byAnswer.set(answer, key);
+      }
     }
   }
 

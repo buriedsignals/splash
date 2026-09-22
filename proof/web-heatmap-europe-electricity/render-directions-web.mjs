@@ -265,6 +265,12 @@ const interaction = {
       changes:
         "Every cell under the chosen share leaves — rect, printed value, hit target, and a source's " +
         "own column label once its whole column has fallen away. The ramp key never moves.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "le plancher sous la grille",
+      authorPicked: "all",
+      readerPicks: ["all", "5", "15", "25"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: "What is this cell actually worth, and is this country big or small on this source?",
@@ -272,6 +278,12 @@ const interaction = {
       changes:
         "The cell answers with its exact share, the TWh behind it, and the country's rank among the " +
         "seven for that source — the comparison the grid's own geometry makes impossible.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quelle cellule est en question",
+      authorPicked: "le nucléaire français",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

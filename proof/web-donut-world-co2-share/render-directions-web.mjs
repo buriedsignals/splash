@@ -265,6 +265,12 @@ const interaction = {
         "États-Unis n'atteint pas la sienne. Et la phrase sous le contrôle porte quatre lectures " +
         "qu'aucun arc ne dessine — les deux parts, les deux totaux en Gt, le facteur entre elles, " +
         "et le rang d'où le pays part et où il arrive parmi les sept parts de l'anneau.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quel pays est suivi d'un anneau à l'autre",
+      authorPicked: "none",
+      readerPicks: ["none", "chn", "usa", "ind", "rus", "jpn", "irn", "rest"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: "32,9 % de quoi, au juste ?",
@@ -273,6 +279,12 @@ const interaction = {
         "Chaque part — le reste du monde compris — répond avec son pays, sa part de l'année, les " +
         "Gt derrière elle et ce que le même pays pesait l'autre année. Un angle est l'encodage le " +
         "moins lisible de la liste : on peut classer des parts, on ne peut pas en mesurer une.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quel secteur est en question",
+      authorPicked: "la Chine",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

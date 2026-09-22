@@ -198,6 +198,12 @@ const interaction = {
         `plaque : sa valeur, son écart au pic de ${peak.year}, pour toute année postérieure au pic ` +
         `l'année d'avant-pic sous laquelle elle ramène la série et le nombre d'années effacées, et ` +
         `de combien ${last.year} s'en écarte.`,
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quelle année est en question",
+      authorPicked: "2024",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

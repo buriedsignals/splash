@@ -222,6 +222,12 @@ const interaction = {
         `reculent. Une phrase donne son rang de niveau en ${FROM} et en ${TO}, combien des neuf ` +
         `autres étaient déjà au-dessus de son niveau de ${TO}, et combien sont encore sous son ` +
         `niveau de ${FROM}.`,
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "le pays à l'aune duquel les autres sont mesurés",
+      authorPicked: "none",
+      readerPicks: ["none", "pol", "fra", "esp", "che", "ita", "nld", "jpn", "gbr", "deu", "usa"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: "Celui-là a gagné combien, et ça le met où parmi les dix ?",
@@ -231,6 +237,12 @@ const interaction = {
         `point posé en son milieu — et répond avec le gain, son rang parmi les dix et son écart au ` +
         `gain médian, qui n'est imprimé nulle part sur la page. Jamais avec les deux niveaux : ils ` +
         `sont déjà écrits à côté de leurs propres têtes.`,
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quel trait est en question",
+      authorPicked: "la Pologne",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

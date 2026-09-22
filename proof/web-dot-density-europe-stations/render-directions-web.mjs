@@ -724,6 +724,12 @@ const interaction = {
         "effectifs par source dans la légende se réécrivent avec elle, et une phrase dit combien de " +
         "sites n'atteignent plus un point et quittent la carte. La carte ne change ni de cadrage ni " +
         "d'échelle — seule la place de l'encre change.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "ce qu'un point vaut",
+      authorPicked: "lieux",
+      readerPicks: ["lieux", "mw"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: "Et les pays un par un, sans la carte — ou sans JavaScript ?",
@@ -733,6 +739,12 @@ const interaction = {
         "que la règle choisie leur donne. Cette dernière colonne suit la règle en CSS pur : c'est là " +
         "que le geste survit quand la carte ne le peut pas, un fond MapLibre n'étant atteignable par " +
         "aucune feuille de style.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "sous quelle forme les lectures sont lues",
+      authorPicked: "l'image",
+      readerPicks: ["l'image", "la table"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: "Ce point-là, c'est quoi — et combien de points ce lieu a-t-il obtenus ?",
@@ -742,6 +754,12 @@ const interaction = {
         "propre couleur et sans qu'aucun ne change de taille, et la réponse donne la source, les " +
         "mégawatts, le pays, la part du parc de ce pays et le nombre de points que ce lieu a obtenus " +
         "à cette résolution.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quelle maille est en question",
+      authorPicked: "l'Allemagne",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

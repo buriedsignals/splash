@@ -579,6 +579,12 @@ const interaction = {
           `régional — et au grain régional un trait épais apparaît partout où deux cases voisines ` +
           `ne sont pas dans le même bloc.`,
       ),
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "l'échelle à laquelle une case met sa valeur en commun",
+      authorPicked: "pays",
+      readerPicks: ["pays", "voisinage", "region"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: plain("Et les 32 lectures en toutes lettres, elles sont où ?"),
@@ -590,6 +596,12 @@ const interaction = {
           `aucune feuille de style n'atteint une couche MapLibre, donc la moitié carte du geste est ` +
           `du script et la moitié tableau n'en est pas.`,
       ),
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "sous quelle forme les lectures sont lues",
+      authorPicked: "l'image",
+      readerPicks: ["l'image", "la table"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: plain("Cette case-là, c'est qui, et combien fait-elle aux trois grains ?"),
@@ -599,6 +611,12 @@ const interaction = {
           `trois taux d'un coup, les personnes, la population qui les divise et son rang dans les ` +
           `deux classements.`,
       ),
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quelle case est en question",
+      authorPicked: "la France",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

@@ -269,6 +269,12 @@ const interaction = {
         "série au seuil choisi, où qu'elle soit sur le calendrier — quatre segments de ligne à " +
         "16 °C, un seul à 24 °C. Une phrase donne la longueur de cette série, ses deux dates et le " +
         "nombre de jours de l'année qui passent cette ligne. Les couleurs, elles, ne bougent pas.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "le seuil qui définit la série",
+      authorPicked: "claim",
+      readerPicks: ["claim", "16", "18", "22", "24"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question:
@@ -279,6 +285,12 @@ const interaction = {
         "Le jour répond avec sa date, sa moyenne, son maximum, son palier et son rang sur les " +
         `${rows.length} jours de l'année — la lecture qu'un palier détruit par construction et ` +
         "qu'aucun axe de cette plaque ne porte.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quel jour est en question",
+      authorPicked: "le jour le plus chaud",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

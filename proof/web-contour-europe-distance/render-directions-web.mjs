@@ -745,6 +745,12 @@ const interaction = {
           `kilomètres, face à la maille de ${fr(KM_PER_CELL, 1)} km et aux ±${fr(ERROR_KM)} km ` +
           `d'erreur d'échelle.`,
       ),
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "l'intervalle entre deux courbes",
+      authorPicked: "100",
+      readerPicks: ["50", "100", "200", "400"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: "Ce point-là, il est à combien exactement — et de quelle bande le pas le rend-il ?",
@@ -754,6 +760,12 @@ const interaction = {
           `continent — sa largeur EST le pas, rendue visible — et la réponse donne le pays, la ` +
           `distance mesurée au palier de ${BIN_KM} km, et la bande que le pas lui donne.`,
       ),
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quel point du champ est en question",
+      authorPicked: "Zaporijjia",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: "Et si je veux toutes les courbes, sans la carte — ou sans JavaScript ?",
@@ -765,6 +777,12 @@ const interaction = {
           `la carte, elle, ne peut pas — un fond MapLibre n'est atteignable par aucune feuille de ` +
           `style.`,
       ),
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "sous quelle forme les lectures sont lues",
+      authorPicked: "l'image",
+      readerPicks: ["l'image", "la table"],
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

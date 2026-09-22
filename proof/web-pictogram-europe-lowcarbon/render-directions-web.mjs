@@ -403,6 +403,12 @@ const interaction = {
           `longueur, le dernier carré de chaque bloc se remplit à son propre reste, et le chiffre ` +
           `de chaque bloc se remplace sur place dans la gouttière.`,
       ),
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "ce qu'un carré vaut",
+      authorPicked: "country",
+      readerPicks: ["country", "power", "clean", "fossil"],
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: plain("Ce carré-là, c'est qui ?"),
@@ -412,6 +418,12 @@ const interaction = {
           `son pays, sa part, sa production et son rang — et sous les unités en térawattheures avec ` +
           `les pays qui le remplissent et la fraction que chacun y met.`,
       ),
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quel carré est en question",
+      authorPicked: "la France",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };

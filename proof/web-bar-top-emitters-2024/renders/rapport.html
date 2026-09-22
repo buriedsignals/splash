@@ -371,7 +371,7 @@ svg.chart { display: block; }
 </style>
 </head>
 <body>
-<figure class="chart-figure" style="--ground:#FFFFFF;--accent:#1F5C8B;--ink:#000000;--muted:#616161;--grid:#d1d1d1;--col-neutral:#919191;--label-ink:#000000;--axis-ink:#616161;--axis-weight:400;--title-size:27px;--title-weight:700;--title-family:&quot;Merriweather&quot;, Georgia, serif;--subtitle-size:13px;--subtitle-family:&quot;Merriweather&quot;, Georgia, serif;--subtitle-style:italic;--source-size:13px;--source-family:&quot;Merriweather&quot;, Georgia, serif;--axis-size:11px;--axis-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--label-size:14.5px;--label-weight:700;--label-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--note-size:10px;--note-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--eyebrow-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--eyebrow-weight:700;--eyebrow-tracking:1.6px;--filter-size:13px"><style>.chart-figure [data-value] { color: var(--label-ink); }
+<figure class="chart-figure" data-free-parameter="quelle colonne est en question|le pays contre lequel les suivants sont empilés" data-held-still=".chart-header|.chart-source" style="--ground:#FFFFFF;--accent:#1F5C8B;--ink:#000000;--muted:#616161;--grid:#d1d1d1;--col-neutral:#919191;--label-ink:#000000;--axis-ink:#616161;--axis-weight:400;--title-size:27px;--title-weight:700;--title-family:&quot;Merriweather&quot;, Georgia, serif;--subtitle-size:13px;--subtitle-family:&quot;Merriweather&quot;, Georgia, serif;--subtitle-style:italic;--source-size:13px;--source-family:&quot;Merriweather&quot;, Georgia, serif;--axis-size:11px;--axis-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--label-size:14.5px;--label-weight:700;--label-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--note-size:10px;--note-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--eyebrow-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--eyebrow-weight:700;--eyebrow-tracking:1.6px;--filter-size:13px"><style>.chart-figure [data-value] { color: var(--label-ink); }
 
 .chart-figure [data-value="CHN"] { color: var(--accent); }
 
@@ -738,6 +738,40 @@ function nearestCell(cxs, cys, x, y) {
 }
 
 /**
+ * WHERE THE ANSWER IS DRAWN: on the mark it names, and only then on the point.
+ *
+ * The rule this serves is "the answer sits on the mark it names, not on the pointer" — arrived at
+ * twice, on the ten-column ranking (the box for India sat over the United States) and on the
+ * grouped bar (the box floated at whatever height the hand happened to be). Both times it was
+ * implemented as "sits on the POINT", which is the same thing exactly while the point is DRAWN at
+ * its mark — a circle on an arc, on a column's top, on a dot strip's dot.
+ *
+ * A HIT POINT IS NOT ALWAYS DRAWN AT ITS MARK. A beat whose marks share an x — a ranking's
+ * twenty-seven rows — has to park every hit point at ONE x so `nearestCell` resolves by y, and the
+ * answer then rose in the right margin, a screen away from the bar it named. Measured 2026-09-23
+ * on a real story's ranking, and now measured by `verify-web.mjs` on every beat.
+ *
+ * SO THE TEST IS WHETHER THE POINT IS ALREADY ON ITS MARK, and not merely whether it names one.
+ * Anchoring on the named shape unconditionally would have been worse for the beats that are right
+ * today: a donut's arc, a radar's polygon and a connected scatter's path all have bounding boxes
+ * the size of the whole picture, and every segment's answer would collect at its centre. A point
+ * inside its mark's box keeps its own position, which is what those beats already have; a point
+ * outside it moves to the mark, which is the only case that was ever wrong.
+ *
+ * Pure, so it is testable without a DOM — the same boundary `nearestIndex` draws.
+ */
+function placeOn(point, mark) {
+  const inside =
+    mark !== null &&
+    point.left >= mark.left &&
+    point.right <= mark.right &&
+    point.top >= mark.top &&
+    point.bottom <= mark.bottom;
+  const box = mark === null || inside ? point : mark;
+  return [box.left + box.width / 2, box.top];
+}
+
+/**
  * TRUE WHEN A `pointerleave` REALLY MEANS THE READER LOOKED AWAY.
  *
  * A mouse or a pen leaves a target because the hand moved off it: the reading is no longer being
@@ -886,9 +920,32 @@ function initChart(svg, tooltip) {
 
   /** Place the answer on the mark's own rect: centred on its horizontal centre, rising from its
    *  top. Nothing about the pointer enters, which is what keeps the box off the picture. */
+  /**
+   * ON THE MARK THE POINT NAMES, AND ONLY THEN ON THE POINT.
+   *
+   * The rule this function exists for is "the answer sits on the mark it names, not on the
+   * pointer" — arrived at twice, on the ten-column ranking (the box for India sat over the United
+   * States) and on the grouped bar (the box floated at the hand's own height). Both times it was
+   * implemented as "sits on the POINT", which is the same thing exactly while the point is drawn at
+   * its mark. A hit point is not always drawn at its mark: a beat whose marks share an x — a
+   * ranking's rows — must park every hit point at one x so `nearestCell` resolves by y, and the
+   * answer then rose in the margin, a screen away from the bar it named. Measured 2026-09-23 on a
+   * real story's ranking.
+   *
+   * So when the point NAMES a shape (`data-mark-ref`, the attribute this layer already follows to
+   * paint that shape), the answer is placed on THAT shape. Nothing changes for a beat whose point
+   * is its mark, or for one that names no shape: the fallback is the point's own rect, unchanged.
+   */
   function anchorOn(point) {
-    const rect = point.getBoundingClientRect();
-    show(point, rect.left + rect.width / 2, rect.top);
+    const own = point.getBoundingClientRect();
+    show(point, ...placeOn(own, markRectFor(point)));
+  }
+
+  /** The named shape's box, when this point names one that is drawn. */
+  function markRectFor(point) {
+    const named = marksOf[points.indexOf(point)];
+    if (!named || !named.length) return null;
+    return named[0].getBoundingClientRect();
   }
 
   if (hitArea) {

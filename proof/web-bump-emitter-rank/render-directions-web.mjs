@@ -290,6 +290,12 @@ const interaction = {
       changes:
         "One mark per year answers with India's own world rank that year, what it actually emitted " +
         "in gigatonnes, and the two countries immediately above and below it in the ranking.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quel rang est en question",
+      authorPicked: "la Chine",
+      readerPicks: "every mark",
+      heldStill: [".chart-header", ".chart-source"],
     },
     {
       question: "Cette ligne grise qui tombe à travers les rangs vides, c'est qui — et qui l'a doublée ?",
@@ -299,6 +305,12 @@ const interaction = {
         "steps back to the non-text floor, every step where it crossed somebody is ringed on its " +
         "own line, and the sentence gives its rank run by run across the thirty-five years with " +
         "every country it passed or was passed by, named and dated.",
+      // The free parameter this control hands the reader — the decision this beat's own
+      // `earns` already argues a fixed frame is forced to settle on their behalf.
+      parameter: "quelle ligne est suivie à travers le classement",
+      authorPicked: "none",
+      readerPicks: ["none", "usa", "rus", "chn", "jpn", "deu"],
+      heldStill: [".chart-header", ".chart-source"],
     },
   ],
 };
