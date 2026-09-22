@@ -435,6 +435,12 @@ describe("assertInteractionPlan — the interaction is written before the code",
         question: "What is this mark worth?",
         gesture: "ask-a-mark" as const,
         changes: "the mark answers with its value and its rank",
+        // The free parameter, added when it became a required atom of a declaration: a plate
+        // settles which readings it prints, and this page hands that back one mark at a time.
+        parameter: "which mark is in question",
+        authorPicked: "Bern",
+        readerPicks: "every mark" as const,
+        heldStill: [".chart-plot"],
       },
     ],
   };
@@ -498,6 +504,12 @@ describe("assertInteractionPlan — the interaction is written before the code",
           question: "Which of these are in Europe?",
           gesture: "filter-to-a-subset" as const,
           changes: "every mark outside Europe leaves the frame",
+          // A COMPLETE declaration of a control the page does not ship: the refusal under test is
+          // "promised and not built", so this control must clear every other refusal to reach it.
+          parameter: "the subset the frame is measured over",
+          authorPicked: "every country",
+          readerPicks: ["every country", "Europe only"],
+          heldStill: [".chart-plot"],
         },
       ],
     };

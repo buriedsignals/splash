@@ -110,6 +110,46 @@ export type ReaderControl = {
   question: string;
   gesture: Gesture;
   changes: string;
+} & FreeParameter;
+
+/**
+ * THE FREE PARAMETER — what a fixed frame is forced to settle on the reader's behalf.
+ *
+ * A still must pick a threshold, a bin width, a scale exponent, a unit, a reference year, a pivot,
+ * a class rule, a denominator, a camera remove, a dot value — print it, and ask to be trusted. A
+ * video and a scrolly settle the same parameter AND fix the order the alternatives are seen in,
+ * which is already somebody's argument. The web export is the one that hands it back, over a plate
+ * that does not otherwise move.
+ *
+ * EXTRACTED FROM THE CATALOGUE, NOT INVENTED. All 27 authored `earns` make this move in their own
+ * words — « un fixe doit choisir une largeur de palier et le lecteur n'a qu'à la croire », « une
+ * plaque n'a la place que d'une règle ; cette page rend la règle au lecteur », "all have exactly one
+ * dot value, because a dot value is baked into the drawing" — and nobody ever named it. That is why
+ * `earns` was prose: the rule was always there, it was never extracted.
+ *
+ * It constrains the ARGUMENT, never the mechanism. The parameter is whatever this type's fixed frame
+ * had to freeze, which differs for every type, and `GESTURES` is unchanged.
+ *
+ * `ask-a-mark` is the degenerate case and it is legitimate: its free parameter is which mark is in
+ * question, and a plate settles it by printing some readings and not others. The histogram beat
+ * states the test itself — « un histogramme dit combien sont tombés là et refuse de dire QUI ».
+ *
+ * Spec: `docs/superpowers/specs/2026-09-23-web-free-parameter-design.md`.
+ */
+export type FreeParameter = {
+  /** The decision a fixed frame has to make and print. A noun phrase, the beat's own. */
+  parameter: string;
+  /** The value the still, the video and the scrolly of THIS claim each had to fix. */
+  authorPicked: string;
+  /** The values the reader can put it at, or `"every mark"` when the marks are the values. */
+  readerPicks: string[] | "every mark";
+  /**
+   * CSS selectors, never prose, because prose is what made this unverifiable. Every element these
+   * name renders pixel-identical at every value of the parameter — the clause the corpus writes
+   * every time (« sous une légende qui ne change pas », "the two ends of every band stay exactly
+   * where they are") and that nothing had ever measured.
+   */
+  heldStill: string[];
 };
 
 /** What a beat declares when it has written its interaction out. Absent means it has not yet —
@@ -679,8 +719,80 @@ export function assertInteractionPlan(
         `${at} must say WHAT CHANGES IN THE PICTURE when the reader asks — the half an author ` +
           `otherwise settles by building something and looking at it. Got ${JSON.stringify(control?.changes)}`,
       );
+
+    // ── THE FREE PARAMETER ───────────────────────────────────────────────────────────────────────
+    if (typeof control.parameter !== "string" || control.parameter.trim().split(/\s+/).length < 2)
+      throw new Error(
+        `${at} names no free parameter — the decision a fixed frame is forced to settle on the ` +
+          `reader's behalf, and that this page hands back. A threshold, a bin width, a unit, a ` +
+          `reference year, a pivot, a class rule, a denominator, a dot value. ` +
+          `Got ${JSON.stringify(control?.parameter)}`,
+      );
+    const picks = control.readerPicks;
+    const everyMark = picks === "every mark";
+    if (!everyMark && (!Array.isArray(picks) || picks.length < 2))
+      throw new Error(
+        `${at}: a parameter the reader can put at one value is not a choice, it is a view. Give ` +
+          `\`readerPicks\` the values on offer, or "every mark" when the marks are the values.`,
+      );
+    if (!everyMark && !(picks as string[]).includes(control.authorPicked))
+      throw new Error(
+        `${at}: \`authorPicked\` ${JSON.stringify(control.authorPicked)} is not among ` +
+          `\`readerPicks\` (${(picks as string[]).map((p) => JSON.stringify(p)).join(", ")}). A page ` +
+          `that cannot be put back into the view its still, its video and its scrolly share no ` +
+          `longer carries the claim at rest.`,
+      );
+    if (!Array.isArray(control.heldStill) || control.heldStill.length === 0)
+      throw new Error(
+        `${at} holds nothing still. A choice with nothing held is two pictures, not two readings — ` +
+          `the reader has no fixed thing to read the change against, and every beat in the ` +
+          `catalogue says what it holds ("the two ends of every band stay exactly where they are"). ` +
+          `Name the selectors that must render identically at every value: the axis, the legend, ` +
+          `the ranking, the totals.`,
+      );
+
     declared.push(control.gesture);
   });
+
+  // ONE CONTROL PER PARAMETER. Two controls moving the same one is a single gesture wearing two
+  // chips — the reader is offered two ways to ask the same question and gets one answer.
+  const byParameter = new Map<string, number>();
+  for (const control of plan.controls) {
+    const key = String(control.parameter).trim().toLowerCase();
+    byParameter.set(key, (byParameter.get(key) ?? 0) + 1);
+  }
+  for (const [key, count] of byParameter)
+    if (count > 1)
+      throw new Error(
+        `${where}: ${count} controls move the same free parameter (${JSON.stringify(key)}). Fold ` +
+          `them into one control, or name what the second one actually settles that the first ` +
+          `does not.`,
+      );
+
+  // THE PAIRWISE RULE ON THE CHEAP AXIS. `assertEventStates` compares state(i) to state(i-1) across
+  // a video's whole sequence; a page has no sequence, but it has the values of one parameter. Where
+  // the marks ARE the values, two marks answering with the same string are two values that give the
+  // reader the same reading — so the parameter has fewer values than it appears to. The expensive
+  // half of the same rule, over a control's options, is a frame comparison and lives in
+  // `verify-web.mjs`.
+  if (plan.controls.some((control) => control.readerPicks === "every mark")) {
+    // NOT `askAnswers`, which returns a Set: two marks carrying the SAME string collapse into one
+    // there, which is exactly the case this refusal exists to see.
+    const everyAnswer = [...String(html).matchAll(/\sdata-detail="([^"]*)"/g)].map((m) =>
+      decodeText(m[1]).trim(),
+    );
+    const seen = new Set<string>();
+    for (const answer of everyAnswer) {
+      if (!answer) continue;
+      if (seen.has(answer))
+        throw new Error(
+          `${where}: two marks answer with the same reading (${JSON.stringify(answer)}). Asking one ` +
+            `rather than the other tells the reader nothing, so this parameter has fewer values ` +
+            `than it appears to.`,
+        );
+      seen.add(answer);
+    }
+  }
 
   for (const control of shipped) {
     if (control.gestures.some((gesture) => declared.includes(gesture))) continue;
