@@ -293,6 +293,16 @@ because it says nothing the `medium:` field does not.
 approval and one delivery. Splitting that beat into three would have been three of each for one
 visual — which is exactly what the journalist did not ask for.
 
+### The population the slot carries
+
+A slot also records WHICH ROWS its beat may draw — `populationKey`, an optional `populationPeriod`,
+and `population` (the values, or `all`). It is not a tenth question: the analyst can read the
+candidate population off the frozen profile's own panel block (`entity`, `period`, the count per
+period), so it is PROPOSED and confirmed, and asked cold only when the data leaves it genuinely
+ambiguous — the same rule the palette follows when it declines to ask a question with no decision in
+it. What makes it worth recording is that `buildData` filters the contract to it and refuses a value
+the frozen table does not hold; a component cannot draw a row that is not in `data.json`.
+
 ## ⑥ The format — G2b
 
 This movement is a hard turn boundary. Present one recommendation and the complete publication-

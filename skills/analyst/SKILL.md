@@ -42,6 +42,33 @@ half-built artifact that a craft skill then treats as current. If you are tempte
 the file anyway, the data looked fine" — that temptation is the defect class the hash record
 exists to catch.
 
+## The population a slot records
+
+Which rows a beat draws is an editorial decision, and until 2026-09-23 it was the only consequential
+one this chain did not write down: the contract carried every frozen row, the component picked some
+of them by hand, and nothing recorded which. Draw the wrong subset and no gate, no file and no test
+could tell.
+
+A slot names its population in three flat fields, beside its other answers:
+
+```yaml
+    populationKey: iso3          # the column its values are read from
+    populationPeriod: 2024       # optional; matched against the `year` column
+    population: [ROU, ITA, DEU]  # the values, or `all`
+```
+
+`buildData` then carries **only** those rows into `data.json`, and records what it left out in
+`DATA-NOTES.md` under Exclusions. That is why the field lives here rather than in a document: a
+component cannot draw a row that is not in the contract.
+
+Three refusals, each by name and each before anything is written: a `populationKey` that is not a
+column, a period no row holds, and — the one that matters — a value the frozen table does not hold.
+A recorded population that silently drops a subject is the failure this exists to prevent, so a
+typo fails loud instead of shortening the list.
+
+A slot that records no population is a complete and ordinary state: every frozen row is carried, and
+`DATA-NOTES.md` says so in those words, so the absence is visible rather than silent.
+
 ## Architecture
 
 | Layer | File | Role |

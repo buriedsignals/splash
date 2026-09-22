@@ -19,7 +19,8 @@ rebuild rather than touch.
 
 ## Exclusions
 
-- None. All 11 frozen rows are carried.
+- None. All 11 frozen rows are carried, because no population is recorded on the slot.
+- That absence is a state, not a silence: whichever rows the beat draws are chosen in its component and written down nowhere.
 
 ## Profile citations
 

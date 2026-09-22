@@ -56,6 +56,77 @@ export function parseStoryboardForAnalyst(content) {
 // Every reason the named slot cannot leave the analyst gate yet. Empty means it can: gate 2 is
 // closed on the whole storyboard (the same reading `whereIs` dispatches on), the slot exists, and
 // its medium is one that owes a data contract.
+/**
+ * THE ROWS A BEAT MAY DRAW, NAMED ON THE SLOT — ruling of 2026-09-23.
+ *
+ * Every other consequential decision in this chain is written to a file and gated. Which rows a
+ * beat draws was not: the contract carried every frozen row, the component picked some of them by
+ * hand, and nothing anywhere recorded which. Draw the wrong twenty-seven and no gate, no file and
+ * no test could tell.
+ *
+ * So the slot names its population and this filters the contract to it. That is the whole point of
+ * putting it here rather than in a document: a component cannot draw a row that is not in
+ * `data.json`. A population that names a value the frozen table does not hold is a refusal, never
+ * a quietly shorter list — a typo that silently drops a subject is the failure this exists to
+ * prevent.
+ */
+function applyPopulation(slot, columns, rows, slotId) {
+  const values = slot.population;
+  const hasKey = typeof slot.populationKey === "string" && slot.populationKey.trim() !== "";
+  if ((values === undefined || values === null || values === "") && !hasKey) {
+    return { rows, excluded: 0, said: null };
+  }
+  if (!hasKey) {
+    throw new Error(`slot ${slotId}: a population needs populationKey — the column its values are read from`);
+  }
+  const keyName = String(slot.populationKey).trim();
+  const keyAt = columns.findIndex((column) => column.name === keyName);
+  if (keyAt < 0) {
+    throw new Error(
+      `slot ${slotId}: population is keyed on ${JSON.stringify(keyName)}, which is not a column of the frozen table (${columns.map((c) => c.name).join(", ")})`,
+    );
+  }
+
+  let kept = rows;
+  const said = [];
+  if (slot.populationPeriod !== undefined && slot.populationPeriod !== null && String(slot.populationPeriod).trim() !== "") {
+    const periodName = String(slot.populationPeriodColumn ?? "year").trim();
+    const periodAt = columns.findIndex((column) => column.name === periodName);
+    if (periodAt < 0) {
+      throw new Error(
+        `slot ${slotId}: population names the period ${JSON.stringify(slot.populationPeriod)} but the frozen table has no ${JSON.stringify(periodName)} column`,
+      );
+    }
+    const wanted = String(slot.populationPeriod);
+    kept = kept.filter((row) => String(row[periodAt]) === wanted);
+    if (kept.length === 0) {
+      throw new Error(
+        `slot ${slotId}: population names the period ${JSON.stringify(slot.populationPeriod)}, which no row of the frozen table holds`,
+      );
+    }
+    said.push(`${periodName} = ${wanted}`);
+  }
+
+  if (values !== undefined && values !== null && values !== "all") {
+    if (!Array.isArray(values) || values.length === 0) {
+      throw new Error(`slot ${slotId}: population values must be a list of keys, or "all"`);
+    }
+    const wanted = values.map((value) => String(value).trim());
+    const held = new Set(kept.map((row) => String(row[keyAt])));
+    const absent = wanted.filter((value) => !held.has(value));
+    if (absent.length > 0) {
+      throw new Error(
+        `slot ${slotId}: population names ${absent.map((a) => JSON.stringify(a)).join(", ")}, which the frozen table does not hold${said.length > 0 ? ` at ${said.join(" and ")}` : ""} — a recorded population that silently drops a subject is the thing this check exists to prevent`,
+      );
+    }
+    const chosen = new Set(wanted);
+    kept = kept.filter((row) => chosen.has(String(row[keyAt])));
+    said.push(`${wanted.length} ${keyName} value(s) named on the slot`);
+  }
+
+  return { rows: kept, excluded: rows.length - kept.length, said: said.join(", ") || null };
+}
+
 export function slotRefusal(meta, slotId) {
   const [gap] = checkStoryboard(meta);
   if (gap) return gap;
@@ -180,20 +251,23 @@ export async function buildData({
     }),
   );
 
+  const population = applyPopulation(slot, columns, rows, String(slotId));
+
   const artifact = {
     schemaVersion: SCHEMA_VERSION,
     slot: { id: String(slot.id), medium: slot.medium, format: slot.format ?? null, chosen: slot.chosen },
     columns,
-    rows,
+    rows: population.rows,
     meta: {
       hashes,
       sources: ["STORYBOARD.md", "source/profile.json", "source/data.csv"],
-      rowCount: rows.length,
+      rowCount: population.rows.length,
+      population: slot.population === undefined ? null : { key: slot.populationKey ?? null, period: slot.populationPeriod ?? null, values: slot.population },
       generatedBy: "analyst/scripts/build-data.mjs",
     },
   };
 
-  const notes = renderNotes({ slotId: String(slotId), columns, rows, hashes });
+  const notes = renderNotes({ slotId: String(slotId), columns, rows: population.rows, hashes, population, frozenRowCount: rows.length });
 
   await fs.mkdir(beatDir, { recursive: true });
   const dataPath = join(beatDir, "data.json");
@@ -210,7 +284,7 @@ function recordTyped(cell, type) {
   return type === "number" ? Number(cell) : cell;
 }
 
-function renderNotes({ slotId, columns, rows, hashes }) {
+function renderNotes({ slotId, columns, rows, hashes, population, frozenRowCount }) {
   const lines = [];
   lines.push(`# Data notes — beat ${slotId}`);
   lines.push("");
@@ -239,7 +313,19 @@ function renderNotes({ slotId, columns, rows, hashes }) {
   lines.push("");
   lines.push("## Exclusions");
   lines.push("");
-  lines.push(`- None. All ${rows.length} frozen rows are carried.`);
+  if (population && population.excluded > 0) {
+    lines.push(
+      `- ${population.excluded} of ${frozenRowCount} frozen rows are left out by the population recorded on the slot (${population.said}).`,
+    );
+    lines.push(`- The ${rows.length} rows carried are the ones that population names, and no others.`);
+  } else if (population && population.said) {
+    lines.push(`- None. The population recorded on the slot (${population.said}) names every frozen row.`);
+  } else {
+    lines.push(`- None. All ${frozenRowCount} frozen rows are carried, because no population is recorded on the slot.`);
+    lines.push(
+      "- That absence is a state, not a silence: whichever rows the beat draws are chosen in its component and written down nowhere.",
+    );
+  }
   lines.push("");
   lines.push("## Profile citations");
   lines.push("");
