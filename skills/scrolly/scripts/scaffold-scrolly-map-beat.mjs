@@ -62,6 +62,7 @@ import { join as chainJoin, relative as chainRelative } from "node:path";
 import { choreographyFrame, parseTypeSheet } from "#shared/editorial/frame.mjs";
 import { replaceSection } from "#shared/editorial/derived.mjs";
 import { directionReachable, directionRefusalMessage } from "#shared/design-base/run-direction.mjs";
+import { oneRunDirection } from "#shared/design-base/adapt-direction.mjs";
 import { checkChoreography, renderChoreographySection } from "./choreography.mjs";
 import { checkPrecision, renderPrecisionSection, scaffoldRequirements } from "./precision.mjs";
 
@@ -413,7 +414,7 @@ export function adaptFromBeat({ root, fromBeat, values, shapeMismatch = null }) 
   // Depth-independent paths (this beat may sit at any depth, unlike fromBeat's own proof/<beat>/) and a number
   // formatter matching this beat's own default language, defaulted from NEWSROOM.md — see depth-independent.mjs.
   const lang = defaultLanguage(root);
-  runner = languageAwareNumbers(depthIndependentPaths(runner), lang);
+  runner = oneRunDirection(languageAwareNumbers(depthIndependentPaths(runner), lang), runnerFile);
   plan = languageAwareNumbers(depthIndependentPaths(plan), lang);
   tsx = languageAwareNumbers(depthIndependentPaths(tsx), lang, { typed: true });
   drive = languageAwareNumbers(depthIndependentPaths(drive), lang);

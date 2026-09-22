@@ -161,6 +161,16 @@ let chosen;
 if (FILED) {
   chosen = all.map((d) => ({ label: labelOf(d.id), direction: d }));
   console.log("every filed demo direction (--filed): a catalogue proof, not a production render");
+} else if (directionReachable(HERE)) {
+  // THE RUN'S OWN ART DIRECTION (ruling R-A). It was composed once for this story, from NEWSROOM.md
+  // and the subject, and written at the story root beside PALETTE.md; every export of the run reads
+  // THAT file rather than composing its own. Re-composing here is how two exports of one claim end
+  // up in two type ladders: the composer is fed \`textPerRegister\`, and an export's text is by
+  // definition not its siblings'. A beat with no reachable DIRECTION.md is a catalogue proof, and
+  // falls through to the composer below.
+  const run = readRunDirection(HERE);
+  console.log(\`the run's one art direction: \${run.id}\\n  composed from: \${run.origin}\\n  read from: \${run.source}\\n\`);
+  chosen = [{ label: labelOf(run.id), direction: run }];
 } else {
   const composition = composeDirections({ newsroom, filed: all, beat: BEAT_FACTS, textPerRegister });
   if (!composition.offered.length) throw new Error(\`no composed direction holds up for this beat:\\n\${composeReport(composition, { beat: BEAT_FACTS })}\`);
@@ -190,7 +200,7 @@ export function composedDirectionDefault(content, { fromBeat }) {
   if (!LOOP_HEADER_RE.test(content)) throw new Error(`${fromBeat}'s own runner does not open its render loop with "for (const file of readdirSync(DIRECTIONS)…)" — the composed-direction rewrite cannot run. Adapt this beat by hand.`);
 
   let out = content;
-  out = out.replace(DESIGN_BASE_IMPORTS_RE, 'import { composeDirections, filedDirections, report as composeReport, resolveDirectionFamilies } from "#shared/design-base/index.mjs";\n');
+  out = out.replace(DESIGN_BASE_IMPORTS_RE, 'import { composeDirections, filedDirections, report as composeReport, resolveDirectionFamilies } from "#shared/design-base/index.mjs";\nimport { directionReachable, readRunDirection } from "#shared/design-base/run-direction.mjs";\n');
   out = out.replace(DIRECTIONS_CONST_RE, "");
   out = out.replace(COMPOSE_BLOCK_RE, COMPOSED_DEFAULT_BLOCK(composeMatch[1]));
   out = out.replace(LOOP_HEADER_RE, LOOP_HEADER_REPLACEMENT);

@@ -91,6 +91,49 @@ describe("every runner a journalist is handed", () => {
     expect(withoutFiled).toEqual([]);
   });
 
+  /**
+   * AND THE TEMPLATES ARE NOT WHAT MOST JOURNALISTS RECEIVE.
+   *
+   * All eight scaffolds ADAPT a worked example by default: they copy a catalogue beat's own runner
+   * and mark its regions `SCAFFOLD:`. That runner is a PROOF's, so it carries R-A's named exception
+   * — the three filed demo directions — and the journalist receives it. Fixing the `.tmpl` files
+   * closed the path nobody takes and left the one everybody does. Measured immediately afterwards by
+   * scaffolding a real story's scrolly beat: its written runner still looped over
+   * `docs/design-base/directions`, with the templates already green.
+   *
+   * So the adapting pipelines are asked the same question, on the transform each one applies.
+   */
+  it("rewrites the worked example's three-direction loop when it adapts one", () => {
+    const adapting = readdirSync(SKILLS, { withFileTypes: true })
+      .filter((e) => e.isDirectory())
+      .flatMap((skill) => {
+        const scripts = join(SKILLS, skill.name, "scripts");
+        let files: string[];
+        try {
+          files = readdirSync(scripts);
+        } catch {
+          return [];
+        }
+        return files
+          .filter((f) => /^scaffold-.*\.mjs$/.test(f))
+          .map((f) => ({ name: `${skill.name}/${f}`, source: readFileSync(join(scripts, f), "utf8") }))
+          // An ADAPTING scaffold is one that copies a worked example's code: it exports
+          // `adaptFromBeat` and takes `--from`. The four that only fill their own templates are
+          // covered by the case above, on those templates.
+          .filter(({ source }) => /function adaptFromBeat\b/.test(source) && /"--from"/.test(source));
+      });
+    expect(adapting.map((a) => a.name).sort()).toEqual([
+      "chart-beat/scaffold-static-beat.mjs",
+      "map-beat/scaffold-static-map-beat.mjs",
+      "scrolly/scaffold-scrolly-beat.mjs",
+      "scrolly/scaffold-scrolly-map-beat.mjs",
+    ]);
+    const unrewritten = adapting
+      .filter(({ source }) => !/oneRunDirection|composedDirectionDefault/.test(source))
+      .map(({ name }) => name);
+    expect(unrewritten).toEqual([]);
+  });
+
   it("names the one family still owed, so the exemption cannot quietly grow", () => {
     const owed = scaffoldBundles()
       .filter(({ source }) => !/\breadRunDirection\b/.test(source))
