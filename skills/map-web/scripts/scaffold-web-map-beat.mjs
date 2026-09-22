@@ -317,7 +317,10 @@ export function scaffoldBeat({ root = DEFAULT_ROOT, templates = TEMPLATES, files
   }
   mkdirSync(beatDir, { recursive: true });
   for (const [target, content] of planned) writeFileSync(join(beatDir, target), content, { flag: "wx" });
-  if (!paletteReached) copyFileSync(join(staticDir, "PALETTE.md"), join(beatDir, "PALETTE.md"), 1 /* COPYFILE_EXCL */);
+  // Re-read at the write site rather than carrying a flag across two functions: the answer is a
+  // filesystem fact, and asking it twice is cheaper than a variable that can go stale.
+  const paletteAlreadyReachable = paletteReachableFrom(beatDir);
+  if (!paletteAlreadyReachable) copyFileSync(join(staticDir, "PALETTE.md"), join(beatDir, "PALETTE.md"), 1 /* COPYFILE_EXCL */);
   return [...planned.map(([target]) => target), "PALETTE.md"].sort();
 }
 

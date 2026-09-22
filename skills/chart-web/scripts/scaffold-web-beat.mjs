@@ -595,9 +595,17 @@ export function scaffoldBeat({ root = DEFAULT_ROOT, templates = TEMPLATES, sheet
   }
   mkdirSync(beatDir, { recursive: true });
   for (const [target, content] of planned) writeFileSync(join(beatDir, target), content, { flag: "wx" });
-  if (!paletteReached) copyFileSync(join(staticDir, "PALETTE.md"), join(beatDir, "PALETTE.md"), 1 /* COPYFILE_EXCL */);
-  copyFileSync(join(staticDir, dataFile), join(beatDir, "data.csv"), 1);
-  return [...planned.map(([target]) => target), ...(paletteReached ? [] : ["PALETTE.md"]), "data.csv"].sort();
+  // Re-read at the write site rather than carrying a flag across two functions: the answer is a
+  // filesystem fact, and asking it twice is cheaper than a variable that can go stale.
+  const paletteAlreadyReachable = paletteReachableFrom(beatDir);
+  if (!paletteAlreadyReachable) copyFileSync(join(staticDir, "PALETTE.md"), join(beatDir, "PALETTE.md"), 1 /* COPYFILE_EXCL */);
+  // THE ANALYST'S CONTRACT FOR THIS SLOT WINS. In the catalogue a web beat borrows its sibling's
+  // frozen data, because there is nothing else; in a story the analyst has already written this
+  // slot's own `data.csv` — filtered to the population THIS slot records, which may not be the
+  // sibling's. Copying over it would replace the right rows with someone else's.
+  const carriesItsOwnData = existsSync(join(beatDir, "data.csv"));
+  if (!carriesItsOwnData) copyFileSync(join(staticDir, dataFile), join(beatDir, "data.csv"), 1);
+  return [...planned.map(([target]) => target), ...(paletteAlreadyReachable ? [] : ["PALETTE.md"]), "data.csv"].sort();
 }
 
 export function parseArgs(argv) {
