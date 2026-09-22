@@ -1,5 +1,6 @@
 import { lstat, mkdir, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { checkDependencies } from "./preflight.mjs";
 
 export function storyAgentGuidance() {
   return `# Splash story workspace
@@ -108,10 +109,24 @@ async function assertRootCanRender(root) {
       missing.push(said);
     }
   }
-  if (missing.length === 0) return;
-  throw new Error(
-    `${root} is not a Splash root: it carries no ${missing.join(" and no ")}. A beat written there cannot resolve "#shared/..." and cannot render. Create the story under the root the installer provisioned, or run the installer against this one.`,
-  );
+  if (missing.length > 0) {
+    throw new Error(
+      `${root} is not a Splash root: it carries no ${missing.join(" and no ")}. A beat written there cannot resolve "#shared/..." and cannot render. Create the story under the root the installer provisioned, or run the installer against this one.`,
+    );
+  }
+
+  // SHAPED LIKE A ROOT IS NOT THE SAME AS STOCKED LIKE ONE. The root provisioned in August
+  // carried two of the five vendored craft trees the template ships, and stayed that way through
+  // a later install: the managed check reads the root's PRESENCE, so it was green. Preflight's own
+  // dependency check finds it in milliseconds — it walks the template and names every file the
+  // root is missing — and nothing in the flow had ever pointed it at the root a beat actually
+  // renders from. This is that pointing, at the cheapest moment: before a story exists.
+  const dependencies = await checkDependencies(root);
+  if (dependencies.status !== "pass") {
+    throw new Error(
+      `${root} is a Splash root whose substrate has fallen behind: ${dependencies.detail}. A beat written there resolves "#shared/..." against this directory, so it would fail in the middle of a render rather than here.`,
+    );
+  }
 }
 
 export async function createStory({ root, title }) {

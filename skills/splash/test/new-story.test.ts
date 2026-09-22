@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "bun:test";
 import {
+  cp,
   mkdtemp,
   mkdir,
   readFile,
@@ -19,14 +20,37 @@ import {
 let root: string;
 beforeEach(async () => {
   root = await mkdtemp(join(tmpdir(), "splash-root-"));
-  // A Splash root is the thing `#shared/*` resolves through, and `createStory` now refuses one
-  // that is not. These two are the whole of that: the mapping, and what it maps to.
-  await writeFile(
-    join(root, "package.json"),
-    `${JSON.stringify({ name: "splash-root", private: true, type: "module", imports: { "#shared/*": "./shared/*" } }, null, 2)}\n`,
-  );
-  await mkdir(join(root, "shared"), { recursive: true });
+  await provisionRoot(root);
 });
+
+/**
+ * A root as the installer leaves one, because `createStory` now refuses anything less: the
+ * `#shared/*` mapping, the vendored craft tree the template ships, and a resolvable dependency for
+ * every package that template declares. The dependency check asks only whether
+ * `node_modules/<name>/package.json` exists, so a stub answers it honestly — what is being tested
+ * here is story creation, not `bun install`.
+ */
+const TEMPLATE = join(import.meta.dirname, "..", "assets", "root-template");
+async function provisionRoot(target: string) {
+  const manifest = JSON.parse(
+    await readFile(join(TEMPLATE, "package.json"), "utf8"),
+  );
+  await writeFile(
+    join(target, "package.json"),
+    `${JSON.stringify({ ...manifest, name: "splash-root" }, null, 2)}\n`,
+  );
+  await cp(join(TEMPLATE, "shared"), join(target, "shared"), {
+    recursive: true,
+  });
+  for (const name of Object.keys(manifest.dependencies ?? {})) {
+    const dir = join(target, "node_modules", name);
+    await mkdir(dir, { recursive: true });
+    await writeFile(
+      join(dir, "package.json"),
+      `${JSON.stringify({ name, version: "0.0.0" })}\n`,
+    );
+  }
+}
 afterEach(async () => {
   await rm(root, { recursive: true, force: true });
 });
@@ -181,6 +205,36 @@ describe("the root a story is created in", () => {
       ).rejects.toThrow(/package\.json/);
       // A refusal that has already made directories is one the journalist has to clean up.
       await expect(stat(join(bare, "stories"))).rejects.toThrow();
+    } finally {
+      await rm(bare, { recursive: true, force: true });
+    }
+  });
+});
+
+/**
+ * O1 — A ROOT THAT IS MERELY SHAPED LIKE A ROOT IS NOT ONE.
+ *
+ * The stories root provisioned in August carried `shared/chart-beat` and `shared/chart-video` and
+ * nothing else, while the skills that write into it had moved on: 434 divergent lines, six modules
+ * absent, and `bsig doctor` green because it reads the root's PRESENCE. Preflight's own dependency
+ * check finds it immediately — run against that root it names every missing file — but nothing in
+ * the flow ever points it there. A beat's `#shared/...` resolves against the stories root, so that
+ * is the root whose substrate has to be whole, and story creation is the cheapest place to say so.
+ */
+describe("the substrate that root carries", () => {
+  it("refuses a root whose vendored craft files have fallen behind the template", async () => {
+    const bare = await mkdtemp(join(tmpdir(), "splash-stale-"));
+    try {
+      await writeFile(
+        join(bare, "package.json"),
+        `${JSON.stringify({ name: "splash-root", private: true, type: "module", imports: { "#shared/*": "./shared/*" } }, null, 2)}\n`,
+      );
+      // Shaped like a root, and empty where it matters.
+      await mkdir(join(bare, "shared"), { recursive: true });
+      await mkdir(join(bare, "node_modules"), { recursive: true });
+      await expect(
+        createStory({ root: bare, title: "Anything At All" }),
+      ).rejects.toThrow(/vendored craft files|shared\//);
     } finally {
       await rm(bare, { recursive: true, force: true });
     }

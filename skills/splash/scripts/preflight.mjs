@@ -74,7 +74,7 @@ function resolveDepInTree(name, root) {
   return existsSync(join(root, "node_modules", name, "package.json"));
 }
 
-async function checkDependencies(root, templateRoot) {
+export async function checkDependencies(root, templateRoot = ROOT_TEMPLATE_DIR) {
   if (!(await exists(join(root, "node_modules")))) {
     return { id: "dependencies", status: "missing", detail: "run bun install in the Splash root" };
   }
