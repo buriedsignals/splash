@@ -575,6 +575,56 @@ function transformedSpans(svg) {
   return spans;
 }
 
+/**
+ * THE VERTICAL SIBLING OF `assertWithinFrame`, and it did not exist.
+ *
+ * Measured 2026-09-23, rendering a real story's static beat at landscape and at square for the
+ * first time: the source line's baseline landed at y = 1080 in a 1080-high frame, so the words were
+ * cut through the middle and the credit was unreadable. Nothing refused it. `assertWithinStage`
+ * covers this only for PORTRAIT, whose row reserves a safe band, and only for beats that call it
+ * themselves — 30-odd catalogue beats do, and a journalist's new beat does not. So the one size a
+ * story had exercised was guarded and the two it had not were not.
+ *
+ * A baseline sits at the FOOT of the glyphs: the ink runs from roughly one cap-height above it down
+ * to its descender. 0.75 and 0.25 of the font size are the conventional ratios and are used rather
+ * than measured, because being generous makes this refuse LESS, never more.
+ *
+ * SAME STATED LIMITS as its horizontal sibling: it reads `<text>` baselines, so it sees where WORDS
+ * are and not where a MARK is; rotated runs and runs inside a transformed group are skipped, and a
+ * beat that leans on them is told this guard went quiet rather than green.
+ */
+export function assertWithinHeight(svg, height, { what = "this render" } = {}) {
+  const outside = [];
+  let skipped = 0;
+  const moved = transformedSpans(svg);
+  const isMoved = (at) => moved.some(([from, to]) => at >= from && at < to);
+  for (const m of svg.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)) {
+    const attrs = m[1];
+    if (/transform="/.test(attrs) || isMoved(m.index)) {
+      skipped += 1;
+      continue;
+    }
+    const y = Number(/\by="(-?\d+(?:\.\d+)?)"/.exec(attrs)?.[1]);
+    const fontSize = Number(/font-size="(\d+(?:\.\d+)?)"/.exec(attrs)?.[1] ?? 0);
+    const words = unescapeXml(m[2].replace(/<[^>]*>/g, "")).trim();
+    if (!Number.isFinite(y) || !fontSize || !words) continue;
+    const top = y - fontSize * 0.75;
+    const bottom = y + fontSize * 0.25;
+    if (top < 0 || bottom > height)
+      outside.push(
+        `"${words.slice(0, 40)}" at ${fontSize}px runs from ${Math.round(top)} to ${Math.round(bottom)}`,
+      );
+  }
+  if (outside.length)
+    throw new Error(
+      `${what} draws words outside its own ${height}px frame: ${outside.join("; ")}. A baseline at ` +
+        "the frame's foot is a line cut through the middle, and a cut credit is an attribution " +
+        "failure rather than a cosmetic one. Lay the block out from the height this size actually " +
+        "has — `sizeFor(size)` — instead of from the one the beat was first drawn at" +
+        (skipped ? ` (${skipped} rotated or transformed run(s) were not measured)` : ""),
+    );
+}
+
 export function assertWithinFrame(svg, width, { what = "this render" } = {}) {
   const outside = [];
   const moved = transformedSpans(svg);
@@ -642,6 +692,7 @@ export async function renderStill({
   }
 
   assertWithinFrame(svg, width, { what: `the render named ${JSON.stringify(name)}` });
+  assertWithinHeight(svg, height, { what: `the render named ${JSON.stringify(name)}` });
 
   await mkdir(outDir, { recursive: true });
   const svgPath = join(outDir, `${name}.svg`);
