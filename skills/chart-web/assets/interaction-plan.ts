@@ -213,6 +213,62 @@ export function askAnswers(html: string): string[] {
 }
 
 /**
+ * THE TWO DOORS `interaction.mjs` READS A READING THROUGH, and nothing else is a door.
+ *
+ * `initChart` collects `svg.querySelectorAll(".pt")` and returns at once when that list is empty
+ * (`assets/interaction.mjs:109`); `initLines` does the same for `.line-hit` (`:339`). A
+ * `data-detail` anywhere else is a string in the markup that no hover, tap or key press can ever
+ * reach — the page ships the promise and not the answer.
+ *
+ * Measured 2026-09-23 on a real story's second export: twenty-seven `data-detail` attributes on
+ * `<rect class="bar">`, a reading line promising hover, tap and keyboard, and both handlers
+ * returning on their first line. `shippedControls` called it a live control because the attribute
+ * was present and its strings added something — the two questions it did ask.
+ */
+const ANSWER_DOORS = ["pt", "line-hit"];
+
+/**
+ * Every `[data-detail]` element DRAWN ON THE PLOT, as `{ classes, detail }`.
+ *
+ * Scoped to the `<svg>`, and that scope is the whole precision of this check. A reading on a table
+ * row is the disclosure's, answered by reading the row; a live map answers from its own layer, off
+ * the feature's properties rather than off the DOM (`map-web/assets/live-map.mjs:469`), and the
+ * attributes it also writes onto its rows are surplus rather than a promise. What CANNOT be
+ * surplus is a reading on a mark inside the picture: that mark exists to be pointed at, and the
+ * only two things that answer a pointer over the plot are the two doors above.
+ */
+function answerElements(html: string): { classes: string[]; detail: string }[] {
+  const plots = [...String(html).matchAll(/<svg\b[\s\S]*?<\/svg>/g)].map((m) => m[0]);
+  return plots.flatMap((plot) =>
+    [...plot.matchAll(/<[a-zA-Z][^>]*\sdata-detail="[^"]*"[^>]*>/g)].map((m) => {
+      const tag = m[0];
+      const classAttr = /\sclass="([^"]*)"/.exec(tag);
+      return {
+        classes: (classAttr?.[1] ?? "").trim().split(/\s+/).filter(Boolean),
+        detail: decodeText(/\sdata-detail="([^"]*)"/.exec(tag)![1]).trim(),
+      };
+    }),
+  );
+}
+
+/**
+ * The readings this page carries that neither handler can collect — the exact strings, so a refusal
+ * can quote what the reader was promised rather than a count.
+ *
+ * Deliberately a CLASS-LIST test and not a substring one: `class="pointer"` contains `pt` and is not
+ * `.pt`, and `class="pt mark-active"` is.
+ */
+export function answersOutOfReach(html: string): string[] {
+  return [
+    ...new Set(
+      answerElements(html)
+        .filter(({ classes }) => !classes.some((c) => ANSWER_DOORS.includes(c)))
+        .map(({ detail }) => detail),
+    ),
+  ].filter(Boolean);
+}
+
+/**
  * Every cell a disclosure's table holds, as text. `|` is inserted at every tag boundary so two
  * adjacent cells cannot be read as one string that happens to be absent from the plate.
  *
@@ -543,6 +599,18 @@ export function shippedControls(html: string): ShippedControl[] {
  * event before it.
  */
 export function assertControlsChangeSomething(html: string, where = "this page"): ShippedControl[] {
+  // ASKED BEFORE "does it change anything", because a reading nobody can reach changes nothing in a
+  // way no reader will ever discover — and reads, in the census, exactly like a live control.
+  const stranded = answersOutOfReach(html);
+  if (stranded.length)
+    throw new Error(
+      `${where}: ${stranded.length} reading${stranded.length === 1 ? " is" : "s are"} out of reach — ` +
+        `\`data-detail\` sits on an element the interaction layer never collects. It reads a reading ` +
+        `through exactly two doors: \`.pt\` (initChart) and \`.line-hit\` (initLines), and returns on ` +
+        `its first line when neither is present. Put the attribute on a \`.pt\` the mark names with ` +
+        `\`data-mark-ref\`/\`data-mark\`, or on the line's own \`.line-hit\` twin. ` +
+        `First out of reach: ${JSON.stringify(stranded[0])}`,
+    );
   const controls = shippedControls(html);
   if (controls.length === 0)
     throw new Error(
