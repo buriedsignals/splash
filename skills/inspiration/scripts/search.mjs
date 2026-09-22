@@ -139,7 +139,15 @@ export async function searchInspiration({
     ) {
       return { ok: false, reason: "unexpected-response", status: response.status };
     }
-    return { ok: true, query: subject, items: normaliseItems(body.items), quota };
+    // WHICH RATION THIS SEARCH RAN UNDER. The gallery counts per address without a key and per
+    // account with one, and the journalist is the last person who can tell which happened.
+    return {
+      ok: true,
+      query: subject,
+      account: token ? "navigator" : "anonymous",
+      items: normaliseItems(body.items),
+      quota,
+    };
   })();
 
   try {

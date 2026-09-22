@@ -1106,6 +1106,8 @@
    * ===================================================================== */
 
   const API   = 'https://splash-inspiration.buriedsignals.com';
+  /* The single origin the gallery's CORS policy admits — this page's own home. */
+  const CANONICAL_ORIGIN = 'https://splash.buriedsignals.com';
   const SB    = 'https://towumekminbldlabbyss.supabase.co';
   const SBKEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRvd3VtZWttaW5ibGRsYWJieXNzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjEyMjEyOTEsImV4cCI6MjA3Njc5NzI5MX0.lRh7eg8CwOQBd2Squ6wVt2Ko6Z6YgMIeE5tmOOqmIlI';
 
@@ -1397,6 +1399,20 @@
       return true;
     } catch (err) {
       all = [];
+      /* THE GALLERY ANSWERS ONE ORIGIN, AND A DEVELOPER'S MACHINE IS NOT IT. Its CORS preflight
+         returns 403 to http://localhost and 204 to this page's own origin, so every search from a
+         local copy fails identically to an outage — and whoever is editing this file reads "the
+         gallery did not come back" and cannot tell their change from the product. Measured
+         2026-09-22. Saying which of the two it is costs one comparison. */
+      const foreign = location.origin !== new URL(CANONICAL_ORIGIN).origin;
+      if (foreign) {
+        box('ink', 'Wrong origin', 'The gallery only answers its own page.',
+            'This copy is served from ' + esc(location.origin) + ', and the gallery accepts requests from '
+              + esc(CANONICAL_ORIGIN) + ' alone — so the search fails here and nowhere else. '
+              + 'Nothing is wrong with the gallery, and nothing is wrong with this page.',
+            '<a class="btn" href="' + CANONICAL_ORIGIN + '/inspiration.html">Open the real page</a>');
+        return true;
+      }
       box('ink', 'No answer', 'The gallery did not come back.',
           esc(err.message || 'The request failed before it reached the gallery.'),
           '<button class="btn" type="button" id="retry">Try again</button>');

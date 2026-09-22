@@ -27,14 +27,20 @@ function isoDate(value) {
   return typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value) ? value.slice(0, 10) : null;
 }
 
-function quotaLine(quota) {
+// WHICH RATION WAS APPLIED, AND WHY — the gallery counts five a day per address anonymously and
+// ten for a Navigator account, and Engine hands the key only inside Indicator Labs. A journalist
+// who has just signed in with `bsig auth login`, been told their PAT is in the keychain, and is
+// then counted down from five has no way to tell a design from a fault. One sentence, said only
+// when the search really did go out without the account.
+const ANONYMOUS_NOTE =
+  "This search was anonymous — five a day per address. A Navigator account raises that to ten, and reaches the search only inside Indicator Labs.";
+
+function quotaLine(quota, account) {
   if (!quota || quota.remaining === null || quota.remaining === undefined) return null;
   const of = quota.limit === null || quota.limit === undefined ? "" : ` of ${quota.limit}`;
   const base = `${quota.remaining}${of} searches left today.`;
-  if (quota.remaining === 0) {
-    return `${base} It resets at ${quota.resetsAt ?? "midnight UTC"}.`;
-  }
-  return base;
+  const said = quota.remaining === 0 ? `${base} It resets at ${quota.resetsAt ?? "midnight UTC"}.` : base;
+  return account === "anonymous" ? `${said}\n\n${ANONYMOUS_NOTE}` : said;
 }
 
 const RECONNECT =
@@ -65,7 +71,7 @@ function formatFailure(result) {
 function formatResult(result) {
   if (!result.ok) return formatFailure(result);
 
-  const { query, items, quota } = result;
+  const { query, items, quota, account } = result;
   const lines = [];
   const lq = "“";  // LEFT DOUBLE QUOTATION MARK
   const rq = "”";  // RIGHT DOUBLE QUOTATION MARK
@@ -84,7 +90,7 @@ function formatResult(result) {
     });
   }
 
-  const left = quotaLine(quota);
+  const left = quotaLine(quota, account);
   if (left) lines.push("", left);
   return lines.join("\n");
 }

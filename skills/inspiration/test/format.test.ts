@@ -294,3 +294,42 @@ describe("formatInspiration and the Navigator account", () => {
     );
   });
 });
+
+/**
+ * D2 — A SIGNED-IN JOURNALIST WAS GIVEN FIVE AND TOLD NOTHING.
+ *
+ * `bsig auth login` answers "signed in as … (lab tier) — PAT stored in the keychain", and the
+ * searches that follow are still the anonymous five a day, because Engine only hands the MCP server
+ * `OSINT_NAV_API_KEY` when a Navigator account is connected inside Indicator Labs. That is the
+ * design; the silence around it is not. Measured on 2026-09-22: signed in, the count ran 5, 4, 3,
+ * 2, 1, 0 with no word anywhere about why the account was not in play.
+ *
+ * The gallery's own ration is the only thing this file may state as fact, so it states which one
+ * was applied and stops there.
+ */
+describe("which ration the search ran under", () => {
+  it("says an anonymous search was anonymous, and what would change it", () => {
+    const text = formatInspiration({
+      ok: true,
+      query: "floods",
+      account: "anonymous",
+      items: [{ title: "A flood map", source: "A newsroom", date: "2026-01-01", url: "https://example.org/x" }],
+      quota: { limit: 5, remaining: 4, resetsAt: null },
+    });
+    expect(text).toContain("4 of 5 searches left today.");
+    expect(text).toContain("anonymous");
+    expect(text).toContain("Indicator Labs");
+  });
+
+  it("says nothing extra when the account is the one searching", () => {
+    const text = formatInspiration({
+      ok: true,
+      query: "floods",
+      account: "navigator",
+      items: [{ title: "A flood map", source: "A newsroom", date: "2026-01-01", url: "https://example.org/x" }],
+      quota: { limit: 10, remaining: 9, resetsAt: null },
+    });
+    expect(text).toContain("9 of 10 searches left today.");
+    expect(text).not.toContain("anonymous");
+  });
+});

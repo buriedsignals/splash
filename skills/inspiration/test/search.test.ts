@@ -39,6 +39,9 @@ describe("searchInspiration", () => {
     expect(result).toEqual({
       ok: true,
       query: "floods",
+      // No token was handed to this search, and the result says which ration it therefore ran
+      // under — the journalist is the last person able to tell.
+      account: "anonymous",
       items: [ITEM],
       quota: { limit: 5, remaining: 4, resetsAt: RESET },
     });
@@ -157,6 +160,7 @@ describe("searchInspiration", () => {
     expect(result).toEqual({
       ok: true,
       query: "floods",
+      account: "anonymous",
       items: [],
       quota: { limit: 5, remaining: 4, resetsAt: RESET },
     });
