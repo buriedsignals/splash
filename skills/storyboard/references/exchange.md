@@ -145,7 +145,18 @@ Two clauses were doing different jobs and only one of them belonged to the journ
 article on that run was 2,746 lines across 20 sections — *"which paragraph"* has no answer anybody
 produces from memory at that size, and the second clause lands as a comprehension test. **The
 position is theirs; what the text says at that position is ours to read out of the frozen article
-and propose back for confirmation.** The positions to offer are the article's own headings:
+and propose back for confirmation.** RULED 2026-09-23: **the position IS the placement in the article**, and the menu must fit the
+article in hand. Offer the article's own headings when it has more than one — an investigation
+organised in sections gives the journalist a vocabulary they already hold. A reported newspaper
+feature does not: the Guardian piece frozen on 2026-09-22 carried fifty paragraphs and exactly one
+heading, its title, so the heading menu offered a single position and the movement had nothing left
+to do. In that case offer `positions` instead — one per paragraph, each carrying enough of its own
+opening to be recognised, derived at freeze time by `articlePositions` and written into the same
+prose entry. Nothing else about this movement changes: the position is theirs, and what the text
+says at the one they choose is ours to read back out of the frozen article and propose for
+confirmation.
+
+The positions to offer are the article's own headings:
 `source/MANIFEST.json`'s prose entry carries a `sections` index (id, heading, line), derived from
 the frozen text at intake (issue #61). Offer those, by heading; read the frozen article at the one
 they choose; propose what the text already says there. The `do not duplicate` destination is unchanged and is still

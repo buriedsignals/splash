@@ -4,7 +4,7 @@ import { mkdtemp, mkdir, writeFile, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { freezeSource } from "../scripts/freeze.mjs";
-import { driftedSources, sourceFor, articleSections } from "../scripts/manifest.mjs";
+import { driftedSources, sourceFor, articleSections, articlePositions } from "../scripts/manifest.mjs";
 
 let dir: string;
 beforeEach(async () => {
@@ -168,5 +168,58 @@ describe("the article's section index", () => {
 
   it("should record an empty index for an article with no headings — an answer, not an absence", () => {
     expect(articleSections("just prose\nmore prose\n")).toEqual([]);
+  });
+});
+
+/**
+ * O5 — A POSITION IS THE PLACEMENT IN THE ARTICLE, AND A NEWS FEATURE HAS NO INTERNAL HEADINGS.
+ *
+ * Movement ③ asks the journalist where the graphic goes, and the positions it offers are "the
+ * article's own headings", read from this index. That question had already been rewritten once,
+ * because a 2,746-line investigation made "which paragraph" unanswerable from memory. A reported
+ * newspaper feature breaks it from the other end: the Guardian piece frozen on 2026-09-22 carried
+ * fifty paragraphs and exactly ONE heading — its title — so the journalist was offered a single
+ * position and the movement had nothing left to do.
+ *
+ * Ruled by the owner on 2026-09-23: the position IS the placement in the article. So the frozen
+ * manifest carries paragraph positions beside the headings, and the offer falls back to them.
+ * The half that worked is untouched: the position is the journalist's, and what the text says
+ * there is ours to read back out of the frozen article.
+ */
+describe("the positions an article offers", () => {
+  it("gives every paragraph a position, with enough of its opening to be recognised", () => {
+    const article = [
+      "# Three towns carry the outage",
+      "",
+      "By 10am the corridor of the clinic was already crowded with parents and children waiting.",
+      "",
+      "Most of the cases that morning were routine: colds, checkups, chronic conditions.",
+      "",
+    ].join("\n");
+
+    const positions = articlePositions(article);
+    expect(positions).toHaveLength(2);
+    expect(positions[0]).toMatchObject({ line: 3 });
+    expect(positions[0].opening).toContain("By 10am the corridor");
+    expect(positions[1].opening).toContain("Most of the cases");
+    // Each one is addressable on its own, because the journalist names one of them.
+    expect(new Set(positions.map((p) => p.id)).size).toBe(2);
+  });
+
+  it("does not offer a heading as a paragraph, because headings are already offered", () => {
+    const positions = articlePositions("# A title\n\n## A section\n\nThe only paragraph.\n");
+    expect(positions).toHaveLength(1);
+    expect(positions[0].opening).toBe("The only paragraph.");
+  });
+
+  it("records an empty index for an article that is nothing but headings", () => {
+    expect(articlePositions("# One\n\n## Two\n")).toEqual([]);
+  });
+
+  it("keeps an opening short enough to read in a menu, and says it was cut", () => {
+    const long = `# T\n\n${"word ".repeat(60).trim()}\n`;
+    const [position] = articlePositions(long);
+    expect(position.opening.length).toBeLessThanOrEqual(80);
+    expect(position.opening.endsWith("…")).toBe(true);
   });
 });

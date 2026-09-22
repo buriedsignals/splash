@@ -54,7 +54,7 @@ function storyRelative(storyDir, path) {
  * rather than a filename — a story with nine datasets needs to say which one a beat draws on, and
  * `source/data.csv` cannot answer that.
  */
-export function sourceEntry({ id, path, kind, digest, profile = null, note = null, sections = null }) {
+export function sourceEntry({ id, path, kind, digest, profile = null, note = null, sections = null, positions = null }) {
   if (!id || !/^[a-z0-9][a-z0-9-]*$/.test(id)) {
     throw new Error(`a source id is lowercase words joined by hyphens — got ${JSON.stringify(id)}`);
   }
@@ -63,6 +63,9 @@ export function sourceEntry({ id, path, kind, digest, profile = null, note = nul
   }
   if (!/^sha256:[0-9a-f]{64}$/.test(digest ?? "")) {
     throw new Error(`source ${id} must carry a sha256 digest of what was read`);
+  }
+  if (positions !== null && kind !== "prose") {
+    throw new Error("only a prose source carries paragraph positions");
   }
   if (sections !== null && kind !== "prose") {
     throw new Error(`source ${id}: only a prose source carries a section index`);
@@ -75,6 +78,7 @@ export function sourceEntry({ id, path, kind, digest, profile = null, note = nul
     ...(profile ? { profile } : {}),
     ...(note ? { note } : {}),
     ...(sections ? { sections } : {}),
+    ...(positions ? { positions } : {}),
   };
 }
 
@@ -109,6 +113,62 @@ export function articleSections(text) {
       sections.push({ id: count === 1 ? base : `${base}-${count}`, level: match[1].length, heading, line: index + 1 });
     });
   return sections;
+}
+
+/**
+ * THE POSITIONS AN ARTICLE OFFERS, WHEN ITS HEADINGS ARE NOT ENOUGH — ruling of 2026-09-23.
+ *
+ * Movement ③ asks the journalist where the graphic goes and offers the article's own headings.
+ * That question had already been rewritten once because a 2,746-line investigation made "which
+ * paragraph" unanswerable; a reported newspaper feature breaks it from the other end. The Guardian
+ * piece frozen on 2026-09-22 carried fifty paragraphs and one heading — its title — so there was a
+ * single position to choose from and nothing for the movement to do.
+ *
+ * A position is a paragraph: the unit a graphic actually sits after. Each carries enough of its own
+ * opening to be recognised in a menu and the line it starts at, so what the text says there can be
+ * read back out of the frozen article — which is the half of this question that always worked, and
+ * is unchanged. Headings are excluded because they are already offered as sections; a fenced block
+ * is not prose and is skipped. DERIVED, so a re-freeze reproduces it byte for byte.
+ */
+export function articlePositions(text) {
+  const OPENING = 79;
+  const lines = String(text ?? "").split(/\r?\n/);
+  const positions = [];
+  let buffer = [];
+  let startLine = 0;
+  let fenced = false;
+
+  const flush = () => {
+    if (buffer.length === 0) return;
+    const prose = buffer.join(" ").replace(/\s+/g, " ").trim();
+    buffer = [];
+    if (prose === "") return;
+    const opening = prose.length > OPENING ? `${prose.slice(0, OPENING - 1).trimEnd()}\u2026` : prose;
+    positions.push({ id: `p${positions.length + 1}`, line: startLine, opening });
+  };
+
+  lines.forEach((line, index) => {
+    if (/^\s*(```|~~~)/.test(line)) {
+      flush();
+      fenced = !fenced;
+      return;
+    }
+    if (fenced) return;
+    if (line.trim() === "") {
+      flush();
+      return;
+    }
+    // A heading ends the paragraph before it and is not itself a position: sections already
+    // carry it, and offering the same place twice under two names is not two choices.
+    if (/^#{1,6}\s+/.test(line)) {
+      flush();
+      return;
+    }
+    if (buffer.length === 0) startLine = index + 1;
+    buffer.push(line.trim());
+  });
+  flush();
+  return positions;
 }
 
 /** Write the manifest. Sorted by id so two runs over the same material produce the same bytes. */

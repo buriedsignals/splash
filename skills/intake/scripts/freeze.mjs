@@ -3,7 +3,7 @@ import { readFile, writeFile, mkdir, stat } from "node:fs/promises";
 import { basename, join } from "node:path";
 import { parseCsv } from "./csv.mjs";
 import { profileTable } from "./profile.mjs";
-import { digestOf, sourceEntry, writeManifest, articleSections } from "./manifest.mjs";
+import { digestOf, sourceEntry, writeManifest, articleSections, articlePositions } from "./manifest.mjs";
 
 /** `rents.csv` → `rents`, so a slot names the journalist's own word for the table. */
 function idFor(path, fallback) {
@@ -47,6 +47,9 @@ export async function freezeSource({ storyDir, articlePath, dataPath, extraSourc
       digest: digestOf(article),
       // The article's headings, so movement ③ can offer real positions (issue #61).
       sections: articleSections(article),
+      // The paragraphs a graphic can sit after, for the article that has no internal headings —
+      // which is every reported newspaper feature. See `articlePositions`.
+      positions: articlePositions(article),
     }),
     sourceEntry({
       id: idFor(dataPath, "data"),
