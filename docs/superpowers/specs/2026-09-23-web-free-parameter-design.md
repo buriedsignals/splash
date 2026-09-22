@@ -184,12 +184,18 @@ unfinished beat is not red — it is simply not yet approvable.
 
 A catalogue BRIEF opens with front matter — `format`, `type`, `medium`, `grounding`, `derived: v1` —
 and that front matter is what puts it under the editorial chain: 161 of 163 beats, all 40 web ones.
-**None of the eight scaffolds writes any front matter.** Every beat a journalist scaffolds, in any of
-the four formats, is therefore born outside the chain: it receives the empty table as a prompt and
-nothing ever reads it back. The eight scaffolds write `format`, `type` and `medium` — all three known
-at scaffold time — and G3 reads them.
 
-`grounding` is the analyst's answer and is not written by a scaffold.
+**Corrected against the code while implementing (2026-09-23).** The first draft of this section said
+no scaffold wrote any front matter. Six of the eight already wrote `format` and `type`. What was
+actually true: **no scaffold wrote `medium`**, and the two WEB scaffolds wrote no front matter at all
+— `chart-web`'s inline `const BRIEF` template and `map-web`'s `BRIEF.md.tmpl`. So it was the web
+export, the one this work is about, that was invisible to the chain, and `medium` was missing
+everywhere. A beat scaffolded in either web format received the empty table as a prompt and nothing
+ever read it back.
+
+All eight now write `format`, `type` and `medium` — the three known at scaffold time — and G3 reads
+them. `grounding` is the analyst's answer and is not written by a scaffold; `derived: v1` marks a
+beat migrated into the L5 census, which a fresh beat has not been.
 
 ---
 
