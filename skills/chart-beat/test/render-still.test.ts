@@ -538,3 +538,74 @@ describe("renderStill", () => {
     expect(svg).not.toContain("<title");
   });
 });
+
+/**
+ * NOTHING DRAWN IS CLIPPED BY ITS OWN FRAME.
+ *
+ * `assertWithinStage` refuses a `<text>` baseline outside the band a portrait reserves — one axis,
+ * mechanically checked. The other axis had nothing, and on 2026-09-22 a beat shipped a title cut
+ * off at the right edge and a source line missing its year, with no complaint from anywhere:
+ * `renderStill` measures contrast and does not measure width.
+ *
+ * The invariant held here is the frame's, not a design's: a gutter is a choice a beat makes, but a
+ * string running off the canvas is never one. It is checked at the one place every beat passes
+ * through, because a guard a producer has to remember to call is the defect this closes.
+ */
+describe("text that does not fit the frame", () => {
+  const Title = ({ text, width, height, x, anchor }: {
+    text: string; width: number; height: number; x: number; anchor?: string;
+  }) =>
+    createElement(
+      "svg",
+      { width, height, viewBox: `0 0 ${width} ${height}`, xmlns: "http://www.w3.org/2000/svg" },
+      createElement("rect", { x: 0, y: 0, width, height, fill: "#FFFFFF" }),
+      createElement(
+        "text",
+        { x, y: 120, fill: "#111111", fontSize: 78, fontWeight: 700, ...(anchor ? { textAnchor: anchor } : {}) },
+        text,
+      ),
+    );
+
+  it("refuses a title that runs off the right edge", async () => {
+    await expect(
+      renderStill({
+        element: createElement(Title, {
+          text: "One EU country holds almost every measles case reported anywhere in the union",
+          width: 1080,
+          height: 1920,
+          x: 72,
+        }),
+        width: 1080,
+        height: 1920,
+        outDir,
+        name: "overflow",
+      }),
+    ).rejects.toThrow(/draws text past its own frame/);
+  });
+
+  it("lets a title that fits through untouched", async () => {
+    const { pngPath } = await renderStill({
+      element: createElement(Title, { text: "One EU country", width: 1080, height: 1920, x: 72 }),
+      width: 1080,
+      height: 1920,
+      outDir,
+      name: "fits",
+    });
+    expect((await stat(pngPath)).size).toBeGreaterThan(0);
+  });
+
+  it("reads an end-anchored label from the right edge of its own box", async () => {
+    // Anchored at `end`, x is where the string STOPS. The same x that overflows from `start`
+    // is comfortably inside the frame here, and a guard that ignored the anchor would refuse it.
+    const { pngPath } = await renderStill({
+      element: createElement(Title, {
+        text: "One EU country", width: 1080, height: 1920, x: 1000, anchor: "end",
+      }),
+      width: 1080,
+      height: 1920,
+      outDir,
+      name: "anchored",
+    });
+    expect((await stat(pngPath)).size).toBeGreaterThan(0);
+  });
+});

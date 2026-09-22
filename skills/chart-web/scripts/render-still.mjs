@@ -512,6 +512,50 @@ export function measureTextBand(text, options) {
  * Render one React element to an SVG on disk and a PNG beside it. The PNG is the artifact the
  * checklist is applied to — the SVG is kept because a defect is easier to read in the markup.
  */
+/**
+ * NOTHING DRAWN IS CLIPPED BY ITS OWN FRAME.
+ *
+ * `sizes.mjs`'s `assertWithinStage` refuses a `<text>` baseline outside the band a portrait
+ * reserves. That is one axis, mechanically checked; the other had nothing, and a beat shipped with
+ * its title cut off at the right edge and its source line missing its year while this file happily
+ * measured the contrast of both. A journalist opening the PNG was the only control there was.
+ *
+ * What is held here is the FRAME's invariant, not a design's. A gutter is a choice a beat makes and
+ * this has no business having an opinion about it; a string running off the canvas is never a
+ * choice. So the rule is only: the ink box of every drawn string lies inside [0, width].
+ *
+ * Skipped deliberately, in the same shape as the stage guard above: a `<text>` carrying a
+ * `transform`, because a rotated string's box is not its advance width. `text-anchor` is read,
+ * because an end-anchored label legitimately sits at an x its own width exceeds.
+ */
+export function assertWithinFrame(svg, width, { what = "this render" } = {}) {
+  const outside = [];
+  for (const m of svg.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)) {
+    const attrs = m[1];
+    if (/transform="/.test(attrs)) continue;
+    const x = Number(/\bx="(-?\d+(?:\.\d+)?)"/.exec(attrs)?.[1]);
+    const fontSize = Number(/font-size="(\d+(?:\.\d+)?)"/.exec(attrs)?.[1] ?? 0);
+    const words = m[2].replace(/<[^>]*>/g, "").trim();
+    if (!Number.isFinite(x) || !fontSize || !words) continue;
+    const fontWeight = Number(/font-weight="(\d+)"/.exec(attrs)?.[1] ?? 400);
+    const drawn = measureText(words, { fontSize, fontWeight });
+    const anchor = /text-anchor="(start|middle|end)"/.exec(attrs)?.[1] ?? "start";
+    const left = anchor === "middle" ? x - drawn / 2 : anchor === "end" ? x - drawn : x;
+    const right = left + drawn;
+    if (left < 0 || right > width) {
+      outside.push(
+        `"${words.slice(0, 40)}" at ${fontSize}px runs from ${Math.round(left)} to ${Math.round(right)}`,
+      );
+    }
+  }
+  if (outside.length > 0) {
+    throw new Error(
+      `${what} draws text past its own frame, which is ${width}px wide: ${outside.join("; ")}`,
+    );
+  }
+  return svg;
+}
+
 export async function renderStill({
   element,
   width,
@@ -543,6 +587,8 @@ export async function renderStill({
   if (drawn.width !== width || drawn.height !== height) {
     throw new Error(`asked to render at ${width}x${height}, but the element is drawn at ${drawn.width}x${drawn.height}`);
   }
+
+  assertWithinFrame(svg, width, { what: `the render named ${JSON.stringify(name)}` });
 
   await mkdir(outDir, { recursive: true });
   const svgPath = join(outDir, `${name}.svg`);
