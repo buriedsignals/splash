@@ -208,6 +208,50 @@ describe("the corpus obeys the rule", () => {
     expect(reaching).toEqual([]);
   });
 
+  /**
+   * THE GUARD ABOVE WALKS `stories/`, AND A JOURNALIST'S STORY IS NOT THERE.
+   *
+   * Measured 2026-09-23. A real story lives in the install root — `~/.local/share/splash-stories/
+   * stories/<slug>` — which this repository cannot see, so the walk above reports green over a tree
+   * where no production story exists at all. Meanwhile the thing that WRITES every story's runner
+   * is in this repository and was never read: `chart-web/scripts/scaffold-web-beat.mjs` emitted a
+   * runner looping over `docs/design-base/directions`, so every web beat it scaffolded redefined the
+   * run's one direction as three, and did it before a journalist typed a line.
+   *
+   * The scaffolds are where the rule has to hold, because they are upstream of every story this
+   * repository will never see. A template is source like any other; it is exempt from nothing.
+   */
+  it("should let no scaffold emit a runner that reads the filed directions", () => {
+    // THE CATALOGUE'S OWN BRANCH IS EXEMPT BY THE NAME OF THE CONSTANT THAT HOLDS IT, and by
+    // nothing else — the same shape as `EXEMPT` above, and for the same reason: a heuristic
+    // ("a template that looks like the catalogue's") is a rule nobody can enumerate. A scaffold
+    // that wants the three writes them into a constant called CATALOGUE_DIRECTION_SOURCE, where
+    // a reader looking for the exception finds it, and `--filed` is what reaches it.
+    const CATALOGUE_BRANCH = /const CATALOGUE_DIRECTION_\w+ = (`[\s\S]*?`|\[[\s\S]*?\]\.join\([^)]*\));/g;
+    const emitting: string[] = [];
+    for (const path of walk(join(ROOT, "skills"))) {
+      if (!/scaffold-.*\.mjs$/.test(path)) continue;
+      const text = readFileSync(path, "utf8")
+        .replace(CATALOGUE_BRANCH, "")
+        .replace(/^\s*\/\/.*$/gm, "")
+        .replace(/\/\*[\s\S]*?\*\//g, "");
+      if (/design-base", "directions"/.test(text) || /design-base\/directions/.test(text))
+        emitting.push(relative(ROOT, path));
+    }
+    expect(emitting).toEqual([]);
+  });
+
+  it("should fail if that exemption ever stops being load-bearing, so it cannot quietly cover everything", () => {
+    // The exemption is only honest while exactly one scaffold uses it. If a second one appears,
+    // somebody is spelling the catalogue's escape where a story's runner is written.
+    const named = [...walk(join(ROOT, "skills"))].filter(
+      (p) => /scaffold-.*\.mjs$/.test(p) && /CATALOGUE_DIRECTION_/.test(readFileSync(p, "utf8")),
+    );
+    expect(named.map((p) => relative(ROOT, p))).toEqual([
+      "skills/chart-web/scripts/scaffold-web-beat.mjs",
+    ]);
+  });
+
   it("should exempt proof/ by an explicit path prefix and by nothing else", () => {
     expect(
       EXEMPT(

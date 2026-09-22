@@ -245,17 +245,14 @@ import { existsSync, readFileSync, readdirSync, rmSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { readPalette } from "#shared/chart-beat/colour.mjs";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
-import { readDirection } from "#shared/design-base/read-direction.mjs";
-import { composeDirections, report } from "#shared/design-base/compose.mjs";
+%%DIRECTION_IMPORTS%%
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
 import { renderWeb } from "%%UP%%/skills/chart-web/scripts/render-web.mjs";
 import { Directed%%Name%%Web, FRAME } from "./Directed%%Name%%Web.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
 const OUT = join(HERE, "renders");
 
 // THE LANGUAGE THIS PAGE DECLARES, read from the story that owns this beat — never guessed from its
@@ -265,7 +262,7 @@ const OUT = join(HERE, "renders");
 // outside a story has no storyboard, and the renderer's own English default stands.
 const STORYBOARD = join(HERE, "..", "..", "STORYBOARD.md");
 const LANGUAGE = existsSync(STORYBOARD)
-  ? readFileSync(STORYBOARD, "utf8").match(/^\s*language:\s*"?([A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*)"?\s*$/m)?.[1] ?? "en"
+  ? readFileSync(STORYBOARD, "utf8").match(/^\\s*language:\\s*"?([A-Za-z]{2,3}(?:-[A-Za-z0-9]{2,8})*)"?\\s*$/m)?.[1] ?? "en"
   : "en";
 
 // SCAFFOLD — THE EYEBROW is this beat's own: the desk and the geography, in the newsroom's words.
@@ -321,17 +318,13 @@ const textPerRegister = {
 // code point and not the string.
 for (const key of Object.keys(textPerRegister)) textPerRegister[key] = plain(textPerRegister[key]);
 
-const filed = readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md")).map((f) => readDirection(join(DIRECTIONS, f)));
-const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
 // SCAFFOLD — how many levels of evidence this beat's ink has to separate.
 const BEAT_FACTS = { evidenceLevels: 2 };
-console.log(report(composeDirections({ newsroom, filed, beat: BEAT_FACTS, textPerRegister }), { beat: BEAT_FACTS }));
-console.log("");
+
+%%DIRECTION_SOURCE%%
 
 const refused = [];
-for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
-  const id = file.replace(/\\.md$/, "");
-  const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, file)), textPerRegister);
+for (const { id, direction } of directions) {
   const name = \`\${id}.html\`;
   try {
     await renderWeb({
@@ -572,6 +565,62 @@ found by.
 - Then OPEN the shots and look. A script cannot see a collision, a clipped mark, or a squat plot.
 `;
 
+/**
+ * HOW THE RUNNER GETS ITS ART DIRECTION — the two values `%%DIRECTION_IMPORTS%%` and
+ * `%%DIRECTION_SOURCE%%` can take, and there are exactly two.
+ *
+ * Ruling R-A: a production run is produced in ONE art direction, composed once from `NEWSROOM.md`
+ * and the story's subject, written at the story root beside `PALETTE.md`, read by the still, the
+ * video, the page and the scrolly alike, and redefined by none of them. THE CATALOGUE IS THE NAMED
+ * EXCEPTION: a proof renders the three filed directions precisely to show that the direction is a
+ * parameter of the run rather than a value baked into a beat — a rule that holds on one palette may
+ * only be lucky.
+ *
+ * Until 2026-09-23 this scaffold refused to write a beat whose `DIRECTION.md` was unreachable
+ * (`assertRunDirection`, below) and then handed the journalist a runner that looped over the three
+ * filed directions anyway. It enforced the file's existence and ignored its contents, so every web
+ * beat a journalist scaffolded produced three pages in three palettes and three type ladders, of a
+ * story that had already chosen one. Found by rendering a real story's second export and looking at
+ * the output.
+ */
+const RUN_DIRECTION_SOURCE = (beat) => `// THE RUN'S ONE ART DIRECTION (ruling R-A). It was composed once for this story, from NEWSROOM.md
+// and the subject, and written at the story root beside PALETTE.md. Every export of this run reads
+// that one file — the still, the video, this page, the scrolly — and none of them redefines it.
+// The three filed directions (creme/nocturne/rapport) are the CATALOGUE's device for showing that
+// the direction is a parameter of the run; this story has already chosen.
+const runDirection = readRunDirection(HERE);
+console.log(\`direction: \${runDirection.id}\\n  composed from: \${runDirection.origin}\\n  read from: \${runDirection.source}\\n\`);
+const directions = [{ id: ${JSON.stringify(basename(beat))}, direction: resolveDirectionFamilies(runDirection, textPerRegister) }];`;
+
+/** The catalogue's three, and the one place in this file that names their path. The R-A guard
+ *  (`splash/test/a-production-run-has-one-direction.test.ts`) strips this constant's value before it
+ *  greps, exactly as it exempts `proof/` by an explicit prefix rather than by a heuristic. */
+const CATALOGUE_DIRECTION_SOURCE = `// A CATALOGUE PROOF, WHICH IS R-A's NAMED EXCEPTION: the three filed directions, rendered to show
+// that the art direction is a parameter of the run rather than a value baked into this beat.
+const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
+const filedDirections = readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"));
+const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
+console.log(report(composeDirections({ newsroom, filed: filedDirections.map((f) => readDirection(join(DIRECTIONS, f))), beat: BEAT_FACTS, textPerRegister }), { beat: BEAT_FACTS }));
+console.log("");
+const directions = filedDirections.map((f) => ({
+  id: f.replace(/\.md$/, ""),
+  direction: resolveDirectionFamilies(readDirection(join(DIRECTIONS, f)), textPerRegister),
+}));`;
+
+const RUN_DIRECTION_IMPORTS = `import { readRunDirection } from "#shared/design-base/run-direction.mjs";`;
+const CATALOGUE_DIRECTION_IMPORTS = [
+  `import { readPalette } from "#shared/chart-beat/colour.mjs";`,
+  `import { readDirection } from "#shared/design-base/read-direction.mjs";`,
+  `import { composeDirections, report } from "#shared/design-base/compose.mjs";`,
+].join("\n");
+
+/** The two tokens the runner's direction wiring is filled from, for a story or for the catalogue. */
+export function directionTokens({ beat, filed }) {
+  return filed
+    ? { DIRECTION_IMPORTS: CATALOGUE_DIRECTION_IMPORTS, DIRECTION_SOURCE: CATALOGUE_DIRECTION_SOURCE }
+    : { DIRECTION_IMPORTS: RUN_DIRECTION_IMPORTS, DIRECTION_SOURCE: RUN_DIRECTION_SOURCE(beat) };
+}
+
 export const TEMPLATES = Object.freeze({
   "render-directions-web.mjs": RUNNER,
   "Directed%%Name%%Web.tsx": COMPONENT,
@@ -588,7 +637,7 @@ export function scaffoldBeat({ root = DEFAULT_ROOT, templates = TEMPLATES, sheet
   // another beat's code, so the empty choreography section carries the frame and nothing else.
   const scaffoldedFrom = "";
   const { beatDir, staticDir, dataFile, values } = tokensFor({ root, type, beat, staticBeat, component, sheets });
-  const all = { ...values, DATA_FILE: "data.csv" };
+  const all = { ...values, DATA_FILE: "data.csv", ...directionTokens({ beat, filed }) };
   const planned = Object.entries(templates).map(([target, body]) => [fill(target, all), fill(body, all)]);
   // The chain, read before a single file exists on disk (see "THE EDITORIAL CHAIN, WIRED" above).
   const briefAt = planned.findIndex(([target]) => target === "BRIEF.md");
