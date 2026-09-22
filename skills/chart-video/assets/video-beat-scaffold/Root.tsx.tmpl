@@ -11,7 +11,7 @@ export const COMPOSITION_ID = "%%COMPOSITION%%";
 const PLACEHOLDER = { faces: [], timing: %%CONST%%_VIDEO_TIMING } as unknown as Directed%%Name%%VideoProps;
 
 export const RemotionRoot: React.FC = () => {
-  const { width, height } = sizeFor("landscape");
+  const { width, height } = sizeFor("%%SIZE%%");
   return (
     <Composition
       id={COMPOSITION_ID}

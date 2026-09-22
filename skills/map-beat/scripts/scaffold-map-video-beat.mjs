@@ -4,6 +4,7 @@
 //
 // Usage:  bun skills/map-beat/scripts/scaffold-map-video-beat.mjs --type <type> --beat proof/video-<type>-<subject>
 //           --static proof/<static-beat> [--component <PascalName>]
+//           [--size landscape|portrait|square]  the slot's own size; landscape when omitted
 //
 // OPTIONAL, by the owner's rule: a beat may be written by hand, and the scaffold must never constrain the creative
 // part. The cold test (`.superpowers/sdd/cold-test-map-friction.md`, F8) measured ~500 of a map video's ~1,000 lines as
@@ -74,6 +75,7 @@ import { join as chainJoin, relative as chainRelative } from "node:path";
 import { choreographyFrame, parseTypeSheet } from "#shared/editorial/frame.mjs";
 import { replaceSection } from "#shared/editorial/derived.mjs";
 import { directionReachable, directionRefusalMessage } from "#shared/design-base/run-direction.mjs";
+import { EXPORT_SIZE_NAMES, sizeFor } from "#shared/chart-video/sizes.mjs";
 import { checkChoreography, renderChoreographySection } from "./choreography.mjs";
 import { readPalette } from "./colour.mjs";
 import { checkPrecision, renderPrecisionSection, scaffoldRequirements } from "./precision.mjs";
@@ -145,6 +147,28 @@ export function assertRunDirection(root, beatDir, filed) {
 const HERE = import.meta.dirname;
 const SKILL = "map-beat";
 const TEMPLATES = join(HERE, "..", "assets", "video-beat-scaffold");
+/**
+ * THE SIZE IS THE SLOT'S, and it is not a default anything falls back to silently.
+ *
+ * `SIZES` draws three — landscape for YouTube and an article's column, portrait for stories, square
+ * for a feed post — chosen at gate 2c and recorded on the slot. This scaffold wrote `landscape` into
+ * four places and took no flag, so a journalist whose slot said `portrait` received a landscape beat
+ * and had to hand-edit the composition's id, Root.tsx, build.mjs and the BRIEF. Landscape stays the
+ * default because it is the commonest, and `--size` is how the other two are asked for.
+ */
+export const DEFAULT_SIZE = "landscape";
+
+/** Refuses a size the table does not draw, naming the three — the `sizeFor` precedent. */
+export function assertSize(size) {
+  if (!EXPORT_SIZE_NAMES.includes(size))
+    throw new Error(
+      `--size takes one of ${EXPORT_SIZE_NAMES.join(", ")}, got ${JSON.stringify(size)}. ` +
+        "It is chosen at gate 2c and recorded on the slot in STORYBOARD.md; it is not a default " +
+        "anything may fall back to.",
+    );
+  return size;
+}
+
 export const DEFAULT_ROOT = resolve(HERE, "..", "..", "..");
 
 /** Template file → the file it becomes; `%%Name%%` is the component's name. */
@@ -203,7 +227,7 @@ function proofDirOf(root, given, flag) {
 }
 
 /** Every value the templates carry, derived and validated. */
-export function tokensFor({ root, skill, medium, type, beat, staticBeat, component }) {
+export function tokensFor({ root, skill, medium, type, beat, staticBeat, component, size = DEFAULT_SIZE }) {
   if (!KEBAB.test(type ?? "")) throw new Error(`--type must be a kebab-case map type, got ${JSON.stringify(type)}`);
   const beatDir = proofDirOf(root, beat, "--beat");
   const staticDir = proofDirOf(root, staticBeat, "--static");
@@ -227,7 +251,9 @@ export function tokensFor({ root, skill, medium, type, beat, staticBeat, compone
       CONST: name.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase(),
       BEAT: basename(beatDir),
       BEAT_PATH: relative(root, beatDir).split(sep).join("/"),
-      COMPOSITION: `${basename(beatDir).replace(/^\./, "")}-landscape`,
+      COMPOSITION: `${basename(beatDir).replace(/^\./, "")}-${size}`,
+      SIZE: size,
+      SIZE_PX: `${sizeFor(size).width} × ${sizeFor(size).height}`,
       TYPE: type,
       MEDIUM: medium,
       SKILL: skill,
@@ -252,11 +278,12 @@ export function fill(template, values) {
  * even when it appeared since the check) and each file written with an exclusive flag.
  * @returns {string[]} the files written, relative to the beat
  */
-export function scaffoldBeat({ root = DEFAULT_ROOT, templates, files, skill, medium, type, beat, staticBeat, component, filed = false }) {
+export function scaffoldBeat({ root = DEFAULT_ROOT, templates, files, skill, medium, type, beat, staticBeat, component, filed = false, size = DEFAULT_SIZE }) {
   // No `--from` provenance here: this scaffold fills its own templates rather than adapting
   // another beat's code, so the empty choreography section carries the frame and nothing else.
   const scaffoldedFrom = "";
-  const { beatDir, staticDir, values } = tokensFor({ root, skill, medium, type, beat, staticBeat, component });
+  assertSize(size);
+  const { beatDir, staticDir, values } = tokensFor({ root, skill, medium, type, beat, staticBeat, component, size });
   const planned = Object.entries(files).map(([template, target]) => [fill(target, values), fill(readFileSync(join(templates, template), "utf8"), values)]);
   // The chain, read before a single file exists on disk (see "THE EDITORIAL CHAIN, WIRED" above).
   const briefAt = planned.findIndex(([target]) => target === "BRIEF.md");
@@ -286,7 +313,7 @@ export function scaffoldBeat({ root = DEFAULT_ROOT, templates, files, skill, med
 }
 
 export function parseArgs(argv) {
-  const known = new Set(["--type", "--beat", "--static", "--component", "--filed"]);
+  const known = new Set(["--type", "--beat", "--static", "--component", "--filed", "--size"]);
   const out = {};
   for (let i = 0; i < argv.length; ) {
     // `--filed` is the catalogue-only escape from the DIRECTION.md refusal, and it is the
@@ -308,7 +335,7 @@ export function parseArgs(argv) {
 if (import.meta.main) {
   try {
     const args = parseArgs(process.argv.slice(2));
-    const written = scaffoldBeat({ templates: TEMPLATES, files: FILES, skill: SKILL, medium: "map", type: args.type, beat: args.beat, staticBeat: args.static, component: args.component, filed: Boolean(args.filed) });
+    const written = scaffoldBeat({ templates: TEMPLATES, files: FILES, skill: SKILL, medium: "map", type: args.type, beat: args.beat, staticBeat: args.static, component: args.component, filed: Boolean(args.filed), size: args.size ?? DEFAULT_SIZE });
     console.log(
       `scaffolded ${args.beat}:\n  ${written.join("\n  ")}\n\nNext: BRIEF.md's choreography, the plan's bounds and layers, then measure.mjs with the .env loaded, then the SCAFFOLD stubs (grep -n SCAFFOLD ${args.beat}).`,
     );
