@@ -72,9 +72,15 @@ to one Engine plan/apply transaction. Engine owns dependency and compatible-brow
 the no-value smoke gate, direct skill projections, Goose registration, receipts, doctor, repair,
 and uninstall. Do not add a second Splash lifecycle or mutate those paths after Engine commits.
 
-Engine projects every directory under `skills/` containing `SKILL.md` as one flat link in the shared
-agents store. Derive that inventory from the filesystem; do not maintain another hard-coded skill
-list. `install-set.txt` is the only product-boundary file: it names the directories a runtime needs.
+Engine projects every directory under `skills/` containing `SKILL.md` into the shared agents store,
+under this product's own namespace — `~/.agents/skills/splash/<id>` — and then places a per-runtime
+adapter over that namespace for each runtime present. Claude Code gets a generated plugin root at
+`~/.claude/skills/splash/`, because it does not scan a nested `<product>/<id>/SKILL.md`; Goose and
+Cursor read the canonical store directly; Pi gets one symlink of its own. Engine's
+`docs/engine/skill-placement.md` is the authority, and it measures each runtime's discovery before
+adding it. This paragraph used to claim "one flat link" and was wrong: an install verified on
+2026-09-23 places the namespace and the plugin root, and nothing flat. Derive the inventory from the
+filesystem; do not maintain another hard-coded skill list. `install-set.txt` is the only product-boundary file: it names the directories a runtime needs.
 README's "Install from source (agents)" section documents the unmanaged sparse-checkout path that
 uses it; a later managed install adopts or replaces those links. There is no other placement code
 in this repository: Engine owns projection and runtime adapters (`docs/engine/skill-placement.md`).
