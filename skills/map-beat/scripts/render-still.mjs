@@ -528,14 +528,67 @@ export function measureTextBand(text, options) {
  * `transform`, because a rotated string's box is not its advance width. `text-anchor` is read,
  * because an end-anchored label legitimately sits at an x its own width exceeds.
  */
+/** The glyphs an XML text node stands for — entities decoded, so a width is measured on what a
+ * reader sees rather than on the escape that encodes it. */
+function unescapeXml(text) {
+  return text
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCodePoint(Number.parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec) => String.fromCodePoint(Number.parseInt(dec, 10)))
+    .replace(/&quot;/g, '"')
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
+}
+
+/**
+ * The offsets in this file's `x` attributes are the frame's own only while nothing above has moved
+ * them. A `<g transform="translate(372,32)">` — which every baked map plate draws inside — puts its
+ * children in a coordinate space this guard cannot reach with a regex, and measuring their raw `x`
+ * reported labels running from −83 to −15 on a beat that draws them perfectly well. So the spans of
+ * the document that sit under a transformed group are marked, and text inside them is left alone,
+ * exactly as text carrying its own `transform` is.
+ */
+function transformedSpans(svg) {
+  const spans = [];
+  let depth = 0;
+  let openedAt = -1;
+  for (const m of svg.matchAll(/<(\/?)g\b([^>]*)>/g)) {
+    const closing = m[1] === "/";
+    if (closing) {
+      if (depth > 0) {
+        depth -= 1;
+        if (depth === 0 && openedAt >= 0) {
+          spans.push([openedAt, m.index + m[0].length]);
+          openedAt = -1;
+        }
+      }
+      continue;
+    }
+    if (m[2].endsWith("/")) continue;
+    if (depth > 0) depth += 1;
+    else if (/transform="/.test(m[2])) {
+      depth = 1;
+      openedAt = m.index;
+    }
+  }
+  return spans;
+}
+
 export function assertWithinFrame(svg, width, { what = "this render" } = {}) {
   const outside = [];
+  const moved = transformedSpans(svg);
+  const isMoved = (at) => moved.some(([from, to]) => at >= from && at < to);
   for (const m of svg.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)) {
     const attrs = m[1];
-    if (/transform="/.test(attrs)) continue;
+    if (/transform="/.test(attrs) || isMoved(m.index)) continue;
     const x = Number(/\bx="(-?\d+(?:\.\d+)?)"/.exec(attrs)?.[1]);
     const fontSize = Number(/font-size="(\d+(?:\.\d+)?)"/.exec(attrs)?.[1] ?? 0);
-    const words = m[2].replace(/<[^>]*>/g, "").trim();
+    // The MARKUP is not the string a reader sees. `&#x27;` is six characters here and one glyph on
+    // the page, and measuring the escape rather than the apostrophe reported a title 125px wider
+    // than it draws — which is how this guard's own first sweep produced false positives on beats
+    // that fit perfectly well.
+    const words = unescapeXml(m[2].replace(/<[^>]*>/g, "")).trim();
     if (!Number.isFinite(x) || !fontSize || !words) continue;
     const fontWeight = Number(/font-weight="(\d+)"/.exec(attrs)?.[1] ?? 400);
     const drawn = measureText(words, { fontSize, fontWeight });

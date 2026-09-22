@@ -609,3 +609,45 @@ describe("text that does not fit the frame", () => {
     expect((await stat(pngPath)).size).toBeGreaterThan(0);
   });
 });
+
+/**
+ * THE TWO WAYS THIS GUARD LIED, BOTH FOUND BY SWEEPING THE DELIVERED CORPUS WITH IT.
+ *
+ * Its first sweep of 166 delivered SVGs reported 17 clipped. Thirteen of those were the guard's
+ * own fault, in two distinct ways, and both are pinned here — a guard that cries wolf is removed
+ * by whoever it interrupts, which costs more than the defect it was written for.
+ */
+describe("what the frame guard must not refuse", () => {
+  it("measures the glyph an entity stands for, not the escape that writes it", async () => {
+    // `&#x27;` is six characters of markup and one apostrophe on the page. Measuring the markup
+    // reported a title 125px wider than it draws.
+    const text = "France's per-capita emissions, told plainly";
+    const element = createElement(
+      "svg",
+      { width: 1080, height: 400, viewBox: "0 0 1080 400", xmlns: "http://www.w3.org/2000/svg" },
+      createElement("rect", { x: 0, y: 0, width: 1080, height: 400, fill: "#FFFFFF" }),
+      createElement("text", { x: 40, y: 120, fill: "#111111", fontSize: 40, fontWeight: 700 }, text),
+    );
+    const markup = renderToStaticMarkup(element);
+    expect(markup).toContain("&#x27;");
+    const { pngPath } = await renderStill({ element, width: 1080, height: 400, outDir, name: "entity" });
+    expect((await stat(pngPath)).size).toBeGreaterThan(0);
+  });
+
+  it("leaves alone a label a transformed group has moved", async () => {
+    // Every baked map plate draws its labels inside a `<g transform="translate(...)">`. Their raw
+    // `x` is not the frame's, and reading it as if it were reported labels at −83.
+    const element = createElement(
+      "svg",
+      { width: 900, height: 400, viewBox: "0 0 900 400", xmlns: "http://www.w3.org/2000/svg" },
+      createElement("rect", { x: 0, y: 0, width: 900, height: 400, fill: "#FFFFFF" }),
+      createElement(
+        "g",
+        { transform: "translate(400,32)" },
+        createElement("text", { x: -300, y: 60, fill: "#111111", fontSize: 20 }, "Sweden 3.5"),
+      ),
+    );
+    const { pngPath } = await renderStill({ element, width: 900, height: 400, outDir, name: "moved" });
+    expect((await stat(pngPath)).size).toBeGreaterThan(0);
+  });
+});
