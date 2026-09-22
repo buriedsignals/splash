@@ -92,3 +92,55 @@ describe("the free parameter", () => {
     expect(() => assertInteractionPlan(PAGE, plan(control()) as never, "the ranking")).not.toThrow();
   });
 });
+
+/**
+ * AND IT HAS TO REACH THE DELIVERED FILE.
+ *
+ * `verify-web.mjs` reads an HTML page and has no access to the beat's render module, so a
+ * declaration that stays in the module is a declaration no driven browser can check — which is how
+ * `heldStill` would have stayed exactly as unverifiable as the prose it replaces. Everything else
+ * this format guards is discovered off the markup the same way: `shippedControls` finds a control
+ * because the attribute that makes it work is there, `plotViewBoxOf` reads the geometry the
+ * component actually drew.
+ */
+import { stampFreeParameters } from "../scripts/render-web.mjs";
+
+describe("the declaration a delivered page carries", () => {
+  const markup = `<figure class="chart-figure"><svg class="chart"></svg></figure>`;
+
+  it("stamps each control's parameter and everything held still", () => {
+    const out = stampFreeParameters(markup, {
+      earns: "x",
+      controls: [
+        { parameter: "the reference year", heldStill: [".x-axis", ".chart-total"] },
+        { parameter: "which mark is in question", heldStill: [".chart-plot"] },
+      ],
+    });
+    expect(out).toContain('data-free-parameter="the reference year|which mark is in question"');
+    expect(out).toContain('data-held-still=".x-axis|.chart-total|.chart-plot"');
+  });
+
+  it("names a selector once however many controls hold it", () => {
+    const out = stampFreeParameters(markup, {
+      earns: "x",
+      controls: [
+        { parameter: "a", heldStill: [".chart-plot"] },
+        { parameter: "b", heldStill: [".chart-plot"] },
+      ],
+    });
+    expect(out.match(/\.chart-plot/g)).toHaveLength(1);
+  });
+
+  it("leaves a page with no plan exactly as it was", () => {
+    expect(stampFreeParameters(markup, null)).toBe(markup);
+  });
+
+  it("escapes a parameter carrying a quote, so the attribute cannot be broken out of", () => {
+    const out = stampFreeParameters(markup, {
+      earns: "x",
+      controls: [{ parameter: `the "author's" cut`, heldStill: [".a"] }],
+    });
+    expect(out).toContain("&quot;");
+    expect(out).toMatch(/^<figure class="chart-figure" data-free-parameter="[^"]*" data-held-still="[^"]*">/);
+  });
+});

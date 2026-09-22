@@ -180,6 +180,10 @@ async function renderWeb({ component, props, outDir, name, frame = null, drawing
   // it declares a filter — by DOING it, here by tagging its own layers with `data-entrance-motion`
   // — and a beat that declares none gets no keyframes, no rules and no class ever added. See
   // `buildCss`'s own `entranceRules`.
+  // The free-parameter declaration is stamped onto the figure before the document is assembled, so
+  // both assembly passes and the delivered file all carry it.
+  markup = stampFreeParameters(markup, props.interaction ?? null);
+
   const declaresEntrance = /\sdata-entrance-motion="/.test(markup);
 
   const interactionSource = await readFile(
@@ -278,6 +282,35 @@ function assertLanguageTag(lang) {
       `lang must be a BCP 47 tag such as "fr" or "en-GB"; got ${JSON.stringify(lang)}. ` +
         `A beat takes it from its story's own STORYBOARD.md \`language:\` field — the code, never the language's name.`,
     );
+}
+
+/**
+ * THE DECLARATION TRAVELS WITH THE PAGE, as two attributes on the figure.
+ *
+ * `verify-web.mjs` reads a delivered HTML file and has no access to the beat's render module, so a
+ * declaration that stays in the module is one no driven browser can check — which would have left
+ * `heldStill` exactly as unverifiable as the prose it replaces. Everything else this format guards
+ * is discovered off the markup the same way: `shippedControls` finds a control because the
+ * attribute that makes it work is there, `plotViewBoxOf` reads the geometry the component actually
+ * drew. This is that contract, for the one clause the whole catalogue writes in prose — « sous une
+ * légende qui ne change pas », "the two ends of every band stay exactly where they are" — and that
+ * nothing had ever measured.
+ */
+/** `escapeHtml` is written for TEXT and leaves `"` alone, which is fine between tags and is an
+ *  injection inside a double-quoted attribute. These two values are the beat's own words, so the
+ *  quote is escaped here rather than widening the shared helper under every other caller. */
+const attributeValue = (text) => escapeHtml(text).replace(/"/g, "&quot;");
+
+function stampFreeParameters(markup, plan) {
+  if (!plan || !Array.isArray(plan.controls) || plan.controls.length === 0) return markup;
+  const parameters = plan.controls.map((control) => control.parameter).filter(Boolean);
+  const held = [...new Set(plan.controls.flatMap((control) => control.heldStill ?? []))];
+  if (parameters.length === 0 && held.length === 0) return markup;
+  return markup.replace(
+    /<figure class="chart-figure"/,
+    `<figure class="chart-figure" data-free-parameter="${attributeValue(parameters.join("|"))}"` +
+      ` data-held-still="${attributeValue(held.join("|"))}"`,
+  );
 }
 
 /** The one shape of the document every web beat is written into. Exported so the language it
@@ -1246,6 +1279,7 @@ export {
   render,
   renderWeb,
   webDocument,
+  stampFreeParameters,
   MAP_DRAWING_SHARE,
   foldProseIntoDisclosure,
   assertDrawingShare,
