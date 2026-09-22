@@ -11,6 +11,7 @@
 //
 // What it writes, only after every check passes:
 //   <storyDir>/beats/<slotId>/data.json     — compact {schemaVersion, slot, columns, rows, meta}
+//   <storyDir>/beats/<slotId>/data.csv      — the same carried rows, as every runner in the corpus reads them
 //   <storyDir>/beats/<slotId>/DATA-NOTES.md — derivations, exclusions, profile-column citations
 //
 // `data.json`'s `meta` records the sha256 of the three inputs it was built from. On a later run
@@ -125,6 +126,31 @@ function applyPopulation(slot, columns, rows, slotId) {
   }
 
   return { rows: kept, excluded: rows.length - kept.length, said: said.join(", ") || null };
+}
+
+/**
+ * THE SAME ROWS, IN THE FORM EVERY RUNNER IN THE CORPUS READS.
+ *
+ * `scaffold-static-beat.mjs` scans the worked example it adapts for the files that example's own
+ * code reads and refuses when they are not beside the beat — which is right, since copying a runner
+ * whose data is missing produces a beat that cannot run. Every chart worked example reads
+ * `data.csv`. The contract was `data.json` alone, so no story beat could be scaffolded at all, and
+ * the scaffold is the only thing that writes `BRIEF.md` — without which `OUTPUT-REVIEW.json` cannot
+ * bind and gate G3 can never close.
+ *
+ * So both forms are written, from one list of rows in one call: they cannot drift. A null is an
+ * empty cell, because that is what a missing reading looks like in a CSV and turning it into the
+ * word "null" would invent a value (references/data-rules.md).
+ */
+function renderCsv(columns, rows) {
+  const cell = (value) => {
+    if (value === null || value === undefined) return "";
+    const written = String(value);
+    return /[",\n\r]/.test(written) ? `"${written.replace(/"/g, '""')}"` : written;
+  };
+  const lines = [columns.map((column) => cell(column.name)).join(",")];
+  for (const row of rows) lines.push(row.map(cell).join(","));
+  return `${lines.join("\n")}\n`;
 }
 
 export function slotRefusal(meta, slotId) {
@@ -271,10 +297,12 @@ export async function buildData({
 
   await fs.mkdir(beatDir, { recursive: true });
   const dataPath = join(beatDir, "data.json");
+  const csvPath = join(beatDir, "data.csv");
   const notesPath = join(beatDir, "DATA-NOTES.md");
   await fs.writeFile(dataPath, JSON.stringify(artifact));
+  await fs.writeFile(csvPath, renderCsv(columns, population.rows));
   await fs.writeFile(notesPath, notes);
-  return { wrote: [dataPath, notesPath], artifact };
+  return { wrote: [dataPath, csvPath, notesPath], artifact };
 }
 
 // Numbers arrive as numbers; dates and text stay strings. Typing comes from the FROZEN PROFILE —
@@ -326,6 +354,13 @@ function renderNotes({ slotId, columns, rows, hashes, population, frozenRowCount
       "- That absence is a state, not a silence: whichever rows the beat draws are chosen in its component and written down nowhere.",
     );
   }
+  lines.push("");
+  lines.push("## The two forms");
+  lines.push("");
+  lines.push("- `data.json` is the typed contract, with its own meta and hashes.");
+  lines.push(
+    "- `data.csv` holds the same carried rows, because every worked example's runner in this corpus reads a CSV beside the beat — one call writes both, so they cannot drift.",
+  );
   lines.push("");
   lines.push("## Profile citations");
   lines.push("");

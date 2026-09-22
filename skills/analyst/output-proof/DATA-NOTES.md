@@ -22,6 +22,11 @@ rebuild rather than touch.
 - None. All 11 frozen rows are carried, because no population is recorded on the slot.
 - That absence is a state, not a silence: whichever rows the beat draws are chosen in its component and written down nowhere.
 
+## The two forms
+
+- `data.json` is the typed contract, with its own meta and hashes.
+- `data.csv` holds the same carried rows, because every worked example's runner in this corpus reads a CSV beside the beat — one call writes both, so they cannot drift.
+
 ## Profile citations
 
 - `year` typed `number` from `source/profile.json`.

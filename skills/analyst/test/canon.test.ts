@@ -132,10 +132,14 @@ ${slot}
     await writeFile(join(dir, "STORYBOARD.md"), text);
   }
 
-  it("should write the artifact and notes on a closed slot", async () => {
+  it("should write the artifact, its CSV twin and the notes on a closed slot", async () => {
     await seed();
     const { wrote } = await buildData({ storyDir: dir, slotId: "1" });
-    expect(wrote.length).toBe(2);
+    // THREE, not two: `data.csv` holds the same carried rows, because every worked example's
+    // runner in this corpus reads a CSV beside the beat, and without it no story beat could be
+    // scaffolded — which is what writes BRIEF.md, without which gate G3 can never close.
+    expect(wrote.length).toBe(3);
+    expect(wrote.some((path: string) => path.endsWith("data.csv"))).toBe(true);
     const artifact = JSON.parse(await readFile(wrote[0], "utf8"));
     expect(artifact.schemaVersion).toBe(1);
     expect(artifact.columns).toEqual([
@@ -272,7 +276,7 @@ describe("output proof is current", () => {
         await readFile(join(fixture, "profile.json")),
       );
       await buildData({ storyDir: story, slotId: "1" });
-      for (const name of ["data.json", "DATA-NOTES.md"]) {
+      for (const name of ["data.json", "data.csv", "DATA-NOTES.md"]) {
         const fresh = await readFile(join(story, "beats", "1", name), "utf8");
         const proof = await readFile(join(SKILL, "output-proof", name), "utf8");
         expect(fresh).toBe(proof);

@@ -195,3 +195,48 @@ describe("the population a slot records", () => {
     expect(notes).toContain("no population is recorded on the slot");
   });
 });
+
+/**
+ * O7 — THE CONTRACT A STORY BEAT CANNOT BE SCAFFOLDED FROM.
+ *
+ * `scaffold-static-beat.mjs` scans the worked example it adapts for the files that example's own
+ * runner reads, and refuses when they are not beside the beat. That rule is right: copying a runner
+ * whose data is missing produces a beat that cannot run. But every chart worked example reads
+ * `data.csv`, and the analyst wrote only `data.json`, so no story beat could be scaffolded — and
+ * the scaffold is the only thing that writes `BRIEF.md`, without which `OUTPUT-REVIEW.json` cannot
+ * bind and gate G3 can never close. The run of 2026-09-23 got past it only by writing the brief
+ * by hand.
+ *
+ * So the contract carries both forms of the same rows: `data.json` typed, with its meta, and
+ * `data.csv` as every runner in the corpus expects to read it. They cannot drift — one call writes
+ * both from one list of rows.
+ */
+describe("the two forms of the contract", () => {
+  it("writes the carried rows as a CSV beside the JSON, so a scaffold can adapt any worked example", async () => {
+    await writeFile(
+      join(storyDir, "STORYBOARD.md"),
+      storyboard(
+        "    populationKey: town\n    populationPeriod: 2024\n    population: [Alder, Birch, Cedar]\n",
+      ),
+    );
+    const { wrote } = await buildData({ storyDir, slotId: "three-towns" });
+    expect(wrote.some((p: string) => p.endsWith("data.csv"))).toBe(true);
+
+    const csv = await readFile(beatFile("data.csv"), "utf8");
+    const lines = csv.trim().split("\n");
+    expect(lines[0]).toBe("town,year,outage_hours");
+    // The population is applied once, to both forms: three towns, one period.
+    expect(lines).toHaveLength(4);
+    expect(lines[1]).toBe("Alder,2024,412");
+
+    const contract = JSON.parse(await readFile(beatFile("data.json"), "utf8"));
+    expect(contract.rows).toHaveLength(lines.length - 1);
+  });
+
+  it("writes a blank for a null, because an empty cell is what a missing reading looks like in a CSV", async () => {
+    await writeFile(join(storyDir, "STORYBOARD.md"), storyboard(""));
+    await buildData({ storyDir, slotId: "three-towns" });
+    const csv = await readFile(beatFile("data.csv"), "utf8");
+    expect(csv).not.toContain("null");
+  });
+});
