@@ -1,8 +1,9 @@
 import { createHash, randomUUID } from "node:crypto";
 import { blockingGap } from "./finding-severity.mjs";
-import { lstatSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, lstatSync, readFileSync, readdirSync } from "node:fs";
 import { rename, rm, writeFile } from "node:fs/promises";
-import { basename, join } from "node:path";
+import { basename, join, relative } from "node:path";
+import { parseBriefFrontMatter } from "#shared/chart-beat/sizes.mjs";
 
 export const OUTPUT_REVIEW_FILE = "OUTPUT-REVIEW.json";
 export const OUTPUT_REVIEW_SCHEMA_VERSION = 1;
@@ -318,6 +319,52 @@ export function requireApprovedOutput({ beatDir, planVersion: version, findingId
   });
 }
 
+/**
+ * A WEB BEAT IS APPROVABLE ONLY ONCE IT HAS SAID WHAT IT HANDS THE READER.
+ *
+ * The web export exists to hand back a parameter a still, a video and a scrolly are each forced to
+ * settle on the reader's behalf — a threshold, a bin width, a unit, a reference year, a pivot, a
+ * class rule, a denominator, a dot value. A page that has not said which one is a still with a
+ * stylesheet. Spec: `docs/superpowers/specs/2026-09-23-web-free-parameter-design.md`.
+ *
+ * HERE, AND NOT EARLIER, and each alternative was considered and rejected: at scaffold time nothing
+ * exists to check; at render time an author could not look at their own draft, which is how a
+ * discipline turns into a workaround; and enrolling scaffolded beats in the L5 census would turn
+ * this repository red on every unfinished scratch beat under `proof/` — and would still never see a
+ * journalist's story, which lives in the install root. G3 is where a beat becomes approvable, and an
+ * unfinished beat is not red here, it is simply not yet approvable.
+ *
+ * Silent on a beat that is not web, and on a beat with no BRIEF front matter to read — the refusal
+ * this file owes is about what a web beat declares, not about whether a directory is a beat.
+ */
+export function assertWebBeatDeclaresItsFreeParameter(beatDir) {
+  const brief = join(beatDir, "BRIEF.md");
+  if (!existsSync(brief)) return;
+  const record = parseBriefFrontMatter(readFileSync(brief, "utf8"));
+  if (record?.format !== "web") return;
+  const where = relative(process.cwd(), beatDir) || beatDir;
+  const runner = readdirSync(beatDir).find((file) => /^render-.*web\.mjs$/.test(file));
+  const source = runner ? readFileSync(join(beatDir, runner), "utf8") : "";
+  const block = /\nconst interaction = \{[\s\S]*?\n\};\n/.exec(source);
+  if (!block)
+    throw new Error(
+      `${where} is a web beat and declares no interaction: its render module carries no ` +
+        "`const interaction = { … }`. The web export exists to hand the reader a parameter a still, " +
+        "a video and a scrolly are each forced to settle on their behalf; a page that has not said " +
+        "which one is a still with a stylesheet " +
+        "(docs/superpowers/specs/2026-09-23-web-free-parameter-design.md).",
+    );
+  const owed = ["parameter", "authorPicked", "readerPicks", "heldStill"].filter(
+    (field) => !new RegExp(`\\b${field}:`).test(block[0]),
+  );
+  if (owed.length)
+    throw new Error(
+      `${where}: its interaction declares no ${owed.map((f) => `\`${f}\``).join(", ")}. A web beat ` +
+        "names the free parameter, what the fixed frame had to pick, what the reader can put it at, " +
+        "and what does not move while it moves.",
+    );
+}
+
 /** Atomically serialize a review. This records QA supplied by its caller; it never runs QA itself. */
 export async function writeOutputReview({
   beatDir,
@@ -352,6 +399,7 @@ export async function writeOutputReview({
   };
   validateOutputReview(record);
   if (decision === "approve") {
+    assertWebBeatDeclaresItsFreeParameter(beatDir);
     approvalAgainstCurrent(record, {
       beatDir,
       expectedPlanVersion: version,

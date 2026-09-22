@@ -522,7 +522,13 @@ export function Directed%%Name%%Web({
 }
 `;
 
-const BRIEF = `# %%BEAT%% — brief
+const BRIEF = `---
+format: web
+type: %%TYPE%%
+medium: chart
+---
+
+# %%BEAT%% — brief
 
 Type: \`%%TYPE%%\` · format: web · static sibling: \`%%STATIC_PATH%%\`
 Type sheet: \`skills/chart-web/references/types/%%TYPE%%.md\`
