@@ -213,6 +213,10 @@ export function tokensFor({ root, type, beat, staticBeat, component, sheets = SH
       BEAT_PATH: relative(root, beatDir).split(sep).join("/"),
       TYPE: type,
       STATIC: basename(staticDir),
+      // WHERE THE SIBLING ACTUALLY IS. The brief used to write `proof/<name>` whatever the
+      // sibling's real home; on a story beat that is a false statement in a file the journalist
+      // reads. `beats/<name>` when it is one, the catalogue's own path otherwise.
+      STATIC_PATH: `${basename(dirname(staticDir))}/${basename(staticDir)}`,
       UP: relative(beatDir, root).split(sep).join("/"),
     },
   };
@@ -516,7 +520,7 @@ export function Directed%%Name%%Web({
 
 const BRIEF = `# %%BEAT%% — brief
 
-Type: \`%%TYPE%%\` · format: web · static sibling: \`proof/%%STATIC%%\`
+Type: \`%%TYPE%%\` · format: web · static sibling: \`%%STATIC_PATH%%\`
 Type sheet: \`skills/chart-web/references/types/%%TYPE%%.md\`
 
 ## The takeaway
