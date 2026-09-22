@@ -1474,6 +1474,36 @@ async function checkControlSurface(page, darkroom, vp, { scripting = true } = {}
       ? await baselineOf(page, darkroom, geometry.get(initial.id).clip)
       : null;
 
+    // R5 — EVERY VALUE OF THE PARAMETER PAINTS ITS OWN PICTURE.
+    //
+    // `assertEventStates` transposed. A video compares state(i) to state(i-1) across its whole
+    // sequence; a page has no sequence, but it has the values of ONE parameter, and the comparison
+    // is exactly as mechanical. Until now each option was compared to the LANDING VIEW only, so two
+    // options producing the same drawing both passed — which is how a page can offer a reader three
+    // choices and give them two answers.
+    const framesByOption = new Map();
+
+    // R6 — AND WHAT THE BEAT SAID WOULD NOT MOVE, DOES NOT.
+    //
+    // The clause every authored `earns` in the catalogue carries — « sur un terrain dont aucun carré
+    // ne bouge », « sous une légende qui ne change pas », "the two ends of every band stay exactly
+    // where they are" — and the one nothing had ever measured. DECLARED as selectors rather than
+    // inferred from what happens to be stable: inferring it would report whatever is stable as if it
+    // had been promised, which is the same weakness as asking only whether a reading is new.
+    const heldSelectors = await page.evaluate(() => {
+      const figure = document.querySelector(".chart-figure[data-held-still]");
+      const raw = figure ? figure.getAttribute("data-held-still") : "";
+      return raw ? raw.split("|").filter(Boolean) : [];
+    });
+    const heldAtRest = new Map();
+    for (const selector of heldSelectors) {
+      const box = await boxOf(selector);
+      if (!box || box.width < 1 || box.height < 1) continue;
+      const clip = { x: box.x, y: box.y, width: box.width, height: box.height };
+      heldAtRest.set(selector, { clip, frame: await shot(clip) });
+    }
+    const heldBroken = new Map();
+
     // ── each option, chosen for real ─────────────────────────────────────────────────────────────
     const notesDrawnSomewhere = new Set();
     for (const option of control.options) {
@@ -1542,6 +1572,11 @@ async function checkControlSurface(page, darkroom, vp, { scripting = true } = {}
 
       // (1) THE PICTURE REALLY CHANGED. The one check a control wired to nothing cannot pass.
       const plotNow = await shot(plotClip);
+      framesByOption.set(option.key, plotNow);
+      for (const [selector, rest] of heldAtRest) {
+        const moved = await apart(await shot(rest.clip), rest.frame);
+        if (moved > plotBase.floor) heldBroken.set(`${selector} @ "${option.key}"`, moved);
+      }
       const plotMoved = await apart(plotNow, plotAtRest);
       check(
         plotMoved > plotBase.floor,
@@ -1623,6 +1658,44 @@ async function checkControlSurface(page, darkroom, vp, { scripting = true } = {}
         `${moved} of ${chosenPillAtStart.totalPixels} pixels differ between its chosen and its rest frame, against a ${chosenPillAtStart.floor}-pixel floor${moved > chosenPillAtStart.floor ? "" : " — nothing marks the landing option"}`,
       );
     }
+
+    // ── R5: pairwise, over the values of this parameter ─────────────────────────────────────────
+    //
+    // The landing view is one of the values, so its own frame joins the comparison: an option that
+    // merely reproduces the view a reader landed on is as dead as two options reproducing each
+    // other, and only a pairwise sweep sees both.
+    const valueFrames = new Map([[`${initial.key ?? "the landing view"} (at rest)`, plotAtRest], ...framesByOption]);
+    const valueKeys = [...valueFrames.keys()];
+    const twins = [];
+    for (let i = 0; i < valueKeys.length; i++)
+      for (let j = i + 1; j < valueKeys.length; j++) {
+        const differ = await apart(valueFrames.get(valueKeys[i]), valueFrames.get(valueKeys[j]));
+        if (differ <= plotBase.floor)
+          twins.push(`"${valueKeys[i]}" and "${valueKeys[j]}" (${differ}px apart)`);
+      }
+    if (valueKeys.length >= 2)
+      check(
+        twins.length === 0,
+        `${who}: every value of this parameter paints its own picture`,
+        twins.length === 0
+          ? `${(valueKeys.length * (valueKeys.length - 1)) / 2} pairs compared, every one above this rectangle's ${plotBase.floor}-pixel floor`
+          : `${twins.join(", ")} — a reader who moves between them operates a control while the picture stands still`,
+      );
+
+    // ── R6: and what the beat said would not move, did not ──────────────────────────────────────
+    if (heldSelectors.length === 0)
+      skip(
+        `${who}: what this control holds still`,
+        "the beat declares no `heldStill` selectors, so there is nothing it promised to hold",
+      );
+    else
+      check(
+        heldBroken.size === 0,
+        `${who}: everything this beat holds still, holds`,
+        heldBroken.size === 0
+          ? `${heldAtRest.size} of ${heldSelectors.length} declared selector(s) identical at every value: ${[...heldAtRest.keys()].join(", ")}`
+          : [...heldBroken].map(([at, px]) => `${at} moved by ${px}px`).join(", "),
+      );
 
     // Every sentence in the note row belongs to an option a reader can actually choose. A note no
     // option reveals is markup nobody will ever read, and the row that reserves height for it is
