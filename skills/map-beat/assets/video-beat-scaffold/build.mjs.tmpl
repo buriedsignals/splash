@@ -18,6 +18,7 @@ import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
 import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
 import { composeDirections, report as reportComposition } from "#shared/design-base/compose.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
+import { directionReachable, readRunDirection } from "#shared/design-base/run-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { mapLabelFamily } from "#shared/map-beat/glyphs.mjs";
@@ -119,6 +120,27 @@ export function directionsFor(beat, { candidates = 1, filed = false, root = ROOT
   const all = filedDirections();
   if (filed) return { directions: all.map((d) => ({ label: labelOf(d.id), direction: d })), composition: null, note: "every filed demo direction (--filed): a catalogue proof, not a production render" };
   if (!(Number.isInteger(candidates) && candidates >= 1)) throw new Error(`candidates is a count of at least 1, got ${JSON.stringify(candidates)}`);
+  // THE RUN'S ONE ART DIRECTION COMES FIRST (ruling R-A). It was composed once for this story,
+  // from NEWSROOM.md and the subject, and written at the story root beside PALETTE.md. Every export
+  // of the run reads THAT file — the still, the video, this one, the scrolly — so two exports of
+  // one claim can never land in two palettes or two type ladders.
+  //
+  // Re-composing here instead is how they drift: the composer is fed `textPerRegister`, and an
+  // export's text is by definition not its siblings' text, so the same story composes a slightly
+  // different ladder per export and the four agree only by luck. Measured 2026-09-23 on a real
+  // story: the video re-composed and happened to match the still, which is exactly what makes this
+  // invisible until the day it does not.
+  //
+  // A beat with NO reachable DIRECTION.md is the catalogue, which composes its own — and `--filed`
+  // stays the catalogue's escape to the three demo directions.
+  if (candidates === 1 && directionReachable(HERE)) {
+    const run = readRunDirection(HERE);
+    return {
+      directions: [{ label: labelOf(run.id), direction: run }],
+      composition: null,
+      note: `the run's one art direction, read from ${run.source}`,
+    };
+  }
   const { newsroom, note } = newsroomOf(root);
   const composition = composeDirections({ newsroom, filed: all, beat: BEAT_FACTS, textPerRegister: textPerRegisterOf(beat.copy), limit: Math.max(3, candidates) });
   if (!composition.offered.length) throw new Error(`no composed direction holds up for this beat:\n${reportComposition(composition, { beat: BEAT_FACTS })}`);

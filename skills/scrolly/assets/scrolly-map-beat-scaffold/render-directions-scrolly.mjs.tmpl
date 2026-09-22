@@ -126,13 +126,26 @@ const composition = composeDirections({ newsroom, filed, beat: BEAT_FACTS, textP
 console.log(report(composition, { beat: BEAT_FACTS }));
 console.log("");
 
+// THE RUN'S ONE ART DIRECTION COMES FIRST (ruling R-A). It was composed once for this story, from
+// NEWSROOM.md and the subject, and written at the story root beside PALETTE.md. Every export of the
+// run reads THAT file, so two exports of one claim can never land in two palettes or two type
+// ladders. Re-composing here instead is how they drift: the composer is fed `textPerRegister`, and
+// an export's text is by definition not its siblings' text. A beat with NO reachable DIRECTION.md
+// is the catalogue, which composes its own; `--filed` stays the catalogue's escape to the three.
+const { directionReachable, readRunDirection } = await import("#shared/design-base/run-direction.mjs");
 const labelOf = (id) => id.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const chosen = FILED
   ? filed.map((d) => ({ id: labelOf(d.id), direction: d }))
-  : (() => {
-      if (!composition.offered.length) throw new Error(`no composed direction holds up for this beat:\n${report(composition, { beat: BEAT_FACTS })}`);
-      return [{ id: labelOf(composition.offered[0].id), direction: composition.offered[0] }];
-    })();
+  : directionReachable(HERE)
+    ? (() => {
+        const run = readRunDirection(HERE);
+        console.log(`the run's one art direction: ${run.id}\n  composed from: ${run.origin}\n  read from: ${run.source}\n`);
+        return [{ id: labelOf(run.id), direction: run }];
+      })()
+    : (() => {
+        if (!composition.offered.length) throw new Error(`no composed direction holds up for this beat:\n${report(composition, { beat: BEAT_FACTS })}`);
+        return [{ id: labelOf(composition.offered[0].id), direction: composition.offered[0] }];
+      })();
 if (ONLY && !chosen.some((c) => c.id === ONLY)) throw new Error(`--only takes one of ${chosen.map((c) => c.id).join(", ")}`);
 const toRender = chosen.filter((c) => !ONLY || c.id === ONLY);
 

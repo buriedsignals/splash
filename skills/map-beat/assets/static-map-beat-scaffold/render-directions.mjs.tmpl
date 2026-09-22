@@ -18,6 +18,7 @@ import { createElement } from "react";
 import { renderStill } from "#shared/chart-beat/render-still.mjs";
 import { readPalette } from "#shared/chart-beat/colour.mjs";
 import { composeDirections, filedDirections, report as composeReport, resolveDirectionFamilies } from "#shared/design-base/index.mjs";
+import { directionReachable, readRunDirection } from "#shared/design-base/run-direction.mjs";
 import { drawnSizeOf, assertPlateMatchesMarks } from "#shared/map-beat/geometry.mjs";
 import { validateExpressions } from "#shared/map-beat/mount.mjs";
 import { makePlan, validatePlan } from "#shared/map-beat/plan.mjs";
@@ -69,6 +70,12 @@ if (ONLY_AT !== -1 && (!ONLY || ONLY.startsWith("--"))) throw new Error("--only 
 
 // A composed direction's own `id` (e.g. "creme/creme/the newsroom" — colour/type/space) is not a filename;
 // a filed direction's is already a plain slug — labelOf makes both safe as `renders/<label>.png`.
+// THE RUN'S ONE ART DIRECTION COMES FIRST (ruling R-A). It was composed once for this story, from
+// NEWSROOM.md and the subject, and written at the story root beside PALETTE.md. Every export of the
+// run reads THAT file, so two exports of one claim can never land in two palettes or two type
+// ladders. Re-composing here instead is how they drift: the composer is fed `textPerRegister`, and
+// an export's text is by definition not its siblings' text. A beat with NO reachable DIRECTION.md
+// is the catalogue, which composes its own; `--filed` stays the catalogue's escape to the three.
 const labelOf = (id) => id.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const all = filedDirections();
 const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
@@ -78,6 +85,10 @@ let chosen;
 if (FILED) {
   chosen = all.map((d) => ({ label: labelOf(d.id), direction: d }));
   console.log("every filed demo direction (--filed): a catalogue proof, not a production render");
+} else if (directionReachable(HERE)) {
+  const run = readRunDirection(HERE);
+  console.log(`the run's one art direction: ${run.id}\n  composed from: ${run.origin}\n  read from: ${run.source}\n`);
+  chosen = [{ label: labelOf(run.id), direction: run }];
 } else {
   const composition = composeDirections({ newsroom, filed: all, beat: BEAT_FACTS, textPerRegister });
   if (!composition.offered.length) throw new Error(`no composed direction holds up for this beat:\n${composeReport(composition, { beat: BEAT_FACTS })}`);
