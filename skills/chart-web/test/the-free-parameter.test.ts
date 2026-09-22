@@ -144,3 +144,33 @@ describe("the declaration a delivered page carries", () => {
     expect(out).toMatch(/^<figure class="chart-figure" data-free-parameter="[^"]*" data-held-still="[^"]*">/);
   });
 });
+
+/**
+ * AND THE JOURNALIST IS ASKED UPSTREAM, BEFORE ANY CODE.
+ *
+ * The scaffold writes the empty table into `BRIEF.md`; it is the web analogue of the video's
+ * six-row event table. It asked for the gesture — a mechanism — and never for the thing the
+ * mechanism exists to hand back.
+ */
+import { renderChoreographySection } from "../scripts/choreography.mjs";
+import { chainFrameFor } from "../scripts/scaffold-web-beat.mjs";
+
+describe("what the BRIEF asks the journalist, upstream", () => {
+  const section = () => renderChoreographySection(chainFrameFor("bar-and-column").frame);
+
+  it("asks for the free parameter, what the fixed frame had to pick, and what is held still", () => {
+    expect(section()).toContain("| le paramètre libre |");
+    expect(section()).toContain("| ce que le fixe a dû trancher |");
+    expect(section()).toContain("| ce que le lecteur peut poser |");
+    expect(section()).toContain("| ce qui ne bouge pas |");
+  });
+
+  it("says why the last column is selectors and not a sentence", () => {
+    expect(section()).toMatch(/selectors|sélecteurs/i);
+  });
+
+  it("still names the closed repertoire, which this work does not touch", () => {
+    expect(section()).toContain("ask-a-mark");
+    expect(section()).toContain("the repertoire:");
+  });
+});
