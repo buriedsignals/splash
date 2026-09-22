@@ -628,3 +628,37 @@ describe("runPreflight — dependency-checking behaviour carried over unchanged"
     expect(report.ready).toBe(false);
   });
 });
+
+/**
+ * THE DOCUMENTED CALL IS A COMPLETE CALL.
+ *
+ * `env` defaults to `process.env` and `fetchFn`, beside it in the same destructuring, defaulted to
+ * nothing — so an agent calling `runPreflight({root})` the way SKILL.md writes it got every
+ * capability probe throwing `fetchFn is not a function`, surfaced to the journalist as a reason to
+ * go and obtain keys they already hold, while `ready` stayed `true`. Measured on 2026-09-22 with a
+ * valid MapTiler key in the environment: map and datawrapper both reported closed.
+ *
+ * The platform fetch is stubbed here rather than called: what this holds is that the default
+ * RESOLVES to it, not that maptiler.com answers.
+ */
+describe("preflight's own default", () => {
+  it("probes with the platform fetch when the caller passes none", async () => {
+    const original = globalThis.fetch;
+    let called = 0;
+    globalThis.fetch = (async () => {
+      called += 1;
+      return new Response("{}", { status: 200 });
+    }) as typeof globalThis.fetch;
+    try {
+      const report = await runPreflight({ root, env: { MAPTILER_KEY: "not-a-real-key" } });
+      for (const capability of Object.values(report.capabilities)) {
+        expect(String((capability as { reason?: string }).reason ?? "")).not.toContain(
+          "fetchFn is not a function",
+        );
+      }
+      expect(called).toBeGreaterThan(0);
+    } finally {
+      globalThis.fetch = original;
+    }
+  });
+});

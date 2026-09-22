@@ -173,7 +173,12 @@ async function checkCapability({ id, opens, canonicalEnv, env, probeFn, fetchFn,
   return { id, opens, available: result.ok, reason: result.detail, fill };
 }
 
-export async function runPreflight({ root, env = process.env, fetchFn, templateRoot = ROOT_TEMPLATE_DIR, newsroomPath = join(root, "NEWSROOM.md") }) {
+// `fetchFn` defaults for the same reason `env` does: this function is called from a skill, by an
+// agent reading SKILL.md, and a parameter the caller cannot know to pass is a parameter that will
+// not be passed. Left undefined it did not fail loudly — every capability probe threw, and the
+// throw was reported to the journalist as a reason to go and obtain a key they already had, with
+// `ready` still true. It stays an accepted parameter: tests inject their own.
+export async function runPreflight({ root, env = process.env, fetchFn = globalThis.fetch, templateRoot = ROOT_TEMPLATE_DIR, newsroomPath = join(root, "NEWSROOM.md") }) {
 	const dependencies = await checkDependencies(root, templateRoot);
 	const newsroom = await checkNewsroom(newsroomPath);
   const checks = [dependencies, newsroom];

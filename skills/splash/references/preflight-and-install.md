@@ -19,7 +19,8 @@ would never touch.
 | `DATAWRAPPER_TOKEN` | Datawrapper beats              | only if the story uses one                                                 |
 | Cloudflare Pages    | the hosted embed delivery form | never blocks the session — probed like the other two, opens a real form    |
 
-`runPreflight({root, env, fetchFn})` returns `{ready, blockers, checks, capabilities}`:
+`runPreflight({root})` returns `{ready, blockers, checks, capabilities}` — `env` defaults to the
+process environment and `fetchFn` to the platform `fetch`; both are parameters only a test injects:
 
 - `checks` holds only the two facts that can block the session outright: `dependencies` and
   `newsroom-profile`. `ready` is true exactly when neither is a blocker.

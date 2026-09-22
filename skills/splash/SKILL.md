@@ -54,7 +54,7 @@ owner's own skill or persona brief; this document duplicates no owner body.
   chat.
 - When a caller (human or agent) asks to skip a phase — refuse, report `missing` verbatim, and
   stop. A missing prerequisite is **reported**, never argued around, never designed around.
-- Once per session, before any story exists: call `runPreflight({root, env, fetchFn})`
+- Once per session, before any story exists: call `runPreflight({root})`
   (`scripts/preflight.mjs`) — a function, not a CLI (no `bin`/`import.meta.main` entrypoint); import
   it and call it, the way `references/preflight-and-install.md` and `skills/intake/SKILL.md`'s own
   `freezeSource` snippet do. It checks dependencies, `NEWSROOM.md`'s identity, and a **probed** (not
