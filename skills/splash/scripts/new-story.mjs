@@ -88,7 +88,34 @@ export async function ensureStoryGuidance({ storyDir }) {
   }
 }
 
+/**
+ * A root a beat cannot render from is not a root, and saying so here costs nothing. A story
+ * created in a bare directory walked intake, framing and storyboard and into production before
+ * anything noticed; the first symptom would have been an unresolved `#shared/...` specifier deep
+ * in a render, several gates after the mistake. `package.json` carries the `#shared/*` mapping and
+ * `shared/` is what it maps to, so those two are the whole question.
+ */
+async function assertRootCanRender(root) {
+  const missing = [];
+  for (const [name, said, wanted] of [
+    ["package.json", "package.json", "file"],
+    ["shared", "shared/", "directory"],
+  ]) {
+    try {
+      const found = await stat(join(root, name));
+      if (wanted === "directory" ? !found.isDirectory() : !found.isFile()) missing.push(said);
+    } catch {
+      missing.push(said);
+    }
+  }
+  if (missing.length === 0) return;
+  throw new Error(
+    `${root} is not a Splash root: it carries no ${missing.join(" and no ")}. A beat written there cannot resolve "#shared/..." and cannot render. Create the story under the root the installer provisioned, or run the installer against this one.`,
+  );
+}
+
 export async function createStory({ root, title }) {
+  await assertRootCanRender(root);
   const slug = slugify(title);
   if (!slug) {
     throw new Error(`title carries no usable content for a folder name`);
