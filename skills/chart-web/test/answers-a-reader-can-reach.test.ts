@@ -89,3 +89,53 @@ describe("a reading the interaction layer can actually reach", () => {
     expect(() => assertControlsChangeSomething(page("pt"), "the ranking")).not.toThrow();
   });
 });
+
+/**
+ * WHERE THE ANSWER IS DRAWN — the pure half of a rule that had been stated twice and measured never.
+ *
+ * `interaction.mjs` anchors the box on the mark rather than on the pointer, for reasons written in
+ * the file: the box for India sat over the United States, and on the grouped bar it floated at
+ * whatever height the hand happened to be. Both fixes anchored on the POINT, which is the mark
+ * exactly while the point is drawn at it — and a ranking cannot draw it there, because its
+ * twenty-seven rows share one x and every hit point has to sit at the same x for the pointer to
+ * resolve by row. The answer then rose in the right margin, a screen from the bar it named.
+ */
+import { placeOn } from "../assets/interaction.mjs";
+
+/** The shape `getBoundingClientRect` returns, in the fields `placeOn` reads. */
+const box = (left: number, top: number, width: number, height: number) => ({
+  left,
+  top,
+  width,
+  height,
+  right: left + width,
+  bottom: top + height,
+});
+
+describe("where the answer is drawn", () => {
+  it("keeps the point's own position when the point sits inside its mark", () => {
+    // A donut's arc, a radar's polygon, a column's own rect: the point is drawn ON the mark, and
+    // every beat shipped today is right for that reason. Moving it would break them.
+    const point = box(500, 300, 10, 10);
+    const arc = box(200, 100, 600, 600);
+    expect(placeOn(point, arc)).toEqual([505, 300]);
+  });
+
+  it("moves to the mark when the point is parked away from it", () => {
+    // A ranking's hit proxy in the right margin, and the bar it names near the left.
+    const proxy = box(980, 220, 10, 10);
+    const bar = box(190, 218, 60, 12);
+    expect(placeOn(proxy, bar)).toEqual([220, 218]);
+  });
+
+  it("keeps the point's own position when it names no mark at all", () => {
+    const point = box(40, 80, 10, 10);
+    expect(placeOn(point, null)).toEqual([45, 80]);
+  });
+
+  it("treats a point that merely overlaps its mark as outside it, so a proxy grazing an edge still moves", () => {
+    const grazing = box(240, 218, 20, 12);
+    const bar = box(190, 218, 60, 12);
+    expect(placeOn(grazing, bar)).toEqual([220, 218]);
+  });
+});

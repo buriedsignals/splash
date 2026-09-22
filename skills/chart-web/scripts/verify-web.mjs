@@ -448,6 +448,65 @@ async function checkHover(page, vp) {
     `${vp.label}: every reading answers a real pointer on its own mark`,
     `${onMark}/${onMarkExpected}`,
   );
+
+  /**
+   * AND THE ANSWER LANDS ON THE MARK IT NAMES — the rule nothing measured until now.
+   *
+   * `interaction.mjs` anchors the box on the mark rather than on the pointer, and the reason is
+   * written there twice: the box for India sat over the United States, and on the grouped bar it
+   * floated at whatever height the hand happened to be. Both defects were found by a human looking
+   * at a page, both were fixed, and neither left a check behind — so the third instance was found
+   * the same way, on a ranking whose hit points are parked in the right margin so the pointer can
+   * be resolved by row. The answer rose in the margin, a screen away from the bar it named.
+   *
+   * Measured as OVERLAP, not as a distance: the box and the mark it names must share some column of
+   * pixels. A tooltip clamped at the viewport edge, a mark wider than the box, a box wider than the
+   * mark — all of those still overlap, and a box that names something on the other side of the page
+   * does not.
+   */
+  let onItsMark = 0;
+  let onItsMarkExpected = 0;
+  for (const r of readings) {
+    const own = probe(r.cx, r.cy);
+    const want = await expectedAt(own);
+    if (!want) continue;
+    await page.mouse.move(own.x, own.y);
+    await sleep(25);
+    const placed = await page.evaluate(() => {
+      const t = document.getElementById("tooltip");
+      if (t.hidden) return null;
+      const active =
+        document.querySelector(".mark-active") ?? document.querySelector(".pt-active");
+      if (!active) return null;
+      const box = t.getBoundingClientRect();
+      const mark = active.getBoundingClientRect();
+      return {
+        overlaps: box.right > mark.left && box.left < mark.right,
+        box: [Math.round(box.left), Math.round(box.right)],
+        mark: [Math.round(mark.left), Math.round(mark.right)],
+      };
+    });
+    if (placed === null) continue;
+    onItsMarkExpected += 1;
+    if (placed.overlaps) onItsMark += 1;
+    else
+      failures.push(
+        `${vp.label}: the answer for ${r.name} was drawn at x ${placed.box[0]}–${placed.box[1]} ` +
+          `and the mark it names stands at ${placed.mark[0]}–${placed.mark[1]} — they do not ` +
+          `overlap, so the box names something the reader is not looking at`,
+      );
+  }
+  if (onItsMarkExpected > 0)
+    check(
+      onItsMark === onItsMarkExpected,
+      `${vp.label}: the answer is drawn over the mark it names`,
+      `${onItsMark}/${onItsMarkExpected}`,
+    );
+  else
+    skip(
+      `${vp.label}: where the answer is drawn`,
+      "no mark reports itself active on hover, so there is nothing to measure it against",
+    );
   if (inColumnExpected > 0)
     check(
       inColumn === inColumnExpected,
