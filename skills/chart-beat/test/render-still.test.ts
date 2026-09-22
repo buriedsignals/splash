@@ -195,8 +195,15 @@ describe("measureText and measureTextBand set an italic run in the italic face",
   const AT = { fontSize: 13, fontWeight: 400 };
 
   it("should measure a narrower italic where the italic face is narrower (Open Sans)", () => {
-    const roman = measureText("Mer Méditerranée", { ...AT, fontFamily: "Open Sans" });
-    const italic = measureText("Mer Méditerranée", { ...AT, fontFamily: "Open Sans", fontStyle: "italic" });
+    const roman = measureText("Mer Méditerranée", {
+      ...AT,
+      fontFamily: "Open Sans",
+    });
+    const italic = measureText("Mer Méditerranée", {
+      ...AT,
+      fontFamily: "Open Sans",
+      fontStyle: "italic",
+    });
     expect(roman).toBeGreaterThan(0);
     expect(italic).not.toBe(roman);
     expect(italic).toBeLessThan(roman);
@@ -206,8 +213,15 @@ describe("measureText and measureTextBand set an italic run in the italic face",
    *  measured in roman is SMALLER than the word really drawn — and two words that genuinely touch
    *  read as clear. This is the case the deferral was silently accepting. */
   it("should measure a wider italic where the italic face is wider (Montserrat)", () => {
-    const roman = measureText("Mer Méditerranée", { ...AT, fontFamily: "Montserrat" });
-    const italic = measureText("Mer Méditerranée", { ...AT, fontFamily: "Montserrat", fontStyle: "italic" });
+    const roman = measureText("Mer Méditerranée", {
+      ...AT,
+      fontFamily: "Montserrat",
+    });
+    const italic = measureText("Mer Méditerranée", {
+      ...AT,
+      fontFamily: "Montserrat",
+      fontStyle: "italic",
+    });
     expect(italic).toBeGreaterThan(roman);
   });
 
@@ -215,8 +229,17 @@ describe("measureText and measureTextBand set an italic run in the italic face",
    *  ROMAN `f` sits entirely on the baseline (descent 0) while its ITALIC `f` descends 9.6px at
    *  40px. A gutter cleared for the roman band would have that descender written through it. */
   it("should measure the vertical band on the italic face too", () => {
-    const roman = measureTextBand("f", { ...AT, fontSize: 40, fontFamily: "Open Sans" });
-    const italic = measureTextBand("f", { ...AT, fontSize: 40, fontFamily: "Open Sans", fontStyle: "italic" });
+    const roman = measureTextBand("f", {
+      ...AT,
+      fontSize: 40,
+      fontFamily: "Open Sans",
+    });
+    const italic = measureTextBand("f", {
+      ...AT,
+      fontSize: 40,
+      fontFamily: "Open Sans",
+      fontStyle: "italic",
+    });
     expect(roman.ascent).toBeGreaterThan(0);
     expect(roman.descent).toBe(0);
     expect(italic.descent).toBeGreaterThan(5);
@@ -225,16 +248,24 @@ describe("measureText and measureTextBand set an italic run in the italic face",
   /** AND THE DEFAULT DID NOT MOVE. Every one of the ~350 existing call sites passes no `fontStyle`;
    *  they must measure exactly the bytes they measured before this key existed. */
   it("should treat an absent fontStyle as normal, to the pixel", () => {
-    expect(measureText("Mer Méditerranée", { ...AT, fontFamily: "Open Sans", fontStyle: "normal" })).toBe(
-      measureText("Mer Méditerranée", { ...AT, fontFamily: "Open Sans" }),
-    );
+    expect(
+      measureText("Mer Méditerranée", {
+        ...AT,
+        fontFamily: "Open Sans",
+        fontStyle: "normal",
+      }),
+    ).toBe(measureText("Mer Méditerranée", { ...AT, fontFamily: "Open Sans" }));
   });
 
   /** A STYLE WITH NO FACE IS A SILENT UPRIGHT. `oblique` resolves to no file and would be drawn
    *  roman with nothing to say so — the same silence, one layer down. */
   it("should refuse a fontStyle that is neither normal nor italic", () => {
-    expect(() => measureText("x", { ...AT, fontStyle: "oblique" })).toThrow(/fontStyle/);
-    expect(() => measureTextBand("x", { ...AT, fontStyle: "Italic" })).toThrow(/fontStyle/);
+    expect(() => measureText("x", { ...AT, fontStyle: "oblique" })).toThrow(
+      /fontStyle/,
+    );
+    expect(() => measureTextBand("x", { ...AT, fontStyle: "Italic" })).toThrow(
+      /fontStyle/,
+    );
   });
 });
 
@@ -552,16 +583,38 @@ describe("renderStill", () => {
  * through, because a guard a producer has to remember to call is the defect this closes.
  */
 describe("text that does not fit the frame", () => {
-  const Title = ({ text, width, height, x, anchor }: {
-    text: string; width: number; height: number; x: number; anchor?: string;
+  const Title = ({
+    text,
+    width,
+    height,
+    x,
+    anchor,
+  }: {
+    text: string;
+    width: number;
+    height: number;
+    x: number;
+    anchor?: string;
   }) =>
     createElement(
       "svg",
-      { width, height, viewBox: `0 0 ${width} ${height}`, xmlns: "http://www.w3.org/2000/svg" },
+      {
+        width,
+        height,
+        viewBox: `0 0 ${width} ${height}`,
+        xmlns: "http://www.w3.org/2000/svg",
+      },
       createElement("rect", { x: 0, y: 0, width, height, fill: "#FFFFFF" }),
       createElement(
         "text",
-        { x, y: 120, fill: "#111111", fontSize: 78, fontWeight: 700, ...(anchor ? { textAnchor: anchor } : {}) },
+        {
+          x,
+          y: 120,
+          fill: "#111111",
+          fontSize: 78,
+          fontWeight: 700,
+          ...(anchor ? { textAnchor: anchor } : {}),
+        },
         text,
       ),
     );
@@ -585,7 +638,12 @@ describe("text that does not fit the frame", () => {
 
   it("lets a title that fits through untouched", async () => {
     const { pngPath } = await renderStill({
-      element: createElement(Title, { text: "One EU country", width: 1080, height: 1920, x: 72 }),
+      element: createElement(Title, {
+        text: "One EU country",
+        width: 1080,
+        height: 1920,
+        x: 72,
+      }),
       width: 1080,
       height: 1920,
       outDir,
@@ -599,7 +657,11 @@ describe("text that does not fit the frame", () => {
     // is comfortably inside the frame here, and a guard that ignored the anchor would refuse it.
     const { pngPath } = await renderStill({
       element: createElement(Title, {
-        text: "One EU country", width: 1080, height: 1920, x: 1000, anchor: "end",
+        text: "One EU country",
+        width: 1080,
+        height: 1920,
+        x: 1000,
+        anchor: "end",
       }),
       width: 1080,
       height: 1920,
@@ -621,16 +683,34 @@ describe("what the frame guard must not refuse", () => {
   it("measures the glyph an entity stands for, not the escape that writes it", async () => {
     // `&#x27;` is six characters of markup and one apostrophe on the page. Measuring the markup
     // reported a title 125px wider than it draws.
-    const text = "France's per-capita emissions, told plainly";
+    // Measured, not guessed: this string draws 1204px wide and its markup measures 1330px, so a
+    // 1249px frame holds the one a reader sees and not the one the escape writes. A frame any
+    // wider would hold both and this test would pass with the fix removed — which is what the
+    // first version of it did.
+    const text =
+      "France's own per-capita emissions, told plainly and at length";
+    const FRAME = { width: 1249, height: 400 };
     const element = createElement(
       "svg",
-      { width: 1080, height: 400, viewBox: "0 0 1080 400", xmlns: "http://www.w3.org/2000/svg" },
-      createElement("rect", { x: 0, y: 0, width: 1080, height: 400, fill: "#FFFFFF" }),
-      createElement("text", { x: 40, y: 120, fill: "#111111", fontSize: 40, fontWeight: 700 }, text),
+      {
+        ...FRAME,
+        viewBox: `0 0 ${FRAME.width} ${FRAME.height}`,
+        xmlns: "http://www.w3.org/2000/svg",
+      },
+      createElement("rect", { x: 0, y: 0, ...FRAME, fill: "#FFFFFF" }),
+      createElement(
+        "text",
+        { x: 40, y: 120, fill: "#111111", fontSize: 40, fontWeight: 700 },
+        text,
+      ),
     );
-    const markup = renderToStaticMarkup(element);
-    expect(markup).toContain("&#x27;");
-    const { pngPath } = await renderStill({ element, width: 1080, height: 400, outDir, name: "entity" });
+    expect(renderToStaticMarkup(element)).toContain("&#x27;");
+    const { pngPath } = await renderStill({
+      element,
+      ...FRAME,
+      outDir,
+      name: "entity",
+    });
     expect((await stat(pngPath)).size).toBeGreaterThan(0);
   });
 
@@ -639,15 +719,36 @@ describe("what the frame guard must not refuse", () => {
     // `x` is not the frame's, and reading it as if it were reported labels at −83.
     const element = createElement(
       "svg",
-      { width: 900, height: 400, viewBox: "0 0 900 400", xmlns: "http://www.w3.org/2000/svg" },
-      createElement("rect", { x: 0, y: 0, width: 900, height: 400, fill: "#FFFFFF" }),
+      {
+        width: 900,
+        height: 400,
+        viewBox: "0 0 900 400",
+        xmlns: "http://www.w3.org/2000/svg",
+      },
+      createElement("rect", {
+        x: 0,
+        y: 0,
+        width: 900,
+        height: 400,
+        fill: "#FFFFFF",
+      }),
       createElement(
         "g",
         { transform: "translate(400,32)" },
-        createElement("text", { x: -300, y: 60, fill: "#111111", fontSize: 20 }, "Sweden 3.5"),
+        createElement(
+          "text",
+          { x: -300, y: 60, fill: "#111111", fontSize: 20 },
+          "Sweden 3.5",
+        ),
       ),
     );
-    const { pngPath } = await renderStill({ element, width: 900, height: 400, outDir, name: "moved" });
+    const { pngPath } = await renderStill({
+      element,
+      width: 900,
+      height: 400,
+      outDir,
+      name: "moved",
+    });
     expect((await stat(pngPath)).size).toBeGreaterThan(0);
   });
 });
