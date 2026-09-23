@@ -66,6 +66,7 @@ export function DirectedGantt({
   spanLabel,
   direction,
   treatments,
+  frame,
 }: {
   rows: Row[];
   first: number;
@@ -79,8 +80,11 @@ export function DirectedGantt({
   spanLabel: (row: Row) => string;
   direction: any;
   treatments: string[];
+  /** The frame this render draws at — `sizeFor(size)` halved, so one component
+   *  serves landscape, portrait and square. Absent means the landscape this beat was accepted at. */
+  frame?: { width: number; height: number };
 }) {
-  const { width, height } = FRAME;
+  const { width, height } = frame ?? FRAME;
   const { ink, muted, grid } = deriveFurniture(direction.ground);
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);

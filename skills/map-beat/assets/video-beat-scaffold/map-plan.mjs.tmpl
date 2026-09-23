@@ -4,11 +4,24 @@
 //
 // SCAFFOLD: what the whole map holds (BOUNDS), the other cameras, the seats, and the layers are this beat's own.
 
+import { sizeFor } from "#shared/chart-video/sizes.mjs";
 import { viewOf } from "#shared/map-beat/scrolly.mjs";
 import { plateTints } from "#shared/map-beat/tints.mjs";
-import { fitBoundsMeet } from "%%UP%%/skills/map-beat/scripts/video-placement.mjs";
+const { skillScriptFrom } = await import("#shared/design-base/skill-script.mjs");
+const { fitBoundsMeet } = await import(skillScriptFrom(import.meta.dirname, "map-beat", "scripts", "video-placement.mjs"));
 
-export const STAGE = Object.freeze({ width: 1920, height: 1080 });
+
+/** THE STAGE THE CAMERA IS FITTED TO, AND IT IS THIS BEAT'S OWN SLOT — never a literal.
+ *
+ *  `fitBoundsMeet` takes `min(stage.width/dx, stage.height/dy)`, so a stage that is not the frame
+ *  fits the geography to a frame nobody is going to watch. Measured 2026-09-23 with the literal in
+ *  place: landscape agreed by coincidence (1920x1080 IS its slot) and square agreed by a second one
+ *  (these bounds are height-bound, so `min()` picked 1080 either way) — and PORTRAIT drew the
+ *  continent at 0.67x, filling 52% of the frame where `fit` promises 92%, with a slab of empty
+ *  Atlantic above and Africa below. The beat's own suite was 20 pass / 0 fail throughout: nothing
+ *  in the toolchain compared the stage to the slot, so the two literals that agree for two of the
+ *  three sizes hid the one that does not. */
+export const STAGE = Object.freeze(sizeFor("%%SIZE%%"));
 const KEY = "__MAPTILER" + "_KEY__";
 /** MapTiler Countries: one `administrative` layer, `level` 0 the countries and 1 their regions, joined on `iso_a2`. */
 export const COUNTRIES = Object.freeze({ type: "vector", url: `https://api.maptiler.com/tiles/countries/tiles.json?key=${KEY}` });

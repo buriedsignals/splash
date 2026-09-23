@@ -201,7 +201,15 @@ const PASCAL = /^[A-Z][A-Za-z0-9]*$/;
 
 /** `web-dot-density-europe-stations` of type `dot-density` → `EuropeStations`. */
 export function componentNameOf(beatName, type) {
-  const subject = beatName.replace(/^\./, "").replace(/^web-/, "").replace(new RegExp(`^${type}-`), "");
+  // A TRAILING `-web` IS THE SAME SUFFIX AS A LEADING ONE. The template writes
+  // `Directed%%Name%%Web.tsx`, so a beat named for its siblings — `eu-inequality-map` beside
+  // `eu-inequality-web`, which is the natural pair — came out as `DirectedEuInequalityWebWeb.tsx`.
+  const subject = beatName
+    .replace(/^\./, "")
+    .replace(/^web-/, "")
+    .replace(/-web$/, "")
+    .replace(new RegExp(`^${type}-`), "")
+    .replace(new RegExp(`-${type}$`), "");
   return subject
     .split("-")
     .filter(Boolean)
@@ -322,7 +330,12 @@ export function scaffoldBeat({ root = DEFAULT_ROOT, templates = TEMPLATES, files
   // filesystem fact, and asking it twice is cheaper than a variable that can go stale.
   const paletteAlreadyReachable = paletteReachableFrom(beatDir);
   if (!paletteAlreadyReachable) copyFileSync(join(staticDir, "PALETTE.md"), join(beatDir, "PALETTE.md"), 1 /* COPYFILE_EXCL */);
-  return [...planned.map(([target]) => target), "PALETTE.md"].sort();
+  // NAME ONLY WHAT WAS WRITTEN. This list is the whole inventory a new user gets of what the
+  // scaffold just created, and it named PALETTE.md unconditionally — including on the branch that
+  // deliberately did not copy one because the story root already answers. Someone told a file
+  // exists that does not goes looking for it, or edits the story-wide palette believing it is the
+  // beat's own.
+  return [...planned.map(([target]) => target), ...(paletteAlreadyReachable ? [] : ["PALETTE.md"])].sort();
 }
 
 export function parseArgs(argv) {

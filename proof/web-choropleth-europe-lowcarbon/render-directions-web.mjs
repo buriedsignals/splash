@@ -21,6 +21,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import puppeteer from "puppeteer-core";
+import { resolveChrome } from "#shared/design-base/chrome.mjs";
 import { fileURLToPath } from "node:url";
 import { mix, readPalette } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
@@ -875,6 +876,8 @@ async function bakeFallback(pagePath, outFile, id) {
   await writeFile(keyed, html);
   const browser = await puppeteer.launch({
     headless: "new",
+    // `puppeteer-core` ships no browser: a launch with no `executablePath` fails on every machine.
+    executablePath: resolveChrome(),
     args: ["--no-sandbox", "--use-gl=swiftshader", "--enable-unsafe-swiftshader"],
   });
   try {

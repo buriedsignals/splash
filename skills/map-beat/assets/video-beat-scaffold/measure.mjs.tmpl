@@ -10,6 +10,8 @@
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { mapTilerKeyIn } from "#shared/map-beat/glyphs.mjs";
+import { STAGE } from "./map-plan.mjs";
+const { skillScriptFrom } = await import("#shared/design-base/skill-script.mjs");
 
 export const planDigestOf = (plan) => createHash("sha256").update(JSON.stringify(plan)).digest("hex");
 
@@ -29,7 +31,7 @@ if (import.meta.main) {
   if (!key) throw new Error("no MapTiler key in the environment: run with the worktree's .env loaded (set -a && . ./.env && set +a)");
   // Loaded here, not at the top: `build.mjs` reads `planDigestOf` from this file, and neither the tests nor the build
   // should start a browser driver to do so.
-  const { measureLiveMap } = await import("%%UP%%/skills/map-beat/scripts/measure-live-map.mjs");
+  const { measureLiveMap } = await import(skillScriptFrom(import.meta.dirname, "map-beat", "scripts", "measure-live-map.mjs"));
   const { buildDirection, directionsFor, loadBeat, MEASURED, parseDirectionArgs } = await import("./build.mjs");
   const { mapStateAt } = await import("./scene.mjs");
   const { %%CONST%%_VIDEO_TIMING: timing } = await import("./timing-contract.ts");
@@ -38,7 +40,7 @@ if (import.meta.main) {
   const { directions, note } = directionsFor(beat, { candidates: args.candidates, filed: args.filed });
   console.log(note);
   // Merged into what is already measured: measuring the candidates does not unmeasure the default.
-  const out = existsSync(MEASURED) ? JSON.parse(readFileSync(MEASURED, "utf8")) : { size: { width: 1920, height: 1080 }, planDigest: {}, cameras: {} };
+  const out = existsSync(MEASURED) ? JSON.parse(readFileSync(MEASURED, "utf8")) : { size: { width: STAGE.width, height: STAGE.height }, planDigest: {}, cameras: {} };
   for (const entry of directions) {
     const { props } = buildDirection(entry, beat, { measured: null });
     const states = Object.fromEntries(Object.entries(MEASURED_FRAMES).map(([name, frameOf]) => [name, mapStateAt({ cameras: props.cameras, states: beat.states, timing }, frameOf(timing))]));

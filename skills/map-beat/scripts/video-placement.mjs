@@ -46,10 +46,21 @@ export function cellsUnder(grid, box) {
   return out;
 }
 
-/** The share of a box's cells `predicate` holds for; 0 for a box off the grid. */
+/**
+ * The share of a box's cells `predicate` holds for.
+ *
+ * A BOX OFF THE GRID IS UNMEASURED, NOT CLEAR. `cellsUnder` clips to the grid, so a box outside it
+ * comes back with no cells at all — and answering `0` for that made "no land under this box" and
+ * "nothing was measured under this box" the same number. Measured 2026-09-23 on a portrait map
+ * video whose grid had been measured at landscape: the credit's search walked to y≈1848 in a grid
+ * that ended at y=1072, every candidate scored a perfect 0, and the credit was seated on North
+ * Africa with the beat's own suite at 20 pass / 0 fail. `NaN` is the honest answer to a share of
+ * nothing, and it fails every comparison a caller makes, so an unmeasured box is refused by
+ * whichever rule was about to accept it rather than welcomed by all of them.
+ */
 export function shareUnder(grid, box, predicate) {
   const cells = cellsUnder(grid, box);
-  return cells.length ? cells.filter(predicate).length / cells.length : 0;
+  return cells.length ? cells.filter(predicate).length / cells.length : Number.NaN;
 }
 
 /**

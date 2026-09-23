@@ -66,6 +66,7 @@ export function DirectedSankey({
   format,
   direction,
   treatments,
+  frame,
 }: {
   sources: Node[];
   targets: Node[];
@@ -81,8 +82,11 @@ export function DirectedSankey({
   format: (v: number) => string;
   direction: any;
   treatments: string[];
+  /** The frame this render draws at — `sizeFor(size)` halved, so one component
+   *  serves landscape, portrait and square. Absent means the landscape this beat was accepted at. */
+  frame?: { width: number; height: number };
 }) {
-  const { width, height } = FRAME;
+  const { width, height } = frame ?? FRAME;
   const { ink, muted, grid } = deriveFurniture(direction.ground);
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);

@@ -164,6 +164,7 @@ export function mapGeometryFor({
   reading,
   source,
   direction,
+  frame,
 }: {
   aspect: number;
   callout: Callout;
@@ -172,8 +173,11 @@ export function mapGeometryFor({
   reading: string[];
   source: string;
   direction: any;
+  /** The frame this render draws at — `sizeFor(size)` halved, so one component
+   *  serves landscape, portrait and square. Absent means the landscape this beat was accepted at. */
+  frame?: { width: number; height: number };
 }) {
-  const { width, height } = FRAME;
+  const { width, height } = frame ?? FRAME;
   const PAD = direction.pad;
   const display = registerOf(direction, "display");
   const eyebrowReg = registerOf(direction, "eyebrow");

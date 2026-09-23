@@ -66,6 +66,7 @@ export function DirectedSlope({
   direction,
   treatments,
   onLadder,
+  frame,
 }: {
   lines: Line[];
   rails: { left: string; right: string };
@@ -80,8 +81,11 @@ export function DirectedSlope({
   direction: any;
   treatments: string[];
   onLadder?: (note: string) => void;
+  /** The frame this render draws at — `sizeFor(size)` halved, so one component
+   *  serves landscape, portrait and square. Absent means the landscape this beat was accepted at. */
+  frame?: { width: number; height: number };
 }) {
-  const { width, height } = FRAME;
+  const { width, height } = frame ?? FRAME;
   const { ink, muted, grid } = deriveFurniture(direction.ground);
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);

@@ -41,7 +41,13 @@ const ROOT = splashRoot(HERE);
 // A beat finds the skill that produces it through this, never by assuming `skills/` sits under the
 // root it found: an installed stories root vendors `shared/` and nothing else.
 const { skillScript } = await import("#shared/design-base/skill-script.mjs");
-const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
+/** THE FILED DEMO DIRECTIONS, WHEREVER THIS BEAT IS RUN FROM. They used to be read at
+ *  `<root>/docs/design-base/directions`, which exists in a checkout and in no installed stories
+ *  root — a root vendors `shared/`, and the three are vendored with it. `#shared/design-base`
+ *  resolves them relative to itself, so the answer no longer depends on the beat's depth or on
+ *  which kind of root it sits in. Measured 2026-09-23: a story that had a perfectly good
+ *  DIRECTION.md still died on a directory it was never going to read. */
+const { DIRECTIONS_DIR: DIRECTIONS } = await import("#shared/design-base/index.mjs");
 const OUT = join(HERE, "renders");
 /** The no-break space, written as its escape — number formatting helpers live at #shared/design-base/web.mjs. */
 const NB = "\u00A0";

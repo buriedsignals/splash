@@ -26,13 +26,18 @@ import { assertEventsMove } from "#shared/chart-video/moves.mjs";
 import { EVENT_ORDER, endOf } from "#shared/chart-video/timing.ts";
 import { report as reportComposition } from "#shared/design-base/compose.mjs";
 import { mapTilerKeyIn } from "#shared/map-beat/glyphs.mjs";
-import { DEFAULT_CACHE_DIR } from "%%UP%%/skills/map-beat/scripts/maptiler-proxy.mjs";
-import { throughProxy } from "%%UP%%/skills/map-beat/scripts/measure-live-map.mjs";
-import { renderVideoMap } from "%%UP%%/skills/map-beat/scripts/render-video-map.mjs";
-import { wantedOf, writeRenderProps } from "%%UP%%/skills/map-beat/scripts/video-faces.mjs";
+
+
+
+
 import { assertWritten, BEAT_FACTS, buildDirection, directionsFor, loadBeat, parseDirectionArgs, ROOT, SIZE } from "./build.mjs";
 import { %%Name%%Frame } from "./%%Name%%Frame.tsx";
 import { COMPOSITION_ID } from "./Root.tsx";
+const { skillScriptFrom } = await import("#shared/design-base/skill-script.mjs");
+const { DEFAULT_CACHE_DIR } = await import(skillScriptFrom(import.meta.dirname, "map-beat", "scripts", "maptiler-proxy.mjs"));
+const { throughProxy } = await import(skillScriptFrom(import.meta.dirname, "map-beat", "scripts", "measure-live-map.mjs"));
+const { renderVideoMap } = await import(skillScriptFrom(import.meta.dirname, "map-beat", "scripts", "render-video-map.mjs"));
+const { wantedOf, writeRenderProps } = await import(skillScriptFrom(import.meta.dirname, "map-beat", "scripts", "video-faces.mjs"));
 
 const HERE = import.meta.dirname;
 const OUT = join(HERE, "renders");
@@ -85,7 +90,13 @@ for (const entry of chosen) {
     if (!args.look) await writeRenderProps({ props, wanted, auditPath: join(OUT, `${label}-props.json`) });
     // The render copy: the plan pointed at this render's proxy, written to a temp file and never committed.
     const buildProps = (origin) => writeRenderProps({ props: { ...props, mapPlanProxied: throughProxy(props.mapPlan, origin) }, wanted, auditPath: join(scratch, "audit.json") });
-    const common = { entry: relative(ROOT, join(HERE, "index.ts")), composition: COMPOSITION_ID, buildProps, mapTilerKey: key, cacheDir: DEFAULT_CACHE_DIR };
+    const common = {
+      // AN ABSOLUTE ENTRY, because the renderer does not run here. `renderVideoMap` spawns Remotion
+      // with the SKILL's checkout as its cwd (that is where `node_modules/.bin/remotion` lives), so
+      // a path measured against the journalist's root resolved to nothing under it and Remotion
+      // reported "No entry point specified" — an error that names a missing CLI argument when what
+      // is missing is a directory. Absolute is right whatever the cwd turns out to be.
+      entry: join(HERE, "index.ts"), composition: COMPOSITION_ID, buildProps, mapTilerKey: key, cacheDir: DEFAULT_CACHE_DIR };
 
     if (args.look) {
       await mkdir(args.look, { recursive: true });

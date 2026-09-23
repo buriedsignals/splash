@@ -250,7 +250,7 @@ import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.m
 %%DIRECTION_IMPORTS%%
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
-import { renderWeb } from "%%UP%%/skills/chart-web/scripts/render-web.mjs";
+
 import { Directed%%Name%%Web, FRAME } from "./Directed%%Name%%Web.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -388,6 +388,8 @@ import {
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/colour.mjs";
 import { figureVars, webRegisters } from "#shared/design-base/web.mjs";
+const { skillScriptFrom } = await import("#shared/design-base/skill-script.mjs");
+const { renderWeb } = await import(skillScriptFrom(import.meta.dirname, "chart-web", "scripts", "render-web.mjs"));
 
 // SCAFFOLD — THE VOCABULARY THIS BEAT SPENDS, IF IT SPENDS ONE. The scaffold does not choose: the
 // vocabulary IS the design of the page. The twenty-five that exist, each a declaration the beat
@@ -402,7 +404,7 @@ import { figureVars, webRegisters } from "#shared/design-base/web.mjs";
 // new file: nineteen of the twenty-five were written for exactly one beat, because that beat needed
 // something no existing file said. Reuse the MECHANISM, never the gesture.
 //
-// import { ... } from "%%UP%%/skills/chart-web/assets/<vocabulary>.ts";
+// const { ... } = await import(skillScriptFrom(import.meta.dirname, "chart-web", "assets", "<vocabulary>.ts"));
 
 /** The scope every generated rule is written inside, and the prefix every control id carries. */
 const SCOPE = ".chart-figure";

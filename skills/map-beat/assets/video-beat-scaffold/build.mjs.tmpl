@@ -22,20 +22,32 @@ import { directionReachable, readRunDirection } from "#shared/design-base/run-di
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { mapLabelFamily } from "#shared/map-beat/glyphs.mjs";
-import { isDeclinedProfile, parseNewsroom, validateNewsroom } from "%%UP%%/skills/splash/scripts/newsroom.mjs";
-import { applyCase } from "%%UP%%/skills/map-beat/scripts/registers.mjs";
-import { CREDIT_ONE_LINE, haloOf, pillOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "%%UP%%/skills/map-beat/scripts/shots.mjs";
-import { videoRegistersOf } from "%%UP%%/skills/map-beat/scripts/video-registers.mjs";
-import { cellAt, offSeat, seatOnSea, touches } from "%%UP%%/skills/map-beat/scripts/video-placement.mjs";
+
+
+
+
+
 import { camerasOf, mapPlanFor, SEATS, STAGE } from "./map-plan.mjs";
 import { planDigestOf } from "./measure.mjs";
 import { statesFor } from "./states.mjs";
 import { assertClaim, loadSubject } from "./subject.mjs";
 import { %%CONST%%_VIDEO_TIMING } from "./timing-contract.ts";
+const { skillScriptFrom } = await import("#shared/design-base/skill-script.mjs");
+const { isDeclinedProfile, parseNewsroom, validateNewsroom } = await import(skillScriptFrom(import.meta.dirname, "splash", "scripts", "newsroom.mjs"));
+const { applyCase } = await import(skillScriptFrom(import.meta.dirname, "map-beat", "scripts", "registers.mjs"));
+const { CREDIT_ONE_LINE, haloOf, pillOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } = await import(skillScriptFrom(import.meta.dirname, "map-beat", "scripts", "shots.mjs"));
+const { videoRegistersOf } = await import(skillScriptFrom(import.meta.dirname, "map-beat", "scripts", "video-registers.mjs"));
+const { cellAt, offSeat, seatOnSea, touches } = await import(skillScriptFrom(import.meta.dirname, "map-beat", "scripts", "video-placement.mjs"));
 
 const HERE = import.meta.dir;
 export const ROOT = join(HERE, "%%UP%%");
-export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
+/** THE FILED DEMO DIRECTIONS, WHEREVER THIS BEAT IS RUN FROM. They used to be read at
+ *  `<root>/docs/design-base/directions`, which exists in a checkout and in no installed stories
+ *  root — a root vendors `shared/`, and the three are vendored with it. `#shared/design-base`
+ *  resolves them relative to itself, so the answer no longer depends on the beat's depth or on
+ *  which kind of root it sits in. Measured 2026-09-23: a story that had a perfectly good
+ *  DIRECTION.md still died on a directory it was never going to read. */
+const { DIRECTIONS_DIR: DIRECTIONS } = await import("#shared/design-base/index.mjs");
 export const SIZE = "%%SIZE%%";
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 /** The registers the overlay draws in — the six resolved ones, the map's `area` and `feature`, and the credit's. */
@@ -117,8 +129,10 @@ const labelOf = (id) => id.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-
  *   { filed: true }   every filed demo direction — a catalogue or demo proof, never a production render
  */
 export function directionsFor(beat, { candidates = 1, filed = false, root = ROOT } = {}) {
-  const all = filedDirections();
-  if (filed) return { directions: all.map((d) => ({ label: labelOf(d.id), direction: d })), composition: null, note: "every filed demo direction (--filed): a catalogue proof, not a production render" };
+  // READ ONLY WHERE THEY ARE USED. The production path below never touches the filed demo
+  // directions — it reads the run's own DIRECTION.md — and reading them eagerly made a story die
+  // on a directory it was never going to open.
+  if (filed) return { directions: filedDirections().map((d) => ({ label: labelOf(d.id), direction: d })), composition: null, note: "every filed demo direction (--filed): a catalogue proof, not a production render" };
   if (!(Number.isInteger(candidates) && candidates >= 1)) throw new Error(`candidates is a count of at least 1, got ${JSON.stringify(candidates)}`);
   // THE RUN'S ONE ART DIRECTION COMES FIRST (ruling R-A). It was composed once for this story,
   // from NEWSROOM.md and the subject, and written at the story root beside PALETTE.md. Every export
@@ -142,7 +156,7 @@ export function directionsFor(beat, { candidates = 1, filed = false, root = ROOT
     };
   }
   const { newsroom, note } = newsroomOf(root);
-  const composition = composeDirections({ newsroom, filed: all, beat: BEAT_FACTS, textPerRegister: textPerRegisterOf(beat.copy), limit: Math.max(3, candidates) });
+  const composition = composeDirections({ newsroom, filed: filedDirections(), beat: BEAT_FACTS, textPerRegister: textPerRegisterOf(beat.copy), limit: Math.max(3, candidates) });
   if (!composition.offered.length) throw new Error(`no composed direction holds up for this beat:\n${reportComposition(composition, { beat: BEAT_FACTS })}`);
   const directions = composition.offered.slice(0, candidates).map((d) => ({ label: labelOf(d.id), direction: d }));
   return { directions, composition, note };
@@ -210,6 +224,19 @@ export function buildDirection({ label, direction: chosen }, { subject, states, 
   const row = sizeFor(SIZE);
   for (const [name, r] of Object.entries(registers)) if (!(r.fontSize >= row.minTypePx)) throw new Error(`${label}: register ${name} is ${r.fontSize}px, under the ${row.minTypePx}px floor`);
   const frame = { width: row.width, height: row.height };
+  /** THE MEASUREMENT AND THE FRAME ARE THE SAME PIXELS, OR NOTHING BELOW MEANS ANYTHING.
+   *
+   *  Every seat, every projected point and the whole colour grid come out of a browser sized by
+   *  `measure.mjs`; every word below is placed inside `frame`. When the two were different sizes the
+   *  placement searched a grid that stopped half way up the frame, scored the empty space a perfect
+   *  zero, and seated the credit on land — with the beat's own suite green, because no rule compared
+   *  them. It is compared here, once, before a single word is placed. */
+  if (measurement.size?.width !== frame.width || measurement.size?.height !== frame.height)
+    throw new Error(
+      `${label}: measured at ${measurement.size?.width}x${measurement.size?.height} but this beat ` +
+        `draws at ${frame.width}x${frame.height} (--size ${SIZE}). Every seat and the colour grid ` +
+        `are in the wrong pixel space — run measure.mjs again for this size.`,
+    );
   const stage = { x: 0, y: 0, ...STAGE };
   const inset = frameInsetFor(SIZE);
   const vInset = verticalInsetFor(SIZE);

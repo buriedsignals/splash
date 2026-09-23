@@ -2,7 +2,9 @@ import { describe, expect, it } from "bun:test";
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { mapTilerKeyIn } from "#shared/map-beat/glyphs.mjs";
-import { DEFAULT_CACHE_DIR } from "%%UP%%/skills/map-beat/scripts/maptiler-proxy.mjs";
+const { skillScriptFrom } = await import("#shared/design-base/skill-script.mjs");
+const { DEFAULT_CACHE_DIR } = await import(skillScriptFrom(import.meta.dirname, "map-beat", "scripts", "maptiler-proxy.mjs"));
+
 
 /** After a render: the MapTiler key is in no file the render or the measurement wrote. Needs the worktree's .env. */
 const key = mapTilerKeyIn(process.env);

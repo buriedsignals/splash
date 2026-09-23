@@ -12,7 +12,9 @@
 //   source     the credit                                              0..1
 
 import { EVENT_ORDER } from "#shared/chart-video/timing.ts";
-import { assertEventStates } from "%%UP%%/skills/%%SKILL%%/scripts/choreography.mjs";
+const { skillScriptFrom } = await import("#shared/design-base/skill-script.mjs");
+const { assertEventStates } = await import(skillScriptFrom(import.meta.dirname, "%%SKILL%%", "scripts", "choreography.mjs"));
+
 
 export function statesFor() {
   const blank = { title: 0, furniture: 0, reveal: 0, subject: 0, source: 0 };

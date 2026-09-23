@@ -17,6 +17,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import puppeteer from "puppeteer-core";
+import { resolveChrome } from "#shared/design-base/chrome.mjs";
 import { fileURLToPath } from "node:url";
 import { mix, readPalette } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
@@ -51,7 +52,13 @@ const SCAFFOLD = (what) => {
 };
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
+/** THE FILED DEMO DIRECTIONS, WHEREVER THIS BEAT IS RUN FROM. They used to be read at
+ *  `<root>/docs/design-base/directions`, which exists in a checkout and in no installed stories
+ *  root — a root vendors `shared/`, and the three are vendored with it. `#shared/design-base`
+ *  resolves them relative to itself, so the answer no longer depends on the beat's depth or on
+ *  which kind of root it sits in. Measured 2026-09-23: a story that had a perfectly good
+ *  DIRECTION.md still died on a directory it was never going to read. */
+const { DIRECTIONS_DIR: DIRECTIONS } = await import("#shared/design-base/index.mjs");
 const OUT = join(HERE, "renders");
 const SIZE = 900;
 // SCAFFOLD · THE EYEBROW, one short strand: subject · place.
@@ -279,6 +286,8 @@ async function bakeFallback(pagePath, outFile, id) {
   await writeFile(keyed, html);
   const browser = await puppeteer.launch({
     headless: "new",
+    // `puppeteer-core` ships no browser: a launch with no `executablePath` fails on every machine.
+    executablePath: resolveChrome(),
     args: ["--no-sandbox", "--use-gl=swiftshader", "--enable-unsafe-swiftshader"],
   });
   try {

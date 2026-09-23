@@ -133,6 +133,7 @@ export function DirectedTreemap({
   direction,
   treatments,
   onLadder,
+  frame,
 }: {
   cells: Cell[];
   unit: string;
@@ -147,8 +148,11 @@ export function DirectedTreemap({
   direction: any;
   treatments: string[];
   onLadder?: (note: string) => void;
+  /** The frame this render draws at — `sizeFor(size)` halved, so one component
+   *  serves landscape, portrait and square. Absent means the landscape this beat was accepted at. */
+  frame?: { width: number; height: number };
 }) {
-  const { width, height } = FRAME;
+  const { width, height } = frame ?? FRAME;
   const { ink, muted } = deriveFurniture(direction.ground);
   const PAD = direction.pad;
 

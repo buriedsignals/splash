@@ -23,10 +23,12 @@ import { assertDeliveredSize, assertTypeFloor, readPngSize } from "#shared/chart
 import { assertEventsMove } from "#shared/chart-video/moves.mjs";
 import { EVENT_ORDER, endOf } from "#shared/chart-video/timing.ts";
 import { report as reportComposition } from "#shared/design-base/compose.mjs";
-import { wantedOf, writeRenderProps } from "%%UP%%/skills/chart-video/scripts/video-faces.mjs";
+
 import { assertWritten, BEAT_FACTS, buildDirection, directionsFor, loadBeat, parseDirectionArgs, ROOT, SIZE } from "./build.mjs";
 import { %%Name%%Frame } from "./%%Name%%Frame.tsx";
 import { COMPOSITION_ID } from "./Root.tsx";
+const { skillScriptFrom } = await import("#shared/design-base/skill-script.mjs");
+const { wantedOf, writeRenderProps } = await import(skillScriptFrom(import.meta.dirname, "chart-video", "scripts", "video-faces.mjs"));
 
 const HERE = import.meta.dirname;
 const OUT = join(HERE, "renders");

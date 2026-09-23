@@ -73,6 +73,7 @@ export function DirectedLocator({
   direction,
   treatments,
   onLadder,
+  frame,
 }: {
   /** The baked MapTiler basemap for THIS direction, already a data URI. */
   plate: string;
@@ -98,8 +99,11 @@ export function DirectedLocator({
   direction: any;
   treatments: string[];
   onLadder?: (note: string) => void;
+  /** The frame this render draws at — `sizeFor(size)` halved, so one component
+   *  serves landscape, portrait and square. Absent means the landscape this beat was accepted at. */
+  frame?: { width: number; height: number };
 }) {
-  const { width, height } = FRAME;
+  const { width, height } = frame ?? FRAME;
   const { ink, muted } = deriveFurniture(direction.ground);
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);
