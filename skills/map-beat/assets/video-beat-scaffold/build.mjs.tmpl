@@ -289,8 +289,34 @@ export function buildDirection({ label, direction: chosen }, { subject, states, 
     within: { x: inset, y: vInset, width: frame.width - 2 * inset, height: frame.height - 2 * vInset },
     step: CREDIT_STEP,
   });
-  if (!seated) throw new Error(`${label}: no one-line form of the source finds open sea on the whole map`);
-  const credit = sources[seated.index];
+  /**
+   * AND WHEN NO FORM FINDS OPEN SEA, THE CREDIT GETS A PILL — it is not a dead end.
+   *
+   * A square frame pairs the NARROWEST width (1080) with the HIGHEST type floor (36 px), and it
+   * reserves no stage, so the whole frame is the budget: the bare basemap attribution alone needs
+   * about half the frame's width in unbroken water. Measured 2026-09-23 on a whole-continent map at
+   * square, with the stage already corrected: the widest all-sea run inside the credit band was
+   * 576 px against a 564 px minimum form, and no box of it was three rows deep. The beat refused,
+   * and the refusal offered the journalist no lever — shortening the copy cannot help, because the
+   * floor is the mandatory attribution.
+   *
+   * So the shortest form is seated on a pill instead, against the frame's own bottom inset, and the
+   * refusal becomes a line that says what was measured. Any whole-continent map video at square
+   * takes this path; it is the ordinary outcome for that slot, not a failure of this beat.
+   */
+  let credit;
+  let creditPill = null;
+  if (seated) {
+    credit = sources[seated.index];
+  } else {
+    credit = sources[sources.length - 1];
+    creditPill = pillOf(credit.text, credit.register);
+    console.log(
+      `${label}: no one-line form of the source finds open sea on the whole map — the shortest ` +
+        `(${Math.round(widthOf(credit.text, credit.register))}px) is seated on a pill at the frame's ` +
+        `bottom instead. Widen FIT in map-plan.mjs to open more water if the pill is unwanted.`,
+    );
+  }
   registers.source = credit.register;
 
   // ════ THE LAYOUT — SCAFFOLD ═══════════════════════════════════════════════════════════════════════════════════
@@ -307,7 +333,18 @@ export function buildDirection({ label, direction: chosen }, { subject, states, 
     stage,
     registers: Object.fromEntries(DRAWN_REGISTERS.map((name) => [name, registers[name]])),
     titleCard,
-    credit: { ...credit, at: { x: seated.box.x, y: seated.box.y } },
+    credit: seated
+      ? { ...credit, at: { x: seated.box.x, y: seated.box.y }, pill: null }
+      : {
+          ...credit,
+          // No open sea anywhere on the map: the pill sits against the frame's own bottom inset,
+          // centred, and carries its own ground so the words stay readable over land.
+          at: {
+            x: Math.round((frame.width - creditPill.width) / 2),
+            y: frame.height - vInset - creditPill.height,
+          },
+          pill: creditPill,
+        },
     colours,
     strokes,
     halo: haloOf(registers.value, k),

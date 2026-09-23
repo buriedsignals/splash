@@ -66,6 +66,12 @@ export function %%Name%%Frame(props: %%Name%%FrameProps & { at: number; svgRef?:
         {/* ════ THE STORY — SCAFFOLD: this beat's overlay at build.mjs's coordinates, moved by `scene`; every word through <Word>. ════ */}
 
         <g transform={`translate(${credit.at.x} ${credit.at.y})`} opacity={scene.source}>
+          {/* A pill only when no open sea could hold the credit — a square frame on a whole
+              continent, where the attribution alone is half the frame wide. Its ground is the
+              direction's own, so the words read over land. */}
+          {credit.pill ? (
+            <rect width={credit.pill.width} height={credit.pill.height} rx={credit.pill.height / 2} fill={colours.ground} opacity={0.82} />
+          ) : null}
           {credit.lines.map((line, i) => (
             <Word key={`credit${i}`} line={line} register={r.source} fill={colours.text.source} halo={{ colour: colours.sea, width: credit.halo }} />
           ))}
