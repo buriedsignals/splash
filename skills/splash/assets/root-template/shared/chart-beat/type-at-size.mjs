@@ -98,6 +98,42 @@ export const MEASURED_ASPECT = {
   },
 };
 
+/**
+ * TYPES RENDERED AT A SIZE, LOOKED AT, AND ACCEPTED — the method this file prescribes, carried out.
+ *
+ * `MEASURED_ASPECT` answers "how far may this plot be stretched"; it is the right answer for a type whose
+ * x axis is a continuum and whose drawing distorts. It is the wrong question for a type that simply WORKS at
+ * another frame — a treemap, a cartogram, a slope chart — and while it was the only answer available, every
+ * one of those was refused for want of a measurement nobody could take.
+ *
+ * So this is the other answer, and it is a RENDER, not a range: the type's own validated beat was drawn at
+ * that size, the file below was opened and read, and the drawing held. Each entry names the render, so the
+ * next person can open the same file and disagree.
+ *
+ * WHAT DISQUALIFIED THE OTHERS, measured in the same pass at 1080x1080 on 2026-09-23 — all of them
+ * collisions, none of them caught by any counter in this project, which is exactly what the probe warned
+ * about: `column` printed « ChineÉtats-UnisInde » and cut « Corée du Sud » to « Corée du »; `beeswarm`
+ * squashed its distribution into a strip; `connected-scatter` piled nine country labels on top of each
+ * other; `parallel-coordinates` ran « Hydraulique » into « Bioénergie »; `boxplot` printed eight decade
+ * labels through each other; `streamgraph` ran its last value into its last tick.
+ */
+export const MEASURED_HOLDS = {
+  square: {
+    area: "proof/static-area-swiss-co2/renders/creme-square.png",
+    gantt: "proof/static-gantt-top-ten-tenure/renders/rapport-square.png",
+    pictogram: "proof/static-pictogram-europe-lowcarbon/renders/creme-square.png",
+    "stacked-bar": "proof/static-stacked-bar-lowcarbon-growth/renders/rapport-square.png",
+    slope: "proof/static-slope-europe-lowcarbon/renders/nocturne-square.png",
+    treemap: "proof/static-treemap-europe-capacity/renders/rapport-square.png",
+    sankey: "proof/static-sankey-electricity-sources/renders/creme-square.png",
+    cartogram: "proof/static-cartogram-europe-lowcarbon/renders/creme-square.png",
+    dumbbell: "proof/more-dumbbell-life-expectancy-gains/renders/rapport-square.png",
+  },
+  // NOTHING HAS BEEN ACCEPTED AT PORTRAIT. 1080x1920 is the frame the band-scale types have a twin form for
+  // and no other type was looked at there; an empty row is the honest record of that, not an oversight.
+  portrait: {},
+};
+
 /** Types whose refusal has a reason of its own, rather than "nobody has measured it yet". */
 const NAMED_REFUSALS = {
   map:
@@ -128,6 +164,15 @@ export function formForSize(type, size) {
     return {
       verdict: "as-is",
       reason: "landscape is the frame this corpus was designed and accepted at",
+    };
+  const held = MEASURED_HOLDS[size]?.[key];
+  if (held)
+    return {
+      verdict: "as-is",
+      from: held,
+      reason:
+        `${key} was drawn at ${size} in its own validated beat, and the render was read and accepted — ` +
+        `${held}. A type that holds at a frame needs no clamp and has no twin form to reach for.`,
     };
   if (BAND_SCALE_TYPES.includes(key))
     return {
