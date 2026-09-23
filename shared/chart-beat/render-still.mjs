@@ -621,6 +621,90 @@ function transformedSpans(svg) {
  * SAME STATED LIMITS as its siblings: `<text>` baselines only, so it sees where WORDS are and not
  * where a MARK is, and rotated or transformed runs are skipped and counted in the refusal.
  */
+/**
+ * A PLATE THAT DRAWS MARKS NOBODY CAN SEE HAS TO SAY HOW MANY IT DREW.
+ *
+ * A still has no clock and no reader input, so everything it owes is on it at once — and the thing
+ * that makes it the hardest of the four is that it must choose ONE scale. On a concentrated ranking
+ * that choice turns most of the data into a hairline: this beat's first cut drew twenty-seven bars
+ * of which twenty-five were three pixels, printed two country names, and left the rest to a phrase.
+ * The owner's words for it were "trop condensé, pas expliqué, sans précision", and no guard in this
+ * tree disagreed with the render.
+ *
+ * WHAT IS REFUSED IS NOT THE CONDENSATION. A concentration IS the claim on a beat like this one, and
+ * a scale that flattens the tail is the honest way to draw it; a log scale would make the tail
+ * readable and lie about the shape. What is refused is drawing marks a reader cannot see and saying
+ * nothing about them. A plate that brackets them and prints their COUNT — "and 15 more, 271 between
+ * them" — has told the reader exactly what it could not draw, and that sentence is what this looks
+ * for: the number of invisible marks, as a numeral, in some run of the plate's own words.
+ *
+ * THE THRESHOLDS ARE MEASURED, AND THERE ARE TWO, because a share alone cannot tell a tail from a
+ * small chart. Swept over the 68 delivered plates that draw four or more rect marks: the most any
+ * of them hides is 50 %, and that is `static-carbon-footprint-spread` hiding four of eight — four
+ * marks are not a tail anyone expects to read. Nothing else exceeds 37 %. So: MORE than half of the
+ * marks, AND at least eight of them. The plate this guard was written from hid seventeen of
+ * twenty-seven.
+ *
+ * STATED LIMITS, because a guard whose reach is unstated gets trusted past it: it measures `<rect>`
+ * marks only, so a beat drawn with circles, paths or a map's own geometry is not seen here at all,
+ * and a plate whose marks are all one size has no varying dimension and is skipped. Both are
+ * reported as skips rather than passes.
+ */
+export function assertPlateSaysWhatItCannotDraw(svg, { what = "this render", most = 0.5, atLeast = 8 } = {}) {
+  const frame = {
+    width: Number(/width="([\d.]+)"/.exec(svg)?.[1] ?? 0),
+    height: Number(/height="([\d.]+)"/.exec(svg)?.[1] ?? 0),
+  };
+  if (!(frame.width > 0 && frame.height > 0)) return { measured: false, why: "the frame has no size" };
+  const rects = [...svg.matchAll(/<rect\b([^>]*)\/?>/g)]
+    .map((m) => ({
+      width: Number(/\bwidth="([\d.]+)"/.exec(m[1])?.[1] ?? 0),
+      height: Number(/\bheight="([\d.]+)"/.exec(m[1])?.[1] ?? 0),
+    }))
+    .filter((r) => r.width > 0 && r.height > 0);
+  // The ground is the rect that covers the frame; the marks are everything smaller.
+  const marks = rects.filter(
+    (r) => !(r.width >= frame.width * 0.99 && r.height >= frame.height * 0.99),
+  );
+  if (marks.length < 4) return { measured: false, why: `${marks.length} rect mark(s): too few to read a shape from` };
+
+  const widths = marks.map((m) => m.width);
+  const heights = marks.map((m) => m.height);
+  const spread = (xs) => Math.max(...xs) - Math.min(...xs);
+  const varying = spread(widths) >= spread(heights) ? widths : heights;
+  if (spread(varying) <= 0) return { measured: false, why: "every mark is the same size: no varying dimension" };
+
+  // Four pixels on a 1080-wide plate, scaled to whatever this one is.
+  const floor = frame.width * 0.004;
+  const invisible = varying.filter((v) => v <= floor).length;
+  const share = invisible / marks.length;
+  // TWO TESTS, AND BOTH HAVE TO HOLD, because a share alone cannot tell a tail from a small chart.
+  // `proof/static-carbon-footprint-spread` hides four of its eight marks — half, and the most of
+  // anything delivered — and four marks are not a tail a reader expects to read. The plate this
+  // guard was written from hid seventeen of twenty-seven.
+  if (share <= most || invisible < atLeast)
+    return { measured: true, marks: marks.length, invisible, share };
+
+  const words = [...svg.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/g)]
+    .map((m) => unescapeXml(m[1].replace(/<[^>]*>/g, "")))
+    .join(" ");
+  // A PLATE WRITES A COUNT THE WAY A READER DOES, so the separators come out before the number is
+  // looked for: "2,000" and "2 000" and "2\u202f000" are all the same count.
+  const plain = words.replace(/[\u202f\u00a0,](?=\d)/g, "");
+  const said = new RegExp(`\\b${invisible}\\b`).test(plain);
+  if (said) return { measured: true, marks: marks.length, invisible, share, accountedFor: true };
+
+  throw new Error(
+    `${what} draws ${invisible} of its ${marks.length} marks at ${Math.round(floor)}px or less — ` +
+      `${Math.round(share * 100)}% of the data is a hairline — and says nowhere how many that is. ` +
+      "The concentration may well BE the claim, and flattening the tail may well be the honest way " +
+      "to draw it; what a plate cannot do is draw marks a reader cannot see and leave them " +
+      "unaccounted for. Bracket them and print their count — \"and 15 more, 271 between them\" — " +
+      "or name and number the rows that fit and bracket only the rest. A still has no clock and no " +
+      "reader to ask; everything it owes is on it at once.",
+  );
+}
+
 export function assertNoOverlappingText(svg, { what = "this render", most = 0.5 } = {}) {
   const runs = [];
   let skipped = 0;
@@ -783,6 +867,7 @@ export async function renderStill({
   assertWithinFrame(svg, width, { what: `the render named ${JSON.stringify(name)}` });
   assertWithinHeight(svg, height, { what: `the render named ${JSON.stringify(name)}` });
   assertNoOverlappingText(svg, { what: `the render named ${JSON.stringify(name)}` });
+  assertPlateSaysWhatItCannotDraw(svg, { what: `the render named ${JSON.stringify(name)}` });
 
   await mkdir(outDir, { recursive: true });
   const svgPath = join(outDir, `${name}.svg`);
