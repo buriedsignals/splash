@@ -40,6 +40,7 @@ import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
 import { splashEnvPath } from "./splash-root.mjs";
 import { keepPoint } from "../assets/geo-symbol.ts";
+import { mapLibreSource } from "#shared/map-beat/maplibre-source.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 /** THE TRUNK'S OWN STYLE SWEEP, carried into this skill's `assets/` (line 1 of that file names
@@ -71,8 +72,12 @@ const BEAT = {
   tints: { water: "#aac9e0" },
 };
 
-const MAPLIBRE = "https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js";
-const MAPLIBRE_CSS = "https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css";
+/** ONE MAPLIBRE DRAWS BOTH HALVES. The page inlines the renderer out of `node_modules`; this used to
+ *  fetch a version pinned by hand from unpkg, and one template had been left a whole MAJOR behind — so the
+ *  plate under the marks and the live map over it were drawn by two different renderers, which is the one
+ *  pair this format insists must be a single camera. It also put a network round trip inside an otherwise
+ *  offline bake. Resolved from the lockfile now, so the version is a fact of the install. */
+const { js: MAPLIBRE_JS, css: MAPLIBRE_CSS_TEXT } = mapLibreSource();
 
 const argv = process.argv.slice(2);
 const flag = (name, fallback) => {
@@ -309,8 +314,8 @@ if (sealed) {
 } else {
   await page.setContent(
     `<!doctype html><html><head>
-<link href="${MAPLIBRE_CSS}" rel="stylesheet"/>
-<script src="${MAPLIBRE}"></script>
+<style>${MAPLIBRE_CSS_TEXT}</style>
+<script>${MAPLIBRE_JS}</script>
 <style>html,body{margin:0;padding:0}#map{width:${size}px;height:${size}px}</style>
 </head><body><div id="map"></div></body></html>`,
     { waitUntil: "load" },

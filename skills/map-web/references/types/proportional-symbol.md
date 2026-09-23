@@ -8,7 +8,7 @@ Owner rules that apply here: an interaction is a SPACE the reader explores, not 
 
 Worked example: `proof/web-proportional-symbol-europe-capacity` (2026-09-15), from `proof/static-proportional-symbol-europe-capacity`.
 Vocabulary: `skills/map-web/assets/area-scale.ts` + `skills/map-web/assets/live-symbols.ts`.
-**The gesture**: the reader picks the EXPONENT of the size scale, because the spread between the circles — the only thing the map is for — is a free parameter the author otherwise sets in silence.
+**The vocabulary** (what the page is built from; the reader's own gesture is one of `interaction-plan.ts`'s ten): the reader picks the EXPONENT of the size scale, because the spread between the circles — the only thing the map is for — is a free parameter the author otherwise sets in silence.
 
 - **Pin the anchor across the laws**: three laws over the same circles at the same places, the biggest circle at the same radius in all
   three, so the only cue that changes is the spread. The ranking is right under every law; that is precisely why the exponent is invisible.

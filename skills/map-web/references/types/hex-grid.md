@@ -8,7 +8,7 @@ Owner rules that apply here: an interaction is a SPACE the reader explores, not 
 
 Worked example: `proof/web-hex-grid-europe-protection` (2026-09-15), from `proof/static-hex-grid-europe-protection`.
 Vocabulary: `skills/map-web/assets/pool.ts` + `skills/map-web/assets/live-hex.ts`.
-**The gesture**: the reader holds THE GRAIN — over how many cells a cell adds up its own numerator and its own denominator before it divides.
+**The vocabulary** (what the page is built from; the reader's own gesture is one of `interaction-plan.ts`'s ten): the reader holds THE GRAIN — over how many cells a cell adds up its own numerator and its own denominator before it divides.
 
 - **Build the grid in Web Mercator METRES, never in degrees**: one degree of latitude is not one degree of longitude on a Mercator screen, and
   a grid laid out in degrees is a grid of sheared cells. Unproject to lon/lat only to hand the seats to MapLibre.

@@ -8,7 +8,7 @@ Owner rules that apply here: an interaction is a SPACE the reader explores, not 
 
 Worked example: `proof/web-choropleth-europe-lowcarbon` (2026-09-15), from `proof/static-choropleth-europe-lowcarbon`.
 Vocabulary: `skills/map-web/assets/classing.ts` + `skills/map-web/assets/live-choropleth.ts`.
-**The gesture**: the reader picks the CLASSING RULE, because what a choropleth hides is that the partition was a choice.
+**The vocabulary** (what the page is built from; the reader's own gesture is one of `interaction-plan.ts`'s ten): the reader picks the CLASSING RULE, because what a choropleth hides is that the partition was a choice.
 
 - **Draw it live, not as paths**: every region is a MapLibre `fill` and `line` layer over MapTiler's own tiles, joined
   on the tileset's own key (ISO A2 here) — no `viewBox`, so the map fills the figure's width and the ratio question stops existing.

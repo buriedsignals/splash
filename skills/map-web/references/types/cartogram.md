@@ -8,7 +8,7 @@ Owner rules that apply here: an interaction is a SPACE the reader explores, not 
 
 Worked example: `proof/web-cartogram-europe-lowcarbon` (2026-09-15), from `proof/static-cartogram-europe-lowcarbon`.
 Vocabulary: `skills/map-web/assets/restore.ts`.
-**The gesture**: the reader PUTS THE GEOGRAPHY BACK, one sacrifice at a time — first the place each unit really occupies, then the size it really weighs — and watches the headline figure move from the by-country number to the by-area one.
+**The vocabulary** (what the page is built from; the reader's own gesture is one of `interaction-plan.ts`'s ten): the reader PUTS THE GEOGRAPHY BACK, one sacrifice at a time — first the place each unit really occupies, then the size it really weighs — and watches the headline figure move from the by-country number to the by-area one.
 
 - **THIS ONE IS NOT A LIVE MAP, and the sheet says so rather than pretending.** There is no basemap and no geography to tile: the cells are the
   whole picture, drawn as SVG through the design base. So there is no MapTiler plan, no plate, no fallback image, no `bake.mjs`, and none of

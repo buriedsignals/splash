@@ -42,6 +42,7 @@ const { MAP_DRAWING_SHARE, renderWeb } = await import(
 // const { live%%Name%%Plan, live%%Name%%Script } = await import(skillScriptFrom(import.meta.dirname, "map-web", "assets", "live-<type>.ts"));
 import { CHANGE_MS, Directed%%Name%%Web } from "./Directed%%Name%%Web.tsx";
 import { WINDOW, CAMERA_ASPECT as MEASURE_ASPECT } from "./camera.ts";
+import { mapTilerKeyFor } from "#shared/map-beat/maptiler-key.mjs";
 
 /**
  * A HOLE THE SCAFFOLD REFUSED TO GUESS. It throws where a value would have been, so an unfinished
@@ -215,10 +216,28 @@ const interaction = {
   earns: SCAFFOLD("argument for why it earns the web genre"),
   controls: [
     {
-      // SCAFFOLD · the question in the reader's own words, and what the page does when they ask it.
-      question: SCAFFOLD("question a reader arrives with"),
-      gesture: SCAFFOLD("gesture named from interaction-plan.ts's GESTURES"),
+      // SCAFFOLD · the question in the reader's own words. It ENDS IN A QUESTION MARK — the contract
+      // refuses a control whose question is a description of a feature rather than something a reader
+      // would actually ask.
+      question: SCAFFOLD("question a reader arrives with, ending in a question mark"),
+      // SCAFFOLD · one of `interaction-plan.ts`'s own GESTURES, and only those ten:
+      //   ask-a-mark · ask-a-line · filter-to-a-subset · toggle-a-comparison · open-the-full-table
+      //   zoom-and-pan · find-your-own-case · sort-or-reorder · brush-a-range · reveal-on-scroll
+      // This is the READER'S gesture. It is NOT the map vocabulary the SKILL's type index names
+      // (`classing`, `vantage`, `pooling`…): a vocabulary is what the page is BUILT from, a gesture is
+      // what the reader DOES. A choropleth built with `classing` hands the reader `toggle-a-comparison`.
+      gesture: SCAFFOLD("reader's gesture, from the ten above"),
       changes: SCAFFOLD("account of what the page does when that question is asked"),
+      // SCAFFOLD · THE FREE PARAMETER. A fixed frame has to settle one decision on the reader's behalf —
+      // a threshold, a bin width, a unit, a reference year, a pivot, a class rule, a denominator, a dot
+      // value — and this is the page handing that decision back. Name the parameter, the value the
+      // AUTHOR picked for the still, the values the READER may pick instead (a list, or the string
+      // "every mark"), and what is HELD STILL while they do, so a reader knows the ground has not moved
+      // under the comparison.
+      parameter: SCAFFOLD("the one decision this frame settles for the reader"),
+      authorPicked: SCAFFOLD("the value the author chose, as the page ships"),
+      readerPicks: SCAFFOLD("the values the reader may choose instead — a list, or \"every mark\""),
+      heldStill: SCAFFOLD("what does NOT move while they choose — a list"),
     },
   ],
 };
@@ -242,7 +261,12 @@ const FALLBACK_DIR = join(HERE, "fallback");
 const FALLBACK_WINDOW = { width: 1512, height: 860, scale: 2 };
 const BLANK_PNG =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
-const KEY = process.env.MAPTILER_KEY ?? process.env.REMOTION_MAPTILER_KEY ?? process.env.VITE_MAPTILER_KEY ?? "";
+/** THE KEY, READ THE WAY THE BAKE BESIDE THIS FILE READS IT — one definition, and it does not depend on
+ *  where you were standing when you ran the command. This used to read `process.env` alone, and the key
+ *  reached it only because Bun auto-loads `<cwd>/.env`: run from the beat's own directory, which is what
+ *  the bake's usage line invites, the same command exited 0, printed three successes and silently wrote no
+ *  keyed copy at all. */
+const { key: KEY, from: KEY_FROM } = mapTilerKeyFor(HERE);
 const PLACEHOLDER = `__MAPTILER${"_KEY__"}`;
 const localPageOf = (pagePath) => pagePath.replace(/\.html$/, ".local.html");
 
@@ -468,6 +492,12 @@ for (const { id, base } of RUN_DIRECTIONS) {
     // THE KEYED COPY FOR REVIEW, beside the page and git-ignored. The owner: « non, comme pour les
     // scrolly il faut toujours une clé sinon ça sert à rien ». The COMMITTED page keeps the
     // placeholder, because this repository is public.
+    if (!KEY)
+      console.warn(
+        `  ${id}: no keyed copy written — ${localPageOf(outPath).split("/").pop()} is the page you open to ` +
+          `see the LIVE map, and there is no MapTiler key to put in it (${KEY_FROM}). The committed page ` +
+          `beside it shows the frozen fallback, which is not the same picture.`,
+      );
     if (KEY) {
       const html = await readFile(outPath, "utf8");
       if (!html.includes(PLACEHOLDER))

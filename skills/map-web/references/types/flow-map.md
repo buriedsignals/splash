@@ -8,7 +8,7 @@ Owner rules that apply here: an interaction is a SPACE the reader explores, not 
 
 Worked example: `proof/web-flow-map-ukraine-protection` (2026-09-15), from `proof/static-flow-map-ukraine-protection`.
 Vocabulary: `skills/map-web/assets/live-flow.ts`.
-**The gesture**: the reader picks WHAT THE WIDTH IS DIVIDED BY, because a band measures two places, so it has a second denominator and a still can only pick one without leaving a trace of the pick.
+**The vocabulary** (what the page is built from; the reader's own gesture is one of `interaction-plan.ts`'s ten): the reader picks WHAT THE WIDTH IS DIVIDED BY, because a band measures two places, so it has a second denominator and a still can only pick one without leaving a trace of the pick.
 
 - **Offer the honest denominators and let the lead change hands**: the people, the people per thousand inhabitants of the receiving country,
   the people per thousand square kilometres of its ground. When the lead changes three times across the three, that IS the subject, and no

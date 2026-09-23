@@ -8,7 +8,7 @@ Owner rules that apply here: an interaction is a SPACE the reader explores, not 
 
 Worked example: `proof/web-dot-density-europe-stations` (2026-09-15), from `proof/static-dot-density-europe-stations`.
 Vocabulary: `skills/map-web/assets/live-dot-density.ts`.
-**The gesture**: the reader chooses WHAT ONE DOT IS WORTH, because the dot value is the sentence, not a rendering setting.
+**The vocabulary** (what the page is built from; the reader's own gesture is one of `interaction-plan.ts`'s ten): the reader chooses WHAT ONE DOT IS WORTH, because the dot value is the sentence, not a rendering setting.
 
 - **Make the two resolutions deposit the same ink**: derive the second dot value from the file itself (the mean quantity per row),
   so the same rows paint a comparable number of dots — nothing added, nothing removed, the ink simply put somewhere else. That is

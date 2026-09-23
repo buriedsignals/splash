@@ -86,7 +86,7 @@ Each sheet states what the type argues in this export, its reader gestures, what
 this type must NOT do, the precision to assert, the devices its worked example implements and the
 worked example's own CODE.
 
-| type | sheet | web worked example | the gesture it spends |
+| type | sheet | web worked example | the vocabulary it spends |
 | --- | --- | --- | --- |
 | Cartogram | `references/types/cartogram.md` | `proof/web-cartogram-europe-lowcarbon` | `restore` |
 | Choropleth | `references/types/choropleth.md` | `proof/web-choropleth-europe-lowcarbon` | `classing` |
@@ -172,6 +172,20 @@ carries four pieces a chart beat does not: `camera.ts`, the bake, the frozen fal
 A **menu**, not a checklist. Each says what the reader does and which type spent it. A beat that
 needs none of them, or needs a new one, has a legitimate answer — and squatting on another
 vocabulary's id prefix to be discovered would make the census report a yardstick that is not one.
+
+**A VOCABULARY IS NOT A GESTURE, and the two words were both being used for both things.** A
+vocabulary is what the page is BUILT from — `classing`, `vantage`, `pool`, `area-scale` — and it is
+this skill's own menu. A **gesture** is what the READER does, and `interaction.controls[].gesture`
+is validated against a different, closed list of ten in `assets/interaction-plan.ts`:
+
+> `ask-a-mark` · `ask-a-line` · `filter-to-a-subset` · `toggle-a-comparison` · `open-the-full-table`
+> · `zoom-and-pan` · `find-your-own-case` · `sort-or-reorder` · `brush-a-range` · `reveal-on-scroll`
+
+Writing a vocabulary's name into that field is refused at the declaration, and the refusal prints
+the ten — which is correct and arrives after the reader has carried the wrong word from step 2. The
+mapping for the worked examples: `classing` and `pool` hand the reader **toggle-a-comparison**,
+`vantage` hands them **zoom-and-pan**, `area-scale` and `live-*` hand them **ask-a-mark**,
+`restore` hands them **toggle-a-comparison**.
 
 | vocabulary | the reader … | spent by |
 | --- | --- | --- |

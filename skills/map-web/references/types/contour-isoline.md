@@ -8,7 +8,7 @@ Owner rules that apply here: an interaction is a SPACE the reader explores, not 
 
 Worked example: `proof/web-contour-europe-distance` (2026-09-15), from `proof/static-contour-europe-distance`.
 Vocabulary: `skills/map-web/assets/live-contour.ts`.
-**The gesture**: the reader chooses THE STEP between the lines, because the step decides how much of the continuous surface survives into the picture, and it is the only decision on the page a reader cannot see.
+**The vocabulary** (what the page is built from; the reader's own gesture is one of `interaction-plan.ts`'s ten): the reader chooses THE STEP between the lines, because the step decides how much of the continuous surface survives into the picture, and it is the only decision on the page a reader cannot see.
 
 - **State what each step costs in the field's own units**: too fine and the lines are drawn to a precision the measurement does not have
   (this field is a 7 km mesh, so a 50 km step draws texture the reader will take for information); too coarse and the headline's own figure

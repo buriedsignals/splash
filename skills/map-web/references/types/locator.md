@@ -8,7 +8,7 @@ Owner rules that apply here: an interaction is a SPACE the reader explores, not 
 
 Worked example: `proof/web-locator-zaporizhzhia` (2026-09-15), from `proof/static-locator-zaporizhzhia`.
 Vocabulary: `skills/map-web/assets/vantage.ts` + `skills/map-web/assets/live-locator.ts`.
-**The gesture**: the reader chooses THE REMOVE — how far back the author stood — because on the type with the least to say, the framing is the only decision anybody made, and it decides which neighbour the reader ends up believing matters.
+**The vocabulary** (what the page is built from; the reader's own gesture is one of `interaction-plan.ts`'s ten): the reader chooses THE REMOVE — how far back the author stood — because on the type with the least to say, the framing is the only decision anybody made, and it decides which neighbour the reader ends up believing matters.
 
 - **Make each remove an answer, not a magnification**: its own window, its own stated drawing rule, its own census of what the frame holds
   and therefore what is not drawn, its own scale bar, its own sentence. `vantage.ts` refuses a ladder that does not climb by at least a
