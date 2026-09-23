@@ -609,6 +609,25 @@ const MAP_DRAWING_SHARE = 0.66;
 const REVIEW_WINDOW = { width: 1512, height: 860 };
 
 /**
+ * EVERY WINDOW THE FIT IS CLAIMED AT, and for a long time there was one.
+ *
+ * The SHARE is a promise about the review window: it is where it was measured and where it is
+ * refused. The FIT — "a beat is one thing a reader looks at, not a document they scroll through" —
+ * is a promise about every window, and it was only ever checked at 1512x860. Measured 2026-09-23 on
+ * a delivered choropleth: it fitted at the review window and ran 198 px past the fold at 375x812,
+ * with the claim, the reading, the source and the table all below it, and nothing refused.
+ *
+ * The four are a desktop, a small laptop, a tablet held upright and a phone — the shapes a beat is
+ * embedded in or opened on. Adding one is free; it is the same page, opened again.
+ */
+const FIT_WINDOWS = [
+  REVIEW_WINDOW,
+  { width: 1024, height: 768 },
+  { width: 768, height: 1024 },
+  { width: 375, height: 812 },
+];
+
+/**
  * THE READINGS GO INTO THE DISCLOSURE THE PAGE ALREADY HAS.
  *
  * Every map beat ends with `<details class="mw-readings">` — the values behind the drawing, for a
@@ -682,6 +701,38 @@ async function assertDrawingShare(outPath, share, where) {
   });
   try {
     const page = await browser.newPage();
+    const readAt = async (window) => {
+      await page.setViewport({ ...window, deviceScaleFactor: 1 });
+      await page.goto(`file://${outPath}`, { waitUntil: "domcontentloaded", timeout: 60000 });
+      await new Promise((r) => setTimeout(r, 400));
+      // THE LIVE PAGE'S OWN COLUMN, NOT THE KEYLESS ONE. `p.live-hint` ships `hidden` and is
+      // revealed the moment the live map arrives, so a page measured without it is measured one row
+      // short — 17 px on the locator, which is exactly the overflow this guard exists to catch.
+      await page.evaluate(() => {
+        for (const hint of document.querySelectorAll(".live-hint")) hint.removeAttribute("hidden");
+      });
+      return page.evaluate(() => ({
+        doc: document.documentElement.scrollHeight,
+        scrollW: document.documentElement.scrollWidth,
+        winW: window.innerWidth,
+        winH: window.innerHeight,
+      }));
+    };
+    // The fit, at every window the format claims. The share is measured once, below, where it was
+    // declared: a narrow column is exactly where the drawing is SUPPOSED to give way.
+    for (const window of FIT_WINDOWS) {
+      const at = await readAt(window);
+      if (at.doc > at.winH)
+        throw new Error(
+          `${where} runs ${Math.round(at.doc)} px tall in a ${at.winH} px window at ` +
+            `${window.width}x${window.height} — the beat no longer fits what it is read in. ` +
+            `Shorten the words, or let the drawing give its share back at this width.`,
+        );
+      if (at.scrollW > at.winW)
+        throw new Error(
+          `${where} scrolls sideways at ${window.width} px: ${Math.round(at.scrollW)} px wide`,
+        );
+    }
     await page.setViewport({ ...REVIEW_WINDOW, deviceScaleFactor: 1 });
     await page.goto(`file://${outPath}`, { waitUntil: "domcontentloaded", timeout: 60000 });
     await new Promise((r) => setTimeout(r, 400));
@@ -717,16 +768,6 @@ async function assertDrawingShare(outPath, share, where) {
           `usable height at ${REVIEW_WINDOW.width}x${REVIEW_WINDOW.height} — under the ` +
           `${(share * 100).toFixed(1)} % a map beat declares. The text above and below it is what ` +
           `gives way, not the map.`,
-      );
-    if (seen.doc > seen.winH)
-      throw new Error(
-        `${where} runs ${Math.round(seen.doc)} px tall in a ${seen.winH} px window once its drawing ` +
-          `has taken its ${(share * 100).toFixed(1)} % — the beat no longer fits what it is read in. ` +
-          `Shorten the words; the drawing's share is not the variable.`,
-      );
-    if (seen.scrollW > seen.winW)
-      throw new Error(
-        `${where} scrolls sideways at ${REVIEW_WINDOW.width} px: ${Math.round(seen.scrollW)} px wide`,
       );
     return { share: got, usable: seen.usable, plot: seen.plot, doc: seen.doc };
   } finally {
