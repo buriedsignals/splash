@@ -126,7 +126,6 @@ export const MEASURED_HOLDS = {
     dumbbell: "proof/more-dumbbell-life-expectancy-gains/renders/rapport-square.png",
     gantt: "proof/static-gantt-top-ten-tenure/renders/rapport-square.png",
     "grouped-bar": "proof/static-wind-vs-solar/renders/creme-square.png",
-    histogram: "proof/static-histogram-europe-solar-spread/renders/creme-square.png",
     lollipop: "proof/static-lollipop-co2-per-person/renders/creme-square.png",
     pictogram: "proof/static-pictogram-europe-lowcarbon/renders/creme-square.png",
     sankey: "proof/static-sankey-electricity-sources/renders/creme-square.png",
@@ -190,8 +189,9 @@ export function formForSize(type, size) {
       verdict: "as-is",
       from: held,
       reason:
-        `${key} was drawn at ${size} in its own validated beat, and the render was read and accepted — ` +
-        `${held}. A type that holds at a frame needs no clamp and has no twin form to reach for.`,
+        `${key} was drawn at ${size} in its own validated beat and the render was read and accepted — ` +
+        `${held}. A type that holds at a frame needs no twin form to reach for. It is consulted after ` +
+        `MEASURED_ASPECT, which is stricter where it exists.`,
     };
   if (BAND_SCALE_TYPES.includes(key))
     return {
@@ -205,6 +205,11 @@ export function formForSize(type, size) {
         "becomes a vertical line hard against the frame edge, where it reads as a border. Redraw " +
         "the comparison as a mark, not as a rule.",
     };
+  /** A MEASURED RANGE OUTRANKS A READ RENDER, and that order is not arbitrary. A range says HOW FAR
+   *  this plot may be stretched before its own argument degrades; a read render says only that one
+   *  drawing held. Where both exist the range is the stricter and the more precise, and letting the
+   *  render win silently removed the clamp from a type that had earned one — `assertPlotAspect`
+   *  stopped refusing a histogram squashed to 12px of height. */
   const measured = MEASURED_ASPECT[key];
   if (measured)
     return {
