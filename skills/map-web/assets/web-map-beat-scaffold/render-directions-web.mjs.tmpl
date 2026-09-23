@@ -260,7 +260,10 @@ const requireFrom = createRequire(import.meta.url);
 const MAPLIBRE_JS = await readFile(requireFrom.resolve("maplibre-gl/dist/maplibre-gl.js"), "utf8");
 const MAPLIBRE_CSS = await readFile(requireFrom.resolve("maplibre-gl/dist/maplibre-gl.css"), "utf8");
 const STYLE_MODULE = (
-  await readFile(join(HERE, "..", "..", "skills", "map-web", "assets", "style.mjs"), "utf8")
+  // THE STYLE HELPER'S OWN SOURCE, INLINED INTO THE PAGE — read through the import map rather than
+    // by counting `../`, because the climb reached the checkout from a proof and the story folder
+    // from a story. `shared/map-beat/style.mjs` is this file byte for byte.
+    await readFile(fileURLToPath(import.meta.resolve("#shared/map-beat/style.mjs")), "utf8")
 ).replace(/^export /gm, "");
 
 /**

@@ -24,8 +24,14 @@ import { join } from "node:path";
 const ROOT = join(import.meta.dirname, "..", "..", "..");
 const PROOF = join(ROOT, "proof");
 
-/** The line itself: a specifier that climbs out of the beat and into `skills/`. */
-const REACH = /from\s+"(?:\.\.\/)+skills\//;
+/** The line itself: a specifier that climbs out of the beat and into `skills/`.
+ *
+ *  Three spellings, because the first version of this guard only knew one and the four
+ *  template-filling scaffolds use another: an adapted beat counts `../`, a template writes the
+ *  `%%UP%%` token the scaffold fills with that same climb, and a runner that reads a file rather
+ *  than importing it builds the path with `join`. All three resolve to a directory an installed
+ *  stories root does not have. */
+const REACH = /(?:from\s+"(?:\.\.\/)+skills\/|"%%UP%%\/skills\/|join\([^)]*"\.\.",\s*"\.\.",\s*"skills")/;
 
 /** A scrolly MAP beat carries its layers in a plan; a scrolly chart beat has none. */
 const PLAN = /(?:^|-)plan\.mjs$/;
