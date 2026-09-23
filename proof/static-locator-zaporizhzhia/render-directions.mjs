@@ -35,7 +35,7 @@ const OUT = join(HERE, "renders");
  *  different drawing, not a stretched one, and `type-at-size.mjs` refuses a type whose range nobody has
  *  measured rather than shipping an aspect nobody chose. */
 const SIZE = exportSizeFromArgv();
-const FRAME = directedFrame(SIZE);
+const EXPORT_FRAME = directedFrame(SIZE);
 assertBeatMayEnter(HERE, SIZE, { what: basename(HERE) });
 const EYEBROW = "Énergie · Europe";
 const refused = [];
@@ -372,7 +372,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       element: createElement(DirectedLocator, {
         // THE FRAME THIS RENDER DRAWS IN. The component used to hold a module constant; it takes the
         // run's own frame now, so one component serves landscape, portrait and square.
-        frame: { width: FRAME.width, height: FRAME.height },
+        frame: { width: EXPORT_FRAME.width, height: EXPORT_FRAME.height },
         plate: `data:image/png;base64,${(await readFile(join(plateDir(id), "plate.png"))).toString("base64")}`,
         // The pair this plate was BAKED with, not a second derivation of it — see the prop's own note.
         tints: plateTints(readDirection(join(DIRECTIONS, file)), { landDose: LAND_DOSE }),
@@ -399,11 +399,11 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       }),
       // THE SLOT'S OWN SIZE. `--size` picks it; landscape is what an article's column asks for and
       // what this lineage's tuning was measured at. The frame is half the export size at scale 2.
-      width: FRAME.width,
-      height: FRAME.height,
+      width: EXPORT_FRAME.width,
+      height: EXPORT_FRAME.height,
       outDir: OUT,
       name: nameAtSize(id, SIZE),
-      scale: FRAME.scale,
+      scale: EXPORT_FRAME.scale,
     });
     console.log(`  -> renders/${id}.png\n`);
   } catch (error) {

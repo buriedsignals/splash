@@ -9,7 +9,7 @@
 // Usage:  bun proof/static-histogram-europe-solar-spread/render-directions.mjs
 
 import { readFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderStill } from "#shared/chart-beat/render-still.mjs";
@@ -17,9 +17,15 @@ import { readPalette } from "#shared/chart-beat/colour.mjs";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
 import { composeDirections, filedDirections, report as composeReport, resolveDirectionFamilies } from "#shared/design-base/index.mjs";
 import { DirectedSolarSpreadHistogram } from "./DirectedSolarSpreadHistogram.tsx";
+import { assertBeatMayEnter, directedFrame, exportSizeFromArgv, nameAtSize } from "#shared/chart-beat/directed-size.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = join(HERE, "renders");
+
+/** THE SIZE THIS RUN DRAWS AT, and whether this beat's own type may enter it at all. */
+const SIZE = exportSizeFromArgv();
+const EXPORT_FRAME = directedFrame(SIZE);
+assertBeatMayEnter(HERE, SIZE, { what: basename(HERE) });
 
 const BIN_WIDTH = 10;
 const BIN_COUNT = 8;
@@ -135,6 +141,7 @@ for (const { label: id, direction: chosenDirection } of chosen) {
 
   await renderStill({
     element: createElement(DirectedSolarSpreadHistogram, {
+        frame: { width: EXPORT_FRAME.width, height: EXPORT_FRAME.height },
       bins,
       unit: UNIT,
       threshold: THRESHOLD,
@@ -149,11 +156,12 @@ for (const { label: id, direction: chosenDirection } of chosen) {
       treatments: offered.map((t) => t.id),
     }),
     // The beat pins `landscape` (1920 x 1080); 960 x 540 at scale 2 delivers exactly that.
-    width: 960,
-    height: 540,
+    // THE SLOT'S OWN SIZE. `--size` picks it; landscape is what an article's column asks for.
+    width: EXPORT_FRAME.width,
+    height: EXPORT_FRAME.height,
     outDir: OUT,
-    name: id,
-    scale: 2,
+    name: nameAtSize(id, SIZE),
+    scale: EXPORT_FRAME.scale,
   });
   console.log(`  -> renders/${id}.png\n`);
 }

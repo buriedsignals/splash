@@ -74,6 +74,12 @@ export function beatTypeOf(dir) {
  * for a missing declaration is a different conversation from a refusal for a measured limit.
  */
 export function assertBeatMayEnter(dir, size, { what = "this beat" } = {}) {
+  /** THE MEASUREMENT PASS. `type-at-size.mjs` opens a size for a type on the strength of a render that
+   *  was looked at — so there has to be a way to PRODUCE that render before the size is open, or the
+   *  door can never be unlocked from the inside. This is that way, and it is deliberately an
+   *  environment variable rather than a flag: nothing a journalist runs can reach it by accident, and
+   *  every render it produces is a candidate for the record, not a delivery. */
+  if (process.env.SPLASH_MEASURE_SIZE) return { type: beatTypeOf(dir), verdict: "measuring" };
   if (size === "landscape") return { type: beatTypeOf(dir), verdict: "as-is" };
   const type = beatTypeOf(dir);
   if (!type)

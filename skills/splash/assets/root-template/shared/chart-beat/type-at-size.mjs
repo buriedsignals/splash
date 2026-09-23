@@ -120,14 +120,21 @@ export const MEASURED_ASPECT = {
 export const MEASURED_HOLDS = {
   square: {
     area: "proof/static-area-swiss-co2/renders/creme-square.png",
-    gantt: "proof/static-gantt-top-ten-tenure/renders/rapport-square.png",
-    pictogram: "proof/static-pictogram-europe-lowcarbon/renders/creme-square.png",
-    "stacked-bar": "proof/static-stacked-bar-lowcarbon-growth/renders/rapport-square.png",
-    slope: "proof/static-slope-europe-lowcarbon/renders/nocturne-square.png",
-    treemap: "proof/static-treemap-europe-capacity/renders/rapport-square.png",
-    sankey: "proof/static-sankey-electricity-sources/renders/creme-square.png",
+    bump: "proof/static-bump-emitter-rank/renders/creme-square.png",
+    "calendar-heatmap": "proof/static-calendar-heatmap-geneva/renders/rapport-square.png",
     cartogram: "proof/static-cartogram-europe-lowcarbon/renders/creme-square.png",
     dumbbell: "proof/more-dumbbell-life-expectancy-gains/renders/rapport-square.png",
+    gantt: "proof/static-gantt-top-ten-tenure/renders/rapport-square.png",
+    "grouped-bar": "proof/static-wind-vs-solar/renders/creme-square.png",
+    histogram: "proof/static-histogram-europe-solar-spread/renders/creme-square.png",
+    lollipop: "proof/static-lollipop-co2-per-person/renders/creme-square.png",
+    pictogram: "proof/static-pictogram-europe-lowcarbon/renders/creme-square.png",
+    sankey: "proof/static-sankey-electricity-sources/renders/creme-square.png",
+    scatter: "proof/static-income-life-expectancy/renders/creme-square.png",
+    slope: "proof/static-slope-europe-lowcarbon/renders/nocturne-square.png",
+    "stacked-bar": "proof/static-stacked-bar-lowcarbon-growth/renders/rapport-square.png",
+    treemap: "proof/static-treemap-europe-capacity/renders/rapport-square.png",
+    waterfall: "proof/static-germany-electricity-bridge/renders/creme-square.png",
   },
   // NOTHING HAS BEEN ACCEPTED AT PORTRAIT. 1080x1920 is the frame the band-scale types have a twin form for
   // and no other type was looked at there; an empty row is the honest record of that, not an oversight.
@@ -153,7 +160,8 @@ const NAMED_REFUSALS = {
   scatter:
     "rotating a scatter violates conventions of reading direction (Horak et al. §2.4.2), so it has " +
     "no twin form; and its density, not its aspect, is what a phone frame runs out of budget on. " +
-    "Neither has been measured.",
+    "Neither has been measured at a TALL frame. A SQUARE one was, on 2026-09-23, and it holds — see " +
+    "MEASURED_HOLDS, which is consulted first and is the only thing that overrides this.",
 };
 
 /**

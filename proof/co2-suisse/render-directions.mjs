@@ -9,7 +9,7 @@
 
 import { readdirSync } from "node:fs";
 import { readFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderStill } from "#shared/chart-beat/render-still.mjs";
@@ -20,10 +20,16 @@ import { readPalette } from "#shared/chart-beat/colour.mjs";
 import { resolveDirectionFamilies } from "../../scripts/design-base/resolve-families.mjs";
 import { DirectedLine } from "./DirectedLine.tsx";
 import { BEAT, readingsFromCsv } from "./render-web.mjs";
+import { assertBeatMayEnter, directedFrame, exportSizeFromArgv, nameAtSize } from "#shared/chart-beat/directed-size.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
 const OUT = join(HERE, "renders");
+
+/** THE SIZE THIS RUN DRAWS AT, and whether this beat's own type may enter it at all. */
+const SIZE = exportSizeFromArgv();
+const EXPORT_FRAME = directedFrame(SIZE);
+assertBeatMayEnter(HERE, SIZE, { what: basename(HERE) });
 const EYEBROW = "Climat · Suisse";
 const ERAS = [
   { from: 1973, to: 1975, label: "choc pétrolier" },
@@ -95,6 +101,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
 
   await renderStill({
     element: createElement(DirectedLine, {
+        frame: { width: EXPORT_FRAME.width, height: EXPORT_FRAME.height },
       data,
       title: BEAT.title,
       source: BEAT.source,
@@ -108,12 +115,12 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       treatments: offered.map((t) => t.id),
       eras: ERAS,
     }),
-    width: 900,
-    height: 560,
+    // THE SLOT'S OWN SIZE. `--size` picks it; landscape is what an article's column asks for.
+    width: EXPORT_FRAME.width,
+    height: EXPORT_FRAME.height,
     outDir: OUT,
-    // A STEM, not a filename: `renderStill` appends `.svg` and `.png` itself.
-    name: id,
-    scale: 2,
+    name: nameAtSize(id, SIZE),
+    scale: EXPORT_FRAME.scale,
   });
   console.log(`  -> renders/${id}.png\n`);
 }

@@ -58,6 +58,7 @@ export function DirectedLine({
   direction,
   treatments,
   eras = [],
+  frame,
 }: {
   data: Reading[];
   title: string;
@@ -73,13 +74,15 @@ export function DirectedLine({
    *  not drawn — the data shape decides, never the component. */
   treatments: string[];
   eras?: Array<{ from: number; to: number; label: string }>;
+  /** The frame this render draws at — one component serves landscape, portrait and square. */
+  frame?: { width: number; height: number };
 }) {
   if (data.length < 2)
     throw new Error(
       "a crossing beat needs at least two readings, got " + data.length,
     );
 
-  const { width, height } = FRAME;
+  const { width, height } = frame ?? FRAME;
   const { ink, muted, grid } = deriveFurniture(direction.ground);
   const PAD = direction.pad;
 

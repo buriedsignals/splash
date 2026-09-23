@@ -40,7 +40,7 @@ const OUT = join(HERE, "renders");
  *  different drawing, not a stretched one, and `type-at-size.mjs` refuses a type whose range nobody has
  *  measured rather than shipping an aspect nobody chose. */
 const SIZE = exportSizeFromArgv();
-const FRAME = directedFrame(SIZE);
+const EXPORT_FRAME = directedFrame(SIZE);
 assertBeatMayEnter(HERE, SIZE, { what: basename(HERE) });
 const EYEBROW = "Énergie · Europe";
 const SUBJECT = "Nuclear";
@@ -366,7 +366,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       element: createElement(DirectedDotDensity, {
         // THE FRAME THIS RENDER DRAWS IN. The component used to hold a module constant; it takes the
         // run's own frame now, so one component serves landscape, portrait and square.
-        frame: { width: FRAME.width, height: FRAME.height },
+        frame: { width: EXPORT_FRAME.width, height: EXPORT_FRAME.height },
         shapes,
         dots,
         // Inlined as a data URI: the rasteriser has no network and no CWD, so a plate referenced by
@@ -392,11 +392,11 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       }),
       // THE SLOT'S OWN SIZE. `--size` picks it; landscape is what an article's column asks for and
       // what this lineage's tuning was measured at. The frame is half the export size at scale 2.
-      width: FRAME.width,
-      height: FRAME.height,
+      width: EXPORT_FRAME.width,
+      height: EXPORT_FRAME.height,
       outDir: OUT,
       name: nameAtSize(id, SIZE),
-      scale: FRAME.scale,
+      scale: EXPORT_FRAME.scale,
     });
     console.log(`  -> renders/${id}.png\n`);
   } catch (error) {
