@@ -405,9 +405,10 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       name: nameAtSize(id, SIZE),
       scale: EXPORT_FRAME.scale,
     });
-    console.log(`  -> renders/${id}.png\n`);
+    console.log(`  -> renders/${nameAtSize(id, SIZE)}.png\n`);
   } catch (error) {
-    for (const ext of ["png", "svg"]) await rm(join(OUT, `${id}.${ext}`), { force: true });
+    for (const ext of ["png", "svg"])
+      await rm(join(OUT, `${nameAtSize(id, SIZE)}.${ext}`), { force: true });
     refused.push({ id, why: error.message });
     console.log(`  REFUSED — ${error.message}\n`);
   }

@@ -190,6 +190,40 @@ export function DirectedTreemap({
     return out;
   }
 
+  /** A CELL NAME MAY BREAK AT ITS OWN HYPHEN, AND ONLY IF THE ORDINARY WRAP FAILED.
+   *  At 1080x1080 the accented thread's largest member is « Royaume-Uni » — one unbreakable token
+   *  under `wrap`, 86px wide in creme, in a cell 73px of inner width. The plate refuses to draw a
+   *  thread cell it cannot name, so the whole direction was refused for a name that a reader breaks
+   *  after the hyphen without a second thought. It is held to the small frames, and not merely tried
+   *  second: a hyphen break makes a cell FIT that did not, which moves the whole count ladder — at
+   *  960 it took creme's plate from twelve countries to ten, which is a landscape this corpus had
+   *  already accepted being redrawn to repair a square. */
+  function wrapName(text: string, maxWidth: number, r: any): string[] {
+    const plain = wrap(text, maxWidth, r);
+    if (width >= FRAME.width) return plain;
+    if (plain.every((l) => widthOf(l, r) <= maxWidth)) return plain;
+    const pieces = text
+      .split(/\s+/)
+      .flatMap((word) =>
+        word
+          .split(/(?<=-)/)
+          .map((piece, i, all) => ({ text: piece, glue: i < all.length - 1 })),
+      );
+    const out: string[] = [];
+    let current = "";
+    let glued = false;
+    for (const piece of pieces) {
+      const trial = current ? `${current}${glued ? "" : " "}${piece.text}` : piece.text;
+      if (current && widthOf(trial, r) > maxWidth) {
+        out.push(current);
+        current = piece.text;
+      } else current = trial;
+      glued = piece.glue;
+    }
+    if (current) out.push(current);
+    return out;
+  }
+
   const line = (r: any) => ({
     fontFamily: r.fontFamily,
     fontSize: r.fontSize,
@@ -280,7 +314,15 @@ export function DirectedTreemap({
     }
 
   const totalMw = cells.reduce((s, c) => s + c.mw, 0);
-  const INSET = 4;
+  /** THE CELL'S OWN GUTTER IS A LADDER TOO, AND IT IS THE CHEAPEST RUNG ON IT. 4px was measured on a
+   *  960px plate whose cells run 100-300px across. At 540 the plate is 428-448px wide and the cells
+   *  that carry the argument come out 41-65px, where 8px of gutter is a fifth of the cell —
+   *  « basculés » missed its cell by 4px and the thread remainder's second line by 2px, and that is
+   *  the whole of what refused creme and nocturne at square. Spending the gutter before the headline
+   *  is the right order: a reader loses nothing they can name when a cell's margin goes from 4px to
+   *  2px, and loses the argument when the headline does. So the gutter is tried generous first and
+   *  narrowed only when the rung above it would otherwise have to go. */
+  const INSETS = width >= FRAME.width ? [4] : [4, 3, 2];
   /** French thousands, with an ordinary space: `toLocaleString("fr-FR")` emits U+202F, which no face
    *  on this base's family ladders covers, and one uncovered glyph refuses every family. */
   const grouped = (n: number) =>
@@ -290,7 +332,29 @@ export function DirectedTreemap({
    *  that is this form's repair for the fact that area does not compare across distance — so the
    *  beat walks the counts from generous to mean and takes the first at which every cell fits its
    *  value. What is left over becomes ONE remainder cell, which carries its own number too. */
-  const attempt = (layout_: ReturnType<typeof layoutFor>, count: number) => {
+  /** THE UNIT IS THE LAST REGISTER TO GO, AND IT GOES TO THE CAPTION — it is not lost.
+   *  At 1080x1080 the plate is 460px wide and the rungs above it leave it barely 200px tall, so the
+   *  cells that carry the argument come out 55-65px wide. "34,6 GW" measures 59px in creme and 60px
+   *  in nocturne and did not fit inside a single one of them at any filed cell count, which refused
+   *  both directions outright while rapport — whose type is smaller — drew cleanly. Dropping the
+   *  cell would have been the wrong repair: what was too wide was the unit, repeated identically in
+   *  every cell, and this form already has a caption sitting directly above the plate whose whole
+   *  job is to say what the figures are. So the label ladder gains one rung BELOW basis and subject
+   *  and ABOVE the remainder: strip the unit off every value and name it once, in the caption.
+   *  It only fires when every drawn cell carries the SAME unit — "34,6" beside "580" would be a
+   *  scale a reader cannot read — and only after the full form has been tried at that cell count. */
+  const unitOf = (v: string) => {
+    const m = /^(.*\S)\s+(\S+)$/.exec(v);
+    return m ? { number: m[1], unit: m[2] } : { number: v, unit: "" };
+  };
+
+  const attempt = (
+    layout_: ReturnType<typeof layoutFor>,
+    count: number,
+    foldUnit: boolean,
+    INSET: number,
+    everyNamed: boolean,
+  ) => {
     if (layout_.box <= 0) return null;
     const head = cells.slice(0, count);
     const tail = cells.slice(count);
@@ -318,7 +382,14 @@ export function DirectedTreemap({
         : []),
       ...(tailField.length ? [groupOf(tailField, restLabel, false)] : []),
     ];
-    const drawn = [...head, ...remainders].sort((a, b) => b.mw - a.mw);
+    const all = [...head, ...remainders].sort((a, b) => b.mw - a.mw);
+    const units = new Set(all.map((c) => unitOf(c.value).unit));
+    if (foldUnit && (units.size !== 1 || !units.has(unitOf(all[0].value).unit))) return null;
+    const folded = foldUnit && units.size === 1 && unitOf(all[0].value).unit !== "";
+    if (foldUnit && !folded) return null;
+    const drawn = folded
+      ? all.map((c) => ({ ...c, value: unitOf(c.value).number }))
+      : all;
     const box = {
       x: PAD,
       y: layout_.boxTop,
@@ -338,11 +409,12 @@ export function DirectedTreemap({
       /** THE NAME WRAPS TO THE CELL, up to two lines. A treemap's cells are whatever shape the data
        *  makes them, and a name measured on one line alone drops out of every tall narrow cell —
        *  which is most of the small ones. */
-      const nameLines = wrap(set(c.name, annot), inner.w, annot).slice(0, 2);
+      const wrapped = wrapName(set(c.name, annot), inner.w, annot);
+      const nameLines = wrapped.slice(0, 2);
       const nameFits =
         nameLines.length > 0 &&
         nameLines.every((l) => widthOf(l, annot) <= inner.w) &&
-        wrap(set(c.name, annot), inner.w, annot).length <= 2;
+        wrapped.length <= 2;
       const fitsValue =
         inner.w >= widthOf(set(c.value, value), value) &&
         inner.h >= valueBand.ascent + valueBand.descent;
@@ -372,49 +444,87 @@ export function DirectedTreemap({
       };
     });
     if (placed.some((p) => !p.fitsValue)) return null;
-    /** A CELL IN THE THREAD CARRIES ITS NAME OR THE PLATE DOES NOT DRAW IT. The thread is the
-     *  argument; an accented box with a number and no subject is an assertion with nothing to
-     *  attach it to, and a reader has no way to learn what the colour meant. */
-    if (placed.some((p) => p.c.tipped && !p.fitsName)) return null;
-    return { placed, drawn };
+    /** A CELL CARRIES ITS NAME OR THE PLATE DOES NOT DRAW IT — asked of EVERY cell first, and of the
+     *  thread alone only when no rung on the whole ladder could meet it.
+     *
+     *  The rule was written for the thread — an accented box with a number and no subject is an
+     *  assertion with nothing to attach it to — but the square frame showed it was never really
+     *  about the thread: at 540 the plate drew « 34,6 » and « 32,2 » and « 15,4 » in bare grey
+     *  boxes, and a number with no subject is not a reading of anything. This form's whole repair
+     *  for the fact that area does not compare across distance is that a cell says what it is.
+     *
+     *  It is a preference and not an absolute because nocturne cannot meet it at 540: its annot
+     *  register sets « ALLEMAGNE » 79px wide and the widest cell the frame leaves after the headline
+     *  is 78px of inner width. Refusing the whole direction over one anonymous field cell would cost
+     *  the reader the entire square export, which is the worse trade. Landscape and the other two
+     *  directions meet the strict pass, so nothing that could be named goes unnamed. */
+    if (placed.some((p) => (everyNamed || p.c.tipped) && !p.fitsName)) return null;
+    return { placed, drawn, foldedUnit: folded ? unitOf(all[0].value).unit : null };
   };
 
-  const COUNTS = [16, 14, 12, 11, 10, 9, 8, 7, 6];
+  /** THE LADDER REACHES FURTHER DOWN AT A SMALL FRAME. At 1080x1080 the plate is 460px wide and the
+   *  rungs above it leave it 198px tall — a fifth of the area the landscape box has — and at six
+   *  countries plus a remainder the creme and nocturne directions could not fit "97,2 GW" inside the
+   *  cells that count. Six was never a measured floor, it was the smallest rung landscape ever
+   *  needed. Five, four and three keep the form honest: every drawn cell still carries its own
+   *  figure AND its own name, and what falls out is folded into the two remainders, which carry
+   *  theirs. Three named countries plus the two remainders is the floor — at nocturne, whose annot
+   *  register sets « ALLEMAGNE » 79px wide, it is the only rung at 540 where no cell is anonymous. */
+  const COUNTS = [16, 14, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3];
   let fits: {
     rung: (typeof rungs)[number];
     layout: ReturnType<typeof layoutFor>;
     got: NonNullable<ReturnType<typeof attempt>>;
     count: number;
+    inset: number;
+    everyNamed: boolean;
   } | null = null;
-  outer: for (const rung of rungs) {
+  outer: for (const everyNamed of [true, false])
+  for (const rung of rungs) {
     const layout_ = layoutFor(rung.title, rung.limit, rung.reading);
-    for (const count of COUNTS) {
-      const got = attempt(layout_, Math.min(count, cells.length));
-      if (got) {
-        fits = {
-          rung,
-          layout: layout_,
-          got,
-          count: Math.min(count, cells.length),
-        };
-        break outer;
-      }
-    }
+    /** The full form at every cell count before the folded one at any of them: a plate of six cells
+     *  each reading "34,6 GW" is a better drawing than one of sixteen reading "34,6". */
+    for (const inset of INSETS)
+      for (const foldUnit of [false, true])
+        for (const count of COUNTS) {
+          const got = attempt(
+            layout_,
+            Math.min(count, cells.length),
+            foldUnit,
+            inset,
+            everyNamed,
+          );
+          if (got) {
+            fits = {
+              rung,
+              layout: layout_,
+              got,
+              count: Math.min(count, cells.length),
+              inset,
+              everyNamed,
+            };
+            break outer;
+          }
+        }
   }
   if (!fits)
     throw new Error(
       `no filed cell count leaves every cell room for its own figure in this direction. An area ` +
         `encoding whose cells carry no numbers cannot be compared across the plate at all.`,
     );
-  const { layout, got, count } = fits;
+  const { layout, got, count, inset: INSET } = fits;
   const named = got.placed.filter((p) => p.fitsName).length;
   const based = got.placed.filter((p) => p.fitsBasis).length;
+  /** The caption is where the folded unit lands, so no figure on the plate is ever unitless — the
+   *  reader finds it once, on the line that already says what the areas are. */
+  const captionUnit = got.foldedUnit ? `${unit} (${got.foldedUnit})` : unit;
 
   onLadder?.(
     `ladder: headline ${fits.rung.title + 1}, standfirst ${fits.rung.limit + 1}, reading ` +
       (fits.rung.reading < 0 ? "dropped" : `form ${fits.rung.reading + 1}`) +
       ` · box ${layout.box.toFixed(0)}px · ${count} countries + remainder · ` +
-      `${got.placed.length} values, ${named} names, ${based} bases`,
+      `${got.placed.length} values, ${named} names, ${based} bases` +
+      (got.foldedUnit ? ` · unit "${got.foldedUnit}" folded into the caption` : ""),
   );
 
   const noteY = layout.boxBottom + 8 + axisBand.ascent;
@@ -461,7 +571,7 @@ export function DirectedTreemap({
         fontWeight={700}
         fill={mutedInk}
       >
-        {set(unit, axis)}
+        {set(captionUnit, axis)}
       </text>
 
       {got.placed.map(({ c, r, nameLines, fitsName, fitsBasis }) => {

@@ -24,6 +24,20 @@ export const GRID = [
   ".   .   MLT ITA .   GRC CYP .",
 ];
 export const NAMES = { DEU: "Allemagne", CZE: "Tchéquie" };
+/**
+ * THE SECOND FORM OF EVERY CODE — ISO 3166-1 alpha-2, the same standard as the alpha-3 the layout is written in.
+ * A cell names its country by its code, and how much of a code a cell can hold is a measurement of the frame: a
+ * landscape hexagon is 131px wide and holds « BGR » at the axis size, a square or portrait one is 92–110px and
+ * the widest alpha-3 wants 96px of the 86px a cell keeps free (measured 2026-09-24). So the code is a LADDER of
+ * two filed forms, not one string, and the frame that cannot keep the third letter drops to the form that keeps
+ * the country — never to a letter under the type floor.
+ */
+export const ALPHA2 = {
+  ISL: "IS", NOR: "NO", SWE: "SE", FIN: "FI", IRL: "IE", DNK: "DK", EST: "EE", LVA: "LV", NLD: "NL", DEU: "DE",
+  POL: "PL", LTU: "LT", UKR: "UA", BEL: "BE", LUX: "LU", CHE: "CH", CZE: "CZ", SVK: "SK", HUN: "HU", ROU: "RO",
+  PRT: "PT", ESP: "ES", FRA: "FR", LIE: "LI", AUT: "AT", SVN: "SI", HRV: "HR", BGR: "BG", MLT: "MT", ITA: "IT",
+  GRC: "GR", CYP: "CY",
+};
 /** The static beat's rate bornes, per 1 000 inhabitants. */
 export const RATE_BREAKS = [5, 12, 18, 25];
 /** The count bornes, in people — the video's own, so the count's ramp has as many classes as the rate's. */

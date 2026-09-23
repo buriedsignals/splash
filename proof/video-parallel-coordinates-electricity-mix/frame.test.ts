@@ -88,7 +88,7 @@ for (const id of ["creme", "nocturne", "rapport"]) {
             railXAt(props, piece.axis, 0),
             railXAt(props, piece.axis, 0),
             props.foot,
-            shown.ys[piece.axis],
+            shown.vs[piece.axis],
           ].map((v) => Math.round(v * 1e6) / 1e6),
         );
       });

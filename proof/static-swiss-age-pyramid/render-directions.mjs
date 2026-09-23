@@ -65,14 +65,27 @@ const offered = applicableTreatments(facts);
 console.log(`treatments applicable: ${offered.map((t) => t.id).join(", ")}`);
 console.log(`crossing band derived from the data: ${facts.mirrorCrossingKey}\n`);
 
-const title = `Les femmes passent devant les hommes à partir de ${facts.mirrorCrossingKey} ans`;
-const limits = `Population résidente suisse en 2023 : ${totalLeft.toLocaleString("fr-CH")} hommes, ${totalRight.toLocaleString("fr-CH")} femmes. Les bandes d’âge suivent leur ordre naturel, la plus jeune en bas.`;
+// THE HEADER'S OWN RUNGS, shortest last. The component takes the first that leaves every one of the
+// twenty-one age bands room for its own name, trying the standfirst's forms before the headline's —
+// the removal ladder's order, cheapest information per pixel recovered first. Landscape clears the
+// test at the first rung, so it never sees the others; a 1080x1080 frame gives 72% of its height to
+// this header at rung one and leaves the rows 5.2px each, which is a smear, not a silhouette.
+const title = [
+  `Les femmes passent devant les hommes à partir de ${facts.mirrorCrossingKey} ans`,
+  `Les femmes passent devant dès ${facts.mirrorCrossingKey} ans`,
+  `Femmes devant dès ${facts.mirrorCrossingKey} ans`,
+];
+const limits = [
+  `Population résidente suisse en 2023 : ${totalLeft.toLocaleString("fr-CH")} hommes, ${totalRight.toLocaleString("fr-CH")} femmes. Les bandes d’âge suivent leur ordre naturel, la plus jeune en bas.`,
+  `Population résidente suisse en 2023 : ${totalLeft.toLocaleString("fr-CH")} hommes, ${totalRight.toLocaleString("fr-CH")} femmes.`,
+  `Population résidente suisse en 2023, par bandes de cinq ans.`,
+];
 const source = "Source : ONU, World Population Prospects (2024), via Our World in Data";
 
 const textPerRegister = {
-  display: title,
+  display: title.join(" "),
   eyebrow: EYEBROW,
-  body: `${limits} ${source}`,
+  body: `${limits.join(" ")} ${source}`,
   axis: "100k 200k 300k",
   annot: `${LEFT} ${RIGHT} ${rows.map((r) => r.band).join(" ")} passent devant dès`,
   value: rows.map((r) => String(r.male)).join(" "),
@@ -125,5 +138,5 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
     name: nameAtSize(id, SIZE),
     scale: EXPORT_FRAME.scale,
   });
-  console.log(`  -> renders/${id}.png\n`);
+  console.log(`  -> renders/${nameAtSize(id, SIZE)}.png\n`);
 }

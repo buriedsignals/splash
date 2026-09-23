@@ -126,14 +126,26 @@ const one = (v) =>
 const format = (v) => (v < 1 ? two(v) : one(v));
 const totalOf = (r) => keys.reduce((sum, k) => sum + r[k], 0);
 
-const title = `En ${reachedAt.year}, le solaire est devenu la troisième source d’électricité suisse`;
-const limits =
+// THE SHORT HEADER THE SMALL FRAMES TAKE. Measured, not assumed: at 1080x1080 the long header left
+// nocturne a plot of MINUS 1.2px — the eyebrow, four lines of display, three of body and the reading
+// line together exceed the frame — and creme 53px, a 436 x 53 strip in which a stream's thickness is
+// not readable. The landscape composition is untouched; these are what a half-width column can set.
+const SHORT_HEADER = SIZE !== "landscape";
+const title = SHORT_HEADER
+  ? `En ${reachedAt.year}, le solaire passe troisième`
+  : `En ${reachedAt.year}, le solaire est devenu la troisième source d’électricité suisse`;
+const limits = SHORT_HEADER
+  ? `Production électrique suisse par source, ${FIRST}–${LAST}, en ${UNIT}. Le solaire passe de ` +
+    `${format(first[TRACKED])} à ${format(last[TRACKED])}.`
+  : 
   `Production électrique suisse par source, ${FIRST}–${LAST}, en ${UNIT}. Le solaire passe de ` +
   `${format(first[TRACKED])} à ${format(last[TRACKED])} ${UNIT} et double le pétrole en ` +
   `${reachedAt.year} ; l’hydraulique monte de ${format(first.Hydropower)} à ${format(last.Hydropower)}, ` +
   `le nucléaire descend de ${format(first.Nuclear)} à ${format(last.Nuclear)}.`;
-const reading =
-  `Lecture : l’épaisseur d’une bande est sa production, sa position ne veut rien dire — les couches ` +
+const reading = SHORT_HEADER
+  ? `Lecture : l’épaisseur d’une bande est sa production, sa position ne veut rien dire. Pas d’axe ` +
+    `vertical : les quantités sont écrites.`
+  : `Lecture : l’épaisseur d’une bande est sa production, sa position ne veut rien dire — les couches ` +
   `sont empilées des plus grandes au centre vers les plus fines à l’extérieur. Il n’y a donc pas ` +
   `d’axe vertical : les quantités sont écrites.`;
 const source =
@@ -208,9 +220,10 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       name: nameAtSize(id, SIZE),
       scale: FRAME.scale,
     });
-    console.log(`  -> renders/${id}.png\n`);
+    console.log(`  -> renders/${nameAtSize(id, SIZE)}.png\n`);
   } catch (error) {
-    for (const ext of ["png", "svg"]) await rm(join(OUT, `${id}.${ext}`), { force: true });
+    for (const ext of ["png", "svg"])
+      await rm(join(OUT, `${nameAtSize(id, SIZE)}.${ext}`), { force: true });
     refused.push({ id, why: error.message });
     console.log(`  REFUSED — ${error.message}\n`);
   }

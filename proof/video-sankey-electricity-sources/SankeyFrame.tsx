@@ -66,6 +66,9 @@ export type SankeyFrameProps = {
   baselineShift: number;
   sources: Node[];
   countries: Node[];
+  /** Null where the labels sit in their own gutter. At a narrow frame they sit inside the field and
+   *  are struck in the ground, so a name reads over the ribbons it crosses (`build.mjs`, NARROW). */
+  labelHalo: { colour: string; width: number } | null;
   flows: Flow[];
   subjectKey: string;
   trackedTo: string;
@@ -142,17 +145,33 @@ export function SankeyFrame(
       <g key={`label-${n.key}`} opacity={opacity}>
         {s.accent < 1 ? (
           <g opacity={1 - s.accent}>
-            <Text line={n.name} register={r.annot} fill={colours.text.name} />
-            <Text line={n.value} register={r.value} fill={colours.text.value} />
+            <Text
+              line={n.name}
+              register={r.annot}
+              fill={colours.text.name}
+              halo={props.labelHalo ?? undefined}
+            />
+            <Text
+              line={n.value}
+              register={r.value}
+              fill={colours.text.value}
+              halo={props.labelHalo ?? undefined}
+            />
           </g>
         ) : null}
         {s.accent > 0 ? (
           <g opacity={s.accent}>
-            <Text line={n.name} register={r.annot} fill={colours.text.accent} />
+            <Text
+              line={n.name}
+              register={r.annot}
+              fill={colours.text.accent}
+              halo={props.labelHalo ?? undefined}
+            />
             <Text
               line={n.value}
               register={r.value}
               fill={colours.text.accent}
+              halo={props.labelHalo ?? undefined}
             />
           </g>
         ) : null}

@@ -2,7 +2,7 @@
  * One frame of « La Croatie est le seul pays de l'UE à émettre plus de CO₂ par personne qu'en 1990 » — the title card, the
  * 1990 levels, every level going to 2024 with the part lost left pale, the parts lost sliding across the zero line into
  * the changes, the camera closing ×250 onto the zero line where Croatia's rise becomes a length, then pulling back
- * (BRIEF.md).
+ * (BRIEF.md). Where the frame cannot hold all 27 rows, `scopeLine` is the sentence that says which ones it holds.
  *
  * NOTHING HERE IS MEASURED OR CHOSEN: positions, texts and colours come from `build.mjs`; motion from `sceneAt`.
  */
@@ -33,6 +33,8 @@ export type DivergingBarFrameProps = {
   year: Line;
   countAt: { x: number; y: number };
   unitLine: Line;
+  /** R8's sentence — which rows were drawn, out of how many, and by what rule. `null` when the whole set is drawn. */
+  scopeLine: Line | null;
   gap: number;
   strokes: { zero: number; ring: number; rise: number };
   halo: { value: number; axis: number };
@@ -70,6 +72,7 @@ export function DivergingBarFrame(props: DivergingBarFrameProps & { at: number; 
       <rect width={frame.width} height={frame.height} fill={colours.ground} />
       <g opacity={scene.furniture}>
         <Text line={props.unitLine} register={r.axis} fill={colours.text.axis} />
+        {props.scopeLine ? <Text line={props.scopeLine} register={r.axis} fill={colours.text.axis} /> : null}
         {props.rows.map((row, i) => (
           <Text key={`name${i}`} line={row.name} register={r.axis} fill={row.key === props.subject ? colours.text.name : blend(colours.text.name, colours.text.axis, scene.rows[i].stepBack)} opacity={1 - 0.4 * scene.rows[i].stepBack} />
         ))}

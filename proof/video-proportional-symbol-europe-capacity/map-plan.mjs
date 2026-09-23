@@ -31,7 +31,7 @@ export const arrivalField = (k) => `c${k}`;
  * @param {{ top: Array<{ lon: number, lat: number, r: number }>, rest: Array<[number, number]>, colours: any,
  *   strokes: { circle: number }, pointR: number, cameras: { whole: any } }} input
  */
-export function mapPlanFor({ top, rest, colours, strokes, pointR, cameras }) {
+export function mapPlanFor({ top, rest, colours, strokes, pointR, cameras, stage = REFERENCE }) {
   const half = strokes.circle / 2;
   const restLayer = {
     id: "rest",
@@ -66,8 +66,11 @@ export function mapPlanFor({ top, rest, colours, strokes, pointR, cameras }) {
     styleName: "dataviz",
     projection: "mercator",
     tints: { water: colours.sea, land: colours.land },
-    referenceWidth: REFERENCE.width,
-    referenceHeight: REFERENCE.height,
+    // THE STAGE THE CAMERA WAS AUTHORED FOR, which is the stage this run draws at — not 1920 x 1080. A consumer that
+    // re-fits a plan to its own stage (`zoomShiftFor`) shifts the zoom by the ratio to these numbers, so a portrait
+    // plan that declared the landscape frame would hand it a ratio it never had.
+    referenceWidth: stage.width,
+    referenceHeight: stage.height,
     degreesPerPixel: 1,
     camera: { view: viewOf(cameras.whole) },
     layers: [restLayer, ...circles],

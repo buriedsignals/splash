@@ -154,12 +154,28 @@ const largest = Math.max(...spokes.flatMap((s) => s.shares));
 const ceiling = Math.ceil(largest / 10) * 10;
 const rings = [ceiling / 4, ceiling / 2, (ceiling * 3) / 4, ceiling];
 
-const title = `La France et l’Allemagne produisent presque autant d’électricité, avec des mix opposés`;
-const limits =
+/** THE COPY, SHORTEST-LAST. A radar is a SQUARE drawing: its radius is bounded by the shorter of
+ *  the band it is given and the column it sits in, so at a narrow or tall frame the wheel is what
+ *  the copy takes from. The ladder exists so the copy gives way instead — measured at 540x540,
+ *  where the one filed headline ran to four lines of display type and left the wheel a 44px
+ *  radius carrying nine spoke labels. */
+const title = [
+  `La France et l’Allemagne produisent presque autant d’électricité, avec des mix opposés`,
+  `Deux mix opposés pour presque la même électricité`,
+  `France et Allemagne : deux mix opposés`,
+];
+const limits = [
   `Part de chaque source dans la production électrique du pays, en ${YEAR}. ` +
-  `${french(SUBJECT)} ${one(fr.total)} TWh, ${french(OTHER)} ${one(de.total)} TWh. ` +
-  `Le nucléaire fait ${one(shareOf(fr, "Nuclear"))} % du mix français et ${one(shareOf(de, "Nuclear"))} % du mix allemand ; ` +
-  `l’éolien et le solaire réunis, ${one(shareOf(de, "Wind", "Solar"))} % en Allemagne contre ${one(shareOf(fr, "Wind", "Solar"))} % en France.`;
+    `${french(SUBJECT)} ${one(fr.total)} TWh, ${french(OTHER)} ${one(de.total)} TWh. ` +
+    `Le nucléaire fait ${one(shareOf(fr, "Nuclear"))} % du mix français et ${one(shareOf(de, "Nuclear"))} % du mix allemand ; ` +
+    `l’éolien et le solaire réunis, ${one(shareOf(de, "Wind", "Solar"))} % en Allemagne contre ${one(shareOf(fr, "Wind", "Solar"))} % en France.`,
+  `Part de chaque source dans la production électrique du pays, en ${YEAR}. ` +
+    `${french(SUBJECT)} ${one(fr.total)} TWh, ${french(OTHER)} ${one(de.total)} TWh. ` +
+    `Le nucléaire fait ${one(shareOf(fr, "Nuclear"))} % du mix français et ${one(shareOf(de, "Nuclear"))} % du mix allemand.`,
+  `Part de chaque source dans la production électrique du pays, en ${YEAR}. ` +
+    `${french(SUBJECT)} ${one(fr.total)} TWh, ${french(OTHER)} ${one(de.total)} TWh.`,
+  `Part de chaque source dans la production électrique du pays, en ${YEAR}.`,
+];
 /** The reading line and its short form. A direction that sets the annot register in tracked capitals
  *  turns three lines into seven, so the component takes the longest rung that fits its column. */
 const reading = [
@@ -168,14 +184,21 @@ const reading = [
     `fossiles. Cercle extérieur ${percent(ceiling)} ; chaque nombre est une part, en %.`,
   `Lecture : part de la production du pays lui-même, en %. Rayons par famille, sens horaire. ` +
     `Cercle extérieur ${percent(ceiling)}.`,
+  /** The last two rungs keep the BENCHMARK — « part de la production du pays lui-même » is the one
+   *  sentence `the-benchmark-is-captioned` exists for, and a radar that drops it is nine axes on a
+   *  shared radial scale with nothing saying what of. The spoke ORDER goes first, then the ring's
+   *  own number, because both are also printed on the plate: the families run clockwise from twelve
+   *  and the ceiling label sits on the outer ring. */
+  `Lecture : part de la production du pays lui-même, en %. Rayons par famille, sens horaire.`,
+  `Lecture : part de la production du pays lui-même, en %.`,
 ];
 const source =
   "Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data";
 
 const textPerRegister = {
-  display: title,
+  display: title.join(" "),
   eyebrow: EYEBROW,
-  body: `${limits} ${source}`,
+  body: `${limits.join(" ")} ${source}`,
   axis: percent(ceiling),
   annot: `${spokes.map((s) => s.label).join(" ")} ${reading.join(" ")} ${items.map(french).join(" ")}`,
   value: spokes.map((s) => s.shares.map(format).join(" · ")).join(" "),
@@ -232,6 +255,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
         format,
         direction,
         treatments: offered.map((t) => t.id),
+        onLadder: (note) => console.log(`  ${note}`),
       }),
       // THE SLOT'S OWN SIZE. `--size` picks it; landscape is what an article's column asks for and
       // what this lineage's tuning was measured at. The frame is half the export size at scale 2.
@@ -241,9 +265,10 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       name: nameAtSize(id, SIZE),
       scale: FRAME.scale,
     });
-    console.log(`  -> renders/${id}.png\n`);
+    console.log(`  -> renders/${nameAtSize(id, SIZE)}.png\n`);
   } catch (error) {
-    for (const ext of ["png", "svg"]) await rm(join(OUT, `${id}.${ext}`), { force: true });
+    for (const ext of ["png", "svg"])
+      await rm(join(OUT, `${nameAtSize(id, SIZE)}.${ext}`), { force: true });
     refused.push({ id, why: error.message });
     console.log(`  REFUSED — ${error.message}\n`);
   }

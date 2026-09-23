@@ -22,8 +22,9 @@ export type LollipopFrameProps = {
   colours: { ground: string; grid: string; past: string; present: string; faded: string; ring: string; text: Record<"eyebrow" | "title" | "past" | "present" | "name" | "axis" | "count", string> };
   subject: string;
   other: string;
-  pairs: Array<{ centreX: number; code: string; before: number; after: number; pastX: number; presentX: number; name: Line; dates: Line[] }>;
+  pairs: Array<{ centreX: number; code: string; before: number; after: number; pastX: number; presentX: number; baseline: number; name: Line; dates: Line[] }>;
   baseline: number;
+  zeroLines: number[];
   unit: number;
   R: number;
   zero: { left: number; right: number };
@@ -53,13 +54,13 @@ export function LollipopFrame(props: LollipopFrameProps & { at: number; svgRef?:
   const { frame, registers: r, colours, credit, titleCard } = props;
   const scene = sceneAt(props as never, props.at);
   const valueHalo = { colour: colours.ground, width: props.halo.value };
-  const lolly = (x: number, v: number, colour: string, textColour: string, key: string, opacity: number, valueShown = 1) => {
-    const y = props.baseline - v * props.unit;
+  const lolly = (zero: number, x: number, v: number, colour: string, textColour: string, key: string, opacity: number, valueShown = 1) => {
+    const y = zero - v * props.unit;
     const text = oneText(v);
     const width = props.valueWidths[text];
     return (
       <g key={key}>
-        <line x1={x} x2={x} y1={props.baseline} y2={y} stroke={colour} strokeWidth={props.strokes.stem} />
+        <line x1={x} x2={x} y1={zero} y2={y} stroke={colour} strokeWidth={props.strokes.stem} />
         <circle cx={x} cy={y} r={props.R} fill={colour} />
         <Text line={{ text, width, x: x - width / 2, y: y - props.valueRise }} register={r.value} fill={textColour} opacity={opacity * valueShown} halo={valueHalo} />
       </g>
@@ -71,7 +72,9 @@ export function LollipopFrame(props: LollipopFrameProps & { at: number; svgRef?:
     <svg ref={props.svgRef} xmlns="http://www.w3.org/2000/svg" width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
       <rect width={frame.width} height={frame.height} fill={colours.ground} />
       <g opacity={scene.furniture}>
-        <line x1={props.zero.left} x2={props.zero.right} y1={props.baseline} y2={props.baseline} stroke={colours.grid} strokeWidth={props.strokes.grid} />
+        {props.zeroLines.map((y, i) => (
+          <line key={`zero${i}`} x1={props.zero.left} x2={props.zero.right} y1={y} y2={y} stroke={colours.grid} strokeWidth={props.strokes.grid} />
+        ))}
         <Text line={props.unitLine} register={r.axis} fill={colours.text.axis} />
         {props.pairs.map((p, i) => (
           <g key={`labels${i}`}>
@@ -88,8 +91,8 @@ export function LollipopFrame(props: LollipopFrameProps & { at: number; svgRef?:
         if (!(s.up > 0)) return [];
         const kept = 1 - 0.7 * s.stepBack;
         return [
-          s.pastShown ? lolly(s.pastX, s.past, blend(colours.past, colours.faded, s.stepBack), colours.text.past, `past${i}`, kept) : null,
-          lolly(s.x, s.present, blend(colours.present, colours.faded, s.stepBack), colours.text.present, `present${i}`, kept, p.code === props.other ? 1 - scene.ratioShown : 1),
+          s.pastShown ? lolly(p.baseline, s.pastX, s.past, blend(colours.past, colours.faded, s.stepBack), colours.text.past, `past${i}`, kept) : null,
+          lolly(p.baseline, s.x, s.present, blend(colours.present, colours.faded, s.stepBack), colours.text.present, `present${i}`, kept, p.code === props.other ? 1 - scene.ratioShown : 1),
         ];
       })}
 
@@ -100,7 +103,7 @@ export function LollipopFrame(props: LollipopFrameProps & { at: number; svgRef?:
 
       {props.pairs.map((p, i) =>
         p.code === props.subject ? (
-          <circle key="ring" cx={scene.pairs[i].x} cy={props.baseline - scene.pairs[i].present * props.unit} r={props.R * 2} fill="none" stroke={colours.ring} strokeWidth={props.strokes.ring} opacity={scene.ring} />
+          <circle key="ring" cx={scene.pairs[i].x} cy={p.baseline - scene.pairs[i].present * props.unit} r={props.R * 2} fill="none" stroke={colours.ring} strokeWidth={props.strokes.ring} opacity={scene.ring} />
         ) : null,
       )}
 

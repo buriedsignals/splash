@@ -5,14 +5,18 @@
 // names and faces. Every real render goes through `render-directions-video.mjs`; the placeholder below
 // carries no faces, so a render driven by it is refused rather than drawn in whatever this machine has.
 import { Composition } from "remotion";
-import { sizeFor } from "#shared/chart-video/sizes.mjs";
+import { EXPORT_SIZE_NAMES, sizeFor } from "#shared/chart-video/sizes.mjs";
 import {
   DirectedGanttVideo,
   type DirectedGanttVideoProps,
 } from "./DirectedGanttVideo";
 import { GANTT_VIDEO_TIMING } from "./timing-contract";
 
-export const COMPOSITION_ID = "video-gantt-top-ten-tenure-landscape";
+/** ONE COMPOSITION PER EXPORT SIZE, and not one. Remotion bundles this root in a process of its
+ *  own, which never sees the runner's `--size`, so the size cannot be read here — it has to be
+ *  registered here and CHOSEN by the runner, which picks `<base>-<size>`. */
+export const COMPOSITION_BASE = "video-gantt-top-ten-tenure";
+export const COMPOSITION_ID = `${COMPOSITION_BASE}-landscape`;
 
 const PLACEHOLDER = {
   faces: [],
@@ -20,16 +24,23 @@ const PLACEHOLDER = {
 } as unknown as DirectedGanttVideoProps;
 
 export const RemotionRoot: React.FC = () => {
-  const { width, height } = sizeFor("landscape");
   return (
-    <Composition
-      id={COMPOSITION_ID}
-      component={DirectedGanttVideo}
-      durationInFrames={GANTT_VIDEO_TIMING.total}
-      fps={GANTT_VIDEO_TIMING.fps}
-      width={width}
-      height={height}
-      defaultProps={PLACEHOLDER}
-    />
+    <>
+      {EXPORT_SIZE_NAMES.map((size) => {
+        const { width, height } = sizeFor(size);
+        return (
+          <Composition
+            key={size}
+            id={`${COMPOSITION_BASE}-${size}`}
+            component={DirectedGanttVideo}
+            durationInFrames={GANTT_VIDEO_TIMING.total}
+            fps={GANTT_VIDEO_TIMING.fps}
+            width={width}
+            height={height}
+            defaultProps={PLACEHOLDER}
+          />
+        );
+      })}
+    </>
   );
 };

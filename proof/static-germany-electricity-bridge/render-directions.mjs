@@ -161,5 +161,5 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
     name: nameAtSize(id, SIZE),
     scale: EXPORT_FRAME.scale,
   });
-  console.log(`  -> renders/${id}.png\n`);
+  console.log(`  -> renders/${nameAtSize(id, SIZE)}.png\n`);
 }

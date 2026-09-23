@@ -13,7 +13,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { adjustToContrast, contrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
+import { frameInsetFor, sizeFor, videoExportSize } from "#shared/chart-video/sizes.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
@@ -30,10 +30,15 @@ import { CONTOUR_VIDEO_TIMING } from "./timing-contract.ts";
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const ROOT = join(HERE, "..", "..");
 export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
-export const SIZE = "landscape";
+/** The size this run exports at — `--size`, landscape when nothing asks. R2 names three and
+ *  everything under it already answered per size; only this line pinned the beat to one. */
+export const SIZE = videoExportSize();
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 const NB = "\u00A0";
 const SEAT_STEP = 10;
+/** The sea probes, in order: each is a seat `measure.mjs` projects on the real map, and the first that lands
+ *  inside the frame on the plan's water tint says what the sea IS. */
+const SEA_PROBES = ["atlantic", "biscay"];
 /** The swatch beside « hors mesure », × the axis lead. */
 const SWATCH_W = 1.2;
 const SWATCH_H = 0.4;
@@ -44,6 +49,9 @@ const CHART_H = 7;
 const CHART_PAD = 0.3;
 /** The narrowest the curve may be, × the key's width. */
 const CHART_MIN = 0.8;
+/** The shortest the curve may be, × the axis lead — the floor of the ladder a frame that is not 16:9 steps down
+ *  when `CHART_H` finds no water. Below it the curve is a stripe and its slope stops being an argument. */
+const CHART_MIN_H = 4;
 /** The share of land the key and the curve may stand over. */
 export const PANEL_LAND = 0.03;
 /** A line this close to the median gives way to it: at the scale of Europe the two run a few pixels apart. */
@@ -54,10 +62,70 @@ const SAME_CELL = 3;
 const RIM_LAT = 52;
 /** The farthest point's number stands this far from its centre, × the dot: past the ring (2.2) and its stroke. */
 export const SUMMIT_OFFSET = 3.6;
+/** The air a block in the ground band keeps from the band's edges and from the block above it, × the axis lead — the
+ *  same `gap` every other pair of blocks in this beat is held apart by. */
+const BAND_AIR = 0.25;
+/** The least share of the frame the live map may be left with once the band has taken its room — the static map
+ *  beat's `MIN_MAP_SHARE`, and its reasoning: below a third the map stops being the largest single thing in the
+ *  frame and the beat is a caption with an illustration. */
+const MIN_MAP_SHARE = 1 / 3;
+
+/**
+ * THE GROUND BAND — WHAT A SQUARE FRAME MAKES POSSIBLE, AND WHAT THE OTHER FORMATS ALREADY DRAW.
+ *
+ * Everything this beat stands over the map — the key, the credit, the curve — is placed by the same rule: over open
+ * water, or at worst over `PANEL_LAND` of land. At 16:9 Europe is fitted by its HEIGHT and the width left over is the
+ * Atlantic, a band some 810 px wide and the whole height of the frame; at 9:16 it is fitted by its WIDTH and the
+ * Norwegian Sea runs across the top. A SQUARE frame fits the same ground by its width and has no spare height at all:
+ * measured 2026-09-24 on the square whole-map picture, the bottom 100 px of the frame are 72 % land and the top 100 px
+ * are 27 % — the frame is Europe and nothing else. That is what the three directions refused with: « a 677x126 key
+ * finds nowhere on a 1080x1080 stage over at most 3 % land », and the key cannot narrow, because its width is the
+ * longest count « 100 % à moins de 682 km » set at the 36 px floor.
+ *
+ * So at square the frame overrides the rule that the live map takes the whole of it: a band of the direction's own
+ * ground across the FOOT carries what the map has no room for, and the live map keeps the whole width and is fitted
+ * and raised into the band above it (`map-plan.mjs`, `camerasOf`). This is a DIFFERENT DRAWING of the same argument,
+ * not a degraded one — the key and the credit cross no coast because they cross no map at all.
+ *
+ * THE BAND CARRIES THE KEY, THE CURVE AND THE CREDIT — the whole column the landscape frame hangs down its left
+ * margin — and it was MEASURED down to two of them first. The first band drawn here carried the key and the credit
+ * alone, leaving the map 761-780 px of the 1080 and the curve its own search; measured 2026-09-24, all three
+ * directions refused it: « the curve finds nowhere over at most 3 % land, 542-677 wide and 190-333 tall, on a
+ * 1080x767 map ». A square map of Europe has no water for any of the three, so the band carries all three.
+ *
+ * THE CURVE JOINS AT THE FLOOR OF ITS OWN HEIGHT LADDER, not at its full height. In the band nothing competes with it
+ * for water; the only thing it competes with is the map, and every pixel it takes above `CHART_MIN_H` is a pixel
+ * Europe is drawn smaller by. `CHART_MIN_H` is already this beat's statement of how short the panel may be before
+ * « the curve is a stripe and its slope stops being an argument » — so it is the honest rung to stand on here, and it
+ * buys the map some 140 px back.
+ *
+ * THE MAP STAYS THE SUBJECT: a band that leaves it under `MIN_MAP_SHARE` of the frame is refused with the arithmetic.
+ */
+function bandFor({ stage, inset, vInset, air, gap, key, curveHeight, credit }) {
+  const height = air + key.height + air + curveHeight + air + credit.height + vInset;
+  const y = stage.height - height;
+  const mapBand = { width: stage.width, height: y };
+  if (mapBand.height < stage.height * MIN_MAP_SHARE)
+    throw new Error(
+      `the ground band is ${Math.round(height)}px tall and leaves the map ${Math.round(mapBand.height)}px of a ` +
+        `${stage.height}px frame, under the ${Math.round(stage.height * MIN_MAP_SHARE)}px a map beat keeps for its map. ` +
+        `Give the beat a shorter credit, or fewer rows in the key.`,
+    );
+  return {
+    x: 0,
+    y,
+    width: stage.width,
+    height,
+    mapBand,
+    keyAt: { x: inset, y: y + air },
+    curveAt: { x: inset, y: y + air + key.height + air, width: key.width, height: curveHeight },
+    creditAt: { x: inset, y: stage.height - vInset - credit.height },
+  };
+}
 
 export function loadBeat() {
   const subject = loadSubject();
-  const cameras = camerasOf();
+  const cameras = camerasOf(sizeFor(SIZE));
   return { subject, states: statesFor(subject), copy: copyOf(subject), cameras, mapSeats: mapSeatsOf(subject), sweep: sweepOf(subject, cameras.whole) };
 }
 
@@ -110,11 +178,20 @@ const touches = (a, b, gap = 0) => a.x < b.x + b.width + gap && b.x < a.x + a.wi
 
 const MEASURED = join(HERE, "measured.json");
 let measuredCache = null;
-/** `measured.json`, read once: what `measure.mjs` froze on the real map. */
+/** `measured.json` AT THIS SIZE, read once: what `measure.mjs` froze on the real map for this frame shape.
+ *  The file is keyed by export size because the camera is fitted to the stage — a portrait camera is a different
+ *  camera, over a different plan, with a different digest — so one frozen entry cannot serve three sizes. A size
+ *  that has not been measured is named here with the command that measures it, rather than read as a plan drift. */
 export function readMeasured() {
   if (measuredCache) return measuredCache;
   if (!existsSync(MEASURED)) throw new Error("no measured.json beside the beat — run measure.mjs with the worktree's .env loaded");
-  measuredCache = JSON.parse(readFileSync(MEASURED, "utf8"));
+  const all = JSON.parse(readFileSync(MEASURED, "utf8"));
+  if (!all[SIZE])
+    throw new Error(
+      `measured.json holds no ${SIZE} entry — measured so far: ${Object.keys(all).join(", ") || "nothing"}. ` +
+        `Run: set -a && . ./.env && set +a && bun proof/video-contour-europe-distance/measure.mjs --size ${SIZE}`,
+    );
+  measuredCache = all[SIZE];
   return measuredCache;
 }
 /** The measured colour of the cell under a stage point. */
@@ -141,7 +218,7 @@ export function countOf(grid, kind) {
 /**
  * @param {{ measured?: any }} [options]  `measured: null` builds the plan and the camera only — what `measure.mjs` reads.
  */
-export function buildDirection(id, { subject, states, copy, cameras, sweep }, { measured = undefined } = {}) {
+export function buildDirection(id, { subject, states, copy, cameras: beatCameras, sweep: beatSweep }, { measured = undefined } = {}) {
   const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, `${id}.md`)), textPerRegisterOf(copy));
   const resolved = Object.fromEntries(REGISTER_NAMES.map((name) => [name, registerOf(direction, name)]));
   const registers = videoRegistersOf(resolved, SIZE);
@@ -218,31 +295,6 @@ export function buildDirection(id, { subject, states, copy, cameras, sweep }, { 
   const strokes = { line: (direction.stroke?.rule ?? 1) * k, median: 1.6 * (direction.stroke?.rule ?? 1) * k, dot };
   const pad = haloOf(axis, k) / 2;
 
-  // ── the live map: the land, the lines and the farthest point, measured before anything is placed over it ───
-  const summitSeat = lonLatOfFrame(field, field.summit);
-  const summitText = applyCase(copy.summit, value.transform);
-  const study = [...subject.study].sort();
-  const basePlan = mapPlanFor({ subject, study, colours, strokes, registers, cameras, summit: { seat: summitSeat, text: summitText, halo: haloOf(value, k), offset: SUMMIT_OFFSET * dot } });
-  const levels = copy.levels.map(({ level }) => ({ level }));
-  const yielding = copy.levels.filter(({ level }) => level !== copy.medianLevel && Math.abs(level - copy.medianLevel) < YIELD_KM).map(({ level }) => level);
-  /** What the frame's drive reads (`scene.mjs`): the live map's state needs no overlay. */
-  const drive = { cameras, levels, medianLevel: copy.medianLevel, yielding, within: field.within, deepest: field.deepest, states, timing: CONTOUR_VIDEO_TIMING };
-  if (measured === null) return { props: { mapPlan: basePlan, ...drive } };
-  measured ??= readMeasured();
-  if (measured.planDigest?.[id] !== planDigestOf(basePlan)) throw new Error(`${id}: the plan changed since it was measured — run measure.mjs again`);
-  if (measured.size.width !== stage.width || measured.size.height !== stage.height)
-    throw new Error(`${id}: measured at ${measured.size.width}×${measured.size.height}, drawn at ${stage.width}×${stage.height}`);
-  const m = measured.cameras[id].whole;
-  const { grid } = m;
-  const sea = cellAt(grid, ...m.projected.atlantic);
-  if (!near(sea, ground)) throw new Error(`${id}: the measured sea ${sea} is not the ground ${ground}`);
-  const landIn = countOf(grid, (c) => !near(c, sea));
-  const seaIn = countOf(grid, (c) => near(c, sea));
-  const landShare = (box) => {
-    const { count, total } = landIn(box);
-    return total ? count / total : 0;
-  };
-
   // ── the key: the count over « hors mesure » ─────────────────────────────────────────────────────────────
   /** Every text the count can show, keyed by its uncased form, cased by its register, with the width Bun measured —
    *  the composition draws the cased text and checks that width back. */
@@ -268,33 +320,115 @@ export function buildDirection(id, { subject, states, copy, cameras, sweep }, { 
     halo: haloOf(axis, k),
     valueHalo: haloOf(value, k),
   };
-  const chartHeight = Math.round(CHART_H * axis.lead);
+  let chartHeight = Math.round(CHART_H * axis.lead);
   const columnHeight = key.height + gap + chartHeight;
 
-  // ── the credit, the key and the curve: one column, on the measured sea ────────────────────────────────────
-  // THE CREDIT FIRST, ON ONE LINE AND ON THE OPEN SEA: every cell under it is sea, so it crosses no coast. The longest
-  // form that finds a row is set, in the highest row from the top-left.
+  /**
+   * THE GROUND BAND AT SQUARE, and the camera fitted into what it leaves (`bandFor` above). The band is as tall as
+   * what it carries, so it is a DIRECTION's band — nocturne's key is 712x117 and rapport's 704x131 — which is why the
+   * camera is rebuilt here per direction rather than taken from the beat, and the sweep's raster with it: both are
+   * read off the camera, and `measure.mjs` measures one plan per direction anyway.
+   */
+  const band = SIZE === "square" ? bandFor({ stage, inset, vInset, air: BAND_AIR * axis.lead, gap, key, curveHeight: Math.round(CHART_MIN_H * axis.lead), credit: credits[0] }) : null;
+  const cameras = band ? camerasOf(stage, band.mapBand) : beatCameras;
+  const sweep = band ? sweepOf(subject, cameras.whole) : beatSweep;
+  /** WHERE THE LIVE MAP STOPS: the band's top edge at square, the frame's own foot everywhere else. The map is still
+   *  MOUNTED on the whole frame — the measurement is a picture of that frame and its seats are its pixels — so
+   *  anything seated below this floor would be drawn under the band. */
+  const mapFloor = band ? band.y : stage.height;
+
+  // ── the live map: the land, the lines and the farthest point, measured before anything is placed over it ───
+  const summitSeat = lonLatOfFrame(field, field.summit);
+  const summitText = applyCase(copy.summit, value.transform);
+  const study = [...subject.study].sort();
+  // WHICH SIDE THE FARTHEST POINT'S NUMBER STANDS ON, decided before the plan is built and therefore offline: the
+  // projector is the same one `map-plan.test.ts` holds to a tenth of a pixel against the measured map. To the right
+  // while the number clears the margin there, to the left when it does not — at 1080x1920 the point sits against the
+  // east edge and the number ran off the frame.
+  //
+  // THE DECISION COUNTS THE SAME PIXELS THE ASSERTION DOES. It used to weigh the number's letters alone while the
+  // refusal below measures the number's BOX, which carries the halo's pad on its right — so a point that cleared the
+  // margin by less than the pad chose the right and was then refused for running 5 px past it (measured 2026-09-24,
+  // nocturne at square, 772..1013 against a margin at 1008). The pad is in both now, or the two never agreed.
+  const summitAtX = projectorOf(cameras.whole, stage)(summitSeat)[0];
+  const summitWidth = widthOf(summitText, value);
+  const summitSide = summitAtX + SUMMIT_OFFSET * dot + summitWidth + pad <= stage.width - inset ? "right" : "left";
+  const basePlan = mapPlanFor({ subject, study, colours, strokes, registers, cameras, summit: { seat: summitSeat, text: summitText, halo: haloOf(value, k), offset: SUMMIT_OFFSET * dot, side: summitSide }, stage });
+  const levels = copy.levels.map(({ level }) => ({ level }));
+  const yielding = copy.levels.filter(({ level }) => level !== copy.medianLevel && Math.abs(level - copy.medianLevel) < YIELD_KM).map(({ level }) => level);
+  /** What the frame's drive reads (`scene.mjs`): the live map's state needs no overlay. */
+  const drive = { cameras, levels, medianLevel: copy.medianLevel, yielding, within: field.within, deepest: field.deepest, states, timing: CONTOUR_VIDEO_TIMING };
+  if (measured === null) return { props: { mapPlan: basePlan, ...drive } };
+  measured ??= readMeasured();
+  if (measured.planDigest?.[id] !== planDigestOf(basePlan)) throw new Error(`${id}: the plan changed since it was measured — run measure.mjs again`);
+  if (measured.size.width !== stage.width || measured.size.height !== stage.height)
+    throw new Error(`${id}: measured at ${measured.size.width}×${measured.size.height}, drawn at ${stage.width}×${stage.height}`);
+  const m = measured.cameras[id].whole;
+  const { grid } = m;
+  // THE SEA, READ OFF THE MEASURED MAP AND NOT OFF A CLAMPED CELL. `cellAt` clamps a point outside the grid to the
+  // nearest column, so a probe that falls off the frame reads whatever sits at the edge and the WHOLE map is then
+  // classified against it — silently, with no refusal, and the key and the credit are placed on that lie. Measured
+  // at 1080x1920: a probe tuned for a 16:9 frame can sit west of a width-fitted one. So the probe is a LADDER, a
+  // rung counts only when it lands INSIDE the frame and reads the plan's own water tint, and no rung qualifying is
+  // a refusal. A rung the measurement predates is skipped, so landscape keeps rung 0 and nothing delivered moves.
+  const seaProbe = (grid, water) => {
+    const tried = [];
+    for (const name of SEA_PROBES) {
+      const at = m.projected[name];
+      if (!at) continue;
+      const [px, py] = at;
+      if (px < 0 || py < 0 || px >= stage.width || py >= stage.height) {
+        tried.push(`${name} falls off the ${stage.width}x${stage.height} frame at ${Math.round(px)},${Math.round(py)}`);
+        continue;
+      }
+      const colour = cellAt(grid, px, py);
+      if (near(colour, water)) return colour;
+      tried.push(`${name} reads ${colour} at ${Math.round(px)},${Math.round(py)}`);
+    }
+    throw new Error(`${id}: no sea probe reads the water tint ${water} inside the frame — ${tried.join("; ")}`);
+  };
+  const sea = seaProbe(grid, ground);
+  const landIn = countOf(grid, (c) => !near(c, sea));
+  const seaIn = countOf(grid, (c) => near(c, sea));
+  const landShare = (box) => {
+    const { count, total } = landIn(box);
+    return total ? count / total : 0;
+  };
+
+
+  // ── the credit, the key and the curve, on the measured sea ───────────────────────────────────────────────
+  // AT LANDSCAPE they are ONE COLUMN down the left margin: the Atlantic there is a band ~810 px wide and the whole
+  // height of the frame, so the credit takes the highest row of open sea and the key and the curve hang under it.
+  //
+  // AT A FRAME THAT IS NOT 16:9 that band is gone. Measured at 1080x1920 on the stage-fitted camera: the only sea
+  // wide enough for a ~700 px key is the Norwegian Sea across the top, and between Greenland and the Scandinavian
+  // coast it is 291 px of open water — while the credit, the key and the curve stack 550. Every ordering of the
+  // three as one column was searched and none holds, at any rung of the curve's height ladder. What does hold is
+  // seating them in reading order but each on its own sea: the KEY first, because it is the widest block and the
+  // one that cannot be narrowed (its width is the longest count « 100 % à moins de 1 234 km » set at `value`);
+  // then the CREDIT, still over open water and nothing else; then the CURVE, as wide and as tall as the water it
+  // finds. Each block still stands over at most `PANEL_LAND` of land — the assertion does not move, only the search.
+  //
+  // AT SQUARE even that fails, and the frame answers instead of the search: the key and the credit stand in a band of
+  // the direction's own ground across the foot (`bandFor`), and only the curve is still seated on the map. Nothing is
+  // searched for a block in the band, because a band is not water to be found — it is ground the composition is built
+  // on, and the blocks in it cross no coast because they cross no map.
+  // WHAT THE CREDIT MAY STAND ON. At 1920x1080: open sea, every cell of it — "so it crosses no coast". The property
+  // being protected is the SECOND half of that sentence: one uninterrupted surface under the line, so the halo does
+  // its work and no coastline runs through the words. At 1080x1920 and 1080x1080 the sea wide enough to hold a
+  // credit is gone — measured, no row of open water anywhere on the stage clears the marks — while whole countries
+  // are. So a frame that is not 16:9 accepts EITHER surface, as long as it is one: all sea, or all land. Landscape
+  // keeps the sea and nothing delivered moves.
+  const landOnly = (box) => {
+    const { count, total } = landIn(box);
+    return count === 0 || (SIZE !== "landscape" && count === total);
+  };
   let credit = null;
   let creditAt = null;
-  for (const form of credits) {
-    search: for (let y = vInset; y + form.height <= stage.height - vInset; y += SEAT_STEP / 2)
-      for (let x = inset; x + form.width <= stage.width - inset; x += SEAT_STEP) {
-        if (landIn({ x, y, width: form.width, height: form.height }).count) continue;
-        creditAt = { x, y };
-        break search;
-      }
-    if (creditAt) {
-      const { register, ...rest } = form;
-      credit = rest;
-      break;
-    }
-  }
-  if (!creditAt) throw new Error(`${id}: no one-line form of the source (the shortest ${credits.at(-1).width}×${credits.at(-1).height}) finds a row of open sea on the measured map`);
-  const creditBox = { x: creditAt.x, y: creditAt.y, width: credit.width, height: credit.height };
-  // THE KEY AND THE CURVE UNDER IT, each over at most `PANEL_LAND` of land. The curve is as wide as the key when the
-  // sea allows, narrowed down to `CHART_MIN` of it when a coast would run under its corner (the tracked nocturne's key
-  // is wider than the Atlantic south of Iceland). Hung under the credit when that column seats; otherwise the column
-  // at the left margin with the widest curve, the highest first, clear of the credit.
+  let keyAt = null;
+  let creditBox = null;
+
+  /** The curve under the key at (x, y), as wide as the key when the sea allows, narrowed to `CHART_MIN` of it. */
   const seatColumn = (x, y) => {
     const keyB = { x, y, width: key.width, height: key.height };
     if (y < vInset || landShare(keyB) > PANEL_LAND) return null;
@@ -304,21 +438,126 @@ export function buildDirection(id, { subject, states, copy, cameras, sweep }, { 
     const chartAt = (w) => ({ x, y: y + key.height + gap, width: w, height: chartHeight });
     // No coast under the curve when a width allows it, else at most `PANEL_LAND`.
     const w = widths.find((w) => landIn(chartAt(w)).count === 0) ?? widths.find((w) => landShare(chartAt(w)) <= PANEL_LAND);
-    return w === undefined ? null : { x, y, chartWidth: w };
+    return w === undefined ? null : { x, y, chartWidth: w, chartX: x, chartY: y + key.height + gap };
   };
-  let keyAt = seatColumn(creditBox.x, creditBox.y + creditBox.height + gap);
-  if (!keyAt)
-    for (let y = vInset; y + columnHeight <= stage.height - vInset; y += SEAT_STEP)
-      for (let x = inset; x <= inset + 4 * SEAT_STEP; x += SEAT_STEP) {
-        if (touches({ x, y, width: key.width, height: columnHeight }, creditBox, gap)) continue;
-        const seat = seatColumn(x, y);
-        if (seat && (!keyAt || seat.chartWidth > keyAt.chartWidth)) keyAt = seat;
+
+  if (SIZE === "landscape") {
+    // THE CREDIT FIRST, ON ONE LINE AND ON THE OPEN SEA: every cell under it is sea, so it crosses no coast. The
+    // longest form that finds a row is set, in the highest row from the top-left.
+    for (const form of credits) {
+      search: for (let y = vInset; y + form.height <= stage.height - vInset; y += SEAT_STEP / 2)
+        for (let x = inset; x + form.width <= stage.width - inset; x += SEAT_STEP) {
+          if (!landOnly({ x, y, width: form.width, height: form.height })) continue;
+          creditAt = { x, y };
+          break search;
+        }
+      if (creditAt) {
+        const { register, ...rest } = form;
+        credit = rest;
+        break;
       }
-  if (!keyAt) throw new Error(`${id}: no place at the left margin seats the key and the curve over at most ${PANEL_LAND * 100} % land`);
+    }
+    if (!creditAt) throw new Error(`${id}: no one-line form of the source (the shortest ${credits.at(-1).width}×${credits.at(-1).height}) finds a row of open sea on the measured map`);
+    creditBox = { x: creditAt.x, y: creditAt.y, width: credit.width, height: credit.height };
+    // THE KEY AND THE CURVE UNDER IT, each over at most `PANEL_LAND` of land. The curve is as wide as the key when
+    // the sea allows, narrowed down to `CHART_MIN` of it when a coast would run under its corner (the tracked
+    // nocturne's key is wider than the Atlantic south of Iceland). Hung under the credit when that column seats;
+    // otherwise the column at the left margin with the widest curve, the highest first, clear of the credit.
+    keyAt = seatColumn(creditBox.x, creditBox.y + creditBox.height + gap);
+    if (!keyAt)
+      for (let y = vInset; y + columnHeight <= stage.height - vInset; y += SEAT_STEP)
+        for (let x = inset; x <= inset + 4 * SEAT_STEP; x += SEAT_STEP) {
+          if (touches({ x, y, width: key.width, height: columnHeight }, creditBox, gap)) continue;
+          const seat = seatColumn(x, y);
+          if (seat && (!keyAt || seat.chartWidth > keyAt.chartWidth)) keyAt = seat;
+        }
+    if (!keyAt)
+      throw new Error(
+        `${id}: no place at the left margin seats the key and the curve over at most ${PANEL_LAND * 100} % land — ` +
+          `the column is ${key.width}x${Math.round(columnHeight)} (key ${key.height} + gap ${Math.round(gap)} + curve ${chartHeight}) ` +
+          `on a ${stage.width}x${stage.height} stage inset ${inset}/${vInset}`,
+      );
+  } else if (band) {
+    // THE BAND SEATS THEM, AND NOTHING IS SEARCHED FOR. The key is the widest block this beat has and the one that
+    // cannot be narrowed — its width is the longest count « 100 % à moins de 682 km » set at the frame's own type
+    // floor — and on a square map of Europe no place over 3 % land holds it (measured 2026-09-24, all three
+    // directions). Its place is the band's own, the credit's is under it on the frame's margin, and the credit is the
+    // LONGEST form the frame's line budget holds rather than the shortest that happened to fit a sea.
+    keyAt = { x: band.keyAt.x, y: band.keyAt.y, chartWidth: band.curveAt.width, chartX: band.curveAt.x, chartY: band.curveAt.y };
+    chartHeight = band.curveAt.height;
+    const { register, ...rest } = credits[0];
+    credit = rest;
+    creditAt = { x: band.creditAt.x, y: band.creditAt.y };
+    creditBox = { x: creditAt.x, y: creditAt.y, width: credit.width, height: credit.height };
+  } else {
+    // THE KEY FIRST, the highest seat and then the leftmost.
+    for (let y = vInset; y + key.height <= stage.height - vInset && !keyAt; y += SEAT_STEP)
+      for (let x = inset; x + key.width <= stage.width - inset; x += SEAT_STEP)
+        if (landShare({ x, y, width: key.width, height: key.height }) <= PANEL_LAND) {
+          keyAt = { x, y, chartWidth: null, chartX: null, chartY: null };
+          break;
+        }
+    if (!keyAt)
+      throw new Error(
+        `${id}: a ${key.width}x${key.height} key finds nowhere on a ${stage.width}x${stage.height} stage over at ` +
+          `most ${PANEL_LAND * 100} % land. The key is as wide as « ${Object.values(countWidths).reduce((a, b) => (a.width > b.width ? a : b)).text} » ` +
+          `set at ${value.fontSize}px, which the ${row.minTypePx}px floor for ${JSON.stringify(SIZE)} does not let it narrow.`,
+      );
+    const keyB = { x: keyAt.x, y: keyAt.y, width: key.width, height: key.height };
+    // THE CREDIT NEXT, still the longest form over open water and nothing else, clear of the key.
+    for (const form of credits) {
+      search: for (let y = vInset; y + form.height <= stage.height - vInset; y += SEAT_STEP / 2)
+        for (let x = inset; x + form.width <= stage.width - inset; x += SEAT_STEP) {
+          const box = { x, y, width: form.width, height: form.height };
+          if (touches(box, keyB, gap) || !landOnly(box)) continue;
+          creditAt = { x, y };
+          break search;
+        }
+      if (creditAt) {
+        const { register, ...rest } = form;
+        credit = rest;
+        break;
+      }
+    }
+    if (!creditAt) throw new Error(`${id}: no one-line form of the source (the shortest ${credits.at(-1).width}×${credits.at(-1).height}) finds a row of open sea clear of the key on the measured map`);
+    creditBox = { x: creditAt.x, y: creditAt.y, width: credit.width, height: credit.height };
+    seatCurve();
+  }
+  // THE CURVE LAST, clear of both: as tall as the water allows down a ladder from `CHART_H`, and as wide as the key
+  // allows at that height. A shorter panel is the same argument drawn in the room a tall frame leaves; a panel that
+  // stood on a coast would not be. It stays ON THE MAP at every frame, the band included: the band carries what the
+  // map has no room for, and the curve still finds its own water above the band's floor.
+  function seatCurve() {
+    const keyB = { x: keyAt.x, y: keyAt.y, width: key.width, height: key.height };
+    const full = chartHeight;
+    const floor = Math.round(CHART_MIN_H * axis.lead);
+    let curve = null;
+    for (let h = full; h >= floor && !curve; h -= SEAT_STEP)
+      for (let y = vInset; y + h <= mapFloor - vInset && !curve; y += SEAT_STEP)
+        for (let x = inset; x + Math.ceil(CHART_MIN * key.width) <= stage.width - inset; x += SEAT_STEP) {
+          for (let w = Math.min(key.width, stage.width - inset - x); w >= Math.ceil(CHART_MIN * key.width); w -= SEAT_STEP) {
+            const box = { x, y, width: w, height: h };
+            if (touches(box, keyB, gap) || touches(box, creditBox, gap)) continue;
+            if (landShare(box) <= PANEL_LAND) {
+              curve = { x, y, width: w, height: h };
+              break;
+            }
+          }
+          if (curve) break;
+        }
+    if (!curve)
+      throw new Error(
+        `${id}: the curve finds nowhere over at most ${PANEL_LAND * 100} % land clear of the key and the credit — ` +
+          `${Math.ceil(CHART_MIN * key.width)}-${key.width} wide and ${floor}-${full} tall, on a ${stage.width}x${Math.round(mapFloor)} map` +
+          (band ? `. Grow the ground band to carry the curve too (\`bandFor\`) and measure the beat again` : ``),
+      );
+    chartHeight = curve.height;
+    keyAt = { ...keyAt, chartWidth: curve.width, chartX: curve.x, chartY: curve.y };
+  }
   const keyBox = { x: keyAt.x, y: keyAt.y, width: key.width, height: key.height };
-  // THE CURVE, under the key: the share of the land within each distance of the sea, 0 to the farthest point, on one
-  // scale — every kilometre's share from the field's own `within` table.
-  const chartBox = { x: keyBox.x, y: keyBox.y + keyBox.height + gap, width: keyAt.chartWidth, height: chartHeight };
+  // THE CURVE: the share of the land within each distance of the sea, 0 to the farthest point, on one scale — every
+  // kilometre's share from the field's own `within` table. Under the key at landscape, on its own sea elsewhere.
+  const chartBox = { x: keyAt.chartX, y: keyAt.chartY, width: keyAt.chartWidth, height: chartHeight };
   const chartPad = CHART_PAD * axis.lead;
   const plot = { left: chartBox.x + chartPad, right: chartBox.x + chartBox.width - chartPad, top: chartBox.y + chartPad, bottom: chartBox.y + chartBox.height - chartPad };
   const maxKm = field.deepest;
@@ -343,8 +582,18 @@ export function buildDirection(id, { subject, states, copy, cameras, sweep }, { 
   // ── the farthest point: where the measured map drew it, its number beside it ─────────────────────────────
   const [sx, sy] = m.projected.summit;
   const summitBand = bandOf(summitText, value);
-  const summitLine = { text: summitText, x: sx + SUMMIT_OFFSET * dot, y: sy + (summitBand.ascent - summitBand.descent) / 2, width: widthOf(summitText, value) };
-  const summitBox = { x: sx - 2.2 * dot, y: summitLine.y - summitBand.ascent - pad, width: summitLine.x + summitLine.width + pad - (sx - 2.2 * dot), height: summitBand.ascent + summitBand.descent + 2 * pad };
+  const summitLine = { text: summitText, x: summitSide === "left" ? sx - SUMMIT_OFFSET * dot - summitWidth : sx + SUMMIT_OFFSET * dot, y: sy + (summitBand.ascent - summitBand.descent) / 2, width: summitWidth, side: summitSide };
+  const summitLeft = Math.min(sx - 2.2 * dot, summitLine.x - pad);
+  const summitBox = { x: summitLeft, y: summitLine.y - summitBand.ascent - pad, width: Math.max(sx + 2.2 * dot, summitLine.x + summitLine.width + pad) - summitLeft, height: summitBand.ascent + summitBand.descent + 2 * pad };
+  if (summitBox.x < inset || summitBox.x + summitBox.width > stage.width - inset)
+    throw new Error(`${id}: the farthest point's number runs outside the margins — ${Math.round(summitBox.x)}..${Math.round(summitBox.x + summitBox.width)} on a ${stage.width} wide stage inset ${inset}`);
+  // THE FARTHEST POINT IS THE SHOT'S OWN CLAIM, so a ground band that covered it would take the argument with it. The
+  // band is drawn over the live map, and the map is fitted and raised into what the band leaves — this says so.
+  if (band && summitBox.y + summitBox.height > mapFloor)
+    throw new Error(
+      `${id}: the farthest point's number reaches ${Math.round(summitBox.y + summitBox.height)} and the ground band ` +
+        `starts at ${Math.round(mapFloor)} — the band would be drawn over the one point the shot is about. Shorten the band.`,
+    );
 
   // ── the numbers, one per line, each on its own line and never across another ────────────────────────────
   // The scrolly's seats (`contour-field.mjs`), taken to the map's stage through the camera. Among the seats inside the
@@ -394,7 +643,8 @@ export function buildDirection(id, { subject, states, copy, cameras, sweep }, { 
       const seat = lonLatOfFrame(field, [fx, fy]);
       const [cx, cy] = project(seat);
       const box = { x: cx - w / 2, y: cy - h / 2, width: w, height: h };
-      if (box.x < inset || box.y < vInset || box.x + w > stage.width - inset || box.y + h > stage.height - vInset) continue;
+      // Held inside the margins AND above the map's floor: a number seated under the ground band is drawn under it.
+      if (box.x < inset || box.y < vInset || box.x + w > stage.width - inset || box.y + h > mapFloor - vInset) continue;
       if (touches(box, keyBox, gap) || touches(box, summitBox, gap) || touches(box, chartBox, gap) || touches(box, creditBox, gap) || placed.some((p) => touches(box, p, gap))) continue;
       // AT THE VIDEO'S FLOOR A NUMBER IS TALLER THAN THE GAP BETWEEN TWO LINES: its halo, struck in the land's colour,
       // masks what it crosses, and the seat crossing the fewest other lines wins.
@@ -434,6 +684,8 @@ export function buildDirection(id, { subject, states, copy, cameras, sweep }, { 
     credit: { ...credit, at: creditAt },
     chart,
     layoutInset: { x: inset, y: vInset },
+    /** The ground band under the map at square — `null` at a frame whose map has water for every block. */
+    band,
     colours,
     strokes,
     labels,
@@ -446,6 +698,6 @@ export function buildDirection(id, { subject, states, copy, cameras, sweep }, { 
     id,
     direction,
     props,
-    report: { k, titleForm: titleCard.form, sourceForm: credit.form, sourceText: credit.lines[0].text, keyLand: landShare(keyBox), chartLand: landShare(chartBox), chartWidth: chartBox.width / key.width, labels: Object.keys(labels).map(Number), unlabelled, crossed: Object.fromEntries(Object.entries(labels).map(([l, v]) => [l, v.crossed])) },
+    report: { k, band: band && { height: Math.round(band.height), map: Math.round(band.mapBand.height) }, titleForm: titleCard.form, sourceForm: credit.form, sourceText: credit.lines[0].text, keyLand: band ? null : landShare(keyBox), chartLand: landShare(chartBox), chartWidth: chartBox.width / key.width, labels: Object.keys(labels).map(Number), unlabelled, crossed: Object.fromEntries(Object.entries(labels).map(([l, v]) => [l, v.crossed])) },
   };
 }

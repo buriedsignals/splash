@@ -40,6 +40,8 @@ type Slot =
 export type ChoroplethFrameProps = {
   frame: { width: number; height: number };
   stage: Rect;
+  /** The ground band under the map — the square frame's own composition (`layout.mjs`, `bandFor`); `null` elsewhere. */
+  band: Rect | null;
   registers: Record<Slot, Register>;
   titleCard: {
     register: Register;
@@ -70,6 +72,8 @@ export type ChoroplethFrameProps = {
     ground: string;
     /** The sea as the map measured it: the ground under the panel's and the credit's halos. */
     sea: string;
+    /** The ground band's fill, and the ground its blocks are read against — `null` where there is no band. */
+    band: string | null;
     classFills: string[];
     missingFill: string;
     ring: string;
@@ -99,6 +103,8 @@ export type ChoroplethFrameProps = {
     } | null;
     x: number;
     y: number;
+    /** The word's lines at the pill's own origin: one, or a place over its share at a narrow frame. */
+    lines: Array<{ text: string; x: number; y: number; width: number }>;
     /** A close-up share's gauge, inside the pill: 0–100 % over its width, the floor notched at `notch`. */
     gauge: {
       x: number;
@@ -176,7 +182,10 @@ export function ChoroplethFrame(
     strokes,
     panel,
     titleCard,
+    band,
   } = props;
+  /** What the key and the credit stand on: the band's ground where the frame stacks one, the measured sea otherwise. */
+  const furnitureGround = colours.band ?? colours.sea;
   const scene = sceneAt(props as never, props.at);
   const counter = panel.counter[scene.counter.step];
   // The floor's cursor, on the key: between the left edges of the swatches either side of its position.
@@ -219,6 +228,20 @@ export function ChoroplethFrame(
         height={frame.height}
         viewBox={`0 0 ${frame.width} ${frame.height}`}
       >
+        {/* ── THE GROUND BAND: the square frame's foot, the key and the credit on the direction's own ground rather
+            than on the map's water. It is drawn over the live map because the map is mounted on the WHOLE frame and
+            measured there; the camera is fitted and raised into the band above it (`map-plan.mjs`, `camerasOf`), so
+            the ground this covers is the ground that fit left over, not a slice taken off Europe. ── */}
+        {band ? (
+          <rect
+            x={band.x}
+            y={band.y}
+            width={band.width}
+            height={band.height}
+            fill={colours.band ?? colours.ground}
+          />
+        ) : null}
+
         {/* ── THE LABELS: Albania beside its ring on the whole map, the close-up's names — each where the measured map put it. ── */}
         {props.names.map((n) =>
           n.leader ? (
@@ -254,25 +277,29 @@ export function ChoroplethFrame(
             </g>
           ) : null,
         )}
-        {props.names.map((n) => {
-          const shown = counted(n);
-          return (
-            <Word
-              key={n.key}
-              line={{
-                text: shown.text,
-                x: stage.x + n.x + n.textX,
-                y: stage.y + n.y + n.baseline,
-                width: n.textWidth,
-              }}
-              register={r[n.register]}
-              fill={n.ink}
-              opacity={scene.names[n.key]}
-              measured={shown.final}
-              halo={{ colour: n.haloColour, width: n.halo }}
-            />
-          );
-        })}
+        {props.names.flatMap((n) =>
+          /* A NAME IS A STACK OF LINES — one at 16:9, where the place and its share stand side by side, two where a
+             narrow frame makes the same words too wide for the map (`build.mjs`, `closeLines`). */
+          n.lines.map((l, i) => {
+            const shown = counted({ role: n.role, text: l.text });
+            return (
+              <Word
+                key={`${n.key}-${i}`}
+                line={{
+                  text: shown.text,
+                  x: stage.x + n.x + l.x,
+                  y: stage.y + n.y + l.y,
+                  width: l.width,
+                }}
+                register={r[n.register]}
+                fill={n.ink}
+                opacity={scene.names[n.key]}
+                measured={shown.final}
+                halo={{ colour: n.haloColour, width: n.halo }}
+              />
+            );
+          }),
+        )}
 
         {/* ── THE GAUGES: every measured share at the close-up on one scale, the floor notched, filling as it counts. ── */}
         {props.names.map((n) => {
@@ -339,7 +366,7 @@ export function ChoroplethFrame(
             register={r.value}
             fill={colours.text.counter}
             opacity={scene.counter.opacity}
-            halo={{ colour: colours.sea, width: panel.valueHalo }}
+            halo={{ colour: furnitureGround, width: panel.valueHalo }}
           />
           {panel.swatches.map((s, i) => (
             <rect
@@ -362,7 +389,7 @@ export function ChoroplethFrame(
               register={r.axis}
               fill={colours.text.key}
               opacity={scene.swatches[i]}
-              halo={{ colour: colours.sea, width: panel.halo }}
+              halo={{ colour: furnitureGround, width: panel.halo }}
             />
           ))}
           <rect
@@ -385,7 +412,7 @@ export function ChoroplethFrame(
             register={r.axis}
             fill={colours.text.key}
             opacity={1}
-            halo={{ colour: colours.sea, width: panel.halo }}
+            halo={{ colour: furnitureGround, width: panel.halo }}
           />
         </g>
 
@@ -425,7 +452,7 @@ export function ChoroplethFrame(
               register={r.source}
               fill={colours.text.source}
               opacity={1}
-              halo={{ colour: colours.sea, width: props.source.halo }}
+              halo={{ colour: furnitureGround, width: props.source.halo }}
             />
           ))}
         </g>

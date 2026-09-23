@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { stack, stackOffsetSilhouette, stackOrderInsideOut } from "d3-shape";
 import { adjustToContrast, contrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
+import { frameInsetFor, sizeFor, videoExportSize } from "#shared/chart-video/sizes.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
@@ -23,7 +23,9 @@ import { STREAM_VIDEO_TIMING } from "./timing-contract.ts";
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const ROOT = join(HERE, "..", "..");
 export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
-export const SIZE = "landscape";
+/** The size this run exports at — `--size`, landscape when nothing asks. R2 names three and
+ *  everything under it already answered per size; only this line pinned the beat to one. */
+export const SIZE = videoExportSize();
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 const NB = "\u00A0";
 const LABEL_GAP = 0.4;
@@ -168,10 +170,23 @@ export function buildDirection(id, { subject, states, copy }) {
   const rival = { ...rivalText, x: xs.at(-1) + gap / 2, y: lines[RIVAL].at(-1)[1] + (annotBand.ascent - annotBand.descent) / 2 };
   const solarEnd = lines[TRACKED].at(-1)[1];
   if (!(Math.abs(solarEnd - lines[RIVAL].at(-1)[1]) > valueBand.ascent + annotBand.ascent)) throw new Error("solar's rank and oil's name would meet at the end of their lines");
-  const ticks = readings.filter((r) => r.year % 5 === 0 || r.year === readings.at(-1).year).map((r) => {
+  /**
+   * THE YEARS ARE THINNED FROM THE RIGHT. Every fifth year and the last reading is what the axis wants; what it
+   * can have is whatever does not touch. The last reading is the year the claim is made at, so it is kept and
+   * the year beside it gives way — walked right to left, each label kept only if it clears the one already
+   * standing to its right. At 1920 the plot is 1345px for 25 years and nothing is dropped; at 1080 it is 636
+   * and « 2020 » ran straight through « 2024 » (measured 2026-09-23 at portrait and at square).
+   */
+  const wantedYears = readings.filter((r) => r.year % 5 === 0 || r.year === readings.at(-1).year).map((r) => {
     const t = measure(String(r.year), axis);
     return { ...t, x: Math.min(x(r.year) - t.width / 2, plot.right - t.width), y: plot.bottom + 1.6 * gap + axisBand.ascent, tickX: x(r.year) };
   });
+  const ticks = [];
+  for (let i = wantedYears.length - 1; i >= 0; i--) {
+    const t = wantedYears[i];
+    if (!ticks.length || t.x + t.width * (1 + DRAWN_WIDER) + gap / 2 <= ticks[0].x) ticks.unshift(t);
+  }
+  if (ticks.length < 2) throw new Error(`the years thinned to ${ticks.length} label(s): the ${Math.round(plot.right - plot.left)}px plot cannot carry a time axis at ${axis.fontSize}px`);
 
   // ── the credit: one line, under the years ─────────────────────────────────────────────────────────────────
   const creditAt = { x: inset, y: stage.height - vInset - credit.height };

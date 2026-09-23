@@ -31,6 +31,36 @@ export const SOURCES = [
 ];
 export const NUCLEAR_COLUMN = SOURCES.findIndex((s) => s.family === "nucléaire");
 
+/**
+ * THE SAME NINE SOURCES, DRAWN AS SIX — the beat's last rung for a frame that is not 16:9, and one it has to SAY.
+ *
+ * A column has to be wide enough to stand its own head a word apart from its neighbours', and a head sits at the
+ * type floor. Measured 2026-09-24 at 1080px: the names take 329px of the 936 a narrow frame gives, the low-carbon
+ * column 194 and the bracket 32, which leaves the grid 381 — 42px a column for nine, against a « Hydraulique »
+ * that wants 282. Six columns give 63, which the stagger holds. Nothing is dropped and no share is restated: the
+ * two smallest renewables are added into « Autres », the three fossil sources into « Fossiles », and both sums are
+ * shares of the same whole. The credit says so, in the plate's own words.
+ *
+ * A 1:1 frame has the same 936px of width AND only 936 of height, where twelve rows of a name at the type floor,
+ * six heads staggered over four lines and the key with the credit want 989. So square takes the rung below:
+ * `FAMILY_COLUMNS`, the nine sources added into the three families the beat already names — which is the reading
+ * the three routes are made of — and the rows step down with it. Both reductions are said in the credit.
+ */
+export const FAMILY_COLUMNS = [
+  { label: "Renouvelables", family: "renouvelables", of: ["hydro_generation__twh", "wind_generation__twh", "solar_generation__twh", "bioenergy_stacked_generation__twh", "other_renewables_generation__twh"] },
+  { label: "Nucléaire", family: "nucléaire", of: ["nuclear_generation__twh"] },
+  { label: "Fossiles", family: "fossiles", of: ["gas_generation__twh", "coal_generation__twh", "oil_generation__twh"] },
+];
+
+export const MERGED_COLUMNS = [
+  { label: "Hydraulique", family: "renouvelables", of: ["hydro_generation__twh"] },
+  { label: "Éolien", family: "renouvelables", of: ["wind_generation__twh"] },
+  { label: "Solaire", family: "renouvelables", of: ["solar_generation__twh"] },
+  { label: "Autres", family: "renouvelables", of: ["bioenergy_stacked_generation__twh", "other_renewables_generation__twh"] },
+  { label: "Nucléaire", family: "nucléaire", of: ["nuclear_generation__twh"] },
+  { label: "Fossiles", family: "fossiles", of: ["gas_generation__twh", "coal_generation__twh", "oil_generation__twh"] },
+];
+
 /** The three routes, in the order the video sets them: without nuclear, both, nuclear-led. */
 export const ROUTES = ["renouvelables", "les deux", "nucléaire"];
 

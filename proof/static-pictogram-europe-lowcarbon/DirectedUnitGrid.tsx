@@ -89,6 +89,9 @@ export function DirectedUnitGrid({
   frame?: { width: number; height: number };
 }) {
   const { width, height } = frame ?? FRAME;
+  /** THE FORM THIS FRAME ASKS FOR, read off the frame. Everything below that is conditional on it
+   *  leaves the landscape plate exactly as it was accepted. */
+  const SIZE = width > height ? "landscape" : width === height ? "square" : "portrait";
   const { ink, muted, grid } = deriveFurniture(direction.ground);
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);
@@ -173,7 +176,28 @@ export function DirectedUnitGrid({
   const titleLead = leadOf(display);
   const bodyLead = leadOf(body);
   const annotLead = leadOf(annot);
-  const keyRoom = axisBand.ascent * 2 + axisBand.descent + 14;
+  const axisLead = axisBand.ascent + axisBand.descent + 2;
+
+  /** THE KEY'S TWO NOTES GO UNDER THE SWATCHES WHEN THEY NO LONGER FIT BESIDE THEM, and whether they
+   *  fit is MEASURED against the narrowest swatch row the key can draw. At 960 they sit beside the
+   *  ramp with 400px to spare and this is a no-op. At 540 they did not: « 1 pays sans donnée 2024
+   *  n'est pas dessiné » ran past the plate's own margin in both the square and the portrait render —
+   *  not off the frame, which is why nothing caught it, but into the gutter every other line
+   *  respects. */
+  const keyNoteW = Math.max(
+    widthOf(set(unitIs, axis), axis),
+    widthOf(set(middleNote, axis), axis),
+  );
+  /** Stacked, the key owes its two notes a row each — and a clear line under them ONLY when a
+   *  reading line follows, because the two are set in the same small type and without the gap they
+   *  read as one paragraph. Where the ladder has already dropped the reading, the source's own
+   *  leading does that work and the 10px would be taken out of the squares for nothing: it cost the
+   *  square plate 3px of side when it was charged unconditionally. */
+  const keyRoomFor = (stacked: boolean, hasReading: boolean) =>
+    axisBand.ascent * 2 +
+    axisBand.descent +
+    14 +
+    (stacked ? 2 * axisLead + (hasReading ? 10 : 0) : 0);
 
   const total = blocks.reduce((s, b) => s + b.count, 0);
 
@@ -183,7 +207,7 @@ export function DirectedUnitGrid({
   const SQUARE_FLOOR = 13;
   const blockHeadH = annotBand.ascent + annotBand.descent + 6;
 
-  const layoutFor = (t: number, l: number, r: number) => {
+  const layoutFor = (t: number, l: number, r: number, stacked: boolean) => {
     const titleLines = wrap(set(title[t], display), column, display);
     const limitLines = wrap(set(limits[l], body), column, body);
     const readingLines =
@@ -199,7 +223,8 @@ export function DirectedUnitGrid({
       ? sourceTop - bodyLead - readingLines.length * annotLead
       : sourceTop - bodyLead * 0.4;
     const top = limitsTop + limitLines.length * bodyLead + gapOf(body, 0.2759);
-    const bottom = readingTop - gapOf(annot, 0.8571) - keyRoom;
+    const bottom =
+      readingTop - gapOf(annot, 0.8571) - keyRoomFor(stacked, readingLines.length > 0);
     return {
       titleLines,
       limitLines,
@@ -217,15 +242,27 @@ export function DirectedUnitGrid({
 
   /** THE COLUMN COUNT IS A RUNG. A field of forty squares can be laid ten wide or twenty wide, and
    *  which one keeps the square above its floor is a measurement. Widest rows first: a wide row is
-   *  fewer rows, and fewer rows is more height per square. */
+   *  fewer rows, and fewer rows is more height per square.
+   *
+   *  THAT REASONING HOLDS ONLY WHILE HEIGHT IS WHAT RUNS OUT, and at 1080 x 1920 it is not. The cell
+   *  is the SMALLER of what the height allows and what the width allows; at portrait the width
+   *  allowed 21.5px, the height allowed 100+, and the widest row won the ladder on its first try. The
+   *  render was three short rows of small squares in the top third and half the frame empty under
+   *  them — nothing clipped, nothing colliding, and a pictogram that had stopped using its own plate.
+   *  So a frame that is not landscape asks each copy rung for the row count that gives the BIGGEST
+   *  square rather than taking the widest row on offer, which at portrait is 8 per row: six rows of
+   *  52px squares that reach the key. At square the height is binding again and the answer comes back
+   *  20, which is why this is a measurement and not a second hardcoded list. */
   const rowChoices = [20, 16, 13, 10, 8];
   const rungs: Array<{
-    perRow: number;
+    perRow: number | null;
     title: number;
     limit: number;
     reading: number;
   }> = [];
-  for (const perRow of rowChoices)
+  const perRowChoices: Array<number | null> =
+    SIZE === "landscape" ? rowChoices : [null];
+  for (const perRow of perRowChoices)
     for (let t = 0; t < title.length; t++)
       for (let l = 0; l < limits.length; l++) {
         for (let r = 0; r < reading.length; r++)
@@ -245,20 +282,50 @@ export function DirectedUnitGrid({
     return { rowsUsed, cell };
   };
 
-  let fits: {
+  /** The row count this layout gets the biggest square out of — `null` on a rung means "ask". */
+  const resolveRow = (perRow: number | null, l: ReturnType<typeof layoutFor>) => {
+    if (perRow !== null) return { perRow, cell: sizeFor(perRow, l).cell };
+    let pick = { perRow: rowChoices[0], cell: -Infinity };
+    for (const candidate of rowChoices) {
+      const { cell } = sizeFor(candidate, l);
+      if (cell > pick.cell) pick = { perRow: candidate, cell };
+    }
+    return pick;
+  };
+
+  type Fit = {
     rung: (typeof rungs)[number];
     layout: ReturnType<typeof layoutFor>;
     cell: number;
-  } | null = null;
+    perRow: number;
+  };
   let best = -Infinity;
-  for (const rung of rungs) {
-    const l = layoutFor(rung.title, rung.limit, rung.reading);
-    const { cell } = sizeFor(rung.perRow, l);
-    if (cell > best) best = cell;
-    if (cell >= SQUARE_FLOOR) {
-      fits = { rung, layout: l, cell };
-      break;
+  const solve = (stacked: boolean): Fit | null => {
+    for (const rung of rungs) {
+      const l = layoutFor(rung.title, rung.limit, rung.reading, stacked);
+      const { perRow, cell } = resolveRow(rung.perRow, l);
+      if (cell > best) best = cell;
+      if (cell >= SQUARE_FLOOR) return { rung, layout: l, cell, perRow };
     }
+    return null;
+  };
+
+  /** The ramp never runs past the plate's own margin: at portrait a 52px square would make an 88px
+   *  swatch, and five of those plus the two notes beside them are wider than the column. */
+  const swatchFor = (c: number) =>
+    Math.min(Math.max(c * 1.7, 34), (width - PAD * 2) / classCount);
+
+  /** TWO PASSES, BECAUSE THE KEY'S WIDTH AND THE SQUARE'S SIZE EACH DEPEND ON THE OTHER. The swatch
+   *  is sized off the square, and whether the notes still fit beside the swatches decides how much
+   *  height the key takes, which is what the square is sized out of. So the ladder is solved once
+   *  with the notes beside the ramp — the shape landscape was accepted in — and solved again only if
+   *  the square that came back makes a ramp too wide for them. Stacking only ever takes height, so
+   *  the second pass cannot want to unstack and there is no third. */
+  let keyStacked = false;
+  let fits = solve(false);
+  if (fits && PAD + classCount * swatchFor(fits.cell) + 10 + keyNoteW > width - PAD) {
+    keyStacked = true;
+    fits = solve(true);
   }
   if (!fits)
     throw new Error(
@@ -266,12 +333,12 @@ export function DirectedUnitGrid({
         `and a square a reader is asked to COUNT owes ${SQUARE_FLOOR}px. A field nobody can count ` +
         `is a bar chart made of squares. Draw fewer units, or publish taller.`,
     );
-  const { layout, cell } = fits;
-  const perRow = fits.rung.perRow;
+  const { layout, cell, perRow } = fits;
   onLadder?.(
     `ladder: headline ${fits.rung.title + 1}, standfirst ${fits.rung.limit + 1}, reading ` +
       (fits.rung.reading < 0 ? "dropped" : `form ${fits.rung.reading + 1}`) +
-      ` · ${total} units, ${perRow} per row, square ${cell.toFixed(1)}px against a ${SQUARE_FLOOR}px floor`,
+      ` · ${total} units, ${perRow} per row, square ${cell.toFixed(1)}px against a ${SQUARE_FLOOR}px floor` +
+      (keyStacked ? " · key notes stacked under the ramp" : ""),
   );
 
   const gap = Math.max(cell * 0.14, 2);
@@ -384,8 +451,12 @@ export function DirectedUnitGrid({
           opens, and one line saying what a single square IS. */}
       {on("the-scale-is-stepped-not-continuous") &&
         (() => {
-          const swatchW = Math.max(cell * 1.7, 34);
+          const swatchW = swatchFor(cell);
           const top = layout.bottom + 12;
+          const noteX = keyStacked ? PAD : PAD + classCount * swatchW + 10;
+          const noteY = keyStacked
+            ? top + axisBand.ascent * 2 + 4 + axisLead
+            : top + axisBand.ascent;
           return (
             <g>
               {Array.from({ length: classCount }, (_, i) => (
@@ -416,17 +487,12 @@ export function DirectedUnitGrid({
                   )}
                 </g>
               ))}
-              <text
-                x={PAD + classCount * swatchW + 10}
-                y={top + axisBand.ascent}
-                {...line(axis)}
-                fill={mutedInk}
-              >
+              <text x={noteX} y={noteY} {...line(axis)} fill={mutedInk}>
                 {set(unitIs, axis)}
               </text>
               <text
-                x={PAD + classCount * swatchW + 10}
-                y={top + axisBand.ascent * 2 + 4}
+                x={noteX}
+                y={noteY + (keyStacked ? axisLead : axisBand.ascent + 4)}
                 {...line(axis)}
                 fill={mutedInk}
               >

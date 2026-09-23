@@ -106,22 +106,37 @@ const two = (v) =>
 const format = (v) =>
   v.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 
-const title = `Les émissions de CO2 par personne en France ont culminé dans les années ${peak.label.replace("s", "")}`;
-const limits =
+/** THE HEADLINE AND THE STANDFIRST IN THREE FORMS EACH, longest first — R3's rung, written as copy
+ *  rather than as a truncation. At 1920x1080 the first of each fits and the plate is what it has
+ *  always been; at 1080x1080 the first headline runs to five lines of display and leaves the eight
+ *  distributions 38px, which is a strip. A shorter sentence is a decision an editor makes; cutting
+ *  a long one mid-word is not. The eyebrow already says « France », so the shorter forms let the
+ *  headline stop repeating it. */
+const decade = (s) => s.label.replace("s", "");
+const title = [
+  `Les émissions de CO2 par personne en France ont culminé dans les années ${decade(peak)}`,
+  `Le CO2 par personne a culminé dans les années ${decade(peak)}`,
+  `Le pic du CO2 : les années ${decade(peak)}`,
+];
+const limits = [
   `Une boîte par décennie : la médiane, l’intervalle qui contient la moitié des années, et les ` +
-  `moustaches à ${WHISKER_RULE}. Chaque année est dessinée à côté de sa propre boîte. ` +
-  `Médiane ${two(peak.median)} t dans les années ${peak.label.replace("s", "")}, ` +
-  `${two(last.median)} t dans les années ${last.label.replace("s", "")}` +
-  (partial.length
-    ? ` — décennie partielle, ${partial[0].n} années seulement.`
-    : ".");
+    `moustaches à ${WHISKER_RULE}. Chaque année est dessinée à côté de sa propre boîte. ` +
+    `Médiane ${two(peak.median)} t dans les années ${decade(peak)}, ` +
+    `${two(last.median)} t dans les années ${decade(last)}` +
+    (partial.length ? ` — décennie partielle, ${partial[0].n} années seulement.` : "."),
+  `Une boîte par décennie, chaque année en point à côté de la sienne. Médiane ` +
+    `${two(peak.median)} t dans les années ${decade(peak)}, ${two(last.median)} t dans les ` +
+    `années ${decade(last)}.`,
+  `Médiane ${two(peak.median)} t dans les années ${decade(peak)}, ${two(last.median)} t ` +
+    `dans les années ${decade(last)}.`,
+];
 const source =
   "Source : Global Carbon Budget 2025, via Our World in Data · France, 1950-2024, extraites le 8 août 2026";
 
 const textPerRegister = {
-  display: title,
+  display: title.join(" "),
   eyebrow: EYEBROW,
-  body: `${limits} ${source}`,
+  body: `${limits.join(" ")} ${source}`,
   axis: `${summaries.map((s) => format(s.median)).join(" ")} ${UNIT}`,
   annot: `${summaries.map((s) => `${s.label} · n=${s.n}`).join(" ")} médiane 50 % des années ${WHISKER_RULE}`,
   value: `${two(peak.median)} ${two(last.median)}`,
@@ -184,9 +199,10 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       name: nameAtSize(id, SIZE),
       scale: FRAME.scale,
     });
-    console.log(`  -> renders/${id}.png\n`);
+    console.log(`  -> renders/${nameAtSize(id, SIZE)}.png\n`);
   } catch (error) {
-    for (const ext of ["png", "svg"]) await rm(join(OUT, `${id}.${ext}`), { force: true });
+    for (const ext of ["png", "svg"])
+      await rm(join(OUT, `${nameAtSize(id, SIZE)}.${ext}`), { force: true });
     refused.push({ id, why: error.message });
     console.log(`  REFUSED — ${error.message}\n`);
   }

@@ -85,7 +85,7 @@ export function DirectedHexGrid({
   rows: number;
   breaks: string[];
   unit: string;
-  originNote: string;
+  originNote: string[];
   originCode: string;
   title: string[];
   limits: string[];
@@ -186,15 +186,16 @@ export function DirectedHexGrid({
   const codeOwes = Math.max(...tiles.map((t) => widthOf(set(t.code, axis), axis))) + 6;
   const bandOwes = axisBand.ascent + axisBand.descent + 4;
 
-  const layoutFor = (t: number, l: number, r: number) => {
+  const layoutFor = (t: number, l: number, r: number, o: number) => {
     const titleLines = wrap(set(title[t], display), column, display);
-    const limitLines = wrap(set(limits[l], body), column, body);
+    const limitLines = l < 0 ? [] : wrap(set(limits[l], body), column, body);
     const readingLines = r < 0 ? [] : wrap(set(reading[r], annot), column, annot);
     const sourceLines = wrap(set(source, body), column, body);
-    const originLines = wrap(set(originNote, axis), column, axis);
+    const originLines = wrap(set(originNote[o], axis), column, axis);
     const eyebrowBaseline = PAD + eyebrowReg.fontSize;
     const titleTop = eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
-    const limitsTop = titleTop + titleLines.length * titleLead + gapOf(body, 0.5517);
+    const titleBottom = titleTop + titleLines.length * titleLead;
+    const limitsTop = titleBottom + gapOf(body, 0.5517);
     const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
     const readingTop = sourceTop - bodyLead * 1.1 - Math.max(0, readingLines.length - 1) * annotLead;
     const originLead = axisBand.ascent + axisBand.descent + 2;
@@ -202,7 +203,9 @@ export function DirectedHexGrid({
     /** THE KEY IS TWO ROWS, NOT ONE: the swatches and, under them, the breaks. Budgeted as one, the
      *  breaks printed over the line that says what the pale cell is. */
     const keyTop = originTop - (axisBand.ascent + axisBand.descent) - axisBand.ascent - 14;
-    const top = limitsTop + limitLines.length * bodyLead + annotBand.ascent * 1.2;
+    const top =
+      (limitLines.length ? limitsTop + limitLines.length * bodyLead : titleBottom) +
+      annotBand.ascent * 1.2;
     const bottom = keyTop - axisBand.ascent - annotBand.ascent - 12;
     return {
       titleLines,
@@ -224,12 +227,29 @@ export function DirectedHexGrid({
     };
   };
 
-  const rungs: Array<{ title: number; limit: number; reading: number }> = [];
+  /** THE RUNGS, IN THE ORDER A DESK CUTS: the reading line first, then the note that explains
+   *  Ukraine's own cell takes its short form, then the standfirst's, then the standfirst goes, and
+   *  the headline is last. The note is on the ladder and never off it — see the runner's own
+   *  comment on why it may be shortened but not dropped. */
+  const rungs: Array<{
+    title: number;
+    limit: number;
+    reading: number;
+    origin: number;
+  }> = [];
+  const limitRungs = [...limits.map((_, i) => i), -1];
   for (let t = 0; t < title.length; t++)
-    for (let l = 0; l < limits.length; l++) {
-      for (let r = 0; r < reading.length; r++) rungs.push({ title: t, limit: l, reading: r });
-      rungs.push({ title: t, limit: l, reading: -1 });
-    }
+    for (const l of limitRungs)
+      for (let o = 0; o < originNote.length; o++) {
+        for (let r = 0; r < reading.length; r++)
+          rungs.push({ title: t, limit: l, reading: r, origin: o });
+        rungs.push({ title: t, limit: l, reading: -1, origin: o });
+      }
+  /** `limit: -1` IS THE REMOVAL LADDER'S R7 — the standfirst dropped altogether, which this
+   *  component had no rung for. Measured at 1080x1080: with every other rung spent, the widest
+   *  hexagon the copy left was 22.1px in `creme` and 15.9px in `nocturne`, against the 30.6px a cell
+   *  that must hold « DEU » owes. Five lines of standfirst on a 540px plate are a third of the
+   *  grid's band. */
 
   /** POINTY-TOP HEXES IN OFFSET ROWS. Width `w`, height `h = w * 2 / √3`; rows overlap by a quarter
    *  of the height, and odd rows shift by half a width — which is what makes every neighbour an edge
@@ -242,7 +262,7 @@ export function DirectedHexGrid({
   } | null = null;
   let best = -Infinity;
   for (const rung of rungs) {
-    const l = layoutFor(rung.title, rung.limit, rung.reading);
+    const l = layoutFor(rung.title, rung.limit, rung.reading, rung.origin);
     if (l.band <= 0) continue;
     const byWidth = (width - PAD * 2) / (columns + 0.5);
     const byHeight = (l.band / (rows * 0.75 + 0.25)) * (ROOT3 / 2);
@@ -267,8 +287,11 @@ export function DirectedHexGrid({
   const originY = layout.top + (layout.band - gridH) / 2;
 
   onLadder?.(
-    `ladder: headline ${fits.rung.title + 1}, standfirst ${fits.rung.limit + 1}, reading ` +
+    `ladder: headline ${fits.rung.title + 1}, standfirst ` +
+      (fits.rung.limit < 0 ? "dropped" : `${fits.rung.limit + 1}`) +
+      `, reading ` +
       (fits.rung.reading < 0 ? "dropped" : `form ${fits.rung.reading + 1}`) +
+      `, note ${fits.rung.origin + 1}` +
       ` · ${tiles.length} hexes, ${w.toFixed(0)} x ${h.toFixed(0)}px, code floor ${codeOwes.toFixed(0)}px`,
   );
 

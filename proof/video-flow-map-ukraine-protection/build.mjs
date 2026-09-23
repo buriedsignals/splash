@@ -13,7 +13,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { adjustToContrast, contrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
+import { frameInsetFor, sizeFor, videoExportSize } from "#shared/chart-video/sizes.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
@@ -31,7 +31,9 @@ import { FLOW_VIDEO_TIMING } from "./timing-contract.ts";
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const ROOT = join(HERE, "..", "..");
 export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
-export const SIZE = "landscape";
+/** The size this run exports at — `--size`, landscape when nothing asks. R2 names three and
+ *  everything under it already answered per size; only this line pinned the beat to one. */
+export const SIZE = videoExportSize();
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 const NB = "\u00A0";
 /** The widest band, the largest host's, in px. */
@@ -39,6 +41,9 @@ export const WIDEST = 36;
 /** A band narrower than this is not drawn; its people still count. */
 export const BAND_FLOOR = 2;
 const SEAT_STEP = 10;
+/** The sea probes, in order: each is a seat `measure.mjs` projects on the real map, and the first that lands
+ *  inside the frame on the plan's water tint says what the sea IS. */
+const SEA_PROBES = ["biscay"];
 /** Two measured cells are one colour when no channel differs by more than this — the tolerance of a cell's mean. */
 const SAME_CELL = 3;
 /** A named host's seat dot, × the axis size. */
@@ -97,11 +102,20 @@ export function textPerRegisterOf(copy, subject) {
 
 const MEASURED = join(HERE, "measured.json");
 let measuredCache = null;
-/** `measured.json`, read once: what `measure.mjs` froze on the real map. */
+/** `measured.json` AT THIS SIZE, read once: what `measure.mjs` froze on the real map for this frame shape.
+ *  The file is keyed by export size because the camera is fitted to the stage — a portrait camera is a different
+ *  camera, over a different plan, with a different digest — so one frozen entry cannot serve three sizes. A size
+ *  that has not been measured is named here with the command that measures it, rather than read as a plan drift. */
 export function readMeasured() {
   if (measuredCache) return measuredCache;
   if (!existsSync(MEASURED)) throw new Error("no measured.json beside the beat — run measure.mjs with the worktree's .env loaded");
-  measuredCache = JSON.parse(readFileSync(MEASURED, "utf8"));
+  const all = JSON.parse(readFileSync(MEASURED, "utf8"));
+  if (!all[SIZE])
+    throw new Error(
+      `measured.json holds no ${SIZE} entry — measured so far: ${Object.keys(all).join(", ") || "nothing"}. ` +
+        `Run: set -a && . ./.env && set +a && bun proof/video-flow-map-ukraine-protection/measure.mjs --size ${SIZE}`,
+    );
+  measuredCache = all[SIZE];
   return measuredCache;
 }
 export const near = (a, b, tolerance = SAME_CELL) => [1, 3, 5].every((k) => Math.abs(Number.parseInt(a.slice(k, k + 2), 16) - Number.parseInt(b.slice(k, k + 2), 16)) <= tolerance);
@@ -202,12 +216,89 @@ export function buildDirection(id, { subject, states, copy, seats }, { measured 
   const keyWidth = Math.ceil(pad + Math.max(...Object.values(peopleTexts).map((t) => t.width), ...Object.values(shareTexts).map((t) => t.width), ...scale.map((s) => s.label.x - pad + s.label.width)) * (1 + DRAWN_WIDER) + pad);
   const keyHeight = Math.ceil(y + axisBand.descent + pad);
 
+  // ── the ground band: the square frame's own composition ───────────────────────────────────────────────────────
+  /**
+   * WHAT A SQUARE FRAME MAKES POSSIBLE, AND WHAT THE OTHER TWO DO NOT NEED.
+   *
+   * Careful with the word: a FLOW band is an arc out of Ukraine (`bands`, `bandsIn`). The GROUND band is this — a
+   * strip of the direction's own ground across the foot of the frame, under the live map rather than over it.
+   *
+   * The key stands over the map at 16:9 and at 9:16, and it can: at 1920x1080 it is a column at the left margin
+   * with the map fitted right of it, and at 1080x1920 it is a strip across the top with 840 px of height left under
+   * it. A SQUARE frame has neither. The map is fitted by its WIDTH, so the frame is the subject's ground and
+   * nothing else, and the flow bands radiate out of Ukraine PAST the box the camera was fitted on — a host outside
+   * the ten reaches anywhere. Measured 2026-09-24, all three directions, over every seat on a 10 px step: a
+   * 780x291 key (creme; 815x302 rapport, 815x268 nocturne) found NO place on the whole 1080x1080 stage clear of
+   * every flow band. « in its band across the top » was a reservation on the map, and a reservation the arcs cross
+   * is not room.
+   *
+   * So at square the key stops standing on the map. A band of ground takes the foot of the frame, the key stands in
+   * it on the left margin, and the map is fitted into what is left — still the whole width, edge to edge across it.
+   * This is a different drawing of the same argument, not a degraded one: the key crosses no band because it
+   * crosses no map. `cameraOf` already fits its seats into a BOX inside the stage and offsets the camera by that
+   * box's centre, so the map raises itself into the band above; nothing new computes a camera here.
+   *
+   * THE BAND CARRIES THE CREDIT TOO, and it was measured down to the key alone first. The credit is one line of
+   * type that asks for one uninterrupted surface (`oneSurface`) — a far weaker ask than a 300 px key — so the first
+   * band drawn here left it on the map, which kept the map 705 px of the 1080. Measured 2026-09-24, all three
+   * directions: no form of the source found a surface there either, clear of the key, the node, the ten names and
+   * every flow band. The band carries what the map has NO room for, and here that is both.
+   *
+   * THE MAP STAYS THE SUBJECT — the static twin's `MIN_MAP_SHARE` (« a third is a statement about what a map beat
+   * IS »): a band that leaves the map less than a third of the frame is refused with the number it fell short by.
+   */
+  const MIN_MAP_SHARE = 1 / 3;
+  const groundBand = (() => {
+    if (SIZE !== "square") return null;
+    const content = stage.width - 2 * inset;
+    if (keyWidth > content) throw new Error(`the ${keyWidth}px key is wider than the ${content}px of content the ground band holds between the frame's margins`);
+    // The longest form of the source the band's own width holds: the band is not looking for sea, so the credit is
+    // set at the fullest the frame can read rather than at the shortest a patch of water would have allowed.
+    const form = credits.find((c) => c.width <= content);
+    if (!form) throw new Error(`no one-line form of the source is narrower than the ${content}px the ground band holds (the shortest is ${Math.round(credits.at(-1).width)}px)`);
+    const height = gap + keyHeight + gap + form.height + vInset;
+    const y = stage.height - height;
+    if (y < stage.height * MIN_MAP_SHARE)
+      throw new Error(
+        `the ground band is ${Math.round(height)}px tall and leaves the map ${Math.round(y)}px of a ${stage.height}px frame, under the ` +
+          `${Math.round(stage.height * MIN_MAP_SHARE)}px a map beat keeps for its map. Give the beat a shorter key, or a shorter credit.`,
+      );
+    return {
+      x: 0,
+      y,
+      width: stage.width,
+      height,
+      /** The key at the band's top, the credit at its foot on the frame's own bottom margin, both on the left one. */
+      keyAt: { x: inset, y: y + gap },
+      credit: form,
+      creditAt: { x: inset, y: stage.height - vInset - form.height },
+    };
+  })();
+  /** WHERE THE LIVE MAP STOPS: the ground band's top edge at square, the frame's own foot everywhere else. The map is
+   *  still MOUNTED on the whole frame and MEASURED there, so a seat, a name or a credit below this floor is drawn
+   *  under the band — which is why every placement below reads this and not `stage.height`. */
+  const mapFloor = groundBand ? groundBand.y : stage.height;
+
   // ── the camera: the box the ten largest hosts need, fitted to the stage to the right of the key column ─────────
   const seatOf = (iso) => {
     if (!seats[iso]) throw new Error(`${iso} has no seat inside the window`);
     return seats[iso];
   };
-  const mapBox = { x: inset + keyWidth + axis.lead, y: vInset, w: stage.width - 2 * inset - keyWidth - axis.lead, h: stage.height - 2 * vInset };
+  // WHERE THE MAP IS FITTED, AND WHERE THE KEY STANDS. At 1920x1080 the key is a COLUMN at the left margin and the
+  // map takes the rest of the width: a 16:9 frame has width to spare and Europe is wider than it is tall. At
+  // 1080x1920 and 1080x1080 the same column eats two thirds of the width — measured at 1080x1920, it left the map
+  // 300 px wide and the Bay of Biscay, the seat that tells the build what the sea IS, fell inside a cell of land.
+  // So at a frame that is not 16:9 the key becomes a BAND across the top and the map takes the whole width below it:
+  // the same two blocks, turned through a right angle, which is what a tall frame asks of a side-by-side.
+  //
+  // AND AT SQUARE, NEITHER: the key is off the map entirely, in the ground band at the foot, so the map box is the
+  // whole frame above that band — the widest of the three fits, and the one that keeps the map edge to edge.
+  const keyBeside = SIZE === "landscape";
+  const mapBox = keyBeside
+    ? { x: inset + keyWidth + axis.lead, y: vInset, w: stage.width - 2 * inset - keyWidth - axis.lead, h: stage.height - 2 * vInset }
+    : groundBand
+      ? { x: inset, y: vInset, w: stage.width - 2 * inset, h: mapFloor - vInset }
+      : { x: inset, y: vInset + keyHeight + axis.lead, w: stage.width - 2 * inset, h: stage.height - 2 * vInset - keyHeight - axis.lead };
   const camera = cameraOf([ORIGIN, ...ranked.slice(0, FOCUS_HOSTS).map((f) => f.code)].map(seatOf), mapBox, stage);
   const project = projectorOf(camera, stage);
   const unproject = unprojectorOf(camera, stage);
@@ -254,8 +345,9 @@ export function buildDirection(id, { subject, states, copy, seats }, { measured 
     const dy = sy - oy;
     const len = Math.hypot(dx, dy);
     const width = widthOfPeople(f.people);
-    // A host is drawn only when its seat is inside the frame's margins: a band running off the edge ends nowhere.
-    const inStage = sx >= inset && sx <= stage.width - inset && sy >= vInset && sy <= stage.height - vInset;
+    // A host is drawn only when its seat is inside the frame's margins — and above the map's own floor, because a
+    // band whose end is drawn under the ground band ends nowhere just as surely as one running off the edge.
+    const inStage = sx >= inset && sx <= stage.width - inset && sy >= vInset && sy <= mapFloor - vInset;
     const drawn = width >= BAND_FLOOR && inStage && len > nodeR * 1.5;
     const start = [ox + (dx / len) * nodeR, oy + (dy / len) * nodeR];
     const bow = Math.min(len * 0.1, 44) * (sy < oy ? -1 : 1);
@@ -277,7 +369,7 @@ export function buildDirection(id, { subject, states, copy, seats }, { measured 
       cumulative: lengths,
     };
   });
-  const mapPlan = mapPlanFor({ bands, node: { seat: seatOf(ORIGIN), r: nodeR, text: originText.text }, colours, strokes, registers: { axis }, camera });
+  const mapPlan = mapPlanFor({ bands, node: { seat: seatOf(ORIGIN), r: nodeR, text: originText.text }, colours, strokes, registers: { axis }, camera, stage });
   /** What the frame's drive reads (`scene.mjs`): the live map's state needs no overlay. */
   const drive = { cameras: { whole: camera }, bands: bands.map(({ samples, seat, coordinates, cumulative, ...b }) => b), topTwoShare: copy.topTwoShare, total, states, timing: FLOW_VIDEO_TIMING };
   if (measured === null) return { props: { mapPlan, ...drive } };
@@ -286,8 +378,29 @@ export function buildDirection(id, { subject, states, copy, seats }, { measured 
   if (measured.size.width !== stage.width || measured.size.height !== stage.height)
     throw new Error(`${id}: measured at ${measured.size.width}×${measured.size.height}, drawn at ${stage.width}×${stage.height}`);
   const { grid, projected } = measured.cameras[id].whole;
-  const measuredSea = cellAt(grid, ...projected.biscay);
-  if (!near(measuredSea, ground)) throw new Error(`${id}: the measured sea ${measuredSea} is not the direction's ground ${ground}`);
+  // THE SEA, READ OFF THE MEASURED MAP AND NOT OFF A CLAMPED CELL. `cellAt` clamps a point outside the grid to the
+  // nearest column, so a probe that falls off the frame reads whatever sits at the edge and the WHOLE map is then
+  // classified against it — silently, with no refusal, and the key and the credit are placed on that lie. Measured
+  // at 1080x1920: a probe tuned for a 16:9 frame can sit west of a width-fitted one. So the probe is a LADDER, a
+  // rung counts only when it lands INSIDE the frame and reads the plan's own water tint, and no rung qualifying is
+  // a refusal. A rung the measurement predates is skipped, so landscape keeps rung 0 and nothing delivered moves.
+  const seaProbe = (grid, water) => {
+    const tried = [];
+    for (const name of SEA_PROBES) {
+      const at = projected[name];
+      if (!at) continue;
+      const [px, py] = at;
+      if (px < 0 || py < 0 || px >= stage.width || py >= stage.height) {
+        tried.push(`${name} falls off the ${stage.width}x${stage.height} frame at ${Math.round(px)},${Math.round(py)}`);
+        continue;
+      }
+      const colour = cellAt(grid, px, py);
+      if (near(colour, water)) return colour;
+      tried.push(`${name} reads ${colour} at ${Math.round(px)},${Math.round(py)}`);
+    }
+    throw new Error(`${id}: no sea probe reads the water tint ${water} inside the frame — ${tried.join("; ")}`);
+  };
+  const measuredSea = seaProbe(grid, ground);
   /** Not sea: the land, the node and every band drawn over the sea (the measured frame is the last, every band in). */
   const landIn = countOf(grid, (c) => !near(c, measuredSea));
   const landShare = (box) => {
@@ -295,16 +408,37 @@ export function buildDirection(id, { subject, states, copy, seats }, { measured 
     return cells ? count / cells : 0;
   };
 
-  // ── the key column: at the left margin, the height over the least measured land clear of every band ────────────
+  // ── the key: down the left margin at 16:9, in the ground band at 1:1, across its own strip at the top otherwise ─
+  // The rule does not change where the key still stands ON the map — the place over the least measured land that no
+  // flow band crosses — only the line it is searched along: a height at the left margin when the key stands beside
+  // the map, an offset along the reserved strip when it stands above it.
+  //
+  // AT SQUARE THERE IS NOTHING TO SEARCH. The key stands in the ground band, on the left margin, where every other
+  // block of this beat stands; it is over no land and no flow band because it is over no map (see `groundBand`).
   const keyAt = (() => {
+    if (groundBand) return { ...groundBand.keyAt, share: 0 };
     let best = null;
-    for (let ky = vInset; ky + keyHeight <= stage.height - vInset; ky += SEAT_STEP) {
-      const box = { x: inset, y: ky, width: keyWidth, height: keyHeight };
+    const seats = [];
+    if (keyBeside) for (let ky = vInset; ky + keyHeight <= stage.height - vInset; ky += SEAT_STEP) seats.push({ x: inset, y: ky });
+    // The band across the top is where the map leaves room, but the bands radiate from Ukraine past the map's own
+    // box — hosts outside the ten the camera is fitted on reach anywhere — so the whole stage is searched and the
+    // band is a reservation, not a cage.
+    else
+      for (let ky = vInset; ky + keyHeight <= stage.height - vInset; ky += SEAT_STEP)
+        for (let kx = inset; kx + keyWidth <= stage.width - inset; kx += SEAT_STEP) seats.push({ x: kx, y: ky });
+    const middle = keyBeside ? stage.height / 2 : stage.width / 2;
+    const off = (seat) => (keyBeside ? Math.abs(seat.y + keyHeight / 2 - middle) : Math.abs(seat.x + keyWidth / 2 - middle) + seat.y);
+    for (const seat of seats) {
+      const box = { ...seat, width: keyWidth, height: keyHeight };
       if (bandsIn(bands, box, gap)) continue;
       const share = landShare(box);
-      if (!best || share < best.share - 1e-9 || (Math.abs(share - best.share) < 1e-9 && Math.abs(ky + keyHeight / 2 - stage.height / 2) < Math.abs(best.y + keyHeight / 2 - stage.height / 2))) best = { x: inset, y: ky, share };
+      if (!best || share < best.share - 1e-9 || (Math.abs(share - best.share) < 1e-9 && off(seat) < off(best))) best = { ...seat, share };
     }
-    if (!best) throw new Error(`a ${keyWidth}×${keyHeight} key finds no height at the left margin clear of every band`);
+    if (!best)
+      throw new Error(
+        `a ${keyWidth}×${keyHeight} key finds no place ${keyBeside ? "at the left margin" : "in its band across the top"} ` +
+          `clear of every band, over ${seats.length} seat(s) on a ${stage.width}x${stage.height} stage`,
+      );
     return best;
   })();
   const keyBox = { x: keyAt.x, y: keyAt.y, width: keyWidth, height: keyHeight };
@@ -317,7 +451,7 @@ export function buildDirection(id, { subject, states, copy, seats }, { measured 
   const dots = named.map((b) => ({ x: b.seat.x - dotR, y: b.seat.y - dotR, width: 2 * dotR, height: 2 * dotR }));
   const placed = placePills(
     pills.map((b) => ({ key: b.code, cx: b.seat.x, cy: b.seat.y, width: b.pill.width, height: b.pill.height, avoid: dots })),
-    { width: stage.width, height: stage.height },
+    { width: stage.width, height: mapFloor },
     gap,
     // A name never sits across one of the wide bands (a quarter of the widest or more) — the thin ones pass under its halo.
     { obstacles: [nodeBox, { ...keyBox, x: 0, width: keyBox.x + keyBox.width }], allowed: (box) => !bandsIn(bands, box, 0, WIDEST / 4) },
@@ -340,14 +474,26 @@ export function buildDirection(id, { subject, states, copy, seats }, { measured 
     };
   });
 
+  // WHAT THE CREDIT MAY STAND ON. At 1920x1080: open sea, every cell of it — "so it crosses no coast". The property
+  // being protected is the SECOND half of that sentence: one uninterrupted surface under the line, so the halo does
+  // its work and no coastline runs through the words. At 1080x1920 and 1080x1080 the sea wide enough to hold a
+  // credit is gone — measured, no row of open water anywhere on the stage clears the marks — while whole countries
+  // are. So a frame that is not 16:9 accepts EITHER surface, as long as it is one: all sea, or all land. Landscape
+  // keeps the sea and nothing delivered moves.
+  const oneSurface = (box) => {
+    const { count, total } = landIn(box);
+    return count === 0 || (SIZE !== "landscape" && count === total);
+  };
   // ── the credit: one line over open sea, in the lowest, leftmost corner clear of the key, the node, the names ────
-  let creditAt = null;
-  let credit = null;
-  for (const form of credits) {
+  // WHERE THERE IS A GROUND BAND, NOTHING IS SEARCHED FOR: the credit's place is the band's own, under the key, and
+  // its form is the longest the band's width holds rather than the shortest that fitted a patch of water.
+  let creditAt = groundBand ? groundBand.creditAt : null;
+  let credit = groundBand ? (({ register, ...rest }) => rest)(groundBand.credit) : null;
+  for (const form of creditAt ? [] : credits) {
     search: for (let cy = stage.height - vInset - form.height; cy >= vInset; cy -= SEAT_STEP)
       for (let cx = inset; cx + form.width <= stage.width - inset; cx += SEAT_STEP) {
         const box = { x: cx, y: cy, width: form.width, height: form.height };
-        if (landIn(box).count || touches(box, keyBox, gap) || touches(box, nodeBox, gap) || names.some((n) => touches(box, n.box, gap)) || bandsIn(bands, box, gap)) continue;
+        if (!oneSurface(box) || touches(box, keyBox, gap) || touches(box, nodeBox, gap) || names.some((n) => touches(box, n.box, gap)) || bandsIn(bands, box, gap)) continue;
         creditAt = { x: cx, y: cy };
         break search;
       }
@@ -361,6 +507,8 @@ export function buildDirection(id, { subject, states, copy, seats }, { measured 
 
   const props = {
     frame: stage,
+    /** The ground band under the map at square — `null` at a frame that stands its key on the map itself. */
+    band: groundBand,
     registers: { display: titleCard.register, eyebrow: registers.eyebrow, value, axis, source: sourceRegister },
     titleCard,
     legend: { at: { x: keyBox.x, y: keyBox.y }, width: keyWidth, height: keyHeight, peopleRow, shareRow, peopleTexts, shareTexts, scale, halo, valueHalo: haloOf(value, k) },

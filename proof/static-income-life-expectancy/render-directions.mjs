@@ -84,14 +84,27 @@ const times =
  *  were all refused, before a mark was drawn. Inside a single text run a plain space is not
  *  collapsed, so the thousands separator survives. */
 const money = (v) => `${v.toLocaleString("fr-FR").replace(/[\u202f\u00a0]/g, " ")} $`;
-const title = `Au-delà de ${money(BREAK)} par personne, l’espérance de vie tient dans une bande ${times} fois plus étroite`;
-const limits = `${pairs.length} pays disposant des deux mesures en 2021. Corrélation, pas causalité — les systèmes de santé, les conflits et les maladies évoluent aussi indépendamment du revenu.`;
+/** THREE FORMS OF THE HEADLINE AND THREE OF THE STANDFIRST, LONGEST FIRST — the component's own
+ *  removal ladder spends them, standfirst before headline, which is the order a desk cuts in. It
+ *  has to spend them: measured at 1080x1080, the long forms run to four lines each and leave the
+ *  plot 12px of height, where five y ticks land 3px apart and the y axis name prints through all of
+ *  them. A scatter whose plot is a 12px band is not a scatter. */
+const title = [
+  `Au-delà de ${money(BREAK)} par personne, l’espérance de vie tient dans une bande ${times} fois plus étroite`,
+  `Au-delà de ${money(BREAK)}, l’espérance de vie tient dans une bande ${times} fois plus étroite`,
+  `Au-delà de ${money(BREAK)}, l’espérance de vie se resserre`,
+];
+const limits = [
+  `${pairs.length} pays disposant des deux mesures en 2021. Corrélation, pas causalité — les systèmes de santé, les conflits et les maladies évoluent aussi indépendamment du revenu.`,
+  `${pairs.length} pays en 2021. Corrélation, pas causalité : santé, conflits et maladies évoluent aussi indépendamment du revenu.`,
+  `${pairs.length} pays en 2021. Corrélation, pas causalité.`,
+];
 const source = "Source : Banque mondiale via Gapminder, ONU WPP (2024), via Our World in Data";
 
 const textPerRegister = {
-  display: title,
+  display: title.join(" "),
   eyebrow: EYEBROW,
-  body: `${limits} ${source}`,
+  body: `${limits.join(" ")} ${source}`,
   axis: `${X_NAME} ${X_QUALIFIER} ${Y_NAME} ${Y_QUALIFIER} $500 $1k $100k 40 90`,
   annot: `${spread.below.count} pays sous ${money(BREAK)} · ${spread.below.range.toFixed(0)} ans d’écart au-dessus`,
   value: "",
@@ -139,6 +152,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       eyebrow: EYEBROW,
       direction,
       treatments: offered.map((t) => t.id),
+      onLadder: (note) => console.log(`  ${note}`),
     }),
     // The beat pins `landscape` (1920 x 1080); 960 x 540 at scale 2 delivers exactly that.
     // THE SLOT'S OWN SIZE. `--size` picks it; landscape is what an article's column asks for.
@@ -148,5 +162,5 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
     name: nameAtSize(id, SIZE),
     scale: EXPORT_FRAME.scale,
   });
-  console.log(`  -> renders/${id}.png\n`);
+  console.log(`  -> renders/${nameAtSize(id, SIZE)}.png\n`);
 }

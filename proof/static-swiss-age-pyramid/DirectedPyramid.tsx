@@ -154,17 +154,10 @@ export function DirectedPyramid({
 
   // ── header ────────────────────────────────────────────────────────────────
   const column = width - PAD * 2;
-  const titleLines = wrap(set(title, display), column, display);
   const titleLead = leadOf(display);
-  const limitLines = wrap(set(limits, body), column, body);
   const bodyLead = leadOf(body);
   const sourceLines = wrap(set(source, body), column, body);
-
   const eyebrowBaseline = PAD + eyebrowReg.fontSize;
-  const titleTop =
-    eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
-  const limitsTop =
-    titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
   const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
 
   // The centre channel is measured off the widest band label the ANNOT register actually sets,
@@ -173,19 +166,86 @@ export function DirectedPyramid({
   const gutter =
     Math.max(...bands.map((b) => widthOf(set(b.band, annot), annot))) + 18;
 
-  const plot = {
-    left: PAD,
-    right: width - PAD,
-    top: limitsTop + limitLines.length * bodyLead + gapOf(annot, 1.5714),
-    bottom: sourceTop - gapOf(body, 0.9655) - axis.fontSize * 2,
+  /** Measured PAIR BY PAIR on the INK the band names actually set, which is what the overlap guard
+   *  compares. Consecutive labels carry the same offset off their row's middle, so they sit exactly
+   *  one step apart and what must fit in that step is the upper run's DESCENT plus the lower run's
+   *  ASCENT. `bands` runs foot first and the row scale is reversed, so band i sits BELOW band i+1. */
+  const inkRow = bands.map((b) =>
+    measureTextBand(set(b.band, annot), sizeOf(annot)),
+  );
+  /** THE TWO LADDERS BELOW RUN AT THE SMALL FRAMES ONLY, and that is a decision, not an oversight.
+   *
+   *  960x540 is the frame this beat was composed at, looked at and accepted: its header takes the
+   *  share it takes and all twenty-one bands are named at a 10.5px pitch, which is dense and which
+   *  READS — the plate is in `renders/creme.png` and anyone can check. Nothing here is allowed to
+   *  redraw it, so at that frame the header stays on its first rung and every band keeps its name.
+   *
+   *  Every attempt to write ONE rule covering both frames failed on the same wall: measured by ink
+   *  alone the accepted landscape is already at the limit (10.74px of ink in a 10.51px pitch, two
+   *  per cent shared) while the square render that looked identical by that measure — 7.16px of ink
+   *  in a 6.71px pitch — came out a solid column of merged digits. A tolerance loose enough to
+   *  admit the first admitted the second. So the small frames get their own rule and the accepted
+   *  frame gets none. */
+  const LADDERS = width < FRAME.width;
+  /** A reading column needs LEADING, not merely non-overlap: a quarter of the type size between two
+   *  runs is what separated the legible square from the merged one. */
+  const stepNeededForEveryBand = !LADDERS
+    ? 0
+    : Math.max(
+        ...inkRow
+          .slice(0, -1)
+          .map((box, i) => inkRow[i + 1].descent + box.ascent),
+      ) +
+      annot.fontSize * 0.25;
+
+  /** THE HEADER IS A LADDER AND IT IS SPENT ON THE ROWS.
+   *
+   *  A pyramid has twenty-one rows and its argument is the SILHOUETTE those rows make. At 1920x1080
+   *  the header takes 40% of the frame and the rows get 10.5px each, which is the drawing this beat
+   *  was accepted as. At 1080x1080 the same header takes 72% and the rows get 5.2px: the bars become
+   *  a four-pixel smear and the shape — the whole claim — is gone.
+   *
+   *  So the header climbs: the standfirst's shorter forms first (the removal ladder's R3, cheapest
+   *  information per pixel), then the headline's, and it stops at the first rung where every age
+   *  band can still carry its own name. When no rung reaches that, the shortest is taken and the
+   *  band labels fall back to their own stride ladder — two ladders, spent in the right order.
+   *  Landscape clears the test at rung one, so it never moves. */
+  const titleRungs = Array.isArray(title) ? title : [title];
+  const limitRungs = Array.isArray(limits) ? limits : [limits];
+  const layoutFor = (t: number, l: number) => {
+    const titleLines = wrap(set(titleRungs[t], display), column, display);
+    const limitLines = wrap(set(limitRungs[l], body), column, body);
+    const titleTop =
+      eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
+    const limitsTop =
+      titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
+    const plot = {
+      left: PAD,
+      right: width - PAD,
+      top: limitsTop + limitLines.length * bodyLead + gapOf(annot, 1.5714),
+      bottom: sourceTop - gapOf(body, 0.9655) - axis.fontSize * 2,
+    };
+    const rows = scaleBand<string>()
+      .domain([...bands].reverse().map((b) => b.band))
+      .range([plot.top, plot.bottom])
+      .paddingInner(0.22);
+    return { titleLines, limitLines, titleTop, limitsTop, plot, rows };
   };
+
+  const chosen = (() => {
+    let best = layoutFor(0, 0);
+    if (!LADDERS) return best;
+    for (let t = 0; t < titleRungs.length; t++)
+      for (let l = 0; l < limitRungs.length; l++) {
+        const candidate = layoutFor(t, l);
+        if (candidate.rows.step() > best.rows.step()) best = candidate;
+        if (candidate.rows.step() >= stepNeededForEveryBand) return candidate;
+      }
+    return best;
+  })();
+  const { titleLines, limitLines, titleTop, limitsTop, plot, rows } = chosen;
   const centre = (plot.left + plot.right) / 2;
   const halfWidth = (plot.right - plot.left - gutter) / 2;
-
-  const rows = scaleBand<string>()
-    .domain([...bands].reverse().map((b) => b.band))
-    .range([plot.top, plot.bottom])
-    .paddingInner(0.22);
   const most = Math.max(...bands.flatMap((b) => [b.male, b.female]));
   const magnitude = scaleLinear()
     .domain([0, most])
@@ -208,6 +268,30 @@ export function DirectedPyramid({
     };
   });
 
+  /** THE BAND LABELS ARE A LADDER TOO, and it is the one the header ladder above could not spare.
+   *
+   *  At 960x540 the twenty-one bands get 20.2px of pitch between them once the header has taken its
+   *  share, and every name is drawn. At 1080x1080 the best rung of the header ladder still leaves
+   *  less, and the first render printed « 0-4 » through « 5-9 » through « 10-14 » — twenty pairs of
+   *  words through each other — and the beat threw rather than ship it. The rung is a STRIDE: label
+   *  every band, then every other, then every third, until the step times the stride clears the ink.
+   *  It is anchored at BOTH ENDS and the kept rows are distributed evenly between them, so « 0-4 »
+   *  and « 100+ » — the two that say what the scale runs from and to — are never the ones dropped,
+   *  and the gaps stay regular enough that a reader counts rows between two labels. */
+  const labelStride = (() => {
+    if (!LADDERS) return 1;
+    for (let stride = 1; stride <= bands.length; stride++)
+      if (rows.step() * stride >= stepNeededForEveryBand) return stride;
+    return bands.length;
+  })();
+  const labelledBands = (() => {
+    const last = bands.length - 1;
+    const count = Math.max(2, Math.floor(last / labelStride) + 1);
+    const kept = new Set<string>();
+    for (let j = 0; j < count; j++)
+      kept.add(bands[Math.round((j * last) / (count - 1))].band);
+    return kept;
+  })();
   /** The band the halves change places at, taken from the same rows the bars were built from. */
   const crossing = on("mirrored-halves-cross-at-a-named-band")
     ? (() => {
@@ -228,6 +312,17 @@ export function DirectedPyramid({
     ),
     right: adjustToContrast(muted, direction.ground, TEXT_CONTRAST_MIN),
   };
+
+  /** The crossing sentence, broken to as many lines as the half it is anchored in can hold. */
+  const crossingLines = !crossing
+    ? []
+    : width >= FRAME.width
+      ? [set(`${rightName} devant dès ${crossing.band}`, annot)]
+      : wrap(
+          set(`${rightName} devant dès ${crossing.band}`, annot),
+          halfWidth * 0.7,
+          annot,
+        );
 
   // ── the treatment layer, arbitrated ───────────────────────────────────────
   const requests = [
@@ -269,10 +364,12 @@ export function DirectedPyramid({
           {
             id: "crossing",
             treatment: "mirrored-halves-cross-at-a-named-band",
-            text: set(
-              `${rightName} devant dès ${crossing.band}`,
-              annot,
-            ),
+            /** IT WRAPS WHEN THE HALF IT SITS IN IS NARROWER THAN THE RUN. At 960 the empty quarter
+             *  is 400px wide and « Femmes devant dès 60-64 » sets in 260; at 540 the half is 184px
+             *  and the same run measures 210 in nocturne, so no anchor on the plate could hold it
+             *  and the arbiter dropped the beat's own treatment — the sentence the headline makes.
+             *  A dropped annotation is not a smaller annotation, it is a missing one. */
+            text: crossingLines.join("\n"),
             // ANCHORED WHERE A PYRAMID HAS ROOM, NOT ON THE ROW IT NAMES.
             //
             // The first version put this at the crossing band's own outer end and the arbiter
@@ -320,10 +417,14 @@ export function DirectedPyramid({
       },
       measure: (text: string) => {
         const request = requests.find((r) => r.text === text)!;
-        const band = measureTextBand(text, sizeOf(request.register));
+        const lines = text.split("\n");
+        const band = measureTextBand(text.replace(/\n/g, ""), sizeOf(request.register));
         return {
-          width: widthOf(text, request.register),
-          height: band.ascent + band.descent,
+          width: Math.max(...lines.map((l) => widthOf(l, request.register))),
+          height:
+            band.ascent +
+            band.descent +
+            (lines.length - 1) * leadOf(request.register),
         };
       },
       avoid: marks,
@@ -346,29 +447,39 @@ export function DirectedPyramid({
      *  across the plate, and a stroke through a word is not an overlap of two boxes, so no guard
      *  here could see it. The run is drawn twice: once as a halo in the ground it sits on, once as
      *  itself. */
-    const glyphs = {
+    const lines = p.text.split("\n");
+    // A wrapped run is laid from ONE baseline and stepped by its own register's lead — the same
+    // rule the overlap guard states — so the box the arbiter granted holds every line of it.
+    const first =
+      lines.length > 1 ? p.box.y + bandOf(r).ascent : baselineOf(p, r);
+    const glyphs = (i: number) => ({
       x: p.box.x,
-      y: baselineOf(p, r),
+      y: first + i * leadOf(r),
       fontFamily: r.fontFamily,
       fontSize: r.fontSize,
       fontWeight: r.fontWeight,
       fontStyle: r.fontStyle,
       letterSpacing: r.letterSpacing,
-    };
+    });
     return (
       <g key={id}>
-        <text
-          {...glyphs}
-          fill="none"
-          stroke={direction.ground}
-          strokeWidth={3.4}
-          strokeLinejoin="round"
-        >
-          {p.text}
-        </text>
-        <text {...glyphs} fill={fill ?? r.fill}>
-          {p.text}
-        </text>
+        {lines.map((l, i) => (
+          <text
+            key={`h${i}`}
+            {...glyphs(i)}
+            fill="none"
+            stroke={direction.ground}
+            strokeWidth={3.4}
+            strokeLinejoin="round"
+          >
+            {l}
+          </text>
+        ))}
+        {lines.map((l, i) => (
+          <text key={`t${i}`} {...glyphs(i)} fill={fill ?? r.fill}>
+            {l}
+          </text>
+        ))}
       </g>
     );
   };
@@ -464,15 +575,19 @@ export function DirectedPyramid({
             height={b.h}
             fill={muted}
           />
-          {/* The band label sits in the reserved centre channel, never printed over a bar. */}
-          <text
-            x={centre}
-            y={b.middle + annot.fontSize * 0.35}
-            textAnchor="middle"
-            {...line(annot)}
-          >
-            {set(b.band, annot)}
-          </text>
+          {/* The band label sits in the reserved centre channel, never printed over a bar — and
+              only on the rows the ladder above kept, so two names can never share a row's worth of
+              pixels. */}
+          {labelledBands.has(b.band) && (
+            <text
+              x={centre}
+              y={b.middle + annot.fontSize * 0.35}
+              textAnchor="middle"
+              {...line(annot)}
+            >
+              {set(b.band, annot)}
+            </text>
+          )}
         </g>
       ))}
 

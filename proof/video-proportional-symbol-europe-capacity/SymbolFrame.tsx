@@ -18,6 +18,8 @@ type Slot = "display" | "eyebrow" | "value" | "axis" | "source";
 
 export type SymbolFrameProps = {
   frame: { width: number; height: number };
+  /** The band of the direction's own ground across the frame's foot (`build.mjs`, `groundBandOf`); `null` elsewhere. */
+  band: { x: number; y: number; width: number; height: number } | null;
   registers: Record<Slot, Register>;
   titleCard: { register: Register; eyebrow: Line; title: Line[] };
   legend: {
@@ -31,7 +33,7 @@ export type SymbolFrameProps = {
     valueHalo: number;
   };
   credit: { at: { x: number; y: number }; halo: number; lines: Line[] };
-  colours: { ground: string; sea: string; land: string; circle: string; point: string; text: Record<"eyebrow" | "title" | "top" | "rest" | "key", string> };
+  colours: { ground: string; sea: string; land: string; circle: string; point: string; band: string | null; text: Record<"eyebrow" | "title" | "top" | "rest" | "key", string> };
   strokes: { circle: number; hairline: number };
   cameras: { whole: Record<string, number> };
   mapPlan: { layers: Array<{ id: string; bindings?: Record<string, unknown> }> } & Record<string, unknown>;
@@ -49,27 +51,34 @@ function Word({ line, register, fill, opacity = 1, halo }: { line: Line; registe
 }
 
 export function SymbolFrame(props: SymbolFrameProps & { at: number; liveMap: (frame: number) => ReactNode; svgRef?: Ref<SVGSVGElement> }) {
-  const { frame, registers: r, colours, strokes, legend: key, credit, titleCard } = props;
+  const { frame, registers: r, colours, strokes, legend: key, credit, titleCard, band } = props;
   const scene = sceneAt(props as never, props.at);
+  /** What the key and the credit stand on: the band's ground where the frame carries one, the measured sea otherwise. */
+  const furniture = colours.band ?? colours.sea;
 
   return (
     <div style={{ position: "absolute", left: 0, top: 0, width: frame.width, height: frame.height, background: colours.sea }}>
       {props.liveMap(props.at)}
       <svg ref={props.svgRef} style={{ position: "absolute", left: 0, top: 0 }} xmlns="http://www.w3.org/2000/svg" width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
+      {/* ── THE GROUND BAND: the square frame's foot, the key over the credit on the direction's own ground rather
+          than on a surface the map does not have. It is drawn over the live map because the map is mounted on the
+          WHOLE frame; the camera is fitted into what the band leaves above it (`build.mjs`, `contentOf`), so the
+          ground this covers is ground no station stands on. ── */}
+      {band ? <rect x={band.x} y={band.y} width={band.width} height={band.height} fill={colours.band ?? colours.ground} /> : null}
       <g transform={`translate(${key.at.x} ${key.at.y})`} opacity={scene.furniture}>
-        <Word line={{ ...key.topTexts[String(scene.arrived)], ...key.topRow }} register={r.value} fill={colours.text.top} opacity={Math.min(1, scene.circles[0] * 3)} halo={{ colour: colours.sea, width: key.valueHalo }} />
-        <Word line={{ ...key.restText, ...key.restRow }} register={r.value} fill={colours.text.rest} opacity={scene.rest} halo={{ colour: colours.sea, width: key.valueHalo }} />
+        <Word line={{ ...key.topTexts[String(scene.arrived)], ...key.topRow }} register={r.value} fill={colours.text.top} opacity={Math.min(1, scene.circles[0] * 3)} halo={{ colour: furniture, width: key.valueHalo }} />
+        <Word line={{ ...key.restText, ...key.restRow }} register={r.value} fill={colours.text.rest} opacity={scene.rest} halo={{ colour: furniture, width: key.valueHalo }} />
         {key.named.map((n, i) => (
           <g key={`named${i}`}>
             <circle cx={n.cx} cy={n.cy} r={n.r} fill="none" stroke={colours.circle} strokeWidth={strokes.circle} />
-            <Word line={n.label} register={r.axis} fill={colours.text.key} halo={{ colour: colours.sea, width: key.halo }} />
+            <Word line={n.label} register={r.axis} fill={colours.text.key} halo={{ colour: furniture, width: key.halo }} />
           </g>
         ))}
       </g>
 
       <g transform={`translate(${credit.at.x} ${credit.at.y})`} opacity={scene.source}>
         {credit.lines.map((line, i) => (
-          <Word key={`credit${i}`} line={line} register={r.source} fill={colours.text.key} halo={{ colour: colours.sea, width: credit.halo }} />
+          <Word key={`credit${i}`} line={line} register={r.source} fill={colours.text.key} halo={{ colour: furniture, width: credit.halo }} />
         ))}
       </g>
 

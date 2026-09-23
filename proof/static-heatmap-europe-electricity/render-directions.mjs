@@ -43,17 +43,27 @@ const refused = [];
 /** THE COLUMN ORDER IS AN EDITORIAL DECISION and it is stated on the plate: the five renewables,
  *  then nuclear, then the three fossil sources. Neither the order of the columns nor the order of
  *  the rows is in the data. */
+/** EVERY HEAD CARRIES A SHORT FORM, AND ONLY A NARROW PLATE SPENDS IT. Measured at 1080x1080: nine
+ *  columns share 252px there, so a cell is 28px and « Hydraulique » is 73px — the heads printed
+ *  through each other at every stagger depth the plate can afford. A shortened head is the Reuters
+ *  rule's own degradation (`a-narrow-cell-degrades-its-label-rather-than-dropping-it`) taken one
+ *  step further than a second line, and it is COPY, written here beside the name it shortens, never
+ *  a truncation the renderer improvises. Landscape never reads this column. */
 const SOURCES = [
-  { key: "hydro_generation__twh", label: "Hydraulique", family: "renouvelables" },
-  { key: "wind_generation__twh", label: "Éolien", family: "renouvelables" },
-  { key: "solar_generation__twh", label: "Solaire", family: "renouvelables" },
-  { key: "bioenergy_stacked_generation__twh", label: "Bioénergie", family: "renouvelables" },
-  { key: "other_renewables_generation__twh", label: "Autres", family: "renouvelables" },
-  { key: "nuclear_generation__twh", label: "Nucléaire", family: "nucléaire" },
-  { key: "gas_generation__twh", label: "Gaz", family: "fossiles" },
-  { key: "coal_generation__twh", label: "Charbon", family: "fossiles" },
-  { key: "oil_generation__twh", label: "Pétrole", family: "fossiles" },
+  { key: "hydro_generation__twh", label: "Hydraulique", short: "Hydro", family: "renouvelables" },
+  { key: "wind_generation__twh", label: "Éolien", short: "Éolien", family: "renouvelables" },
+  { key: "solar_generation__twh", label: "Solaire", short: "Solaire", family: "renouvelables" },
+  { key: "bioenergy_stacked_generation__twh", label: "Bioénergie", short: "Bio", family: "renouvelables" },
+  { key: "other_renewables_generation__twh", label: "Autres", short: "Autres", family: "renouvelables" },
+  { key: "nuclear_generation__twh", label: "Nucléaire", short: "Nucl.", family: "nucléaire" },
+  { key: "gas_generation__twh", label: "Gaz", short: "Gaz", family: "fossiles" },
+  { key: "coal_generation__twh", label: "Charbon", short: "Charbon", family: "fossiles" },
+  { key: "oil_generation__twh", label: "Pétrole", short: "Pétrole", family: "fossiles" },
 ];
+
+/** The same, for the three family names drawn over the column groups. « nucléaire » sits over ONE
+ *  column, so at 1080x1080 it ran into both of its neighbours. */
+const FAMILY_SHORT = { renouvelables: "Renouv.", "nucléaire": "Nucl.", fossiles: "Foss." };
 
 /** The data is OWID's, so its entities are English; the plate is French. Copy, not data — every
  *  number stays computed — and an entity with no French name throws rather than falling back. All
@@ -171,7 +181,17 @@ const everyCountry = measured
 // every number under it was true. The floor check now runs over the whole frozen file, not over the
 // drawn rows.
 const FLOOR = 94;
-const ROWS_DRAWN = 12;
+/** THE REMOVAL LADDER'S R8, AND IT IS THE ONLY RUNG THAT CHANGES WHAT THE PLATE STATES — so it is
+ *  taken here, in the copy, and printed on the plate rather than left to the renderer.
+ *
+ *  MEASURED at 1080x1080: with the standfirst and the reading line both already spent, twelve rows
+ *  reach a pitch of 12.0px where `nocturne`'s axis register owes 11.5px, and that is before the
+ *  colour key gets the two lines a 540px plate makes it take. Nine rows is the same stated rule —
+ *  every country above the floor, plus the continent's largest producers — asking for fewer of the
+ *  producers. The floor check still runs over all 41, so the headline cannot become a lie by it.
+ *  Horak §2.4.4 sanctions the rung; §2.4.5 attaches the condition that the reader is told, which is
+ *  why `source` below carries the selection at a narrow size. */
+const ROWS_DRAWN = SIZE === "landscape" ? 12 : 9;
 const above = everyCountry.filter((r) => r.lowCarbon > FLOOR);
 const biggest = everyCountry
   .filter((r) => !above.includes(r))
@@ -274,7 +294,7 @@ const FAMILIES = [];
 for (const [i, s] of SOURCES.entries()) {
   const last = FAMILIES[FAMILIES.length - 1];
   if (last && last.name === s.family) last.to = i;
-  else FAMILIES.push({ name: s.family, from: i, to: i });
+  else FAMILIES.push({ name: s.family, short: FAMILY_SHORT[s.family], from: i, to: i });
 }
 
 /** The copy names its groups from the DATA's own partition, so a country that changed route changes
@@ -317,7 +337,12 @@ const reading = [
   `Lecture : chaque ligne fait 100 %. Les bornes de la couleur sont sous la grille.`,
 ];
 const source =
-  "Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data";
+  "Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data" +
+  /** R8's own condition: at a narrow size the plate draws fewer producers, and a reader cannot tell
+   *  a selection that shrank from one that was always this size unless the plate says so. */
+  (SIZE === "landscape"
+    ? ""
+    : ` · les ${above.length} pays au-dessus de ${FLOOR} % et les ${ROWS_DRAWN - above.length} plus gros producteurs d’Europe`);
 const REGION = {
   from: 0,
   to: above.length - 1,
@@ -402,9 +427,10 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       name: nameAtSize(id, SIZE),
       scale: FRAME.scale,
     });
-    console.log(`  -> renders/${id}.png\n`);
+    console.log(`  -> renders/${nameAtSize(id, SIZE)}.png\n`);
   } catch (error) {
-    for (const ext of ["png", "svg"]) await rm(join(OUT, `${id}.${ext}`), { force: true });
+    for (const ext of ["png", "svg"])
+      await rm(join(OUT, `${nameAtSize(id, SIZE)}.${ext}`), { force: true });
     refused.push({ id, why: error.message });
     console.log(`  REFUSED — ${error.message}\n`);
   }

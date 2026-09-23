@@ -81,7 +81,14 @@ const two = (v) =>
 // THE COPY IS WRITTEN IN CHARACTERS ITS OWN DIRECTIONS CAN SET. `CO2` rather than `CO₂`: the serif
 // ladder `resolveDirectionFamilies` walks carries no face with U+2082, and a missing glyph is a
 // silent fallback at render time and a different typeface in the delivered file.
-const title = `La Croatie est le seul pays de l’UE à émettre plus de CO2 par personne qu’en ${FROM}`;
+/** THE HEADLINE IN FORMS, LONGEST FIRST — R0 on this plate's own ladder, spent after every
+ *  standfirst rung and before the packing. Landscape and portrait take the first and stop there;
+ *  only a frame as narrow as it is tall ever asks for the others. */
+const title = [
+  `La Croatie est le seul pays de l’UE à émettre plus de CO2 par personne qu’en ${FROM}`,
+  `La Croatie est le seul pays de l’UE à émettre plus qu’en ${FROM}`,
+  `Le seul pays de l’UE en hausse depuis ${FROM}`,
+];
 const limits =
   `Variation des émissions de CO2 par personne entre ${FROM} et ${TO}, en tonnes, dans les ${MEMBERS} États membres. ` +
   `La hausse croate est de ${two(subject.change)} t sur une base de ${two(subject.from)} t, soit ${(
@@ -92,9 +99,16 @@ const limits =
 const source =
   "Source : Global Carbon Budget (2025) ; population d’après diverses sources (2024), traitement Our World in Data · combustibles fossiles et industrie uniquement";
 const subjectNote = `la seule hausse depuis ${FROM}`;
+/** R8's OWN SENTENCE, and it is a function because the number in it is the count the component's
+ *  ladder ACTUALLY took — never a literal typed here. It names the RULE as well as the count,
+ *  because « 13 des 27 » over a drawing that keeps the rise and the deepest falls would let a
+ *  reader take the thirteen for a sample of the union, which they are not. The counter beside it
+ *  goes on naming the whole: « Moyenne des 26 baisses ». */
+const scope = (drawn, all) =>
+  `${drawn} des ${all} États membres : la hausse et les ${drawn - 1} plus fortes baisses.`;
 
 const textPerRegister = {
-  display: title,
+  display: title.join(" "),
   eyebrow: EYEBROW,
   body: `${limits} ${source}`,
   axis: "0",
@@ -138,11 +152,20 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       title,
       limits,
       source,
-      alt:
-        `Barres divergentes : la variation des émissions de CO2 par personne entre ${FROM} et ${TO} dans les ` +
-        `${MEMBERS} pays de l’UE. La Croatie est la seule en hausse (+${two(subject.change)} t) ; les ${fell.length} autres baissent, ` +
+      /** THE ALT DESCRIBES THE BARS THAT ARE DRAWN, so it is a function of them: a sentence
+       *  written for twenty-seven over a plate R8 reduced would send a screen reader looking for
+       *  marks nobody drew. What it never stops saying is how many fell in the FILE. */
+      alt: (drawnRows) =>
+        `Barres divergentes : la variation des émissions de CO2 par personne entre ${FROM} et ${TO} ` +
+        `${
+          drawnRows.length === rows.length
+            ? `dans les ${MEMBERS} pays de l’UE`
+            : `dans ${drawnRows.length} des ${MEMBERS} pays de l’UE — la hausse et les ` +
+              `${drawnRows.length - 1} plus fortes baisses`
+        }. La Croatie est la seule en hausse (+${two(subject.change)} t) ; les ${fell.length} autres baissent, ` +
         `de ${two(largest.change)} t pour le Luxembourg, la plus forte baisse.`,
       eyebrow: EYEBROW,
+      scope,
       direction,
       treatments: offered.map((t) => t.id),
     }),
@@ -153,18 +176,43 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
     name: nameAtSize(id, SIZE),
     scale: EXPORT_FRAME.scale,
     });
-    console.log(`  -> renders/${id}.png\n`);
+    console.log(`  -> renders/${nameAtSize(id, SIZE)}.png\n`);
   } catch (error) {
     // A DIRECTION MAY REFUSE THIS BEAT, and the refusal is the result rather than a crash.
-    // `nocturne` sets the largest display, the largest padding and an uppercased, tracked annot
-    // register, and 27 rows will not print their values under it at 1920 x 1080: two columns reach
-    // 13.0px of pitch against the 15.8px a value needs, and a third column draws the smallest fall
-    // 0.7px long, which is a table. The alternative is what this file did an hour ago — render it
-    // anyway and drop 14 of the 27 numbers without saying so.
+    // The alternative is what this file did once — render it anyway and drop 14 of the 27 numbers
+    // without saying so.
+    //
+    // AT LANDSCAPE NOTHING REFUSES ANY MORE; the packing ladder in `DirectedDivergingBar.tsx` grew
+    // rungs until `nocturne` — the largest display, the largest padding, an uppercased and tracked
+    // annot register — fitted its 27 rows in three columns.
+    //
+    // AT SQUARE ALL THREE STILL REFUSE, AND NOW THEY REFUSE WITH THE COPY LADDER SPENT. The
+    // headline was one fixed string until 2026-09-23, so the first reading of this — "the header
+    // takes 454 of 540 drawn pixels" — was a measurement of a plate that had never been asked to
+    // give anything back. It has three forms now, spent after all three standfirst rungs, and the
+    // answer does not move: with the shortest headline, the standfirst gone and the average of the
+    // falls standing in its place, ONE column of 27 rows reaches a pitch of 7.8px in creme, 8.8px
+    // in rapport and 6.1px in nocturne, against the 15.8 / 15.4 / 15.1px a row owes to print its
+    // own number. Half. There is no rung left that buys 27 x 8px of height out of a 540px frame
+    // whose padding alone is 104 to 112 of it.
+    //
+    // TWO COLUMNS FAIL ON A WIDTH, WHICH NO RUNG ON THE COPY LADDER BUYS. Cyprus falls 0.52 t and
+    // Luxembourg 20.48 t — 1 part in 39.4 — so a panel that draws the smallest fall as a LENGTH
+    // rather than a tick owes 2 x 39.4 = 79px. A column also costs 150px (creme) to 167px
+    // (nocturne) of gutter before a bar starts: a value lane its longest number grows into, and a
+    // name lane against the zero rule. 229px a column, twice, plus a 24px alley = 481px, against
+    // the 436 / 448 / 428px a 540px frame leaves inside the direction's own padding. Short by 45,
+    // 43 and 87px. Stepping the value register down does not close it either: it would have to
+    // reach 7.6px where creme files 15, and the name lane — the larger half of the cost — is set
+    // in the annot register and would not move.
+    //
+    // So the honest answer is R9: this beat does not ship square. Portrait is where its row form
+    // lives, it is offered there and at landscape, and the refusal names what was spent.
     //
     // The stale PNG from a run that DID drop them is removed, so nothing on disk can be read as a
     // fresh render of a direction that refused.
-    for (const ext of ["png", "svg"]) await rm(join(OUT, `${id}.${ext}`), { force: true });
+    for (const ext of ["png", "svg"])
+      await rm(join(OUT, `${nameAtSize(id, SIZE)}.${ext}`), { force: true });
     refused.push({ id, why: error.message });
     console.log(`  REFUSED — ${error.message}\n`);
   }
@@ -172,6 +220,8 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
 
 if (refused.length)
   console.log(
-    `${refused.length} of ${readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md")).length} directions refused this beat at 1920x1080: ` +
+    `${refused.length} of ${readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md")).length} directions refused this beat at ` +
+      // The size actually drawn, not the landscape one this line used to name whatever `--size` said.
+      `${EXPORT_FRAME.width * EXPORT_FRAME.scale}x${EXPORT_FRAME.height * EXPORT_FRAME.scale}: ` +
       refused.map((r) => r.id).join(", "),
   );

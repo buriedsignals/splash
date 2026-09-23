@@ -50,7 +50,7 @@ export type DotStripFrameProps = {
   stem: number;
   pxPerPoint: number;
   scale: { left: number; right: number };
-  strips: Array<{ rail: number; ticksY: number; year: Line }>;
+  strips: Array<{ rail: number; ticksY: number; labelled: boolean; year: Line }>;
   ticks: Array<{ at: number; major: boolean; label?: Omit<Line, "y"> }>;
   marks: Array<{
     code: string;
@@ -263,8 +263,11 @@ export function DotStripFrame(
                 strokeWidth={t.major ? strokes.rule : strokes.hairline}
               />
             ))}
+            {/* Both strips read the SAME scale, so a frame too short for the corridor between them writes it out
+                once: `build.mjs` spends that arrangement rung before it thins the field, and every tick above is
+                still drawn on both rails — only the numbers over the upper one go. */}
             {props.ticks.map((t, j) =>
-              t.label ? (
+              t.label && s.labelled ? (
                 <Text
                   key={`n${j}`}
                   line={{ ...t.label, y: s.ticksY }}

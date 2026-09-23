@@ -123,9 +123,30 @@ const one = (v) =>
 const format = (v) => plainSpaces(v.toLocaleString("fr-FR", { maximumFractionDigits: 0 }));
 const gainLabel = (row) => `+${one(row.gain)}`;
 
-const title =
+/** THE HEADLINE IN FORMS, LONGEST FIRST — R0 on this plate's own ladder, spent after the reading
+ *  line and the standfirst and before a single row is given up. It was one string until
+ *  2026-09-24, which is a ladder with no rung: at 540x540 `nocturne` sets the largest display of
+ *  the three, wrapped that one sentence to four lines, and handed the ten rows what was left.
+ *  Every form still names BOTH ends — who gained most and who gained least — because the two ends
+ *  ARE the sentence; what the shorter forms give up is the period and the measure, both of which
+ *  the standfirst and the value axis print anyway. Landscape and portrait take the first. */
+const title = [
   `${withArticle(most.key).replace(/^l/, "L")} a gagné ${one(most.gain)} ans d’espérance de vie ` +
-  `depuis ${FROM}, ${withArticle(least.key)} ${one(least.gain)}`;
+    `depuis ${FROM}, ${withArticle(least.key)} ${one(least.gain)}`,
+  `${withArticle(most.key).replace(/^l/, "L")} a gagné ${one(most.gain)} ans d’espérance de vie, ` +
+    `${withArticle(least.key)} ${one(least.gain)}`,
+  `${withArticle(most.key).replace(/^l/, "L")} a gagné ${one(most.gain)} ans, ` +
+    `${withArticle(least.key)} ${one(least.gain)}`,
+];
+/** R8's OWN SENTENCE, and it is a function rather than a string because the number in it is the
+ *  count the component's ladder ACTUALLY took. It heads the standfirst when — and only when —
+ *  fewer rows are drawn than the file holds, and it names the rule as well as the count, because
+ *  « 6 pays » over a plate that kept the two ends of a ranking would describe a sample this is
+ *  not. */
+const scope = (drawn, all) =>
+  `${drawn} des ${all} pays : ${
+    drawn - 1 === 2 ? "les deux plus forts gains" : `les ${drawn - 1} plus forts gains`
+  } et le plus faible.`;
 const limits = [
   `Espérance de vie à la naissance en ${FROM} et en ${TO}, dans ${rows.length} pays. Tous les dix ont ` +
     `gagné des années : de ${one(least.gain)} pour ${withArticle(least.key)} à ${one(most.gain)} pour ` +
@@ -144,7 +165,7 @@ const source =
   "Source : Our World in Data (UN WPP, HMD), espérance de vie à la naissance · données 2023";
 
 const textPerRegister = {
-  display: title,
+  display: title.join(" "),
   eyebrow: EYEBROW,
   body: `${limits.join(" ")} ${source}`,
   axis: `70 75 80 85 ${UNIT}`,
@@ -191,6 +212,11 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
         title,
         limits,
         reading,
+        scope,
+        /** THE ROWS R8 MAY NOT DROP: the two the headline names. Forced in whatever their rank —
+         *  the least gain is last in a list sorted by gain, so any reduction taken from the top
+         *  down would remove the second half of the sentence above the plate. */
+        keep: [most.key, least.key],
         source,
         alt:
           `Graphique haltère : l’espérance de vie de ${rows.length} pays en ${FROM} et en ${TO}, une ` +
@@ -212,9 +238,10 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       name: nameAtSize(id, SIZE),
       scale: FRAME.scale,
     });
-    console.log(`  -> renders/${id}.png\n`);
+    console.log(`  -> renders/${nameAtSize(id, SIZE)}.png\n`);
   } catch (error) {
-    for (const ext of ["png", "svg"]) await rm(join(OUT, `${id}.${ext}`), { force: true });
+    for (const ext of ["png", "svg"])
+      await rm(join(OUT, `${nameAtSize(id, SIZE)}.${ext}`), { force: true });
     refused.push({ id, why: error.message });
     console.log(`  REFUSED — ${error.message}\n`);
   }

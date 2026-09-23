@@ -81,8 +81,10 @@ export function DirectedBoxplot({
   subject: string;
   unit: string;
   whiskerRule: string;
-  title: string;
-  limits: string;
+  /** The headline and the standfirst in FORMS, longest first — R3's rung. Landscape takes the
+   *  first of each and has never needed another. */
+  title: string[];
+  limits: string[];
   source: string;
   alt: string;
   eyebrow: string;
@@ -94,6 +96,9 @@ export function DirectedBoxplot({
   frame?: { width: number; height: number };
 }) {
   const { width, height } = frame ?? FRAME;
+  /** THE FORM THE FRAME ASKS FOR, read off the frame rather than passed in, so one component serves
+   *  the three export sizes without the runner having to tell it which it is drawing. */
+  const SIZE = width > height ? "landscape" : width === height ? "square" : "portrait";
   const { ink, muted, grid } = deriveFurniture(direction.ground);
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);
@@ -142,17 +147,13 @@ export function DirectedBoxplot({
 
   // ── header and footer ─────────────────────────────────────────────────────
   const column = width - PAD * 2;
-  const titleLines = wrap(set(title, display), column, display);
   const titleLead = leadOf(display);
   const bodyLead = leadOf(body);
-  const limitLines = wrap(set(limits, body), column, body);
   const sourceLines = wrap(set(source, body), column, body);
 
   const eyebrowBaseline = PAD + eyebrowReg.fontSize;
   const titleTop =
     eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
-  const limitsTop =
-    titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
   const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
 
   // ── the plot ──────────────────────────────────────────────────────────────
@@ -166,16 +167,106 @@ export function DirectedBoxplot({
     ? `Lecture : la boîte contient 50 % des années de la décennie, le trait est la médiane, ` +
       `les moustaches vont jusqu’à ${whiskerRule} et les points isolés sont les années qui les dépassent.`
     : null;
-  const readingLines = reading ? wrap(set(reading, annot), column, annot) : [];
-  const readingTop =
-    limitsTop + limitLines.length * bodyLead + gapOf(annot, 0.7857);
-
-  const plotTop =
-    readingTop +
-    readingLines.length * bodyLead +
-    gapOf(annot, readingLines.length ? 1 : 1.7143);
   const nameLead = leadOf(annot);
-  const plotBottom = sourceTop - gapOf(body, 1.1034) - nameLead;
+
+  /** THE BAND, MEASURED BEFORE THE HEADER, because the decade's own name is what decides how many
+   *  lines the foot of the plot owes and the header cannot be laid out until that is known. Nothing
+   *  in it depends on the value scale. */
+  const band = scaleBand<string>()
+    .domain(summaries.map((s) => s.label))
+    .range([PAD + 46, width - PAD])
+    .paddingInner(0.34)
+    .paddingOuter(0.2);
+  const slot = band.bandwidth();
+  const boxWidth = slot * (sampled ? 0.42 : 0.68);
+
+  /** EVERY DECADE KEEPS ITS SAMPLE SIZE — ON A SECOND LINE WHEN THE STEP IS TOO NARROW FOR ONE.
+   *
+   *  « 1950s · n=10 » is 90px of annot and the step at 1920 wide is 105, so landscape has always run
+   *  it on one line. At 1080 the step is 47px and the eight names printed straight through each
+   *  other — « 1950s · n1960s · n1970s · n=10 » — measured on creme-square, 2026-09-23, with no
+   *  assertion firing because three quarters of the ink still cleared. The count is the point of
+   *  this beat (one decade has five readings, not ten), so it is never what goes: the pair breaks
+   *  onto two lines, and only if the decade alone still does not fit does it lose its century. */
+  const nameForms: Array<(s: Summary) => string[]> = [
+    (s) => [`${s.label} · n=${s.n}`],
+    (s) => [s.label, `n=${s.n}`],
+    (s) => [s.label.replace(/^\d\d/, ""), `n=${s.n}`],
+  ];
+  const nameForm =
+    nameForms.find((form) =>
+      summaries.every((s) =>
+        form(s).every((l) => widthOf(set(l, annot), annot) + 6 <= band.step()),
+      ),
+    ) ?? nameForms[nameForms.length - 1];
+  const nameRows = Math.max(...summaries.map((s) => nameForm(s).length));
+
+  /** THE PLOT'S OWN FLOOR, and why it is a SHARE of the frame rather than a constant.
+   *
+   *  This plate had no ladder at all: the headline, the four-line standfirst and the three-line
+   *  reading were laid out at full length whatever the frame, and whatever was left over was the
+   *  plot. At 1080x1080 what was left over was 100px — eight distributions in a strip, the value
+   *  ticks « 10,0 t / 8,0 / 7,0 / 6,0 » printed into each other, and nocturne refused outright.
+   *  A distribution's argument IS its shape, so the copy gives way before the boxes do: the plot
+   *  owes 30 % of the height it is drawn in — the same share the sibling `static-area-swiss-co2`
+   *  holds its surface to — and the rungs below are run until it gets it. Landscape keeps the old
+   *  behaviour exactly: its plot is 196px in a 540 frame, which is 36 %, so the first rung fits
+   *  there and nothing moves. */
+  const plotOwes = SIZE === "landscape" ? 0 : height * 0.3;
+
+  /** THE RUNGS, in `REMOVAL_LADDER` order: R3 takes the standfirst's last sentence, repeatedly,
+   *  down to one; R4 then takes the reading line, which is an annotation in prose. Nothing is made
+   *  smaller — a floor that is met by shrinking the type is the rule that fails exactly when it is
+   *  needed. */
+  const layoutFor = (t: number, l: number, keepReading: boolean) => {
+    const titleLines = wrap(set(title[t], display), column, display);
+    const limitLines = wrap(set(limits[l], body), column, body);
+    const readingLines = keepReading && reading ? wrap(set(reading, annot), column, annot) : [];
+    const limitsTop = titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
+    const readingTop = limitsTop + limitLines.length * bodyLead + gapOf(annot, 0.7857);
+    const plotTop =
+      readingTop + readingLines.length * bodyLead + gapOf(annot, readingLines.length ? 1 : 1.7143);
+    const plotBottom = sourceTop - gapOf(body, 1.1034) - nameLead * nameRows;
+    return {
+      titleLines,
+      limitLines,
+      readingLines,
+      limitsTop,
+      readingTop,
+      plotTop,
+      plotBottom,
+      plot: plotBottom - plotTop,
+    };
+  };
+  const rungs: Array<{ title: number; limit: number; reading: boolean }> = [];
+  for (let t = 0; t < title.length; t++)
+    for (let l = 0; l < limits.length; l++) {
+      rungs.push({ title: t, limit: l, reading: true });
+      rungs.push({ title: t, limit: l, reading: false });
+    }
+  let taken = rungs[0];
+  let layout = layoutFor(taken.title, taken.limit, taken.reading);
+  let best = layout.plot;
+  for (const rung of rungs) {
+    const candidate = layoutFor(rung.title, rung.limit, rung.reading);
+    best = Math.max(best, candidate.plot);
+    taken = rung;
+    layout = candidate;
+    if (candidate.plot >= plotOwes) break;
+  }
+  if (layout.plot < plotOwes)
+    throw new Error(
+      `the copy leaves the distributions ${best.toFixed(0)}px at its most generous rung and eight ` +
+        `boxes owe ${plotOwes.toFixed(0)}px at ${width}x${height}. A distribution flattened into a ` +
+        `strip is glanced at, not compared.`,
+    );
+  const { titleLines, limitLines, readingLines, limitsTop, readingTop, plotTop, plotBottom } = layout;
+  if (SIZE !== "landscape")
+    console.log(
+      `  ladder: headline ${taken.title + 1}, standfirst ${taken.limit + 1}, reading ` +
+        `${taken.reading ? "kept" : "dropped"} · plot ${layout.plot.toFixed(0)}px, floor ` +
+        `${plotOwes.toFixed(0)}px · names on ${nameRows} line(s)`,
+    );
 
   const everyValue = summaries.flatMap((s) => s.values);
   const y = scaleLinear()
@@ -202,16 +293,9 @@ export function DirectedBoxplot({
    *  naming each band in words, `Interquartile Range`, never an unlabelled swatch) rather than
    *  Nature's on-figure anatomy. The whisker's rule is in it, because `boxplot.md` says this form is
    *  only ever as honest as its stated whisker rule. */
-  const band = scaleBand<string>()
-    .domain(summaries.map((s) => s.label))
-    .range([PAD + 46, width - PAD])
-    .paddingInner(0.34)
-    .paddingOuter(0.2);
-
   /** The sample takes the LEFT half of each slot and the box the right, so a reading is never drawn
-   *  on top of the rectangle it is evidence for. */
-  const slot = band.bandwidth();
-  const boxWidth = slot * (sampled ? 0.42 : 0.68);
+   *  on top of the rectangle it is evidence for. `band`, `slot` and `boxWidth` are measured above,
+   *  where the decade names need them. */
   const boxes = summaries.map((s) => {
     const left = band(s.label)!;
     const cx = sampled ? left + slot * 0.72 : left + slot / 2;
@@ -238,20 +322,39 @@ export function DirectedBoxplot({
     ...(labelled
       ? boxes
           .filter((b) => b.isSubject || b === boxes[boxes.length - 1])
-          .map((b) => ({
-            id: `median-${b.label}`,
-            treatment: "value-on-the-mark",
-            text: set(format(b.median), value),
-            // From the box's own RIGHT EDGE: anchored at the centre, the label's box lands on the
-            // rectangle it names, which is a mark, and the arbiter drops it — correctly.
-            at: { x: b.boxRight + 2, y: b.yMedian },
-            // Right of the box, or left of it where the frame's edge is closer than the label is
-            // wide — the last decade sits against the right margin and lost its number to it. Both
-            // positions are beside the box's own median, so neither can name the wrong decade.
-            anchors: ["right", "left", "above"],
-            priority: b.isSubject ? 9 : 7,
-            register: value,
-          }))
+          .map((b) => {
+            const w = widthOf(set(format(b.median), value), value);
+            /** THE LAST DECADE'S NUMBER HAS TO LEAVE THE MARGIN WHEN THE MARGIN RUNS OUT.
+             *
+             *  Beside the median is the right seat and landscape keeps it: 1920px leaves 150px to
+             *  the right of the last box and the label is 30. At 1080 there is 14px, so every
+             *  anchor taken from the box's right edge either hangs off the frame — `above` and
+             *  `below` CENTRE on the point, so half the run is outside it — or falls back onto the
+             *  box. Measured square and portrait, 2026-09-23: `median-2020s` was dropped in all
+             *  three directions, silently, and the ladder's shortest standfirst is the only thing
+             *  that still stated 4,27 t. So when the margin cannot hold it, the request moves to
+             *  the whisker's own top, centred on the box: still this decade's own mark, still
+             *  nothing else's, and clear of the rectangle it names.
+             *
+             *  It is asked at the tall and square frames ONLY. Landscape's own last box is nearly
+             *  as tight by this measure and the arbiter still seats it there, in the render this
+             *  beat was accepted at; reseating it would move a label nobody complained about. */
+            const cramped = SIZE !== "landscape" && width - PAD - (b.boxRight + 2) < w + 10;
+            return {
+              id: `median-${b.label}`,
+              treatment: "value-on-the-mark",
+              text: set(format(b.median), value),
+              // From the box's own RIGHT EDGE: anchored at the centre, the label's box lands on the
+              // rectangle it names, which is a mark, and the arbiter drops it — correctly.
+              at: cramped ? { x: b.cx, y: b.yHi } : { x: b.boxRight + 2, y: b.yMedian },
+              // Right of the box, or left of it where the frame's edge is closer than the label is
+              // wide — the last decade sits against the right margin and lost its number to it. Both
+              // positions are beside the box's own median, so neither can name the wrong decade.
+              anchors: cramped ? ["above", "left", "right"] : ["right", "left", "above"],
+              priority: b.isSubject ? 9 : 7,
+              register: value,
+            };
+          })
       : []),
   ];
 
@@ -343,6 +446,17 @@ export function DirectedBoxplot({
   const axisBand = bandOf(axis);
   const annotBand = bandOf(annot);
 
+  /** A TICK LADDER, R2's rung, run as a measurement rather than as a count. Five ticks over 196px of
+   *  landscape plot sit 49px apart and clear each other by a wide margin; the same five over the
+   *  square plot sit 27px apart, and « 10,0 t » is 13px of band with a 4px lead between runs — the
+   *  square render printed six of them into one another. The count steps down until consecutive
+   *  runs clear by their own band plus 4, and the unit still rides the top tick. */
+  const tickCounts = [5, 4, 3];
+  const spacedEnough = (ticks: number[]) =>
+    ticks.every((t, i) => i === 0 || Math.abs(y(ticks[i - 1]) - y(t)) >= axisBand.ascent + axisBand.descent + 4);
+  const valueTicks =
+    tickCounts.map((c) => y.ticks(c)).find(spacedEnough) ?? y.ticks(tickCounts[tickCounts.length - 1]);
+
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -386,7 +500,7 @@ export function DirectedBoxplot({
 
       {/* The value axis: ticks and hairlines, the unit on the top tick. A position encoding needs a
           scale — nothing here is a length measured from zero. */}
-      {y.ticks(5).map((t, i, all) => (
+      {valueTicks.map((t, i, all) => (
         <g key={t}>
           <line
             x1={PAD + 40}
@@ -482,19 +596,21 @@ export function DirectedBoxplot({
         );
       })}
 
-      {boxes.map((b) => (
-        <text
-          key={`name-${b.label}`}
-          x={b.sampleX + (b.cx - b.sampleX) / 2}
-          y={plotBottom + nameLead * 0.8}
-          textAnchor="middle"
-          {...line(annot)}
-          fill={b.isSubject ? ink : annot.fill}
-          fontWeight={b.isSubject ? 700 : annot.fontWeight}
-        >
-          {set(`${b.label} · n=${b.n}`, annot)}
-        </text>
-      ))}
+      {boxes.map((b) =>
+        nameForm(b).map((l, i) => (
+          <text
+            key={`name-${b.label}-${i}`}
+            x={b.sampleX + (b.cx - b.sampleX) / 2}
+            y={plotBottom + nameLead * 0.8 + i * nameLead}
+            textAnchor="middle"
+            {...line(annot)}
+            fill={b.isSubject ? ink : annot.fill}
+            fontWeight={b.isSubject ? 700 : annot.fontWeight}
+          >
+            {set(l, annot)}
+          </text>
+        )),
+      )}
 
       {boxes.map((b) =>
         textAt(`median-${b.label}`, b.isSubject ? accentInk : mutedInk, b.isSubject ? 700 : undefined),

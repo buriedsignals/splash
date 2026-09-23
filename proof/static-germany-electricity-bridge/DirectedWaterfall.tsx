@@ -43,7 +43,8 @@ import {
   adjustToContrast,
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
-import { applyCase } from "#shared/chart-beat/registers.mjs";
+import { applyCase, DERIVED_SIZE_RATIO } from "#shared/chart-beat/registers.mjs";
+import { frameInsetFor, viewedAtCssPx } from "#shared/chart-beat/sizes.mjs";
 import {
   EYEBROW_TO_DISPLAY,
   gapOf,
@@ -153,8 +154,25 @@ export function DirectedWaterfall({
   frame?: { width: number; height: number };
 }) {
   const { width, height } = frame ?? FRAME;
+  const SIZE =
+    width > height ? "landscape" : width === height ? "square" : "portrait";
   const { ink, muted, grid } = deriveFurniture(direction.ground);
-  const PAD = direction.pad;
+  /**
+   * THE MARGIN IS A PROPORTION OF THE PLATE, AND THE DIRECTION FILED ITS OWN ON A 960-WIDE ONE.
+   *
+   * Carried across unchanged it is a landscape decision spent at another frame: `nocturne`'s 56 is
+   * 12 % of the plate it was measured on and 21 % of a 540-wide one. Here it costs twice — height
+   * the bridge needs, and width the five category names are laid out across. Scaled rather than
+   * replaced, so the directions still differ, and never below the toolchain's own inset for the
+   * size (`frameInsetFor`, two type floors).
+   */
+  const PAD =
+    SIZE === "landscape"
+      ? direction.pad
+      : Math.max(
+          frameInsetFor(SIZE) / 2,
+          Math.round((direction.pad * width) / FRAME.width),
+        );
   const on = (id: string) => treatments.includes(id);
 
   const reg = (name: RegisterName) => registerOf(direction, name);
@@ -236,24 +254,116 @@ export function DirectedWaterfall({
    *  leading a 32 px title by one and a half of its own sizes puts the title's ascenders through
    *  it, which is what the first render of this beat did. */
   const eyebrowLead = gapOf(eyebrowReg, EYEBROW_TO_DISPLAY);
-  const titleLines = wrap(set(title, display), column, display);
-  const titleLead = leadOf(display);
-  const limitLines = wrap(set(limits, body), column, body);
   const bodyLead = leadOf(body);
-
-  const eyebrowBaseline = PAD + eyebrowReg.fontSize;
-  const titleTop = eyebrowBaseline + eyebrowLead + display.fontSize;
-  const limitsTop =
-    titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
+  const limitLines = wrap(set(limits, body), column, body);
   const sourceLines = wrap(set(source, body), column, body);
   const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
+  const annotLead = leadOf(annot);
 
-  const plot = {
-    left: PAD + widthOf("000", axis) + 12,
-    right: width - PAD,
-    top: limitsTop + limitLines.length * bodyLead + gapOf(body, 0.9655),
-    bottom: sourceTop - gapOf(body, 0.8276) - gapOf(annot, 1.7143),
+  /**
+   * THE CATEGORY STRIP TAKES A SECOND ROW WHEN ONE WILL NOT HOLD IT.
+   *
+   * Five names across the plot is a landscape sentence. At 540 the band under one bar is 87px and
+   * « RENOUVELABLES » sets 110 wide, so the arbiter — which drops rather than overlaps — dropped it
+   * at square and at portrait both, in every direction. The run printed `arbiter dropped 1: name-1`
+   * and the render succeeded: the beat lost the name of the only step that RISES, which is half of
+   * what the standfirst claims, and nothing refused.
+   *
+   * A staggered strip is the answer the frame asks for: odd bars drop one annot lead, so a name has
+   * its neighbour's width as well as its own. It is only taken where it is needed, and the room for
+   * the second row is budgeted before the plot is measured — a row that is drawn has to be a row
+   * that is budgeted.
+   */
+  const bandWidth = (width - PAD - (PAD + widthOf("000", axis) + 12)) / steps.length;
+  const widestName = Math.max(
+    ...steps.map((s) => widthOf(set(s.label, annot), annot)),
+  );
+  const NAME_ROWS =
+    SIZE !== "landscape" && widestName + 6 > bandWidth ? 2 : 1;
+
+  /**
+   * HOW SMALL A HEADLINE MAY GET AND STILL BE ONE — the two floors
+   * `static-choropleth-europe-lowcarbon` states. The filed size is a 960-wide decision; set in 540
+   * this beat's headline takes five lines and 35 % of the plate, and the bridge below it comes out
+   * 436 x 135 — a strip, with every assertion in this project green. The large-text relaxation binds
+   * only where the filed size already clears it: at square one user unit is 1.5 CSS px, so large
+   * text starts at 36 units while the filed display is 32. Landscape never walks this ladder.
+   */
+  const LARGE_TEXT_CSS_PX = 24;
+  const LARGE_TEXT_BOLD_CSS_PX = 18.66;
+  const displayAt = (fontSize: number) => ({
+    ...display,
+    fontSize,
+    letterSpacing: (display.letterSpacing * fontSize) / display.fontSize,
+  });
+  const displayRungs: Array<typeof display> =
+    SIZE === "landscape"
+      ? [display]
+      : (() => {
+          const largeText =
+            (Number(display.fontWeight) >= 700
+              ? LARGE_TEXT_BOLD_CSS_PX
+              : LARGE_TEXT_CSS_PX) *
+            (width / viewedAtCssPx(SIZE));
+          const floor =
+            display.fontSize >= largeText
+              ? Math.max(largeText, display.fontSize * DERIVED_SIZE_RATIO)
+              : display.fontSize * DERIVED_SIZE_RATIO;
+          const out: Array<typeof display> = [display];
+          for (let s = display.fontSize - 0.5; s >= floor - 1e-9; s -= 0.5)
+            out.push(displayAt(Math.round(s * 100) / 100));
+          return out;
+        })();
+
+  const layoutFor = (dsp: typeof display) => {
+    const titleLines = wrap(set(title, dsp), column, dsp);
+    const titleLead = leadOf(dsp);
+    const eyebrowBaseline = PAD + eyebrowReg.fontSize;
+    const titleTop = eyebrowBaseline + eyebrowLead + dsp.fontSize;
+    const limitsTop =
+      titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
+    return {
+      display: dsp,
+      titleLines,
+      titleLead,
+      eyebrowBaseline,
+      titleTop,
+      limitsTop,
+      plot: {
+        left: PAD + widthOf("000", axis) + 12,
+        right: width - PAD,
+        top: limitsTop + limitLines.length * bodyLead + gapOf(body, 0.9655),
+        bottom:
+          sourceTop -
+          gapOf(body, 0.8276) -
+          gapOf(annot, 1.7143) -
+          (NAME_ROWS - 1) * annotLead,
+      },
+    };
   };
+
+  /** A BRIDGE IS READ AS A SEQUENCE OF HEIGHTS, so a plot flatter than three to one has stopped
+   *  drawing the argument. The landscape plate this beat was accepted at is 2.75:1, and that is
+   *  where the number comes from — the first size on the ladder that reaches it is what draws, so
+   *  the headline gives up as little as it has to. */
+  const chosen =
+    displayRungs.find((dsp) => {
+      const l = layoutFor(dsp);
+      return l.plot.bottom - l.plot.top >= (l.plot.right - l.plot.left) / 3;
+    }) ?? displayRungs[displayRungs.length - 1];
+  const laid = layoutFor(chosen);
+  const drawnDisplay = laid.display;
+  const titleLines = laid.titleLines;
+  const titleLead = laid.titleLead;
+  const eyebrowBaseline = laid.eyebrowBaseline;
+  const titleTop = laid.titleTop;
+  const limitsTop = laid.limitsTop;
+  const plot = laid.plot;
+  if (plot.bottom - plot.top <= 0)
+    throw new Error(
+      `the copy takes the whole plate at ${SIZE}: the bridge is left ` +
+        `${(plot.bottom - plot.top).toFixed(0)}px of height. The headline is already at its floor.`,
+    );
 
   const { bars, value: scale, ticks } = bridgeGeometry(steps, plot);
 
@@ -324,7 +434,13 @@ export function DirectedWaterfall({
       id: `name-${i}`,
       treatment: "accent-marks-the-thread",
       text: set(b.label, annot),
-      at: { x: b.centre, y: plot.bottom + annot.fontSize * 0.6 },
+      at: {
+        x: b.centre,
+        y:
+          plot.bottom +
+          annot.fontSize * 0.6 +
+          (NAME_ROWS > 1 && i % 2 === 1 ? annotLead : 0),
+      },
       // THE CATEGORY STRIP IS ONE LINE. Left to the four-anchor default, the three floating steps
       // took `above` and the two totals — whose bars run all the way to the baseline, so their
       // `above` box lands on their own mark — fell through to a side anchor, putting five labels on
@@ -358,7 +474,7 @@ export function DirectedWaterfall({
         left: PAD,
         top: plot.top - 22,
         right: width - PAD,
-        bottom: plot.bottom + annot.fontSize * 3.2,
+        bottom: plot.bottom + annot.fontSize * 3.2 + (NAME_ROWS - 1) * annotLead,
       },
       measure: (text: string) => {
         const request = requests.find((r) => r.text === text)!;
@@ -443,7 +559,7 @@ export function DirectedWaterfall({
           key={l + i}
           x={PAD}
           y={titleTop + i * titleLead}
-          {...line(display)}
+          {...line(drawnDisplay)}
         >
           {l}
         </text>

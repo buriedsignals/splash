@@ -35,13 +35,49 @@ export const GRID = [
   "..  ..  ..  MLT MNE BIH MKD BGR ..  ..  ..  ..",
   "..  ..  ..  ..  ..  ALB GRC TUR CYP ..  ..  ..",
 ];
+/**
+ * THE SAME MAP, RE-CUT FOR A FRAME THAT IS NOT 16:9 — ten columns instead of eleven, the same forty-one tiles.
+ *
+ * Eleven columns over the 936px a square or portrait frame gives is an 85px cell, and a cell has to hold its
+ * country's code at the 36px type floor: the widest wants 79px of tile and 85px of cell leaves 78 (measured
+ * 2026-09-24, nocturne). Ten columns give 94px of cell and 86 of tile, which holds. The column that goes is the
+ * one that carried a single country — Portugal alone, west of Spain — and Portugal takes the tile under Spain,
+ * the south-west corner of the drawing, which is where it is. Nothing is dropped and no reading moves.
+ */
+export const NARROW_GRID = [
+  "ISL ..  ..  ..  ..  ..  ..  NOR SWE FIN",
+  "..  ..  ..  ..  ..  ..  ..  ..  ..  EST",
+  "..  IRL GBR DNK ..  ..  ..  ..  LVA RUS",
+  "..  ..  ..  NLD DEU POL LTU BLR ..  ..",
+  "..  ..  BEL LUX CZE SVK UKR ..  ..  ..",
+  "ESP FRA CHE AUT HUN MDA ..  ..  ..  ..",
+  "PRT ..  ITA SVN HRV SRB ROU ..  ..  ..",
+  "..  ..  MLT MNE BIH MKD BGR ..  ..  ..",
+  "..  ..  ..  ..  ALB GRC TUR CYP ..  ..",
+];
+
+/**
+ * THE SECOND FORM OF EVERY CODE — ISO 3166-1 alpha-2, the same standard the grid is written in.
+ * A tile names its country by its code, and how much of a code a tile holds is a measurement of the frame: at
+ * 1920x1080 a tile is 145px wide and holds « MDA » at the axis size; at 936px of content the widest alpha-3
+ * wants 111px of the 86px a tile keeps free (measured 2026-09-24, nocturne), and the alpha-2 form of the same
+ * standard wants 79. The frame that cannot keep the third letter keeps the country.
+ */
+export const ALPHA2 = {
+  ISL: "IS", NOR: "NO", SWE: "SE", FIN: "FI", EST: "EE", IRL: "IE", GBR: "GB", DNK: "DK", LVA: "LV", RUS: "RU",
+  NLD: "NL", DEU: "DE", POL: "PL", LTU: "LT", BLR: "BY", BEL: "BE", LUX: "LU", CZE: "CZ", SVK: "SK", UKR: "UA",
+  PRT: "PT", ESP: "ES", FRA: "FR", CHE: "CH", AUT: "AT", HUN: "HU", MDA: "MD", ITA: "IT", SVN: "SI", HRV: "HR",
+  SRB: "RS", ROU: "RO", MLT: "MT", MNE: "ME", BIH: "BA", MKD: "MK", BGR: "BG", ALB: "AL", GRC: "GR", TUR: "TR",
+  CYP: "CY",
+};
+
 /** The map's window, [west, south, east, north]: Europe as the grid names it (the scrolly's own). */
 export const WINDOW = [-25, 34, 50, 72];
 export const BREAKS = [40, 60, 75, 94];
 /** The claim: the two readings are this far apart at least (the static plate's own refusal). */
 export const GAP_FLOOR = 15;
 
-export function loadSubject({ dir = STATIC_DIR } = {}) {
+export function loadSubject({ dir = STATIC_DIR, grid = GRID } = {}) {
   const csv = readFileSync(join(dir, "data.csv"), "utf8").trim().split(/\r?\n/);
   const header = csv[0].split(",");
   const share = new Map();
@@ -55,7 +91,7 @@ export function loadSubject({ dir = STATIC_DIR } = {}) {
 
   // THE GRID AND THE DATA HAVE TO AGREE, BOTH WAYS.
   const placed = [];
-  GRID.forEach((line, row) =>
+  grid.forEach((line, row) =>
     line.trim().split(/\s+/).forEach((code, col) => {
       if (code === "..") return;
       if (!share.has(code)) throw new Error(`the grid places ${code} and the data has no such code`);

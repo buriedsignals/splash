@@ -7,7 +7,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { adjustToContrast, contrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
+import { frameInsetFor, sizeFor, videoExportSize } from "#shared/chart-video/sizes.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
@@ -22,7 +22,9 @@ import { LOLLIPOP_VIDEO_TIMING } from "./timing-contract.ts";
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const ROOT = join(HERE, "..", "..");
 export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
-export const SIZE = "landscape";
+/** The size this run exports at — `--size`, landscape when nothing asks. R2 names three and
+ *  everything under it already answered per size; only this line pinned the beat to one. */
+export const SIZE = videoExportSize();
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 const NB = "\u00A0";
 const LABEL_GAP = 0.4;
@@ -88,24 +90,54 @@ export function buildDirection(id, { subject, states, copy }) {
   const unitLine = { ...unitWord, x: inset, y: bandBaseline };
 
 
-  // THE PAIRS: six slots; in each, the 2000 stem then the 2023 stem, a head's width apart plus its value's; the dates under
+  // THE PAIRS: in each slot, the 2000 stem then the 2023 stem, a head's width apart plus its value's; the dates under
   // the first pair only, the name under every pair.
-  const slot = (stage.width - 2 * inset) / subject.pairs.length;
+  //
+  // HOW MANY SLOTS PER ROW IS A MEASURE, NOT THE NUMBER SIX. A slot has to carry a pair's two values side by side and
+  // its country's name under it. Measured 2026-09-23 on nocturne: the pair wants 224.2px and the widest name 199.1px,
+  // against a 291.7px slot at 1920 — six in a row, which is the picture this beat was cut as. At 1080 the same two
+  // measures are 269.1px and 238.8px against a 156.0px slot, so six in a row is not a tighter drawing of this argument
+  // but an unreadable one. The columns are therefore stepped down until both measures hold and the six pairs wrap into
+  // rows that share one scale and one unit — three columns at 1080, six at 1920, and landscape does not move.
+  const content = stage.width - 2 * inset;
   const values = new Set();
   for (let d = 0; d <= Math.ceil(top * 10); d++) values.add(oneText(d / 10));
   const valueWidths = Object.fromEntries([...values].map((t) => [t, widthOf(applyCase(t, value.transform), value)]));
   const widest = Math.max(...Object.values(valueWidths)) * (1 + DRAWN_WIDER);
   const apart = widest + gap;
-  if (!(apart + widest < slot - gap)) throw new Error("a pair's two values do not fit side by side in its slot");
   const names = subject.pairs.map((p) => measure(p.name, axis));
-  for (const [i, n] of names.entries()) if (!(n.width * (1 + DRAWN_WIDER) < slot - gap)) throw new Error(`${subject.pairs[i].name} does not hold under its pair`);
-  const nameBaseline = creditAt.y - gap - band.descent;
-  const dateBaseline = nameBaseline - band.ascent - band.descent - 0.25 * gap;
-  const baseline = dateBaseline - band.ascent - gap;
+  const widestName = Math.max(...names.map((n) => n.width)) * (1 + DRAWN_WIDER);
+  let columns = 0;
+  const triedColumns = [];
+  for (let cols = subject.pairs.length; cols >= 1; cols--) {
+    const trial = content / cols - gap;
+    if (!(apart + widest < trial)) triedColumns.push(`${cols}: a pair's two values do not fit side by side in its slot (${(apart + widest).toFixed(1)}px in ${trial.toFixed(1)}px)`);
+    else if (!(widestName < trial)) triedColumns.push(`${cols}: a name does not hold under its pair (${widestName.toFixed(1)}px in ${trial.toFixed(1)}px)`);
+    else { columns = cols; break; }
+  }
+  if (!columns) throw new Error(`no number of columns fits this frame: ${triedColumns.join("; ")}`);
+  const rows = Math.ceil(subject.pairs.length / columns);
+  const slot = content / columns;
+  const rowOf = (i) => Math.floor(i / columns);
+  // THE STACK IS A COMPARISON BETWEEN TWO STEMS, so the two countries the title names have to stand on one zero line.
+  // They are the two largest emitters and sort first, but a data year that changed that would silently break the shot.
+  const subjectRow = rowOf(subject.pairs.findIndex((p) => p.code === SUBJECT));
+  const otherRow = rowOf(subject.pairs.findIndex((p) => p.code === OTHER));
+  if (subjectRow !== otherRow) throw new Error(`the stack compares ${SUBJECT} with ${OTHER}, and ${columns} columns put them on rows ${subjectRow} and ${otherRow} — two zero lines the eye cannot measure across`);
+
   const R = 0.3 * axis.lead;
-  const plotTop = bandBaseline + valueBand.descent + 1.5 * gap + valueBand.ascent + valueBand.descent + gap / 2 + R;
-  const unit = (baseline - plotTop) / top;
-  const centre = (i) => inset + slot * (i + 0.5);
+  /** The air over the tallest head a row keeps for its value text, and the air under a zero line for the dates and the name. */
+  const headroom = R + gap / 2 + valueBand.descent + valueBand.ascent;
+  const belowZero = 2 * band.ascent + 2 * band.descent + 1.25 * gap;
+  const plotTop = bandBaseline + valueBand.descent + 1.5 * gap;
+  const rowSpan = (creditAt.y - gap - plotTop) / rows;
+  const unit = (rowSpan - headroom - belowZero) / top;
+  if (!(unit > 0)) throw new Error(`${rows} rows of pairs leave ${(rowSpan - headroom - belowZero).toFixed(1)}px for a stem of ${top} tonnes`);
+  const baselineOf = (r) => plotTop + headroom + unit * top + r * rowSpan;
+  const baseline = baselineOf(subjectRow);
+  const dateBaselineOf = (r) => baselineOf(r) + band.ascent + gap;
+  const nameBaselineOf = (r) => dateBaselineOf(r) + band.ascent + band.descent + 0.25 * gap;
+  const centre = (i) => inset + slot * ((i % columns) + 0.5);
   // THE STACK of China's copies stands just left of the American stem, its ratio centred over it; while the ratio shows the
   // American head's own value gives way. At 2023 the stack must stay clear of the 2000 tint on the pair's left.
   const copies = Math.ceil(subject.ratio.before);
@@ -154,6 +186,7 @@ export function buildDirection(id, { subject, states, copy }) {
     pairs: subject.pairs.map((p, i) => {
       const pastX = centre(i) - apart / 2;
       const presentX = centre(i) + apart / 2;
+      const row = rowOf(i);
       return {
         centreX: r1(centre(i)),
         code: p.code,
@@ -161,14 +194,18 @@ export function buildDirection(id, { subject, states, copy }) {
         after: p.after,
         pastX: r1(pastX),
         presentX: r1(presentX),
-        name: { ...names[i], x: centre(i) - names[i].width / 2, y: nameBaseline },
-        dates: i === 0 ? [pastX, presentX].map((x, j) => ({ ...dates[j], x: x - dates[j].width / 2, y: dateBaseline })) : [],
+        /** Every row shares one unit and one headroom, so a stem's height still reads across rows; only its zero moves. */
+        baseline: r1(baselineOf(row)),
+        name: { ...names[i], x: centre(i) - names[i].width / 2, y: nameBaselineOf(row) },
+        dates: i === 0 ? [pastX, presentX].map((x, j) => ({ ...dates[j], x: x - dates[j].width / 2, y: dateBaselineOf(row) })) : [],
       };
     }),
     baseline: r1(baseline),
     unit,
     R: r1(R),
     zero: { left: inset, right: stage.width - inset },
+    /** One zero line per row of pairs; one line at 16:9, where every pair stands on the same one. */
+    zeroLines: Array.from({ length: rows }, (_, r) => r1(baselineOf(r))),
     ratioWidths,
     copies,
     stackGap: r1(stackGap),
@@ -182,5 +219,5 @@ export function buildDirection(id, { subject, states, copy }) {
     states,
     timing: LOLLIPOP_VIDEO_TIMING,
   };
-  return { id, direction, props, report: { k, titleForm: titleCard.form, sourceForm: credit.form, apart: apart.toFixed(1) } };
+  return { id, direction, props, report: { k, titleForm: titleCard.form, sourceForm: credit.form, apart: apart.toFixed(1), columns, rows } };
 }

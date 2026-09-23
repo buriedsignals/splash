@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { scaleLinear, scaleLog } from "d3-scale";
 import { adjustToContrast, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
+import { frameInsetFor, sizeFor, videoExportSize } from "#shared/chart-video/sizes.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
@@ -23,7 +23,9 @@ import { SCATTER_VIDEO_TIMING } from "./timing-contract.ts";
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const ROOT = join(HERE, "..", "..");
 export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
-export const SIZE = "landscape";
+/** The size this run exports at — `--size`, landscape when nothing asks. R2 names three and
+ *  everything under it already answered per size; only this line pinned the beat to one. */
+export const SIZE = videoExportSize();
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 const NB = "\u00A0";
 const LABEL_GAP = 0.4;
@@ -139,7 +141,6 @@ export function buildDirection(id, { subject, states, copy }) {
   const headBaseline = vInset + Math.max(band.ascent, vBand.ascent);
   const tickBaseline = Math.min(creditAt.y, xNameLine.y - band.ascent) - gap - band.descent;
   const ageTicks = AGE_TICKS.map((v) => ({ v, ...measure(String(v), axis) }));
-  const R = RADIUS * k;
   const plot = {
     left: inset + Math.max(...ageTicks.map(drawn)) + gap,
     right: stage.width - inset,
@@ -150,72 +151,141 @@ export function buildDirection(id, { subject, states, copy }) {
   const yOf = scaleLinear().domain([age.lo, age.hi]).range([age.bottom, age.top]);
   const { countries } = subject;
   const incomes = countries.map((c) => c.income);
-  const xOf = scaleLog()
-    .domain([Math.min(...incomes) * 0.9, Math.max(...incomes) * 1.1])
-    .range([plot.left + R, plot.right - R]);
-  const [dLo, dHi] = xOf.domain();
-  const xTicks = INCOME_TICKS.filter((v) => v >= dLo && v <= dHi).map((v) => {
-    const m = measure(copy.tick(v), axis);
-    return { v, at: xOf(v), ...m, x: xOf(v) - drawn(m) / 2, y: tickBaseline };
-  });
-  if (!(xTicks.at(-1).x + drawn(xTicks.at(-1)) <= stage.width - inset)) throw new Error("the last income tick runs past the frame's inset");
-  const yName = copy.yName.map((t) => measure(t, axis)).find((m) => inset + drawn(m) + 2 * gap < xOf(BREAK) - drawn(measure(copy.breakAt, value)) / 2);
-  if (!yName) throw new Error("no form of the age axis's name clears the break's value on the head row");
-
-  // THE BREAK, ITS BARS AND THE COPIES' COLUMN, from the break outwards: long bar and copies on the left, short bar on the right.
-  const X = xOf(BREAK);
-  const w = BAR * axis.lead;
-  const s = AIR * axis.lead;
   const { below, above } = subject;
-  const long = { x: X - s - w, top: yOf(below.hi), bottom: yOf(below.lo) };
-  const short = { x: X + s, top: yOf(above.hi), bottom: yOf(above.lo) };
-  const copiesX = long.x - s - w;
-  const copies = Array.from({ length: Math.round(subject.ratio) }, (_, i) => ({ x: copiesX, top: yOf(below.lo + (i + 1) * above.range), bottom: yOf(below.lo + i * above.range) }));
 
-  // THE THREE SEATS. The column packs poorest first from the plot's left; each side's column packs nearest the break first.
-  const seats = countries.map((c) => ({ ...c, y: yOf(c.age), x: xOf(c.income) }));
-  const byIncome = [...seats].sort((a, b) => a.income - b.income);
-  const column = pack(byIncome, plot.left + R + gap / 2, 1, R);
-  const left = pack(byIncome.filter((c) => c.income < BREAK).reverse(), copiesX - s - R, -1, R);
-  const right = pack(byIncome.filter((c) => c.income >= BREAK), short.x + w + s + R, 1, R);
-  const members = seats.map((c) => ({
-    code: c.code,
-    age: c.age,
-    income: c.income,
-    x: c.x,
-    y: c.y,
-    column: column.get(c.code),
-    strip: c.income < BREAK ? left.get(c.code) : right.get(c.code),
-    order: byIncome.findIndex((b) => b.code === c.code),
-  }));
-  const columnRight = Math.max(...members.map((m) => m.column)) + R;
-  const leftmost = Math.min(...members.map((m) => m.strip)) - R;
-  if (!(leftmost > columnRight)) throw new Error("the left side's folded column runs into the plot's left edge");
-  if (!(Math.max(...members.map((m) => m.strip)) + R <= plot.right)) throw new Error("the right side's folded column runs past the plot");
+  // EVERYTHING THE DOT'S RADIUS DECIDES, at one radius: the income scale's own inset, the break, its
+  // two bars, the copies' column, and the three seats every country takes. Nothing above this reads
+  // the radius, so the whole of it can be run again at another one.
+  const seatingAt = (R) => {
+    const xOf = scaleLog()
+      .domain([Math.min(...incomes) * 0.9, Math.max(...incomes) * 1.1])
+      .range([plot.left + R, plot.right - R]);
+    const [dLo, dHi] = xOf.domain();
+    // HOW MANY INCOME TICKS ARE DRAWN IS A LADDER. The eight decade-and-half-decade steps are what a
+    // 1920-wide axis holds; at 1080 the type is 20% larger on a frame 44% narrower and « $10k$20k »
+    // and « $50k$100k » were set into one another — two runs a clipping counter and a frame counter
+    // both call fine. A tick is kept only when it stands clear of the last one kept, walking up the
+    // scale, so the ones that survive are still the decades a reader looks for. Landscape keeps all
+    // eight, so nothing there moves.
+    const wanted = INCOME_TICKS.filter((v) => v >= dLo && v <= dHi).map((v) => {
+      const m = measure(copy.tick(v), axis);
+      return { v, at: xOf(v), ...m, x: xOf(v) - drawn(m) / 2, y: tickBaseline };
+    });
+    const xTicks = [];
+    for (const t of wanted) if (!xTicks.length || t.x >= xTicks.at(-1).x + drawn(xTicks.at(-1)) + gap / 2) xTicks.push(t);
+    if (!(xTicks.at(-1).x + drawn(xTicks.at(-1)) <= stage.width - inset)) throw new Error("the last income tick runs past the frame's inset");
+    // THE BREAK, ITS BARS AND THE COPIES' COLUMN, from the break outwards: long bar and copies on the left, short bar on the right.
+    const X = xOf(BREAK);
 
-  // THE WORDS ON THE PICTURE: each span's value over its bar, « 3 fois » in the empty space right of the break under the
-  // short bar — each clear of every dot on its seat and in its folded column.
-  const boxOf = (l) => ({ x0: l.x - halo / 2, x1: l.x + drawn(l) + halo / 2, y0: l.y - vBand.ascent - halo / 2, y1: l.y + vBand.descent + halo / 2 });
-  const longValue = measure(copy.span(below.range), value);
-  const shortValue = measure(copy.span(above.range), value);
-  const timesWord = measure(copy.times, value);
-  const longTop = Math.min(long.top, ...copies.map((c) => c.top));
-  const spans = {
-    long: { ...longValue, x: X - s - drawn(longValue), y: longTop - R - gap / 2 - vBand.descent },
-    short: { ...shortValue, x: X + s, y: short.top - R - gap / 2 - vBand.descent },
+    // WHERE THE BREAK'S VALUE HANGS ON THE HEAD ROW IS A LADDER. Straddling the rule is the reading
+    // that names it best and it is what 1920 wide affords. At 1080 the rule sits at x=752 of a 936px
+    // content width, so a 239px value straddling it ends at 872 and the count — right-aligned at the
+    // frame's inset, 227px of « 190 pays » — begins at 781: they overlap by 91px. Hanging the value
+    // to the LEFT of the rule, still touching it, keeps it attached to what it labels and gives the
+    // count its room back, at no cost to the plot's height.
+    const breakWord = measure(copy.breakAt, value);
+    const countWord = measure(copy.counted(countries.length), value);
+    const countLeft = stage.width - inset - drawn(countWord);
+    const yForms = copy.yName.map((t) => measure(t, axis));
+    const head = [X - drawn(breakWord) / 2, X - gap / 2 - drawn(breakWord), X - drawn(breakWord)]
+      .filter((x) => x + drawn(breakWord) + gap <= countLeft)
+      .map((x) => ({ breakX: x, yName: yForms.find((m) => inset + drawn(m) + 2 * gap < x) }))
+      .find((h) => h.yName);
+    if (!head) throw new Error(countLeft < X + gap ? "the count runs into the break's value" : "no form of the age axis's name clears the break's value on the head row");
+    const { breakX, yName } = head;
+    const w = BAR * axis.lead;
+    const s = AIR * axis.lead;
+    const long = { x: X - s - w, top: yOf(below.hi), bottom: yOf(below.lo) };
+    const short = { x: X + s, top: yOf(above.hi), bottom: yOf(above.lo) };
+    const copiesX = long.x - s - w;
+    const copies = Array.from({ length: Math.round(subject.ratio) }, (_, i) => ({ x: copiesX, top: yOf(below.lo + (i + 1) * above.range), bottom: yOf(below.lo + i * above.range) }));
+
+    // THE THREE SEATS. The column packs poorest first from the plot's left; each side's column packs nearest the break first.
+    const seats = countries.map((c) => ({ ...c, y: yOf(c.age), x: xOf(c.income) }));
+    const byIncome = [...seats].sort((a, b) => a.income - b.income);
+    const column = pack(byIncome, plot.left + R + gap / 2, 1, R);
+    const left = pack(byIncome.filter((c) => c.income < BREAK).reverse(), copiesX - s - R, -1, R);
+    const right = pack(byIncome.filter((c) => c.income >= BREAK), short.x + w + s + R, 1, R);
+    const members = seats.map((c) => ({
+      code: c.code,
+      age: c.age,
+      income: c.income,
+      x: c.x,
+      y: c.y,
+      column: column.get(c.code),
+      strip: c.income < BREAK ? left.get(c.code) : right.get(c.code),
+      order: byIncome.findIndex((b) => b.code === c.code),
+    }));
+    const columnRight = Math.max(...members.map((m) => m.column)) + R;
+    const leftmost = Math.min(...members.map((m) => m.strip)) - R;
+    const rightmost = Math.max(...members.map((m) => m.strip)) + R;
+
+    // THE WORDS ON THE PICTURE: each span's value over its bar, « 3 fois » in the empty space right of the break under the
+    // short bar — each clear of every dot on its seat and in its folded column.
+    const boxOf = (l) => ({ x0: l.x - halo / 2, x1: l.x + drawn(l) + halo / 2, y0: l.y - vBand.ascent - halo / 2, y1: l.y + vBand.descent + halo / 2 });
+    const longValue = measure(copy.span(below.range), value);
+    const shortValue = measure(copy.span(above.range), value);
+    const timesWord = measure(copy.times, value);
+    const longTop = Math.min(long.top, ...copies.map((c) => c.top));
+    // A SPAN'S VALUE SITS OVER ITS BAR'S TOP END — or as high as the plot lets it, whichever is lower.
+    // At 1080 wide the short bar's top end is 88px under the plot's own top and the word's box, halo
+    // included, is 90: two pixels, and the word left the picture rather than move. Taken to the plot's
+    // top edge it still stands clear over the bar, and the dot-clearance test is what decides whether
+    // it may stay there — the one reading that can actually see a word sitting on a country. That
+    // reading is part of THIS ladder's rung: a smaller dot frees the word as surely as it frees the
+    // folds, so a rung is only taken when the picture holds whole.
+    const overBar = (top) => Math.max(top - R - gap / 2 - vBand.descent, plot.top - band.ascent / 2 + halo / 2 + vBand.ascent);
+    const spans = {
+      long: { ...longValue, x: X - s - drawn(longValue), y: overBar(longTop) },
+      short: { ...shortValue, x: X + s, y: overBar(short.top) },
+    };
+    const stackMid = yOf(below.lo + (copies.length / 2) * above.range);
+    const times = { ...timesWord, x: short.x + w + gap, y: stackMid + vShift };
+    const wordBoxes = [spans.long, spans.short, times].map(boxOf);
+    let words = null;
+    for (const [i, box] of wordBoxes.entries()) {
+      const word = [spans.long, spans.short, times][i];
+      if (!(box.y0 >= plot.top - band.ascent / 2)) words ??= `« ${word.text} » rises above the plot`;
+      const onSeat = boxClear(box, members, R);
+      const folded = boxClear(box, members.map((m) => ({ x: m.strip, y: m.y })), R);
+      if (!onSeat || !folded) words ??= `« ${word.text} » sits on a dot${onSeat ? " in its folded column" : " on its seat"}`;
+    }
+
+    return { R, xOf, xTicks, yName, breakX, X, w, s, long, short, copiesX, copies, members, spans, times, wordBoxes, words, columnRight, leftmost, rightmost, clears: leftmost > columnRight && rightmost <= plot.right && words === null };
   };
-  const stackMid = yOf(below.lo + (copies.length / 2) * above.range);
-  const times = { ...timesWord, x: short.x + w + gap, y: stackMid + vShift };
-  const wordBoxes = [spans.long, spans.short, times].map(boxOf);
-  for (const [i, box] of wordBoxes.entries()) {
-    if (!(box.y0 >= plot.top - band.ascent / 2)) throw new Error(`word ${i} rises above the plot`);
-    const onSeat = boxClear(box, members, R);
-    const folded = boxClear(box, members.map((m) => ({ x: m.strip, y: m.y })), R);
-    if (!onSeat || !folded) throw new Error(`« ${[spans.long, spans.short, times][i].text} » sits on a dot${onSeat ? " in its folded column" : " on its seat"}`);
-  }
 
-  const breakLabel = { ...measure(copy.breakAt, value), y: headBaseline };
-  breakLabel.x = X - drawn(breakLabel) / 2;
+  // THE DOT'S RADIUS IS A LADDER, NOT A CONSTANT — the same shape as the title's forms and the
+  // credit's. `RADIUS × k` ties the dot to the TYPE ladder, and at 1080 wide that ladder runs the
+  // wrong way: `k` rises (3.16 → 3.79 in nocturne) to clear the phone's 36px floor, so every dot
+  // grows a fifth while the plot loses nearly half its width. The two folded columns are what
+  // notices — 190 dots packed across the age axis need horizontal room proportional to the radius
+  // — and at the top rung the left fold runs into the plot's own column. The radius steps down
+  // until both folds clear; the refusal below still fires when none does, so a dot is never taken
+  // smaller than a rung the beat names. Landscape clears at the first rung, so nothing moves there.
+  const RADIUS_RUNGS = [1, 0.85, 0.7, 0.6, 0.5, 0.42, 0.35, 0.3];
+  let seating = null;
+  let lastTried = null;
+  for (const factor of RADIUS_RUNGS) {
+    lastTried = seatingAt(RADIUS * k * factor);
+    if (lastTried.clears) {
+      seating = lastTried;
+      break;
+    }
+  }
+  if (!seating) {
+    const smallest = (RADIUS * k * RADIUS_RUNGS.at(-1)).toFixed(1);
+    throw new Error(
+      lastTried.leftmost <= lastTried.columnRight
+        ? `the left side's folded column runs into the plot's left edge, even at the smallest dot the ladder names (${smallest}px): the plot's own column ends at ${lastTried.columnRight.toFixed(0)}px and the fold begins at ${lastTried.leftmost.toFixed(0)}px`
+        : lastTried.rightmost > plot.right
+          ? `the right side's folded column runs past the plot, even at the smallest dot the ladder names (${smallest}px): it ends ${(lastTried.rightmost - plot.right).toFixed(0)}px past it`
+          : `${lastTried.words}, even at the smallest dot the ladder names (${smallest}px)`,
+    );
+  }
+  const { R, xOf, xTicks, yName, breakX, X, w, s, long, short, copiesX, copies, members, spans, times, wordBoxes } = seating;
+
+
+  const breakLabel = { ...measure(copy.breakAt, value), y: headBaseline, x: breakX };
   const countRight = stage.width - inset;
   const counter = Object.fromEntries(
     Array.from({ length: countries.length + 1 }, (_, n) => {

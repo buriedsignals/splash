@@ -100,6 +100,9 @@ export function DirectedArea({
   frame?: { width: number; height: number };
 }) {
   const { width, height } = frame ?? FRAME;
+  /** THE FORM THE FRAME ASKS FOR, read off the frame rather than passed in, so one component serves
+   *  the three export sizes without the runner having to tell it which it is drawing. */
+  const SIZE = width > height ? "landscape" : width === height ? "square" : "portrait";
   const { ink, muted } = deriveFurniture(direction.ground);
   const PAD = direction.pad;
 
@@ -179,7 +182,18 @@ export function DirectedArea({
    *  band is not compared, it is glanced at. The floor is stated in the plate's own terms: the
    *  drawn plot must be at least six axis-bands tall — room for a zero, a top tick, and four bands
    *  of curve between them. */
-  const plotOwes = (axisBand.ascent + axisBand.descent) * 6;
+  /** AND WHY THE FLOOR IS ALSO A SHARE OF THE FRAME AT A SQUARE OR TALL ONE. Six axis bands is 63px,
+   *  and at 540 x 540 the ladder stopped at its very first rung: it kept the four-line headline and
+   *  the four-line standfirst, handed the surface 64px, and drew a 7:1 strip under half a frame of
+   *  type — measured 2026-09-23 on creme-square and nocturne-square. Nothing fired, because 64 is
+   *  more than 63. A floor stated as a share of the frame is what makes the ladder descend: the
+   *  surface owes 30 % of the height it is drawn in, so the headline shortens instead of the chart.
+   *  Landscape keeps the six-band floor exactly — its accepted renders sit at 126-198px in a 540
+   *  frame, which 30 % would have refused. */
+  const plotOwes = Math.max(
+    (axisBand.ascent + axisBand.descent) * 6,
+    SIZE === "landscape" ? 0 : height * 0.3,
+  );
 
   const layoutFor = (t: number, l: number, r: number) => {
     const titleLines = wrap(set(title[t], display), column, display);
@@ -263,7 +277,27 @@ export function DirectedArea({
       `a filled area drawn over a baseline of ${yDomain[0]} claims a surface the data does not ` +
         `have. Either the base is zero or the fill measures nothing.`,
     );
-  const y = scaleLinear().domain(yDomain).range([layout.plotBottom, layout.plotTop]);
+  /** THE PLOT IS NEVER TALLER THAN IT IS WIDE, AND ONLY A TALL FRAME CAN MAKE IT SO.
+   *
+   *  `type-at-size.mjs` has no measured range for `area`, so nothing clamped this plot and at
+   *  1080x1920 it came out 394 x 466 in component units — 0.85:1. A hundred and sixty-seven years
+   *  of a series whose whole growth sits in its last seventy then read as a wall rather than as a
+   *  rise and a fall. That is the probe's finding #1 exactly: nothing was clipped, nothing
+   *  collided, and the shape was wrong. The rule is stated in the plate's own terms rather than
+   *  borrowed from `line`'s range, whose own floor this repo distrusts in writing: the surface
+   *  keeps its width and REFUSES height beyond it, and the slack is split above and below so the
+   *  drawing sits where a reader expects rather than hanging off the standfirst. Landscape is
+   *  untouched — its plots are 5:1 and wider, nowhere near the cap. */
+  const plotWidthAt = width - PAD - (PAD + gutter);
+  const naturalPlot = layout.plotBottom - layout.plotTop;
+  const slack =
+    SIZE === "landscape"
+      ? 0
+      : Math.max(0, naturalPlot - Math.max(plotOwes, Math.min(naturalPlot, plotWidthAt)));
+  const plotTop = layout.plotTop + slack / 2;
+  const plotBottom = layout.plotBottom - slack / 2;
+
+  const y = scaleLinear().domain(yDomain).range([plotBottom, plotTop]);
 
   const pathFor = (span: Reading[]) => {
     const head = span.map((r) => `${x(r.year).toFixed(1)} ${y(r.mt).toFixed(1)}`).join(" L ");
@@ -281,6 +315,32 @@ export function DirectedArea({
     .map((r) => r.year)
     .filter((yr, i, all) => yr % 25 === 0 || i === 0 || i === all.length - 1);
 
+  /** A TICK LADDER, because a count tuned at 960px wide is not a count that fits at 540. Each label
+   *  is measured where it will actually sit — the first year reads from its tick, the last back to
+   *  it, the rest are centred — and a middle tick whose run would touch one already kept is dropped
+   *  rather than printed through it. The two anchors are placed first and never go: they are what
+   *  say where the series starts and ends. Measured at square, where « 1858 » and « 1875 » ran
+   *  together at the left end. */
+  const tickSpan = (yr: number): [number, number] => {
+    const w = widthOf(set(String(yr), axis), axis);
+    const at = x(yr);
+    if (yr === readings[0].year) return [at, at + w];
+    if (yr === last.year) return [at - w, at];
+    return [at - w / 2, at + w / 2];
+  };
+  const anchorYears = [readings[0].year, last.year];
+  const keptTicks = [...anchorYears];
+  for (const yr of xTicks) {
+    if (anchorYears.includes(yr)) continue;
+    const [l, r] = tickSpan(yr);
+    const clashes = keptTicks.some((k) => {
+      const [kl, kr] = tickSpan(k);
+      return l < kr + 6 && r > kl - 6;
+    });
+    if (!clashes) keptTicks.push(yr);
+  }
+  keptTicks.sort((a, b) => a - b);
+
   /** THE LAST READING'S SEAT, measured HERE rather than where it is drawn, because the value axis
    *  has to know about it. The seat clears the CURVE; nothing made it clear the axis's own
    *  hairlines, which are drawn the full width of the plot and ran straight through « 32,1 Mt » in
@@ -295,7 +355,7 @@ export function DirectedArea({
         const covered = readings.filter((r) => x(r.year) >= x(last.year) - w - 6);
         const crest = Math.min(...covered.map((r) => y(r.mt)));
         const above = crest - valueBand.descent - 7;
-        const clears = above - valueBand.ascent >= layout.plotTop;
+        const clears = above - valueBand.ascent >= plotTop;
         return {
           label,
           clears,
@@ -374,7 +434,7 @@ export function DirectedArea({
       ))}
 
       {/* THE UNIT, once, above the plot — the axis prints numbers and the numbers need a noun. */}
-      <text x={PAD} y={layout.plotTop - annotBand.descent - 5} {...line(annot)} fill={mutedInk}>
+      <text x={PAD} y={plotTop - annotBand.descent - 5} {...line(annot)} fill={mutedInk}>
         {set(unit, annot)}
       </text>
 
@@ -471,11 +531,11 @@ export function DirectedArea({
         </g>
       )}
 
-      {xTicks.map((t) => (
+      {keptTicks.map((t) => (
         <text
           key={`x${t}`}
           x={x(t)}
-          y={layout.plotBottom + 8 + axisBand.ascent}
+          y={plotBottom + 8 + axisBand.ascent}
           textAnchor={t === readings[0].year ? "start" : t === last.year ? "end" : "middle"}
           {...line(axis)}
           fill={mutedInk}

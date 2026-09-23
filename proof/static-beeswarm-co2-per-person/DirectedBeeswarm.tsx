@@ -94,6 +94,9 @@ export function DirectedBeeswarm({
   frame?: { width: number; height: number };
 }) {
   const { width, height } = frame ?? FRAME;
+  /** THE FORM THE FRAME ASKS FOR, read off the frame rather than passed in, so one component serves
+   *  the three export sizes without the runner having to tell it which it is drawing. */
+  const SIZE = width > height ? "landscape" : width === height ? "square" : "portrait";
   const { ink, muted } = deriveFurniture(direction.ground);
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);
@@ -159,7 +162,7 @@ export function DirectedBeeswarm({
   const annotLead = leadOf(annot);
   const calloutLead = annotBand.ascent + annotBand.descent + 2;
 
-  const layoutFor = (t: number, l: number, r: number) => {
+  const layoutFor = (t: number, l: number, r: number, cardLines: number) => {
     const titleLines = wrap(set(title[t], display), column, display);
     const limitLines = wrap(set(limits[l], body), column, body);
     const readingLines = r < 0 ? [] : wrap(set(reading[r], annot), column, annot);
@@ -175,7 +178,7 @@ export function DirectedBeeswarm({
      *  densest part of the swarm — the largest circle is by definition where the field is thickest,
      *  so there is no clear seat near it. A card written over the distribution it names is not a
      *  card, it is a stain on the evidence. */
-    const cardRoom = valueBand.ascent + valueBand.descent + 2 * calloutLead + 12;
+    const cardRoom = valueBand.ascent + valueBand.descent + cardLines * calloutLead + 12;
     const swarmTop = limitsTop + limitLines.length * bodyLead + annotBand.ascent * 1.4 + cardRoom;
     const swarmBottom =
       (readingLines.length
@@ -197,16 +200,30 @@ export function DirectedBeeswarm({
       swarmTop,
       swarmBottom,
       cardRoom,
+      cardLines,
       band: swarmBottom - swarmTop,
     };
   };
 
-  const rungs: Array<{ title: number; limit: number; reading: number }> = [];
-  for (let t = 0; t < title.length; t++)
-    for (let l = 0; l < limits.length; l++) {
-      for (let r = 0; r < reading.length; r++) rungs.push({ title: t, limit: l, reading: r });
-      rungs.push({ title: t, limit: l, reading: -1 });
-    }
+  /** THE CARD'S OWN FACTS ARE THE LAST RUNG BEFORE REFUSAL, and they are R4's rung — annotations,
+   *  dropped last first. The card reserves a name plus its two lines above the swarm whatever the
+   *  frame, and at 1080x1080 that fixed 70px was the difference between a band and a strip: the
+   *  copy ladder bottomed out at 117px in nocturne with nothing left to give. The NAME never goes
+   *  — a named case with no name is not a case — and the lines go from the bottom up, so the
+   *  population, which is what the circle's area encodes and what the headline argues, outlives
+   *  the rate, which the circle's position already states. */
+  const maxCardLines = Math.max(0, ...callouts.map((c) => c.lines.length));
+  /** THE CARD'S LINES ARE THE OUTERMOST LOOP, so every form of the copy is tried at full cards
+   *  before one of them is given up. Written as the innermost loop it fired first: creme at square
+   *  kept a three-line headline and threw away « 40,1 t par personne », leaving Qatar's circle at
+   *  the far right of an axis whose last tick is 20 and no way to read what it is worth. */
+  const rungs: Array<{ title: number; limit: number; reading: number; cards: number }> = [];
+  for (let c = maxCardLines; c >= 0; c--)
+    for (let t = 0; t < title.length; t++)
+      for (let l = 0; l < limits.length; l++) {
+        for (let r = 0; r < reading.length; r++) rungs.push({ title: t, limit: l, reading: r, cards: c });
+        rungs.push({ title: t, limit: l, reading: -1, cards: c });
+      }
 
   const top = Math.max(...marks.map((m) => m.tonnes));
   const xTicks = [0, 10, 20, 30, 40].filter((t) => t <= top + 2);
@@ -254,15 +271,33 @@ export function DirectedBeeswarm({
   const MIN_RADIUS = 0.9;
   const biggest = Math.max(...marks.map((m) => m.people));
 
+  /** THE BAND OWES A SHARE OF THE FRAME, AND ONLY A SQUARE OR TALL ONE HAS TO BE TOLD SO.
+   *
+   *  The two ladders here run in the wrong order against each other, and at 1080x1080 it showed.
+   *  The copy rung is the OUTER loop and the radius rung the inner, so the first rung tried — the
+   *  full headline, the full standfirst, the full reading line — was accepted the moment the swarm
+   *  fitted AT ITS MEANEST RADIUS. Measured 2026-09-23: a 96px band holding a 94px swarm of 9px
+   *  circles under two thirds of a frame of type. That is "make it smaller" firing before "remove
+   *  something", which is the one order `REMOVAL_LADDER` exists to forbid. Requiring the band to be
+   *  30 % of the height it is drawn in makes the copy give way first, and the radius rung — which
+   *  already walks generous to mean — then spends the room on circles a reader can compare.
+   *  Landscape's accepted bands are 114-159px in a 540 frame, 21-29 %, so it is exempted rather
+   *  than re-tuned. The share is 28 rather than the 30 its two siblings hold their plots to
+   *  because a swarm's band is not the whole plot: the axis row and its name sit under it and are
+   *  not the drawing. */
+  const bandOwes = SIZE === "landscape" ? 0 : height * 0.28;
+
   let fits: {
     rung: (typeof rungs)[number];
     layout: ReturnType<typeof layoutFor>;
     pack: ReturnType<typeof packAt>;
     maxRadius: number;
   } | null = null;
+  let bestBand = 0;
   outer: for (const rung of rungs) {
-    const layout = layoutFor(rung.title, rung.limit, rung.reading);
-    if (layout.band <= 0) continue;
+    const layout = layoutFor(rung.title, rung.limit, rung.reading, rung.cards);
+    bestBand = Math.max(bestBand, layout.band);
+    if (layout.band <= 0 || layout.band < bandOwes) continue;
     for (const maxRadius of MAX_RADII) {
       const r = scaleSqrt().domain([0, biggest]).range([0, maxRadius]);
       const pack = packAt((m) => Math.max(MIN_RADIUS, r(m.people)));
@@ -274,7 +309,9 @@ export function DirectedBeeswarm({
   }
   if (!fits)
     throw new Error(
-      `the swarm does not fit its band at any filed radius, in this direction. Give the beat ` +
+      `the swarm does not fit its band at any filed radius, in this direction, or no rung leaves ` +
+        `it the ${bandOwes.toFixed(0)}px a ${width}x${height} frame owes it — its most generous ` +
+        `rung reaches ${bestBand.toFixed(0)}px. Give the beat ` +
         `shorter copy — do not narrow the axis, which is the measurement.`,
     );
   const { layout, pack, maxRadius } = fits;
@@ -293,6 +330,7 @@ export function DirectedBeeswarm({
   onLadder?.(
     `ladder: headline ${fits.rung.title + 1}, standfirst ${fits.rung.limit + 1}, reading ` +
       (fits.rung.reading < 0 ? "dropped" : `form ${fits.rung.reading + 1}`) +
+      ` · cards ${layout.cardLines}/${maxCardLines} lines` +
       ` · band ${layout.band.toFixed(0)}px, swarm ${(pack.extent * 2).toFixed(0)}px at a ` +
       `${maxRadius}px largest circle · ${marks.length} countries · ${shownTicks.length}/${xTicks.length} ticks kept`,
   );
@@ -309,7 +347,7 @@ export function DirectedBeeswarm({
     const seat = seatOf(c.code);
     const w = Math.max(
       widthOf(set(c.name, value), value),
-      ...c.lines.map((l) => widthOf(set(l, annot), annot)),
+      ...c.lines.slice(0, layout.cardLines).map((l) => widthOf(set(l, annot), annot)),
     );
     return { c, seat, w, cx: seat.cx };
   });
@@ -330,7 +368,7 @@ export function DirectedBeeswarm({
       anchor = "end";
       tx = width - PAD;
     }
-    const cardH = valueBand.ascent + valueBand.descent + 2 * calloutLead;
+    const cardH = valueBand.ascent + valueBand.descent + layout.cardLines * calloutLead;
     const topY = layout.swarmTop - 10 - cardH;
     return { c, seat, cy: midline + seat.cy, topY, tx, anchor, cardH };
   });
@@ -412,7 +450,7 @@ export function DirectedBeeswarm({
           <text x={tx} y={topY + valueBand.ascent} textAnchor={anchor} {...line(value)} fill={ringed}>
             {set(c.name, value)}
           </text>
-          {c.lines.map((l, i) => (
+          {c.lines.slice(0, layout.cardLines).map((l, i) => (
             <text
               key={l}
               x={tx}

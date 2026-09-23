@@ -159,9 +159,27 @@ export function DirectedStreamgraph({
    *  on the bands, where an accent-coloured number over a pale band is the contrast failure this
    *  family's own records name (measured at 2.32–2.52 : 1 on the LLNL plate). */
   const span = Math.max(...extent) - Math.min(...extent);
+  /** THE PAGE AROUND THE STACK IS A NUMBER OF PIXELS, NOT A PERCENTAGE, ONCE THE PLOT IS SHORT.
+   *
+   *  14% of the domain either side maps to 10.9% of the plot's height, which at 960x540 is 33px —
+   *  more than the 28px « 0,01 TWh » needs under the stream, which is why the rule was never felt.
+   *  At 1080x1080 the same plot is 130px tall, the same percentage is 14px, and the value landed
+   *  first on the year ticks and then, when it was moved above, on the total line. A percentage of
+   *  a small number is a small number; what the label needs is its own height. So the range is
+   *  inset by whatever the proportional padding fails to provide, and by nothing when it does.
+   *
+   *  It is held to the small frames because 960x540 is the composition this beat was accepted at:
+   *  its proportional padding is 8px short of this rule and nothing collided there, so applying the
+   *  rule at that frame would redraw an accepted plate to repair a different one. */
+  const endRoom =
+    noAxis && width < FRAME.width
+      ? bandOf(value).ascent + bandOf(value).descent + 12
+      : 0;
+  const naturalPad = (plotBottom - plotTop) * (0.14 / 1.28);
+  const extraRoom = Math.max(0, endRoom - naturalPad);
   const y = scaleLinear()
     .domain([Math.min(...extent) - span * 0.14, Math.max(...extent) + span * 0.14])
-    .range([plotBottom, plotTop]);
+    .range([plotBottom - extraRoom, plotTop + extraRoom]);
 
   const shape = area<[number, number] & { data: Reading }>()
     .x((d: any) => x(d.data.year))
@@ -283,6 +301,12 @@ export function DirectedStreamgraph({
         series.map((s) => {
           const widest = widestOf(s);
           const text = set(labels[s.key] ?? s.key, annot);
+          /** THE TRACKED BAND IS NAMED ONCE, AND IT IS NAMED OUTSIDE. Its name is already drawn on a
+           *  leader below, where the contrast only has to hold against the page. At 960x540 the
+           *  solar band is 4px thick at its widest and fails the test below anyway, so this never
+           *  fired; at 1080x1920 the same band is thick enough to name itself and the plate printed
+           *  « SOLAIRE » twice, once on the band and once on the leader pointing at it. */
+          if (s.key === tracked && named) return null;
           if (
             widest.thickness < annotBand.ascent + annotBand.descent + 4 ||
             widthOf(text, annot) > width - PAD * 2
@@ -344,9 +368,24 @@ export function DirectedStreamgraph({
           anchor: "start" | "middle" | "end",
         ) => {
           const at = { x: x(readings[i].year), y: midAt(i) };
-          const edge = where === "above" ? topAt(i) : bottomAt(i);
+          /** THE END VALUES GO BELOW THE STACK UNTIL THERE IS NO BELOW LEFT, AND THEN THEY GO ABOVE.
+           *
+           *  Ferdio's rule is that the quantity is printed at the ends, OUTSIDE the stack, and at
+           *  960x540 the silhouette's own 14% padding leaves 21px under the stream for it. At
+           *  1080x1080 the plot is barely half as tall, that padding is 9px, and « 0,01 TWh » landed
+           *  on « 2000 » — 53% of the smaller run — which refused creme and nocturne outright. The
+           *  tick row's ink begins at `plotBottom + 8`; a value that would reach it is not made
+           *  smaller and is not left to collide, it is written above the stack instead, where the
+           *  same rule — outside, against the page — still holds. */
+          const tickInkTop = plotBottom + 8;
+          const belowY = bottomAt(i) + 8 + bandOf(r).ascent;
+          const side =
+            where === "below" && belowY + bandOf(r).descent > tickInkTop - 2
+              ? "above"
+              : where;
+          const edge = side === "above" ? topAt(i) : bottomAt(i);
           const yText =
-            where === "above"
+            side === "above"
               ? edge - 8 - bandOf(r).descent
               : edge + 8 + bandOf(r).ascent;
           const half = widthOf(text, r) / 2;
@@ -366,7 +405,7 @@ export function DirectedStreamgraph({
                 x1={at.x}
                 y1={at.y}
                 x2={at.x}
-                y2={where === "above" ? edge - 4 : edge + 4}
+                y2={side === "above" ? edge - 4 : edge + 4}
                 stroke={direction.ground}
                 strokeWidth={direction.stroke.hairline * 4}
                 strokeOpacity={0.85}
@@ -375,7 +414,7 @@ export function DirectedStreamgraph({
                 x1={at.x}
                 y1={at.y}
                 x2={at.x}
-                y2={where === "above" ? edge - 4 : edge + 4}
+                y2={side === "above" ? edge - 4 : edge + 4}
                 stroke={accentInk}
                 strokeWidth={direction.stroke.hairline}
               />

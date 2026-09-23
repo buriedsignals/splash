@@ -7,7 +7,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { adjustToContrast, contrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
+import { frameInsetFor, sizeFor, videoExportSize } from "#shared/chart-video/sizes.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
@@ -22,7 +22,9 @@ import { DIVERGING_STACKED_VIDEO_TIMING } from "./timing-contract.ts";
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const ROOT = join(HERE, "..", "..");
 export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
-export const SIZE = "landscape";
+/** The size this run exports at — `--size`, landscape when nothing asks. R2 names three and
+ *  everything under it already answered per size; only this line pinned the beat to one. */
+export const SIZE = videoExportSize();
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 const NB = "\u00A0";
 const LABEL_GAP = 0.4;
@@ -101,16 +103,58 @@ export function buildDirection(id, { subject, states, copy }) {
   const hundredWord = measure(copy.hundred, axis);
   const hundred = { ...hundredWord, x: plotLeft + 100 * unit - drawn(hundredWord.width), y: bandBaseline };
   const sideWords = Object.fromEntries(Object.entries(copy.sides).map(([key, t]) => [key, measure(t, axis)]));
-  const sides = {
-    left: { ...sideWords.left, x: plotLeft, y: bandBaseline },
-    centre: { ...sideWords.centre, x: anchor - drawn(sideWords.centre.width) / 2, y: bandBaseline },
-    right: { ...sideWords.right, x: plotRight - drawn(sideWords.right.width), y: bandBaseline },
+
+  // THE SIDE NAMES' ARRANGEMENT IS A LADDER, NOT A LINE.
+  //
+  // Three words over the plot is what 1359-1403px of landscape plot affords. Measured 2026-09-23 on a 1080px
+  // frame: the names, the two totals columns and the two insets take 561-613px of the width before the plot
+  // begins, so the plot falls to 467-519px while the three words still want 640-725px. The row they were
+  // written for has stopped existing. Every rung keeps all three words and every anchor they point at — the
+  // left side where the bars begin, the centre astride the anchor, the right side at the far end — and spends
+  // LINES rather than letters, because a shortened « Renouv. » would be the frame editing the argument.
+  // Landscape takes the first rung, so nothing already delivered moves.
+  const bandStep = band.ascent + 0.5 * gap;
+  const bandLineY = (n) => (n === 0 ? bandBaseline : bandBaseline + Math.max(valueBand.descent, band.descent) + bandStep + (n - 1) * (band.descent + bandStep));
+  const SIDE_RUNGS = [
+    { what: "over the plot", leftX: () => plotLeft, rightEdge: () => plotRight, on: { left: 0, centre: 0, right: 0 } },
+    { what: "on a line of their own, out to the frame's margins", leftX: () => inset, rightEdge: () => stage.width - inset, on: { left: 1, centre: 1, right: 1 } },
+    { what: "the centre on one line, the two sides on the next", leftX: () => plotLeft, rightEdge: () => stage.width - inset, on: { left: 2, centre: 1, right: 2 } },
+  ];
+  const ORDER = ["left", "centre", "right"];
+  const placeSides = (rung) => {
+    const at = {
+      left: { ...sideWords.left, x: rung.leftX(), y: bandLineY(rung.on.left) },
+      centre: { ...sideWords.centre, x: anchor - drawn(sideWords.centre.width) / 2, y: bandLineY(rung.on.centre) },
+      right: { ...sideWords.right, x: rung.rightEdge() - drawn(sideWords.right.width), y: bandLineY(rung.on.right) },
+    };
+    for (let i = 0; i < ORDER.length - 1; i++) {
+      const a = at[ORDER[i]];
+      const b = at[ORDER[i + 1]];
+      if (a.y === b.y && !(a.x + drawn(a.width) + gap <= b.x)) throw new Error(`« ${a.text} » and « ${b.text} » do not hold on one line`);
+    }
+    for (const key of ORDER) {
+      const w = at[key];
+      if (!(w.x >= inset - 1e-6 && w.x + drawn(w.width) <= stage.width - inset + 1e-6)) throw new Error(`« ${w.text} » runs outside the frame's margins`);
+    }
+    const sharingYear = ORDER.filter((key) => rung.on[key] === 0).map((key) => at[key].x);
+    if (!(year.x + drawn(year.width) + gap <= Math.min(hundred.x, ...sharingYear))) throw new Error("« 2024 » runs into the band beside it");
+    return { sides: at, lastLine: Math.max(...ORDER.map((key) => rung.on[key])) };
   };
-  if (!(year.x + drawn(year.width) + gap <= Math.min(sides.left.x, hundred.x))) throw new Error("« 2024 » runs into the band beside it");
-  if (!(sides.left.x + drawn(sides.left.width) + gap <= sides.centre.x && sides.centre.x + drawn(sides.centre.width) + gap <= sides.right.x)) throw new Error("the three side names do not hold on one line");
+  let placed = null;
+  const sideRungs = [];
+  for (const rung of SIDE_RUNGS) {
+    try {
+      placed = placeSides(rung);
+      break;
+    } catch (error) {
+      sideRungs.push(`${rung.what} — ${error.message}`);
+    }
+  }
+  if (!placed) throw new Error(`the three side names find no arrangement in a ${stage.width}px frame: ${sideRungs.join("; ")}`);
+  const { sides } = placed;
 
   // THE VERTICAL: six rows between the band and the credit; France's bar parts into two tracks inside its own row.
-  const top = bandBaseline + Math.max(valueBand.descent, band.descent) + 1.5 * gap;
+  const top = (placed.lastLine === 0 ? bandBaseline + Math.max(valueBand.descent, band.descent) : bandLineY(placed.lastLine) + band.descent) + 1.5 * gap;
   const bottom = creditAt.y - gap;
   const pitch = (bottom - top) / subject.rows.length;
   if (!(pitch >= axis.lead)) throw new Error(`a row is ${pitch.toFixed(1)}px, shorter than its words`);

@@ -119,23 +119,55 @@ const format = (v) => formatValue(v).replace(".", ",");
 // THE COPY IS WRITTEN IN CHARACTERS ITS OWN DIRECTIONS CAN SET: `CO2`, not `CO₂`. No face on the
 // serif ladder `resolveDirectionFamilies` walks carries U+2082, and a missing glyph is a silent
 // fallback at render time and a different typeface in the delivered file.
-const title =
+/** THE HEADLINE IN FORMS, LONGEST FIRST — R0 on this plate's own ladder, spent after the
+ *  standfirst's forms and before a single rank is given up. It was one string until 2026-09-24,
+ *  which is a ladder with no rung: at 540x540 the row form handed ten names 3px of pitch because
+ *  the header had taken everything and had nothing to give back. Every form keeps the whole claim
+ *  — who, what, when, and how many it beats — because the claim is the only thing on the plate
+ *  that a reader cannot reconstruct from the drawing. */
+const title = [
   `${named(subject).replace(/^l/, "L")} a émis plus de CO2 en ${YEAR} que les ` +
-  `${SPELLED[beatenCount]} pays suivants réunis`;
-const limits =
+    `${SPELLED[beatenCount]} pays suivants réunis`,
+  `${named(subject).replace(/^l/, "L")} a émis plus de CO2 en ${YEAR} que les ` +
+    `${SPELLED[beatenCount]} suivants réunis`,
+  `${named(subject).replace(/^l/, "L")} en ${YEAR} : plus de CO2 que les ` +
+    `${SPELLED[beatenCount]} suivants réunis`,
+];
+/** THE STANDFIRST IN FORMS, LONGEST FIRST, and each one drops a whole reading rather than trimming
+ *  words off the last. The unit goes last because nothing else on the plate states it; the caveat
+ *  about imported goods goes first because it qualifies a number the reader can still read
+ *  correctly without it. The form that names the tenth is SKIPPED by the component whenever R8 has
+ *  removed the tenth — a standfirst pointing at a bar that is not drawn is worse than a short
+ *  one. */
+const limits = [
   `CO2 territorial annuel, combustibles fossiles et industrie, en milliards de tonnes. ` +
-  `Ces ${SPELLED[rows.length] ?? rows.length} pays représentent ${(topShare * 100).toFixed(0)} % du ` +
-  `total mondial ; ${named(subject)} émet ${fr(ratioToSecond, 1)} fois plus que ` +
-  `${named(top[1].country)}, et le dixième, ${named(lastPlace.country)}, ${format(lastPlace.value)}. ` +
-  `Les émissions contenues dans les biens importés sont comptées là où les biens sont produits.`;
+    `Ces ${SPELLED[rows.length] ?? rows.length} pays représentent ${(topShare * 100).toFixed(0)} % du ` +
+    `total mondial ; ${named(subject)} émet ${fr(ratioToSecond, 1)} fois plus que ` +
+    `${named(top[1].country)}, et le dixième, ${named(lastPlace.country)}, ${format(lastPlace.value)}. ` +
+    `Les émissions contenues dans les biens importés sont comptées là où les biens sont produits.`,
+  `CO2 territorial annuel, combustibles fossiles et industrie, en milliards de tonnes. ` +
+    `Ces ${SPELLED[rows.length] ?? rows.length} pays représentent ${(topShare * 100).toFixed(0)} % du ` +
+    `total mondial ; ${named(subject)} émet ${fr(ratioToSecond, 1)} fois plus que ` +
+    `${named(top[1].country)}.`,
+  `CO2 territorial annuel, combustibles fossiles et industrie, en milliards de tonnes. ` +
+    `Ces ${SPELLED[rows.length] ?? rows.length} pays représentent ${(topShare * 100).toFixed(0)} % du ` +
+    `total mondial.`,
+  `CO2 territorial annuel, combustibles fossiles et industrie, en milliards de tonnes.`,
+];
+/** R8's OWN SENTENCE, a function because the number in it is the count the component's ladder
+ *  ACTUALLY took. The ranks R8 removes are the TAIL of the ranking — the ones the headline never
+ *  names — so the sentence is « les N premiers des dix »: a reader is told they are looking at the
+ *  top of a ranking, and at how much of it. */
+const scope = (drawn, all) =>
+  `Les ${drawn} premiers des ${all} plus gros émetteurs.`;
 const source =
   "Source : Global Carbon Budget 2025, via Our World in Data · données 2024, extraites le 9 août 2026";
 const comparisonNote = `Les ${SPELLED[beatenCount]} suivants réunis : ${format(combined)}`;
 
 const textPerRegister = {
-  display: title,
+  display: title.join(" "),
   eyebrow: EYEBROW,
-  body: `${limits} ${source}`,
+  body: `${limits.join(" ")} ${source}`,
   axis: "0",
   annot: `${rows.map((r) => r.name).join(" ")} ${comparisonNote}`,
   value: rows.map((r) => format(r.value)).join(" "),
@@ -180,14 +212,27 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
         format,
         title,
         limits,
+        scope,
+        /** THE ROWS R8 MAY NOT DROP: the subject and every country the headline adds up against
+         *  it. They are the top ranks, contiguous, so what R8 removes is always the tail. */
+        keep: [french(subject), ...comparison],
         source,
-        alt:
-          `Colonnes classant les ${SPELLED[rows.length] ?? rows.length} pays qui ont le plus émis de ` +
-          `CO2 en ${YEAR}. ${named(subject).replace(/^l/, "L")} est très au-dessus avec ` +
+        /** THE ALT DESCRIBES THE COLUMNS THAT ARE DRAWN, so it is a function of them rather than
+         *  a string written for ten. Its last sentence names where the ranking on the plate STOPS,
+         *  and under R8 that is not the tenth — a screen reader told the columns run down to
+         *  Germany would be looking for a bar the frame never drew. */
+        alt: (drawnRows) =>
+          `Colonnes classant ${
+            drawnRows.length === rows.length
+              ? `les ${SPELLED[rows.length] ?? rows.length} pays qui ont le plus émis de CO2 en ${YEAR}`
+              : `les ${SPELLED[drawnRows.length] ?? drawnRows.length} premiers des ` +
+                `${SPELLED[rows.length] ?? rows.length} pays qui ont le plus émis de CO2 en ${YEAR}`
+          }. ${named(subject).replace(/^l/, "L")} est très au-dessus avec ` +
           `${format(subjectValue)} milliards de tonnes, ${fr(ratioToSecond, 1)} fois les ` +
           `${format(top[1].value)} de ${named(top[1].country)}, et ` +
           `davantage que ${comparison.join(", ")} réunis (${format(combined)}). Les colonnes suivantes ` +
-          `descendent jusqu'à ${format(lastPlace.value)} pour ${french(lastPlace.country)}.`,
+          `descendent jusqu'à ${format(drawnRows[drawnRows.length - 1].value)} pour ` +
+          `${drawnRows[drawnRows.length - 1].name}.`,
         eyebrow: EYEBROW,
         direction,
         treatments: offered.map((t) => t.id),
@@ -200,13 +245,14 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       name: nameAtSize(id, SIZE),
       scale: FRAME.scale,
     });
-    console.log(`  -> renders/${id}.png\n`);
+    console.log(`  -> renders/${nameAtSize(id, SIZE)}.png\n`);
   } catch (error) {
     // A direction may measure this beat and refuse it; the refusal is the result rather than a
     // crash, and the stale PNG goes so nothing on disk reads as a fresh render of a direction that
     // declined. See `proof/static-diverging-bar-eu-per-capita/render-directions.mjs`, where one
     // direction does exactly that.
-    for (const ext of ["png", "svg"]) await rm(join(OUT, `${id}.${ext}`), { force: true });
+    for (const ext of ["png", "svg"])
+      await rm(join(OUT, `${nameAtSize(id, SIZE)}.${ext}`), { force: true });
     refused.push({ id, why: error.message });
     console.log(`  REFUSED — ${error.message}\n`);
   }

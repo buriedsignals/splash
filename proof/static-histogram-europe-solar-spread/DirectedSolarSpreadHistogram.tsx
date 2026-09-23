@@ -32,6 +32,7 @@ import {
 } from "#shared/chart-beat/render-still.mjs";
 import { applyCase } from "#shared/chart-beat/registers.mjs";
 import { placeLabels } from "#shared/chart-beat/arbiter.mjs";
+import { MEASURED_ASPECT } from "#shared/chart-beat/type-at-size.mjs";
 import {
   EYEBROW_TO_DISPLAY,
   gapOf,
@@ -41,7 +42,12 @@ import {
 
 /** 960 x 540 at scale 2 is the `landscape` this beat pins — 1920 x 1080, read from `BRIEF.md`. */
 const FRAME = { width: 960, height: 540 };
-const Y_TICK_HINT = 5;
+/** The type this beat's own BRIEF.md declares, and the key `type-at-size.mjs` holds its measured
+ *  aspect range under — 1.1:1 to 2.9:1, from `proof/portrait-aspect-probe`. */
+const TYPE = "histogram";
+/** The counts ladder, widest first. Five ticks are what a 540px-tall plate affords; a 140px one
+ *  does not, and a tick that prints through its neighbour is not a tick. */
+const Y_TICK_LADDER = [5, 4, 3, 2];
 
 /**
  * How much of a bar is given up to separate it from its neighbour, as a FRACTION of the bar.
@@ -67,6 +73,7 @@ export function DirectedSolarSpreadHistogram({
   eyebrow,
   direction,
   treatments,
+  onLadder,
   frame,
 }: {
   bins: Bin[];
@@ -74,13 +81,15 @@ export function DirectedSolarSpreadHistogram({
   threshold: number;
   thresholdCount: number;
   thresholdTotal: number;
-  title: string;
-  limits: string;
+  title: string[];
+  limits: string[];
   source: string;
   alt: string;
   eyebrow: string;
   direction: any;
   treatments: string[];
+  /** Every rung the ladder spends is a decision, so it is reported rather than taken quietly. */
+  onLadder?: (note: string) => void;
   /** The frame this render draws at — `sizeFor(size)` halved, so one component
    *  serves landscape, portrait and square. Absent means the landscape this beat was accepted at. */
   frame?: { width: number; height: number };
@@ -129,13 +138,10 @@ export function DirectedSolarSpreadHistogram({
    *  baseline, whatever glyphs they happen to carry. */
   const BAND_PROBE = "Hxpg1,";
   const bandOf = (r: any) => measureTextBand(BAND_PROBE, sizeOf(r));
-  const baselineOf = (p: any, r: any) => {
-    const band = bandOf(r);
-    // `above` holds the box's bottom edge, `below` its top, and the side anchors centre it.
-    if (p.anchor === "above") return p.box.y + p.box.height - band.descent;
-    if (p.anchor === "below") return p.box.y + band.ascent;
-    return p.box.y + p.box.height / 2 + (band.ascent - band.descent) / 2;
-  };
+  /** The block the arbiter granted is drawn from ITS OWN TOP, one lead a line. For a single run
+   *  every anchor agrees with the old per-anchor baseline — `above` holds the bottom edge and the
+   *  box is exactly one band tall — so landscape is untouched; for a wrapped block only the top
+   *  edge is a fixed point at all. */
 
   function wrap(text: string, maxWidth: number, r: any): string[] {
     const lines: string[] = [];
@@ -151,41 +157,134 @@ export function DirectedSolarSpreadHistogram({
     return lines;
   }
 
+  /** THE FORM THE FRAME ASKS FOR, taken off the frame itself rather than passed in — the same three
+   *  words `sizes.mjs` names. Everything conditioned on it leaves landscape exactly as it was
+   *  accepted; 960 x 540 is what every number in this component was measured against. */
+  const SIZE = width > height ? "landscape" : width === height ? "square" : "portrait";
+
   // ── header ────────────────────────────────────────────────────────────────
   const column = width - PAD * 2;
-  const titleLines = wrap(set(title, display), column, display);
   const titleLead = leadOf(display);
-  const limitLines = wrap(set(limits, body), column, body);
   const bodyLead = leadOf(body);
   const sourceLines = wrap(set(source, body), column, body);
 
   const eyebrowBaseline = PAD + eyebrowReg.fontSize;
   const titleTop =
     eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
-  const limitsTop =
-    titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
   const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
 
   /** A bin's name, from the treatment: both edges, and an inequality where the tail is open. */
   const nameOf = (b: Bin) => (b.open ? `${b.lo}+` : `${b.lo}–${b.hi}`);
   const labelled = on("bin-named-by-both-edges-and-an-open-top");
 
-  const plot = {
-    left:
-      PAD + Math.max(...bins.map((b) => widthOf(String(b.count), axis))) + 26,
-    right: width - PAD,
-    top: limitsTop + limitLines.length * bodyLead + gapOf(annot, 1.8571),
+  const plotLeft =
+    PAD + Math.max(...bins.map((b) => widthOf(String(b.count), axis))) + 26;
+  const plotRight = width - PAD;
+  const plotWidth = plotRight - plotLeft;
+
+  const layoutFor = (titleIndex: number, limitIndex: number) => {
+    const titleLines = wrap(set(title[titleIndex], display), column, display);
+    const limitLines =
+      limitIndex < 0 ? [] : wrap(set(limits[limitIndex], body), column, body);
+    const titleBottom = titleTop + titleLines.length * titleLead;
+    const limitsTop = titleBottom + gapOf(body, 0.4138);
+    const top =
+      (limitLines.length ? limitsTop + limitLines.length * bodyLead : titleBottom) +
+      gapOf(annot, 1.8571);
     // Room for BOTH rows the axis register sets below the plot: the bin names at 1.7 lines and the
     // unit at 3.3. A first version reserved 2.2 and drew at 3.2, so the unit sat on the source line.
-    bottom: sourceTop - gapOf(body, 1.1034) - axis.fontSize * 4,
+    const bottom = sourceTop - gapOf(body, 1.1034) - axis.fontSize * 4;
+    return { titleLines, limitLines, limitsTop, top, bottom };
   };
 
+  /**
+   * THE REMOVAL LADDER, AND THEN THE MEASURED CLAMP — in that order, because they answer opposite
+   * halves of one question.
+   *
+   * `type-at-size.mjs` gives `histogram` 1.1:1 to 2.9:1, and it is the type the probe took that
+   * range FROM: its portrait arm went to 0.54:1 and a right-skewed distribution became one enormous
+   * column beside nine slivers, with every assertion green. A distribution's argument is a shape.
+   *
+   * MEASURED at 1080x1080 with the copy this beat ships: the headline runs to five lines and the
+   * standfirst to five more, and what is left for the plot is 25px of height against 390px of
+   * width — 16:1. The five counts ticks then landed 5px apart and printed « 0 5 10 15 » through
+   * each other, which is the refusal the square render actually fired. Nothing above the plot is
+   * smaller than it should be; there is simply too much of it, and "make it smaller" is the rule
+   * that fails at the moment it is needed. So the ladder REMOVES — the standfirst's shorter forms,
+   * then the standfirst itself (R3 then R7), then the headline's (R1 is not available here: this
+   * plate has no axis title) — until the plot clears the range's ceiling.
+   *
+   * The clamp is the other end: at 1080x1920 the frame offers more height than 1.1:1 allows, so the
+   * plot keeps its width, caps its height, and the slack is split above and below — `proof/co2-suisse`
+   * does the same for a line, and for the same reason.
+   *
+   * Landscape reads none of this. Its own plate is flatter than the range and was accepted that way,
+   * and `formForSize` exempts it by name.
+   */
+  const rungs: Array<{ title: number; limit: number }> = [];
+  for (let t = 0; t < title.length; t++)
+    for (let l = 0; l < limits.length; l++) rungs.push({ title: t, limit: l });
+  for (let t = 0; t < title.length; t++) rungs.push({ title: t, limit: -1 });
+  const tried = rungs.map((rung) => ({ rung, layout: layoutFor(rung.title, rung.limit) }));
+  const range = MEASURED_ASPECT[TYPE];
+  const flattest = SIZE === "landscape" ? 0 : plotWidth / range.max;
+  const fits = tried.find(({ layout }) => layout.bottom - layout.top >= flattest);
+  if (!fits) {
+    const best = tried.reduce((a, b) =>
+      b.layout.bottom - b.layout.top > a.layout.bottom - a.layout.top ? b : a,
+    );
+    const got = best.layout.bottom - best.layout.top;
+    throw new Error(
+      `the plot is too FLAT at ${SIZE} even with every rung of the ladder spent: ` +
+        `${plotWidth.toFixed(0)} x ${got.toFixed(0)} is ${(plotWidth / got).toFixed(2)}:1, outside ` +
+        `${TYPE}'s measured range ${range.min}:1 to ${range.max}:1 (${range.from}). The last rung ` +
+        `is to ship the sizes that do work and say why.`,
+    );
+  }
+  const layout = fits.layout;
+  const { titleLines, limitLines, limitsTop } = layout;
+
+  const naturalHeight = layout.bottom - layout.top;
+  const heldHeight =
+    SIZE === "landscape"
+      ? naturalHeight
+      : Math.min(naturalHeight, plotWidth / range.min);
+  const slack = Math.max(0, naturalHeight - heldHeight);
+  const plot = {
+    left: plotLeft,
+    right: plotRight,
+    top: layout.top + slack / 2,
+    bottom: layout.bottom - slack / 2,
+  };
+  onLadder?.(
+    `ladder: headline ${fits.rung.title + 1}, standfirst ` +
+      (fits.rung.limit < 0 ? "dropped" : `${fits.rung.limit + 1}`) +
+      ` · plot ${plotWidth.toFixed(0)} x ${(plot.bottom - plot.top).toFixed(0)} = ` +
+      `${(plotWidth / (plot.bottom - plot.top)).toFixed(2)}:1` +
+      (SIZE === "landscape"
+        ? " (landscape is exempt from the range — it is the frame this plate was accepted at)"
+        : ` in ${range.min}–${range.max}`),
+  );
+
   const most = Math.max(...bins.map((b) => b.count));
+  /** THE COUNTS LADDER. Five ticks is a number tuned on a 180px-tall plot; on a 135px one the same
+   *  five land inside each other's ink. The count steps down until consecutive gridlines are at
+   *  least one axis band apart, and the band is the register's own, not the string's. */
+  const axisBand = bandOf(axis);
+  const tickGapOwed = axisBand.ascent + axisBand.descent + 2;
+  const tickHint =
+    Y_TICK_LADDER.find((n) => {
+      const trial = scaleLinear().domain([0, most]).nice(n).range([plot.bottom, plot.top]);
+      const values = trial.ticks(n);
+      return values.every(
+        (v, i) => i === 0 || trial(values[i - 1]) - trial(v) >= tickGapOwed,
+      );
+    }) ?? Y_TICK_LADDER[Y_TICK_LADDER.length - 1];
   const counts = scaleLinear()
     .domain([0, most])
-    .nice(Y_TICK_HINT)
+    .nice(tickHint)
     .range([plot.bottom, plot.top]);
-  const ticks = counts.ticks(Y_TICK_HINT);
+  const ticks = counts.ticks(tickHint);
   const band = (plot.right - plot.left) / bins.length;
 
   const bars = bins.map((b, i) => {
@@ -213,6 +312,17 @@ export function DirectedSolarSpreadHistogram({
     : null;
 
   const shareText = `${thresholdCount} of ${thresholdTotal} countries under ${threshold} ${unit}`;
+  /** THE ANNOTATION WRAPS WHERE THE PLOT IS NARROW. Measured at 1080x1080 and 1080x1920: this
+   *  sentence is 300px of ink laid beside a threshold line on a 390px plot, so no anchor kept it
+   *  inside the frame and the arbiter dropped it — « arbiter dropped 1: share ». It is the one
+   *  sentence the beat's second treatment exists to state, so it is given lines instead of being
+   *  lost. The arbiter arbitrates a BOX, so the box it is handed is the wrapped block's. */
+  const annotLead = leadOf(annot);
+  const shareLines =
+    SIZE === "landscape"
+      ? [set(shareText, annot)]
+      : wrap(set(shareText, annot), plotWidth * 0.55, annot);
+  const shareBlock = shareLines.join("\n");
 
   // ── the treatment layer, arbitrated ───────────────────────────────────────
   const requests = cut
@@ -220,7 +330,7 @@ export function DirectedSolarSpreadHistogram({
         {
           id: "share",
           treatment: "share-on-the-declared-side-of-a-threshold",
-          text: set(shareText, annot),
+          text: shareBlock,
           at: { x: cut.x + 14, y: plot.top + annot.fontSize * 1.2 },
           priority: 8,
           register: annot,
@@ -228,12 +338,46 @@ export function DirectedSolarSpreadHistogram({
       ]
     : [];
 
-  const marks = bars.map((b) => ({
-    x: b.x,
-    y: b.y,
-    width: b.w,
-    height: Math.max(b.h, 1),
-  }));
+  /** THE INK THE ARBITER CANNOT SEE. The bars it is given; the axis furniture it is not, and a
+   *  label that clears every bar can still land squarely on a tick label or on a bin name. Each of
+   *  these sits at a box this component already knows, so each belongs in `avoid` exactly like a
+   *  mark — the same correction `proof/co2-suisse/DirectedLine.tsx` records for its y ticks. */
+  const marks = [
+    ...bars.map((b) => ({
+      x: b.x,
+      y: b.y,
+      width: b.w,
+      height: Math.max(b.h, 1),
+    })),
+    ...ticks.map((t) => {
+      const text = set(String(t), axis);
+      const w = widthOf(text, axis);
+      return {
+        x: plot.left - 10 - w,
+        y: counts(t) + axis.fontSize * 0.35 - axisBand.ascent,
+        width: w,
+        height: axisBand.ascent + axisBand.descent,
+      };
+    }),
+    ...(labelled
+      ? bars.map((b) => {
+          const text = set(nameOf(b), axis);
+          const w = widthOf(text, axis);
+          return {
+            x: b.centre - w / 2,
+            y: plot.bottom + axis.fontSize * 1.7 - axisBand.ascent,
+            width: w,
+            height: axisBand.ascent + axisBand.descent,
+          };
+        })
+      : []),
+    {
+      x: plot.left,
+      y: plot.bottom + axis.fontSize * 3.3 - axisBand.ascent,
+      width: widthOf(set(unit, axis), axis),
+      height: axisBand.ascent + axisBand.descent,
+    },
+  ];
 
   const { placed, dropped } = placeLabels(
     requests.map(({ id, treatment, text, at, anchors, priority }) => ({
@@ -253,10 +397,12 @@ export function DirectedSolarSpreadHistogram({
       },
       measure: (text: string) => {
         const request = requests.find((r) => r.text === text)!;
-        const b = measureTextBand(text, sizeOf(request.register));
+        const lines = text.split("\n");
+        const b = bandOf(request.register);
         return {
-          width: widthOf(text, request.register),
-          height: b.ascent + b.descent,
+          width: Math.max(...lines.map((l) => widthOf(l, request.register))),
+          height:
+            b.ascent + b.descent + (lines.length - 1) * leadOf(request.register),
         };
       },
       avoid: marks,
@@ -375,22 +521,25 @@ export function DirectedSolarSpreadHistogram({
             )}
             strokeWidth={direction.stroke.series}
           />
-          <text
-            x={byId.get("share")!.box.x}
-            y={baselineOf(byId.get("share")!, annot)}
-            fill={adjustToContrast(
-              direction.accent,
-              direction.ground,
-              TEXT_CONTRAST_MIN,
-            )}
-            fontFamily={annot.fontFamily}
-            fontSize={annot.fontSize}
-            fontWeight={annot.fontWeight}
-            fontStyle={annot.fontStyle}
-            letterSpacing={annot.letterSpacing}
-          >
-            {byId.get("share")!.text}
-          </text>
+          {shareLines.map((l, i) => (
+            <text
+              key={`share-${i}`}
+              x={byId.get("share")!.box.x}
+              y={byId.get("share")!.box.y + bandOf(annot).ascent + i * annotLead}
+              fill={adjustToContrast(
+                direction.accent,
+                direction.ground,
+                TEXT_CONTRAST_MIN,
+              )}
+              fontFamily={annot.fontFamily}
+              fontSize={annot.fontSize}
+              fontWeight={annot.fontWeight}
+              fontStyle={annot.fontStyle}
+              letterSpacing={annot.letterSpacing}
+            >
+              {l}
+            </text>
+          ))}
         </>
       )}
 

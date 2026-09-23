@@ -7,7 +7,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { adjustToContrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
+import { frameInsetFor, sizeFor, videoExportSize } from "#shared/chart-video/sizes.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
@@ -22,7 +22,9 @@ import { BAR_VIDEO_TIMING } from "./timing-contract.ts";
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const ROOT = join(HERE, "..", "..");
 export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
-export const SIZE = "landscape";
+/** The size this run exports at — `--size`, landscape when nothing asks. R2 names three and
+ *  everything under it already answered per size; only this line pinned the beat to one. */
+export const SIZE = videoExportSize();
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 const NB = "\u00A0";
 const LABEL_GAP = 0.4;
@@ -81,11 +83,34 @@ export function buildDirection(id, { subject, states, copy }) {
   const shift = (band.ascent - band.descent) / 2;
 
   const titleCard = titleCardFor({ registers, eyebrow: copy.eyebrow, title: copy.title, size: SIZE, eyebrowToDisplay: EYEBROW_TO_DISPLAY });
-  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k, ...CREDIT_ONE_LINE });
 
   // THE ROWS: the world on top, then the ten; the names at the left, the credit under them. One scale per camera: the world's,
   // where the world bar and its count fill the row, and the ten's, where the first bar and its count do.
-  const creditAt = { x: inset, y: stage.height - vInset - credit.height };
+  //
+  // THE CREDIT'S FORM IS PART OF THE ROWS' BUDGET. Ten rows and the credit share the frame's height, and the shared
+  // ladder in `sourceCreditFor` answers the credit first: it keeps the longest form and pays for it in LINES, which is
+  // right when a beat has one form and wrong here. Measured 2026-09-23 at square: the long form takes two lines (91px),
+  // which leaves a 82.5px row against a count that needs 84.5 — the beat refused « a row is too thin for its count »
+  // while carrying a shorter source line it never tried. So the beat runs its own ladder over its own forms, dropping
+  // the longest first, and keeps the first credit whose height leaves every row able to hold its count. Landscape takes
+  // the first rung, so nothing already delivered moves.
+  const seatRows = (forms) => {
+    const { register, ...block } = sourceCreditFor({ registers, forms, size: SIZE, k, ...CREDIT_ONE_LINE });
+    const at = { x: inset, y: stage.height - vInset - block.height };
+    const bottom = at.y - gap;
+    const pitch = (bottom - vInset) / TOP_N;
+    if (!(pitch >= valueBand.ascent + valueBand.descent + gap)) return { why: `a row is ${pitch.toFixed(1)}px, too thin for its count` };
+    return { sourceRegister: register, credit: block, creditAt: at, plotBottom: bottom, pitch };
+  };
+  let rows = null;
+  const rowsRefused = [];
+  for (let dropped = 0; dropped < copy.source.length && !rows; dropped++) {
+    const got = seatRows(copy.source.slice(dropped));
+    if (got.why) rowsRefused.push(`${copy.source.length - dropped} form(s) of the credit: ${got.why}`);
+    else rows = { ...got, creditForm: dropped + got.credit.form };
+  }
+  if (!rows) throw new Error(`no credit leaves ${TOP_N} rows able to hold their counts at ${SIZE} \u2014 ${rowsRefused.join("; ")}`);
+  const { sourceRegister, credit, creditAt } = rows;
   const names = subject.top.map((r) => {
     const t = applyCase(r.name, axis.transform);
     return { text: t, width: widthOf(t, axis) };
@@ -93,10 +118,8 @@ export function buildDirection(id, { subject, states, copy }) {
   const worldName = { text: applyCase(copy.world, axis.transform), width: widthOf(applyCase(copy.world, axis.transform), axis) };
   const left = inset + Math.max(worldName.width, ...names.map((n) => n.width)) * (1 + DRAWN_WIDER) + gap;
   const plotTop = vInset;
-  const plotBottom = creditAt.y - gap;
   // The world bar stands on the first row: the first of the ten is already in place inside it, the others fall below.
-  const pitch = (plotBottom - plotTop) / TOP_N;
-  if (!(pitch >= valueBand.ascent + valueBand.descent + gap)) throw new Error(`a row is ${pitch.toFixed(1)}px, too thin for its count`);
+  const { plotBottom, pitch } = rows;
   const countOf = (v) => widthOf(applyCase(copy.unit(valueText(v)), value.transform), value) * (1 + DRAWN_WIDER);
   const room = stage.width - inset - gap - left;
   // Past the first bar's end stand its count and, on the row below, the tenth's name: the wider of the two is kept free.
@@ -119,19 +142,51 @@ export function buildDirection(id, { subject, states, copy }) {
   });
   const tenthRow = subject.top[TOP_N - 1];
   const pileY = rowY(1);
-  const pileNameBaseline = rowY(2) + barH / 2 + shift;
-  let cursor = left;
   const blocks = piled.map((r, j) => ({ r, from: pile[j].before }));
-  const pileNames = blocks.map(({ r, from }) => {
-    const t = applyCase(r.name, axis.transform);
-    const w = widthOf(t, axis);
-    const mid = left + (from + r.value / 2) * unit;
-    const x = Math.max(mid - w / 2, cursor);
-    cursor = x + w * (1 + DRAWN_WIDER) + 1.5 * gap;
-    const centre = x + (w * (1 + DRAWN_WIDER)) / 2;
-    return { text: t, width: w, x, y: pileNameBaseline, leader: Math.abs(centre - mid) > 0.25 * w ? { x1: mid, y1: pileY + barH + gap / 2, x2: centre, y2: pileNameBaseline - band.ascent - gap / 4 } : null };
-  });
-  if (!(cursor - 1.5 * gap < stage.width - inset)) throw new Error("the pile's names run past the frame");
+  /**
+   * THE NAMES UNDER THE PILE ARE A COLUMN'S WORTH OF WORDS, NOT ONE LINE'S.
+   *
+   * One line was never a statement about the pile — it is what a 1431px landscape row happens to hold, against five
+   * names that need 795px of it. The same five names need the same 954px at portrait and at square, where the row
+   * offers 554, so the beat refused « the pile's names run past the frame » on a frame it had never been laid out for.
+   *
+   * The five bars have just LEFT rows 2 to `beaten`, so those rows are empty at exactly the moment the names are read:
+   * the ladder spreads the names over as many of them as the frame costs. Each name goes on the line whose cursor has
+   * come least far, which is the line where it has the best chance of standing under its own block: taking the lines in
+   * turn instead sent « Japon » further right than « Indonésie » while its block sat further left, and the two leaders
+   * crossed — looked at, portrait frame 425, before and after. Every line keeps the same left-to-right cursor and the
+   * same leader rule, and a name a row below its block always takes its leader, because a row is a distance too. The
+   * last rung is one name per vacated row; past it the beat refuses with the arithmetic.
+   */
+  const pileLines = Math.max(1, subject.beaten - 1);
+  const seatPileNames = (lines) => {
+    const cursors = new Array(lines).fill(left);
+    const seated = blocks.map(({ r, from }, j) => {
+      const line = cursors.indexOf(Math.min(...cursors));
+      const t = applyCase(r.name, axis.transform);
+      const w = widthOf(t, axis);
+      const mid = left + (from + r.value / 2) * unit;
+      const x = Math.max(mid - w / 2, cursors[line]);
+      cursors[line] = x + w * (1 + DRAWN_WIDER) + 1.5 * gap;
+      const centre = x + (w * (1 + DRAWN_WIDER)) / 2;
+      const baseline = rowY(2 + line) + barH / 2 + shift;
+      const led = line > 0 || Math.abs(centre - mid) > 0.25 * w;
+      return { text: t, width: w, x, y: baseline, leader: led ? { x1: mid, y1: pileY + barH + gap / 2, x2: centre, y2: baseline - band.ascent - gap / 4 } : null };
+    });
+    const past = Math.max(...cursors) - 1.5 * gap;
+    if (!(past < stage.width - inset)) return { why: "the pile's names run past the frame" };
+    return { seated };
+  };
+  let named = null;
+  const namesRefused = [];
+  for (let lines = 1; lines <= pileLines && !named; lines++) {
+    const got = seatPileNames(lines);
+    if (got.why) namesRefused.push(`${lines} line(s): ${got.why}`);
+    else named = { pileNames: got.seated, lines };
+  }
+  if (!named)
+    throw new Error(`the pile's names run past the frame at ${SIZE} on every one of the ${pileLines} rows the five leave empty \u2014 ${namesRefused.join("; ")}`);
+  const pileNames = named.pileNames;
   // The tenth, once in the gap, is named on its own row just past the first's end, where the sum stood.
   const tenthWord = widthOf(applyCase(tenthRow.name, axis.transform), axis);
   const tenthName = { text: applyCase(tenthRow.name, axis.transform), width: tenthWord, x: left + subject.top[0].value * unit + gap, y: pileY + barH / 2 + shift };
@@ -221,5 +276,5 @@ export function buildDirection(id, { subject, states, copy }) {
     states,
     timing: BAR_VIDEO_TIMING,
   };
-  return { id, direction, props, report: { k, titleForm: titleCard.form, sourceForm: credit.form, pitch: pitch.toFixed(1), leaders: pileNames.filter((p) => p.leader).length } };
+  return { id, direction, props, report: { k, titleForm: titleCard.form, sourceForm: rows.creditForm, pitch: pitch.toFixed(1), pileLines: named.lines, leaders: pileNames.filter((p) => p.leader).length } };
 }

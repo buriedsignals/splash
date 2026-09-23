@@ -62,7 +62,9 @@ export type HeatmapFrameProps = {
   families: Array<{ name: Line; x1: number; x2: number; y: number }>;
   shareHead: Line;
   floorLine: { x: number; top: number; bottom: number; label: Line };
-  bracket: { x: number; tick: number; labelX: number };
+  /** `caption`: when the frame has no column for the bracket's words, they stand OVER their span instead of
+   *  beside it — `labelX` is then the frame's own inset and these are the lifts above the span's top. */
+  bracket: { x: number; tick: number; labelX: number; caption: { annot: number; value: number } | null };
   counter: { texts: Record<string, Word>; dy: number; near: number };
   routeNames: Array<Word & { dy: number }>;
   nuclear: { x: number; w: number; pad: number };
@@ -304,7 +306,7 @@ export function HeatmapFrame(
           line={{
             ...count,
             x: scene.counterX,
-            y: (scene.whole.top + scene.whole.bottom) / 2 + props.counter.dy,
+            y: bracket.caption ? scene.whole.top - bracket.caption.value : (scene.whole.top + scene.whole.bottom) / 2 + props.counter.dy,
           }}
           register={r.value}
           fill={colours.text.accent}
@@ -324,7 +326,7 @@ export function HeatmapFrame(
             line={{
               ...props.routeNames[g],
               x: bracket.labelX,
-              y: (b.top + b.bottom) / 2 + props.routeNames[g].dy,
+              y: bracket.caption ? b.top - bracket.caption.annot : (b.top + b.bottom) / 2 + props.routeNames[g].dy,
             }}
             register={r.annot}
             fill={colours.text.accent}

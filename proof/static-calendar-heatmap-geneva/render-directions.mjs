@@ -47,6 +47,13 @@ const MONTHS = [
   "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
   "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre",
 ];
+/** THE SAME TWELVE, ABBREVIATED, for a frame whose row gutter cannot hold them. They are written
+ *  out rather than cut to a fixed number of letters because « Juin » and « Juillet » both truncate
+ *  to « Jui » and the two hottest rows of this plate would then carry the same name. */
+const MONTHS_SHORT = [
+  "Janv.", "Févr.", "Mars", "Avr.", "Mai", "Juin",
+  "Juil.", "Août", "Sept.", "Oct.", "Nov.", "Déc.",
+];
 
 const rows = (await readFile(join(HERE, "data.csv"), "utf8"))
   .trim()
@@ -125,26 +132,42 @@ const one = (v) =>
 const format = (v) => plainSpaces(v.toLocaleString("fr-FR", { maximumFractionDigits: 0 }));
 const asDay = (day) => `${day.day} ${MONTHS[day.month].toLowerCase()}`;
 
-const title = `Genève a tenu ${best.length} jours d’affilée au-dessus de ${THRESHOLD} ${UNIT} en ${YEAR}`;
-const limits =
+/** THE COPY IN FORMS, longest first — R3's rung and R4's, written as copy rather than as a cut.
+ *  Landscape takes the first of each. At 1080x1080 the header left the twelve rows 100px and the
+ *  month names printed straight through one another, « Janvier » over « Février » over « Mars »;
+ *  creme and nocturne REFUSED outright. */
+const title = [
+  `Genève a tenu ${best.length} jours d’affilée au-dessus de ${THRESHOLD} ${UNIT} en ${YEAR}`,
+  `${best.length} jours d’affilée au-dessus de ${THRESHOLD} ${UNIT} à Genève`,
+  `Genève, jour par jour, en ${YEAR}`,
+];
+const limits = [
   `Température moyenne de chaque jour de ${YEAR} à Genève, une case par jour. La série la plus ` +
-  `longue au-dessus de ${THRESHOLD} ${UNIT} court du ${asDay(best.from)} au ${asDay(best.to)}. ` +
-  `Le mois le plus chaud est ${warmestMonth.name.toLowerCase()} (${one(warmestMonth.mean)}) et non ` +
-  `juillet (${one(july.mean)}) ; le jour le plus chaud est le ${asDay(hottest)} ` +
-  `(${one(hottest.value)}), le plus froid le ${asDay(coldest)} (${one(coldest.value)}).`;
-const reading =
+    `longue au-dessus de ${THRESHOLD} ${UNIT} court du ${asDay(best.from)} au ${asDay(best.to)}. ` +
+    `Le mois le plus chaud est ${warmestMonth.name.toLowerCase()} (${one(warmestMonth.mean)}) et non ` +
+    `juillet (${one(july.mean)}) ; le jour le plus chaud est le ${asDay(hottest)} ` +
+    `(${one(hottest.value)}), le plus froid le ${asDay(coldest)} (${one(coldest.value)}).`,
+  `Température moyenne de chaque jour de ${YEAR} à Genève, une case par jour. La série la plus ` +
+    `longue au-dessus de ${THRESHOLD} ${UNIT} court du ${asDay(best.from)} au ${asDay(best.to)}.`,
+  `Température moyenne de chaque jour de ${YEAR} à Genève, une case par jour.`,
+];
+const reading = [
   `Lecture : une ligne par mois, une colonne par quantième. Les six classes contiennent à peu près ` +
-  `autant de jours chacune et leur borne est écrite en ${UNIT}. Le trait accent entoure la série du ` +
-  `titre ; les cases pâles sans valeur sont des dates qui n’existent pas.`;
+    `autant de jours chacune et leur borne est écrite en ${UNIT}. Le trait accent entoure la série du ` +
+    `titre ; les cases pâles sans valeur sont des dates qui n’existent pas.`,
+  `Lecture : une ligne par mois, une colonne par quantième. Les six classes contiennent à peu près ` +
+    `autant de jours chacune et leur borne est écrite en ${UNIT}.`,
+  `Lecture : une ligne par mois, une colonne par quantième.`,
+];
 const source =
   `Source : Open-Meteo (réanalyse ERA5), moyenne journalière à 2 m, Genève · données ${YEAR}, gelées le 9 septembre 2026`;
 
 const textPerRegister = {
-  display: title,
+  display: title.join(" "),
   eyebrow: EYEBROW,
-  body: `${limits} ${source}`,
-  axis: `${MONTHS.join(" ")} 1 5 10 15 20 25 31 ${breaks.map(format).join(" ")} ${UNIT} moyenne du jour date qui n’existe pas`,
-  annot: reading,
+  body: `${limits.join(" ")} ${source}`,
+  axis: `${MONTHS.join(" ")} ${MONTHS_SHORT.join(" ")} 1 5 10 15 20 25 31 ${breaks.map(format).join(" ")} ${UNIT} moyenne du jour date qui n’existe pas`,
+  annot: reading.join(" "),
   value: "",
 };
 
@@ -181,6 +204,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
         frame: { width: FRAME.width, height: FRAME.height },
         days,
         months: MONTHS,
+        monthsShort: MONTHS_SHORT,
         breaks,
         streak: { from: best.from, to: best.to, length: best.length, threshold: THRESHOLD },
         unit: UNIT,
@@ -207,9 +231,10 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       name: nameAtSize(id, SIZE),
       scale: FRAME.scale,
     });
-    console.log(`  -> renders/${id}.png\n`);
+    console.log(`  -> renders/${nameAtSize(id, SIZE)}.png\n`);
   } catch (error) {
-    for (const ext of ["png", "svg"]) await rm(join(OUT, `${id}.${ext}`), { force: true });
+    for (const ext of ["png", "svg"])
+      await rm(join(OUT, `${nameAtSize(id, SIZE)}.${ext}`), { force: true });
     refused.push({ id, why: error.message });
     console.log(`  REFUSED — ${error.message}\n`);
   }

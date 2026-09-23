@@ -217,32 +217,6 @@ export function DirectedSlope({
         rungs.push({ title: t, limit: l, reading: r });
       rungs.push({ title: t, limit: l, reading: -1 });
     }
-  let fits: {
-    rung: (typeof rungs)[number];
-    layout: ReturnType<typeof layoutFor>;
-  } | null = null;
-  for (const rung of rungs) {
-    const l = layoutFor(rung.title, rung.limit, rung.reading);
-    if (l.room >= labelPitch) {
-      fits = { rung, layout: l };
-      break;
-    }
-  }
-  if (!fits) {
-    const best = rungs
-      .map((rung) => ({
-        rung,
-        layout: layoutFor(rung.title, rung.limit, rung.reading),
-      }))
-      .reduce((a, b) => (b.layout.room > a.layout.room ? b : a));
-    throw new Error(
-      `${lines.length} lines do not fit this direction: the widest rung leaves ${best.layout.room.toFixed(1)}px ` +
-        `per end label and the value register owes ${labelPitch.toFixed(1)}px. A slope with no axis ` +
-        `owes every end value it draws, so drawing fewer lines is the only honest cut.`,
-    );
-  }
-  const layout = fits.layout;
-
   // ── the two rails ─────────────────────────────────────────────────────────
   const nameRoom =
     Math.max(...lines.map((d) => widthOf(set(d.label, annot), annot))) + 10;
@@ -267,18 +241,28 @@ export function DirectedSlope({
    *  onto the whole rail and then asking the labels to fit inside a smaller window guarantees that
    *  the extreme label breaches by exactly the band it was never given: the lowest value's label
    *  hung one descent below the plot every single time, and the placer had nowhere to put it. */
-  const topBound = layout.top + valueBand.ascent;
-  const footBound = layout.bottom - valueBand.descent;
-  const y = scaleLinear()
-    .domain([Math.min(...values) - pad, Math.max(...values) + pad])
-    .range([footBound, topBound]);
+  const geometryFor = (l: ReturnType<typeof layoutFor>) => {
+    const topBound = l.top + valueBand.ascent;
+    const footBound = l.bottom - valueBand.descent;
+    return {
+      topBound,
+      footBound,
+      y: scaleLinear()
+        .domain([Math.min(...values) - pad, Math.max(...values) + pad])
+        .range([footBound, topBound]),
+    };
+  };
 
   /** LABELS ARE PUSHED, NEVER DROPPED AND NEVER REORDERED. Two passes over each rail — down, then
    *  up — is the standard way to open a stack to a minimum pitch while keeping its order: the first
    *  pass guarantees the pitch, the second pulls the stack back inside the frame if the first pushed
    *  it out. The plate reports the largest displacement, because a label a long way from its own
    *  line is a label that has stopped pointing at it, and that is a judgement for a person. */
-  function stack(at: (d: Line) => number) {
+  function stack(
+    geo: ReturnType<typeof geometryFor>,
+    at: (d: Line) => number,
+  ) {
+    const { y, topBound, footBound } = geo;
     const order = lines
       .map((d, i) => ({ i, want: y(at(d)) }))
       .sort((a, b) => a.want - b.want);
@@ -311,19 +295,6 @@ export function DirectedSlope({
     order.forEach((o, k) => (out[o.i] = got[k]));
     return out;
   }
-  const leftY = stack((d) => d.from);
-  const rightY = stack((d) => d.to);
-  const shifted = Math.max(
-    ...lines.map((d, i) =>
-      Math.max(Math.abs(leftY[i] - y(d.from)), Math.abs(rightY[i] - y(d.to))),
-    ),
-  );
-  onLadder?.(
-    `ladder: headline ${fits.rung.title + 1}, standfirst ${fits.rung.limit + 1}, reading ` +
-      (fits.rung.reading < 0 ? "dropped" : `form ${fits.rung.reading + 1}`) +
-      ` · ${(layout.bottom - layout.top).toFixed(0)}px for ${lines.length} lines, ` +
-      `${layout.room.toFixed(1)}px each against ${labelPitch.toFixed(1)}px owed`,
-  );
   /** A LABEL MAY BE PUSHED, BUT NOT UNTIL IT STOPS POINTING AT ITS OWN LINE. One label height is
    *  the whole allowance, and it is a hard floor rather than a warning.
    *
@@ -340,14 +311,85 @@ export function DirectedSlope({
    *  slope and the leader stops reading as part of the line. Below the allowance the plate draws;
    *  above it, it refuses. */
   const pushAllowance = labelPitch * 2;
-  if (shifted > pushAllowance)
+
+  /** THE LADDER ASKS THE PLACER, NOT THE ARITHMETIC. `room >= labelPitch` says a stack of evenly
+   *  spread labels would fit; it says nothing about a stack whose values CLUSTER, which is the only
+   *  case that pushes. At 1080 x 1080 the first rung that cleared the arithmetic gave 99px of frame
+   *  for 98px of stack, the six 2024 values clustered, and a label ended 35px from its own line
+   *  against an allowance of 33 — so the plate refused with copy rungs still unspent. Every rung is
+   *  now tried against the real placement and kept only if the real push is inside the allowance,
+   *  which is the ladder's own rule: applied speculatively, kept only if the slack actually
+   *  improved. Landscape clears on the same rung it always did, so its plate is unchanged. */
+  const attempt = (l: ReturnType<typeof layoutFor>) => {
+    if (l.room < labelPitch) return null;
+    const geo = geometryFor(l);
+    let leftY: number[];
+    let rightY: number[];
+    try {
+      leftY = stack(geo, (d) => d.from);
+      rightY = stack(geo, (d) => d.to);
+    } catch {
+      return null;
+    }
+    const shifted = Math.max(
+      ...lines.map((d, i) =>
+        Math.max(
+          Math.abs(leftY[i] - geo.y(d.from)),
+          Math.abs(rightY[i] - geo.y(d.to)),
+        ),
+      ),
+    );
+    return { geo, leftY, rightY, shifted };
+  };
+
+  let fits: {
+    rung: (typeof rungs)[number];
+    layout: ReturnType<typeof layoutFor>;
+    placed: NonNullable<ReturnType<typeof attempt>>;
+  } | null = null;
+  for (const rung of rungs) {
+    const l = layoutFor(rung.title, rung.limit, rung.reading);
+    const placed = attempt(l);
+    if (placed && placed.shifted <= pushAllowance) {
+      fits = { rung, layout: l, placed };
+      break;
+    }
+  }
+  if (!fits) {
+    const widest = rungs
+      .map((rung) => ({
+        rung,
+        layout: layoutFor(rung.title, rung.limit, rung.reading),
+      }))
+      .reduce((a, b) => (b.layout.room > a.layout.room ? b : a));
+    const placed = attempt(widest.layout);
+    if (!placed)
+      throw new Error(
+        `${lines.length} lines do not fit this direction: the widest rung leaves ` +
+          `${widest.layout.room.toFixed(1)}px per end label and the value register owes ` +
+          `${labelPitch.toFixed(1)}px. A slope with no axis owes every end value it draws, so ` +
+          `drawing fewer lines is the only honest cut.`,
+      );
     throw new Error(
-      `an end label sits ${shifted.toFixed(0)}px from its own line and the allowance is ` +
-        `${pushAllowance.toFixed(0)}px. ${lines.length} lines need ${(lines.length * labelPitch).toFixed(0)}px ` +
-        `of stack in ${(layout.bottom - layout.top).toFixed(0)}px of frame, so labels whose values ` +
+      `an end label sits ${placed.shifted.toFixed(0)}px from its own line and the allowance is ` +
+        `${pushAllowance.toFixed(0)}px, with every copy rung already spent. ${lines.length} lines ` +
+        `need ${(lines.length * labelPitch).toFixed(0)}px of stack in ` +
+        `${(widest.layout.bottom - widest.layout.top).toFixed(0)}px of frame, so labels whose values ` +
         `cluster are pushed off their own ends. A slope prints every end value it draws — the only ` +
         `honest cut is to draw fewer lines.`,
     );
+  }
+  const layout = fits.layout;
+  const { y, topBound, footBound } = fits.placed.geo;
+  const leftY = fits.placed.leftY;
+  const rightY = fits.placed.rightY;
+  const shifted = fits.placed.shifted;
+  onLadder?.(
+    `ladder: headline ${fits.rung.title + 1}, standfirst ${fits.rung.limit + 1}, reading ` +
+      (fits.rung.reading < 0 ? "dropped" : `form ${fits.rung.reading + 1}`) +
+      ` · ${(layout.bottom - layout.top).toFixed(0)}px for ${lines.length} lines, ` +
+      `${layout.room.toFixed(1)}px each against ${labelPitch.toFixed(1)}px owed`,
+  );
   onLadder?.(
     `end labels: ${lines.length * 2} placed, 0 dropped · largest push ${shifted.toFixed(1)}px ` +
       `of ${pushAllowance.toFixed(1)}px allowed`,

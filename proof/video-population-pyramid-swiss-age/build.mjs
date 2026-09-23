@@ -7,7 +7,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { adjustToContrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
+import { frameInsetFor, sizeFor, videoExportSize } from "#shared/chart-video/sizes.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
@@ -21,7 +21,9 @@ import { PYRAMID_VIDEO_TIMING } from "./timing-contract.ts";
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const ROOT = join(HERE, "..", "..");
 export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
-export const SIZE = "landscape";
+/** The size this run exports at — `--size`, landscape when nothing asks. R2 names three and
+ *  everything under it already answered per size; only this line pinned the beat to one. */
+export const SIZE = videoExportSize();
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 const NB = "\u00A0";
 const LABEL_GAP = 0.4;
@@ -120,19 +122,56 @@ export function buildDirection(id, { subject, states, copy }) {
   const zoomBy = Math.floor((DIFFERENCE_AT_ZOOM * domain) / largest);
   const closeStep = WHOLE_STEP / zoomBy;
   if (!(zoomBy > 1 && Number.isInteger(closeStep / 1000))) throw new Error(`a ×${zoomBy} zoom gives a close tick step of ${closeStep}, not a round thousand`);
+  // HOW OFTEN THE SCALE IS TICKED IS A MEASURE, NOT THE STEP ITSELF. « 100k » is 92px of ink against a 200px step at
+  // 1920x1080; at 1080 wide the half is less than half as wide and the type a fifth larger, so the same three words per
+  // side are 110px each against a 95px step and print « 300k200k100k » (measured 2026-09-23). Nothing saw it: this beat
+  // asserts the bars, the spine and the figures, and never asserted that two neighbouring ticks stay apart. The step is
+  // therefore multiplied until a tick's own word holds it with air on BOTH scales, and the arithmetic is thrown when no
+  // multiple does. 1920x1080 takes the first rung, so the delivered landscape keeps its 100k ticks.
+  const drawnWidth = (w) => w * (1 + DRAWN_WIDER);
+  const wordsEvery = (m) => {
+    const widths = [];
+    for (let v = m * WHOLE_STEP; v < domain; v += m * WHOLE_STEP) widths.push(measure(copy.tick(v), axis).width, measure(copy.tick(v / zoomBy), axis).width);
+    return widths;
+  };
+  let tickEvery = 0;
+  const triedSteps = [];
+  for (let m = 1; m * WHOLE_STEP < domain; m++) {
+    const widest = Math.max(...wordsEvery(m).map(drawnWidth));
+    if (widest + gap <= m * WHOLE_STEP * unit) {
+      tickEvery = m;
+      break;
+    }
+    triedSteps.push(`every ${(m * WHOLE_STEP) / 1000}k: ${widest.toFixed(0)}px of word in a ${(m * WHOLE_STEP * unit).toFixed(0)}px step`);
+  }
+  if (!tickEvery) throw new Error(`no multiple of ${WHOLE_STEP / 1000}k ticks this ${halfWidth.toFixed(0)}px half without its words touching (${triedSteps.join("; ")})`);
   const ticks = [];
-  for (let v = WHOLE_STEP; v < domain; v += WHOLE_STEP) {
+  for (let v = tickEvery * WHOLE_STEP; v < domain; v += tickEvery * WHOLE_STEP) {
     ticks.push({ value: v, scale: "whole", ...measure(copy.tick(v), axis) });
     ticks.push({ value: v / zoomBy, scale: "close", ...measure(copy.tick(v / zoomBy), axis) });
   }
 
   // THE CROSSING: the last band the men lead and the first the women lead, each difference printed at its bar's end.
   const valueGap = gap / 2;
+  // WHERE THE TWO FIGURES STAND IS A MEASURE, NOT A ROW.
+  //
+  // Each difference belongs in its own band and is set there while the band can hold it: 21 age bands over 1920x1080 give
+  // a 61px pitch against a figure whose ink and halo reach 35px. At 1080x1080 the same 21 bands give 34.3px against 42.7px
+  // (measured 2026-09-23) — and the figure cannot be set smaller, because the type floor is what makes it a figure and not
+  // a smudge. It is the BAND that has run out, not the number.
+  //
+  // The second rung puts both figures on the crossing's own line, which is the thing they are about: the last band the men
+  // lead and the first the women lead meet there, and the two figures sit in opposite halves of the frame, so one line
+  // carries both and neither can ever touch the other. The line then has the two bands the crossing separates to stand in.
+  const figureInk = figureDigits.ascent + figureHalo;
+  const inItsBand = figureInk <= pitch;
+  if (!inItsBand && !(figureDigits.ascent + figureDigits.descent + 2 * figureHalo <= 2 * pitch))
+    throw new Error(`a value's ${figureInk.toFixed(1)}px does not hold a ${pitch.toFixed(1)}px band, and the pair does not hold the ${(2 * pitch).toFixed(1)}px the crossing separates either`);
+  const crossingY = bottom - subject.crossing * pitch;
   const values = [subject.crossing - 1, subject.crossing].map((i) => {
     const b = subject.bands[i];
-    return { row: i, ...measure(copy.value(Math.abs(b.female - b.male)), figure), y: rowTop(i) + h / 2 + figureDigits.ascent / 2 };
+    return { row: i, ...measure(copy.value(Math.abs(b.female - b.male)), figure), y: (inItsBand ? rowTop(i) + h / 2 : crossingY) + figureDigits.ascent / 2 };
   });
-  if (!(figureDigits.ascent + figureHalo <= pitch)) throw new Error(`a value's ${(figureDigits.ascent + figureHalo).toFixed(1)}px does not hold a ${pitch.toFixed(1)}px band`);
   for (const v of values) {
     const d = Math.abs(subject.bands[v.row].female - subject.bands[v.row].male) * unit * zoomBy;
     if (!(d + valueGap + v.width * (1 + DRAWN_WIDER) <= halfWidth)) throw new Error(`${v.text} runs out of its half at ×${zoomBy}`);

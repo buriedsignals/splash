@@ -140,16 +140,31 @@ const one = (v) =>
 const whole = (v) => plainSpaces(v.toLocaleString("fr-FR", { maximumFractionDigits: 0 }));
 const format = (v) => one(v);
 
-const title = `Le nucléaire de ces six pays est français à ${(holderShare * 100).toFixed(0)} %`;
-const limits =
+/** THE COPY, SHORTEST-LAST — the removal ladder as forms rather than as advice. A sankey's fifteen
+ *  node labels are the one thing it cannot drop: the plate has no axis, so a node that does not
+ *  print its quantity leaves the reader estimating areas. The labels therefore own a floor of their
+ *  own in the component, and when a frame is too short for it the copy above is what gives way. */
+const title = [
+  `Le nucléaire de ces six pays est français à ${(holderShare * 100).toFixed(0)} %`,
+  `Six pays, ${(holderShare * 100).toFixed(0)} % du nucléaire en ${french(holder.entity)}`,
+];
+const limits = [
   `Production électrique de six pays européens en ${YEAR}, par source, en ${UNIT}. ` +
-  `Le nucléaire est la première des neuf sources (${one(biggest.total)}) et ` +
-  `${one(holder.value)} en sont produits en ${french(holder.entity)}. ` +
-  `Au total ${whole(grand)} ${UNIT} pour les six pays.`;
-const reading =
+    `Le nucléaire est la première des neuf sources (${one(biggest.total)}) et ` +
+    `${one(holder.value)} en sont produits en ${french(holder.entity)}. ` +
+    `Au total ${whole(grand)} ${UNIT} pour les six pays.`,
+  `Production électrique de six pays européens en ${YEAR}, par source, en ${UNIT}. ` +
+    `Le nucléaire est la première des neuf sources (${one(biggest.total)}) et ` +
+    `${one(holder.value)} en sont produits en ${french(holder.entity)}.`,
+  `Production électrique de six pays européens en ${YEAR}, par source, en ${UNIT}.`,
+];
+const reading = [
   `Lecture : chaque ruban est une source dans un pays ; les ${flows.length} rubans d’un rail se ` +
-  `rejoignent exactement au total du nœud, qui est imprimé. Les rubans sont translucides, donc un ` +
-  `croisement s’assombrit au lieu de cacher ce qu’il traverse.`;
+    `rejoignent exactement au total du nœud, qui est imprimé. Les rubans sont translucides, donc un ` +
+    `croisement s’assombrit au lieu de cacher ce qu’il traverse.`,
+  `Lecture : chaque ruban est une source dans un pays ; les ${flows.length} rubans d’un rail se ` +
+    `rejoignent exactement au total du nœud, qui est imprimé.`,
+];
 const source =
   "Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data";
 
@@ -163,11 +178,11 @@ const targets = rows
   .sort((a, b) => b.total - a.total);
 
 const textPerRegister = {
-  display: title,
+  display: title.join(" "),
   eyebrow: EYEBROW,
-  body: `${limits} ${source}`,
+  body: `${limits.join(" ")} ${source}`,
   axis: UNIT,
-  annot: `${[...sources, ...targets].map((n) => `${n.label} ${format(n.total)}`).join(" ")} ${reading}`,
+  annot: `${[...sources, ...targets].map((n) => `${n.label} ${format(n.total)}`).join(" ")} ${reading.join(" ")}`,
   value: sources.map((n) => format(n.total)).join(" "),
 };
 
@@ -220,6 +235,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
         format,
         direction,
         treatments: offered.map((t) => t.id),
+        onLadder: (note) => console.log(`  ${note}`),
       }),
       // THE SLOT'S OWN SIZE. `--size` picks it; landscape is what an article's column asks for and
       // what this lineage's tuning was measured at. The frame is half the export size at scale 2.
@@ -229,9 +245,10 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       name: nameAtSize(id, SIZE),
       scale: FRAME.scale,
     });
-    console.log(`  -> renders/${id}.png\n`);
+    console.log(`  -> renders/${nameAtSize(id, SIZE)}.png\n`);
   } catch (error) {
-    for (const ext of ["png", "svg"]) await rm(join(OUT, `${id}.${ext}`), { force: true });
+    for (const ext of ["png", "svg"])
+      await rm(join(OUT, `${nameAtSize(id, SIZE)}.${ext}`), { force: true });
     refused.push({ id, why: error.message });
     console.log(`  REFUSED — ${error.message}\n`);
   }

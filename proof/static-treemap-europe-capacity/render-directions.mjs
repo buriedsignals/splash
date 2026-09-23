@@ -163,6 +163,13 @@ const title = [
   `L’eau et l’atome portent encore ${Math.round(legacyShare)} % du bas-carbone européen — mais ${tipped.length} pays ont déjà basculé`,
   `${tipped.length} pays européens où l’éolien et le solaire pèsent déjà plus de la moitié`,
   `La puissance bas-carbone européenne, pays par pays`,
+  // TWO SHORTER HEADLINES, FOR A COLUMN HALF AS WIDE. The ladder takes the FIRST rung that fits, so
+  // these are never reached at landscape — an 868px column sets the long headline in two lines. A
+  // 428px one sets the third headline in FOUR, which took nocturne's plate down to 428 x 121px, a
+  // 3.5:1 strip in which a treemap's areas cannot be compared at all. Each line of display type the
+  // headline gives back is 39px of plate.
+  `La puissance bas-carbone européenne`,
+  `${tipped.length} pays ont déjà basculé`,
 ];
 const limits = [
   `Un rectangle par pays, sa surface est sa puissance bas-carbone installée : ` +
@@ -240,9 +247,10 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       name: nameAtSize(id, SIZE),
       scale: FRAME.scale,
     });
-    console.log(`  -> renders/${id}.png\n`);
+    console.log(`  -> renders/${nameAtSize(id, SIZE)}.png\n`);
   } catch (error) {
-    for (const ext of ["png", "svg"]) await rm(join(OUT, `${id}.${ext}`), { force: true });
+    for (const ext of ["png", "svg"])
+      await rm(join(OUT, `${nameAtSize(id, SIZE)}.${ext}`), { force: true });
     refused.push({ id, why: error.message });
     console.log(`  REFUSED — ${error.message}\n`);
   }

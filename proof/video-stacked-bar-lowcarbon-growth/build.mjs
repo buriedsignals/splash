@@ -7,7 +7,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { adjustToContrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
+import { frameInsetFor, sizeFor, videoExportSize } from "#shared/chart-video/sizes.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
@@ -22,7 +22,9 @@ import { STACKED_BAR_VIDEO_TIMING } from "./timing-contract.ts";
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const ROOT = join(HERE, "..", "..");
 export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
-export const SIZE = "landscape";
+/** The size this run exports at — `--size`, landscape when nothing asks. R2 names three and
+ *  everything under it already answered per size; only this line pinned the beat to one. */
+export const SIZE = videoExportSize();
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 const NB = "\u00A0";
 const LABEL_GAP = 0.4;
@@ -93,11 +95,19 @@ export function buildDirection(id, { subject, states, copy }) {
   const swatchW = band.ascent;
   const keyWidth = words.reduce((w, d, i) => w + swatchW + gap / 2 + d.width * (1 + DRAWN_WIDER) + (i < words.length - 1 ? 1.5 * gap : 0), 0);
   const keyX = stage.width - inset - keyWidth;
-  if (!(unitLine.x + unitLine.width * (1 + DRAWN_WIDER) + 2 * gap < keyX)) throw new Error("the unit and the key do not fit on one line");
+  // THE KEY DROPS TO A LINE OF ITS OWN WHEN THE BAND CANNOT HOLD BOTH. At 1920 the unit and the two
+  // swatches sit at opposite ends of one baseline with room to spare. At 1080 the band is 936px of
+  // content and the two together want more than it: side by side they would touch, which is the one
+  // arrangement that makes a key read as part of the unit. Stacked — the unit on the band's own
+  // baseline, the key right-aligned under it — the reading is the same and the picture pays one
+  // line of height for it. Landscape never drops, so nothing there moves.
+  const keyOnTheBand = unitLine.x + unitLine.width * (1 + DRAWN_WIDER) + 2 * gap < keyX;
+  if (!keyOnTheBand && !(keyX >= inset)) throw new Error("the unit and the key do not fit on one line, and the key does not fit on a line of its own either");
+  const keyBaseline = keyOnTheBand ? bandBaseline : bandBaseline + band.descent + gap + band.ascent;
   let cursor = keyX;
   const legend = words.map((d) => {
-    const swatch = { x: cursor, y: bandBaseline - band.ascent, w: swatchW, h: band.ascent };
-    const word = { ...d, x: cursor + swatchW + gap / 2, y: bandBaseline };
+    const swatch = { x: cursor, y: keyBaseline - band.ascent, w: swatchW, h: band.ascent };
+    const word = { ...d, x: cursor + swatchW + gap / 2, y: keyBaseline };
     cursor = word.x + d.width * (1 + DRAWN_WIDER) + 1.5 * gap;
     return { swatch, word };
   });
@@ -110,12 +120,23 @@ export function buildDirection(id, { subject, states, copy }) {
   const countWidths = Object.fromEntries([...counts].map((t) => [t, widthOf(applyCase(t, value.transform), value)]));
   const copyWidths = Object.fromEntries(Array.from({ length: subject.copies }, (_, i) => copyText(i + 1)).map((t) => [t, widthOf(applyCase(t, value.transform), value)]));
   const countRoom = Math.max(...Object.values(countWidths)) * (1 + DRAWN_WIDER);
-  const left = inset + Math.max(...names.map((m) => m.width)) * (1 + DRAWN_WIDER) + gap;
-  const right = stage.width - inset - countRoom - gap;
   const max = Math.max(...subject.rows.map((r) => r.total));
+  // THE AIR ON EITHER SIDE OF THE TRACK IS A LADDER. A full gap between the names and the track, and
+  // between the track and the gains, is what 1920 wide wants and what it can afford. At 1080 the
+  // names alone take 310px of a 936px band, the track is left 465, and the copy of the adder's level
+  // — the block « ×5 » has to be written inside — measures 84 where the word needs 86. Two pixels,
+  // and nothing on the frame is in the wrong place; there is simply a gap's worth of air the narrow
+  // frame cannot spend twice. The rungs give it back a quarter at a time, and the refusal below
+  // still fires when the closest the track may stand is not close enough. Landscape holds at the
+  // first rung.
+  const nameRoom = Math.max(...names.map((m) => m.width)) * (1 + DRAWN_WIDER);
+  const holdsCopy = (l, r) => Math.max(...Object.values(copyWidths)) * (1 + DRAWN_WIDER) + gap < (subject.adder.level / max) * (r - l);
+  const air = [gap, 0.75 * gap, 0.5 * gap].find((a) => holdsCopy(inset + nameRoom + a, stage.width - inset - countRoom - a)) ?? 0.5 * gap;
+  const left = inset + nameRoom + air;
+  const right = stage.width - inset - countRoom - air;
   const xOf = (v) => left + (v / max) * (right - left);
   const tickBaseline = creditAt.y - gap - band.descent;
-  const top = bandBaseline + band.descent + 1.5 * gap;
+  const top = keyBaseline + band.descent + 1.5 * gap;
   const bottom = tickBaseline - band.ascent - gap;
   const pitch = (bottom - top) / subject.rows.length;
   const trackH = pitch * TRACK;
@@ -130,7 +151,7 @@ export function buildDirection(id, { subject, states, copy }) {
   for (const t of levelTexts) if (!(t.x + t.width * (1 + DRAWN_WIDER) <= stage.width - inset)) throw new Error(`the level ${t.text} runs out of the frame`);
   // Each copy must be wide enough to hold « × 5 » inside it.
   const copyW = xOf(subject.adder.level) - xOf(0);
-  if (!(Math.max(...Object.values(copyWidths)) * (1 + DRAWN_WIDER) + gap < copyW)) throw new Error("a copy of the adder's level is too short to hold its count");
+  if (!(Math.max(...Object.values(copyWidths)) * (1 + DRAWN_WIDER) + gap < copyW)) throw new Error(`a copy of the adder's level is ${copyW.toFixed(0)}px, too short to hold its count's ${(Math.max(...Object.values(copyWidths)) * (1 + DRAWN_WIDER) + gap).toFixed(0)}px, at the closest the track may stand to the names and the gains`);
 
   const { ground, accent } = direction;
   const { ink, muted } = deriveFurniture(ground);

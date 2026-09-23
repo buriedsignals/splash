@@ -8,12 +8,12 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { adjustToContrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
+import { frameInsetFor, sizeFor, videoExportSize } from "#shared/chart-video/sizes.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { applyCase } from "../../skills/chart-video/scripts/registers.mjs";
-import { BAND_PROBE, bandOf, CREDIT_ONE_LINE, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/chart-video/scripts/shots.mjs";
+import { BAND_PROBE, bandOf, CREDIT_ONE_LINE, DRAWN_WIDER, haloOf, registerAt, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } from "../../skills/chart-video/scripts/shots.mjs";
 import { videoRegistersOf } from "../../skills/chart-video/scripts/video-registers.mjs";
 import { tenthsKey } from "./scene.mjs";
 import { statesFor } from "./states.mjs";
@@ -23,7 +23,9 @@ import { WATERFALL_VIDEO_TIMING } from "./timing-contract.ts";
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const ROOT = join(HERE, "..", "..");
 export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
-export const SIZE = "landscape";
+/** The size this run exports at — `--size`, landscape when nothing asks. R2 names three and
+ *  everything under it already answered per size; only this line pinned the beat to one. */
+export const SIZE = videoExportSize();
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 const NB = "\u00A0";
 const LABEL_GAP = 0.4;
@@ -74,7 +76,7 @@ export function buildDirection(id, { subject, states, copy }) {
   const inset = frameInsetFor(SIZE);
   const vInset = verticalInsetFor(SIZE);
   for (const [name, r] of Object.entries(registers)) if (!(r.fontSize >= row.minTypePx)) throw new Error(`register ${name} is ${r.fontSize}px, under the ${row.minTypePx}px floor`);
-  const { axis, value } = registers;
+  const { axis } = registers;
   const measure = (t, r) => {
     const cased = applyCase(t, r.transform);
     return { text: cased, width: widthOf(cased, r) };
@@ -82,7 +84,6 @@ export function buildDirection(id, { subject, states, copy }) {
   const drawn = (w) => w * (1 + DRAWN_WIDER);
   const gap = LABEL_GAP * axis.lead;
   const band = bandOf(BAND_PROBE, axis);
-  const valueBand = bandOf(BAND_PROBE, value);
   const boxOf = (line, b) => ({ x: line.x, y: line.y - b.ascent, w: drawn(line.width), h: b.ascent + b.descent });
 
   const titleCard = titleCardFor({ registers, eyebrow: copy.eyebrow, title: copy.title, size: SIZE, eyebrowToDisplay: EYEBROW_TO_DISPLAY });
@@ -100,14 +101,6 @@ export function buildDirection(id, { subject, states, copy }) {
   const peak = Math.max(subject.opening, ...steps.flatMap((s) => [s.from, s.to]));
   const topTick = Math.ceil(peak / TICK_STEP) * TICK_STEP;
 
-  // THE VERTICAL: the credit at the bottom, the names over it, the zero line over them; the scale the largest that holds
-  // the top tick's word and the highest step's value under the frame's top margin.
-  const namesBaseline = creditAt.y - gap - band.descent;
-  const baseline = namesBaseline - band.ascent - gap;
-  const shift = (band.ascent - band.descent) / 2;
-  const unit = Math.min((baseline - vInset - band.ascent + shift) / topTick, (baseline - vInset - valueBand.ascent - valueBand.descent - gap / 2) / peak);
-  const yOf = (v) => baseline - v * unit;
-
   // THE HORIZONTAL: the ticks at the left, five slots across the rest.
   const ticks = Array.from({ length: topTick / TICK_STEP + 1 }, (_, i) => i * TICK_STEP);
   const tickWords = ticks.map((t) => measure(String(t), axis));
@@ -119,8 +112,83 @@ export function buildDirection(id, { subject, states, copy }) {
   const slots = Array.from({ length: 5 }, (_, i) => ({ x: left + slotW * i + (slotW - barW) / 2, centre: left + slotW * i + slotW / 2 }));
   const centred = (word, x, y) => ({ ...word, x: x - drawn(word.width) / 2, y });
 
+  /**
+   * THE COUNTER'S SIZE IS A LADDER.
+   *
+   * The 2024 total counts from the opening to the closing in tenths, so the word in that slot CHANGES WIDTH
+   * while it runs, and the widest text it passes through is what has to hold — otherwise the count spills into
+   * the step beside it partway through, which no frame of the last shot would show. At 1920x1080 the register
+   * holds it with room to spare: a 335px slot against « 639,2 » at 45px. At 1080 the slot is 168 and the same
+   * word measures 150 at the 53px the size row's type scale gives nocturne, three pixels over the slot's own
+   * width less a gap (measured 2026-09-23).
+   *
+   * So the value register steps down in half pixels until the widest counter holds, and never under the size
+   * row's floor — `registerAt` down to a floor is the move `sourceCreditFor` already makes for the credit. The
+   * first rung is the register itself, which is where landscape holds, so nothing already delivered moves. It
+   * is settled here, above the vertical, because the room it is measured against is the slot's width and the
+   * scale below depends on the band this register ends up with.
+   */
+  const counterRoom = slotW - gap;
+  const counterTexts = [];
+  for (let t = Math.round(Math.min(subject.opening, subject.closing) * 10); t <= Math.round(Math.max(subject.opening, subject.closing) * 10); t++) counterTexts.push(valueText(t / 10));
+  const widthAt = (text, r) => widthOf(applyCase(text, r.transform), r);
+  const widestCounter = counterTexts.reduce((a, b) => (widthAt(b, registers.value) > widthAt(a, registers.value) ? b : a));
+  const counterSteps = Math.max(0, Math.round((registers.value.fontSize - row.minTypePx) * 2));
+  let value = null;
+  for (let step = 0; step <= counterSteps && !value; step++) {
+    const px = Math.max(row.minTypePx, Math.round((registers.value.fontSize - step / 2) * 4) / 4);
+    const r = px === registers.value.fontSize ? registers.value : registerAt(registers.value, px);
+    if (drawn(widthAt(widestCounter, r)) <= counterRoom) value = r;
+  }
+  if (!value)
+    throw new Error(
+      `a counter text does not hold in its slot: « ${applyCase(widestCounter, registers.value.transform)} » is ${Math.round(drawn(widthAt(widestCounter, registerAt(registers.value, row.minTypePx))))}px even at the ${row.minTypePx}px floor, against ${Math.round(counterRoom)}px of slot`,
+    );
+  const valueBand = bandOf(BAND_PROBE, value);
+
+  /**
+   * THE ROW OF NAMES UNDER THE SLOTS IS A LADDER.
+   *
+   * A bridge walks left to right and its five slots cannot become a column — the picture IS the walk. What can
+   * change is the row of words under it. At 1920x1080 a slot is 335px and every name sits under its own; at
+   * 1080 it is 170, and « Renouvelables » is 305px at the 36px floor a phone-read frame carries, so the row
+   * refused outright (measured 2026-09-23, all three directions at portrait and at square).
+   *
+   * So the row steps: one row, then two staggered, then three. On `rows` rows a word's neighbour on its own row
+   * is `rows` slots away, and what a rung has to hold is that no two words ON THE SAME ROW touch and none
+   * leaves the frame — measured between the words themselves, because « Renouvelables » beside a « 2024 » and
+   * a « Fossile » is not the same fit as beside another long one, and a word measured against its own slot
+   * alone sent portrait to three rows where two read the association and three did not. The lowest row stays
+   * where the single row was: the rows grow UPWARD, into the height a narrow frame has to spare, and the zero
+   * line rises with them. Landscape holds on the first rung, so nothing already delivered moves.
+   */
+  const rowStep = band.ascent + band.descent + gap / 2;
+  const slotWords = [measure(copy.years[0], axis), ...subject.members.map((m) => measure(m.name, axis)), measure(copy.years[1], axis)];
+  const nameClash = (rows) => {
+    for (const [i, w] of slotWords.entries()) {
+      const reach = drawn(w.width);
+      if (slots[i].centre - reach / 2 < inset || slots[i].centre + reach / 2 > stage.width - inset) return `« ${w.text} » runs off the frame under its slot`;
+      const next = i + rows;
+      if (next < slotWords.length && slots[i].centre + reach / 2 + gap > slots[next].centre - drawn(slotWords[next].width) / 2)
+        return `« ${w.text} » runs into « ${slotWords[next].text} » on the same row, ${Math.round(rows * slotW)}px apart`;
+    }
+    return null;
+  };
+  const nameRows = [1, 2, 3].find((rows) => !nameClash(rows));
+  if (!nameRows) throw new Error(`« ${slotWords.reduce((a, b) => (b.width > a.width ? b : a)).text} » does not hold in its slot: ${nameClash(3)}, even on three staggered rows`);
+  /** Slot `i` sits on row `i % nameRows`; row 0 is the highest, and the last row keeps the single row's seat. */
+  const nameBaselineOf = (i, lowest) => lowest - (nameRows - 1 - (i % nameRows)) * rowStep;
+
+  // THE VERTICAL: the credit at the bottom, the name rows over it, the zero line over them; the scale the largest that
+  // holds the top tick's word and the highest step's value under the frame's top margin.
+  const namesBaseline = creditAt.y - gap - band.descent;
+  const baseline = namesBaseline - (nameRows - 1) * rowStep - band.ascent - gap;
+  const shift = (band.ascent - band.descent) / 2;
+  const unit = Math.min((baseline - vInset - band.ascent + shift) / topTick, (baseline - vInset - valueBand.ascent - valueBand.descent - gap / 2) / peak);
+  const yOf = (v) => baseline - v * unit;
+
   const tickLines = ticks.map((t, i) => ({ value: t, y: yOf(t), label: { ...tickWords[i], x: inset + tickRoom - drawn(tickWords[i].width), y: yOf(t) + shift } }));
-  const years = copy.years.map((y, i) => centred(measure(y, axis), slots[i * 4].centre, namesBaseline));
+  const years = copy.years.map((y, i) => centred(measure(y, axis), slots[i * 4].centre, nameBaselineOf(i * 4, namesBaseline)));
 
   // THE NAMES: beside the 2015 total at the middle of their member while it is a mix, then under their slot.
   const stack2015 = {};
@@ -131,13 +199,12 @@ export function buildDirection(id, { subject, states, copy }) {
     base += m.from;
   }
   const members = subject.members.map((m, i) => {
-    const word = measure(m.name, axis);
-    if (!(drawn(word.width) <= slotW - gap)) throw new Error(`« ${m.name} » does not hold in its slot`);
+    const word = slotWords[i + 1];
     const seg = stack2015[m.key];
     if (!((seg.hi - seg.lo) * unit >= band.ascent + band.descent)) throw new Error(`« ${m.name} » is taller than its member in 2015`);
     const beside = { x: slots[0].x + barW + gap, y: yOf((seg.lo + seg.hi) / 2) + shift };
     if (!(beside.x + drawn(word.width) < slots[4].x)) throw new Error(`« ${m.name} » beside the 2015 total runs into the 2024 slot`);
-    return { key: m.key, from: m.from, to: m.to, change: m.change, name: { ...word, beside, seat: { x: slots[i + 1].centre - drawn(word.width) / 2, y: namesBaseline } } };
+    return { key: m.key, from: m.from, to: m.to, change: m.change, name: { ...word, beside, seat: { x: slots[i + 1].centre - drawn(word.width) / 2, y: nameBaselineOf(i + 1, namesBaseline) } } };
   });
 
   // EVERY TEXT A COUNTER PASSES THROUGH: the 2024 copy counts from the opening to the closing total, in tenths.

@@ -23,12 +23,13 @@ export type GroupedBarFrameProps = {
   credit: { at: { x: number; y: number }; halo: number; lines: Line[] };
   colours: { ground: string; grid: string; wind: string; solar: string; faded: string; ring: string; others: string[]; text: Record<"eyebrow" | "title" | "wind" | "solar" | "name" | "axis" | "count", string> };
   subject: string;
-  groups: Array<{ name: string; wind: number; solar: number; mix: Array<{ source: string; share: number }>; colX: number; windX: number; solarX: number; label: Line }>;
+  groups: Array<{ name: string; wind: number; solar: number; mix: Array<{ source: string; share: number }>; baseline: number; colX: number; windX: number; solarX: number; label: Line }>;
   barW: number;
   colW: number;
   units: { whole: number; close: number };
   seam: number;
-  baseline: number;
+  /** One zero line per tier: a row of six shares one, tiers do not. */
+  baselines: number[];
   left: number;
   right: number;
   series: Line[];
@@ -62,7 +63,9 @@ export function GroupedBarFrame(props: GroupedBarFrameProps & { at: number; svgR
     <svg ref={props.svgRef} xmlns="http://www.w3.org/2000/svg" width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
       <rect width={frame.width} height={frame.height} fill={colours.ground} />
       <g opacity={scene.furniture}>
-        <line x1={props.left} x2={props.right} y1={props.baseline} y2={props.baseline} stroke={colours.grid} strokeWidth={props.strokes.grid} />
+        {props.baselines.map((y, i) => (
+          <line key={`zero${i}`} x1={props.left} x2={props.right} y1={y} y2={y} stroke={colours.grid} strokeWidth={props.strokes.grid} />
+        ))}
         <rect x={props.swatches[0].x} y={props.swatches[0].y} width={props.swatches[0].size} height={props.swatches[0].size} fill={colours.wind} />
         <rect x={props.swatches[1].x} y={props.swatches[1].y} width={props.swatches[1].size} height={props.swatches[1].size} fill={colours.solar} />
         <Text line={props.series[0]} register={r.axis} fill={colours.text.wind} />

@@ -13,13 +13,13 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { adjustToContrast, contrast, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { sizeFor } from "#shared/chart-video/sizes.mjs";
+import { sizeFor, videoExportSize } from "#shared/chart-video/sizes.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { videoRegistersOf } from "../../skills/map-beat/scripts/video-registers.mjs";
 import { loadSubject } from "../static-choropleth-europe-lowcarbon/beat.mjs";
-import { haloOf, layoutFor, mapRegistersOf, pillOf, SLOT_REGISTERS } from "./layout.mjs";
+import { DRAWN_WIDER, haloOf, layoutFor, mapRegistersOf, pillOf, SLOT_REGISTERS, widthOf } from "./layout.mjs";
 import { camerasOf, mapPlanFor, SEATS } from "./map-plan.mjs";
 import { planDigestOf } from "./measure.mjs";
 import { placePills } from "./scene.mjs";
@@ -29,7 +29,9 @@ import { CHOROPLETH_VIDEO_TIMING } from "./timing-contract.ts";
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const ROOT = join(HERE, "..", "..");
 export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
-export const SIZE = "landscape";
+/** The size this run exports at — `--size`, landscape when nothing asks. R2 names three and
+ *  everything under it already answered per size; only this line pinned the beat to one. */
+export const SIZE = videoExportSize();
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 /** The registers the overlay draws with — `body` is resolved for the ladder's factor, never drawn; `water` sets the
  *  map's own sea names (`map-plan.mjs`), not an SVG word. */
@@ -39,10 +41,29 @@ const NB = "\u00A0";
 const PILL_GAP = 0.25;
 /** The order names are placed in: the subject, then its neighbours. */
 const ROLE_PRIORITY = ["odd", "neighbour"];
-/** WHERE A NAME SITS WHEN ITS COUNTRY'S SEAT PUTS IT ON A NEIGHBOUR'S. At the video's floor FRANCE, centred on
- *  France's seat, runs into SUISSE (measured on the first live stills): France's name moves west, still wholly on
- *  France, and Switzerland's stays on its own small country. */
-const WORD_SEATS = Object.freeze({ FRA: [0.2, 47.0] });
+/**
+ * WHERE A NAME SITS WHEN ITS COUNTRY'S SEAT PUTS IT ON A NEIGHBOUR'S. At the video's floor FRANCE, centred on
+ * France's seat, runs into SUISSE (measured on the first live stills): France's name moves west, still wholly on
+ * France, and Switzerland's stays on its own small country.
+ *
+ * A LADDER, BECAUSE THE WORDS DO NOT SHRINK WITH THE FRAME — they grow. A narrower frame draws the same ground
+ * across fewer pixels AND sets the map's own names larger (the type floor is 36 px at portrait and square against
+ * 30 at landscape), so two names that clear each other at 1920 wide can be printed through one another at 1080.
+ * Measured 2026-09-23: FRANCE and SUISSE stand 170 px apart on the landscape map and are 130 px wide, which
+ * clears; at portrait they stand 129 px apart and are 156 px wide, and the still read « FRANSUISSE ».
+ *
+ * So the seat is chosen by measuring the words, not by taste: the first rung at which the name clears every other
+ * name the map prints. Landscape takes the first rung — it is the seat already delivered — and nothing there
+ * moves; the later rungs trade a little east–west room for north–south room, which is what a tall frame has.
+ *
+ * THE LAST TWO RUNGS ARE THE SQUARE FRAME'S. Once the map is fitted into the band the stacked square frame leaves
+ * it (`layout.mjs`, `bandFor`), Europe is drawn some 10 % smaller and FRANCE runs into SUISSE at every rung that
+ * cleared it before — measured 2026-09-24: 53 px of vertical separation at rung 2 against the 60 px the two boxes
+ * need. East–west is no lever at this zoom: the word FRANCE is 170 px wide, which is 14° of longitude here, wider
+ * than France. The two rungs added go SOUTH inside France — Haute-Garonne, then the Aude — where the same word
+ * clears Switzerland by the height of its own band.
+ */
+const WORD_SEATS = Object.freeze({ FRA: [[0.2, 47.0], [0.2, 44.8], [0.5, 43.6], [1.2, 43.1], [1.8, 42.9]] });
 /** A close-up gauge: its width at 100 %, its thickness and its air under the words, × the axis lead. */
 const GAUGE_WIDTH = 5;
 const GAUGE_HEIGHT = 0.3;
@@ -56,14 +77,38 @@ export const LED_REACH = 3;
 const ALBANIA_CELL = 16;
 /** The step, in stage pixels, of the positions a close-up label is tried at. */
 const CLOSE_STEP = 4;
+/** How far down its own ladder the subject's close-up name walks before the arrangement is refused: 400 places on a
+ *  4 px step is the whole of its own country and then some, and it bounds a search the other four multiply. */
+const CLOSE_ANCHORS = 400;
+/** How many genuinely different places a close-up name is tried at when an arrangement has to back up. */
+const CLOSE_TRIES = 12;
 /** The step, in stage pixels, of the positions the panel is tried at. */
 const PANEL_STEP = 20;
 /** The share of the panel's cells that may be land (the owner's rule for the panel, BRIEF.md). */
 export const PANEL_LAND = 0.03;
 /** Two measured cells are one colour when no channel differs by more than this — the tolerance of a cell's mean. */
 const SAME_CELL = 3;
-/** A seat in the open Atlantic, off every coast the whole map shows: the colour of its cell is what « the sea » is. */
-export const ATLANTIC = Object.freeze([-30, 45]);
+/** Two boxes share ground once `air` is counted around them. */
+const touchingBoxes = (a, b, air) => a.x < b.x + b.width + air && b.x < a.x + a.width + air && a.y < b.y + b.height + air && b.y < a.y + a.height + air;
+/**
+ * SEATS IN THE OPEN ATLANTIC, OFF EVERY COAST THE WHOLE MAP SHOWS: the colour of the first cell the frame holds is
+ * what « the sea » is, and everything that stands on the sea — the credit, the panel, the count — is placed by
+ * comparing cells to it.
+ *
+ * A LADDER, BECAUSE A PROBE OUTSIDE THE FRAME READS THE EDGE. `[-30, 45]` is roughly 400 km west of the ground the
+ * beat is about, which the landscape frame shows because it fits Europe by its HEIGHT and has width to spare. The
+ * portrait and square frames fit the same ground by its WIDTH, so that longitude falls off the plate: measured
+ * 2026-09-23 at 1080 × 1920 it projected to x = -8, `cellAt` clamped it to column 0, and the sea read as the land
+ * tint at the frame's edge — after which every cell on the map was « not sea » and no place on earth seated the
+ * panel. `[-15, 47]` is open North Atlantic INSIDE the bounds the whole-map camera holds at every size
+ * (`BEAT.bounds`, -25..42 by 34..68), so one of the two is always on water the frame really paints.
+ *
+ * The order is the ladder: landscape takes the first and is arithmetically unchanged.
+ */
+export const ATLANTIC_PROBES = Object.freeze([
+  { key: "atlantic", seat: Object.freeze([-30, 45]) },
+  { key: "atlantic-inner", seat: Object.freeze([-15, 47]) },
+]);
 /** The pilot's three seas, named by the map itself (`render-directions-scrolly.mjs` at fdec7bbd, `WATERS`). */
 export const WATERS = Object.freeze([
   { text: "Mer du Nord", seat: [3.0, 56.5] },
@@ -151,8 +196,8 @@ export function loadBeat() {
   const subject = loadSubject({ dir: join(HERE, "..", "static-choropleth-europe-lowcarbon") });
   const copy = copyOf(subject);
   const kosovo = subject.geo.features.find((f) => f.properties.iso === "-99" && f.properties.name === copy.kosovo.name);
-  /** Every seat the measurement reads: the study set's frozen seats, Kosovo's, and the open Atlantic. */
-  const mapSeats = { ...SEATS, [copy.kosovo.key]: interiorSeatOf(kosovo).seat, atlantic: [...ATLANTIC] };
+  /** Every seat the measurement reads: the study set's frozen seats, Kosovo's, and the Atlantic probes. */
+  const mapSeats = { ...SEATS, [copy.kosovo.key]: interiorSeatOf(kosovo).seat, ...Object.fromEntries(ATLANTIC_PROBES.map((p) => [p.key, [...p.seat]])) };
   const states = statesFor(subject, SEATS);
   const albania = subject.geo.features.find((f) => f.properties.iso === subject.ODD_ONE);
   return { subject, states, copy, mapSeats, subjectRadius: interiorSeatOf(albania).radius };
@@ -166,7 +211,15 @@ export function copyOf(subject) {
   const kosovo = unmeasuredNeighboursOf(subject, ODD_ONE);
   if (kosovo.length !== 1 || kosovo[0].name !== "Kosovo")
     throw new Error(`the close-up names one unmeasured neighbour, Kosovo; the rings give ${JSON.stringify(kosovo)}`);
-  const oddText = upper(`${french(ODD_ONE)} · ${pct(value.get(ODD_ONE).lowCarbon)}`);
+  /**
+   * A CLOSE-UP NAME IS ONE LINE, AND STACKING IT WAS MEASURED AND REJECTED. « MACÉDOINE DU NORD · 41 % » is 678 px
+   * wide on a square frame's close-up, which draws 1080, so the obvious rung was to set the place over its share and
+   * halve the width. Measured 2026-09-24: it made the beat WORSE. A word is read on every cell it inks (`readsOn`),
+   * and a stacked name inks a box one lead taller, which crosses one more country's fill — nocturne and rapport went
+   * from a starved arrangement to no place at all for two of the four names, and creme from seated to refused.
+   */
+  const closeLines = (place, share) => [`${place} · ${share}`];
+  const oddLines = closeLines(upper(french(ODD_ONE)), pct(value.get(ODD_ONE).lowCarbon));
   return {
     eyebrow: "Énergie · Europe",
     /** The scrolly's two shorter forms: the title card is read in a second and a half, and the story shows the rest. */
@@ -191,9 +244,12 @@ export function copyOf(subject) {
      *  layer (`top`). `klass` picks the ink's floor: 7:1 for a feature, 4.5:1 for an area. */
     names: [
       { key: `odd:${ODD_ONE}`, seat: ODD_ONE, role: "odd", camera: "overview", text: upper(french(ODD_ONE)), slot: "featureName", klass: "feature" },
-      { key: `close:${ODD_ONE}`, seat: ODD_ONE, role: "odd", camera: "closeUp", text: oddText, slot: "oddName", klass: "feature" },
-      ...neighbours.map((iso) => ({ key: `neighbour:${iso}`, seat: iso, role: "neighbour", camera: "closeUp", text: upper(`${french(iso)} · ${pct(value.get(iso).lowCarbon)}`), slot: "name", klass: "area" })),
-      { key: `neighbour:${kosovo[0].key}`, seat: kosovo[0].key, role: "neighbour", camera: "closeUp", text: upper("Kosovo, hors données"), slot: "name", klass: "area" },
+      { key: `close:${ODD_ONE}`, seat: ODD_ONE, role: "odd", camera: "closeUp", lines: oddLines, text: oddLines.join(" "), slot: "oddName", klass: "feature" },
+      ...neighbours.map((iso) => {
+        const lines = closeLines(upper(french(iso)), pct(value.get(iso).lowCarbon));
+        return { key: `neighbour:${iso}`, seat: iso, role: "neighbour", camera: "closeUp", lines, text: lines.join(" "), slot: "name", klass: "area" };
+      }),
+      { key: `neighbour:${kosovo[0].key}`, seat: kosovo[0].key, role: "neighbour", camera: "closeUp", lines: closeLines(upper("Kosovo,"), upper("hors données")), text: upper("Kosovo, hors données"), slot: "name", klass: "area" },
     ],
     /** The six the map names once the floor has landed, in capitals as every name of this video. */
     top: topSix.map((iso) => ({ iso, text: upper(french(iso)) })),
@@ -219,11 +275,25 @@ export function textPerRegisterOf(copy) {
 
 const MEASURED = join(HERE, "measured.json");
 let measuredCache = null;
-/** `measured.json`, read once: what `measure.mjs` froze on the real map. */
+/**
+ * `measured.json`'s entry for THIS RUN'S SIZE, read once: what `measure.mjs` froze on the real map.
+ *
+ * KEYED BY SIZE, because the measurement is of a PICTURE and the picture changes with the frame. The file held one
+ * 1920 × 1080 measurement, and every seat, every grid cell and every camera in it is a pixel of that frame; read on
+ * a 1080 × 1920 one it puts the credit in the Alps. One file rather than three, so a beat still carries its
+ * measurement beside itself and `no-key.live.test.ts` still has one path to check.
+ */
 export function readMeasured() {
   if (measuredCache) return measuredCache;
   if (!existsSync(MEASURED)) throw new Error("no measured.json beside the beat — run measure.mjs with the worktree's .env loaded");
-  measuredCache = JSON.parse(readFileSync(MEASURED, "utf8"));
+  const all = JSON.parse(readFileSync(MEASURED, "utf8"));
+  const row = all[SIZE];
+  if (!row)
+    throw new Error(
+      `measured.json carries no ${SIZE} measurement (it holds ${Object.keys(all).join(", ") || "none"}) — ` +
+        `run: set -a && . ./.env && set +a && bun proof/video-choropleth-europe-lowcarbon/measure.mjs --size ${SIZE}`,
+    );
+  measuredCache = row;
   return measuredCache;
 }
 
@@ -256,18 +326,66 @@ export function buildDirection(id, { subject, states, copy, mapSeats, subjectRad
   const k = scaled.axis.fontSize / resolved.axis.fontSize;
   const layout = layoutFor({ registers: { ...scaled, ...mapRegistersOf(scaled, k) }, copy, size: SIZE, k });
   const registers = layout.registers;
-  const { stage, inset, vInset, panel: panelLayout } = layout;
+  const { stage, inset, vInset, panel: panelLayout, band } = layout;
   const gap = PILL_GAP * registers.axis.lead;
+  /** WHERE THE LIVE MAP STOPS: the ground band's top edge at square, the frame's own foot everywhere else. The map is
+   *  still MOUNTED on the whole frame — the measurement is a picture of that frame and its seats are its pixels — so
+   *  every seat below the floor is drawn under the band, and nothing of the overlay's may be placed there. */
+  const mapFloor = band ? band.y : stage.height;
+  const mapStage = { ...stage, height: mapFloor };
 
   // ── the live map: the pilot's plan, the video's cameras, the six and the seas named by the map ────────────
-  const { whole, closeUp } = camerasOf(subject);
+  const { whole, closeUp } = camerasOf(subject, SIZE, band?.mapBand ?? null);
   const cameras = { whole, closeUp };
+  // THE MAP'S OWN NAMES, EACH ON THE FIRST SEAT OF ITS LADDER THAT CLEARS THE OTHERS, measured on the whole-map
+  // camera in the register the map prints them in (`feature` — `mapPlanFor` hands MapLibre that face and size).
+  // MapLibre centres a symbol on its seat, so a name's box is its measured width about the projected point and one
+  // band of its register tall; two boxes clear when they are apart on either axis by the air a pill keeps.
+  const worldX = (lon) => (lon + 180) / 360;
+  const worldY = (lat) => (1 - Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 360)) / Math.PI) / 2;
+  const wholePx = 512 * 2 ** whole.camZoom;
+  const boxOfWord = (text, seat) => {
+    const width = widthOf(text, registers.feature) * (1 + DRAWN_WIDER);
+    const band = haloOf(registers.feature, k);
+    const height = registers.feature.lead + band;
+    return {
+      x: (worldX(seat[0]) - whole.camX) * wholePx + stage.width / 2 - width / 2,
+      y: (worldY(seat[1]) - whole.camY) * wholePx + stage.height / 2 - height / 2,
+      width,
+      height,
+    };
+  };
+  const fixedSeats = copy.top.filter((t) => !WORD_SEATS[t.iso]).map((t) => ({ text: t.text, box: boxOfWord(t.text, mapSeats[t.iso]) }));
+  const seatOfTop = (t) => {
+    const rungs = WORD_SEATS[t.iso];
+    if (!rungs) return mapSeats[t.iso];
+    // THE LANDSCAPE SEAT IS THE ONE THAT WAS DELIVERED, and it is not this work's to move. Measured 2026-09-23 the
+    // shipped landscape prints FRANCE and SUISSE 8 px into one another at rung 0 — a real defect of a frame already
+    // cut, and walking the ladder there would redraw it. The ladder is walked at the frames being ADDED, where the
+    // overlap is 41 px and the words are unreadable rather than merely tight.
+    if (SIZE === "landscape") return rungs[0];
+    // No air: the measure is whether the map prints one name THROUGH another, not whether they stand handsomely
+    // apart — two names a pixel apart are two names a reader can read.
+    const clashesAt = (seat) => fixedSeats.filter((other) => touchingBoxes(boxOfWord(t.text, seat), other.box, 0)).map((other) => other.text);
+    const clear = rungs.find((seat) => clashesAt(seat).length === 0);
+    if (!clear)
+      // The rung it fell to is named with the word it was printed through: a ladder that runs out says WHICH name it
+      // could not clear, or the next rung is guesswork.
+      throw new Error(
+        `${id}: no seat on ${t.iso}'s ladder prints « ${t.text} » clear of the other names at ${SIZE} — ` +
+          `the word is ${(widthOf(t.text, registers.feature) * (1 + DRAWN_WIDER)).toFixed(0)}px wide on a map that draws ` +
+          `${stage.width}px of frame, and every rung runs into one: ` +
+          rungs.map((seat) => `${seat.join(",")} → ${clashesAt(seat).join(", ")}`).join("; ") +
+          `. Add a rung, or give the beat a shorter name.`,
+      );
+    return clear;
+  };
   const words = {
-    top: copy.top.map((t) => ({ iso2: iso2Of(t.iso), text: t.text, seat: WORD_SEATS[t.iso] ?? mapSeats[t.iso] })),
+    top: copy.top.map((t) => ({ iso2: iso2Of(t.iso), text: t.text, seat: seatOfTop(t) })),
     odd: { iso2: iso2Of(subject.ODD_ONE), text: copy.names.find((n) => n.key === `odd:${subject.ODD_ONE}`).text, seat: mapSeats[subject.ODD_ONE] },
     waters: copy.waters,
   };
-  const mapPlan = mapPlanFor({ direction, registers, subject, cameras: camerasOf(subject), iso2Of, words });
+  const mapPlan = mapPlanFor({ direction, registers, subject, cameras: camerasOf(subject, SIZE, band?.mapBand ?? null), iso2Of, words, size: SIZE });
   if (measured === null) return { props: { mapPlan, cameras } };
   if (measured.planDigest?.[id] !== planDigestOf(mapPlan)) throw new Error(`${id}: the plan changed since it was measured — run measure.mjs again`);
   if (measured.size.width !== stage.width || measured.size.height !== stage.height)
@@ -284,7 +402,22 @@ export function buildDirection(id, { subject, states, copy, mapSeats, subjectRad
     if (!layer) throw new Error(`the map plan draws no layer for class ${i}`);
     return layer.paint["fill-color"];
   });
-  const sea = cellAt(m.whole.grid, ...m.whole.projected.atlantic);
+  // THE SEA IS READ OFF THE FIRST PROBE THE FRAME HOLDS, AND IT HAS TO READ THE PLAN'S OWN WATER. `cellAt` clamps a
+  // point outside the grid to its edge, so a probe the frame does not show answers with the frame's border instead
+  // of refusing — which is how a whole portrait map once read as land. Checked against `mapPlan.tints.water`, the
+  // colour the map was TOLD to paint, so a probe that lands on a coast, on a sea's own name or on a bathymetry band
+  // is refused here rather than seating the credit on a shoreline.
+  const water = mapPlan.tints.water;
+  const inFrame = ([x, y]) => x >= 0 && y >= 0 && x < stage.width && y < stage.height;
+  const probes = ATLANTIC_PROBES.map(({ key }) => ({ key, at: m.whole.projected[key] }));
+  const probe = probes.find(({ at }) => at && inFrame(at) && cellAt(m.whole.grid, ...at) === water);
+  if (!probe)
+    throw new Error(
+      `${id}: no Atlantic probe reads the plan's own sea ${water} on the ${stage.width}×${stage.height} frame — ` +
+        probes.map(({ key, at }) => (!at ? `${key} has no measured seat` : !inFrame(at) ? `${key} projects to ${at.map((v) => v.toFixed(0)).join(",")}, off the frame` : `${key} reads ${cellAt(m.whole.grid, ...at)}`)).join("; ") +
+        `. Add a seat on open water inside the ground the whole-map camera holds at every size.`,
+    );
+  const sea = cellAt(m.whole.grid, ...probe.at);
   const onGround = (colour) => {
     const walked = adjustToContrast(colour, ground, TEXT_CONTRAST_MIN);
     if (!walked) throw new Error(`no variant of ${colour} reads on ${ground}`);
@@ -301,13 +434,16 @@ export function buildDirection(id, { subject, states, copy, mapSeats, subjectRad
     classFills,
     missingFill: layerOf("missing").paint["fill-color"],
     ring: onGround(accent),
+    /** The ground band's own fill, and what the blocks inside it are read against — absent where there is no band. */
+    band: band ? ground : null,
     text: {
       eyebrow: onGround(registers.eyebrow.fill),
       title: onGround(registers.display.fill),
-      // The count, the key and the credit stand on the sea, in their halo.
-      counter: onSea(accent),
-      key: onSea(muted),
-      source: onSea(muted),
+      // The count, the key and the credit stand on the sea, in their halo — or, where the frame stacks a band under
+      // the map, on the direction's own ground, which is what a band is FOR: ink read off the page, not off water.
+      counter: band ? onGround(accent) : onSea(accent),
+      key: band ? onGround(muted) : onSea(muted),
+      source: band ? onGround(muted) : onSea(muted),
     },
   };
   const strokes = { border: (direction.stroke?.hairline ?? 0.6) * k, ring: (direction.stroke?.rule ?? 1) * k };
@@ -350,50 +486,83 @@ export function buildDirection(id, { subject, states, copy, mapSeats, subjectRad
   };
   const landIn = { whole: countOf(m.whole.grid, (c) => !isSea(c)), wholeFiltered: countOf(m.wholeFiltered.grid, (c) => !isSea(c)) };
   const sevenIn = { whole: countOf(m.whole.grid, showsSeven), wholeFiltered: countOf(m.wholeFiltered.grid, showsSeven) };
-  const insideMargins = (box) => box.x >= inset && box.y >= vInset && box.x + box.width <= stage.width - inset && box.y + box.height <= stage.height - vInset;
-  const touches = (a, b, air) => a.x < b.x + b.width + air && b.x < a.x + a.width + air && a.y < b.y + b.height + air && b.y < a.y + a.height + air;
+  // The margins the key is held inside — and, where the frame stacks a ground band under the map, the map's own
+  // floor: a key seated over the band would be drawn under it.
+  const insideMargins = (box) => box.x >= inset && box.y >= vInset && box.x + box.width <= stage.width - inset && box.y + box.height <= (band ? mapFloor - vInset : stage.height - vInset);
+  const touches = touchingBoxes;
   const PANEL_AIR = PILL_GAP * registers.axis.lead;
-  // THE CREDIT FIRST, ON ONE LINE AND ON THE OPEN SEA (spec §3.2: « posé sur l'eau et loin de tout mot »): every cell
-  // under it is sea, so it crosses no coast, no country and no word of the map's. One line at the type floor is wider
-  // than any other open water the map leaves, so it is seated before the panel — the longest form that finds a row,
-  // in the highest row from the top-left, as the still's credit was.
-  let credit = null;
-  for (const form of layout.sources) {
-    search: for (let y = vInset; y + form.height <= stage.height - vInset; y += PANEL_STEP / 4)
-      for (let x = inset; x + form.width <= stage.width - inset; x += PANEL_STEP) {
-        const box = { x, y, width: form.width, height: form.height };
-        if (landIn.whole(box).count === 0) {
-          credit = { form, box };
-          break search;
-        }
-      }
-    if (credit) break;
-  }
-  if (!credit) throw new Error(`${id}: no one-line form of the source (the shortest ${layout.sources.at(-1).width}×${layout.sources.at(-1).height}) finds the open sea on the whole map`);
-  const sourceBox = credit.box;
   // THE PANEL, the owner's rule for it (BRIEF.md): hung under the credit — one block — when that place covers at most
   // `PANEL_LAND` of land and none of the seven's, in both pictures; otherwise the lowest place from the left margin
   // that does, clear of the credit. Its words stand in their halo, so a corner of coast under them still reads; open
   // sea wide enough for the key and the credit together is not on this map (measured: ~800 px of it, south of Iceland).
-  const panelFits = (box) =>
-    insideMargins(box) &&
-    !touches(box, sourceBox, PANEL_AIR) &&
-    ["whole", "wholeFiltered"].every((picture) => {
-      const land = landIn[picture](box);
-      return land.count / land.total <= PANEL_LAND && sevenIn[picture](box).count === 0;
-    });
-  const under = { x: sourceBox.x, y: sourceBox.y + sourceBox.height + PANEL_AIR + 1e-6, width: panelLayout.width, height: panelLayout.height };
-  let panelBox = panelFits(under) ? under : null;
-  if (!panelBox)
-    search: for (let y = stage.height - vInset - panelLayout.height; y >= vInset; y -= PANEL_STEP)
+  const panelSeatedClearOf = (sourceBox) => {
+    const panelFits = (box) =>
+      insideMargins(box) &&
+      !touches(box, sourceBox, PANEL_AIR) &&
+      ["whole", "wholeFiltered"].every((picture) => {
+        const land = landIn[picture](box);
+        return land.count / land.total <= PANEL_LAND && sevenIn[picture](box).count === 0;
+      });
+    const under = { x: sourceBox.x, y: sourceBox.y + sourceBox.height + PANEL_AIR + 1e-6, width: panelLayout.width, height: panelLayout.height };
+    if (panelFits(under)) return under;
+    for (let y = (band ? mapFloor : stage.height) - vInset - panelLayout.height; y >= vInset; y -= PANEL_STEP)
       for (let x = inset; x + panelLayout.width <= stage.width - inset; x += PANEL_STEP) {
         const box = { x, y, width: panelLayout.width, height: panelLayout.height };
-        if (panelFits(box)) {
-          panelBox = box;
-          break search;
-        }
+        if (panelFits(box)) return box;
       }
-  if (!panelBox) throw new Error(`${id}: no place inside the margins seats the ${panelLayout.width}×${panelLayout.height} panel over at most ${PANEL_LAND * 100} % land and none of the seven's`);
+    return null;
+  };
+  // THE CREDIT ON THE OPEN SEA (spec §3.2: « posé sur l'eau et loin de tout mot »): every cell under it is sea, so it
+  // crosses no coast, no country and no word of the map's — the longest form that finds a row, in the highest row
+  // from the top-left, as the still's credit was.
+  //
+  // AND THE PANEL HAS TO FIT BESIDE THE CHOICE, WHICH IS WHY THIS IS ONE SEARCH AND NOT TWO. The credit used to be
+  // seated greedily and the panel given whatever was left; at landscape the Atlantic is wide enough that the first
+  // credit seat never cost the panel anything, so nothing showed. At portrait the map's open water is ONE band
+  // across the sky — measured 2026-09-23, 832 × 272 px at 176,144 for all three directions — and the first credit
+  // seat, the longest form at two lines, cut that band in half and left the panel 719 × 200 nowhere to stand. The
+  // beat did not have a credit problem or a panel problem: it had a search that could not take back a choice. So a
+  // credit seat is only ACCEPTED when the panel can still be seated clear of it, and the ladder — the forms, then
+  // the rows, then the columns — steps until both stand. Landscape is unchanged by construction: its first seat
+  // already admits the panel, so the first rung is still the one taken.
+  let seated = null;
+  let seenSea = false;
+  // THE BAND SEATS THE CREDIT, AND NOTHING IS SEARCHED FOR IT. Where the frame stacks a band of ground under the map
+  // (`layout.mjs`, `bandFor`), the credit is not looking for water: its place is the band's own, and its form is the
+  // LONGEST the frame's line budget holds on one line rather than the shortest that fitted a sea — at square
+  // « Ember, via OWID · © MapTiler © OpenStreetMap » rather than the bare « Ember · © MapTiler © OpenStreetMap ».
+  // The key stands there too, over the credit: measured on the square map, no 719 × 200 block of it is 3 % land or
+  // less, so the band carries both.
+  if (band) {
+    const form = layout.sources.find((f) => f.lines.length === 1) ?? layout.sources[0];
+    seated = {
+      form,
+      box: { ...band.sourceAt, width: form.width, height: form.height },
+      panelBox: { ...band.panelAt, width: panelLayout.width, height: panelLayout.height },
+    };
+  }
+  for (const form of seated ? [] : layout.sources) {
+    search: for (let y = vInset; y + form.height <= stage.height - vInset; y += PANEL_STEP / 4)
+      for (let x = inset; x + form.width <= stage.width - inset; x += PANEL_STEP) {
+        const box = { x, y, width: form.width, height: form.height };
+        if (landIn.whole(box).count !== 0) continue;
+        seenSea = true;
+        const panelBox = panelSeatedClearOf(box);
+        if (!panelBox) continue;
+        seated = { form, box, panelBox };
+        break search;
+      }
+    if (seated) break;
+  }
+  if (!seated)
+    throw new Error(
+      seenSea
+        ? `${id}: no place inside the margins seats the ${panelLayout.width}×${panelLayout.height} panel over at most ${PANEL_LAND * 100} % land and none of the seven's, clear of any form of the credit that finds the open sea`
+        : `${id}: no one-line form of the source (the shortest ${layout.sources.at(-1).width}×${layout.sources.at(-1).height}) finds the open sea on the whole map`,
+    );
+  const credit = { form: seated.form, box: seated.box };
+  const sourceBox = seated.box;
+  const panelBox = seated.panelBox;
 
   // ── the overlay's words, placed on the measured map ───────────────────────────────────────────────────────
   // THE CLOSE-UP'S GAUGES: every measured share at the close-up carries a bar under its words, all on ONE scale —
@@ -401,13 +570,23 @@ export function buildDirection(id, { subject, states, copy, mapSeats, subjectRad
   // name's pill, so the placement that keeps names apart keeps gauges apart.
   const gaugeWidth = GAUGE_WIDTH * registers.axis.lead;
   const gaugeHeight = GAUGE_HEIGHT * registers.axis.lead;
+  /**
+   * THE CLOSE-UP'S GAUGE IS THE 16:9 FRAME'S. It hangs under a name and adds a lead of height to the box the word
+   * inks — and a word is read only where an ink reaches its floor on EVERY cell it inks (`readsOn`). At 1920 that
+   * costs nothing. On the square frame the close-up's names are set at the 36 px floor rather than 30 and stand on a
+   * map drawn 1080 px wide: measured 2026-09-24, nocturne's « MACÉDOINE DU NORD · 41 % » had 33 places in the whole
+   * shot that read, against 115 for « KOSOVO, HORS DONNÉES », which carries no gauge and is a box one lead shorter.
+   * So at a narrow frame the bar goes and the share stays where it already was — printed on the name itself, in the
+   * data's own units, against the bornes the key prints. Nothing measured is dropped; one drawing of it is.
+   */
+  const gauged = SIZE === "landscape";
   const withGauge = (p) => {
     const pad = p.textX;
-    const descent = p.height - p.baseline - pad;
-    /** What the word inks, inside its box: the text's band, and the gauge's bar. */
-    const text = { x: pad, y: pad, width: p.textWidth, height: p.baseline + descent - pad };
-    if (p.camera !== "closeUp" || !subject.value.has(p.seat)) return { ...p, gauge: null, inked: [text] };
-    const y = p.baseline + descent + GAUGE_GAP * registers.axis.lead;
+    /** What the word inks, inside its box: the text's band — every line of it — and the gauge's bar. `pillOf` pads
+     *  the band equally top and bottom, so the inner box IS the band, at one line or at three. */
+    const text = { x: pad, y: pad, width: p.textWidth, height: p.height - 2 * pad };
+    if (!gauged || p.camera !== "closeUp" || !subject.value.has(p.seat)) return { ...p, gauge: null, inked: [text] };
+    const y = p.height - pad + GAUGE_GAP * registers.axis.lead;
     const gauge = { x: pad, y, width: gaugeWidth, height: gaugeHeight, share: subject.value.get(p.seat).lowCarbon / 100, notch: subject.FLOOR / 100 };
     return {
       ...p,
@@ -418,11 +597,26 @@ export function buildDirection(id, { subject, states, copy, mapSeats, subjectRad
     };
   };
   // A map word has no pill: its box is the word and the halo's reach around it.
+  /** A MAP WORD ON MORE THAN ONE LINE — `pillOf` sets exactly one, and a close-up name stacks at a narrow frame
+   *  (`copyOf`, `closeLines`). Each line is laid out at the pill's own origin, left-aligned, one lead apart; the box
+   *  is as wide as the widest line and as tall as the stack. One line gives back exactly what `pillOf` gave. */
+  const stackedPillOf = (lines, r, pad) => {
+    const parts = lines.map((line) => pillOf(line, r, pad));
+    return {
+      text: parts.map((q) => q.text).join(" "),
+      textWidth: Math.max(...parts.map((q) => q.textWidth)),
+      width: Math.max(...parts.map((q) => q.width)),
+      height: parts[0].height + (parts.length - 1) * r.lead,
+      textX: parts[0].textX,
+      baseline: parts[0].baseline,
+      lines: parts.map((q, i) => ({ text: q.text, width: q.textWidth, x: q.textX, y: q.baseline + i * r.lead })),
+    };
+  };
   const pills = copy.names
     .map((n) => {
       const r = registers[SLOT_REGISTERS[n.slot]];
       const halo = haloOf(r, k);
-      return { ...n, register: SLOT_REGISTERS[n.slot], halo, ...pillOf(n.text, r, halo / 2) };
+      return { ...n, register: SLOT_REGISTERS[n.slot], halo, ...stackedPillOf(n.lines ?? [n.text], r, halo / 2) };
     })
     .map(withGauge);
   /** The measured picture each camera's words are read on: the close-up, and the whole map the video ends on. */
@@ -504,17 +698,28 @@ export function buildDirection(id, { subject, states, copy, mapSeats, subjectRad
     }
     return true;
   };
-  const closeCandidates = pills
+  /**
+   * THE REACH IS A LADDER TOO. `LED_REACH` was one number, and at 16:9 it is the right one: three of a word's own
+   * heights off its seat is as far as a leader runs before the line names less than the word does. On the square
+   * frame the close-up is fitted into the band the ground band leaves it (`layout.mjs`, `bandFor`), and nocturne's
+   * inks cut the places that READ there to 33 for « MACÉDOINE DU NORD » and 115 for « KOSOVO, HORS DONNÉES », every
+   * one of them within two boxes of the others — so no arrangement exists at three heights, however the search
+   * backs up. The reach steps instead: three heights, then four, then five, the first rung that seats every name
+   * wins, and a frame that seated them at three still does. Landscape breaks out at the first rung and is unchanged.
+   */
+  const REACH_LADDER = [LED_REACH, LED_REACH + 1, LED_REACH + 2];
+  const candidatesAt = (reachFactor) => {
+    const found = pills
     .filter((p) => p.camera === "closeUp")
     .sort(byPriority)
     .map((p) => {
       const seat = seatAt(m.closeUp, p.seat);
-      const reach = p.role === "odd" ? 0 : LED_REACH * p.height;
+      const reach = p.role === "odd" ? 0 : reachFactor * p.height;
       const positions = [];
       for (let y = seat.y - p.height - reach; y <= seat.y + reach; y += CLOSE_STEP)
         for (let x = seat.x - p.width - reach; x <= seat.x + reach; x += CLOSE_STEP) {
           const box = { x, y, width: p.width, height: p.height };
-          if (box.x < gap || box.y < gap || box.x + box.width > stage.width - gap || box.y + box.height > stage.height - gap) continue;
+          if (box.x < gap || box.y < gap || box.x + box.width > stage.width - gap || box.y + box.height > mapFloor - gap) continue;
           const off = offSeat(box, seat);
           if (off > reach) continue;
           if (p.role !== "odd" && (touches(box, albaniaBox, gap) || !seatedOrLed(box, seat) || (off > 0 && !leaderClear(box, seat)))) continue;
@@ -523,27 +728,76 @@ export function buildDirection(id, { subject, states, copy, mapSeats, subjectRad
         }
       // Albania's own name: centred on its seat, the ring around it.
       if (p.role === "odd") positions.push({ box: { x: seat.x - p.width / 2, y: seat.y - p.height / 2, width: p.width, height: p.height }, off: 0, moved: 0 });
-      if (!positions.length) throw new Error(`${id}: no place within ${LED_REACH} heights of its seat reads ${p.text} on the close-up`);
-      return { key: p.key, positions: positions.sort((u, v) => u.moved - v.moved) };
-    });
-  const [first, ...rest] = closeCandidates;
-  const orders = (list) => (list.length <= 1 ? [list] : list.flatMap((x, i) => orders([...list.slice(0, i), ...list.slice(i + 1)]).map((o) => [x, ...o])));
-  let best = null;
-  for (const order of orders(rest)) {
-    const boxes = [first.positions[0].box];
-    let off = 0;
-    for (const item of order) {
-      const at = item.positions.find((c) => !boxes.some((b) => touches(c.box, b, gap)));
-      if (!at) {
-        off = Infinity;
-        break;
+      // No place at this rung is not a refusal: the ladder below steps the reach and asks again.
+      if (!positions.length) return null;
+      positions.sort((u, v) => u.moved - v.moved);
+      /** THE PLACES THIS NAME IS ACTUALLY BACKED UP TO: its least moved first, then places at least half a box off
+       *  every one already kept. On a 4 px step a name has thousands of positions that are the SAME arrangement to
+       *  a reader, and backing up through them is a search that never moves — nocturne's MKD had 33 places and all
+       *  of them lay inside two boxes of each other. */
+      const tries = [];
+      for (const c of positions) {
+        if (tries.length >= CLOSE_TRIES) break;
+        if (tries.some((o) => Math.abs(o.box.x - c.box.x) < p.width / 2 && Math.abs(o.box.y - c.box.y) < p.height / 2)) continue;
+        tries.push(c);
       }
-      boxes.push(at.box);
-      off += at.off;
+      return { key: p.key, positions, tries };
+      });
+    return found.some((c) => c === null) ? null : found;
+  };
+  const orders = (list) => (list.length <= 1 ? [list] : list.flatMap((x, i) => orders([...list.slice(0, i), ...list.slice(i + 1)]).map((o) => [x, ...o])));
+  /**
+   * AN ARRANGEMENT THAT BACKS UP. Each name used to take its least-moved free place and never reconsider it, so one
+   * name standing where it liked refused the whole close-up — which is what « no order places them all » meant while
+   * every name still held thousands of free places of its own. The greedy place is still tried FIRST at every level,
+   * so a frame that placed its names before places them identically now; the other tries are only reached once the
+   * greedy chain has failed.
+   */
+  const placeRest = (items, boxes) => {
+    if (!items.length) return [];
+    const [item, ...more] = items;
+    const free = (c) => !boxes.some((b) => touches(c.box, b, gap));
+    const greedy = item.positions.find(free);
+    if (!greedy) return null;
+    for (const c of [greedy, ...item.tries.filter((t) => t !== greedy && free(t))].slice(0, CLOSE_TRIES)) {
+      const rest = placeRest(more, [...boxes, c.box]);
+      if (rest) return [c, ...rest];
     }
-    if (off < (best?.off ?? Infinity) - 1e-9) best = { off, boxes: Object.fromEntries([first, ...order].map((item, i) => [item.key, { x: boxes[i].x, y: boxes[i].y }])) };
+    return null;
+  };
+  let best = null;
+  /** The last rung actually asked, for the refusal's arithmetic. */
+  let asked = null;
+  for (const reachFactor of REACH_LADDER) {
+    const closeCandidates = candidatesAt(reachFactor);
+    if (!closeCandidates) continue;
+    asked = { reachFactor, closeCandidates };
+    const [first, ...rest] = closeCandidates;
+    /** THE SUBJECT'S NAME IS ON A LADDER TOO — until 2026-09-24 it was the one name pinned, fixed at its least-moved
+     *  place while every order of the other four was tried around it. It walks its own places now, least moved
+     *  first, and the first that admits an arrangement wins; landscape's first place already admits one. */
+    for (const anchor of first.positions.slice(0, CLOSE_ANCHORS)) {
+      for (const order of orders(rest)) {
+        const found = placeRest(order, [anchor.box]);
+        if (!found) continue;
+        const boxes = [anchor.box, ...found.map((c) => c.box)];
+        const off = found.reduce((sum, c) => sum + c.off, 0);
+        if (off < (best?.off ?? Infinity) - 1e-9) best = { off, boxes: Object.fromEntries([first, ...order].map((item, i) => [item.key, { x: boxes[i].x, y: boxes[i].y }])) };
+      }
+      if (best) break;
+    }
+    if (best) break;
   }
-  if (!best) throw new Error(`${id}: no order of the close-up's names places them all`);
+  // Which names, and how much room each had at the last rung asked: an order that fails says nothing on its own, and
+  // the next move — one more rung of reach, or one name fewer — depends on whether one name is starved or all are.
+  if (!best)
+    throw new Error(
+      !asked
+        ? `${id}: no place at any rung of the reach reads every close-up name on the ${stage.width}×${mapFloor.toFixed(0)} map`
+        : `${id}: no order of the close-up's names places them all on the ${stage.width}×${mapFloor.toFixed(0)} map at ` +
+          `${asked.reachFactor} heights of reach — ` +
+          asked.closeCandidates.map((c) => `${c.key} has ${c.positions.length} place(s)`).join(", "),
+    );
   Object.assign(placed, best.boxes);
 
   // THE WHOLE MAP: Albania's name beside its ring, the ring kept clear, and so the panel and the credit.
@@ -556,7 +810,7 @@ export function buildDirection(id, { subject, states, copy, mapSeats, subjectRad
       const at = seatAt(m.whole, p.seat);
       return { key: p.key, cx: at.x, cy: at.y, width: p.width, height: p.height, avoid: [], slack: wholeRing, beside: 0 };
     });
-  Object.assign(placed, placePills(overviewItems, stage, gap, { obstacles: [wholeRingBox, panelBox, sourceBox], allowed: readsOn("overview") }));
+  Object.assign(placed, placePills(overviewItems, mapStage, gap, { obstacles: [wholeRingBox, panelBox, sourceBox], allowed: readsOn("overview") }));
 
   /** A LEADER, AS THE STILL DRAWS ONE: a word set beside its seat says which country it names with a line from the
    *  seat — a dot on it — to the word's box. Albania's name at the whole map leads from its ring instead, no dot. */
@@ -585,6 +839,8 @@ export function buildDirection(id, { subject, states, copy, mapSeats, subjectRad
   const props = {
     frame: layout.frame,
     stage,
+    /** The ground band under the map at square — `null` at a frame that seats its furniture on the map's own water. */
+    band,
     /** The frame's margins — what the panel and the credit are held inside. */
     layoutInset: { x: inset, y: vInset },
     registers: Object.fromEntries(DRAWN_REGISTERS.map((name) => [name, registers[name]])),

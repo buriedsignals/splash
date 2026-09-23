@@ -20,6 +20,8 @@ type Symbol = { cx: number; cy: number; label: Measured & { x: number; y: number
 
 export type DotFrameProps = {
   frame: { width: number; height: number };
+  /** The band of the direction's own ground at the foot, carrying the credit (`build.mjs`, `CREDIT_BAND`). */
+  band: { x: number; y: number; width: number; height: number } | null;
   registers: Record<Slot, Register>;
   titleCard: { register: Register; eyebrow: Line; title: Line[] };
   legend: {
@@ -36,7 +38,7 @@ export type DotFrameProps = {
     bar: { x: number; y: number; width: number; height: number };
   };
   credit: { at: { x: number; y: number }; halo: number; lines: Line[] };
-  colours: { ground: string; sea: string; land: string; dot: string; back: string; subject: string; text: Record<"eyebrow" | "title" | "count" | "subject" | "key" | "source", string> };
+  colours: { ground: string; sea: string; land: string; dot: string; back: string; subject: string; band: string | null; text: Record<"eyebrow" | "title" | "count" | "subject" | "key" | "source", string> };
   strokes: { hairline: number; ring: number };
   fuels: Array<{ fuel: string; n: number }>;
   subjectFuel: string;
@@ -62,7 +64,9 @@ function Word({ line, register, fill, opacity = 1, halo }: { line: Line; registe
 
 
 export function DotFrame(props: DotFrameProps & { at: number; liveMap: (frame: number) => ReactNode; svgRef?: Ref<SVGSVGElement> }) {
-  const { frame, registers: r, colours, strokes, legend: key, credit, titleCard } = props;
+  const { frame, registers: r, colours, strokes, legend: key, credit, titleCard, band } = props;
+  /** What the credit stands on: the band's ground where the frame gives it one, the measured sea otherwise. */
+  const creditGround = colours.band ?? colours.sea;
   const scene = sceneAt(props as never, props.at);
   const stationsText = key.stationTexts[String(scene.stations)];
   const powerText = key.powerTexts[String(scene.power)];
@@ -72,6 +76,11 @@ export function DotFrame(props: DotFrameProps & { at: number; liveMap: (frame: n
     <div style={{ position: "absolute", left: 0, top: 0, width: frame.width, height: frame.height, background: colours.sea }}>
       {props.liveMap(props.at)}
       <svg ref={props.svgRef} style={{ position: "absolute", left: 0, top: 0 }} xmlns="http://www.w3.org/2000/svg" width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
+
+      {/* ── THE GROUND BAND: the foot of a frame too narrow to leave the credit one surface of sea. It is drawn over
+           the live map because the map is MOUNTED on the whole frame and measured there; the camera is fitted above
+           it (`contentOf`), so the ground this covers is ground the fit left over, not a slice taken off Europe. ── */}
+      {band ? <rect x={band.x} y={band.y} width={band.width} height={band.height} fill={colours.band ?? colours.ground} /> : null}
 
       {/* ── THE KEY: the three counts, the dot, the ring, the size reference. ── */}
       <g transform={`translate(${key.at.x} ${key.at.y})`} opacity={scene.furniture}>
@@ -98,7 +107,7 @@ export function DotFrame(props: DotFrameProps & { at: number; liveMap: (frame: n
 
       <g transform={`translate(${credit.at.x} ${credit.at.y})`} opacity={scene.source}>
         {credit.lines.map((line, i) => (
-          <Word key={`credit${i}`} line={line} register={r.source} fill={colours.text.source} halo={{ colour: colours.sea, width: credit.halo }} />
+          <Word key={`credit${i}`} line={line} register={r.source} fill={colours.text.source} halo={{ colour: creditGround, width: credit.halo }} />
         ))}
       </g>
 

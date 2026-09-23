@@ -12,7 +12,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { adjustToContrast, contrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
+import { frameInsetFor, sizeFor, videoExportSize } from "#shared/chart-video/sizes.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
@@ -30,7 +30,9 @@ import { LOCATOR_VIDEO_TIMING } from "./timing-contract.ts";
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const ROOT = join(HERE, "..", "..");
 export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
-export const SIZE = "landscape";
+/** The size this run exports at — `--size`, landscape when nothing asks. R2 names three and
+ *  everything under it already answered per size; only this line pinned the beat to one. */
+export const SIZE = videoExportSize();
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 const NB = "\u00A0";
 /** The station's ring, in stage px: on the continent, and closed on the station. */
@@ -41,8 +43,71 @@ export const REGION_WIDTH = 0.6;
 /** The air kept around the station's block, × the axis lead. */
 export const STATION_AIR = 0.5;
 const SEAT_STEP = 10;
+/** The sea probes, in order: each is a seat `measure.mjs` projects on the real map, and the first that lands
+ *  inside the frame on the plan's water tint says what the sea IS. */
+const SEA_PROBES = ["sea"];
 /** Two measured cells are one colour when no channel differs by more than this — the tolerance of a cell's mean. */
 const SAME_CELL = 3;
+/** The air the ground band keeps between the map's floor and the credit's own block, × the axis lead — the same
+ *  quarter lead every other pair of blocks in this beat is held apart by. */
+const BAND_AIR = 0.25;
+/** The least share of the frame the live map may be left with once the band has taken its room — the static twin's
+ *  `MIN_MAP_SHARE` (`proof/static-choropleth-europe-lowcarbon/DirectedChoroplethMap.tsx`) and its reasoning: below a
+ *  third the map stops being the largest single thing in the frame and the beat is a caption with an illustration. */
+const MIN_MAP_SHARE = 1 / 3;
+
+/**
+ * THE CREDIT THE BAND SETS: the longest form that holds ONE line at this frame's own credit measure.
+ *
+ * THE TALLER RUNG WAS SPENT FIRST AND MEASURED BACK. The band exists so the credit no longer has to fit a patch of
+ * map, so the obvious rung was to give it the fullest form the frame holds at all — « Source : WRI Global Power
+ * Plant Database · Natural Earth · © MapTiler © OpenStreetMap » on two lines (849 × 91) for creme and rapport,
+ * « WRI · Natural Earth · © MapTiler © OpenStreetMap » (723 × 88) for nocturne. Measured 2026-09-24: a second line
+ * makes the band 175 px instead of 131, the close-up is then fitted into 905 px instead of 948, and the station's
+ * own block — « Zaporijjia » over « 6 000 MW installés », 531 px wide, the one block that carries the beat's claim
+ * and may never be dropped — found no clear position on that stage for creme or for rapport. The map has to seat
+ * the subject before the credit may have a second line, so the band takes the one-line form.
+ *
+ * What that costs is « Natural Earth », the basemap places credit, at square only; « WRI » and the whole MapTiler
+ * and OpenStreetMap attribution stand. It is the same ladder the credit has always walked — the longest form that
+ * finds a place — with the band's own height as the constraint instead of a patch of sea.
+ */
+const creditInBand = (credits) => credits.find((c) => c.lines.length === 1) ?? credits[0];
+
+/**
+ * THE GROUND BAND — WHAT THE SQUARE FRAME MAKES POSSIBLE, AND WHAT THE STATIC TWIN ALREADY DRAWS (`STACKED`).
+ *
+ * This beat's credit stands ON the map, and it may only stand on ONE surface — all sea, or (away from 16:9) all
+ * land — so that no coastline runs through the words and the halo has one colour to do its work against. That rule
+ * is not the thing to spend: it is the whole reason the line is legible. What a square frame takes away is the
+ * SURFACE. The close-up is Zaporizhzhia's window fitted to a 1080 × 1080 stage rather than a 1920 × 1080 one, so
+ * every country is drawn smaller while the names on it are set at the 36 px floor instead of 30; measured
+ * 2026-09-24, nocturne had no row anywhere on that stage — sea or land — wide enough for the shortest one-line form
+ * and clear of every word, dot and mark. Creme and rapport found one, but only just.
+ *
+ * So at square the frame overrides « the credit stands on the map »: a band of the direction's own ground across the
+ * foot carries it, and the live map keeps the whole width and is FITTED AND RAISED into the band above it
+ * (`map-plan.mjs`, `camerasOf`). The credit then crosses no coast because it crosses no map at all — a different
+ * drawing of the same beat rather than a degraded one, and one composition for all three directions rather than a
+ * rule that bends for the one that refused.
+ *
+ * THE BAND CARRIES THE CREDIT AND NOTHING ELSE, because the credit is the only block this beat has nowhere for: the
+ * station's own block and every name are placed on the ground they NAME and could not move into a band without
+ * naming the band. And the map stays the subject — a band that leaves it less than a third of the frame is refused
+ * with the number it fell short by.
+ */
+function bandFor({ frame, inset, vInset, air, credit }) {
+  const height = air + credit.height + vInset;
+  const y = frame.height - height;
+  const mapBand = { width: frame.width, height: y };
+  if (mapBand.height < frame.height * MIN_MAP_SHARE)
+    throw new Error(
+      `the ground band is ${height.toFixed(0)}px tall and leaves the map ${mapBand.height.toFixed(0)}px of a ` +
+        `${frame.height}px frame, under the ${(frame.height * MIN_MAP_SHARE).toFixed(0)}px a map beat keeps for its map. ` +
+        `Give the beat a shorter form of the credit.`,
+    );
+  return { x: 0, y, width: frame.width, height, mapBand, sourceAt: { x: inset, y: frame.height - vInset - credit.height } };
+}
 
 export function loadBeat() {
   const subject = loadSubject();
@@ -86,11 +151,20 @@ export function textPerRegisterOf(copy) {
 
 const MEASURED = join(HERE, "measured.json");
 let measuredCache = null;
-/** `measured.json`, read once: what `measure.mjs` froze on the real map. */
+/** `measured.json` AT THIS SIZE, read once: what `measure.mjs` froze on the real map for this frame shape.
+ *  The file is keyed by export size because the camera is fitted to the stage — a portrait camera is a different
+ *  camera, over a different plan, with a different digest — so one frozen entry cannot serve three sizes. A size
+ *  that has not been measured is named here with the command that measures it, rather than read as a plan drift. */
 export function readMeasured() {
   if (measuredCache) return measuredCache;
   if (!existsSync(MEASURED)) throw new Error("no measured.json beside the beat — run measure.mjs with the worktree's .env loaded");
-  measuredCache = JSON.parse(readFileSync(MEASURED, "utf8"));
+  const all = JSON.parse(readFileSync(MEASURED, "utf8"));
+  if (!all[SIZE])
+    throw new Error(
+      `measured.json holds no ${SIZE} entry — measured so far: ${Object.keys(all).join(", ") || "nothing"}. ` +
+        `Run: set -a && . ./.env && set +a && bun proof/video-locator-zaporizhzhia/measure.mjs --size ${SIZE}`,
+    );
+  measuredCache = all[SIZE];
   return measuredCache;
 }
 const channels = (c) => [1, 3, 5].map((k) => Number.parseInt(c.slice(k, k + 2), 16));
@@ -161,10 +235,18 @@ export function buildDirection(id, { subject, states, copy }, { measured = undef
   if (!credits.length) throw new Error("no form of the source holds one line");
   const sourceRegister = credits[0].register;
 
+  /** The ground band under the map at square, and `null` at a frame whose map has a surface for the credit. */
+  const band = SIZE === "square" ? bandFor({ frame: stage, inset, vInset, air: BAND_AIR * axis.lead, credit: creditInBand(credits) }) : null;
+  /** WHERE THE LIVE MAP STOPS: the band's top edge at square, the frame's own foot everywhere else. The map is still
+   *  MOUNTED on the whole frame — the measurement is a picture of that frame and its seats are its pixels — so a
+   *  name seated below this floor would be drawn under the band, and nothing of the overlay's may go there. */
+  const mapFloor = band ? band.y : stage.height;
+  const mapStage = { width: stage.width, height: mapFloor };
+
   // ── the cameras: Europe's window, and the still's window centred on the station, both "meet" in the stage ───────
   const { biggest } = subject;
   const station = [biggest.lon, biggest.lat];
-  const cameras = camerasOf(subject, EUROPE_WINDOW, stage);
+  const cameras = camerasOf(subject, EUROPE_WINDOW, stage, band?.mapBand ?? null);
   const projectWhole = projectorOf(cameras.whole, stage);
   const unprojectWhole = unprojectorOf(cameras.whole, stage);
   const projectClose = projectorOf(cameras.closeUp, stage);
@@ -199,7 +281,9 @@ export function buildDirection(id, { subject, states, copy }, { measured = undef
       settlement: walked(ink, [land, story], TEXT_CONTRAST_MIN, "a settlement"),
       water: walked(WATER_HUE, sea, TEXT_CONTRAST_MIN, "a water's name"),
       station: walked(accent, [land, story], TEXT_CONTRAST_MIN, "the station"),
-      source: walked(muted, [land, sea, story], TEXT_CONTRAST_MIN, "the credit"),
+      // The credit is read against every surface it may stand on — or, where the frame stacks a band under the map,
+      // against the direction's own ground, which is what the band is FOR: ink read off the page, not off the map.
+      source: band ? walked(muted, ground, TEXT_CONTRAST_MIN, "the credit") : walked(muted, [land, sea, story], TEXT_CONTRAST_MIN, "the credit"),
     },
   };
   const border = (direction.stroke?.hairline ?? 0.6) * k;
@@ -217,7 +301,7 @@ export function buildDirection(id, { subject, states, copy }, { measured = undef
   const overviewBox = { x: ukrX - ukrPill.width / 2, y: ukrY, width: ukrPill.width, height: ukrPill.height };
   const overviewName = { text: ukrPill.text, width: ukrPill.textWidth, box: overviewBox, at: unprojectWhole([ukrX, ukrY + ukrPill.height / 2]), halo: haloOf(axis, k) };
 
-  const mapPlan = mapPlanFor({ station, overviewName, colours, strokes, rings: { far: RING_FAR, near: RING_NEAR }, dotR, registers: { area }, cameras });
+  const mapPlan = mapPlanFor({ station, overviewName, colours, strokes, rings: { far: RING_FAR, near: RING_NEAR }, dotR, registers: { area }, cameras, stage });
   /** What the frame's drive reads (`scene.mjs`): the live map's state needs no overlay. */
   const drive = { cameras, capacity: biggest.mw, states, timing: LOCATOR_VIDEO_TIMING };
   if (measured === null) return { props: { mapPlan, ...drive } };
@@ -226,8 +310,29 @@ export function buildDirection(id, { subject, states, copy }, { measured = undef
   if (measured.size.width !== stage.width || measured.size.height !== stage.height)
     throw new Error(`${id}: measured at ${measured.size.width}×${measured.size.height}, drawn at ${stage.width}×${stage.height}`);
   const { grid: cells, projected } = measured.cameras[id].closeUp;
-  const measuredSea = cellAt(cells, ...projected.sea);
-  if (!near(measuredSea, sea)) throw new Error(`${id}: the measured sea ${measuredSea} is not the direction's water tint ${sea}`);
+  // THE SEA, READ OFF THE MEASURED MAP AND NOT OFF A CLAMPED CELL. `cellAt` clamps a point outside the grid to the
+  // nearest column, so a probe that falls off the frame reads whatever sits at the edge and the WHOLE map is then
+  // classified against it — silently, with no refusal, and the key and the credit are placed on that lie. Measured
+  // at 1080x1920: a probe tuned for a 16:9 frame can sit west of a width-fitted one. So the probe is a LADDER, a
+  // rung counts only when it lands INSIDE the frame and reads the plan's own water tint, and no rung qualifying is
+  // a refusal. A rung the measurement predates is skipped, so landscape keeps rung 0 and nothing delivered moves.
+  const seaProbe = (grid, water) => {
+    const tried = [];
+    for (const name of SEA_PROBES) {
+      const at = projected[name];
+      if (!at) continue;
+      const [px, py] = at;
+      if (px < 0 || py < 0 || px >= stage.width || py >= stage.height) {
+        tried.push(`${name} falls off the ${stage.width}x${stage.height} frame at ${Math.round(px)},${Math.round(py)}`);
+        continue;
+      }
+      const colour = cellAt(grid, px, py);
+      if (near(colour, water)) return colour;
+      tried.push(`${name} reads ${colour} at ${Math.round(px)},${Math.round(py)}`);
+    }
+    throw new Error(`${id}: no sea probe reads the water tint ${water} inside the frame — ${tried.join("; ")}`);
+  };
+  const measuredSea = seaProbe(cells, sea);
   /** Not sea: the land, Ukraine, every border and coast, the station's marks. */
   const landIn = countOf(cells, (c) => !near(c, measuredSea));
   /** The halo under a box: what the measured map paints at its centre — the sea, the land or Ukraine. */
@@ -264,7 +369,7 @@ export function buildDirection(id, { subject, states, copy }, { measured = undef
   const valueBand = bandOf(BAND_PROBE, value);
   const stationBlock = { width: Math.max(stationName.width, capacityWidth + 2 * pad), height: 2 * (valueBand.ascent + valueBand.descent) + 2 * pad };
   // Settlements first — a name must hug its dot — then the station's block, then the countries.
-  const items = [
+  let items = [
     ...places.map((p) => {
       const pill = pillOf(p.label, settlement, pad);
       return { key: `place:${p.name}`, cx: p.at.x + 2 * dotR + pill.width / 2, cy: p.at.y, kind: "settlement", ...pill };
@@ -272,7 +377,7 @@ export function buildDirection(id, { subject, states, copy }, { measured = undef
     // The station's block keeps an air around it, so no place's name reads as part of it.
     { key: "station", cx: stationAtStage.x + RING_NEAR + gap + stationBlock.width / 2, cy: stationAtStage.y, width: stationBlock.width + 2 * air, height: stationBlock.height + 2 * air, kind: "station" },
     ...AREAS.map((iso) => ({ iso, seat: countrySeat(iso) }))
-      .filter((a) => a.seat && a.seat.x > inset && a.seat.x < stage.width - inset && a.seat.y > vInset && a.seat.y < stage.height - vInset)
+      .filter((a) => a.seat && a.seat.x > inset && a.seat.x < stage.width - inset && a.seat.y > vInset && a.seat.y < mapFloor - vInset)
       .map((a) => ({ key: `area:${a.iso}`, iso: a.iso, cx: a.seat.x, cy: a.seat.y, kind: "area", ...pillOf(copy.countries[a.iso], area, pad) })),
   ];
   /** A country's name is centred inside its own country (Moldova is narrower than « MOLDAVIE »: the ends may overhang),
@@ -289,10 +394,29 @@ export function buildDirection(id, { subject, states, copy }, { measured = undef
     const pill = pillOf(wt.forms[0], water, pad);
     return { key: `water:${wt.forms[0]}`, lonLat: [wt.lon, wt.lat], ...pill, box: { x: at.x - pill.width / 2, y: at.y - pill.height / 2, width: pill.width, height: pill.height } };
   });
-  const placed = placePills(items, stage, gap, {
-    obstacles: [...dotBoxes, ringBox, ...waters.map((wt) => wt.box)],
-    allowed: (box, key) => itemByKey[key].kind !== "area" || insideCountry(itemByKey[key].iso, box),
-  });
+  // A NEIGHBOUR'S NAME THAT CANNOT STAND INSIDE ITS OWN COUNTRY AT THIS FRAME IS DROPPED, NOT MOVED OFF IT.
+  // At 1920x1080 all of them seat. At 1080x1920 and 1080x1080 the same close-up window is fitted to a narrower
+  // frame, so every country is smaller on the stage while its name is set at the 36 px floor and is bigger:
+  // measured, no box centred inside Moldova keeps its middle half off Ukraine. A name pushed outside its country
+  // would label the wrong ground, so it goes and the run says so. Ukraine's own name, the settlements and the
+  // station's block are never dropped — they carry the beat's claim, and a refusal there stays a refusal.
+  const droppedNames = [];
+  let placed = null;
+  for (;;) {
+    try {
+      placed = placePills(items, mapStage, gap, {
+        obstacles: [...dotBoxes, ringBox, ...waters.map((wt) => wt.box)],
+        allowed: (box, key) => itemByKey[key].kind !== "area" || insideCountry(itemByKey[key].iso, box),
+      });
+      break;
+    } catch (error) {
+      const key = /no clear position for the name (\S+) inside/.exec(error.message)?.[1];
+      const item = key ? itemByKey[key] : null;
+      if (!item || item.kind !== "area" || item.iso === "UKR") throw error;
+      droppedNames.push(item.iso);
+      items = items.filter((it) => it.key !== key);
+    }
+  }
   const names = items
     .filter((it) => it.kind !== "station")
     .map((it) => {
@@ -310,15 +434,33 @@ export function buildDirection(id, { subject, states, copy }, { measured = undef
     haloColour: haloUnder(stationBox),
   };
 
+  // WHAT THE CREDIT MAY STAND ON. At 1920x1080: open sea, every cell of it — "so it crosses no coast". The property
+  // being protected is the SECOND half of that sentence: one uninterrupted surface under the line, so the halo does
+  // its work and no coastline runs through the words. At 1080x1920 and 1080x1080 the sea wide enough to hold a
+  // credit is gone — measured, no row of open water anywhere on the stage clears the marks — while whole countries
+  // are. So a frame that is not 16:9 accepts EITHER surface, as long as it is one: all sea, or all land. Landscape
+  // keeps the sea and nothing delivered moves.
+  const oneSurface = (box) => {
+    const { count, total } = landIn(box);
+    return count === 0 || (SIZE !== "landscape" && count === total);
+  };
   // ── the credit: one line over open sea, in the lowest, leftmost corner clear of every word and mark ────────────
   const taken = [...names.map((n) => n.box), ...waterNames.map((n) => n.box), stationBox, ringBox, ...dotBoxes];
   let creditAt = null;
   let credit = null;
-  for (const form of credits) {
+  // THE BAND SEATS THE CREDIT, AND NOTHING IS SEARCHED FOR IT. Where the frame stacks a band of ground under the map
+  // (`bandFor`), the credit is not looking for a surface: its place is the band's own, and its form is the longest
+  // the frame's line budget holds on one line rather than the shortest that happened to fit a patch of the map.
+  if (band) {
+    const { register, ...rest } = creditInBand(credits);
+    credit = rest;
+    creditAt = { ...band.sourceAt };
+  }
+  for (const form of credit ? [] : credits) {
     search: for (let cy = stage.height - vInset - form.height; cy >= vInset; cy -= SEAT_STEP)
       for (let cx = inset; cx + form.width <= stage.width - inset; cx += SEAT_STEP) {
         const box = { x: cx, y: cy, width: form.width, height: form.height };
-        if (landIn(box).count || taken.some((t) => touches(box, t, gap))) continue;
+        if (!oneSurface(box) || taken.some((t) => touches(box, t, gap))) continue;
         creditAt = { x: cx, y: cy };
         break search;
       }
@@ -332,9 +474,12 @@ export function buildDirection(id, { subject, states, copy }, { measured = undef
 
   const props = {
     frame: stage,
+    /** The ground band under the map at square — `null` at a frame whose map has a surface for the credit. */
+    band,
     registers: { display: titleCard.register, eyebrow: registers.eyebrow, value, source: sourceRegister },
     titleCard,
-    credit: { ...credit, at: creditAt, haloColour: sea },
+    // In the band the credit's halo is the band's own ground: it is struck on what it stands on, as it is on the sea.
+    credit: { ...credit, at: creditAt, haloColour: band ? ground : sea },
     colours,
     strokes,
     station: { lines: stationLines, capacityTexts },

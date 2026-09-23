@@ -172,6 +172,11 @@ const title = [
   `Par habitant, ce n’est pas l’Allemagne : la ${NAMES[top]} accueille ${one(rate(top))} Ukrainiens pour 1 000 habitants`,
   `Par habitant, la ${NAMES[top]} accueille ${one(rate(top))} Ukrainiens pour 1 000 habitants`,
   `La protection temporaire, par habitant`,
+  /** A FOURTH FORM, AND IT EXISTS FOR ONE MEASUREMENT. At 1080x1080 `nocturne` sets the display
+   *  register in Montserrat at 32px, where even the third form takes three lines of a 428px column
+   *  — 232px, or 43 % of the plate, before the grid starts. The grid needs 202px to give a hexagon
+   *  the 31.8px its own code owes, and 540 − 232 − 164 of footer is 144. */
+  `La ${NAMES[top]}, pas l’Allemagne`,
 ];
 const limits = [
   `Un hexagone par pays, tous de même taille, rangés à peu près comme la carte : la couleur est le ` +
@@ -190,13 +195,21 @@ const reading = [
 ];
 const source = `Sources : Eurostat (migr_asytpsm), ${month} · population 2023, via Our World in Data`;
 const unit = "Ukrainiens sous protection temporaire pour 1 000 habitants";
-const originNote = `L’Ukraine est sur la carte et hors du compte : c’est d’elle que viennent les personnes que les autres cases comptent.`;
+/** TWO FORMS OF THE NOTE THAT EXPLAINS THE ONE HEXAGON WHOSE COLOUR MEANS SOMETHING ELSE, longest
+ *  first. The ladder spends the short one before it touches the standfirst: measured at 1080x1080,
+ *  the long form takes three lines of a 428px column in `nocturne` and those three lines are a
+ *  sixth of the grid's band. What may NOT happen is the note going altogether — a hexagon drawn in
+ *  the pale class with no line saying why is exactly the silent decision invariant 1 forbids. */
+const originNote = [
+  `L’Ukraine est sur la carte et hors du compte : c’est d’elle que viennent les personnes que les autres cases comptent.`,
+  `L’Ukraine est sur la carte, hors du compte.`,
+];
 
 const textPerRegister = {
   display: title.join(" "),
   eyebrow: EYEBROW,
   body: `${limits.join(" ")} ${source}`,
-  axis: `${unit} ${originNote} ${BREAKS.join(" ")} ${tiles.map((t) => t.code).join(" ")}`,
+  axis: `${unit} ${originNote.join(" ")} ${BREAKS.join(" ")} ${tiles.map((t) => t.code).join(" ")}`,
   annot: reading.join(" "),
   value: tiles.map((t) => (t.rate === null ? "" : one(t.rate))).join(" "),
 };
@@ -255,9 +268,10 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       name: nameAtSize(id, SIZE),
       scale: FRAME.scale,
     });
-    console.log(`  -> renders/${id}.png\n`);
+    console.log(`  -> renders/${nameAtSize(id, SIZE)}.png\n`);
   } catch (error) {
-    for (const ext of ["png", "svg"]) await rm(join(OUT, `${id}.${ext}`), { force: true });
+    for (const ext of ["png", "svg"])
+      await rm(join(OUT, `${nameAtSize(id, SIZE)}.${ext}`), { force: true });
     refused.push({ id, why: error.message });
     console.log(`  REFUSED — ${error.message}\n`);
   }

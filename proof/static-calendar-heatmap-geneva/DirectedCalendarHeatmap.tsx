@@ -49,6 +49,7 @@ export type Streak = { from: Day; to: Day; length: number; threshold: number };
 export function DirectedCalendarHeatmap({
   days,
   months,
+  monthsShort,
   breaks,
   streak,
   unit,
@@ -65,12 +66,16 @@ export function DirectedCalendarHeatmap({
 }: {
   days: Day[];
   months: string[];
+  /** The same twelve names, abbreviated, for a frame whose row gutter cannot hold the full ones. */
+  monthsShort?: string[];
   breaks: number[];
   streak: Streak;
   unit: string;
-  title: string;
-  limits: string;
-  reading: string;
+  /** The headline, the standfirst and the reading line in FORMS, longest first — R3's rung and
+   *  R4's. Landscape takes the first of each and has never needed another. */
+  title: string[];
+  limits: string[];
+  reading: string[];
   source: string;
   alt: string;
   eyebrow: string;
@@ -82,6 +87,9 @@ export function DirectedCalendarHeatmap({
   frame?: { width: number; height: number };
 }) {
   const { width, height } = frame ?? FRAME;
+  /** THE FORM THE FRAME ASKS FOR, read off the frame rather than passed in, so one component serves
+   *  the three export sizes without the runner having to tell it which it is drawing. */
+  const SIZE = width > height ? "landscape" : width === height ? "square" : "portrait";
   const { ink, muted, grid } = deriveFurniture(direction.ground);
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);
@@ -120,21 +128,14 @@ export function DirectedCalendarHeatmap({
 
   // ── header and footer ─────────────────────────────────────────────────────
   const column = width - PAD * 2;
-  const titleLines = wrap(set(title, display), column, display);
   const titleLead = leadOf(display);
   const bodyLead = leadOf(body);
-  const limitLines = wrap(set(limits, body), column, body);
   const sourceLines = wrap(set(source, body), column, body);
-  const readingLines = wrap(set(reading, annot), column, annot);
 
   const eyebrowBaseline = PAD + eyebrowReg.fontSize;
   const titleTop =
     eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
-  const limitsTop =
-    titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
   const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
-  const readingTop =
-    sourceTop - readingLines.length * bodyLead - gapOf(annot, READING_TO_SOURCE);
 
   // ── the grid ──────────────────────────────────────────────────────────────
   const keyed = on("the-key-prints-its-breaks-in-the-data-s-units");
@@ -143,13 +144,83 @@ export function DirectedCalendarHeatmap({
   const axisBand = bandOf(axis);
 
   const keyHeight = keyed ? axisBand.ascent + axisBand.descent + 16 : 0;
-  const plotTop =
-    limitsTop + limitLines.length * bodyLead + annotBand.ascent * 1.6;
-  const plotBottom = readingTop - gapOf(annot, 0.7857) - keyHeight - 8;
 
-  const monthRoom = Math.max(...months.map((m) => widthOf(set(m, axis), axis))) + 12;
+  /** THE ROW GUTTER TAKES THE NAMES IT CAN AFFORD. « Septembre » is 100px of the 424 this plate has
+   *  at 1080 wide — a quarter of the frame spent naming the rows, and the 31 columns left holding
+   *  10px each. The full names are kept while they cost less than a sixth of the column; past that
+   *  the abbreviations are taken, and the grid gets the width back. Landscape is 960 wide and the
+   *  full names cost a tenth of it, so nothing changes there. */
+  const roomFor = (names: string[]) =>
+    Math.max(...names.map((m) => widthOf(set(m, axis), axis))) + 12;
+  const monthNames =
+    monthsShort && roomFor(months) > column / 6 && roomFor(monthsShort) < roomFor(months)
+      ? monthsShort
+      : months;
+  const monthRoom = roomFor(monthNames);
   const gridLeft = PAD + monthRoom;
   const gridRight = width - PAD;
+
+  /** WHAT THE TWELVE ROWS OWE. Every row is named on its own midline, so the rows cannot be closer
+   *  together than the run that names them — which is what failed at square, where 100px of plot
+   *  divided by twelve gave 8px rows under an 11px name. */
+  const rowOwes = axisBand.ascent + axisBand.descent + 2;
+  const gridOwes = SIZE === "landscape" ? 0 : 12 * rowOwes;
+
+  const layoutFor = (t: number, l: number, r: number) => {
+    const titleLines = wrap(set(title[t], display), column, display);
+    const limitLines = wrap(set(limits[l], body), column, body);
+    const readingLines = r < 0 ? [] : wrap(set(reading[r], annot), column, annot);
+    const limitsTop = titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
+    const readingTop =
+      sourceTop - readingLines.length * bodyLead - gapOf(annot, READING_TO_SOURCE);
+    const plotTop = limitsTop + limitLines.length * bodyLead + annotBand.ascent * 1.6;
+    const plotBottom =
+      (readingLines.length ? readingTop : sourceTop - bodyLead * 1.2) -
+      gapOf(annot, 0.7857) -
+      keyHeight -
+      8;
+    return {
+      titleLines,
+      limitLines,
+      readingLines,
+      limitsTop,
+      readingTop,
+      plotTop,
+      plotBottom,
+      plot: plotBottom - plotTop,
+    };
+  };
+  const rungs: Array<{ title: number; limit: number; reading: number }> = [];
+  for (let t = 0; t < title.length; t++)
+    for (let l = 0; l < limits.length; l++) {
+      for (let r = 0; r < reading.length; r++) rungs.push({ title: t, limit: l, reading: r });
+      rungs.push({ title: t, limit: l, reading: -1 });
+    }
+  let taken = rungs[0];
+  let layout = layoutFor(taken.title, taken.limit, taken.reading);
+  let best = layout.plot;
+  for (const rung of rungs) {
+    const candidate = layoutFor(rung.title, rung.limit, rung.reading);
+    best = Math.max(best, candidate.plot);
+    taken = rung;
+    layout = candidate;
+    if (candidate.plot >= gridOwes) break;
+  }
+  if (layout.plot < gridOwes)
+    throw new Error(
+      `the copy leaves the twelve month rows ${best.toFixed(0)}px at its most generous rung and ` +
+        `they owe ${gridOwes.toFixed(0)}px at ${width}x${height} — ${rowOwes.toFixed(0)}px each, ` +
+        `which is what a month's name needs not to print into the month below it.`,
+    );
+  const { titleLines, limitLines, readingLines, limitsTop, readingTop, plotTop, plotBottom } = layout;
+  if (SIZE !== "landscape")
+    console.log(
+      `  ladder: headline ${taken.title + 1}, standfirst ${taken.limit + 1}, reading ` +
+        (taken.reading < 0 ? "dropped" : `form ${taken.reading + 1}`) +
+        ` · rows ${layout.plot.toFixed(0)}px, floor ${gridOwes.toFixed(0)}px · months ` +
+        (monthNames === months ? "in full" : "abbreviated"),
+    );
+
   /** CELLS NEED NOT BE SQUARE. Forced square, a 31 x 12 grid is bound by the frame's height and
    *  leaves half the plate empty — measured on the first render, where the year stopped at the
    *  middle of the page. The cell takes the width it has and the height it has, capped at 2:1 so it
@@ -158,8 +229,21 @@ export function DirectedCalendarHeatmap({
   const cellH = Math.min((plotBottom - plotTop) / 12, cellW * 2);
   const gap = Math.max(Math.min(cellW, cellH) * 0.08, 0.6);
 
+  /** THE CAP LEAVES SLACK, AND THE SLACK IS SPLIT RATHER THAN DUMPED AT THE FOOT.
+   *
+   *  `cellH` is capped at twice `cellW` so twelve rows do not become twelve bar charts, and at
+   *  1080x1920 that cap bites hard: the rungs hand the grid 447px and the twelve rows only want
+   *  312, so 135px fell between the last row and the key — a hole a reader reads as something
+   *  missing. The grid keeps its own height and the leftover is split above and below it, and the
+   *  key follows the ROWS rather than the room they were offered. Landscape's cells are nowhere
+   *  near the cap, so its slack is zero and nothing there moves. */
+  const gridHeight = cellH * 12;
+  const slack = Math.max(0, plotBottom - plotTop - gridHeight);
+  const gridTop = plotTop + slack / 2;
+  const gridBottom = gridTop + gridHeight;
+
   const xOf = (day: number) => gridLeft + (day - 1) * cellW;
-  const yOf = (month: number) => plotTop + month * cellH;
+  const yOf = (month: number) => gridTop + month * cellH;
 
   /** ONE HUE, SIX BINS. The poles are the direction's own: a pale step off the ground at the cold
    *  end, the accent deepened toward the ink at the warm end. A ramp built this way reads
@@ -238,7 +322,7 @@ export function DirectedCalendarHeatmap({
         </text>
       ))}
 
-      {months.map((name, month) => (
+      {monthNames.map((name, month) => (
         <text
           key={name}
           x={gridLeft - 8}
@@ -254,7 +338,7 @@ export function DirectedCalendarHeatmap({
         <text
           key={`day-${day}`}
           x={xOf(day) + cellW / 2}
-          y={plotTop - axisBand.descent - 4}
+          y={gridTop - axisBand.descent - 4}
           textAnchor="middle"
           {...line(axis)}
           fill={mutedInk}
@@ -321,7 +405,7 @@ export function DirectedCalendarHeatmap({
       {keyed &&
         (() => {
           const swatch = Math.max(cellW * 1.6, 26);
-          const top = plotBottom + 12;
+          const top = gridBottom + 12;
           const left = gridLeft;
           return (
             <g>

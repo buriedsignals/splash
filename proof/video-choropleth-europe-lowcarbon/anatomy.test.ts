@@ -9,7 +9,12 @@ import {
   subjectRadiusPx,
   unmeasuredNeighboursOf,
 } from "./build.mjs";
-import measured from "./measured.json";
+import measuredAtEverySize from "./measured.json";
+
+/** THE LANDSCAPE ENTRY: `measured.json` is keyed by export size (`measure.mjs`), and these tests read the
+ *  landscape picture because `buildDirection` here runs without `--size`, so `build.mjs`'s own `SIZE` is
+ *  landscape. A run at another size measures that frame and reads that entry. */
+const measured = (measuredAtEverySize as any).landscape;
 import { mapStateAt } from "./scene.mjs";
 
 /**

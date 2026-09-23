@@ -18,6 +18,8 @@ type Slot = "display" | "eyebrow" | "value" | "source";
 
 export type LocatorFrameProps = {
   frame: { width: number; height: number };
+  /** The ground band under the map — the square frame's own composition (`build.mjs`, `bandFor`); `null` elsewhere. */
+  band: { x: number; y: number; width: number; height: number } | null;
   registers: Record<Slot, Register>;
   titleCard: { register: Register; eyebrow: Line; title: Line[] };
   credit: { at: { x: number; y: number }; halo: number; haloColour: string; lines: Line[] };
@@ -39,7 +41,7 @@ function Word({ line, register, fill, opacity = 1, halo }: { line: Line; registe
 }
 
 export function LocatorFrame(props: LocatorFrameProps & { at: number; liveMap: (frame: number) => ReactNode; svgRef?: Ref<SVGSVGElement> }) {
-  const { frame, registers: r, colours, credit, titleCard, station } = props;
+  const { frame, registers: r, colours, credit, titleCard, station, band } = props;
   const scene = sceneAt(props as never, props.at);
   const capacity = station.capacityTexts[String(scene.capacity)];
 
@@ -47,6 +49,12 @@ export function LocatorFrame(props: LocatorFrameProps & { at: number; liveMap: (
     <div style={{ position: "absolute", left: 0, top: 0, width: frame.width, height: frame.height, background: colours.ground }}>
       {props.liveMap(props.at)}
       <svg ref={props.svgRef} style={{ position: "absolute", left: 0, top: 0 }} xmlns="http://www.w3.org/2000/svg" width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
+        {/* ── THE GROUND BAND: the square frame's foot, the credit on the direction's own ground rather than on a
+            surface of the map. It is drawn over the live map because the map is mounted on the WHOLE frame and
+            measured there; the two cameras are fitted and raised into the band above it (`map-plan.mjs`,
+            `camerasOf`), so what this covers is the ground that fit left over, not a slice taken off the map. ── */}
+        {band ? <rect x={band.x} y={band.y} width={band.width} height={band.height} fill={colours.ground} /> : null}
+
         {/* ── THE STATION'S NAME AND ITS CAPACITY, counted in measured texts. ── */}
         <g opacity={Math.min(1, scene.subject * 3)}>
           <Word line={station.lines.name} register={r.value} fill={colours.text.station} halo={{ colour: station.lines.haloColour, width: station.lines.halo }} />

@@ -100,15 +100,26 @@ const to = india.points[india.points.length - 1].rank;
 // the French ordinal `ᵉ` (U+1D49), and no face on that ladder covers both. The guard fired before a
 // mark was drawn, which is what it is for: a missing glyph is a silent fallback at render time and
 // a different typeface in the delivered file.
-const title = `L’Inde est passée du ${from}e au ${to}e rang mondial des émetteurs de CO2`;
-const limits = `Rang mondial par émissions annuelles de CO2, ${FIRST}–${LAST}. Les ${facts.entitiesEver} pays qui ont occupé une place dans le top ${SLOTS} au moins une fois sont dessinés ; ceux qui en sont sortis s’arrêtent là où ils sont sortis. Le rang est une position, pas une taille — rien ici ne dit de combien.`;
+/** THE HEADLINE AND THE STANDFIRST IN FORMS, longest first — R3's rung, written as copy. Landscape
+ *  takes the first of each; at 1080x1080 the first headline runs to four lines of display and the
+ *  ten rank rows were left a 150px box with the year ticks printed through each other. */
+const title = [
+  `L’Inde est passée du ${from}e au ${to}e rang mondial des émetteurs de CO2`,
+  `L’Inde est passée du ${from}e au ${to}e rang mondial`,
+  `L’Inde, du ${from}e au ${to}e rang`,
+];
+const limits = [
+  `Rang mondial par émissions annuelles de CO2, ${FIRST}–${LAST}. Les ${facts.entitiesEver} pays qui ont occupé une place dans le top ${SLOTS} au moins une fois sont dessinés ; ceux qui en sont sortis s’arrêtent là où ils sont sortis. Le rang est une position, pas une taille — rien ici ne dit de combien.`,
+  `Rang mondial par émissions annuelles de CO2, ${FIRST}–${LAST}. Les ${facts.entitiesEver} pays passés par le top ${SLOTS} sont dessinés ; ceux qui en sont sortis s’arrêtent là. Le rang est une position, pas une taille.`,
+  `Rang mondial par émissions annuelles de CO2, ${FIRST}–${LAST}. Le rang est une position, pas une taille.`,
+];
 const source =
   "Source : Global Carbon Budget (2025), via Our World in Data · combustibles fossiles et industrie uniquement";
 
 const textPerRegister = {
-  display: title,
+  display: title.join(" "),
   eyebrow: EYEBROW,
-  body: `${limits} ${source}`,
+  body: `${limits.join(" ")} ${source}`,
   axis: years.filter((y) => y % 5 === 0).join(" "),
   annot: everIn.join(" "),
   value: everIn.map((e) => `1 ${e}`).join(" "),
@@ -162,5 +173,5 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
     name: nameAtSize(id, SIZE),
     scale: EXPORT_FRAME.scale,
   });
-  console.log(`  -> renders/${id}.png\n`);
+  console.log(`  -> renders/${nameAtSize(id, SIZE)}.png\n`);
 }

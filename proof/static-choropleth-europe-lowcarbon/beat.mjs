@@ -550,11 +550,30 @@ export function copyOf(subject) {
   const oddValue = value.get(ODD_ONE);
   /** The sentence in the panel. The RING that marks its subject on the map is a layer now, placed
    *  from the shape's own seat, so the callout carries no position of its own any more. */
+  /** THE CALLOUT IS A LADDER TOO, and it was the one block of the panel that was not.
+   *
+   *  Measured at 540x540 on 2026-09-23: the stacked layout's shortest rung left the map 143px where
+   *  a third of the usable height is 145, and the beat refused by two pixels. Every other block —
+   *  headline, standfirst, reading line — could give a line back; the callout and the key could not,
+   *  so the ladder walked 144 rungs that all carried the same two lines of it. One rung of this
+   *  ladder is worth one `annotLead`, which is an order of magnitude more than the shortfall.
+   *
+   *  The forms shorten; they do not drop. The subject, its value and the fact that it is the
+   *  exception are what the ring on the map is the other half of, and a rung that lost them would
+   *  leave an accent ring on the plate with nothing in the panel to explain it. What the rungs give
+   *  up is the neighbours' ceiling first (a second fact, stated in a second sentence), then the
+   *  verb. */
   const CALLOUT = {
     iso: ODD_ONE,
-    lines: [
-      `${french(ODD_ONE)}, ${one(oddValue.lowCarbon)} %, est le seul du groupe hors du nord-ouest. ` +
-        `Ses ${neighbours.length} voisins sont tous sous ${NEIGHBOUR_CEILING} %.`,
+    forms: [
+      [
+        `${french(ODD_ONE)}, ${one(oddValue.lowCarbon)} %, est le seul du groupe hors du nord-ouest. ` +
+          `Ses ${neighbours.length} voisins sont tous sous ${NEIGHBOUR_CEILING} %.`,
+      ],
+      [
+        `${french(ODD_ONE)}, ${one(oddValue.lowCarbon)} %, est le seul du groupe hors du nord-ouest.`,
+      ],
+      [`${french(ODD_ONE)}, ${one(oddValue.lowCarbon)} % : le seul hors du nord-ouest.`],
     ],
   };
 
@@ -594,7 +613,7 @@ export function copyOf(subject) {
     eyebrow: EYEBROW,
     body: `${limits.join(" ")} ${source}`,
     axis: `${above.map((r) => r.label).join(" ")} ${ranked.slice(-3).map((r) => r.label).join(" ")} ${BREAKS.map(format).join(" ")} part bas-carbone donnée non rapportée`,
-    annot: `${reading.join(" ")} ${CALLOUT.lines.join(" ")} ${WATERS.flatMap((w) => w.forms).join(" ")}`,
+    annot: `${reading.join(" ")} ${CALLOUT.forms.flat().join(" ")} ${WATERS.flatMap((w) => w.forms).join(" ")}`,
     value: ranked.map((r) => format(r.lowCarbon)).join(" "),
   };
 

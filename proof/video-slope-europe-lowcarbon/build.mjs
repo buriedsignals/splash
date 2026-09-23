@@ -7,7 +7,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { adjustToContrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
+import { frameInsetFor, sizeFor, videoExportSize } from "#shared/chart-video/sizes.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
@@ -21,7 +21,9 @@ import { SLOPE_VIDEO_TIMING } from "./timing-contract.ts";
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const ROOT = join(HERE, "..", "..");
 export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
-export const SIZE = "landscape";
+/** The size this run exports at — `--size`, landscape when nothing asks. R2 names three and
+ *  everything under it already answered per size; only this line pinned the beat to one. */
+export const SIZE = videoExportSize();
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 const NB = "\u00A0";
 const LABEL_GAP = 0.4;
@@ -90,7 +92,6 @@ export function buildDirection(id, { subject, states, copy }) {
     return { text: cased, width: widthOf(cased, r) };
   };
   const gap = LABEL_GAP * axis.lead;
-  const band = bandOf(BAND_PROBE, axis);
 
   const titleCard = titleCardFor({ registers, eyebrow: copy.eyebrow, title: copy.title, size: SIZE, eyebrowToDisplay: EYEBROW_TO_DISPLAY });
   const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k, ...CREDIT_ONE_LINE });
@@ -109,13 +110,45 @@ export function buildDirection(id, { subject, states, copy }) {
   const connector = 1.2 * gap;
   const rail = { left: inset + leftWidth + connector + gap, right: stage.width - inset - rightWidth - connector - gap };
   const railLabels = copy.rails.map((t) => measure(t, axis));
-  const top = vInset + band.ascent + band.descent + gap + band.ascent;
-  const foot = stage.height - vInset - credit.height - 2 * gap - band.descent;
+
+  // WHERE THE DATES SIT IS DECIDED BY WHETHER THE COUNTER CAN STAND BETWEEN THE RAILS.
+  // The counter is centred on the space between the two rails and the dates are centred ON them, so
+  // at 1920 — 1100px of rail span against a 400px counter — the three share one row with air to
+  // spare. At 1080 the two label columns take 700px of the frame and the rails stand 130px apart:
+  // « 1 dépasse la France » is 480px wide and was drawn straight through « 2000 » and « 2024 »,
+  // which no counter in this beat could see. So when the counter cannot stand between the rails,
+  // the dates move to the rails' FEET — where a date belongs on any other chart — and the counter
+  // keeps the head row to itself. Landscape's counter fits, so nothing there moves.
+  const valueBand = bandOf(BAND_PROBE, registers.value);
+  const counterWidth = Math.max(...[...Array.from({ length: lines.length + 1 }, (_, i) => copy.rose(i)), copy.passed(0), copy.passed(1)].map((t) => widthOf(applyCase(t, registers.value.transform), registers.value))) * (1 + DRAWN_WIDER);
+  const probe = bandOf(BAND_PROBE, axis);
+  const counterFits = counterWidth + 2 * gap <= rail.right - rail.left;
+  const creditTop = stage.height - vInset - credit.height;
+  const counterBaseline = vInset + valueBand.ascent;
+  const railBaseline = counterFits ? vInset + probe.ascent : creditTop - gap - probe.descent;
+  const headFoot = counterFits ? vInset + probe.ascent + probe.descent : counterBaseline + valueBand.descent;
+  const stackFoot = counterFits ? creditTop - 2 * gap : railBaseline - probe.ascent - gap;
+  // THE RAIL'S BAND IS A LADDER, the same shape as the title's forms and the credit's. `BAND_PROBE`
+  // is the worst case a register could ever set — a capital under an acute, over four descenders —
+  // and at 1920x1080 this rail can afford to reserve it. At 1080x1080 it cannot: measured in creme,
+  // the probe bands 37.3 + 9.5px where the sixteen names and values this rail actually sets band
+  // 30.3 + 9.5px, so seven pixels a row are reserved for an accent no word on the rail carries —
+  // 105px over the stack, against the 68px by which sixteen labels missed the rail. The first rung
+  // is the probe, the second the rail's own words; `spread` below still refuses when neither seats
+  // sixteen, so the pitch is never taken under the height of the words it holds apart. Landscape
+  // never leaves the first rung, so nothing there moves.
+  const railWords = [...lefts, ...rights, ...railLabels].map((t) => t.text).join("");
+  const drawnBand = bandOf(railWords, axis);
+  const seat = (b, p) => ({ band: b, top: headFoot + gap + b.ascent, foot: stackFoot - b.descent, pitch: p * (b.ascent + b.descent) });
+  // The third rung takes the air OUT of the pitch and leaves the words their own height: 1,08 is the
+  // separation this beat prefers, 1,0 is the least two rows can stand at without touching, and there
+  // is no rung under it because there is nothing under it but overlap.
+  const rungs = [seat(probe, PITCH), seat(drawnBand, PITCH), seat(drawnBand, 1)];
+  const { band, top, foot, pitch } = rungs.find((r) => (lines.length - 1) * r.pitch <= r.foot - r.top) ?? rungs.at(-1);
   const values = lines.flatMap((d) => [d.from, d.to]);
   const lo = Math.min(...values);
   const hi = Math.max(...values);
   const y = (v) => foot - ((v - lo) / (hi - lo)) * (foot - top);
-  const pitch = PITCH * (band.ascent + band.descent);
   const leftY = spread(lines.map((d) => y(d.from)), pitch, top, foot);
   const rightY = spread(lines.map((d) => y(d.to)), pitch, top, foot);
 
@@ -165,19 +198,19 @@ export function buildDirection(id, { subject, states, copy }) {
     },
     strokes: { line: (direction.stroke?.data ?? 2) * k * 0.8, pair: (direction.stroke?.data ?? 2) * k * 1.4, rail: (direction.stroke?.hairline ?? 0.6) * k, connector: (direction.stroke?.hairline ?? 0.6) * k },
     rail: { ...rail, top: top - band.ascent - gap / 2, foot: foot + band.descent },
-    railLabels: railLabels.map((t, i) => ({ ...t, x: (i === 0 ? rail.left : rail.right) - t.width / 2, y: vInset + band.ascent })),
+    railLabels: railLabels.map((t, i) => ({ ...t, x: (i === 0 ? rail.left : rail.right) - t.width / 2, y: railBaseline })),
     lines: drawn,
     held: OVERTAKEN,
     climber: OVERTOOK,
     counters: (() => {
       const value = registers.value;
-      const vBand = bandOf(BAND_PROBE, value);
       const texts = (f, n) => Object.fromEntries(Array.from({ length: n + 1 }, (_, i) => [String(i), measure(f(i), value)]));
       const rose = texts(copy.rose, lines.length);
       const passed = texts(copy.passed, 1);
-      const widest = Math.max(...[...Object.values(rose), ...Object.values(passed)].map((t) => t.width)) * (1 + DRAWN_WIDER);
-      const x = (rail.left + rail.right) / 2 - widest / 2;
-      return { rose, passed, x, y: vInset + vBand.ascent, value };
+      // Centred between the rails when it stands there, centred on the frame when it has the row to
+      // itself: a counter wider than the rails are apart is no longer a word about the gap.
+      const x = counterFits ? (rail.left + rail.right) / 2 - counterWidth / 2 : (stage.width - counterWidth) / 2;
+      return { rose, passed, x, y: counterBaseline, value };
     })(),
     cross,
     dotR: 0.14 * axis.lead,

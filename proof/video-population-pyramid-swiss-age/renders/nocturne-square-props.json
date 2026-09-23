@@ -1,0 +1,595 @@
+{
+  "frame": {
+    "width": 1080,
+    "height": 1080
+  },
+  "registers": {
+    "display": {
+      "fontFamily": "Montserrat",
+      "fontSize": 87.25,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 9.270312500000001,
+      "transform": "uppercase",
+      "lead": 106.4428362,
+      "fill": "#FFFFFF"
+    },
+    "eyebrow": {
+      "fontFamily": "Montserrat",
+      "fontSize": 36,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 9.852631578947369,
+      "transform": "uppercase",
+      "lead": 43.1994096,
+      "fill": "#4FE0C0"
+    },
+    "value": {
+      "fontFamily": "Montserrat",
+      "fontSize": 53.05,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 63.65912998,
+      "fill": "#4FE0C0"
+    },
+    "figure": {
+      "fontFamily": "Montserrat",
+      "fontSize": 37.89,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 45.467378604000004,
+      "fill": "#4FE0C0"
+    },
+    "axis": {
+      "fontFamily": "Montserrat",
+      "fontSize": 37.89,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 4.546799999999999,
+      "transform": "none",
+      "lead": 45.467378604000004,
+      "fill": "#a5a4b8"
+    },
+    "source": {
+      "fontFamily": "Montserrat",
+      "fontSize": 36,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 4.319999999999999,
+      "transform": "none",
+      "lead": 43.1994096,
+      "fill": "#a5a4b8"
+    }
+  },
+  "titleCard": {
+    "form": 0,
+    "register": {
+      "fontFamily": "Montserrat",
+      "fontSize": 87.25,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 9.270312500000001,
+      "transform": "uppercase",
+      "lead": 106.4428362,
+      "fill": "#FFFFFF"
+    },
+    "eyebrow": {
+      "text": "DÉMOGRAPHIE · SUISSE, 2023",
+      "x": 72,
+      "y": 231.9320068359375,
+      "width": 797.5476324683741
+    },
+    "title": [
+      {
+        "text": "LES FEMMES",
+        "x": 72,
+        "y": 346.52681550078125,
+        "width": 657.8868196487426
+      },
+      {
+        "text": "PASSENT",
+        "x": 72,
+        "y": 452.96965170078124,
+        "width": 463.25386066436766
+      },
+      {
+        "text": "DEVANT LES",
+        "x": 72,
+        "y": 559.4124879007812,
+        "width": 636.5105989456176
+      },
+      {
+        "text": "HOMMES À",
+        "x": 72,
+        "y": 665.8553241007812,
+        "width": 572.9489473342895
+      },
+      {
+        "text": "PARTIR DE",
+        "x": 72,
+        "y": 772.2981603007813,
+        "width": 545.2252717971802
+      },
+      {
+        "text": "60-64 ANS",
+        "x": 72,
+        "y": 878.7409965007813,
+        "width": 536.5003119468689
+      }
+    ]
+  },
+  "credit": {
+    "form": 0,
+    "lines": [
+      {
+        "text": "Source : ONU, World Population",
+        "x": 5.391720581054688,
+        "y": 32.10372619628906,
+        "width": 694.6559598731994
+      },
+      {
+        "text": "Prospects (2024), via Our World in Data",
+        "x": 5.391720581054688,
+        "y": 75.30313579628907,
+        "width": 862.4880596733093
+      }
+    ],
+    "halo": 10.783441162109376,
+    "width": 891,
+    "height": 88,
+    "at": {
+      "x": 72,
+      "y": 920
+    }
+  },
+  "colours": {
+    "ground": "#111044",
+    "grid": "#3c3b66",
+    "men": "#53e1c1",
+    "women": "#a7a6b9",
+    "common": "#45456d",
+    "rule": "#ffffff",
+    "text": {
+      "eyebrow": "#53e1c1",
+      "title": "#ffffff",
+      "men": "#53e1c1",
+      "women": "#a7a6b9",
+      "band": "#ffffff",
+      "axis": "#a7a6b9",
+      "zoom": "#ffffff"
+    }
+  },
+  "inset": 72,
+  "spine": {
+    "left": 454.0054863594063,
+    "right": 625.9945136405937
+  },
+  "halfWidth": 382.0054863594063,
+  "unit": 0.0009550137158985157,
+  "zoomBy": 10,
+  "crossing": 12,
+  "rows": [
+    {
+      "band": "0-4",
+      "male": 222640,
+      "female": 211390,
+      "y": 833.3349206293848,
+      "h": 27.20617816970857,
+      "label": {
+        "text": "0-4",
+        "width": 73.7718305240631,
+        "x": 503.1140847379684,
+        "y": 860.1995148411922
+      }
+    },
+    {
+      "band": "5-9",
+      "male": 232332,
+      "female": 220041,
+      "y": 798.4552050271943,
+      "h": 27.20617816970857,
+      "label": null
+    },
+    {
+      "band": "10-14",
+      "male": 228691,
+      "female": 216464,
+      "y": 763.5754894250039,
+      "h": 27.20617816970857,
+      "label": {
+        "text": "10-14",
+        "width": 109.27476148815154,
+        "x": 485.36261925592424,
+        "y": 790.4400836368113
+      }
+    },
+    {
+      "band": "15-19",
+      "male": 220727,
+      "female": 208556,
+      "y": 728.6957738228133,
+      "h": 27.20617816970857,
+      "label": null
+    },
+    {
+      "band": "20-24",
+      "male": 236265,
+      "female": 220433,
+      "y": 693.816058220623,
+      "h": 27.20617816970857,
+      "label": {
+        "text": "20-24",
+        "width": 124.20341794700622,
+        "x": 477.8982910264969,
+        "y": 720.6806524324304
+      }
+    },
+    {
+      "band": "25-29",
+      "male": 273794,
+      "female": 261093,
+      "y": 658.9363426184324,
+      "h": 27.20617816970857,
+      "label": null
+    },
+    {
+      "band": "30-34",
+      "male": 316016,
+      "female": 307406,
+      "y": 624.0566270162419,
+      "h": 27.20617816970857,
+      "label": {
+        "text": "30-34",
+        "width": 124.54442243785857,
+        "x": 477.7277887810707,
+        "y": 650.9212212280494
+      }
+    },
+    {
+      "band": "35-39",
+      "male": 321756,
+      "female": 314851,
+      "y": 589.1769114140515,
+      "h": 27.20617816970857,
+      "label": null
+    },
+    {
+      "band": "40-44",
+      "male": 316615,
+      "female": 311263,
+      "y": 554.297195811861,
+      "h": 27.20617816970857,
+      "label": {
+        "text": "40-44",
+        "width": 132.9560043117523,
+        "x": 473.52199784412386,
+        "y": 581.1617900236685
+      }
+    },
+    {
+      "band": "45-49",
+      "male": 301101,
+      "female": 298341,
+      "y": 519.4174802096705,
+      "h": 27.20617816970857,
+      "label": null
+    },
+    {
+      "band": "50-54",
+      "male": 318884,
+      "female": 317037,
+      "y": 484.53776460748,
+      "h": 27.20617816970857,
+      "label": {
+        "text": "50-54",
+        "width": 125.45378624410628,
+        "x": 477.2731068779469,
+        "y": 511.40235881928743
+      }
+    },
+    {
+      "band": "55-59",
+      "male": 337549,
+      "female": 332413,
+      "y": 449.65804900528957,
+      "h": 27.20617816970857,
+      "label": null
+    },
+    {
+      "band": "60-64",
+      "male": 292211,
+      "female": 293052,
+      "y": 414.7783334030991,
+      "h": 27.20617816970857,
+      "label": {
+        "text": "60-64",
+        "width": 129.0154434940338,
+        "x": 475.4922782529831,
+        "y": 441.6429276149065
+      }
+    },
+    {
+      "band": "65-69",
+      "male": 230172,
+      "female": 241017,
+      "y": 379.8986178009086,
+      "h": 27.20617816970857,
+      "label": null
+    },
+    {
+      "band": "70-74",
+      "male": 190920,
+      "female": 213252,
+      "y": 345.01890219871814,
+      "h": 27.20617816970857,
+      "label": {
+        "text": "70-74",
+        "width": 123.59717445583343,
+        "x": 478.2014127720833,
+        "y": 371.88349641052554
+      }
+    },
+    {
+      "band": "75-79",
+      "male": 166155,
+      "female": 194047,
+      "y": 310.1391865965277,
+      "h": 27.20617816970857,
+      "label": null
+    },
+    {
+      "band": "80-84",
+      "male": 110482,
+      "female": 144880,
+      "y": 275.2594709943372,
+      "h": 27.20617816970857,
+      "label": {
+        "text": "80-84",
+        "width": 130.909949710083,
+        "x": 474.5450251449585,
+        "y": 302.1240652061446
+      }
+    },
+    {
+      "band": "85-89",
+      "male": 60739,
+      "female": 96090,
+      "y": 240.37975539214676,
+      "h": 27.20617816970857,
+      "label": null
+    },
+    {
+      "band": "90-94",
+      "male": 23170,
+      "female": 48626,
+      "y": 205.5000397899563,
+      "h": 27.20617816970857,
+      "label": {
+        "text": "90-94",
+        "width": 128.71233015270232,
+        "x": 475.64383492364885,
+        "y": 232.3646340017637
+      }
+    },
+    {
+      "band": "95-99",
+      "male": 4616,
+      "female": 13502,
+      "y": 170.62032418776585,
+      "h": 27.20617816970857,
+      "label": null
+    },
+    {
+      "band": "100+",
+      "male": 385,
+      "female": 1586,
+      "y": 135.74060858557527,
+      "h": 27.20617816970857,
+      "label": {
+        "text": "100+",
+        "width": 96.92261023082733,
+        "x": 491.53869488458633,
+        "y": 162.60520279738267
+      }
+    }
+  ],
+  "plot": {
+    "top": 131.90383986933438,
+    "bottom": 864.3778675153343
+  },
+  "ruleY": 445.8212802890486,
+  "names": [
+    {
+      "text": "Hommes",
+      "width": 197.89948347473143,
+      "x": 164.05300144233743,
+      "y": 105.381103515625
+    },
+    {
+      "text": "Femmes",
+      "width": 189.52578047180174,
+      "x": 722.234366584396,
+      "y": 105.381103515625
+    }
+  ],
+  "ticks": [
+    {
+      "value": 200000,
+      "scale": "whole",
+      "text": "200k",
+      "width": 107.72126943626404
+    },
+    {
+      "value": 20000,
+      "scale": "close",
+      "text": "20k",
+      "width": 78.09128614768981
+    }
+  ],
+  "tickBaseline": 901.5857231189468,
+  "values": [
+    {
+      "row": 11,
+      "text": "5 136",
+      "width": 91.88324838876724,
+      "y": 459.87847023045487
+    },
+    {
+      "row": 12,
+      "text": "841",
+      "width": 60.320878744125366,
+      "y": 459.87847023045487
+    }
+  ],
+  "valueGap": 9.0934757208,
+  "zoomWord": {
+    "text": "×10",
+    "width": 84.88000154495239,
+    "x": 220.56274240722695,
+    "y": 308.5441091514571
+  },
+  "strokes": {
+    "grid": 1.81872
+  },
+  "halo": {
+    "axis": 11.3495751953125,
+    "value": 16.125076904296876,
+    "figure": 11.517043457031251
+  },
+  "states": [
+    {
+      "title": 1,
+      "furniture": 0,
+      "grow": 0,
+      "fold": 0,
+      "common": 0,
+      "detach": 0,
+      "camera": 0,
+      "cross": 0,
+      "back": 0,
+      "rebuild": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "grow": 1,
+      "fold": 0,
+      "common": 0,
+      "detach": 0,
+      "camera": 0,
+      "cross": 0,
+      "back": 0,
+      "rebuild": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "grow": 1,
+      "fold": 1,
+      "common": 1,
+      "detach": 1,
+      "camera": 0,
+      "cross": 0,
+      "back": 0,
+      "rebuild": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "grow": 1,
+      "fold": 1,
+      "common": 1,
+      "detach": 1,
+      "camera": 1,
+      "cross": 1,
+      "back": 0,
+      "rebuild": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "grow": 1,
+      "fold": 1,
+      "common": 1,
+      "detach": 1,
+      "camera": 1,
+      "cross": 1,
+      "back": 1,
+      "rebuild": 1,
+      "source": 1
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "grow": 1,
+      "fold": 1,
+      "common": 1,
+      "detach": 1,
+      "camera": 1,
+      "cross": 1,
+      "back": 1,
+      "rebuild": 1,
+      "source": 1
+    }
+  ],
+  "timing": {
+    "fps": 30,
+    "total": 531,
+    "establish": {
+      "start": 0,
+      "duration": 45
+    },
+    "reference": {
+      "start": 51,
+      "duration": 60
+    },
+    "reveal": {
+      "start": 111,
+      "duration": 150
+    },
+    "subject": {
+      "start": 261,
+      "duration": 120
+    },
+    "conclusion": {
+      "start": 381,
+      "duration": 90
+    },
+    "hold": {
+      "start": 471,
+      "duration": 60
+    }
+  },
+  "fontFamily": null,
+  "faces": [
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 400,
+      "weightTo": 400,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 500,
+      "weightTo": 500,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 600,
+      "weightTo": 600,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    }
+  ]
+}

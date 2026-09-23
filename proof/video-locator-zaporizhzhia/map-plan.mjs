@@ -37,10 +37,30 @@ export function fitCamera({ west, east, south, north }, stage, center = null) {
   return cameraFields({ center: lonLatOf([cx, cy]), zoom: Math.log2(worldPx / 512) });
 }
 
-/** The two fixed cameras: Europe's window, and the still's window centred on the station. */
-export function camerasOf(subject, window, stage) {
+/**
+ * THE CAMERA RAISED INTO ITS OWN BAND. MapLibre draws the camera's centre at the middle of the VIEWPORT, and the
+ * viewport is the whole frame — the map is mounted on it and `measure.mjs` photographs it there. Fitted into a band
+ * shorter than the frame and left centred, half of what the fit just bought would be drawn under the ground band.
+ * So the camera moves SOUTH by half the band's height, in the world units of its own zoom, which moves the ground
+ * NORTH on the frame by the same amount — the shift `camAlignY: -1` resolves to on a live stage
+ * (`shared/map-beat/scrolly.mjs`, `stageViewOf`), baked in here because the video jumps straight to `viewOf`.
+ */
+const raisedBy = (camera, spare) => (spare <= 0 ? camera : { ...camera, camY: camera.camY + spare / 2 / (512 * 2 ** camera.camZoom) });
+
+/**
+ * The two fixed cameras: Europe's window, and the still's window centred on the station.
+ *
+ * @param {{ width: number, height: number } | null} [mapBand]  The ground the two windows are fitted into when the
+ *   frame stacks a band of the direction's ground under the map (`build.mjs`, `bandFor`). Absent: the whole frame.
+ */
+export function camerasOf(subject, window, stage, mapBand = null) {
   const { biggest } = subject;
-  return { whole: fitCamera(window, stage), closeUp: fitCamera(subject.closeWindow, stage, [biggest.lon, biggest.lat]) };
+  const fit = mapBand ?? stage;
+  const spare = stage.height - fit.height;
+  return {
+    whole: raisedBy(fitCamera(window, fit), spare),
+    closeUp: raisedBy(fitCamera(subject.closeWindow, fit, [biggest.lon, biggest.lat]), spare),
+  };
 }
 
 /** Where MapLibre draws [lon, lat] at a camera with no pitch, bearing or padding — checked against the measured map. */
@@ -90,7 +110,7 @@ const wordLayer = (id, { at, text, register, ink, halo, haloColour }, opacity) =
  *   strokes: { border: number, region: number, ring: number }, rings: { far: number, near: number }, dotR: number,
  *   registers: { area: any }, cameras: { whole: any } }} input
  */
-export function mapPlanFor({ station, overviewName, colours, strokes, rings, dotR, registers, cameras }) {
+export function mapPlanFor({ station, overviewName, colours, strokes, rings, dotR, registers, cameras, stage = REFERENCE }) {
   const zoom = { $state: "zoom" };
   const country = { $state: "country" };
   const layers = [
@@ -150,8 +170,11 @@ export function mapPlanFor({ station, overviewName, colours, strokes, rings, dot
     projection: "mercator",
     // The water convention is taken (PALETTE.md): the sea a tint of the water hue, the land a step off the ground.
     tints: { water: colours.sea, land: colours.land },
-    referenceWidth: REFERENCE.width,
-    referenceHeight: REFERENCE.height,
+    // THE STAGE THE CAMERA WAS AUTHORED FOR, which is the stage this run draws at — not 1920 x 1080. A consumer that
+    // re-fits a plan to its own stage (`zoomShiftFor`) shifts the zoom by the ratio to these numbers, so a portrait
+    // plan that declared the landscape frame would hand it a ratio it never had.
+    referenceWidth: stage.width,
+    referenceHeight: stage.height,
     degreesPerPixel: 1,
     camera: { view: viewOf(cameras.whole) },
     layers,

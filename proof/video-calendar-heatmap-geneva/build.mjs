@@ -7,7 +7,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { adjustToContrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
+import { frameInsetFor, sizeFor, videoExportSize } from "#shared/chart-video/sizes.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
@@ -21,7 +21,9 @@ import { CALENDAR_VIDEO_TIMING } from "./timing-contract.ts";
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const ROOT = join(HERE, "..", "..");
 export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
-export const SIZE = "landscape";
+/** The size this run exports at — `--size`, landscape when nothing asks. R2 names three and
+ *  everything under it already answered per size; only this line pinned the beat to one. */
+export const SIZE = videoExportSize();
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 const NB = "\u00A0";
 const LABEL_GAP = 0.4;
@@ -78,9 +80,6 @@ export function buildDirection(id, { subject, states, copy }) {
   const shift = (band.ascent - band.descent) / 2;
 
   const titleCard = titleCardFor({ registers, eyebrow: copy.eyebrow, title: copy.title, size: SIZE, eyebrowToDisplay: EYEBROW_TO_DISPLAY });
-  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k, ...CREDIT_ONE_LINE });
-  const creditAt = { x: inset, y: stage.height - vInset - credit.height };
-
   // THE BAND OVER THE CALENDAR: the two counts at the left, the key at the right, no plate.
   const valueHalo = haloOf(value, k);
   const counterTexts = {
@@ -92,18 +91,71 @@ export function buildDirection(id, { subject, states, copy }) {
   const counters = { x: inset, warm: warmBaseline, run: runBaseline };
   const key = keyFor({ registers, k, counters: [], breaks: copy.breaks });
   const counterRight = inset + Math.max(...[...Object.values(counterTexts.warm), ...Object.values(counterTexts.run)].map((t) => t.width)) * (1 + DRAWN_WIDER);
-  const keyAt = { x: stage.width - inset - key.width, y: vInset - key.halo / 2 };
-  if (!(counterRight + 2 * gap < keyAt.x)) throw new Error("the counts and the key do not fit side by side over the calendar");
-  const bandBottom = Math.max(runBaseline + valueBand.descent, keyAt.y + key.height) + 1.5 * gap;
+  /**
+   * THE BAND IS ONE ROW OR TWO, AND THE FRAME DECIDES WHICH.
+   *
+   * Side by side is the right band when the frame can pay for it: the two counts read first and the key answers them
+   * from the right edge, over a calendar that then starts as high as it can. Measured 2026-09-23 that costs 725px of
+   * counts and 670px of key with air between them — comfortable across 1750px of landscape content width, impossible
+   * across the 936px portrait and square share, where the counts alone reach 840px and the key wants 804. The second
+   * rung drops the key onto its own row under the counts, set from the same left edge so the band reads as one block.
+   * It costs the calendar one key's height: measured, that leaves a 42.9px month row at square against the 40.9px its
+   * own name needs, so the row assertion below is the one that says whether the second rung was affordable.
+   */
+  const seatBand = (stacked) => {
+    const at = stacked ? { x: inset, y: runBaseline + valueBand.descent + gap - key.halo / 2 } : { x: stage.width - inset - key.width, y: vInset - key.halo / 2 };
+    if (!(at.x + key.width <= stage.width - inset + key.halo / 2)) return { why: `the key is ${key.width}px on a ${Math.round(stage.width - 2 * inset)}px content width` };
+    if (!stacked && !(counterRight + 2 * gap < at.x)) return { why: "the counts and the key do not fit side by side over the calendar" };
+    return { keyAt: at };
+  };
+  let bandSeat = null;
+  const bandRefused = [];
+  for (const stacked of [false, true]) {
+    const got = seatBand(stacked);
+    if (got.why) bandRefused.push(`${stacked ? "stacked" : "side by side"}: ${got.why}`);
+    else {
+      bandSeat = { ...got, stacked };
+      break;
+    }
+  }
+  if (!bandSeat) throw new Error(`neither band holds the counts and the key at ${SIZE} — ${bandRefused.join("; ")}`);
+  const keyAt = bandSeat.keyAt;
+  // A STACKED BAND ENDS ON THE KEY, AND A KEY CARRIES ITS OWN AIR: `key.height` already includes the halo's pad below
+  // its bornes, so the 1.5 gaps tuned under a band that was only ever one row are paid twice here. Half a gap under the
+  // stacked band is what lets rapport's 50px lead keep twelve month rows at square (45.3px against the 45.0px its own
+  // name needs); side by side keeps the 1.5 it was tuned at, so nothing already delivered moves.
+  const bandBottom = Math.max(runBaseline + valueBand.descent, keyAt.y + key.height) + (bandSeat.stacked ? 0.5 : 1.5) * gap;
 
   // THE CALENDAR: a row a month, a column a day of the month, the month names at the left, the day ticks under it.
-  const tickBaseline = creditAt.y - gap - band.descent;
+  //
+  // THE CREDIT'S FORM IS PART OF THE CALENDAR'S BUDGET. Twelve month rows, the day ticks and the credit share what the
+  // band leaves, and the shared ladder in `sourceCreditFor` answers the credit first: it keeps the longest form and
+  // pays for it in LINES, which is right when a beat has one form and wrong here. Measured 2026-09-23 at square, the
+  // long form takes two lines and leaves a 41.1px month row against the 41.6px its own name needs — half a pixel, paid
+  // for by a second credit line the beat carried a shorter form for. Landscape takes the first rung unchanged.
   const monthNames = MONTHS.map((m) => measure(m, axis));
   const monthRoom = Math.max(...monthNames.map((m) => m.width)) * (1 + DRAWN_WIDER) + gap;
-  const grid = { left: inset + monthRoom, right: stage.width - inset, top: bandBottom, bottom: tickBaseline - band.ascent - gap };
+  const seatCalendar = (forms) => {
+    const { register, ...block } = sourceCreditFor({ registers, forms, size: SIZE, k, ...CREDIT_ONE_LINE });
+    const at = { x: inset, y: stage.height - vInset - block.height };
+    const tick = at.y - gap - band.descent;
+    const bottom = tick - band.ascent - gap;
+    const h = (bottom - bandBottom) / 12;
+    if (!(h >= 0.9 * axis.lead)) return { why: `a month's row is ${h.toFixed(1)}px, too short to carry its name` };
+    return { sourceRegister: register, credit: block, creditAt: at, tickBaseline: tick, bottom };
+  };
+  let calendar = null;
+  const calendarRefused = [];
+  for (let dropped = 0; dropped < copy.source.length && !calendar; dropped++) {
+    const got = seatCalendar(copy.source.slice(dropped));
+    if (got.why) calendarRefused.push(`${copy.source.length - dropped} form(s) of the credit: ${got.why}`);
+    else calendar = { ...got, creditForm: dropped + got.credit.form };
+  }
+  if (!calendar) throw new Error(`no credit leaves twelve month rows able to carry their names at ${SIZE} — ${calendarRefused.join("; ")}`);
+  const { sourceRegister, credit, creditAt, tickBaseline } = calendar;
+  const grid = { left: inset + monthRoom, right: stage.width - inset, top: bandBottom, bottom: calendar.bottom };
   const cellW = (grid.right - grid.left) / 31;
   const cellH = (grid.bottom - grid.top) / 12;
-  if (!(cellH >= 0.9 * axis.lead)) throw new Error(`a month's row is ${cellH.toFixed(1)}px, too short to carry its name`);
   const cellGap = Math.max(Math.min(cellW, cellH) * 0.08, k);
   const xOf = (day) => grid.left + (day - 1) * cellW;
   const yOf = (month) => grid.top + month * cellH;
@@ -185,5 +237,5 @@ export function buildDirection(id, { subject, states, copy }) {
     states,
     timing: CALENDAR_VIDEO_TIMING,
   };
-  return { id, direction, props, report: { k, titleForm: titleCard.form, sourceForm: credit.form, cell: `${cellW.toFixed(1)}×${cellH.toFixed(1)}` } };
+  return { id, direction, props, report: { k, titleForm: titleCard.form, sourceForm: calendar.creditForm, band: bandSeat.stacked ? "stacked" : "side by side", cell: `${cellW.toFixed(1)}×${cellH.toFixed(1)}` } };
 }

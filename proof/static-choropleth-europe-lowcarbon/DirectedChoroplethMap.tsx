@@ -86,7 +86,10 @@ export type Water = { forms: string[]; x: number; y: number };
  *  position of its own. */
 export type Callout = {
   iso: string;
-  lines: string[];
+  /** The sentence's own forms, longest first, one entry per rung — the same ladder the headline,
+   *  the standfirst and the reading line already spend. It was a single fixed block until
+   *  2026-09-23, and that is what refused the square frame by two pixels. */
+  forms: string[][];
 };
 
 /** The measuring helpers the LADDER and the DRAWING both spend, at module scope because both now
@@ -309,14 +312,15 @@ export function mapGeometryFor({
     panel: number,
     t: number,
     l: number,
+    c: number,
     r: number,
     dsp: typeof display,
     rhythm: "filed" | "drawn",
   ) => {
     const titleLines = wrap(set(title[t], dsp), panel, dsp);
     const limitLines = wrap(set(limits[l], body), panel, body);
-    const calloutLines = callout.lines.flatMap((c) =>
-      wrap(set(c, annot), panel, annot),
+    const calloutLines = callout.forms[c].flatMap((line) =>
+      wrap(set(line, annot), panel, annot),
     );
     const readingLines =
       r < 0 ? [] : wrap(set(reading[r], annot), panel, annot);
@@ -347,8 +351,18 @@ export function mapGeometryFor({
     const readingTop =
       keyTop + keyRoom + gapOf(on.annot, 0.7143) + annotBand.ascent;
     const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
-    const footTop =
-      readingTop + Math.max(0, readingLines.length - 1) * annotLead;
+    /** WHERE THE COPY ACTUALLY STOPS — and when the reading line is dropped, that is the bottom of
+     *  the KEY, not the baseline a reading line would have had.
+     *
+     *  It was `readingTop + max(0, lines - 1) * annotLead`, which for a one-line reading and for no
+     *  reading at all is the same number. So `reading: -1` — the first rung the desk's own cut order
+     *  spends — recovered exactly nothing, and the reader lost the reading line for free. Measured
+     *  2026-09-23 at 540x540 on `nocturne`: the rung freed 0px where the band was 8px short, and
+     *  taking the gap and the ascent back with the line frees 16. `REMOVAL_LADDER` states the rule
+     *  this broke in its own words — *a rung that recovers nothing does not fire*. */
+    const footTop = readingLines.length
+      ? readingTop + (readingLines.length - 1) * annotLead
+      : keyTop + keyRoom;
     return {
       titleLines,
       limitLines,
@@ -450,6 +464,12 @@ export function mapGeometryFor({
     lines: number | null;
     display: typeof display;
     limit: number;
+    /** WHICH FORM OF THE CALLOUT THIS RUNG CARRIES. It sits OUTSIDE the standfirst's loop and
+     *  INSIDE the headline's, which is where the shared removal ladder puts it: R3 cuts the
+     *  standfirst before R4 touches an annotation, and the callout is an annotation — but it is
+     *  cut before the headline gives up size, because the headline is what a reader takes in
+     *  first. */
+    callout: number;
     reading: number;
   }> = [];
   for (const share of STACKED ? [1] : SHARES) {
@@ -472,25 +492,28 @@ export function mapGeometryFor({
       for (const lines of budgets) {
         const dsp = lines === null ? display : displayForLines(t, panel, lines);
         if (!dsp) continue;
-        for (let l = 0; l < limits.length; l++) {
-          for (let r = 0; r < reading.length; r++)
+        for (let c = 0; c < callout.forms.length; c++)
+          for (let l = 0; l < limits.length; l++) {
+            for (let r = 0; r < reading.length; r++)
+              rungs.push({
+                share,
+                title: t,
+                lines,
+                display: dsp,
+                limit: l,
+                callout: c,
+                reading: r,
+              });
             rungs.push({
               share,
               title: t,
               lines,
               display: dsp,
               limit: l,
-              reading: r,
+              callout: c,
+              reading: -1,
             });
-          rungs.push({
-            share,
-            title: t,
-            lines,
-            display: dsp,
-            limit: l,
-            reading: -1,
-          });
-        }
+          }
       }
     }
   }
@@ -510,6 +533,7 @@ export function mapGeometryFor({
       panelFor(rung.share),
       rung.title,
       rung.limit,
+      rung.callout,
       rung.reading,
       rung.display,
       "filed",
@@ -520,6 +544,11 @@ export function mapGeometryFor({
     }
   }
   if (!fits) {
+    /** THE SHORTFALL IS MEASURED ON THE CRITERION THE FIT TEST USED. It used to pick the rung with
+     *  the largest `spare` and then report the map band of THAT rung — two different questions, so
+     *  a stacked frame named a number no rung had actually been judged on. */
+    const scoreOf = (l: ReturnType<typeof layoutFor>) =>
+      STACKED ? mapBandOf(l).height : l.spare;
     const best = rungs
       .map((rung) => ({
         rung,
@@ -527,12 +556,13 @@ export function mapGeometryFor({
           panelFor(rung.share),
           rung.title,
           rung.limit,
+          rung.callout,
           rung.reading,
           rung.display,
           "filed",
         ),
       }))
-      .reduce((a, b) => (b.layout.spare > a.layout.spare ? b : a));
+      .reduce((a, b) => (scoreOf(b.layout) > scoreOf(a.layout) ? b : a));
     throw new Error(
       (STACKED
         ? `the copy leaves no room for the map in this direction: the shortest rung still leaves only ` +
@@ -548,6 +578,7 @@ export function mapGeometryFor({
     panel,
     fits.rung.title,
     fits.rung.limit,
+    fits.rung.callout,
     fits.rung.reading,
     fits.rung.display,
     "drawn",
@@ -564,12 +595,18 @@ export function mapGeometryFor({
   /** STACKED: the map takes the band the copy left between its last line and the source, full width.
    *  BESIDE: the map takes the column next to the panel, full height. `spare` is the same number in
    *  both readings — what the panel did not spend — so one ladder serves both shapes. */
+  /** STACKED: THE BOX IS THE BAND THE LADDER JUDGED, not a taller one measured another way. The
+   *  box took its `y` from `mapBandOf` and its `height` from `spare` — two answers to the same
+   *  question, 14px apart — so the plate the beat actually drew was 14px taller than the band it had
+   *  been approved at, and at 540x540 the source's own line was printed through the map's lower
+   *  edge. One measurement, spent by the fit test and by the drawing alike. */
+  const mapBand = mapBandOf(layout);
   const mapBox = STACKED
     ? {
         x: PAD,
-        y: layout.footTop + leadOf(annot) * 0.9,
+        y: mapBand.top,
         width: width - PAD * 2,
-        height: layout.spare,
+        height: mapBand.height,
       }
     : {
         x: PAD + panel + GUTTER,
@@ -596,7 +633,11 @@ export function mapGeometryFor({
     : Math.max(mapBox.width, mapBox.height * aspect);
   const mapW = fill;
   const mapH = fill / aspect;
-  const mapX = mapBox.x;
+  /** STACKED: THE MAP IS CENTRED IN ITS BAND ON BOTH AXES. It is FIT rather than filled there, so a
+   *  band shorter than the plate is wide leaves horizontal slack — and anchoring it west, which is
+   *  what the beside layout does because its box is exactly the map's column, put a 219px Europe
+   *  against the left edge of a 428px band with the right half of the page empty. */
+  const mapX = STACKED ? mapBox.x + (mapBox.width - mapW) / 2 : mapBox.x;
   const mapY = mapBox.y + (mapBox.height - mapH) / 2;
   return {
     rung: fits.rung,
@@ -1332,7 +1373,8 @@ export function DirectedChoroplethMap({
   onLadder?.(
     `ladder: headline ${rung.title + 1} in ${layout.titleLines.length} lines at ` +
       `${display.fontSize}px (filed ${display.filedSize}, floor ${displayFloor.toFixed(1)}, ` +
-      `budget ${rung.lines ?? "none"}), standfirst ${rung.limit + 1}, reading ` +
+      `budget ${rung.lines ?? "none"}), standfirst ${rung.limit + 1}, callout ` +
+      `${rung.callout + 1}, reading ` +
       (rung.reading < 0 ? "dropped" : `form ${rung.reading + 1}`) +
       ` · panel ${(rung.share * 100).toFixed(0)}% (${panel}px), ${layout.spare.toFixed(0)}px drawn spare` +
       ` · map ${mapW.toFixed(0)} x ${mapH.toFixed(0)}`,

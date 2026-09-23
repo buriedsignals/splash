@@ -13,7 +13,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { adjustToContrast, contrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
+import { frameInsetFor, sizeFor, videoExportSize } from "#shared/chart-video/sizes.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
@@ -25,13 +25,15 @@ import { cellAt, countOf, near, nearestOf } from "../video-locator-zaporizhzhia/
 import { cameraOf, mapPlanFor, mapSeatsOf, projectorOf } from "./map-plan.mjs";
 import { planDigestOf } from "./measure.mjs";
 import { statesFor } from "./states.mjs";
-import { COUNT_BREAKS, loadSubject, NAMES, RATE_BREAKS, shapesOf } from "./subject.mjs";
+import { ALPHA2, COUNT_BREAKS, loadSubject, NAMES, RATE_BREAKS, shapesOf } from "./subject.mjs";
 import { HEX_VIDEO_TIMING } from "./timing-contract.ts";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const ROOT = join(HERE, "..", "..");
 export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
-export const SIZE = "landscape";
+/** The size this run exports at — `--size`, landscape when nothing asks. R2 names three and
+ *  everything under it already answered per size; only this line pinned the beat to one. */
+export const SIZE = videoExportSize();
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 const NB = "\u00A0";
 /** A cell's code keeps this share of the hexagon's width free: the hexagon narrows toward its points. */
@@ -90,7 +92,7 @@ export function textPerRegisterOf(copy, subject) {
     body: copy.source.join(" "),
     annot: copy.origin,
     value: `${copy.largest.count} ${copy.largest.rate} ${copy.leader}`,
-    axis: [copy.units.count, copy.units.rate, ...copy.bornes.count, ...copy.bornes.rate, copy.origin, ...subject.cells.map((c) => c.code), ...copy.source].join(" "),
+    axis: [copy.units.count, copy.units.rate, ...copy.bornes.count, ...copy.bornes.rate, copy.origin, ...subject.cells.map((c) => c.code), ...subject.cells.map((c) => ALPHA2[c.code] ?? c.code), ...copy.source].join(" "),
   };
 }
 
@@ -153,10 +155,46 @@ export function buildDirection(id, { subject, states, copy }, { measured = undef
   const keyWidth = Math.ceil(pad + Math.max(largestRow.count.width, largestRow.rate.width, leaderRow.width, unitRow.count.width, unitRow.rate.width, classCount * swatchW + swatchW / 2, originLabel.x - pad + originLabel.width) * (1 + DRAWN_WIDER) + pad);
   const keyHeight = Math.ceil(y + pad);
 
-  // ── the grid: pointy-top hexagons, odd rows offset by half a cell, as large as the box right of the key allows ──
+  // ── the grid: pointy-top hexagons, odd rows offset by half a cell, as large as the box the key leaves ──
+  //
+  // THE KEY STANDS BESIDE THE GRID, OR UNDER IT. Beside is the still's own arrangement and what a landscape
+  // frame affords: the key column takes 600px of 1750 and leaves the grid 1110, so its eight columns draw a
+  // 131px hexagon. A square or portrait frame offers 936px in all, of which the same key takes 719 — the
+  // grid is left 180px for eight columns and draws a 3px hexagon (measured 2026-09-23, which is the number
+  // the refusal below was printing). A column that has run out of column becomes a band: the key drops under
+  // the grid, at the foot of the frame, and the grid takes the whole width. The choice is made on the
+  // measurement that matters — whether a cell can still hold its three-letter code at the type floor — so
+  // landscape, where beside already holds, is untouched and its measured plan does not move.
   const cols = Math.max(...subject.cells.map((c) => c.col)) + 1;
   const rows = Math.max(...subject.cells.map((c) => c.row)) + 1;
-  const box = { x: inset + keyWidth + axis.lead, y: vInset, w: stage.width - inset - (inset + keyWidth + axis.lead), h: stage.height - 2 * vInset };
+  const KEY_GAP = axis.lead;
+  // WHEN THE KEY IS A BAND, THE CREDIT IS THE BAND'S SECOND ROW — and the band reserves it before the grid is
+  // sized. Beside the grid the credit is set on the picture, in the lowest free corner the cells leave, which is
+  // what a landscape frame affords. At 1080x1080 the key has already dropped under the grid and the only corner
+  // left is the 217px the 719px key leaves at the foot; the narrowest form of this credit that still exists
+  // wants 346px (measured 2026-09-24, creme), so the beat refused with « no form wraps into 2 lines of 459px »
+  // — the form ladder running out, not the corner. A row that has run out of row becomes two rows: the key, then
+  // the credit under it, each from the frame's own inset, and the credit keeps the one line it is supposed to be.
+  const bandLead = GAP * axis.lead;
+  const creditInBand = (available) => {
+    let widest = null;
+    for (const measure of CREDIT_MEASURES) {
+      const tried = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k: kk, ...CREDIT_ONE_LINE, measure });
+      widest ??= tried;
+      if (tried.width <= available) return tried;
+    }
+    return widest;
+  };
+  const bandCredit = creditInBand(stage.width - 2 * inset);
+  const boxes = {
+    beside: { x: inset + keyWidth + KEY_GAP, y: vInset, w: stage.width - inset - (inset + keyWidth + KEY_GAP), h: stage.height - 2 * vInset },
+    under: { x: inset, y: vInset, w: stage.width - 2 * inset, h: stage.height - 2 * vInset - keyHeight - KEY_GAP - bandLead - bandCredit.height },
+  };
+  const hexWidthIn = (b) => SQRT3 * Math.min(b.w / (cols * SQRT3 + SQRT3 / 2), b.h / ((rows - 1) * 1.5 + 2));
+  const atFloor = registerAt(axis, row.minTypePx);
+  const codeAtFloor = Math.max(...subject.cells.map((c) => widthOf(applyCase(c.code, atFloor.transform), atFloor))) * (1 + DRAWN_WIDER);
+  const stackedKey = codeAtFloor > CODE_SHARE * hexWidthIn(boxes.beside) && hexWidthIn(boxes.under) > hexWidthIn(boxes.beside);
+  const box = stackedKey ? boxes.under : boxes.beside;
   const R = Math.min(box.w / (cols * SQRT3 + SQRT3 / 2), box.h / ((rows - 1) * 1.5 + 2));
   const W = SQRT3 * R;
   const gx = box.x + (box.w - (cols * W + W / 2)) / 2;
@@ -180,10 +218,33 @@ export function buildDirection(id, { subject, states, copy }, { measured = undef
   }).join("L")}Z`;
 
   // The code register: the axis voice, stepped down until the widest code fits, refused under the floor.
+  //
+  // THE FORM OF THE CODE IS A LADDER TOO. The size steps first, so a frame never loses a letter it could have
+  // kept; only when the floor is reached does the code drop to the second filed form — the alpha-2 of the same
+  // ISO 3166 standard the layout is written in. Measured 2026-09-24: at 1920x1080 the 131px hexagon holds the
+  // alpha-3 and this loop stops on the first form, so landscape does not move. At 1080x1920 the same eight
+  // columns draw a 110px hexagon whose widest alpha-3 wants 96px of the 86px a cell keeps free, and « UA » in
+  // the alpha-2 form wants 64 — the country is kept, the third letter is what the frame cannot afford.
+  const forms = [{ name: "alpha-3", of: (c) => c.code }, { name: "alpha-2", of: (c) => ALPHA2[c.code] ?? c.code }];
+  const widestIn = (form, r) => Math.max(...subject.cells.map((c) => widthOf(applyCase(form.of(c), r.transform), r))) * (1 + DRAWN_WIDER);
   let codeR = axis;
-  const widest = () => Math.max(...subject.cells.map((c) => widthOf(applyCase(c.code, codeR.transform), codeR)));
-  while (widest() * (1 + DRAWN_WIDER) > CODE_SHARE * W && codeR.fontSize - 0.5 >= row.minTypePx) codeR = registerAt(codeR, codeR.fontSize - 0.5);
-  if (widest() * (1 + DRAWN_WIDER) > CODE_SHARE * W) throw new Error(`a ${W.toFixed(0)}px hexagon cannot hold its code at the ${row.minTypePx}px floor`);
+  let codeForm = null;
+  for (const form of forms) {
+    let r = axis;
+    while (widestIn(form, r) > CODE_SHARE * W && r.fontSize - 0.5 >= row.minTypePx) r = registerAt(r, r.fontSize - 0.5);
+    codeR = r;
+    if (widestIn(form, r) <= CODE_SHARE * W) {
+      codeForm = form;
+      break;
+    }
+  }
+  if (!codeForm)
+    throw new Error(
+      `a ${W.toFixed(0)}px hexagon cannot hold its code at the ${row.minTypePx}px floor in any filed form ` +
+        `(${forms.map((f) => f.name).join(", ")}): the shortest wants ` +
+        `${widestIn(forms[forms.length - 1], codeR).toFixed(0)}px of the ${(CODE_SHARE * W).toFixed(0)}px a cell keeps free, and ` +
+        `${cols} columns across ${box.w.toFixed(0)}px of frame is all there is${stackedKey ? " with the key already under the grid" : ""}`,
+    );
   const codeBand = bandOf(BAND_PROBE, codeR);
 
   // ── colours: the still's ramp, floored against the ground ─────────────────────────────────────────────────────
@@ -239,7 +300,7 @@ export function buildDirection(id, { subject, states, copy }, { measured = undef
   };
   const cells = subject.cells.map((c) => {
     const { x, y: cy } = centreOf(c);
-    const t = measure(c.code, codeR);
+    const t = measure(codeForm.of(c), codeR);
     const inks = c.origin ? { neutral: inkOn(ground), count: inkOn(ground), rate: inkOn(ground) } : { neutral: inkOn(neutral), count: inkOn(classFills[c.countClass]), rate: inkOn(classFills[c.rateClass]) };
     const cellBox = { x: r1(x - W / 2), y: r1(cy - R), w: r1(W), h: r1(2 * R) };
     return {
@@ -262,7 +323,11 @@ export function buildDirection(id, { subject, states, copy }, { measured = undef
   /** What the live map's drive reads (`scene.mjs`, `mapStateAt`): it needs no overlay. */
   const drive = { camera, states, timing: HEX_VIDEO_TIMING };
   if (measured === null) return { props: { mapPlan, ...drive } };
-  measured ??= readMeasured();
+  // The measurement is read AT THIS FRAME'S SIZE: landscape from the top of the file, every other frame from
+  // `sizes`, because the camera is fitted to the box the key leaves and that box moves with the frame.
+  const held = measured ?? readMeasured();
+  measured = SIZE === "landscape" ? held : held.sizes?.[SIZE];
+  if (!measured) throw new Error(`${id}: nothing measured for the ${SIZE} frame — run measure.mjs --size ${SIZE} with the worktree's .env loaded`);
   if (measured.planDigest?.[id] !== planDigestOf(mapPlan)) throw new Error(`${id}: the plan changed since it was measured — run measure.mjs again`);
   if (measured.size.width !== stage.width || measured.size.height !== stage.height)
     throw new Error(`${id}: measured at ${measured.size.width}×${measured.size.height}, drawn at ${stage.width}×${stage.height}`);
@@ -277,14 +342,30 @@ export function buildDirection(id, { subject, states, copy }, { measured = undef
   // (the still's place). West of the window it stands on the Atlantic, Greenland's tip and Labrador: context, each word
   // haloed in what lies under it.
   let keyAt = null;
-  for (let ky = vInset; ky + keyHeight <= stage.height - vInset; ky += SEAT_STEP) {
-    const b = { x: inset, y: ky, width: keyWidth, height: keyHeight };
-    if (hostsIn(b).count) continue;
-    const off = Math.abs(ky + keyHeight / 2 - stage.height / 2);
-    const l = landIn(b);
-    if (!keyAt || off < keyAt.off) keyAt = { x: inset, y: ky, off, land: Math.round((100 * l.count) / l.total) };
+  if (stackedKey) {
+    // THE BAND UNDER THE GRID: the grid's own box stops KEY_GAP above it, so no cell reaches here and there is
+    // nothing to seat around vertically. The key runs along the foot, from the left, over the credit's own row,
+    // and the search is for the x that puts it over the fewest hosts rather than for a y.
+    const ky = stage.height - vInset - bandCredit.height - bandLead - keyHeight;
+    for (let kx = inset; kx + keyWidth <= stage.width - inset; kx += SEAT_STEP) {
+      const b = { x: kx, y: ky, width: keyWidth, height: keyHeight };
+      const over = hostsIn(b).count;
+      if (keyAt && over >= keyAt.over) continue;
+      const l = landIn(b);
+      keyAt = { x: kx, y: ky, over, land: Math.round((100 * l.count) / l.total) };
+      if (!over) break;
+    }
+    if (!keyAt) throw new Error(`${id}: the key is ${keyWidth}px and the band under the grid gives it ${(stage.width - 2 * inset).toFixed(0)}px`);
+  } else {
+    for (let ky = vInset; ky + keyHeight <= stage.height - vInset; ky += SEAT_STEP) {
+      const b = { x: inset, y: ky, width: keyWidth, height: keyHeight };
+      if (hostsIn(b).count) continue;
+      const off = Math.abs(ky + keyHeight / 2 - stage.height / 2);
+      const l = landIn(b);
+      if (!keyAt || off < keyAt.off) keyAt = { x: inset, y: ky, off, land: Math.round((100 * l.count) / l.total) };
+    }
+    if (!keyAt) throw new Error(`${id}: the key column finds no place at the left margin clear of every host`);
   }
-  if (!keyAt) throw new Error(`${id}: the key column finds no place at the left margin clear of every host`);
   const keyBox = { x: keyAt.x, y: keyAt.y, width: keyWidth, height: keyHeight };
   /** What the measured map mostly paints under a word of the key: its halo while the basemap is up. */
   const seaIn = countOf(mapCells, (c) => near(c, measuredSea));
@@ -299,7 +380,13 @@ export function buildDirection(id, { subject, states, copy }, { measured = undef
   let credit = null;
   let sourceRegister = null;
   let creditAt = null;
-  for (const measure of CREDIT_MEASURES) {
+  if (stackedKey) {
+    const { register, ...tried } = bandCredit;
+    credit = tried;
+    sourceRegister = register;
+    creditAt = { x: inset, y: stage.height - vInset - tried.height };
+  }
+  for (const measure of creditAt ? [] : CREDIT_MEASURES) {
     const { register, ...tried } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k: kk, ...CREDIT_ONE_LINE, measure });
     search: for (let cy = stage.height - vInset - tried.height; cy >= vInset; cy -= SEAT_STEP)
       for (let cx = inset; cx + tried.width <= stage.width - inset; cx += SEAT_STEP) {

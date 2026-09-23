@@ -79,8 +79,10 @@ export function DirectedBump({
   years: number[];
   slots: number;
   subject: string;
-  title: string;
-  limits: string;
+  /** The headline and the standfirst in FORMS, longest first — R3's rung. Landscape takes the
+   *  first of each and has never needed another. */
+  title: string[];
+  limits: string[];
   source: string;
   alt: string;
   eyebrow: string;
@@ -91,6 +93,9 @@ export function DirectedBump({
   frame?: { width: number; height: number };
 }) {
   const { width, height } = frame ?? FRAME;
+  /** THE FORM THE FRAME ASKS FOR, read off the frame rather than passed in, so one component serves
+   *  the three export sizes without the runner having to tell it which it is drawing. */
+  const SIZE = width > height ? "landscape" : width === height ? "square" : "portrait";
   const { ink, muted, grid } = deriveFurniture(direction.ground);
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);
@@ -158,17 +163,13 @@ export function DirectedBump({
 
   // ── header ────────────────────────────────────────────────────────────────
   const column = width - PAD * 2;
-  const titleLines = wrap(set(title, display), column, display);
   const titleLead = leadOf(display);
-  const limitLines = wrap(set(limits, body), column, body);
   const bodyLead = leadOf(body);
   const sourceLines = wrap(set(source, body), column, body);
 
   const eyebrowBaseline = PAD + eyebrowReg.fontSize;
   const titleTop =
     eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
-  const limitsTop =
-    titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
   const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
 
   /** An entry's label carries its rank where the treatment applies: `3 India`, not `India`. */
@@ -176,21 +177,93 @@ export function DirectedBump({
   const nameAt = (entity: string, rank: number) =>
     ranked ? `${rank} ${entity}` : entity;
 
-  const widestEdge = Math.max(
-    ...tracks.map((t) =>
-      Math.max(
-        widthOf(set(nameAt(t.entity, slots), value), value),
-        widthOf(set(t.entity, value), value),
+  const firstYearOf = years[0];
+  const lastYearOf = years[years.length - 1];
+
+  /** WHICH ENTRIES ARE NAMED AT WHICH EDGE, AND WHY A NARROW FRAME NAMES ONLY ONE.
+   *
+   *  Both gutters are reserved for the widest name a track can carry — « 10 United States » — so at
+   *  1920 wide the plot still gets 700px and the arbiter seats all twenty labels. At 1080 the same
+   *  two gutters take 252px of 424 and leave the plot 172: thirty-five years in a box the width of
+   *  a thumb, the year ticks printed into each other as « 19909 9250 000 0250 100 12502024 », and
+   *  the arbiter dropping EIGHTEEN of the twenty names — measured in nocturne, 2026-09-23, with the
+   *  render exiting 0.
+   *
+   *  So the left gutter stops being reserved for everybody. The entry the headline is about keeps
+   *  its opening rank, because « du 8e au 3e » is a claim about two numbers and one of them lives
+   *  there; every other entry is read at the right edge, where the ranking ends. That is R4 —
+   *  annotations dropped, last first — applied to a set whose members are not equal: nine of these
+   *  labels are context and one is the argument. */
+  const namesBothEdges = SIZE === "landscape";
+  const edgeWidth = (only: (t: Track) => boolean) => {
+    const wanted = tracks.filter(only);
+    if (!wanted.length) return 0;
+    return Math.max(
+      ...wanted.map((t) =>
+        Math.max(
+          widthOf(set(nameAt(t.entity, slots), value), value),
+          widthOf(set(t.entity, value), value),
+        ),
       ),
-    ),
+    );
+  };
+  const leftRoom = edgeWidth(
+    (t) =>
+      t.points[0].year === firstYearOf && (namesBothEdges || t.entity === subject),
+  );
+  /** The right gutter is owed only to the tracks that REACH the last year. An exit is named where it
+   *  left, in the middle of the plot, so reserving an edge for it was buying margin nothing sits in. */
+  const rightRoom = edgeWidth(
+    (t) => namesBothEdges || t.points[t.points.length - 1].year === lastYearOf,
   );
 
-  const plot = {
-    left: PAD + widestEdge + 16,
-    right: width - PAD - widestEdge - 16,
-    top: limitsTop + limitLines.length * bodyLead + gapOf(annot, 1.4286),
-    bottom: sourceTop - gapOf(body, 1.1034) - axis.fontSize * 2.4,
+  /** WHAT THE TEN RANK ROWS OWE. A rank is read off the row it sits on and every row may carry a
+   *  name, so the rows cannot be closer together than the run that names them. */
+  const rowOwes = bandOf(value).ascent + bandOf(value).descent + 3;
+  const plotOwes = SIZE === "landscape" ? 0 : (slots - 1) * rowOwes;
+
+  const layoutFor = (t: number, l: number) => {
+    const titleLines = wrap(set(title[t], display), column, display);
+    const limitLines = wrap(set(limits[l], body), column, body);
+    const limitsTop = titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
+    const top = limitsTop + limitLines.length * bodyLead + gapOf(annot, 1.4286);
+    const bottom = sourceTop - gapOf(body, 1.1034) - axis.fontSize * 2.4;
+    return { titleLines, limitLines, limitsTop, top, bottom, plot: bottom - top };
   };
+  const rungs: Array<{ title: number; limit: number }> = [];
+  for (let t = 0; t < title.length; t++)
+    for (let l = 0; l < limits.length; l++) rungs.push({ title: t, limit: l });
+  let taken = rungs[0];
+  let layout = layoutFor(taken.title, taken.limit);
+  let best = layout.plot;
+  for (const rung of rungs) {
+    const candidate = layoutFor(rung.title, rung.limit);
+    best = Math.max(best, candidate.plot);
+    taken = rung;
+    layout = candidate;
+    if (candidate.plot >= plotOwes) break;
+  }
+  if (layout.plot < plotOwes)
+    throw new Error(
+      `the copy leaves the ${slots} rank rows ${best.toFixed(0)}px at its most generous rung and ` +
+        `they owe ${plotOwes.toFixed(0)}px at ${width}x${height} — ${rowOwes.toFixed(0)}px between ` +
+        `rows, which is what a name printed on a rank needs not to sit on the rank above.`,
+    );
+  const { titleLines, limitLines, limitsTop } = layout;
+
+  const plot = {
+    left: PAD + leftRoom + 16,
+    right: width - PAD - rightRoom - 16,
+    top: layout.top,
+    bottom: layout.bottom,
+  };
+  if (SIZE !== "landscape")
+    console.log(
+      `  ladder: headline ${taken.title + 1}, standfirst ${taken.limit + 1} · rows ` +
+        `${layout.plot.toFixed(0)}px, floor ${plotOwes.toFixed(0)}px · plot ` +
+        `${(plot.right - plot.left).toFixed(0)}px wide · names at ` +
+        (namesBothEdges ? "both edges" : "the right edge, plus the subject's own start"),
+    );
 
   const x = scaleLinear()
     .domain([years[0], years[years.length - 1]])
@@ -212,7 +285,7 @@ export function DirectedBump({
     const last = t.points[t.points.length - 1];
     const isSubject = t.entity === subject;
     const left =
-      first.year === firstYear
+      first.year === firstYear && (namesBothEdges || isSubject)
         ? [
             {
               id: `left-${t.entity}`,
@@ -304,6 +377,27 @@ export function DirectedBump({
     direction.ground,
     TEXT_CONTRAST_MIN,
   );
+
+  /** A YEAR-TICK LADDER, because a count tuned on a 700px plot is not a count that fits on a 250px
+   *  one. Every fifth year plus both ends clears easily at 1920; at 1080 the eight runs ran
+   *  together into « 19909 9250 000 0250 100 12502024 ». The two ends are placed first and never
+   *  go — they say what the span IS — and a middle tick whose run would touch one already kept is
+   *  dropped rather than printed through it. */
+  const tickSpan = (v: number): [number, number] => {
+    const w = widthOf(set(String(v), axis), axis);
+    return [x(v) - w / 2, x(v) + w / 2];
+  };
+  const endYears = [firstYear, lastYear];
+  const shownYears = [...endYears];
+  for (const v of years.filter((yr) => yr % 5 === 0 && !endYears.includes(yr))) {
+    const [l, r] = tickSpan(v);
+    const clashes = shownYears.some((kept) => {
+      const [kl, kr] = tickSpan(kept);
+      return l < kr + 6 && r > kl - 6;
+    });
+    if (!clashes) shownYears.push(v);
+  }
+  shownYears.sort((a, b) => a - b);
   /**
    * Three inks, one rule each: the subject, a survivor, and something that left.
    *
@@ -364,9 +458,7 @@ export function DirectedBump({
           strokeWidth={direction.stroke.rule}
         />
       ))}
-      {years
-        .filter((v) => v % 5 === 0 || v === firstYear || v === lastYear)
-        .map((v) => (
+      {shownYears.map((v) => (
           <text
             key={v}
             x={x(v)}

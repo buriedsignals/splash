@@ -28,6 +28,10 @@
  */
 
 import { scaleLinear, scaleBand } from "d3-scale";
+import { formForSize } from "#shared/chart-beat/type-at-size.mjs";
+
+/** This beat's own type, as its BRIEF declares it — what decides whether a tall frame asks for the twin form. */
+const TYPE = "column";
 import {
   deriveFurniture,
   measureText,
@@ -63,6 +67,8 @@ export function DirectedColumns({
   source,
   alt,
   eyebrow,
+  scope,
+  keep,
   direction,
   treatments,
   frame,
@@ -73,11 +79,23 @@ export function DirectedColumns({
   comparisonSum: number;
   comparisonNote: string;
   format: (v: number) => string;
-  title: string;
-  limits: string;
+  /** The headline in FORMS, longest first — spent after the standfirst's own forms and before a
+   *  single row is given up. It was ONE string until 2026-09-24, which is a ladder with no rung. */
+  title: string | string[];
+  /** The standfirst in FORMS, longest first. A form that NAMES a row R8 has dropped is skipped
+   *  rather than shortened: the plate would be pointing at a bar that is not there. */
+  limits: string | string[];
   source: string;
-  alt: string;
+  /** The plate's own description, and a FUNCTION of the rows R8 left — a sentence written for ten
+   *  columns over a plate that drew six would send a screen reader looking for bars nobody drew. */
+  alt: string | ((drawn: Column[]) => string);
   eyebrow: string;
+  /** R8's own sentence, called with the count the ladder ACTUALLY took — never a typed number.
+   *  Absent means this beat has no R8 and the ladder stops at the word rungs. */
+  scope?: (drawn: number, all: number) => string;
+  /** The rows R8 may not drop, by name: the subject and every member of the set the headline adds
+   *  up. Dropping one of those would leave the plate summing bars a reader cannot see. */
+  keep?: string[];
   direction: any;
   treatments: string[];
   /** The frame this render draws at — `sizeFor(size)` halved, so one component
@@ -146,59 +164,216 @@ export function DirectedColumns({
 
   // ── header and footer ─────────────────────────────────────────────────────
   const column = width - PAD * 2;
-  const titleLines = wrap(set(title, display), column, display);
   const titleLead = leadOf(display);
   const bodyLead = leadOf(body);
-  const limitLines = wrap(set(limits, body), column, body);
+  const nameLead = leadOf(annot);
   const sourceLines = wrap(set(source, body), column, body);
+  const titleChoices = (Array.isArray(title) ? title : [title]).filter(Boolean);
+  const limitChoices = (Array.isArray(limits) ? limits : [limits]).filter(Boolean);
 
   const eyebrowBaseline = PAD + eyebrowReg.fontSize;
   const titleTop =
     eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
-  const limitsTop =
-    titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
   const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
 
+  /**
+   * THE TWIN FORM. A band scale has one, and at a tall frame it is not a refinement: ten columns in
+   * 540px are 38px wide, every name wraps or collides — measured at 1080x1920, this beat printed
+   * « ChineÉtats-UnisInde » and cut « Corée du Sud » to « Corée du ». Rows running down the frame,
+   * each name horizontal on one line, is the drawing the frame asks for, and `type-at-size.mjs` has
+   * been saying so all along; nothing was carrying it out.
+   *
+   * The size is read off the frame rather than passed in, because the frame is what the component is
+   * already given and the three are distinguishable by their own proportions.
+   */
+  const SIZE = width > height ? "landscape" : width === height ? "square" : "portrait";
+  const ROWS = formForSize(TYPE, SIZE).verdict === "transpose";
+
   // ── the plot ──────────────────────────────────────────────────────────────
-  const band = scaleBand<string>()
-    .domain(rows.map((r) => r.name))
-    .range([PAD, width - PAD])
-    .paddingInner(0.28)
-    .paddingOuter(0.06);
+  /**
+   * WHAT ONE ROW OWES IN THE ROW FORM, and why this plate needed telling.
+   *
+   * In the column form the names sit under the baseline and the frame's WIDTH decides whether they
+   * fit; `wrap` and `deepestName` have answered for that since landscape. In the row form the names
+   * sit ON the rows and the frame's HEIGHT decides, and nothing here was asking. Measured
+   * 2026-09-24 at 540x540: `nocturne` left the ten rows 3px of pitch each — « Chine » at baseline
+   * 388 and « États-Unis » at 391, sharing 71 % of their ink — and the beat only learned about it
+   * from the ink guard AFTER the render, as nine collided pairs rather than as an arithmetic. A row
+   * carries a name and a number on one line, so it owes the taller of the two bands plus the breath
+   * the arbiter itself keeps.
+   */
+  const ROW_BREATH = 3;
+  const nameBand = measureTextBand("Hxpg1,", sizeOf(annot));
+  const numberBand = measureTextBand("Hxpg1,", sizeOf(value));
+  const rowsOwe =
+    Math.max(nameBand.ascent + nameBand.descent, numberBand.ascent + numberBand.descent) +
+    ROW_BREATH;
 
-  /** Category names sit under the baseline, wrapped on MEASURED width to at most two lines — never
-   *  rotated, and never wider than the column they name. */
-  const nameLines = new Map(
-    rows.map((r) => [r.name, wrap(set(r.name, annot), band.bandwidth(), annot).slice(0, 2)]),
+  /**
+   * R8 — DRAW FEWER ROWS AND SAY SO ON THE PLATE. The last rung, under every word rung, and the
+   * one the square refusal stopped short of.
+   *
+   * WHAT IS KEPT IS THE CLAIM ITSELF: the subject, and every country the headline adds up against
+   * it. Those are the top of a ranking and they are contiguous, so what R8 removes is the TAIL —
+   * the ranks the sentence above the plate never mentions. A reader told « les 6 premiers des 10 »
+   * is reading a ranking, not a sample.
+   */
+  const mustKeep = new Set(keep ?? []);
+  const ROW_FLOOR = Math.max(mustKeep.size, 3);
+  /** The rows R8 draws at a given count: the claim's own rows, then down the ranking. */
+  const rowsAt = (n: number) => {
+    if (n >= rows.length) return rows;
+    const kept = new Set(rows.filter((r) => mustKeep.has(r.name)));
+    for (const r of rows) {
+      if (kept.size >= n) break;
+      kept.add(r);
+    }
+    return rows.filter((r) => kept.has(r));
+  };
+
+  const layout = (() => {
+    let last = null;
+    // The row count is the OUTER loop, so every word rung is spent at the full ranking before one
+    // rank is given up, and the words come back longest-first once one has been.
+    for (let drawn = rows.length; drawn >= ROW_FLOOR; drawn -= 1) {
+      const plate = rowsAt(drawn);
+      const gone = rows.filter((r) => !plate.includes(r)).map((r) => r.name);
+      const scopeLine =
+        plate.length < rows.length && scope ? scope(plate.length, rows.length) : "";
+      const band = scaleBand<string>()
+        .domain(plate.map((r) => r.name))
+        .range([PAD, width - PAD])
+        .paddingInner(0.28)
+        .paddingOuter(0.06);
+      /** Category names sit under the baseline, wrapped on MEASURED width to at most two lines —
+       *  never rotated, and never wider than the column they name. */
+      const nameLines = new Map(
+        plate.map((r) => [r.name, wrap(set(r.name, annot), band.bandwidth(), annot).slice(0, 2)]),
+      );
+      const deepestName = Math.max(...[...nameLines.values()].map((l) => l.length));
+      const baseline =
+        sourceTop - gapOf(body, 1.1034) - deepestName * nameLead - gapOf(annot, 0.4286);
+      /** The value labels stand ABOVE their columns, so the tallest column needs a line of
+       *  clearance under the standfirst, and the bracket needs a line under the rule. Both are
+       *  measured. */
+      const valueBand = measureTextBand(format(plate[0].value), sizeOf(value));
+      for (const [titleForm, titleText] of titleChoices.entries())
+        for (const limitText of limitChoices) {
+          // A standfirst that names a rank R8 has removed would point at a bar that is not drawn.
+          if (gone.some((name) => limitText.includes(name))) continue;
+          const titleLines = wrap(set(titleText, display), column, display);
+          const limitsTop = titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
+          const limitLines = wrap(
+            set(scopeLine ? `${scopeLine} ${limitText}` : limitText, body),
+            column,
+            body,
+          );
+          const plotTop =
+            limitsTop + limitLines.length * bodyLead + (valueBand.ascent + valueBand.descent) * 1.9;
+          /** In the COLUMN form the height of a row is not a thing, so the gate is vacuous and the
+           *  first candidate — the whole ranking, the longest headline, the longest standfirst — is
+           *  the one drawn. Landscape is untouched by this ladder, to the byte. */
+          const pitch = ROWS ? (baseline - plotTop) / plate.length : Number.POSITIVE_INFINITY;
+          const candidate = {
+            plate,
+            scopeLine,
+            titleForm,
+            titleLines,
+            limitsTop,
+            limitLines,
+            band,
+            nameLines,
+            deepestName,
+            baseline,
+            valueBand,
+            plotTop,
+            pitch,
+          };
+          last = candidate;
+          if (pitch >= rowsOwe) return candidate;
+        }
+    }
+    return last!;
+  })();
+  const plate = layout.plate;
+  const {
+    titleLines,
+    limitsTop,
+    limitLines,
+    band,
+    nameLines,
+    deepestName,
+    baseline,
+    valueBand,
+    plotTop,
+  } = layout;
+  console.log(
+    `  ladder: headline form ${layout.titleForm + 1}, standfirst ${limitLines.length} line(s)` +
+      `${plate.length < rows.length ? `, R8: ${plate.length} of ${rows.length} rows drawn` : ""}` +
+      `${ROWS ? ` · pitch ${layout.pitch.toFixed(1)}px, owed ${rowsOwe.toFixed(1)}px` : ""}`,
   );
-  const nameLead = leadOf(annot);
-  const deepestName = Math.max(...[...nameLines.values()].map((l) => l.length));
-
-  const baseline =
-    sourceTop -
-    gapOf(body, 1.1034) -
-    deepestName * nameLead -
-    gapOf(annot, 0.4286);
-  /** The value labels stand ABOVE their columns, so the tallest column needs a line of clearance
-   *  under the standfirst, and the bracket needs a line under the rule. Both are measured. */
-  const valueBand = measureTextBand(format(rows[0].value), sizeOf(value));
-  const plotTop =
-    limitsTop + limitLines.length * bodyLead + (valueBand.ascent + valueBand.descent) * 1.9;
+  if (ROWS && layout.pitch < rowsOwe)
+    throw new Error(
+      `${plate.length} rows want ${rowsOwe.toFixed(1)}px of pitch to print a name and a number on ` +
+        `one line and this frame gives ${layout.pitch.toFixed(1)}px with every rung spent, down to ` +
+        `R8's floor of ${ROW_FLOOR} of ${rows.length} rows — the ${ROW_FLOOR} rows the headline ` +
+        `itself adds up`,
+    );
 
   const magnitude = scaleLinear()
-    .domain([0, Math.max(...rows.map((r) => r.value))])
+    .domain([0, Math.max(...plate.map((r) => r.value))])
     // Zero is the floor, non-negotiable for a length encoding.
     .range([baseline, plotTop]);
 
-  const columns = rows.map((r) => ({
-    ...r,
-    x: band(r.name)!,
-    w: band.bandwidth(),
-    y: magnitude(r.value),
-    h: baseline - magnitude(r.value),
-    isSubject: r.name === subject,
-    inComparison: comparison.includes(r.name),
-  }));
+  /** IN ROWS the same two scales swap axes: the band runs DOWN the plot and the magnitude runs
+   *  across it from a left rule. Every mark, every value and every name is derived from these two,
+   *  so there is one geometry with two readings rather than two geometries. */
+  const valueGutter = ROWS
+    ? Math.max(...plate.map((r) => widthOf(set(format(r.value), value), value))) + gapOf(value, 0.6)
+    : 0;
+  const nameGutter = ROWS
+    ? Math.max(...plate.map((r) => widthOf(set(r.name, annot), annot))) + gapOf(annot, 0.5)
+    : 0;
+  const rowBand = ROWS
+    ? scaleBand<string>()
+        .domain(plate.map((r) => r.name))
+        .range([plotTop, baseline])
+        .paddingInner(0.3)
+        .paddingOuter(0.06)
+    : null;
+  /** In rows the set bracket needs a lane of its own to the right of the numbers, or it is drawn
+   *  through them. The lane comes out of the magnitude scale, so the bars stop short of it. */
+  const rowsBracketed =
+    ROWS &&
+    on("the-set-a-claim-adds-up-is-drawn-as-a-set") &&
+    plate.filter((r) => comparison.includes(r.name)).length >= 2;
+  const bracketLane = rowsBracketed ? gapOf(annot, 1.4) : 0;
+  const rowValue = ROWS
+    ? scaleLinear()
+        .domain([0, Math.max(...plate.map((r) => r.value))])
+        .range([PAD + nameGutter, width - PAD - valueGutter - bracketLane])
+    : null;
+  const columns = plate.map((r) =>
+    ROWS
+      ? {
+          ...r,
+          x: PAD + nameGutter,
+          w: Math.max(rowValue!(r.value) - (PAD + nameGutter), 1),
+          y: rowBand!(r.name)!,
+          h: rowBand!.bandwidth(),
+          isSubject: r.name === subject,
+          inComparison: comparison.includes(r.name),
+        }
+      : {
+          ...r,
+          x: band(r.name)!,
+          w: band.bandwidth(),
+          y: magnitude(r.value),
+          h: baseline - magnitude(r.value),
+          isSubject: r.name === subject,
+          inComparison: comparison.includes(r.name),
+        },
+  );
 
   const subjectColumn = columns.find((c) => c.isSubject)!;
   const setColumns = columns.filter((c) => c.inComparison);
@@ -223,6 +398,20 @@ export function DirectedColumns({
   const bracketFrom = setColumns.length ? Math.min(...setColumns.map((c) => c.x)) : 0;
   const bracketTo = setColumns.length ? Math.max(...setColumns.map((c) => c.x + c.w)) : 0;
 
+  /** The rows reading of the same three annotations: the level the subject reaches is a vertical
+   *  line at its own bar end, and the set is bracketed down the lane reserved at the right. */
+  const ruleX = subjectColumn.x + subjectColumn.w;
+  const ruleFromY = subjectColumn.y + subjectColumn.h;
+  const ruleToY = bracketed ? Math.max(...setColumns.map((c) => c.y + c.h)) : baseline;
+  const bracketX = width - PAD - bracketLane * 0.4;
+  const bracketFromY = setColumns.length ? Math.min(...setColumns.map((c) => c.y)) : 0;
+  const bracketToY = setColumns.length ? Math.max(...setColumns.map((c) => c.y + c.h)) : 0;
+  /** In rows the note takes the gutter the names have vacated, under the plot and above the source. */
+  const noteLines =
+    ROWS && bracketed
+      ? wrap(set(comparisonNote, annot), width - PAD * 2, annot).slice(0, deepestName)
+      : [];
+
   // ── the labels that compete for space, arbitrated ─────────────────────────
   const requests = [
     ...(labelled
@@ -230,15 +419,17 @@ export function DirectedColumns({
           id: `value-${c.name}`,
           treatment: "value-on-the-mark",
           text: set(format(c.value), value),
-          at: { x: c.x + c.w / 2, y: c.y },
-          // A value belongs above its own column's tip and nowhere else: `below` would put it
-          // inside the fill, which is this type's named accessibility trap.
-          anchors: ["above"],
+          // A value belongs at its own mark's tip and nowhere else: `below` (or, in rows, `left`)
+          // would put it inside the fill, which is this type's named accessibility trap.
+          at: ROWS
+            ? { x: c.x + c.w, y: c.y + c.h / 2 }
+            : { x: c.x + c.w / 2, y: c.y },
+          anchors: ROWS ? ["right"] : ["above"],
           priority: c.isSubject ? 9 : 6,
           register: value,
         }))
       : []),
-    ...(bracketed
+    ...(bracketed && !ROWS
       ? [
           {
             id: "comparison-note",
@@ -265,7 +456,14 @@ export function DirectedColumns({
       priority,
     })),
     {
-      frame: { left: PAD, top: plotTop - value.fontSize * 1.6, right: width - PAD, bottom: baseline },
+      frame: ROWS
+        ? { left: PAD + nameGutter, top: plotTop, right: width - PAD, bottom: baseline }
+        : {
+            left: PAD,
+            top: plotTop - value.fontSize * 1.6,
+            right: width - PAD,
+            bottom: baseline,
+          },
       measure: (text: string) => {
         const request = requests.find((r) => r.text === text)!;
         const b = measureTextBand(text, sizeOf(request.register));
@@ -321,7 +519,7 @@ export function DirectedColumns({
       height={height}
       viewBox={`0 0 ${width} ${height}`}
       role="img"
-      aria-label={alt}
+      aria-label={typeof alt === "function" ? alt(plate) : alt}
     >
       <rect x={0} y={0} width={width} height={height} fill={direction.ground} />
 
@@ -358,16 +556,47 @@ export function DirectedColumns({
       {/* The zero baseline: the floor the lengths are measured from, and the only rule this plate
           draws — every column carries its own number, so an axis would be the same decoding done
           twice. */}
-      <line
-        x1={PAD}
-        x2={width - PAD}
-        y1={baseline}
-        y2={baseline}
-        stroke={ink}
-        strokeWidth={direction.stroke.rule}
-      />
+      {ROWS ? (
+        <line
+          x1={PAD + nameGutter}
+          x2={PAD + nameGutter}
+          y1={plotTop}
+          y2={baseline}
+          stroke={ink}
+          strokeWidth={direction.stroke.rule}
+        />
+      ) : (
+        <line
+          x1={PAD}
+          x2={width - PAD}
+          y1={baseline}
+          y2={baseline}
+          stroke={ink}
+          strokeWidth={direction.stroke.rule}
+        />
+      )}
 
-      {bracketed && (
+      {bracketed && ROWS && (
+        <>
+          <line
+            x1={ruleX}
+            x2={ruleX}
+            y1={ruleFromY}
+            y2={ruleToY}
+            stroke={direction.accent}
+            strokeWidth={direction.stroke.rule}
+            strokeDasharray="6 5"
+          />
+          <path
+            d={`M${bracketX - 5} ${bracketFromY} L${bracketX} ${bracketFromY} L${bracketX} ${bracketToY} L${bracketX - 5} ${bracketToY}`}
+            fill="none"
+            stroke={direction.accent}
+            strokeWidth={direction.stroke.rule}
+          />
+        </>
+      )}
+
+      {bracketed && !ROWS && (
         <>
           <line
             x1={ruleFrom}
@@ -397,21 +626,47 @@ export function DirectedColumns({
       {/* Category names under the baseline, in their own band. Furniture in a reserved gutter: the
           arbiter's four anchors would place a name wherever there was room, and a name that is not
           under its column names the wrong country. */}
-      {columns.map((c) =>
-        nameLines.get(c.name)!.map((l, i) => (
-          <text
-            key={`${c.name}-${i}`}
-            x={c.x + c.w / 2}
-            y={baseline + annot.fontSize * 1.5 + i * nameLead}
-            textAnchor="middle"
-            {...line(annot)}
-            fill={c.isSubject ? ink : annot.fill}
-            fontWeight={c.isSubject ? 700 : annot.fontWeight}
-          >
-            {l}
-          </text>
-        )),
-      )}
+      {ROWS
+        ? columns.map((c) => (
+            <text
+              key={c.name}
+              x={PAD + nameGutter - gapOf(annot, 0.5)}
+              y={c.y + c.h / 2 + annot.fontSize * 0.34}
+              textAnchor="end"
+              {...line(annot)}
+              fill={c.isSubject ? ink : annot.fill}
+              fontWeight={c.isSubject ? 700 : annot.fontWeight}
+            >
+              {c.name}
+            </text>
+          ))
+        : columns.map((c) =>
+            nameLines.get(c.name)!.map((l, i) => (
+              <text
+                key={`${c.name}-${i}`}
+                x={c.x + c.w / 2}
+                y={baseline + annot.fontSize * 1.5 + i * nameLead}
+                textAnchor="middle"
+                {...line(annot)}
+                fill={c.isSubject ? ink : annot.fill}
+                fontWeight={c.isSubject ? 700 : annot.fontWeight}
+              >
+                {l}
+              </text>
+            )),
+          )}
+
+      {noteLines.map((l, i) => (
+        <text
+          key={`note-${i}`}
+          x={PAD}
+          y={baseline + annot.fontSize * 1.5 + i * nameLead}
+          {...line(annot)}
+          fill={accentInk}
+        >
+          {l}
+        </text>
+      ))}
     </svg>
   );
 }

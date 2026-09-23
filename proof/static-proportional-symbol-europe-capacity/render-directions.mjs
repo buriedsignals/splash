@@ -30,7 +30,11 @@ import { plateWaterField } from "../../scripts/map-beat/plate-water.mjs";
 import { readDirection } from "../../scripts/design-base/read-direction.mjs";
 import { composeDirections, guardColour, report } from "../../scripts/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "../../scripts/design-base/resolve-families.mjs";
-import { DirectedProportionalSymbol, worstCellInk } from "./DirectedProportionalSymbol.tsx";
+import {
+  DirectedProportionalSymbol,
+  minMapShare,
+  worstCellInk,
+} from "./DirectedProportionalSymbol.tsx";
 import { assertBeatMayEnter, directedFrame, exportSizeFromArgv, nameAtSize } from "#shared/chart-beat/directed-size.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -276,8 +280,36 @@ const waterField = plateWaterField(plateDir(DIRECTION_FILES[0].replace(/\.md$/, 
  *
  *  The cut is editorial and it is printed: this plate is about where the WEIGHT is, and the stations
  *  it drops are the ones carrying least of it. */
-const SMALLEST_MAP = 596;
-const THRESHOLDS = [0, 50, 100, 200, 400, 800];
+/** THE SMALLEST CAMERA **THIS SIZE** GIVES, not the one landscape gives.
+ *
+ *  596 is the column left beside the widest panel at 960x540, and while that was the only frame this
+ *  beat drew it was the whole answer. It is not the answer at 1080x1080: there the header goes on top
+ *  and the map is FITTED into the band the copy leaves, which owes a third of the plate — 185px of
+ *  camera, not 596. Measured 2026-09-23, the 386 stations chosen against 596px came to **99 % ink** in
+ *  their busiest cell at 201px and the component refused the plate outright, correctly: the stroke is
+ *  0.7px whatever the camera, so halving the map does not halve the ink, it doubles its share.
+ *
+ *  So the threshold ladder is climbed against the smallest map the SIZE can produce, and what it cuts
+ *  is stated on the plate in three places that all read `threshold` — the standfirst, the limit note
+ *  and the key's smaller circle. This is the ladder's own R8, reclassify AND SAY SO, spent because the
+ *  frame changed rather than because the data did.
+ *
+ *  The 120 is two generous pads: the band floor is a third of `height - PAD * 2` and `PAD` is the
+ *  direction's, which is not known here. Taking the largest pad any direction uses makes this the
+ *  SMALLEST band any of them can give, which is the conservative end and the one the comment above
+ *  asks for. */
+const SMALLEST_MAP =
+  SIZE === "landscape"
+    ? 596
+    : Math.round(
+        (EXPORT_FRAME.height - 120) *
+          minMapShare(EXPORT_FRAME.width, EXPORT_FRAME.height) *
+          CAMERA_ASPECT,
+      );
+/** The ladder gained 1 200 between 800 and 1 600 when square was measured: at the cameras a square
+ *  plate can give, 800 MW is over the ink floor and 1 600 leaves 49 stations — one short of the
+ *  field floor below. A rung between them is not a softer rule, it is a finer one. */
+const THRESHOLDS = [0, 50, 100, 200, 400, 800, 1200, 1600, 3000, 6000];
 let threshold = null;
 for (const t of THRESHOLDS) {
   const kept = symbols.filter((_, i) => stations[i].capacity_mw >= t);
@@ -288,6 +320,22 @@ for (const t of THRESHOLDS) {
 }
 if (threshold === null)
   throw new Error("no capacity threshold leaves a legible field at this camera");
+const kept = stations.filter((s) => s.capacity_mw >= threshold).length;
+/** A FIELD, OR NOTHING. The threshold ladder always terminates — draw few enough circles and any
+ *  camera is legible — so on its own it will happily answer "one station" and call the plate clear.
+ *  Measured at 1080x1080: the stacked map band owes a third of the plate, which is 191px of camera,
+ *  and at 191px the 0.7px stroke is a third of a 400 MW circle's own radius. The ladder climbed to
+ *  6 000 MW and left ONE circle. That is not this beat — the claim is about where the weight SITS
+ *  across a continent — so the refusal is R9, stated with the arithmetic, and the journalist is
+ *  offered landscape and portrait, both of which this beat draws. */
+const FIELD_FLOOR = 50;
+if (kept < FIELD_FLOOR)
+  throw new Error(
+    `at ${SIZE} the map is at most ${SMALLEST_MAP}px wide, and the only capacity threshold that ` +
+      `keeps that camera under the ink floor is ${threshold} MW — ${kept} of ${total} stations. A ` +
+      `proportional-symbol map of a continent is a FIELD; ${kept} circles is a locator. This beat ` +
+      `ships at landscape and portrait.`,
+  );
 const drawnIdx = stations.map((s, i) => [s, i]).filter(([s]) => s.capacity_mw >= threshold);
 const shown = drawnIdx.map(([, i]) => symbols[i]);
 const shownStations = drawnIdx.map(([s]) => s);
@@ -317,7 +365,10 @@ console.log(
     `pire cellule ${worstCellInk(shown, SMALLEST_MAP, CAMERA_ASPECT, 0.7).toFixed(0)} %\n`,
 );
 
-const KEY_MW = [4000, 400];
+/** The smaller repère is the smallest circle the plate actually draws, once the threshold is above
+ *  400 MW — a key whose bottom circle is smaller than anything on the map is a scale for marks that
+ *  are not there. */
+const KEY_MW = [4000, Math.max(400, threshold)];
 const keyCircles = KEY_MW.map((mw) => ({ mw, r: radiusOf(mw) }));
 if (KEY_MW[0] > MAX_MW)
   throw new Error(`the key's largest circle is ${KEY_MW[0]} MW and the largest station is ${MAX_MW}`);
@@ -345,10 +396,27 @@ const n0 = (v) => plain(Math.round(v).toLocaleString("fr-FR"));
 const one = (v) =>
   plain(v.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
 
+/**
+ * FOUR FORMS, LONGEST FIRST. The fourth was filed when square proved that a two-line headline is
+ * itself a rung: at 540x540 the display register sets up to 39px of lead, so a form that comes back
+ * onto ONE line is worth more to the map than any sentence in the foot — 37px in `creme`, which is
+ * the difference between this plate drawing and refusing.
+ *
+ * AND THE FIRST FOURTH FORM WAS STRUCK OUT RATHER THAN SHIPPED. « Peu de sites, presque tout » was
+ * one line in two directions of three and it is not true: the hundred largest sites carry 43 % of
+ * the capacity, not almost all of it. A headline is the last place on a plate where a rung may be
+ * bought with a claim, so the rung was bought with a shorter TRUE one instead — the concentration
+ * is the argument, and the standfirst under it still carries the number.
+ */
 const title = [
   `Un centième des sites porte plus d’un tiers de la puissance bas-carbone d’Europe`,
   `Un centième des sites, plus d’un tiers de la puissance`,
   `La puissance tient dans peu de sites`,
+  /** OFF LANDSCAPE ONLY. A rung added to the bottom of a ladder still changes what the ladder
+   *  chooses at the top: landscape lays the copy in a 257px column, where this form fits at the
+   *  narrowest share the beat offers and the accepted plate takes a wider one. Filing it for every
+   *  size redrew a landscape render nobody asked to redraw. */
+  ...(SIZE === "landscape" ? [] : [`La puissance est concentrée`]),
 ];
 const limits = [
   `Un cercle par centrale, à ses propres coordonnées ; l’aire du cercle est sa puissance installée. ` +
@@ -369,19 +437,41 @@ const reading = [
   `Lecture : l’aire est la puissance ; les repères sont en MW. Cercles creux.`,
   `Lecture : l’aire est la puissance.`,
 ];
+/** THE CREDIT HAS A SHORT FORM OFF LANDSCAPE. Both parties are still named — who counted the
+ *  stations, who drew the ground under them — and what goes is the sentence saying the basemap was
+ *  tinted, which the plate shows by being tinted. Two lines of the body register become one, at the
+ *  foot of a frame where the map is fighting for every one of them. */
 const source =
-  "Source : WRI Global Power Plant Database v1.3.0 · fond de carte MapTiler (dataviz), teinté par la direction";
-const dotIs = `MW · un cercle = une centrale`;
-const subjectNote = `${shownStations.filter((s) => s.fuel === SUBJECT).length} sites nucléaires`;
-const limitNote =
-  `Sous ${threshold} MW, non dessiné : à 8 900 cercles le champ se referme. ` +
-  `Le petit solaire et le petit éolien sont sous-représentés dans la base.`;
+  SIZE === "landscape"
+    ? "Source : WRI Global Power Plant Database v1.3.0 · fond de carte MapTiler (dataviz), teinté par la direction"
+    : "Source : WRI Global Power Plant Database v1.3.0 · fond MapTiler (dataviz)";
+/** THE KEY'S TWO SENTENCES HAVE A SQUARE FORM, because at square they are set as a ROW beside the
+ *  key's circles rather than as a column under them, and a row has a width. Measured in `nocturne`,
+ *  whose annot register is tracked capitals: the long pair sets 392px against the 369px the key
+ *  leaves, so the count fell to its own line and cost the map a whole lead of the annot register.
+ *  Both forms say the same two things — one circle stands for one station, and this many of them
+ *  are the subject. */
+const shownNuclear = shownStations.filter((s) => s.fuel === SUBJECT).length;
+const dotIs = SIZE === "square" ? `MW · un cercle par centrale` : `MW · un cercle = une centrale`;
+const subjectNote =
+  SIZE === "square" ? `${shownNuclear} nucléaires` : `${shownNuclear} sites nucléaires`;
+/** THE LIMIT NOTE IS ON THE LADDER TOO. It is four lines of the axis register at a 452px column,
+ *  and stacked under the header at 540x540 it is the single biggest fixed block on the plate after
+ *  the key — the thing that left the map 88px where it owes 145. The first clause is what the plate
+ *  cannot be read without (what is NOT drawn); the base's own bias is a caveat the source line's
+ *  database already lets a reader chase. */
+const limitNote = [
+  `Sous ${threshold} MW, non dessiné : à ${n0(total)} cercles le champ se referme. ` +
+    `Le petit solaire et le petit éolien sont sous-représentés dans la base.`,
+  `Sous ${threshold} MW, non dessiné : à ${n0(total)} cercles le champ se referme.`,
+  `Sous ${threshold} MW, non dessiné.`,
+];
 
 const textPerRegister = {
   display: title.join(" "),
   eyebrow: EYEBROW,
   body: `${limits.join(" ")} ${source}`,
-  axis: limitNote,
+  axis: limitNote.join(" "),
   annot: `${reading.join(" ")} ${dotIs} ${subjectNote}`,
   value: `${nuclear.length} ${n0(total)}`,
 };
@@ -439,11 +529,25 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
         limits,
         reading,
         source,
+        /** THE ALT SAYS WHAT IS DRAWN, off landscape. The frame decides the capacity threshold —
+         *  200 MW and 386 circles at 1920x1080, 1 200 MW and 69 at 1080x1080 — so one sentence
+         *  cannot describe three plates, and a reader who cannot see the plate is the last person
+         *  who should be told the number the plate does NOT draw. Landscape keeps the sentence it
+         *  was accepted with. */
         alt:
-          `Carte de points de l’Europe : ${n0(total)} centrales bas-carbone, une par point, chacune ` +
-          `à ses propres coordonnées. Le champ est dense en Europe de l’Ouest et le long des côtes ; ` +
-          `les ${nuclear.length} sites nucléaires, cerclés, sont rares et surtout français. Ils font ` +
-          `${one(shareSites)} % des sites et ${one(shareCapacity)} % de la puissance installée.`,
+          SIZE === "landscape"
+            ? `Carte de points de l’Europe : ${n0(total)} centrales bas-carbone, une par point, ` +
+              `chacune à ses propres coordonnées. Le champ est dense en Europe de l’Ouest et le ` +
+              `long des côtes ; les ${nuclear.length} sites nucléaires, cerclés, sont rares et ` +
+              `surtout français. Ils font ${one(shareSites)} % des sites et ` +
+              `${one(shareCapacity)} % de la puissance installée.`
+            : `Carte de cercles proportionnels de l’Europe : les ${n0(shownStations.length)} ` +
+              `centrales bas-carbone de ${threshold} MW ou plus, une par cercle, à leurs propres ` +
+              `coordonnées, l’aire du cercle valant la puissance installée. Elles font ` +
+              `${one(shareShownSites)} % des ${n0(total)} sites que la base recense et ` +
+              `${one(shareShownMw)} % de la puissance ; sous ${threshold} MW rien n’est dessiné. ` +
+              `Le champ est dense en Europe de l’Ouest, et ${shownNuclear} des cercles dessinés ` +
+              `sont nucléaires.`,
         eyebrow: EYEBROW,
         direction,
         treatments: offered.map((t) => t.id),
@@ -457,9 +561,10 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       name: nameAtSize(id, SIZE),
       scale: EXPORT_FRAME.scale,
     });
-    console.log(`  -> renders/${id}.png\n`);
+    console.log(`  -> renders/${nameAtSize(id, SIZE)}.png\n`);
   } catch (error) {
-    for (const ext of ["png", "svg"]) await rm(join(OUT, `${id}.${ext}`), { force: true });
+    for (const ext of ["png", "svg"])
+      await rm(join(OUT, `${nameAtSize(id, SIZE)}.${ext}`), { force: true });
     refused.push({ id, why: error.message });
     console.log(`  REFUSED — ${error.message}\n`);
   }

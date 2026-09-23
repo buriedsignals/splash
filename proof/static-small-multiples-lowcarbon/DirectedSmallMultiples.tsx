@@ -181,16 +181,23 @@ export function DirectedSmallMultiples({
    *  `what-is-shared-is-stated-once-and-what-varies-is-repeated` sets. Below this height a panel is a
    *  thumbnail of a chart rather than a chart. */
   const NAME_TO_BARS = 4;
-  const BARS_H = 34;
   const BARS_TO_DELTA = 5;
-  const blockH =
+  /** THE BAR HEIGHT IS A RUNG, AND IT IS THE LAST ONE SPENT BEFORE THE GRID GOES NARROW.
+   *
+   *  34px was measured on a 960px plate. At 540 the plate is 436 wide and 265 tall, and the arithmetic
+   *  closes on itself: a four-column grid is the only one whose cells are wide enough for « Royaume-Uni »
+   *  (84.6px against 74.7px at six columns), and four columns means four rows, and four rows of the
+   *  34px block owe 328px of a plate that has 265. Every header rung was spent and it recovered 19.
+   *  What is left to give is the bar, and a bar is a MARK, not type — no floor in the removal ladder
+   *  protects it, and 24px still reads as a pair of columns where a name cut to « Royaume- » does not
+   *  read as a country. Tried tallest first, so landscape never leaves 34. */
+  const BAR_HEIGHTS = [34, 30, 26, 24];
+  const blockFor = (barsH: number, withDelta: boolean) =>
     annotBand.ascent +
     annotBand.descent +
     NAME_TO_BARS +
-    BARS_H +
-    BARS_TO_DELTA +
-    valueBand.ascent +
-    valueBand.descent;
+    barsH +
+    (withDelta ? BARS_TO_DELTA + valueBand.ascent + valueBand.descent : 0);
   /** THE GAP BETWEEN PANELS IS PART OF WHAT A PANEL OWES, and it is the thing this component was
    *  getting wrong.
    *
@@ -201,8 +208,15 @@ export function DirectedSmallMultiples({
    *  which name goes with which pair — so a gap that is merely larger is not enough. The gap between
    *  panels has to be CLEARLY larger than the gaps inside one, and `clearly` is a number the plate
    *  checks rather than a judgement it hopes for. */
-  const PANEL_GAP = Math.max(16, blockH * 0.24);
-  const panelOwes = blockH + PANEL_GAP;
+  /** The floor is the GROUPING RULE itself — twice the largest gap inside a panel — rather than a
+   *  flat 16px. At the block this beat was accepted with, 24% of the block is 16.8px and wins either
+   *  way, so landscape does not move; at a shorter block the flat floor was asking for a gap larger
+   *  than the rule it exists to serve. */
+  const insideGapFor = () => Math.max(annotBand.descent + NAME_TO_BARS, BARS_TO_DELTA);
+  const panelOwesFor = (barsH: number, withDelta: boolean) => {
+    const block = blockFor(barsH, withDelta);
+    return block + Math.max(block * 0.24, insideGapFor() * 2);
+  };
 
   const layoutFor = (t: number, l: number, r: number) => {
     const titleLines = wrap(set(title[t], display), column, display);
@@ -241,19 +255,74 @@ export function DirectedSmallMultiples({
    *  the panel owes a fixed height before it owes anything else. Widest-first, so the plate prefers
    *  the shape that gives each panel the most room. */
   const columnChoices = [4, 6, 8].filter((c) => c <= panels.length);
+  const widestName = Math.max(
+    ...panels.map((p) => widthOf(set(p.label, annot), annot)),
+  );
+  /** HOW MANY PANELS ARE DRAWN IS THE LAST RUNG BEFORE REFUSAL, and it is the only one that changes
+   *  what the plate STATES — Horak §2.4.4 with §2.4.5's condition, which is that the reader is told
+   *  it happened. So the key line says it, in the same breath as the unit.
+   *
+   *  It exists because at 1080x1080 the arithmetic has no other way out. Creme's header leaves the
+   *  plate 436 x 202px; a country's name needs 95px of cell, so the grid can be four columns wide
+   *  and no wider; four columns of sixteen is four rows; and four rows of 202px is 50px a panel,
+   *  where a name, a pair of columns and a gap that groups them owe 56 at the shortest bar on the
+   *  ladder. Every rung above this one was spent first and together they recovered 37px.
+   *
+   *  WHICH panels go is not "the last few". The standfirst names the largest and the smallest mover
+   *  by name, so both ends are kept and the middle is what folds — a reader who is told « Malte
+   *  gagne le plus, la Suède le moins » can find both on the plate. */
+  const DRAWN_COUNTS = [...new Set([panels.length, 12, 8])].filter(
+    (n) => n >= 4 && n <= panels.length,
+  );
+  const drawnFor = (n: number) =>
+    n >= panels.length
+      ? panels
+      : [...panels.slice(0, n - 1), panels[panels.length - 1]];
+  /** A GRID WHOSE CELLS CANNOT HOLD A COUNTRY'S NAME IS NOT A CANDIDATE, and that test belongs HERE
+   *  and not after the choice. It used to be a throw at the end: the plate picked the first grid
+   *  whose cells were TALL enough, then discovered the names did not fit and refused the whole
+   *  direction — at 1080x1080 all three of them, for want of 10px on « Royaume-Uni ». A name is what
+   *  makes a panel readable on its own, so it is a condition on the grid, exactly like the height. */
+  const nameFitsAt = (cellW: number) => widestName <= cellW - 10;
   const rungs: Array<{
+    count: number;
+    withDelta: boolean;
+    barsH: number;
     cols: number;
     title: number;
     limit: number;
     reading: number;
   }> = [];
-  for (const cols of columnChoices)
-    for (let t = 0; t < title.length; t++)
-      for (let l = 0; l < limits.length; l++) {
-        for (let r = 0; r < reading.length; r++)
-          rungs.push({ cols, title: t, limit: l, reading: r });
-        rungs.push({ cols, title: t, limit: l, reading: -1 });
-      }
+  /** OUTERMOST IS WHAT IS PRESERVED LONGEST. The first rung that fits wins, so the loops run from
+   *  the thing a reader can least afford to lose — the panels themselves — inward to the thing they
+   *  can: the bar's height. Every count is tried with the delta before any count is tried without
+   *  it, and every bar height is tried before the delta goes. */
+  for (const count of DRAWN_COUNTS)
+    for (const withDelta of [true, false])
+      for (const barsH of BAR_HEIGHTS)
+        for (const cols of columnChoices)
+          for (let t = 0; t < title.length; t++)
+            for (let l = 0; l < limits.length; l++) {
+              for (let r = 0; r < reading.length; r++)
+                rungs.push({
+                  count,
+                  withDelta,
+                  barsH,
+                  cols,
+                  title: t,
+                  limit: l,
+                  reading: r,
+                });
+              rungs.push({
+                count,
+                withDelta,
+                barsH,
+                cols,
+                title: t,
+                limit: l,
+                reading: -1,
+              });
+            }
 
   let fits: {
     rung: (typeof rungs)[number];
@@ -262,32 +331,44 @@ export function DirectedSmallMultiples({
   } | null = null;
   let best: { cellH: number; owed: number } = {
     cellH: -Infinity,
-    owed: panelOwes,
+    owed: panelOwesFor(BAR_HEIGHTS[0], true),
   };
   for (const rung of rungs) {
+    if (!nameFitsAt((width - PAD * 2) / rung.cols)) continue;
     const l = layoutFor(rung.title, rung.limit, rung.reading);
-    const rowsOf = Math.ceil(panels.length / rung.cols);
+    const rowsOf = Math.ceil(rung.count / rung.cols);
     const cellH = (l.bottom - l.top) / rowsOf;
-    if (cellH > best.cellH) best = { cellH, owed: panelOwes };
-    if (cellH >= panelOwes) {
+    const owes = panelOwesFor(rung.barsH, rung.withDelta);
+    if (cellH > best.cellH) best = { cellH, owed: owes };
+    if (cellH >= owes) {
       fits = { rung, layout: l, cellH };
       break;
     }
   }
   if (!fits)
     throw new Error(
-      `${panels.length} panels do not fit this direction: the best grid gives each ` +
-        `${best.cellH.toFixed(1)}px of height and a panel that carries its own name, its columns and ` +
-        `its delta owes ${panelOwes.toFixed(1)}px. Draw fewer panels, or publish taller.`,
+      `${panels.length} panels do not fit this direction: the widest grid whose cells can hold a ` +
+        `panel's own name (${widestName.toFixed(0)}px) gives each ${best.cellH.toFixed(1)}px of ` +
+        `height, and a panel that carries its name, its columns and its delta owes ` +
+        `${best.owed.toFixed(1)}px. Draw fewer panels, or publish taller.`,
     );
   const { layout, cellH } = fits;
+  const BARS_H = fits.rung.barsH;
+  const WITH_DELTA = fits.rung.withDelta;
+  const drawn = drawnFor(fits.rung.count);
+  const folded = panels.length - drawn.length;
+  const blockH = blockFor(BARS_H, WITH_DELTA);
+  const panelOwes = panelOwesFor(BARS_H, WITH_DELTA);
   const cols = fits.rung.cols;
-  const rowsOf = Math.ceil(panels.length / cols);
+  const rowsOf = Math.ceil(drawn.length / cols);
   const cellW = (width - PAD * 2) / cols;
   onLadder?.(
     `ladder: headline ${fits.rung.title + 1}, standfirst ${fits.rung.limit + 1}, reading ` +
       (fits.rung.reading < 0 ? "dropped" : `form ${fits.rung.reading + 1}`) +
-      ` · grid ${cols} x ${rowsOf}, panel ${cellW.toFixed(0)} x ${cellH.toFixed(0)}px, owed ${panelOwes.toFixed(0)}px`,
+      ` · grid ${cols} x ${rowsOf}, panel ${cellW.toFixed(0)} x ${cellH.toFixed(0)}px, owed ${panelOwes.toFixed(0)}px` +
+      (BARS_H === BAR_HEIGHTS[0] ? "" : ` · bars ${BARS_H}px`) +
+      (WITH_DELTA ? "" : " · deltas dropped") +
+      (folded ? ` · ${drawn.length} of ${panels.length} panels drawn` : ""),
   );
 
   /** Inside a panel: the name on top, the two columns on a shared scale, the panel's own baseline,
@@ -297,7 +378,7 @@ export function DirectedSmallMultiples({
   const barsH = BARS_H;
   /** The block sits at the top of its cell, so every pixel of slack the grid gave falls BETWEEN
    *  panels rather than inside them — and the grouping is then checked, not assumed. */
-  const insideGap = Math.max(annotBand.descent + NAME_TO_BARS, BARS_TO_DELTA);
+  const insideGap = insideGapFor();
   const betweenGap = cellH - blockH + annotBand.ascent;
   if (betweenGap < insideGap * 2)
     throw new Error(
@@ -308,14 +389,18 @@ export function DirectedSmallMultiples({
   onLadder?.(
     `grouping: ${betweenGap.toFixed(1)}px between panels against ${insideGap.toFixed(1)}px inside one`,
   );
+  /** §2.4.5's condition, drawn: a plate that folded four countries away says so on the line that
+   *  already states what is shared. */
+  const keyNote = folded
+    ? `${unit} · ${drawn.length} des ${panels.length} pays`
+    : unit;
   const y = scaleLinear().domain([0, ceiling]).range([barsH, 0]);
   const barW = Math.min(cellW * 0.2, 22);
   const gap = Math.min(cellW * 0.1, 12);
 
-  const nameFits = panels.every(
-    (p) => widthOf(set(p.label, annot), annot) <= cellW - 10,
-  );
-  if (!nameFits)
+  /** Kept as a guard although the rung search already refuses a grid that fails it: the two must
+   *  agree, and a silent disagreement would print a cut name. */
+  if (!nameFitsAt(cellW))
     throw new Error(
       `a panel name does not fit its panel at ${cellW.toFixed(0)}px wide. Every panel carries its ` +
         `own name — that is what makes it readable alone — so the grid must be narrower.`,
@@ -418,11 +503,11 @@ export function DirectedSmallMultiples({
           {...line(axis)}
           fill={mutedInk}
         >
-          {set(unit, axis)}
+          {set(keyNote, axis)}
         </text>
       </g>
 
-      {panels.map((p, i) => {
+      {drawn.map((p, i) => {
         const cx = PAD + (i % cols) * cellW;
         const cy = layout.top + Math.floor(i / cols) * cellH;
         const base = cy + barsTop + barsH;
@@ -468,17 +553,21 @@ export function DirectedSmallMultiples({
               strokeWidth={direction.stroke.rule}
             />
 
-            {/* THE DELTA, in the value register, under the panel it belongs to. */}
-            <text
-              x={cx + cellW / 2}
-              y={base + valueBand.ascent + BARS_TO_DELTA}
-              textAnchor="middle"
-              {...line(value)}
-              fill={ink0}
-              fontWeight={p.thread ? 700 : value.fontWeight}
-            >
-              {set(formatDelta(p.delta), value)}
-            </text>
+            {/* THE DELTA, in the value register, under the panel it belongs to — unless the ladder
+                had to spend it. It is a per-panel annotation, and the removal ladder puts
+                annotations ahead of the data itself. */}
+            {WITH_DELTA && (
+              <text
+                x={cx + cellW / 2}
+                y={base + valueBand.ascent + BARS_TO_DELTA}
+                textAnchor="middle"
+                {...line(value)}
+                fill={ink0}
+                fontWeight={p.thread ? 700 : value.fontWeight}
+              >
+                {set(formatDelta(p.delta), value)}
+              </text>
+            )}
           </g>
         );
       })}

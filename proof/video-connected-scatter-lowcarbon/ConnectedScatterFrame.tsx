@@ -40,10 +40,17 @@ export type ConnectedScatterFrameProps = {
   legs: { from: number[]; corner: number[]; to: number[]; across: Line; up: Line };
   panel: {
     at: { x: number; y: number };
-    cleaner: { x: number; y: number };
-    lighter: { x: number; y: number };
+    // A COUNTER IS A STACK OF LINES, NOT A LINE. Measured 2026-09-24: « 16 sur 16 plus propres » set on one
+    // line makes the block 604px wide, and no seat in a square frame's 832x610 plot is clear of sixteen
+    // countries' marks at both scales. `build.mjs` steps a line-break ladder, so both the words and the
+    // baselines arrive as arrays — one baseline per line, landscape still one line each.
+    cleaner: Array<{ x: number; y: number }>;
+    lighter: Array<{ x: number; y: number }>;
     key: { cy: number; ring: number; disc: number; years: Line[] };
-    counterTexts: { cleaner: Record<string, Word>; lighter: Record<string, Word> };
+    counterTexts: { cleaner: Record<string, Word[]>; lighter: Record<string, Word[]> };
+    // R8's SENTENCE, or null. When the frame cannot name every country, `build.mjs` names as many as it holds and
+    // writes the count here; the plate then says so in the beat's own voice rather than losing the names silently.
+    note: Line | null;
   };
   halo: { axis: number; value: number };
   states: Record<string, number>[];
@@ -147,13 +154,18 @@ export function ConnectedScatterFrame(props: ConnectedScatterFrameProps & { at: 
       })}
 
       <g transform={`translate(${panel.at.x} ${panel.at.y})`} opacity={scene.furniture}>
-        <Text line={{ ...cleaner, ...panel.cleaner }} register={r.value} fill={colours.text.count} opacity={scene.travel > 0 ? 1 : 0} halo={valueHalo} />
-        <Text line={{ ...lighter, ...panel.lighter }} register={r.value} fill={colours.text.count} opacity={scene.lighterShown} halo={valueHalo} />
+        {cleaner.map((word, i) => (
+          <Text key={`cleaner${i}`} line={{ ...word, ...panel.cleaner[i] }} register={r.value} fill={colours.text.count} opacity={scene.travel > 0 ? 1 : 0} halo={valueHalo} />
+        ))}
+        {lighter.map((word, i) => (
+          <Text key={`lighter${i}`} line={{ ...word, ...panel.lighter[i] }} register={r.value} fill={colours.text.count} opacity={scene.lighterShown} halo={valueHalo} />
+        ))}
         <circle cx={panel.key.ring} cy={panel.key.cy} r={R} fill={colours.ground} stroke={colours.context} strokeWidth={strokes.ring} />
         <circle cx={panel.key.disc} cy={panel.key.cy} r={R} fill={colours.context} />
         {panel.key.years.map((y, i) => (
           <Text key={`year${i}`} line={y} register={r.axis} fill={colours.text.axis} halo={axisHalo} />
         ))}
+        {panel.note ? <Text line={panel.note} register={r.axis} fill={colours.text.axis} halo={axisHalo} /> : null}
       </g>
 
       <g transform={`translate(${credit.at.x} ${credit.at.y})`} opacity={scene.source}>

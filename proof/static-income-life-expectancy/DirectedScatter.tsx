@@ -73,6 +73,7 @@ export function DirectedScatter({
   eyebrow,
   direction,
   treatments,
+  onLadder,
   frame,
 }: {
   pairs: Pair[];
@@ -85,13 +86,15 @@ export function DirectedScatter({
   xQualifier: string;
   yName: string;
   yQualifier: string;
-  title: string;
-  limits: string;
+  title: string[];
+  limits: string[];
   source: string;
   alt: string;
   eyebrow: string;
   direction: any;
   treatments: string[];
+  /** Every rung the ladder spends is a decision, so it is reported rather than taken quietly. */
+  onLadder?: (note: string) => void;
   /** The frame this render draws at — `sizeFor(size)` halved, so one component
    *  serves landscape, portrait and square. Absent means the landscape this beat was accepted at. */
   frame?: { width: number; height: number };
@@ -161,41 +164,108 @@ export function DirectedScatter({
     return lines;
   }
 
+  /** THE FORM THE FRAME ASKS FOR, taken off the frame itself. Everything conditioned on it leaves
+   *  landscape exactly as it was accepted; 960 x 540 is what this plate was measured against. */
+  const SIZE = width > height ? "landscape" : width === height ? "square" : "portrait";
+
   // ── header ────────────────────────────────────────────────────────────────
   const column = width - PAD * 2;
-  const titleLines = wrap(set(title, display), column, display);
   const titleLead = leadOf(display);
-  const limitLines = wrap(set(limits, body), column, body);
   const bodyLead = leadOf(body);
   const sourceLines = wrap(set(source, body), column, body);
 
   const eyebrowBaseline = PAD + eyebrowReg.fontSize;
   const titleTop =
     eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
-  const limitsTop =
-    titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
   const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
 
-  const plot = {
-    left: PAD + widthOf("00", axis) + 16,
-    right: width - PAD,
-    top: limitsTop + limitLines.length * bodyLead + gapOf(annot, 1.7143),
+  const plotLeft = PAD + widthOf("00", axis) + 16;
+  const plotRight = width - PAD;
+
+  const layoutFor = (titleIndex: number, limitIndex: number) => {
+    const titleLines = wrap(set(title[titleIndex], display), column, display);
+    const limitLines =
+      limitIndex < 0 ? [] : wrap(set(limits[limitIndex], body), column, body);
+    const titleBottom = titleTop + titleLines.length * titleLead;
+    const limitsTop = titleBottom + gapOf(body, 0.4138);
+    const top =
+      (limitLines.length ? limitsTop + limitLines.length * bodyLead : titleBottom) +
+      gapOf(annot, 1.7143);
     // Two rows below the plot in the axis register: the ticks, then the axis name with its
     // qualifier beside it.
-    bottom: sourceTop - gapOf(body, 1.1034) - axis.fontSize * 3.4,
+    const bottom = sourceTop - gapOf(body, 1.1034) - axis.fontSize * 3.4;
+    return { titleLines, limitLines, limitsTop, top, bottom };
   };
+
+  /**
+   * THE REMOVAL LADDER. `scatter` has no twin form — rotating one violates reading direction, which
+   * is why `type-at-size.mjs` refuses it at a tall frame by name — and no measured aspect range. It
+   * is admitted at square on the strength of a render somebody read, and that render has to BE a
+   * scatter.
+   *
+   * MEASURED at 1080x1080 with the copy this beat ships: the headline runs to four lines and the
+   * standfirst to four more, and the plot comes out 12px tall. The five y ticks then landed 3px
+   * apart — « 40 » through « 50 » through « 60 » — and the y axis name, which sits just above the
+   * plot, landed on all of them. That is the refusal the square render fired, and nothing about it
+   * is a type-setting problem: there was no plot left.
+   *
+   * So the plot is OWED a third of the frame, the share `proof/static-choropleth-europe-lowcarbon`
+   * gives its map at the same size and for the same reason, and the ladder removes until it is paid:
+   * the standfirst's shorter forms, then the standfirst itself, then the headline's. Landscape is
+   * owed nothing and never leaves the first rung.
+   */
+  const rungs: Array<{ title: number; limit: number }> = [];
+  for (let t = 0; t < title.length; t++)
+    for (let l = 0; l < limits.length; l++) rungs.push({ title: t, limit: l });
+  for (let t = 0; t < title.length; t++) rungs.push({ title: t, limit: -1 });
+  const tried = rungs.map((rung) => ({ rung, layout: layoutFor(rung.title, rung.limit) }));
+  const plotOwed = SIZE === "landscape" ? 0 : height / 3;
+  const fits =
+    tried.find(({ layout }) => layout.bottom - layout.top >= plotOwed) ??
+    tried.reduce((a, b) =>
+      b.layout.bottom - b.layout.top > a.layout.bottom - a.layout.top ? b : a,
+    );
+  const layout = fits.layout;
+  const { titleLines, limitLines, limitsTop } = layout;
+  const plot = {
+    left: plotLeft,
+    right: plotRight,
+    top: layout.top,
+    bottom: layout.bottom,
+  };
+  onLadder?.(
+    `ladder: headline ${fits.rung.title + 1}, standfirst ` +
+      (fits.rung.limit < 0 ? "dropped" : `${fits.rung.limit + 1}`) +
+      ` · plot ${(plot.right - plot.left).toFixed(0)} x ${(plot.bottom - plot.top).toFixed(0)}` +
+      (plotOwed ? `, owed ${plotOwed.toFixed(0)} of height` : ""),
+  );
 
   const xs = pairs.map((p) => p.x);
   const ys = pairs.map((p) => p.y);
   const x = scaleLog()
     .domain([Math.min(...xs) * 0.9, Math.max(...xs) * 1.1])
     .range([plot.left, plot.right]);
+  /** HEADROOM FOR THE STACKED PAIR, AND ONLY WHERE THE PAIR STACKS.
+   *
+   *  At a narrow frame the break's two sentences become a two-line block that has to live inside
+   *  the plot — there is no band above it — and the arbiter refuses to put a label on a mark.
+   *  Measured at 1080x1080 in `nocturne`, whose plot is the shortest of the three at 165px, every
+   *  anchor collided and the block was dropped. So the top of the plot is RESERVED: the y range
+   *  stops short of `plot.top` by the block's own height, which leaves a strip no point can reach
+   *  rather than hoping the cloud's top-left corner happens to be empty. The gridlines and ticks
+   *  follow the scale, so nothing else moves. */
+  const annotLeadForReserve = leadOf(annot);
+  const stackedPair =
+    SIZE !== "landscape" &&
+    on("declared-break-with-the-spread-on-each-side") &&
+    spread !== null;
+  const headroom = stackedPair ? 2 * annotLeadForReserve + 14 : 0;
   const y = scaleLinear()
     .domain([
       Math.floor(Math.min(...ys) / 10) * 10,
       Math.ceil(Math.max(...ys) / 10) * 10,
     ])
-    .range([plot.bottom, plot.top]);
+    .range([plot.bottom, plot.top + headroom]);
   const yTicks = y.ticks(5);
   const xTicks = [500, 1000, 2000, 5000, 10000, 20000, 50000, 100000].filter(
     (v) => v >= x.domain()[0] && v <= x.domain()[1],
@@ -212,8 +282,56 @@ export function DirectedScatter({
     TEXT_CONTRAST_MIN,
   );
 
+  const belowText = drawBreak
+    ? set(
+        `${spread!.below.count} pays sous ${money(breakAt)} \u00b7 ${spread!.below.range.toFixed(0)} ans d\u2019écart`,
+        annot,
+      )
+    : "";
+  const aboveText = drawBreak
+    ? set(`${spread!.above.count} au-dessus \u00b7 ${spread!.above.range.toFixed(0)} ans`, annot)
+    : "";
+  const annotLead = leadOf(annot);
+
   // ── the treatment layer, arbitrated ───────────────────────────────────────
-  const requests = drawBreak
+  /**
+   * THE TWO SIDES OF THE BREAK STACK WHERE THE PLATE IS NARROW, AND THEY STACK AS ONE REQUEST.
+   *
+   * At 960px the two sentences sit on one line, one on each side of the break, which is the whole
+   * point of the pair. At 540px they are 330px of ink over a 390px plot and the right-hand one is
+   * anchored past the break, so its box ran off the frame: measured at 1080x1080 and 1080x1920, the
+   * arbiter dropped « 133 au-dessus · 30 ans » outright, and at `nocturne` it dropped both. A
+   * dropped half of a pair is worse than a stacked pair — the plate then states one side of a
+   * comparison and not the other.
+   *
+   * Stacking them as TWO requests would let the arbiter place one and drop the other, which is the
+   * defect again. One request carrying both lines cannot come apart.
+   */
+  const requests = stackedPair
+    ? [
+        {
+          id: "break",
+          treatment: "declared-break-with-the-spread-on-each-side",
+          text: `${belowText}\n${aboveText}`,
+          /** AND IT HANGS INSIDE THE PLOT, not above it. Two lines are about 30px, and the band
+           *  between the standfirst and the plot is 16px: anchored `above` the block's own box fell
+           *  outside the arbiter's frame and was dropped for want of room, which is the defect
+           *  again. The plate's top-left corner is where a life-expectancy-against-income cloud has
+           *  no points — low income with high life expectancy — and the arbiter checks that rather
+           *  than trusting it. */
+          at: {
+            x:
+              plot.left +
+              8 +
+              Math.max(widthOf(belowText, annot), widthOf(aboveText, annot)) / 2,
+            y: plot.top,
+          },
+          anchors: ["below"],
+          priority: 8,
+          register: annot,
+        },
+      ]
+    : drawBreak
     ? [
         {
           id: "below",
@@ -271,13 +389,64 @@ export function DirectedScatter({
       ]
     : [];
 
-  /** Every point is a mark. A cloud of 165 is what an annotation has to clear. */
-  const marks = pairs.map((p) => ({
-    x: x(p.x) - MARK_RADIUS,
-    y: y(p.y) - MARK_RADIUS,
-    width: MARK_RADIUS * 2,
-    height: MARK_RADIUS * 2,
-  }));
+  /** Every point is a mark. A cloud of 165 is what an annotation has to clear.
+   *
+   *  AND SO IS THE AXIS FURNITURE, which the arbiter could not see. The y axis name sits just above
+   *  the plot, on the same band the break's labels are anchored to, and the tick labels line both
+   *  edges of it — measured at 1080x1080, « 40 » and « Esp\u00e9rance de vie \u00e0 la naissance »
+   *  shared 88% of the smaller run. Each of these sits at a box this component already knows, so
+   *  each belongs in `avoid` exactly like a mark; `proof/co2-suisse/DirectedLine.tsx` records the
+   *  same correction for its own y ticks. */
+  const axisBand = bandOf(axis);
+  /** AND ONLY WHERE THE PLATE IS NARROW. The furniture is ink at every size, but at 960px the
+   *  break's left-hand label already sits one pixel under the y axis name and was accepted there;
+   *  handing the arbiter that box made it drop the label instead, which is a worse plate than the
+   *  one it was fixing. The measured defect is a 540px one, so the correction is too. */
+  const furniture = SIZE === "landscape" ? [] : [
+    ...yTicks.map((t) => {
+      const text = set(String(t), axis);
+      const w = widthOf(text, axis);
+      return {
+        x: plot.left - 8 - w,
+        y: y(t) + axis.fontSize * 0.35 - axisBand.ascent,
+        width: w,
+        height: axisBand.ascent + axisBand.descent,
+      };
+    }),
+    ...xTicks.map((t) => {
+      const text = set(tick(t), axis);
+      const w = widthOf(text, axis);
+      return {
+        x: x(t) - w / 2,
+        y: plot.bottom + axis.fontSize * 1.7 - axisBand.ascent,
+        width: w,
+        height: axisBand.ascent + axisBand.descent,
+      };
+    }),
+    {
+      x: PAD,
+      y: plot.top - annot.fontSize * 1.2 - axisBand.ascent,
+      width:
+        widthOf(set(yName, axis), axis) + widthOf(` ${set(yQualifier, axis)}`, axis),
+      height: axisBand.ascent + axisBand.descent,
+    },
+    {
+      x: plot.left,
+      y: plot.bottom + axis.fontSize * 3.1 - axisBand.ascent,
+      width:
+        widthOf(set(xName, axis), axis) + widthOf(` ${set(xQualifier, axis)}`, axis),
+      height: axisBand.ascent + axisBand.descent,
+    },
+  ];
+  const marks = [
+    ...pairs.map((p) => ({
+      x: x(p.x) - MARK_RADIUS,
+      y: y(p.y) - MARK_RADIUS,
+      width: MARK_RADIUS * 2,
+      height: MARK_RADIUS * 2,
+    })),
+    ...furniture,
+  ];
 
   const { placed, dropped } = placeLabels(
     requests.map(({ id, treatment, text, at, anchors, priority }) => ({
@@ -297,10 +466,12 @@ export function DirectedScatter({
       },
       measure: (text: string) => {
         const request = requests.find((r) => r.text === text)!;
-        const b = measureTextBand(text, sizeOf(request.register));
+        const lines = text.split("\n");
+        const b = bandOf(request.register);
         return {
-          width: widthOf(text, request.register),
-          height: b.ascent + b.descent,
+          width: Math.max(...lines.map((l) => widthOf(l, request.register))),
+          height:
+            b.ascent + b.descent + (lines.length - 1) * leadOf(request.register),
         };
       },
       avoid: marks,
@@ -322,14 +493,17 @@ export function DirectedScatter({
     fill: r.fill,
   });
 
+  /** A granted box is drawn from ITS OWN TOP, one lead a line. For a single run every anchor agrees
+   *  with the per-anchor baseline — `above` holds the bottom edge and the box is exactly one band
+   *  tall — so landscape is untouched; for a stacked pair only the top edge is a fixed point. */
   const claimAt = (id: string) => {
     const p = byId.get(id);
     if (!p) return null;
-    return (
+    return p.text.split("\n").map((l: string, i: number) => (
       <text
-        key={id}
+        key={`${id}-${i}`}
         x={p.box.x}
-        y={baselineOf(p, annot)}
+        y={p.box.y + bandOf(annot).ascent + i * annotLead}
         fill={claimInk}
         fontFamily={annot.fontFamily}
         fontSize={annot.fontSize}
@@ -337,9 +511,9 @@ export function DirectedScatter({
         fontStyle={annot.fontStyle}
         letterSpacing={annot.letterSpacing}
       >
-        {p.text}
+        {l}
       </text>
-    );
+    ));
   };
 
   /** The axis name and its qualifier: one size, weight apart. Three publications.
@@ -453,6 +627,7 @@ export function DirectedScatter({
         />
       ))}
 
+      {claimAt("break")}
       {claimAt("below")}
       {claimAt("above")}
 

@@ -40,7 +40,8 @@ export type HistogramFrameProps = {
   barW: number;
   plot: { left: number; right: number };
   rug: { w: number; h: number };
-  bins: Array<{ lo: number; hi: number; open: boolean; count: number; x: number; centre: number; name: Line }>;
+  /** `name` is null on a bin the axis's naming ladder skips at a narrow frame. */
+  bins: Array<{ lo: number; hi: number; open: boolean; count: number; x: number; centre: number; name: Line | null }>;
   countries: Array<{ bin: number; j: number; tickX: number }>;
   ticks: Array<{ value: number; y: number; label: Line }>;
   tail: { moving: number[]; base: number[] };
@@ -144,9 +145,9 @@ export function HistogramFrame(props: HistogramFrameProps & { at: number; svgRef
           stroke={colours.zero}
           strokeWidth={props.strokes.zero}
         />
-        {bins.map((b) => (
-          <Text key={`name${b.lo}`} line={b.name} register={r.axis} fill={colours.text.name} />
-        ))}
+        {bins.map((b) =>
+          b.name ? <Text key={`name${b.lo}`} line={b.name} register={r.axis} fill={colours.text.name} /> : null,
+        )}
       </g>
 
       {scene.bars.map((b, i) =>

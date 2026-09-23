@@ -42,10 +42,15 @@ import {
   leadOf,
   registerOf,
 } from "#shared/design-base/register.mjs";
+import { MEASURED_ASPECT } from "#shared/chart-beat/type-at-size.mjs";
 
 /** 960 x 540 at scale 2 is the `landscape` this beat pins — 1920 x 1080, read from `BRIEF.md`. */
 const FRAME = { width: 960, height: 540 };
 const Y_TICK_HINT = 5;
+/** The ticks this beat will step down through at a narrow frame — `REMOVAL_LADDER`'s R2, which is
+ *  the one rung that gives slack back without removing anything vertical, so it is tried first. */
+const Y_TICK_LADDER = [5, 4, 3];
+const TYPE = "histogram";
 
 /**
  * How much of a bar is given up to separate it from its neighbour, as a FRACTION of the bar.
@@ -155,11 +160,18 @@ export function DirectedHistogram({
     return lines;
   }
 
+  /** THE FORM THIS FRAME ASKS FOR, taken off the frame itself rather than passed in — the same
+   *  three rows `sizes.mjs` files, recognised by shape. LANDSCAPE IS UNTOUCHED BY EVERYTHING BELOW:
+   *  every rung this component now walks is gated on a frame that is not wider than it is tall, so
+   *  the three accepted 1920x1080 renders come out byte-identical. */
+  const SIZE =
+    width > height ? "landscape" : width === height ? "square" : "portrait";
+  const NARROW = SIZE !== "landscape";
+
   // ── header ────────────────────────────────────────────────────────────────
   const column = width - PAD * 2;
   const titleLines = wrap(set(title, display), column, display);
   const titleLead = leadOf(display);
-  const limitLines = wrap(set(limits, body), column, body);
   const bodyLead = leadOf(body);
   const sourceLines = wrap(set(source, body), column, body);
 
@@ -174,22 +186,119 @@ export function DirectedHistogram({
   const nameOf = (b: Bin) => (b.open ? `${b.lo}+` : `${b.lo}–${b.hi}`);
   const labelled = on("bin-named-by-both-edges-and-an-open-top");
 
+  const plotLeft =
+    PAD + Math.max(...bins.map((b) => widthOf(String(b.count), axis))) + 26;
+  const plotRight = width - PAD;
+  const plotWidth = plotRight - plotLeft;
+  const topFor = (lines: number) =>
+    limitsTop + lines * bodyLead + gapOf(annot, 1.8571);
+  // Room for BOTH rows the axis register sets below the plot: the bin names at 1.7 lines and the
+  // unit at 3.3. A first version reserved 2.2 and drew at 3.2, so the unit sat on the source line.
+  const BOTH_ROWS = axis.fontSize * 4;
+  /** The bin names alone, with room for their descenders — what the foot costs once R1 has taken
+   *  the unit away. */
+  const NAMES_ROW = axis.fontSize * 2.2;
+  const bottomWith = (unitRow: boolean) =>
+    sourceTop - gapOf(body, 1.1034) - (unitRow ? BOTH_ROWS : NAMES_ROW);
+
+  /** THE MEASURED CEILING, AND IT IS WHAT DECIDES WHETHER ANY RUNG FIRES AT ALL.
+   *  `MEASURED_ASPECT.histogram` is 1.1:1 to 2.9:1 — a distribution's argument is a SHAPE, and the
+   *  probe that produced those numbers showed that no counter in this project can see a plot
+   *  squashed out of it. At 1080x1080 this beat's plot came out 385 x 74, which is 5.2:1: a row of
+   *  ten slivers under a four-line headline. */
+  const CEILING = MEASURED_ASPECT[TYPE]?.max;
+  const tooFlat = (top: number, bottom: number) =>
+    !!CEILING && (bottom <= top || plotWidth / (bottom - top) > CEILING);
+
+  /** R3, SPENT ONLY WHILE THE PLOT IS STILL TOO FLAT: the standfirst gives up its LAST SENTENCE,
+   *  repeatedly, down to one.
+   *
+   *  At 960px the standfirst sets in two lines. At 540 the same words take three — the column is
+   *  44 % narrower and nothing else changed — and the third line comes straight out of the plot,
+   *  which at square had 74px of height to give. The sentence it drops is the one the title already
+   *  implies (the far right of the distribution); what stays is the sentence that says what the
+   *  bars ARE.
+   *
+   *  The condition is what keeps it from firing where it is not needed: a TALL frame has height to
+   *  spare, and a rung that fires there takes a sentence away and buys the reader nothing. */
+  const sentencesOf = (text: string) => text.split(/(?<=[.!?])\s+/);
+  const limitsAtSize = (() => {
+    if (!NARROW) return limits;
+    let kept = sentencesOf(limits);
+    while (kept.length > 1) {
+      const lines = wrap(set(kept.join(" "), body), column, body).length;
+      if (!tooFlat(topFor(lines), bottomWith(true))) break;
+      kept = kept.slice(0, -1);
+    }
+    return kept.join(" ");
+  })();
+  const limitLines = wrap(set(limitsAtSize, body), column, body);
+  const plotTop = topFor(limitLines.length);
+  /** R1: THE AXIS TITLE, AND IT IS SPENT ONLY WHEN THE PLOT CANNOT AFFORD IT.
+   *
+   *  The unit line under the bin names is the cheapest thing below the plot that carries no bar,
+   *  and the headline already names the unit while the callout repeats it in its own sentence — so
+   *  the rung loses the unit's prominence and nothing else. It fires only when keeping it leaves
+   *  the plot flatter than the measured ceiling, so landscape and portrait — both of which can
+   *  afford it — keep it. */
+  const unitRow = !NARROW || !tooFlat(plotTop, bottomWith(true));
+  const naturalBottom = bottomWith(unitRow);
+
+  /** THE MEASURED CLAMP, the other end of the same range — worked in
+   *  `proof/co2-suisse/DirectedLine.tsx`. A tall frame offers more height than a histogram's own
+   *  accepted renders ever had: at 1080x1920 the plot would run 385 x 494, which is 0.78:1, and ten
+   *  bins become ten towers. The plot keeps its width, caps its height at the floor of its measured
+   *  range, and the slack is split above and below so the drawing sits where a reader expects it
+   *  rather than hanging off the standfirst. At landscape and at square the natural height is
+   *  already inside the range, so the slack is zero and nothing moves. */
+  const FLOOR_ASPECT = MEASURED_ASPECT[TYPE]?.min;
+  const naturalHeight = naturalBottom - plotTop;
+  const heldHeight = FLOOR_ASPECT
+    ? Math.min(naturalHeight, plotWidth / FLOOR_ASPECT)
+    : naturalHeight;
+  const slack = Math.max(0, naturalHeight - heldHeight);
+
   const plot = {
-    left:
-      PAD + Math.max(...bins.map((b) => widthOf(String(b.count), axis))) + 26,
-    right: width - PAD,
-    top: limitsTop + limitLines.length * bodyLead + gapOf(annot, 1.8571),
-    // Room for BOTH rows the axis register sets below the plot: the bin names at 1.7 lines and the
-    // unit at 3.3. A first version reserved 2.2 and drew at 3.2, so the unit sat on the source line.
-    bottom: sourceTop - gapOf(body, 1.1034) - axis.fontSize * 4,
+    left: plotLeft,
+    right: plotRight,
+    top: plotTop + slack / 2,
+    bottom: naturalBottom - slack / 2,
   };
 
   const most = Math.max(...bins.map((b) => b.count));
-  const counts = scaleLinear()
-    .domain([0, most])
-    .nice(Y_TICK_HINT)
-    .range([plot.bottom, plot.top]);
-  const ticks = counts.ticks(Y_TICK_HINT);
+  /** R2: THE VALUE-AXIS TICK COUNT, STEPPED DOWN UNTIL TWO NEIGHBOURS CLEAR.
+   *
+   *  Five is the hint this beat was tuned at, and at 960 x 540 it yields eight gridlines 24.3px
+   *  apart under a 9.6px ink band. At 540 x 540 the same eight land 9.3px apart — closer than the
+   *  band is tall, so 140, 120 and 100 print through each other while every assertion stays green.
+   *  The rung is walked against the plot the beat actually ends up with, and it REFUSES rather than
+   *  printing through: a ladder whose last rung still collides is a ladder that is too short. */
+  const digitBand = measureTextBand("0123456789", sizeOf(axis));
+  const tickInk = digitBand.ascent + digitBand.descent;
+  const scaleAt = (hint: number) =>
+    scaleLinear().domain([0, most]).nice(hint).range([plot.bottom, plot.top]);
+  const clearance = (scale: any, values: number[]) =>
+    values.length < 2
+      ? Infinity
+      : Math.min(
+          ...values.slice(1).map((v, i) => Math.abs(scale(v) - scale(values[i]))),
+        );
+  const rungs = NARROW ? Y_TICK_LADDER : [Y_TICK_HINT];
+  let counts = scaleAt(rungs[0]);
+  let ticks = counts.ticks(rungs[0]);
+  for (const hint of rungs) {
+    counts = scaleAt(hint);
+    ticks = counts.ticks(hint);
+    if (clearance(counts, ticks) >= tickInk + 2) break;
+  }
+  if (clearance(counts, ticks) < tickInk + 2)
+    throw new Error(
+      `the value axis cannot be read at ${width} x ${height}: even ${ticks.length} tick labels ` +
+        `land ${clearance(counts, ticks).toFixed(1)}px apart on a ${tickInk.toFixed(1)}px ink ` +
+        `band, so they would be printed through each other. The plot is ` +
+        `${plotWidth.toFixed(0)} x ${(plot.bottom - plot.top).toFixed(0)}px — run the removal ` +
+        `ladder above it rather than lowering the type floor.`,
+    );
   const band = (plot.right - plot.left) / bins.length;
 
   const bars = bins.map((b, i) => {
@@ -216,7 +325,33 @@ export function DirectedHistogram({
       })()
     : null;
 
-  const shareText = `${thresholdCount} pays sur ${thresholdTotal} sous ${threshold} ${unit}`;
+  /** THE CALLOUT IS A LADDER, longest form first, and the first that fits the room to the right of
+   *  the threshold is the one drawn.
+   *
+   *  It used to be one fixed string, and at 1080x1080 the arbiter could not place it at any anchor:
+   *  it printed `arbiter dropped 1: share`, exited 0, and the render lost BOTH the sentence and the
+   *  rule — because the rule is drawn only when its label was placed. The beat's whole claim is
+   *  `share-on-the-declared-side-of-a-threshold`; a size that silently drops it is not a smaller
+   *  version of this beat. The forms give up the year first, then the denominator's unit, then the
+   *  word `pays`; what no form gives up is the count, the total and the threshold. */
+  const unitHead = unit.split(",")[0];
+  const unitWord = unit.split(/[\s,]/)[0];
+  const shareForms = [
+    `${thresholdCount} pays sur ${thresholdTotal} sous ${threshold} ${unit}`,
+    `${thresholdCount} pays sur ${thresholdTotal} sous ${threshold} ${unitHead}`,
+    `${thresholdCount} pays sur ${thresholdTotal} sous ${threshold} ${unitWord}`,
+    `${thresholdCount} sur ${thresholdTotal} sous ${threshold} ${unitWord}`,
+  ];
+  /** THE ROOM IS THE ROOM THE ARBITER WILL ACTUALLY HAVE, and that is eight pixels less than the
+   *  distance to the frame edge: `arbiter.mjs` sets every label a `GAP` of 8 away from the point it
+   *  names before it tests the frame. Measuring without it picked a form 346px wide for a 348px
+   *  gap, the arbiter built a box at 8px further right, no anchor fitted, and the label — and with
+   *  it the threshold rule, which is drawn only when its label was placed — was dropped. */
+  const ARBITER_GAP = 8;
+  const shareRoom = cut ? width - PAD - (cut.x + 14) - ARBITER_GAP : 0;
+  const shareText =
+    shareForms.find((f) => widthOf(set(f, annot), annot) <= shareRoom) ??
+    shareForms[shareForms.length - 1];
 
   // ── the treatment layer, arbitrated ───────────────────────────────────────
   const requests = cut
@@ -398,14 +533,20 @@ export function DirectedHistogram({
         </>
       )}
 
-      <text
-        x={plot.left}
-        y={plot.bottom + axis.fontSize * 3.3}
-        {...line(axis)}
-        fill={muted}
-      >
-        {set(unit, axis)}
-      </text>
+      {/* THE AXIS TITLE — drawn only when the plot could afford it. R1 is the rung that takes it
+          away, and a rung that stops reserving the room while the run is still drawn puts the unit
+          straight through the source line: measured at 1080x1080, `tonnes de CO₂ par personne,
+          2023` and `Source : Global Carbon Budget` shared a line. */}
+      {unitRow && (
+        <text
+          x={plot.left}
+          y={plot.bottom + axis.fontSize * 3.3}
+          {...line(axis)}
+          fill={muted}
+        >
+          {set(unit, axis)}
+        </text>
+      )}
     </svg>
   );
 }

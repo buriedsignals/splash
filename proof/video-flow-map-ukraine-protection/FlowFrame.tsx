@@ -19,6 +19,8 @@ type Slot = "display" | "eyebrow" | "value" | "axis" | "source";
 
 export type FlowFrameProps = {
   frame: { width: number; height: number };
+  /** The ground band under the map — the square frame's own composition (`build.mjs`, `groundBand`); `null` elsewhere. */
+  band: { x: number; y: number; width: number; height: number } | null;
   registers: Record<Slot, Register>;
   titleCard: { register: Register; eyebrow: Line; title: Line[] };
   legend: {
@@ -54,13 +56,19 @@ function Word({ line, register, fill, opacity = 1, halo }: { line: Line; registe
 }
 
 export function FlowFrame(props: FlowFrameProps & { at: number; liveMap: (frame: number) => ReactNode; svgRef?: Ref<SVGSVGElement> }) {
-  const { frame, registers: r, colours, legend: key, credit, titleCard } = props;
+  const { frame, registers: r, colours, legend: key, credit, titleCard, band } = props;
   const scene = sceneAt(props as never, props.at);
 
   return (
     <div style={{ position: "absolute", left: 0, top: 0, width: frame.width, height: frame.height, background: colours.ground }}>
       {props.liveMap(props.at)}
       <svg ref={props.svgRef} style={{ position: "absolute", left: 0, top: 0 }} xmlns="http://www.w3.org/2000/svg" width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
+      {/* ── THE GROUND BAND: the square frame's foot, where the key stands on the direction's own ground instead of
+           on a map that has no place for it. It is drawn over the live map because the map is mounted on the WHOLE
+           frame and measured there; the camera is fitted into the box above it (`build.mjs`, `mapBox`), so what this
+           covers is ground the fit left over, not a slice taken off the flow map. ── */}
+      {band ? <rect x={band.x} y={band.y} width={band.width} height={band.height} fill={colours.ground} /> : null}
+
       {/* ── THE KEY: the people, the top two's share, the width scale. ── */}
       <g transform={`translate(${key.at.x} ${key.at.y})`} opacity={scene.furniture}>
         <Word line={{ ...key.peopleTexts[String(scene.arrived)], ...key.peopleRow }} register={r.value} fill={colours.text.count} opacity={scene.countShown} halo={{ colour: colours.ground, width: key.valueHalo }} />

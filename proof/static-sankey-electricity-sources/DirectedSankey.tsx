@@ -66,6 +66,7 @@ export function DirectedSankey({
   format,
   direction,
   treatments,
+  onLadder,
   frame,
 }: {
   sources: Node[];
@@ -73,15 +74,16 @@ export function DirectedSankey({
   flows: Flow[];
   tracked: { from: string; to: string };
   unit: string;
-  title: string;
-  limits: string;
-  reading: string;
+  title: string[];
+  limits: string[];
+  reading: string[];
   source: string;
   alt: string;
   eyebrow: string;
   format: (v: number) => string;
   direction: any;
   treatments: string[];
+  onLadder?: (note: string) => void;
   /** The frame this render draws at — `sizeFor(size)` halved, so one component
    *  serves landscape, portrait and square. Absent means the landscape this beat was accepted at. */
   frame?: { width: number; height: number };
@@ -125,22 +127,95 @@ export function DirectedSankey({
 
   // ── header and footer ─────────────────────────────────────────────────────
   const column = width - PAD * 2;
-  const titleLines = wrap(set(title, display), column, display);
   const titleLead = leadOf(display);
   const bodyLead = leadOf(body);
-  const limitLines = wrap(set(limits, body), column, body);
   const sourceLines = wrap(set(source, body), column, body);
-  const readingLines = wrap(set(reading, annot), column, annot);
 
-  const eyebrowBaseline = PAD + eyebrowReg.fontSize;
-  const titleTop = eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
-  const limitsTop = titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
-  const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
-  const readingTop = sourceTop - readingLines.length * bodyLead - gapOf(annot, READING_TO_SOURCE);
+  /** WHAT THE NODE LABELS OWE, AND WHY THEY GET IT FIRST. A sankey has no axis, so every node
+   *  prints its own total — fifteen labels that cannot be dropped, spaced by the annot register's
+   *  own band. Nine of them are on the source rail, and nine pitches is a hard floor on the plot's
+   *  height.
+   *
+   *  Measured at 1080 x 1080 on 2026-09-23: the plate had no ladder at all, so the copy took what it
+   *  liked and the nine source labels were pushed OUT THE TOP of a plot that could not hold them —
+   *  « Éolien 268,2 » and « Solaire 127,0 » ended up level with the standfirst, and in `nocturne`,
+   *  whose registers are largest, « SOLAIRE 127,0 » printed through « sont produits en France ».
+   *  `spacedLabels` clamped its stack at the foot and nowhere else, so the overflow had only one way
+   *  to go. The clamp is now at both ends and the copy is a ladder that gives way to the labels. */
+  const labelPitchOf = () => bandOf(annot).ascent + bandOf(annot).descent + 3;
+  const labelPitch = labelPitchOf();
 
-  // ── the two rails ─────────────────────────────────────────────────────────
-  const plotTop = limitsTop + limitLines.length * bodyLead + gapOf(annot, 1.1429);
-  const plotBottom = readingTop - gapOf(annot, 1.1429);
+  const layoutFor = (t: number, l: number, r: number) => {
+    const titleLines = wrap(set(title[t], display), column, display);
+    const limitLines = wrap(set(limits[l], body), column, body);
+    const readingLines = r < 0 ? [] : wrap(set(reading[r], annot), column, annot);
+    const eyebrowBaseline = PAD + eyebrowReg.fontSize;
+    const titleTop = eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
+    const limitsTop = titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
+    const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
+    const readingTop =
+      sourceTop - readingLines.length * bodyLead - gapOf(annot, READING_TO_SOURCE);
+    const plotTop = limitsTop + limitLines.length * bodyLead + gapOf(annot, 1.1429);
+    const plotBottom = readingTop - gapOf(annot, 1.1429);
+    return {
+      titleLines,
+      limitLines,
+      readingLines,
+      eyebrowBaseline,
+      titleTop,
+      limitsTop,
+      readingTop,
+      sourceTop,
+      plotTop,
+      plotBottom,
+    };
+  };
+
+  const rungs: Array<{ title: number; limit: number; reading: number }> = [];
+  for (let t = 0; t < title.length; t++)
+    for (let l = 0; l < limits.length; l++) {
+      for (let r = 0; r < reading.length; r++) rungs.push({ title: t, limit: l, reading: r });
+      rungs.push({ title: t, limit: l, reading: -1 });
+    }
+  /** The taller rail decides: its labels have to fit between the plot's own bounds without either
+   *  end being pushed past them. */
+  const labelsOwe = (Math.max(sources.length, targets.length) - 1) * labelPitch;
+  let fits: { rung: (typeof rungs)[number]; layout: ReturnType<typeof layoutFor> } | null = null;
+  let best = -Infinity;
+  for (const rung of rungs) {
+    const l = layoutFor(rung.title, rung.limit, rung.reading);
+    const room = l.plotBottom - l.plotTop;
+    if (room > best) best = room;
+    if (room >= labelsOwe) {
+      fits = { rung, layout: l };
+      break;
+    }
+  }
+  if (!fits)
+    throw new Error(
+      `the copy leaves the rails ${best.toFixed(0)}px and ${Math.max(sources.length, targets.length)} ` +
+        `node labels owe ${labelsOwe.toFixed(0)}px at ${width} x ${height}. A sankey has no axis, so ` +
+        `a node that does not print its total leaves the reader estimating areas — drawing fewer ` +
+        `nodes is the only honest cut.`,
+    );
+  const layout = fits.layout;
+  const {
+    titleLines,
+    limitLines,
+    readingLines,
+    eyebrowBaseline,
+    titleTop,
+    limitsTop,
+    readingTop,
+    sourceTop,
+    plotTop,
+    plotBottom,
+  } = layout;
+  onLadder?.(
+    `ladder: headline ${fits.rung.title + 1}, standfirst ${fits.rung.limit + 1}, reading ` +
+      (fits.rung.reading < 0 ? "dropped" : `form ${fits.rung.reading + 1}`) +
+      ` · rails ${(plotBottom - plotTop).toFixed(0)}px, labels owe ${labelsOwe.toFixed(0)}px`,
+  );
 
   const labelled = on("every-node-carries-its-own-total");
   /** A node's label is `Name 380,5` on one line, in one register — Carbon Brief's arrangement, with
@@ -216,7 +291,7 @@ export function DirectedSankey({
    *  up to pull the overflow back inside the plot. Order is preserved, which is what lets a label
    *  off its node's centre still name that node. */
   const spacedLabels = (boxes: ReturnType<typeof stack>) => {
-    const pitch = bandOf(annot).ascent + bandOf(annot).descent + 3;
+    const pitch = labelPitch;
     const placed = boxes.map((b) => ({ node: b, y: (b.y0 + b.y1) / 2 }));
     for (let i = 1; i < placed.length; i++)
       placed[i].y = Math.max(placed[i].y, placed[i - 1].y + pitch);
@@ -226,6 +301,16 @@ export function DirectedSankey({
       for (let i = placed.length - 2; i >= 0; i--)
         placed[i].y = Math.min(placed[i].y, placed[i + 1].y - pitch);
     }
+    /** THE STACK IS CLAMPED AT BOTH ENDS, OR THE OVERFLOW ONLY EVER GOES UP. The pass above pulls
+     *  the stack back inside the foot; with no matching bound at the head, the first labels simply
+     *  left the plot and landed in the standfirst. The ladder is what makes this unreachable, so
+     *  reaching it means a rung was missed rather than that a label should be moved quietly. */
+    if (placed[0].y < plotTop - 0.5)
+      throw new Error(
+        `the node labels do not fit their rail: ${placed.length} labels need ` +
+          `${((placed.length - 1) * pitch).toFixed(0)}px between baselines and the rail allows ` +
+          `${(plotBottom - plotTop).toFixed(0)}px. Spend a copy rung, or draw fewer nodes.`,
+      );
     return placed;
   };
 

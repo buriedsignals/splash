@@ -57,6 +57,7 @@ export type MarimekkoFrameProps = {
     name: Line;
     tick: { x1: number; y1: number; x2: number; y2: number } | null;
     totalWord: Line;
+    totalTick: { x1: number; y1: number; x2: number; y2: number } | null;
   }>;
   whole: Line;
   strip: {
@@ -64,8 +65,9 @@ export type MarimekkoFrameProps = {
     h: number;
     pieces: Array<{ key: string; x: number; w: number; name: Line | null }>;
     label: Line;
+    namesUnder: boolean;
   };
-  legend: Array<{ key: string; from: number; mid: number; line: Line }>;
+  legend: Array<{ key: string; from: number | null; mid: number | null; swatch: { x: number; y: number; width: number; height: number } | null; line: Line }>;
   year: Line;
   strokes: { hairline: number; rule: number; ring: number };
   halo: { axis: number };
@@ -201,6 +203,13 @@ export function MarimekkoFrame(
               stroke={colours.rule}
               strokeWidth={props.strokes.hairline}
             />
+            {c.totalTick ? (
+              <line
+                {...c.totalTick}
+                stroke={colours.rule}
+                strokeWidth={props.strokes.hairline}
+              />
+            ) : null}
             <Text
               line={c.totalWord}
               register={r.axis}
@@ -227,14 +236,18 @@ export function MarimekkoFrame(
               key={`key${row.key}`}
               opacity={isTracked ? 1 : faded(scene.focus)}
             >
-              <line
-                x1={last.x + last.w}
-                y1={row.from}
-                x2={row.line.x - props.gap / 3}
-                y2={row.mid}
-                stroke={colours.rule}
-                strokeWidth={props.strokes.hairline}
-              />
+              {row.swatch ? (
+                <rect {...row.swatch} fill={colours.fill[row.key]} />
+              ) : (
+                <line
+                  x1={last.x + last.w}
+                  y1={row.from!}
+                  x2={row.line.x - props.gap / 3}
+                  y2={row.mid!}
+                  stroke={colours.rule}
+                  strokeWidth={props.strokes.hairline}
+                />
+              )}
               <Text
                 line={row.line}
                 register={r.axis}
@@ -253,7 +266,7 @@ export function MarimekkoFrame(
                 key={`piece${p.key}`}
                 line={p.name}
                 register={r.axis}
-                fill={colours.text.onCoal}
+                fill={props.strip.namesUnder ? colours.text.name : colours.text.onCoal}
               />
             ) : null,
           )}

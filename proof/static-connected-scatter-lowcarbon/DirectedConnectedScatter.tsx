@@ -98,6 +98,10 @@ export function DirectedConnectedScatter({
   frame?: { width: number; height: number };
 }) {
   const { width, height } = frame ?? FRAME;
+  /** THE FORM THIS FRAME ASKS FOR, taken off the frame itself. Only the label packer's LAST-RESORT
+   *  bank of directions consults it, and only to keep an accepted landscape plate exactly as it
+   *  was drawn. */
+  const NARROW = width <= height;
   const { ink, muted } = deriveFurniture(direction.ground);
   const PAD = direction.pad;
 
@@ -270,8 +274,16 @@ export function DirectedConnectedScatter({
           /** EIGHT DIRECTIONS AT THREE DISTANCES, near first. A label that has to sit far from its
            *  mark gets a hairline leader — without one, at sixteen entities, a name a centimetre away
            *  from its disc is a name the reader will attach to the wrong disc. */
+          /** FIVE REACHES WERE ENOUGH AT 960px AND NOT AT 540. The search gives up on a name when no
+           *  offset at any reach clears, and at square the sixteen discs pack into a plot barely a
+           *  third as tall: `creme` and `nocturne` both refused the whole plate because ONE name
+           *  could not be seated, while the plate had empty page to the right of the cluster and no
+           *  reach long enough to get there. Two longer reaches are two more places to try, at the
+           *  end of a list that is already walked near-first — so a frame where the near offsets
+           *  clear is unchanged, and the leader the extra distance earns is already drawn. */
           const OFFSETS: Array<[number, number, "start" | "middle" | "end", number]> = [];
-          for (const reach of [R + 5, R + 14, R + 24, R + 36, R + 50]) {
+          const REACHES = [R + 5, R + 14, R + 24, R + 36, R + 50, R + 68, R + 90];
+          for (const reach of REACHES) {
             OFFSETS.push(
               [reach, h / 2 - band.descent, "start", reach],
               [-reach, h / 2 - band.descent, "end", reach],
@@ -283,6 +295,32 @@ export function DirectedConnectedScatter({
               [-reach * 0.72, reach * 0.72 + band.ascent * 0.6, "end", reach],
             );
           }
+          /** A SECOND BANK OF DIRECTIONS, BETWEEN THE FIRST EIGHT — appended after every reach of
+           *  those, and spent only at a frame narrower than the one this beat was accepted at.
+           *
+           *  Eight directions is a coarse grid, and in this beat's own north-west cluster eight
+           *  countries sit inside forty pixels of each other. At 540x540 the best rung placed
+           *  fifteen of sixteen and refused the plate for DENMARK — one name, on a plate with empty
+           *  page to its east.
+           *
+           *  IT IS GATED ON THE FRAME, and that is not timidity. A better packer does not only
+           *  rescue a plate that had none: it makes an EARLIER rung nameable, and the ladder takes
+           *  the first rung that fits — so at 960x540 `nocturne` stopped cutting its reading line,
+           *  kept the fuller copy, and drew its sixteen countries into a plot 47px shorter. That is
+           *  the beat's own stated preference and it is still the worse picture, which is a
+           *  judgement the landscape plate has already had made on it by a person. A tall or square
+           *  frame has had no such judgement and needs the room. */
+          if (NARROW)
+            for (const reach of REACHES)
+            for (const degrees of [22.5, 67.5, 112.5, 157.5, 202.5, 247.5, 292.5, 337.5]) {
+              const radians = (degrees * Math.PI) / 180;
+              const dx = Math.cos(radians) * reach;
+              const up = Math.sin(radians) > 0;
+              const dy =
+                -Math.sin(radians) * reach +
+                (up ? -band.descent : band.ascent * 0.6);
+              OFFSETS.push([dx, dy, dx >= 0 ? "start" : "end", reach]);
+            }
           for (const [dx, dy, anchor, reach] of OFFSETS) {
             const tx = s.x1 + dx;
             const ty = s.y1 + dy;

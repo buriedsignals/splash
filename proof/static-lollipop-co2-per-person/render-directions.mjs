@@ -137,10 +137,19 @@ const plain = (s) => s.replace(/[\u202F\u00A0\u2009]/g, " ");
 const one = (v) =>
   plain(v.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
 
+/** THE HEADLINE IN FORMS, LONGEST FIRST — the rung the component climbs before it touches the plot.
+ *  A FOURTH FORM was added on 2026-09-23 because three were not enough for one direction: nocturne
+ *  sets its display UPPERCASE at 32px with 3.4px of tracking, and in the 428px column a 540x540
+ *  frame leaves, even the third form wraps to FOUR lines — 156px of headline, which left the stems
+ *  65px where six value-bands owe 76px, and the direction REFUSED. The fourth says only what the
+ *  plate measures and over which two dates; it drops to two lines and gives the drawing back 78px.
+ *  creme and rapport never reach it — they settle on forms 2 and 1 — and landscape settles on the
+ *  first, so nothing that already read changes. */
 const title = [
   `La ${NAMES[SUBJECT]} a triplé son CO₂ par personne depuis ${FROM} ; l’Américain moyen n’en émet plus que ${one(ratioAfter)} fois plus`,
   `Le rapport entre l’Américain et le Chinois moyens est passé de ${one(ratioBefore)} à ${one(ratioAfter)}`,
   `Le CO₂ par personne des six plus gros émetteurs`,
+  `Le CO₂ par personne, ${FROM} et ${TO}`,
 ];
 const limits = [
   `Les ${HOW_MANY} pays qui émettent le plus de CO₂ — ${one(chosenShare)} % du total mondial en ` +
@@ -220,9 +229,10 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       name: nameAtSize(id, SIZE),
       scale: FRAME.scale,
     });
-    console.log(`  -> renders/${id}.png\n`);
+    console.log(`  -> renders/${nameAtSize(id, SIZE)}.png\n`);
   } catch (error) {
-    for (const ext of ["png", "svg"]) await rm(join(OUT, `${id}.${ext}`), { force: true });
+    for (const ext of ["png", "svg"])
+      await rm(join(OUT, `${nameAtSize(id, SIZE)}.${ext}`), { force: true });
     refused.push({ id, why: error.message });
     console.log(`  REFUSED — ${error.message}\n`);
   }

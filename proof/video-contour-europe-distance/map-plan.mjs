@@ -17,6 +17,8 @@ import { cameraFields, lonLatOf, mercatorOf, viewOf } from "#shared/map-beat/scr
 import { laea } from "../scrolly-contour-europe-distance/contour-field.mjs";
 import { lonLatOfFrame, STATIC_DIR, unlaea } from "./subject.mjs";
 
+/** The stage the cameras were authored for before this beat drew at three sizes — kept as the DEFAULT of
+ *  `camerasOf` so landscape is bit-for-bit what it was, and as what `map-plan.test.ts` projects against. */
 export const REFERENCE = Object.freeze({ width: 1920, height: 1080 });
 export const LAYER = "administrative";
 export const LEVEL = "level";
@@ -31,6 +33,10 @@ export const SWEEP_BENEATH = "outside";
 export const SWEEP_PX = 2;
 /** A seat in the open Atlantic: the colour of its cell is what « the sea » is. */
 export const ATLANTIC = Object.freeze([-30, 45]);
+/** The ladder's inner rung: the Bay of Biscay, open water INSIDE the plate's own bounds (-25..42, 34..68).
+ *  `ATLANTIC` is west of them, so a width-fitted frame leaves it off the stage — measured at 1080x1920,
+ *  x = -8 — and a clamped read would classify the whole map against whatever sits in column 0. */
+export const BISCAY = Object.freeze([-5, 45.5]);
 
 /** ISO 3166-1 alpha-2, the join key MapTiler Countries carries (the choropleth pilot's table, this study's rows). */
 const ISO2 = {
@@ -50,14 +56,36 @@ const worldY = (lat) => (1 - Math.log(Math.tan(Math.PI / 4 + (lat * Math.PI) / 3
 const latOfWorldY = (y) => (2 * Math.atan(Math.exp((1 - 2 * y) * Math.PI)) * 180) / Math.PI - 90;
 
 /** THE WHOLE-MAP CAMERA: the static plate's bounds fitted into its frame, that frame fitted "meet" into the stage (the
- *  choropleth pilot's rule, on the same bounds and frame). The camera never moves. */
-export function camerasOf() {
+ *  choropleth pilot's rule, on the same bounds and frame). The camera never moves.
+ *
+ *  THE STAGE IS AN ARGUMENT, and it is the whole of this beat's answer to a frame that is not 16:9. Fitted "meet",
+ *  every one of Europe reaches the reader at every size — which is the claim (« la moitié de l'Europe »): a slice fit
+ *  would fill a portrait frame by cutting Iceland, Portugal and the Russian edge out of the picture that counts them.
+ *  Fitting 1080 × 1920 gives the same map 76 % of its landscape size across the FULL width, with the spare height
+ *  above and below it open sea — which is where the credit, the key and the curve are then seated. */
+/**
+ * @param {{ width: number, height: number }} [stage]  The frame the map is MOUNTED on — always the whole frame.
+ * @param {{ width: number, height: number } | null} [mapBand]  The ground the plate is FITTED into when the frame
+ *   stacks a band of the direction's ground under the map (`build.mjs`, `bandFor`). Absent: the whole frame.
+ */
+export function camerasOf(stage = REFERENCE, mapBand = null) {
   const { bounds, frame } = JSON.parse(readFileSync(join(STATIC_DIR, "plate", "creme", "geometry.json"), "utf8"));
   const [[west, south], [east, north]] = bounds;
   const frameWorldPx = Math.min(frame.width / (worldX(east) - worldX(west)), frame.height / (worldY(south) - worldY(north)));
-  const zoom = Math.log2((frameWorldPx * Math.min(REFERENCE.width / frame.width, REFERENCE.height / frame.height)) / 512);
+  /** The ground the plate is fitted into — the whole frame, or the band the stacked square frame leaves it. */
+  const fit = mapBand ?? stage;
+  const zoom = Math.log2((frameWorldPx * Math.min(fit.width / frame.width, fit.height / frame.height)) / 512);
   const center = [(west + east) / 2, latOfWorldY((worldY(south) + worldY(north)) / 2)];
-  return { whole: cameraFields({ center, zoom }), bounds };
+  /**
+   * THE PLATE IS CENTRED IN THE BAND IT WAS FITTED INTO, NOT IN THE FRAME. MapLibre draws the camera's centre at the
+   * middle of the VIEWPORT, and the viewport stays the whole frame — the map is mounted on it and `measure.mjs` takes
+   * a picture of it. Fitted into a shorter band and left centred, the plate would be cut in half by the ground band:
+   * half of what the fit just bought would be drawn under it. So the camera moves SOUTH by half the band's height, in
+   * the world units of its own zoom, which moves the ground NORTH on the frame by the same amount.
+   */
+  const spare = stage.height - fit.height;
+  const raised = spare <= 0 ? center : [center[0], latOfWorldY(worldY(center[1]) + spare / 2 / (512 * 2 ** zoom))];
+  return { whole: cameraFields({ center: raised, zoom }), bounds };
 }
 
 /** Where MapLibre draws [lon, lat] at a camera with no pitch, bearing or padding — checked against the measured map. */
@@ -150,7 +178,7 @@ const r5 = (v) => Math.round(v * 1e5) / 1e5;
  * @param {{ subject: any, study: string[], colours: any, strokes: { line: number, median: number, dot: number },
  *   registers: { value: any }, cameras: { whole: any }, summit: { seat: [number, number], text: string } }} input
  */
-export function mapPlanFor({ subject, study, colours, strokes, registers, cameras, summit }) {
+export function mapPlanFor({ subject, study, colours, strokes, registers, cameras, summit, stage = REFERENCE }) {
   const { field, MEDIAN } = subject;
   const codes = study.map(iso2Of);
   const small = codes.filter((c) => SMALL_BELOW_Z4.includes(c));
@@ -197,8 +225,11 @@ export function mapPlanFor({ subject, study, colours, strokes, registers, camera
         "text-font": [faceOf(value)],
         "text-size": value.fontSize,
         "text-letter-spacing": trackingEm(value),
-        "text-anchor": "left",
-        "text-offset": [summit.offset / value.fontSize, 0],
+        // WHICH SIDE OF THE POINT THE NUMBER STANDS ON. At 1920x1080 the farthest point has the whole east of the
+        // frame to its right; at 1080x1920 it sits against the right margin and the number ran off the frame — a
+        // MapLibre symbol, so no overlay counter could see it. The caller decides the side from the projected seat.
+        "text-anchor": summit.side === "left" ? "right" : "left",
+        "text-offset": [((summit.side === "left" ? -1 : 1) * summit.offset) / value.fontSize, 0],
         "text-max-width": 100,
         "text-allow-overlap": true,
         "text-ignore-placement": true,
@@ -212,8 +243,11 @@ export function mapPlanFor({ subject, study, colours, strokes, registers, camera
     styleName: "dataviz",
     projection: "mercator",
     tints: { water: colours.ground, land: colours.outside },
-    referenceWidth: REFERENCE.width,
-    referenceHeight: REFERENCE.height,
+    // THE STAGE THE CAMERA WAS AUTHORED FOR, which is the stage this run draws at — not 1920 x 1080. A consumer that
+    // re-fits a plan to its own stage (`zoomShiftFor`) shifts the zoom by the ratio to these numbers, so a portrait
+    // plan that declared the landscape frame would hand it a ratio it never had.
+    referenceWidth: stage.width,
+    referenceHeight: stage.height,
     degreesPerPixel: 1,
     camera: { view: viewOf(cameras.whole) },
     layers: [...land, ...isolines, ...farthest],
@@ -249,5 +283,5 @@ export function withNumbers(plan, { labels, colours, axis }) {
 export function mapSeatsOf(subject) {
   const { field } = subject;
   const first = (level) => lonLatLinesOf(field, field.lines.find((l) => l.level === level).d)[0][0];
-  return { atlantic: ATLANTIC, summit: lonLatOfFrame(field, field.summit), line100: first(100), line500: first(500) };
+  return { atlantic: ATLANTIC, biscay: [...BISCAY], summit: lonLatOfFrame(field, field.summit), line100: first(100), line500: first(500) };
 }

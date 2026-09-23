@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { scaleLinear } from "d3-scale";
 import { adjustToContrast, contrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
+import { frameInsetFor, sizeFor, videoExportSize } from "#shared/chart-video/sizes.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
@@ -23,7 +23,9 @@ import { BEESWARM_VIDEO_TIMING } from "./timing-contract.ts";
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const ROOT = join(HERE, "..", "..");
 export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
-export const SIZE = "landscape";
+/** The size this run exports at — `--size`, landscape when nothing asks. R2 names three and
+ *  everything under it already answered per size; only this line pinned the beat to one. */
+export const SIZE = videoExportSize();
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 const NB = "\u00A0";
 const LABEL_GAP = 0.4;
@@ -31,6 +33,16 @@ const TICKS = [0, 10, 20, 30, 40];
 /** THE RADIUS IS A LADDER, NOT A TASTE (the static plate's rule, at the video's scale): the largest circle's radius, walked
  *  from generous to mean; the first rung where the swarm, the world disc, the outline and the bracket all fit is taken. */
 const MAX_RADII = [72, 66, 60, 54, 48, 42, 36, 30];
+/**
+ * RUNGS BEYOND THE FILED HEAD — walked only when every filed rung leaves a named circle too small for its own name.
+ *
+ * 72 is a statement about the 792px band a 1920x1080 frame leaves, and the ladder's whole direction is DOWN because on
+ * that frame the binding constraint is the band. A portrait frame inverts it: the band is 1506px, the swarm at 72 uses
+ * 1032 of them, and what refuses is the type — « Chine » measures 160px at the portrait value register against a 143px
+ * circle. Walked mean-first, so the beat takes the smallest enlargement that seats the names rather than the largest
+ * circle the band would tolerate (96 would leave 9px of the portrait band unspent, which is not room, it is luck).
+ */
+const BEYOND_RADII = [78, 84, 90, 96];
 /** The smallest countries are floored at a radius a viewer can see — the static plate's 0.9 at scale 2. */
 const MIN_RADIUS = 1.8;
 const PACK_STEP = 2.2;
@@ -168,9 +180,48 @@ export function buildDirection(id, { subject, states, copy }) {
   const highWord = measure(copy.high, value);
   const tailFrom = x(HIGH);
 
+  /**
+   * HOW A NAMED CIRCLE IS NAMED — a ladder, because « inside its own circle » is a fact about the circle's SIZE, and the
+   * circle's size is the band's to give. Landscape and portrait seat both names inside, in the value voice. A square
+   * frame cannot: its band is 692px, the widest swarm that fits it puts « Inde » in a 96px circle and the name would need
+   * a 123px one — no rung of any radius ladder closes a gap the frame itself opened. The last rung keeps the name
+   * CENTRED on its circle and lets it overrun, struck in the ground halo these names already carry, which is how a
+   * reader still reads it off the one circle it is centred on; what it must then clear is the frame and the other name.
+   */
+  const NAME_RUNGS = [
+    { register: value, inside: true, what: "in the value voice, inside its circle" },
+    { register: axis, inside: true, what: "in the axis voice, inside its circle" },
+    { register: axis, inside: false, what: "in the axis voice, struck over its circle" },
+  ];
+  const seatNames = (circles, rung) => {
+    const rBand = bandOf(BAND_PROBE, rung.register);
+    const rShift = (rBand.ascent - rBand.descent) / 2;
+    const seated = new Map();
+    const boxes = [];
+    for (const p of circles) {
+      const named = NAMED[p.m.code];
+      if (!named) continue;
+      const m = measure(named, rung.register);
+      const wide = drawn(m);
+      if (rung.inside && !(wide < 2 * p.r)) return { why: `« ${named} » (${Math.round(m.width)}px) does not fit inside its circle (${Math.round(2 * p.r)}px)` };
+      const x0 = p.x - wide / 2;
+      const y = p.y + rShift;
+      if (!rung.inside && (x0 < inset || x0 + wide > stage.width - inset)) return { why: `« ${named} », struck over its circle, runs past the frame` };
+      const box = { x0: x0 - gap / 2, x1: x0 + wide + gap / 2, y0: y - rBand.ascent - gap / 2, y1: y + rBand.descent + gap / 2 };
+      const hit = boxes.find((b) => b.x0 < box.x1 && box.x0 < b.x1 && b.y0 < box.y1 && box.y0 < b.y1);
+      if (hit) return { why: `« ${named} » and « ${hit.named} », struck over their circles, run into each other` };
+      boxes.push({ ...box, named });
+      seated.set(p.m.code, { ...m, x: x0, y });
+    }
+    return { seated };
+  };
+
   let chosen = null;
   const refusals = [];
-  for (const maxRadius of MAX_RADII) {
+  // Every naming rung against the whole radius ladder before the next rung is tried: a bigger circle is a better answer
+  // than a smaller voice, and the filed rungs come before the ones beyond the head so landscape takes 72 as it always did.
+  for (const [rung, maxRadius] of NAME_RUNGS.flatMap((r) => [...MAX_RADII, ...BEYOND_RADII].map((m) => [r, m]))) {
+    if (chosen) break;
     const c = maxRadius / Math.sqrt(biggest);
     const { placed, extent } = pack(countries, x, (m) => Math.max(MIN_RADIUS, c * Math.sqrt(m.people)));
     const worldR = c * Math.sqrt(subject.world);
@@ -199,8 +250,12 @@ export function buildDirection(id, { subject, states, copy }) {
       refusals.push(`${maxRadius}: the outline would sit on the swarm`);
       continue;
     }
-    chosen = { maxRadius, c, circles, worldR, bracket: { y: bracketY, x0: tailFrom, x1: tailTo, centre, labelBaseline, shareBaseline }, compare: { x: cx, y: cy } };
-    break;
+    const named = seatNames(circles, rung);
+    if (named.why) {
+      refusals.push(`${maxRadius} ${rung.what}: ${named.why}`);
+      continue;
+    }
+    chosen = { maxRadius, c, circles, worldR, naming: rung, names: named.seated, bracket: { y: bracketY, x0: tailFrom, x1: tailTo, centre, labelBaseline, shareBaseline }, compare: { x: cx, y: cy } };
   }
   if (!chosen) throw new Error(`no filed radius fits this frame: ${refusals.join("; ")}`);
   const { c, circles, worldR, bracket } = chosen;
@@ -208,13 +263,7 @@ export function buildDirection(id, { subject, states, copy }) {
   const order = [...countries].sort((a, b) => b.people - a.people).map((m) => m.code);
   const highOrder = [...countries].filter((m) => subject.high.includes(m.code)).sort((a, b) => b.tonnes - a.tonnes).map((m) => m.code);
   const members = circles.map((p) => {
-    const named = NAMED[p.m.code];
-    let name;
-    if (named) {
-      const w = measure(named, value);
-      if (!(drawn(w) < 2 * p.r)) throw new Error(`« ${named} » (${Math.round(w.width)}px) does not fit inside its circle (${Math.round(2 * p.r)}px)`);
-      name = { ...w, x: p.x - drawn(w) / 2, y: p.y + shift };
-    }
+    const name = chosen.names.get(p.m.code);
     return {
       code: p.m.code,
       people: p.m.people,
@@ -261,7 +310,7 @@ export function buildDirection(id, { subject, states, copy }) {
 
   const props = {
     frame: stage,
-    registers: { display: titleCard.register, eyebrow: registers.eyebrow, axis, value, source: sourceRegister },
+    registers: { display: titleCard.register, eyebrow: registers.eyebrow, axis, value, name: chosen.naming.register, source: sourceRegister },
     titleCard,
     credit: { ...credit, at: { x: inset, y: creditY } },
     colours: {
@@ -295,8 +344,9 @@ export function buildDirection(id, { subject, states, copy }) {
     },
     counter,
     halo: haloOf(value, k),
+    nameHalo: haloOf(chosen.naming.register, k),
     states,
     timing: BEESWARM_VIDEO_TIMING,
   };
-  return { id, direction, props, report: { k, titleForm: titleCard.form, sourceForm: credit.form, maxRadius: chosen.maxRadius, band: Math.round(height), unit: tickLines[0].text } };
+  return { id, direction, props, report: { k, titleForm: titleCard.form, sourceForm: credit.form, maxRadius: chosen.maxRadius, naming: chosen.naming.what, band: Math.round(height), unit: tickLines[0].text } };
 }

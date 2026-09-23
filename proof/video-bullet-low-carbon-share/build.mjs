@@ -7,7 +7,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { adjustToContrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
+import { frameInsetFor, sizeFor, videoExportSize } from "#shared/chart-video/sizes.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
@@ -22,7 +22,9 @@ import { BULLET_VIDEO_TIMING } from "./timing-contract.ts";
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const ROOT = join(HERE, "..", "..");
 export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
-export const SIZE = "landscape";
+/** The size this run exports at — `--size`, landscape when nothing asks. R2 names three and
+ *  everything under it already answered per size; only this line pinned the beat to one. */
+export const SIZE = videoExportSize();
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 const NB = "\u00A0";
 const LABEL_GAP = 0.4;
@@ -92,15 +94,41 @@ export function buildDirection(id, { subject, states, copy }) {
   const dates = copy.dates.map((d) => measure(d, axis));
   const swatchW = band.ascent;
   const keyWidth = dates.reduce((w, d, i) => w + swatchW + gap / 2 + d.width * (1 + DRAWN_WIDER) + (i < dates.length - 1 ? 1.5 * gap : 0), 0);
-  const keyX = stage.width - inset - keyWidth;
-  if (!(unitLine.x + unitLine.width * (1 + DRAWN_WIDER) + 2 * gap < keyX)) throw new Error("the unit and the key do not fit on one line");
-  let cursor = keyX;
-  const key = dates.map((d) => {
-    const swatch = { x: cursor, y: bandBaseline - band.ascent, w: swatchW, h: band.ascent };
-    const word = { ...d, x: cursor + swatchW + gap / 2, y: bandBaseline };
-    cursor = word.x + d.width * (1 + DRAWN_WIDER) + 1.5 * gap;
-    return { swatch, word };
-  });
+  /**
+   * THE HEADER IS ONE LINE OR TWO, AND THE FRAME DECIDES WHICH.
+   *
+   * Side by side is the right header when the frame can pay for it: one line, the unit read first and the key answering
+   * it from the right edge. Measured 2026-09-23 that costs 1233px — a 700px unit, a 497px key and the air between them
+   * — against 1750px of landscape content width and 936px of portrait and square, so the beat refused « the unit and
+   * the key do not fit on one line » on every narrow frame. The second rung drops the key onto its own line under the
+   * unit, set from the same left edge so the two read as one header block, and the rows begin a lead lower.
+   */
+  const seatHeader = (stacked) => {
+    const keyBaseline = stacked ? bandBaseline + axis.lead : bandBaseline;
+    const keyLeft = stacked ? inset : stage.width - inset - keyWidth;
+    if (!(keyLeft + keyWidth <= stage.width - inset)) return { why: `the key is ${Math.round(keyWidth)}px on a ${Math.round(stage.width - 2 * inset)}px content width` };
+    if (!stacked && !(unitLine.x + unitLine.width * (1 + DRAWN_WIDER) + 2 * gap < keyLeft)) return { why: "the unit and the key do not fit on one line" };
+    let cursor = keyLeft;
+    const seated = dates.map((d) => {
+      const swatch = { x: cursor, y: keyBaseline - band.ascent, w: swatchW, h: band.ascent };
+      const word = { ...d, x: cursor + swatchW + gap / 2, y: keyBaseline };
+      cursor = word.x + d.width * (1 + DRAWN_WIDER) + 1.5 * gap;
+      return { swatch, word };
+    });
+    return { key: seated, keyBaseline };
+  };
+  let header = null;
+  const headerRefused = [];
+  for (const stacked of [false, true]) {
+    const got = seatHeader(stacked);
+    if (got.why) headerRefused.push(`${stacked ? "stacked" : "side by side"}: ${got.why}`);
+    else {
+      header = { ...got, stacked };
+      break;
+    }
+  }
+  if (!header) throw new Error(`neither header holds the unit and the key at ${SIZE} — ${headerRefused.join("; ")}`);
+  const key = header.key;
 
   // THE ROWS: names at the left, the track to 100 %, the gains in a column of their own at the right, the ticks under.
   const names = subject.countries.map((c) => measure(c.name, axis));
@@ -111,7 +139,7 @@ export function buildDirection(id, { subject, states, copy }) {
   const left = inset + Math.max(...names.map((n) => n.width)) * (1 + DRAWN_WIDER) + gap;
   const right = stage.width - inset - gainRoom - gap;
   const tickBaseline = creditAt.y - gap - band.descent;
-  const top = bandBaseline + band.descent + 1.5 * gap;
+  const top = header.keyBaseline + band.descent + 1.5 * gap;
   const bottom = tickBaseline - band.ascent - gap;
   const pitch = (bottom - top) / subject.countries.length;
   const trackH = pitch * TRACK;
@@ -178,5 +206,5 @@ export function buildDirection(id, { subject, states, copy }) {
     states,
     timing: BULLET_VIDEO_TIMING,
   };
-  return { id, direction, props, report: { k, titleForm: titleCard.form, sourceForm: credit.form, steps: subject.steps.length - 1, pitch: pitch.toFixed(1) } };
+  return { id, direction, props, report: { k, titleForm: titleCard.form, sourceForm: credit.form, header: header.stacked ? "stacked" : "side by side", steps: subject.steps.length - 1, pitch: pitch.toFixed(1) } };
 }

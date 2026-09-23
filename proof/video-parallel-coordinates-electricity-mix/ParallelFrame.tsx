@@ -53,6 +53,11 @@ export type ParallelFrameProps = {
   scale: number;
   top: number;
   foot: number;
+  /** Which way round the two axes are drawn (`build.mjs`, TRANSPOSED): false lays the rails across the
+   *  frame and the values up it, true stacks the rails down it and runs the values across. */
+  transposed: boolean;
+  labelH: number;
+  railNameRight: number | null;
   headerBaseline: number;
   axes: Text[];
   bar: {
@@ -79,9 +84,9 @@ export type ParallelFrameProps = {
     pair: boolean;
     shown: boolean;
     drawRank: number | null;
-    ys: number[];
-    seat: Text & { axis: number; anchor: string; off: number; y: number };
-    close: (Text & { dx: number; cy: number; y: number }) | null;
+    vs: number[];
+    seat: Text & { axis: number; anchor: string; off: number; du: number; v: number; y: number };
+    close: (Text & { cy: number; y: number }) | null;
   }>;
   counter: { texts: Record<string, Text>; x: number; y: number };
   halo: number;
@@ -127,6 +132,10 @@ function Word({
 const pathOf = (points: number[][]) =>
   `M${points.map((p) => `${p[0].toFixed(2)} ${p[1].toFixed(2)}`).join(" L")}`;
 
+/** A point from the rails' own coordinate `u` and the values' `v` — the component's half of `scene.mjs`'s `pt`. */
+const pt = (transposed: boolean, u: number, v: number) =>
+  transposed ? { x: v, y: u } : { x: u, y: v };
+
 export function ParallelFrame(
   props: ParallelFrameProps & { at: number; svgRef?: Ref<SVGSVGElement> },
 ) {
@@ -152,27 +161,38 @@ export function ParallelFrame(
     >
       <rect width={frame.width} height={frame.height} fill={colours.ground} />
 
-      {scene.rails.map((rail, i) => (
-        <g key={`rail${i}`} opacity={rail.opacity}>
-          <line
-            x1={rail.x}
-            x2={rail.x}
-            y1={props.top}
-            y2={props.foot}
-            stroke={colours.rail}
-            strokeWidth={strokes.rail}
-          />
-          <Word
-            line={{
-              ...props.axes[i],
-              x: rail.x - props.axes[i].width / 2,
+      {scene.rails.map((rail, i) => {
+        const a = pt(props.transposed, rail.u, props.top);
+        const b = pt(props.transposed, rail.u, props.foot);
+        // Above its rail at landscape, where the names make a header row; right-aligned into the gutter
+        // beside it transposed, where each name sits on its own rail's line.
+        const name = props.transposed
+          ? {
+              x: (props.railNameRight ?? 0) - props.axes[i].width,
+              y: rail.u + props.shift,
+            }
+          : {
+              x: rail.u - props.axes[i].width / 2,
               y: props.headerBaseline,
-            }}
-            register={r.axis}
-            fill={colours.text.rail}
-          />
-        </g>
-      ))}
+            };
+        return (
+          <g key={`rail${i}`} opacity={rail.opacity}>
+            <line
+              x1={a.x}
+              x2={b.x}
+              y1={a.y}
+              y2={b.y}
+              stroke={colours.rail}
+              strokeWidth={strokes.rail}
+            />
+            <Word
+              line={{ ...props.axes[i], ...name }}
+              register={r.axis}
+              fill={colours.text.rail}
+            />
+          </g>
+        );
+      })}
 
       {order.map((i) => {
         const d = props.lines[i];
@@ -224,22 +244,40 @@ export function ParallelFrame(
       {scene.floors.map((f, i) => {
         const spec = props.floors[i];
         const text = spec.texts[f.label];
-        const x =
-          spec.side === "right"
-            ? f.x + props.tick / 2 + props.gap / 2
-            : f.x - props.tick / 2 - props.gap / 2 - text.width;
+        // The tick always crosses its own rail, so it runs along the values at landscape and across them
+        // transposed; the value beside it follows the same quarter turn — `right` becoming above the rail
+        // and `left` below it. Mirrors `floorBox` in `build.mjs`, which seats the names around these.
+        const ascent = props.labelH / 2 + props.shift;
+        const descent = props.labelH / 2 - props.shift;
+        const tickA = pt(props.transposed, f.u - props.tick / 2, f.v);
+        const tickB = pt(props.transposed, f.u + props.tick / 2, f.v);
+        const word = props.transposed
+          ? {
+              x: f.v - text.width / 2,
+              y:
+                spec.side === "right"
+                  ? f.u - props.tick / 2 - props.gap / 2 - descent
+                  : f.u + props.tick / 2 + props.gap / 2 + ascent,
+            }
+          : {
+              x:
+                spec.side === "right"
+                  ? f.x + props.tick / 2 + props.gap / 2
+                  : f.x - props.tick / 2 - props.gap / 2 - text.width,
+              y: f.y + props.shift,
+            };
         return (
           <g key={`floor${i}`} opacity={f.opacity}>
             <line
-              x1={f.x - props.tick / 2}
-              x2={f.x + props.tick / 2}
-              y1={f.y}
-              y2={f.y}
+              x1={tickA.x}
+              x2={tickB.x}
+              y1={tickA.y}
+              y2={tickB.y}
               stroke={colours.floor}
               strokeWidth={strokes.floor}
             />
             <Word
-              line={{ ...text, x, y: f.y + props.shift }}
+              line={{ ...text, ...word }}
               register={r.axis}
               fill={colours.text.count}
               halo={halo}
@@ -267,10 +305,10 @@ export function ParallelFrame(
             {s.close && d.close && s.close.opacity > 0 ? (
               <g opacity={s.close.opacity}>
                 <line
-                  x1={s.close.x + d.close.width + props.gap / 4}
-                  x2={s.close.x + d.close.dx}
-                  y1={s.close.cy}
-                  y2={d.ys[0]}
+                  x1={s.close.connector.x1}
+                  x2={s.close.connector.x2}
+                  y1={s.close.connector.y1}
+                  y2={s.close.connector.y2}
                   stroke={colours.rail}
                   strokeWidth={strokes.connector}
                 />

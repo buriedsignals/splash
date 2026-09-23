@@ -22,7 +22,7 @@ import { join, relative } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { readPalette } from "#shared/chart-beat/colour.mjs";
-import { assertDeliveredSize, assertTypeFloor, readPngSize } from "#shared/chart-video/sizes.mjs";
+import { assertDeliveredSize, assertTypeFloor, nameAtSize, readPngSize } from "#shared/chart-video/sizes.mjs";
 import { EVENT_ORDER, endOf } from "#shared/chart-video/timing.ts";
 import { composeDirections, report as reportComposition } from "#shared/design-base/compose.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
@@ -37,7 +37,7 @@ import { HANDOVER, WINDOWS } from "./scene.mjs";
 
 const HERE = import.meta.dirname;
 const OUT = join(HERE, "renders");
-const COMPOSITION = "video-cartogram-europe-lowcarbon-landscape";
+const COMPOSITION = `video-cartogram-europe-lowcarbon-${SIZE}`;
 
 const filedIds = readdirSync(DIRECTIONS)
   .filter((f) => f.endsWith(".md"))
@@ -48,6 +48,11 @@ const only = onlyAt === -1 ? null : args[onlyAt + 1];
 if (only !== null && !filedIds.includes(only))
   throw new Error(`--only takes one of the filed directions (${filedIds.join(", ")}), got ${JSON.stringify(only)}`);
 const stillOnly = args.includes("--still");
+/** `--check`: build the direction and hold every event's last frame to the type floor, without
+ *  spawning Remotion. Two seconds instead of two minutes, and it is where every layout refusal a
+ *  new frame size causes is raised — so a size can be swept over forty beats before any pixel is
+ *  rendered. It delivers nothing, so nothing it does can be mistaken for a delivery. */
+const checkOnly = args.includes("--check");
 /** `--look <dir>`: instead of the deliverables, render the frames a reviewer looks at into <dir> — the
  *  last frame of every event, the handover from the map to the shapes, and the morph. */
 const lookAt = args.indexOf("--look");
@@ -86,7 +91,10 @@ function mp4Size(path) {
 const refused = [];
 await mkdir(OUT, { recursive: true });
 for (const id of filedIds.filter((i) => only === null || i === only)) {
-  const outputs = [`${id}.mp4`, `${id}-final-frame.png`, `${id}-props.json`].map((f) => join(OUT, f));
+  // WHAT THIS RUN WRITES IS WHAT THIS RUN MAY REMOVE. Spelled `${id}` it was the LANDSCAPE name,
+  // and a refusal at another size deleted a delivered landscape mp4 that had nothing to do with it.
+  const at = nameAtSize(id, SIZE);
+  const outputs = [`${at}.mp4`, `${at}-final-frame.png`, `${at}-props.json`].map((f) => join(OUT, f));
   const scratch = await mkdtemp(join(tmpdir(), "video-cartogram-props-"));
   try {
     const built = buildDirection(id, beat);
@@ -98,9 +106,13 @@ for (const id of filedIds.filter((i) => only === null || i === only)) {
         `key over ${(100 * report.keyLand).toFixed(1)} % land · tile ${report.tile.w}×${report.tile.h} · codes at ${report.codeSize}px`,
     );
     assertEventFramesReadable(props, id);
+    if (checkOnly) {
+      console.log(`  checked at ${SIZE}\n`);
+      continue;
+    }
 
     // The audit copy: the props as built, no proxy origin, no key.
-    await writeRenderProps({ props, wanted: wantedOf(props.registers), auditPath: join(OUT, `${id}-props.json`) });
+    await writeRenderProps({ props, wanted: wantedOf(props.registers), auditPath: join(OUT, `${at}-props.json`) });
     // The render copy: the plan pointed at this render's proxy, written to a temp file and never committed.
     const buildProps = (origin) => writeRenderProps({ props: { ...props, mapPlanProxied: throughProxy(props.mapPlan, origin) }, wanted: wantedOf(props.registers), auditPath: join(scratch, "audit.json") });
     const entry = relative(ROOT, join(HERE, "index.ts"));
@@ -117,21 +129,26 @@ for (const id of filedIds.filter((i) => only === null || i === only)) {
         ...[0.1, 0.3, 0.55, 0.8].map((t) => ({ name: `morph-${t}`, frame: Math.round(T.subject.start + T.subject.duration * (WINDOWS.subject.morph[0] + t * (WINDOWS.subject.morph[1] - WINDOWS.subject.morph[0]))) })),
       ];
       for (const { name, frame } of frames) await renderVideoMap({ ...common, outDir: lookDir, name: `${id}-${String(frame).padStart(3, "0")}-${name}`, mode: "still", frame });
-      await rm(join(OUT, `${id}-props.json`), { force: true });
+      await rm(join(OUT, `${at}-props.json`), { force: true });
       console.log(`  -> ${frames.length} frames in ${lookDir}`);
       continue;
     }
 
-    const still = await renderVideoMap({ ...common, outDir: OUT, name: id, mode: "still" });
-    assertDeliveredSize(readPngSize(await readFile(still.path)), SIZE, { what: `renders/${id}-final-frame.png` });
-    console.log(`  -> renders/${id}-final-frame.png (${still.seconds}s)`);
+    const still = await renderVideoMap({ ...common, outDir: OUT, name: at, mode: "still" });
+    assertDeliveredSize(readPngSize(await readFile(still.path)), SIZE, { what: `renders/${at}-final-frame.png` });
+    console.log(`  -> renders/${at}-final-frame.png (${still.seconds}s)`);
     if (stillOnly) continue;
 
-    const movie = await renderVideoMap({ ...common, outDir: OUT, name: id, mode: "mp4" });
-    assertDeliveredSize(mp4Size(movie.path), SIZE, { what: `renders/${id}.mp4` });
-    console.log(`  -> renders/${id}.mp4 (${movie.seconds}s) · ${Object.entries(movie.proxyCounts).map(([k, v]) => `${k}: ${v}`).join(", ")}\n`);
+    const movie = await renderVideoMap({ ...common, outDir: OUT, name: at, mode: "mp4" });
+    assertDeliveredSize(mp4Size(movie.path), SIZE, { what: `renders/${at}.mp4` });
+    console.log(`  -> renders/${at}.mp4 (${movie.seconds}s) · ${Object.entries(movie.proxyCounts).map(([k, v]) => `${k}: ${v}`).join(", ")}\n`);
   } catch (error) {
-    for (const path of outputs) await rm(path, { force: true });
+    // A CHECK DELIVERS NOTHING, SO IT MAY REMOVE NOTHING. The cleanup exists so a refused direction
+    // leaves no stale file reading as a fresh render; `--check` renders nothing, and wiping a
+    // delivered mp4 because a build threw while somebody was editing the layout is pure loss —
+    // measured 2026-09-23 on `video-waterfall-germany-electricity-bridge`, which lost its delivered
+    // landscape mp4, still and props to a check run mid-edit.
+    if (!checkOnly) for (const path of outputs) await rm(path, { force: true });
     refused.push({ id, why: error.message });
     console.log(`  REFUSED — ${error.message}\n`);
   } finally {

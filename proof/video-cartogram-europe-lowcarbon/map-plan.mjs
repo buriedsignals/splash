@@ -45,7 +45,7 @@ const byLevel1 = (codes) => ["all", ["==", ["get", LEVEL], 1], ["match", ["get",
  * @param {{ countries: Array<{ iso: string, classIndex: number|null }>, widest: string, colours: any,
  *   strokes: { border: number, missingDash: number[] }, camera: any }} input
  */
-export function mapPlanFor({ countries: studied, widest, colours, strokes, camera }) {
+export function mapPlanFor({ countries: studied, widest, colours, strokes, camera, stage = REFERENCE }) {
   const n = colours.classFills.length;
   const fills = { $state: "fills" };
   const others = { $state: "others" };
@@ -96,8 +96,11 @@ export function mapPlanFor({ countries: studied, widest, colours, strokes, camer
     styleName: "dataviz",
     projection: "mercator",
     tints: { water: colours.sea, land: colours.land },
-    referenceWidth: REFERENCE.width,
-    referenceHeight: REFERENCE.height,
+    // THE STAGE THE CAMERA WAS AUTHORED FOR, which is the stage this run draws at — not 1920 x 1080. A consumer
+    // that re-fits a plan to its own stage (`zoomShiftFor`) shifts the zoom by the ratio to these numbers, so a
+    // portrait plan that declared the landscape frame would hand it a ratio it never had.
+    referenceWidth: stage.width,
+    referenceHeight: stage.height,
     degreesPerPixel: 1,
     camera: { view: viewOf(camera) },
     layers,

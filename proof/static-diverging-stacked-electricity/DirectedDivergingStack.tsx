@@ -59,7 +59,6 @@ function Haloed({
   fill,
   weight,
   text,
-  frame,
 }: {
   x: number;
   y: number;
@@ -69,9 +68,6 @@ function Haloed({
   fill: string;
   weight?: number;
   text: string;
-  /** The frame this render draws at — `sizeFor(size)` halved, so one component
-   *  serves landscape, portrait and square. Absent means the landscape this beat was accepted at. */
-  frame?: { width: number; height: number };
 }) {
   const glyphs = {
     x,
@@ -117,6 +113,8 @@ export function DirectedDivergingStack({
   format,
   direction,
   treatments,
+  frame,
+  onLadder,
 }: {
   rows: Row[];
   subject: string;
@@ -124,15 +122,24 @@ export function DirectedDivergingStack({
   rightName: string;
   centreName: string;
   unit: string;
-  title: string;
-  limits: string;
-  reading: string;
+  /** THE COPY IS HANDED IN AS A LADDER — every form the layout may spend, longest first. A bare
+   *  string is the one-rung ladder this beat used to have, so a caller that has not been migrated
+   *  still draws exactly what it drew. */
+  title: string | string[];
+  limits: string | string[];
+  reading: string | string[];
   source: string;
   alt: string;
   eyebrow: string;
   format: (v: number) => string;
   direction: any;
   treatments: string[];
+  /** The frame this render draws at — `sizeFor(size)` halved, so one component
+   *  serves landscape, portrait and square. Absent means the landscape this beat was accepted at. */
+  frame?: { width: number; height: number };
+  /** Which rung of the copy the layout ended up standing on — emitted rather than inferred, so a
+   *  run says out loud what it gave up. */
+  onLadder?: (line: string) => void;
 }) {
   const { width, height } = frame ?? FRAME;
   const { ink, muted, grid } = deriveFurniture(direction.ground);
@@ -174,21 +181,10 @@ export function DirectedDivergingStack({
 
   // ── header and footer ─────────────────────────────────────────────────────
   const column = width - PAD * 2;
-  const titleLines = wrap(set(title, display), column, display);
   const titleLead = leadOf(display);
   const bodyLead = leadOf(body);
-  const limitLines = wrap(set(limits, body), column, body);
+  const annotLead = leadOf(annot);
   const sourceLines = wrap(set(source, body), column, body);
-  const readingLines = wrap(set(reading, annot), column, annot);
-
-  const eyebrowBaseline = PAD + eyebrowReg.fontSize;
-  const titleTop =
-    eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
-  const limitsTop =
-    titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
-  const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
-  const readingTop =
-    sourceTop - readingLines.length * bodyLead - gapOf(annot, READING_TO_SOURCE);
 
   // ── the rows ──────────────────────────────────────────────────────────────
   const ramped = on("the-ramp-deepens-outward");
@@ -209,11 +205,126 @@ export function DirectedDivergingStack({
       ),
     ) + 12;
 
-  const plotTop = limitsTop + limitLines.length * bodyLead + annotBand.ascent * 3.2;
-  const plotBottom =
-    readingTop - gapOf(annot, 0.7857) - axisBand.ascent - axisBand.descent - 8;
   const plotLeft = PAD + nameRoom + totalRoom;
   const plotRight = width - PAD - totalRoom;
+
+  /** THE TWO SIDES AND THE ANCHOR ARE THREE RUNS ON ONE LINE, AND AT A NARROW FRAME THEY DO NOT FIT.
+   *
+   *  Measured at 1080x1920: the half-width either side of the anchor came to 156px, and
+   *  « Nucléaire » centred on the anchor ran straight into « Renouvelable → » — the plate printed
+   *  « NUCLÉAPRENOUVELABLE ». Neither run is arbitrated; both are drawn from the geometry, so no
+   *  counter in this tree was watching them. When the three do not clear each other the anchor's
+   *  name takes a line of its own ABOVE the pair, and the plot is pushed down by exactly that line
+   *  rather than by a guess. At 960px the three clear and nothing moves. */
+  const SIDE_NAME_BREATH = 10;
+  const sideNameRoom = (plotRight - plotLeft) / 2;
+  const sideNamesStacked =
+    straddles &&
+    widthOf(set(centreName, annot), annot) / 2 + SIDE_NAME_BREATH >
+      sideNameRoom -
+        Math.max(
+          widthOf(set(`← ${leftName}`, annot), annot),
+          widthOf(set(`${rightName} →`, annot), annot),
+        );
+
+  /** THE COPY IS A LADDER, and every rung of it is the desk's own cut order: the reading line
+   *  first, then the standfirst, then the headline — `REMOVAL_LADDER`'s R3 and R4 in the order
+   *  `type-at-size.mjs` files them.
+   *
+   *  It was three fixed strings. At 960x540 they fit; at 540x540 the headline alone set in six
+   *  lines of display type, the reading line in seven of annot, and the plot's own band came out
+   *  NEGATIVE — `plotBottom` above `plotTop` — so the rows were drawn through the reading line and
+   *  the guard counted thirty pairs of words printed through each other. A beat with no rungs has
+   *  nothing to spend at a frame that is narrower than the one it was written for. */
+  const titleForms = Array.isArray(title) ? title : [title];
+  const limitForms = Array.isArray(limits) ? limits : [limits];
+  const readingForms = Array.isArray(reading) ? reading : [reading];
+
+  const layoutFor = (t: number, l: number, r: number) => {
+    const titleLines = wrap(set(titleForms[t], display), column, display);
+    const limitLines = wrap(set(limitForms[l], body), column, body);
+    const readingLines =
+      r < 0 ? [] : wrap(set(readingForms[r], annot), column, annot);
+    const eyebrowBaseline = PAD + eyebrowReg.fontSize;
+    const titleTop =
+      eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
+    const limitsTop =
+      titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
+    const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
+    const readingTop =
+      sourceTop - readingLines.length * bodyLead - gapOf(annot, READING_TO_SOURCE);
+    const plotTop =
+      limitsTop +
+      limitLines.length * bodyLead +
+      annotBand.ascent * 3.2 +
+      (sideNamesStacked ? annotLead : 0);
+    const plotBottom =
+      readingTop - gapOf(annot, 0.7857) - axisBand.ascent - axisBand.descent - 8;
+    return {
+      titleLines,
+      limitLines,
+      readingLines,
+      eyebrowBaseline,
+      titleTop,
+      limitsTop,
+      sourceTop,
+      readingTop,
+      plotTop,
+      plotBottom,
+    };
+  };
+
+  /** A ROW HAS TO HOLD ITS OWN NAME, on one line, clear of the row above. That is the floor the
+   *  ladder is walked against: the annot register's own band plus breath, per row of pitch. Below
+   *  it the six country names are printed through each other, which is what a 540px frame did
+   *  before there was a ladder to walk. */
+  const rowOwes = annotBand.ascent + annotBand.descent + 6;
+  const rungs: Array<{ title: number; limit: number; reading: number }> = [];
+  for (let t = 0; t < titleForms.length; t++)
+    for (let l = 0; l < limitForms.length; l++) {
+      for (let r = 0; r < readingForms.length; r++)
+        rungs.push({ title: t, limit: l, reading: r });
+      rungs.push({ title: t, limit: l, reading: -1 });
+    }
+  let fits: { rung: (typeof rungs)[number]; layout: ReturnType<typeof layoutFor> } | null = null;
+  let bestPitch = -Infinity;
+  for (const rung of rungs) {
+    const candidate = layoutFor(rung.title, rung.limit, rung.reading);
+    const pitchAt = (candidate.plotBottom - candidate.plotTop) / rows.length;
+    if (pitchAt > bestPitch) bestPitch = pitchAt;
+    if (pitchAt >= rowOwes) {
+      fits = { rung, layout: candidate };
+      break;
+    }
+  }
+  if (!fits)
+    throw new Error(
+      `the copy leaves the six rows ${bestPitch.toFixed(1)}px of pitch at ${width} x ${height}, ` +
+        `and a row that carries its own name owes ${rowOwes.toFixed(1)}px. Every rung of this ` +
+        `beat's copy has been spent. Give it shorter forms — do not squeeze the rows, which are ` +
+        `the argument.`,
+    );
+  const layout = fits.layout;
+  const {
+    titleLines,
+    limitLines,
+    readingLines,
+    eyebrowBaseline,
+    titleTop,
+    limitsTop,
+    sourceTop,
+    readingTop,
+  } = layout;
+  onLadder?.(
+    `ladder: headline ${fits.rung.title + 1} in ${titleLines.length} lines, standfirst ` +
+      `${fits.rung.limit + 1}, reading ` +
+      (fits.rung.reading < 0 ? "dropped" : `form ${fits.rung.reading + 1}`) +
+      ` · ${rows.length} rows, pitch ${((layout.plotBottom - layout.plotTop) / rows.length).toFixed(0)}px, ` +
+      `floor ${rowOwes.toFixed(1)}px` +
+      (sideNamesStacked ? " · the anchor's name takes a line of its own" : ""),
+  );
+  const plotTop = layout.plotTop;
+  const plotBottom = layout.plotBottom;
 
   /** The scale is MIRRORED about the centre and reads as a magnitude on both sides — jbryer's
    *  `100 · 50 · 0 · 50 · 100`, because "a signed axis under a count of people says something
@@ -317,7 +428,11 @@ export function DirectedDivergingStack({
       {straddles && (
         <text
           x={centreX}
-          y={plotTop - annotBand.descent - 6}
+          y={
+            sideNamesStacked
+              ? plotTop - annotBand.descent - 6 - annotLead
+              : plotTop - annotBand.descent - 6
+          }
           textAnchor="middle"
           {...line(annot)}
           fill={mutedInk}

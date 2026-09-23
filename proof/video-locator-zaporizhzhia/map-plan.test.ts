@@ -17,7 +17,11 @@ import {
   RING_NEAR,
 } from "./build.mjs";
 import { FOCUS_ISO2, projectorOf, REFERENCE } from "./map-plan.mjs";
-import measured from "./measured.json";
+import measuredAtEverySize from "./measured.json";
+
+// `measured.json` is keyed by export size. This file measures the plan `build.mjs` builds with no `--size`,
+// which is landscape, so it reads the landscape entry — naming it rather than taking whatever is first.
+const measured = (measuredAtEverySize as any).landscape;
 import { MAP_FIELDS, mapStateAt } from "./scene.mjs";
 import { EUROPE_WINDOW } from "./subject.mjs";
 

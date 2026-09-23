@@ -135,26 +135,43 @@ const one = (v) =>
 const format = (v) => plainSpaces(v.toLocaleString("fr-FR", { maximumFractionDigits: 0 }));
 const verdict = (row) => `+${one(row.measure - row.marker)} pts`;
 
-const title = `${french(moved.key)} : +${one(moved.measure - moved.marker)} points de bas-carbone depuis ${BEFORE}, et toujours la seule des six sous la moitié`;
-const limits =
+/** THE COPY IN FORMS, LONGEST FIRST — R3's rung and R4's, written as copy rather than as a cut.
+ *  This plate had no ladder at all: at 1920x1080 the header takes a third of the frame and the six
+ *  rows share the rest, and at 1080x1080 the same header takes all of it. Measured 2026-09-23, all
+ *  three directions REFUSED at square with the headline printed through « Norvège » and the
+ *  standfirst through the reading line. Only the longest form of each is used at landscape. */
+const title = [
+  `${french(moved.key)} : +${one(moved.measure - moved.marker)} points de bas-carbone depuis ${BEFORE}, et toujours la seule des six sous la moitié`,
+  `${french(moved.key)} : +${one(moved.measure - moved.marker)} points depuis ${BEFORE}, et toujours sous la moitié`,
+  `${french(moved.key)} : +${one(moved.measure - moved.marker)} points de bas-carbone`,
+];
+const limits = [
   `Part du bas-carbone — nucléaire et renouvelables — dans la production électrique de chaque pays, ` +
-  `en ${BEFORE} et en ${AFTER}. ${french(moved.key)} passe de ${one(moved.marker)} % à ` +
-  `${one(moved.measure)} % ; les ${SPELLED[alreadyHigh.length] ?? alreadyHigh.length} pays déjà ` +
-  `au-dessus de ${SATURATED} % en ${BEFORE} gagnent moins d’un point chacun.`;
-const reading =
+    `en ${BEFORE} et en ${AFTER}. ${french(moved.key)} passe de ${one(moved.marker)} % à ` +
+    `${one(moved.measure)} % ; les ${SPELLED[alreadyHigh.length] ?? alreadyHigh.length} pays déjà ` +
+    `au-dessus de ${SATURATED} % en ${BEFORE} gagnent moins d’un point chacun.`,
+  `Part du bas-carbone — nucléaire et renouvelables — dans la production électrique, en ${BEFORE} ` +
+    `et en ${AFTER}. ${french(moved.key)} passe de ${one(moved.marker)} % à ${one(moved.measure)} %.`,
+  `Le bas-carbone — nucléaire et renouvelables — dans l’électricité, en ${BEFORE} et en ${AFTER}.`,
+];
+const reading = [
   `Lecture : la barre épaisse et pâle est ${BEFORE}, la fine et saturée ${AFTER} — deux états d’une ` +
-  `même mesure, donc une seule teinte à deux intensités. La piste va jusqu’à 100 %, si bien que ce ` +
-  `qui reste à parcourir se lit aussi. Aucun objectif n’est dessiné ici : ${BEFORE} est une date, pas ` +
-  `une cible.`;
+    `même mesure, donc une seule teinte à deux intensités. La piste va jusqu’à 100 %, si bien que ce ` +
+    `qui reste à parcourir se lit aussi. Aucun objectif n’est dessiné ici : ${BEFORE} est une date, pas ` +
+    `une cible.`,
+  `Lecture : la barre épaisse et pâle est ${BEFORE}, la fine et saturée ${AFTER}. La piste va ` +
+    `jusqu’à 100 %, si bien que ce qui reste à parcourir se lit aussi.`,
+  `Lecture : la barre épaisse et pâle est ${BEFORE}, la fine et saturée ${AFTER}.`,
+];
 const source =
   "Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data";
 
 const textPerRegister = {
-  display: title,
+  display: title.join(" "),
   eyebrow: EYEBROW,
-  body: `${limits} ${source}`,
+  body: `${limits.join(" ")} ${source}`,
   axis: `0 50 100 %`,
-  annot: `${rows.map((r) => r.label).join(" ")} ${reading} ${BEFORE} ${AFTER}`,
+  annot: `${rows.map((r) => r.label).join(" ")} ${reading.join(" ")} ${BEFORE} ${AFTER}`,
   value: rows.map(verdict).join(" "),
 };
 
@@ -218,9 +235,10 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       name: nameAtSize(id, SIZE),
       scale: FRAME.scale,
     });
-    console.log(`  -> renders/${id}.png\n`);
+    console.log(`  -> renders/${nameAtSize(id, SIZE)}.png\n`);
   } catch (error) {
-    for (const ext of ["png", "svg"]) await rm(join(OUT, `${id}.${ext}`), { force: true });
+    for (const ext of ["png", "svg"])
+      await rm(join(OUT, `${nameAtSize(id, SIZE)}.${ext}`), { force: true });
     refused.push({ id, why: error.message });
     console.log(`  REFUSED — ${error.message}\n`);
   }

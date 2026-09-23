@@ -134,6 +134,12 @@ const title = [
   `Les ${above.length} pays au-dessus de ${HIGH} t de CO₂ par personne pèsent ${one(aboveShare)} % de l’humanité`,
   `${above.length} pays au-dessus de ${HIGH} t de CO₂ par personne, ${one(aboveShare)} % de l’humanité`,
   `Le CO₂ par personne, pays par pays`,
+  /** A FOURTH RUNG, ADDED FOR THE NARROW FRAMES AND USED BY NOTHING ELSE. In nocturne the display
+   *  register is set in caps, and at 1080x1080 even « Le CO₂ par personne, pays par pays » runs to
+   *  three lines — the ladder bottomed out at a 139px band where the swarm owes 151. This is the
+   *  same sentence with its second clause gone, which is what R3 does to a standfirst; it carries
+   *  no claim the eyebrow (« Climat · Monde ») and the standfirst do not already carry. */
+  `Le CO₂ par personne`,
 ];
 const limits = [
   `Un cercle par pays, placé selon ses tonnes de CO₂ par habitant en 2023 ; sa surface est sa ` +
@@ -214,9 +220,10 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       name: nameAtSize(id, SIZE),
       scale: FRAME.scale,
     });
-    console.log(`  -> renders/${id}.png\n`);
+    console.log(`  -> renders/${nameAtSize(id, SIZE)}.png\n`);
   } catch (error) {
-    for (const ext of ["png", "svg"]) await rm(join(OUT, `${id}.${ext}`), { force: true });
+    for (const ext of ["png", "svg"])
+      await rm(join(OUT, `${nameAtSize(id, SIZE)}.${ext}`), { force: true });
     refused.push({ id, why: error.message });
     console.log(`  REFUSED — ${error.message}\n`);
   }

@@ -49,19 +49,55 @@ export function fieldAt(field, frame, states, timing) {
 export const moveOf = (t, k, n, move) => clamp01((t - (n > 1 ? (k / (n - 1)) * (1 - move) : 0)) / move);
 const lerp = (a, b, t) => a + (b - a) * t;
 
-/** Rail `i`'s x with the camera `c` of the way open. */
+/**
+ * THE TWO AXES, NAMED RATHER THAN ASSUMED.
+ *
+ * Landscape lays the rails ACROSS the frame and the values UP it. A narrow frame turns the whole
+ * chart a quarter turn — the rails stack DOWN the frame and the values run ACROSS it (`build.mjs`,
+ * TRANSPOSED). Everything in this file is arithmetic in two named coordinates instead: `u` along the
+ * rails' own stacking, `v` along the values. `pt` is the only place that knows which is x and which
+ * is y, so the choreography is written once and reads the same at every frame size.
+ */
+const pt = (props, u, v) => (props.transposed ? [v, u] : [u, v]);
+/** Which way the values run from the foot: up the frame at landscape, right across it transposed. */
+const vDir = (props) => (props.transposed ? 1 : -1);
+
+/** Rail `i`'s own coordinate with the camera `c` of the way open — an x at landscape, a y transposed. */
 export const railXAt = (props, i, c) => lerp(props.camera.whole.left + i * props.camera.whole.step, props.camera.close.left + i * props.camera.close.step, c);
 
-/** A line drawn `d` of the way across the rails: its vertices so far, the last one cut between two rails. */
-export function pointsAt(props, ys, d, c) {
+/** A line drawn `d` of the way across the rails: its vertices so far, the last one cut between two rails.
+ *  `vs` is each vertex's VALUE coordinate, in the rails' order. */
+export function pointsAt(props, vs, d, c) {
   if (d <= 0) return [];
-  const s = d * (ys.length - 1);
+  const s = d * (vs.length - 1);
   const whole = Math.floor(s + 1e-9);
   const points = [];
-  for (let i = 0; i <= Math.min(whole, ys.length - 1); i++) points.push([railXAt(props, i, c), ys[i]]);
+  for (let i = 0; i <= Math.min(whole, vs.length - 1); i++) points.push(pt(props, railXAt(props, i, c), vs[i]));
   const part = s - whole;
-  if (whole < ys.length - 1 && part > 1e-9) points.push([lerp(railXAt(props, whole, c), railXAt(props, whole + 1, c), part), lerp(ys[whole], ys[whole + 1], part)]);
+  if (whole < vs.length - 1 && part > 1e-9)
+    points.push(pt(props, lerp(railXAt(props, whole, c), railXAt(props, whole + 1, c), part), lerp(vs[whole], vs[whole + 1], part)));
   return points;
+}
+
+/** Where a name seated on a rail is drawn, with the camera `c` of the way open: it travels with its
+ *  rail along `u` and stays put along `v`. `clear` pushes it off the piece it rides while that piece
+ *  is still drawn. */
+export function seatAt(props, seat, c, clear = 0) {
+  const [x, y] = pt(props, railXAt(props, seat.axis, c) + seat.du + clear, seat.v);
+  return { x, y };
+}
+
+/** A close-up name and the hairline back to its vertex on the nuclear rail. At landscape the name is
+ *  spread down a gutter beside the rail and reaches it sideways; transposed it is spread across the
+ *  frame above the rail and reaches it downwards. */
+export function closeAt(props, d, c) {
+  const along = railXAt(props, 0, c);
+  if (props.transposed) {
+    const y = along + d.close.du;
+    return { x: d.close.x, y, connector: { x1: d.close.cx, y1: y + d.close.drop, x2: d.vs[0], y2: along } };
+  }
+  const x = along - d.close.dx;
+  return { x, y: d.close.y, connector: { x1: x + d.close.width + props.gap / 4, y1: d.close.cy, x2: along, y2: d.vs[0] } };
 }
 
 /** Where a floor at `value` has passed a line at `v`, as progress through the subject. */
@@ -97,45 +133,52 @@ export function sceneAt(props, frame) {
     const px = lerp(lying, piece.axis === null ? lying : railXAt(props, piece.axis, camera), m);
     const angle = (m * Math.PI) / 2;
     const fade = piece.axis === null ? 1 - standOf[k] : 1;
-    return { axis: piece.axis, x1: px, y1: props.foot, x2: px + len * Math.cos(angle), y2: props.foot - len * Math.sin(angle), width: thickness * (1 - settle), opacity: fade * (1 - settle) };
+    // Lying, the piece runs along the rails' own axis at the value axis's foot; standing, it turns a
+    // quarter and runs up the values — which at a narrow frame is a slide to the right, not a rise.
+    const [x1, y1] = pt(props, px, props.foot);
+    const [x2, y2] = pt(props, px + len * Math.cos(angle), props.foot + vDir(props) * len * Math.sin(angle));
+    return { axis: piece.axis, x1, y1, x2, y2, width: thickness * (1 - settle), opacity: fade * (1 - settle) };
   });
   const railOn = props.axes.map((_, i) => clamp01((standOf[laid.findIndex((q) => q.axis === i)] - 0.6) / 0.4));
 
   let count = 0;
   const lines = props.lines.map((l) => {
     const d = l.shown ? trace : ease(moveOf(draw, l.drawRank, props.lines.length - 1, MOVE.draw));
-    const points = pointsAt(props, l.ys, d, camera);
+    const points = pointsAt(props, l.vs, d, camera);
     if (l.values[0] >= nuclearFloor - 1e-9 && l.values[1] >= windFloor - 1e-9) count += 1;
     let back = 0;
     if (!l.pair) {
       const [event, v, floor] = l.values[0] < props.floors[0].value ? [WINDOWS.subject.nuclear, l.values[0], props.floors[0].value] : [WINDOWS.subject.wind, l.values[1], props.floors[1].value];
       back = ease(clamp01((p - passedAt(event, floor, v)) / STEP_BACK));
     }
-    const seatX = l.seat.anchor === "start" ? railXAt(props, l.seat.axis, camera) + l.seat.off : railXAt(props, l.seat.axis, camera) - l.seat.off - l.seat.width;
-    const arrived = l.shown ? clamp01(bar * 5) : d <= 0 ? 0 : clamp01((d * (l.ys.length - 1) - l.seat.axis + 0.5) / 0.5);
+    const arrived = l.shown ? clamp01(bar * 5) : d <= 0 ? 0 : clamp01((d * (l.vs.length - 1) - l.seat.axis + 0.5) / 0.5);
     // Finland's name rides the top of its first piece as it stands, clear of the piece until the piece thins away.
     const travel = l.shown ? standOf[laid.findIndex((q) => q.axis === l.seat.axis)] : 1;
     const clear = l.shown ? (thickness / 2) * (1 - settle) : 0;
+    const seat = seatAt(props, l.seat, camera, clear);
     const name = {
-      x: l.shown ? lerp(props.bar.name.x, seatX + clear, travel) : seatX,
-      y: l.shown ? lerp(props.bar.name.y, l.seat.y, travel) : l.seat.y,
+      x: l.shown ? lerp(props.bar.name.x, seat.x, travel) : seat.x,
+      y: l.shown ? lerp(props.bar.name.y, seat.y, travel) : seat.y,
       opacity: arrived * wholeNames,
     };
-    const close = l.close ? { x: railXAt(props, 0, camera) - l.close.dx, y: l.close.y, cy: l.close.cy, opacity: closeNames } : null;
+    const close = l.close ? { ...closeAt(props, l, camera), opacity: closeNames } : null;
     return { points, stepBack: back * (1 - release), accent: l.pair ? ease(clamp01(pair)) : 0, lit: l.shown ? 1 - settle : 0, name, close };
   });
 
   const floors = props.floors.map((f, i) => {
     const value = i === 0 ? nuclearFloor : windFloor;
     const t = i === 0 ? nuclear : wind;
-    return { value, y: props.foot - value * props.scale, x: railXAt(props, f.axis, camera), label: String(Math.floor(value + 1e-9)), opacity: clamp01(t * 12) };
+    const u = railXAt(props, f.axis, camera);
+    const v = props.foot + vDir(props) * value * props.scale;
+    const [x, y] = pt(props, u, v);
+    return { value, u, v, x, y, label: String(Math.floor(value + 1e-9)), opacity: clamp01(t * 12) };
   });
 
   return {
     title: at("title"),
     bar,
     camera,
-    rails: props.axes.map((_, i) => ({ x: railXAt(props, i, camera), opacity: railOn[i] })),
+    rails: props.axes.map((_, i) => ({ u: railXAt(props, i, camera), opacity: railOn[i] })),
     pieces,
     hundred: clamp01((bar - 0.9) / 0.1) * (1 - split),
     lines,

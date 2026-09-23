@@ -2131,6 +2131,7 @@
       }
     }
   ],
+  "labelHalo": null,
   "flows": [
     {
       "from": "Wind",

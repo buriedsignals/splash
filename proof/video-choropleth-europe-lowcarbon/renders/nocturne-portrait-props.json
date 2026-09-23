@@ -1,0 +1,2394 @@
+{
+  "frame": {
+    "width": 1080,
+    "height": 1920
+  },
+  "stage": {
+    "x": 0,
+    "y": 0,
+    "width": 1080,
+    "height": 1920
+  },
+  "layoutInset": {
+    "x": 72,
+    "y": 85
+  },
+  "registers": {
+    "display": {
+      "fontFamily": "Montserrat",
+      "fontSize": 121.26,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 12.883875,
+      "transform": "uppercase",
+      "lead": 147.934192752,
+      "fill": "#FFFFFF"
+    },
+    "eyebrow": {
+      "fontFamily": "Montserrat",
+      "fontSize": 36,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 9.852631578947369,
+      "transform": "uppercase",
+      "lead": 43.1994096,
+      "fill": "#4FE0C0"
+    },
+    "value": {
+      "fontFamily": "Montserrat",
+      "fontSize": 53.05,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 63.65912998,
+      "fill": "#4FE0C0"
+    },
+    "axis": {
+      "fontFamily": "Montserrat",
+      "fontSize": 37.89,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 4.546799999999999,
+      "transform": "none",
+      "lead": 45.467378604000004,
+      "fill": "#a5a4b8"
+    },
+    "area": {
+      "fontFamily": "Montserrat",
+      "fontSize": 37.89,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 4.546799999999999,
+      "transform": "none",
+      "lead": 45.467378604000004,
+      "fill": "#a5a4b8"
+    },
+    "feature": {
+      "fontFamily": "Montserrat",
+      "fontSize": 37.89,
+      "fontWeight": 700,
+      "fontStyle": "normal",
+      "letterSpacing": 4.546799999999999,
+      "transform": "none",
+      "lead": 45.467378604000004,
+      "fill": "#a5a4b8"
+    },
+    "closeFeature": {
+      "fontFamily": "Montserrat",
+      "fontSize": 53.05,
+      "fontWeight": 700,
+      "fontStyle": "normal",
+      "letterSpacing": 6.365999999999999,
+      "transform": "none",
+      "lead": 63.65912998,
+      "fill": "#4FE0C0"
+    },
+    "source": {
+      "fontFamily": "Montserrat",
+      "fontSize": 36,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 4.319999999999999,
+      "transform": "none",
+      "lead": 43.1994096,
+      "fill": "#a5a4b8"
+    }
+  },
+  "titleCard": {
+    "form": 0,
+    "register": {
+      "fontFamily": "Montserrat",
+      "fontSize": 69.25,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 7.357812499999999,
+      "transform": "uppercase",
+      "lead": 84.4832826,
+      "fill": "#FFFFFF"
+    },
+    "eyebrow": {
+      "text": "ÉNERGIE · EUROPE",
+      "x": 72,
+      "y": 717.9320068359375,
+      "width": 500.19343581952546
+    },
+    "title": [
+      {
+        "text": "LE",
+        "x": 72,
+        "y": 811.628805246875,
+        "width": 90.31931409835815
+      },
+      {
+        "text": "BAS-CARBONE",
+        "x": 72,
+        "y": 896.112087846875,
+        "width": 602.3711848258972
+      },
+      {
+        "text": "EUROPÉEN EST",
+        "x": 72,
+        "y": 980.595370446875,
+        "width": 634.1049738883972
+      },
+      {
+        "text": "AU",
+        "x": 72,
+        "y": 1065.078653046875,
+        "width": 103.2690709888935
+      },
+      {
+        "text": "NORD-OUEST —",
+        "x": 72,
+        "y": 1149.561935646875,
+        "width": 658.4810114860535
+      },
+      {
+        "text": "ET EN ALBANIE",
+        "x": 72,
+        "y": 1234.045218246875,
+        "width": 624.7043025016785
+      }
+    ]
+  },
+  "source": {
+    "form": 0,
+    "lines": [
+      {
+        "text": "Ember, via OWID · © MapTiler ©",
+        "x": 5.391720581054688,
+        "y": 32.10372619628906,
+        "width": 690.660000591278
+      },
+      {
+        "text": "OpenStreetMap",
+        "x": 5.391720581054688,
+        "y": 75.30313579628907,
+        "width": 339.7319584751129
+      }
+    ],
+    "halo": 10.783441162109376,
+    "width": 716,
+    "height": 88,
+    "at": {
+      "x": 192,
+      "y": 145
+    }
+  },
+  "panel": {
+    "width": 784,
+    "height": 186,
+    "halo": 11.3495751953125,
+    "valueHalo": 16.125076904296876,
+    "counter": [
+      {
+        "text": "40 pays",
+        "x": 5.67478759765625,
+        "y": 43.34028442382812,
+        "width": 210.13106203079224
+      },
+      {
+        "text": "32 pays",
+        "x": 5.67478759765625,
+        "y": 43.34028442382812,
+        "width": 199.89239021018147
+      },
+      {
+        "text": "26 pays",
+        "x": 5.67478759765625,
+        "y": 43.34028442382812,
+        "width": 202.54491391777992
+      },
+      {
+        "text": "20 pays",
+        "x": 5.67478759765625,
+        "y": 43.34028442382812,
+        "width": 204.98520627617836
+      },
+      {
+        "text": "12 pays",
+        "x": 5.67478759765625,
+        "y": 43.34028442382812,
+        "width": 189.49460569024086
+      },
+      {
+        "text": "7 pays",
+        "x": 5.67478759765625,
+        "y": 43.34028442382812,
+        "width": 170.6618525981903
+      }
+    ],
+    "swatches": [
+      {
+        "x": 5.67478759765625,
+        "y": 74.46366021555,
+        "width": 123.97579451997811,
+        "height": 18.1869514416
+      },
+      {
+        "x": 131.92395104783435,
+        "y": 74.46366021555,
+        "width": 123.97579451997811,
+        "height": 18.1869514416
+      },
+      {
+        "x": 258.17311449801247,
+        "y": 74.46366021555,
+        "width": 123.97579451997811,
+        "height": 18.1869514416
+      },
+      {
+        "x": 384.4222779481905,
+        "y": 74.46366021555,
+        "width": 123.97579451997811,
+        "height": 18.1869514416
+      },
+      {
+        "x": 510.67144139836864,
+        "y": 74.46366021555,
+        "width": 123.97579451997811,
+        "height": 18.1869514416
+      },
+      {
+        "x": 636.9206048485468,
+        "y": 74.46366021555,
+        "width": 123.97579451997811,
+        "height": 18.1869514416
+      }
+    ],
+    "bornes": [
+      {
+        "text": "40 %",
+        "x": 80.1662139737453,
+        "y": 126.031715172775,
+        "width": 103.5154741481781
+      },
+      {
+        "text": "55 %",
+        "x": 210.12859888450424,
+        "y": 126.031715172775,
+        "width": 96.08903122701645
+      },
+      {
+        "text": "70 %",
+        "x": 334.40748195562537,
+        "y": 126.031715172775,
+        "width": 100.02959198513031
+      },
+      {
+        "text": "85 %",
+        "x": 461.1681578641279,
+        "y": 126.031715172775,
+        "width": 99.00656706848144
+      },
+      {
+        "text": "94 %",
+        "x": 586.1669527787874,
+        "y": 126.031715172775,
+        "width": 101.50730413951874
+      }
+    ],
+    "missingSwatch": {
+      "x": 5.67478759765625,
+      "y": 153.312142335175,
+      "width": 123.97579451997811,
+      "height": 18.1869514416
+    },
+    "missingLabel": {
+      "text": "sans donnée",
+      "x": 143.29079569883436,
+      "y": 171.499093776775,
+      "width": 285.0464779787063
+    },
+    "at": {
+      "x": 192,
+      "y": 244.366845651
+    }
+  },
+  "colours": {
+    "ground": "#111044",
+    "sea": "#152e67",
+    "classFills": [
+      "#182953",
+      "#2e4f6d",
+      "#437686",
+      "#599ca0",
+      "#6ec3b9",
+      "#84e9d3"
+    ],
+    "missingFill": "#302f5c",
+    "ring": "#53e1c1",
+    "text": {
+      "eyebrow": "#53e1c1",
+      "title": "#ffffff",
+      "counter": "#53e1c1",
+      "key": "#a7a6b9",
+      "source": "#a7a6b9"
+    }
+  },
+  "strokes": {
+    "border": 1.81872,
+    "ring": 3.0312
+  },
+  "names": [
+    {
+      "key": "odd:ALB",
+      "seat": {
+        "x": 704.9155769336678,
+        "y": 1250.8448967322536
+      },
+      "role": "odd",
+      "camera": "overview",
+      "text": "ALBANIE",
+      "register": "feature",
+      "halo": 11.607221069335939,
+      "textWidth": 203.92395140247345,
+      "width": 215.53117247180938,
+      "height": 54.53657287597656,
+      "textX": 5.803610534667969,
+      "baseline": 39.94249603271484,
+      "gauge": null,
+      "inked": [
+        {
+          "x": 5.803610534667969,
+          "y": 5.803610534667969,
+          "width": 203.92395140247345,
+          "height": 42.929351806640625
+        }
+      ],
+      "klass": "feature",
+      "x": 597.1499906977631,
+      "y": 1287.9717423832537,
+      "ink": "#53e1c1",
+      "haloColour": "#152e67",
+      "leader": {
+        "from": {
+          "x": 704.9155769336678,
+          "y": 1276.6048967322536
+        },
+        "to": {
+          "x": 704.9155769336678,
+          "y": 1287.9717423832537
+        },
+        "dot": 0
+      }
+    },
+    {
+      "key": "close:ALB",
+      "seat": {
+        "x": 540,
+        "y": 960
+      },
+      "role": "odd",
+      "camera": "closeUp",
+      "text": "ALBANIE · 100 %",
+      "register": "closeFeature",
+      "halo": 16.251336975097658,
+      "textWidth": 537.8739364614487,
+      "width": 554.1252734365463,
+      "height": 103.63740073417736,
+      "textX": 8.125668487548829,
+      "baseline": 55.92371841430664,
+      "gauge": {
+        "x": 8.125668487548829,
+        "y": 81.87151866542852,
+        "width": 227.33689302000002,
+        "height": 13.640213581200001,
+        "share": 1,
+        "notch": 0.94
+      },
+      "inked": [
+        {
+          "x": 8.125668487548829,
+          "y": 8.125668487548829,
+          "width": 537.8739364614487,
+          "height": 60.105636596679695
+        },
+        {
+          "x": 8.125668487548829,
+          "y": 81.87151866542852,
+          "width": 227.33689302000002,
+          "height": 13.640213581200001
+        }
+      ],
+      "klass": "feature",
+      "x": 262.93736328172685,
+      "y": 908.1812996329113,
+      "ink": "#18433a",
+      "haloColour": "#83e6d1",
+      "leader": null
+    },
+    {
+      "key": "neighbour:MNE",
+      "seat": {
+        "x": 474.58267053637604,
+        "y": 754.7002750771043
+      },
+      "role": "neighbour",
+      "camera": "closeUp",
+      "text": "MONTÉNÉGRO · 59 %",
+      "register": "area",
+      "halo": 11.3495751953125,
+      "textWidth": 476.8456341827392,
+      "width": 488.19520937805174,
+      "height": 80.34689078544687,
+      "textX": 5.67478759765625,
+      "baseline": 39.05589111328125,
+      "gauge": {
+        "x": 5.67478759765625,
+        "y": 61.031889606590624,
+        "width": 227.33689302000002,
+        "height": 13.640213581200001,
+        "share": 0.5949008498583569,
+        "notch": 0.94
+      },
+      "inked": [
+        {
+          "x": 5.67478759765625,
+          "y": 5.67478759765625,
+          "width": 476.8456341827392,
+          "height": 41.716888427734375
+        },
+        {
+          "x": 5.67478759765625,
+          "y": 61.031889606590624,
+          "width": 227.33689302000002,
+          "height": 13.640213581200001
+        }
+      ],
+      "klass": "area",
+      "x": 477.3467888019837,
+      "y": 481.3127119353168,
+      "ink": "#f2f2f5",
+      "haloColour": "#437284",
+      "leader": {
+        "from": {
+          "x": 474.58267053637604,
+          "y": 754.7002750771043
+        },
+        "to": {
+          "x": 477.3467888019837,
+          "y": 561.6596027207637
+        },
+        "dot": 4.5467378604
+      }
+    },
+    {
+      "key": "neighbour:MKD",
+      "seat": {
+        "x": 625.0965110952138,
+        "y": 884.4735183770432
+      },
+      "role": "neighbour",
+      "camera": "closeUp",
+      "text": "MACÉDOINE DU NORD · 39 %",
+      "register": "area",
+      "halo": 11.3495751953125,
+      "textWidth": 666.4850933135986,
+      "width": 677.834668508911,
+      "height": 80.34689078544687,
+      "textX": 5.67478759765625,
+      "baseline": 39.05589111328125,
+      "gauge": {
+        "x": 5.67478759765625,
+        "y": 61.031889606590624,
+        "width": 227.33689302000002,
+        "height": 13.640213581200001,
+        "share": 0.39461172741679873,
+        "notch": 0.94
+      },
+      "inked": [
+        {
+          "x": 5.67478759765625,
+          "y": 5.67478759765625,
+          "width": 666.4850933135986,
+          "height": 41.716888427734375
+        },
+        {
+          "x": 5.67478759765625,
+          "y": 61.031889606590624,
+          "width": 227.33689302000002,
+          "height": 13.640213581200001
+        }
+      ],
+      "klass": "area",
+      "x": 46.22117022996218,
+      "y": 719.0859552352558,
+      "ink": "#fafafb",
+      "haloColour": "#375c78",
+      "leader": {
+        "from": {
+          "x": 625.0965110952138,
+          "y": 884.4735183770432
+        },
+        "to": {
+          "x": 625.0965110952138,
+          "y": 799.4328460207028
+        },
+        "dot": 4.5467378604
+      }
+    },
+    {
+      "key": "neighbour:GRC",
+      "seat": {
+        "x": 650.0968537023601,
+        "y": 1039.2408253290212
+      },
+      "role": "neighbour",
+      "camera": "closeUp",
+      "text": "GRÈCE · 49 %",
+      "register": "area",
+      "halo": 11.3495751953125,
+      "textWidth": 301.1497375247955,
+      "width": 312.49931272010804,
+      "height": 80.34689078544687,
+      "textX": 5.67478759765625,
+      "baseline": 39.05589111328125,
+      "gauge": {
+        "x": 5.67478759765625,
+        "y": 61.031889606590624,
+        "width": 227.33689302000002,
+        "height": 13.640213581200001,
+        "share": 0.49229152067273985,
+        "notch": 0.94
+      },
+      "inked": [
+        {
+          "x": 5.67478759765625,
+          "y": 5.67478759765625,
+          "width": 301.1497375247955,
+          "height": 41.716888427734375
+        },
+        {
+          "x": 5.67478759765625,
+          "y": 61.031889606590624,
+          "width": 227.33689302000002,
+          "height": 13.640213581200001
+        }
+      ],
+      "klass": "area",
+      "x": 556.5568686259114,
+      "y": 1025.8532621872337,
+      "ink": "#dbdbe3",
+      "haloColour": "#2e4f6d",
+      "leader": null
+    },
+    {
+      "key": "neighbour:-99:Kosovo",
+      "seat": {
+        "x": 594.0458892760746,
+        "y": 780.112316941924
+      },
+      "role": "neighbour",
+      "camera": "closeUp",
+      "text": "KOSOVO, HORS DONNÉES",
+      "register": "area",
+      "halo": 11.3495751953125,
+      "textWidth": 592.713268069458,
+      "width": 604.0628432647704,
+      "height": 53.06646362304687,
+      "textX": 5.67478759765625,
+      "baseline": 39.05589111328125,
+      "gauge": null,
+      "inked": [
+        {
+          "x": 5.67478759765625,
+          "y": 5.67478759765625,
+          "width": 592.713268069458,
+          "height": 41.716888427734375
+        }
+      ],
+      "klass": "area",
+      "x": 290.7836551421635,
+      "y": 575.8464624497365,
+      "ink": "#f2f2f5",
+      "haloColour": "#182953",
+      "leader": {
+        "from": {
+          "x": 594.0458892760746,
+          "y": 780.112316941924
+        },
+        "to": {
+          "x": 594.0458892760746,
+          "y": 628.9129260727833
+        },
+        "dot": 4.5467378604
+      }
+    }
+  ],
+  "cameras": {
+    "whole": {
+      "camX": 0.5236111111111111,
+      "camY": 0.319391225030748,
+      "camZoom": 3.3233504489986054,
+      "camBearing": 0,
+      "camPitch": 0
+    },
+    "closeUp": {
+      "camX": 0.5557894444444444,
+      "camY": 0.3761408917957844,
+      "camZoom": 5.623350448998606,
+      "camBearing": 0,
+      "camPitch": 0
+    }
+  },
+  "mapPlan": {
+    "styleUrl": "https://api.maptiler.com/maps/dataviz/style.json?key=__MAPTILER_KEY__",
+    "styleName": "dataviz",
+    "projection": "mercator",
+    "tints": {
+      "water": "#152e67",
+      "land": "#1c1b4c"
+    },
+    "cameras": [
+      {
+        "camX": 0.5236111111111111,
+        "camY": 0.319391225030748,
+        "camZoom": 3.3233504489986054,
+        "camBearing": 0,
+        "camPitch": 0
+      },
+      {
+        "camX": 0.5557894444444444,
+        "camY": 0.3761408917957844,
+        "camZoom": 5.623350448998606,
+        "camBearing": 0,
+        "camPitch": 0
+      }
+    ],
+    "statesForCards": [],
+    "referenceWidth": 1080,
+    "referenceHeight": 1920,
+    "oddSeat": [
+      20.0842,
+      40.6691
+    ],
+    "warmSamples": 3,
+    "degreesPerPixel": 1,
+    "layers": [
+      {
+        "id": "class-0",
+        "type": "fill",
+        "beneath": "water",
+        "source": {
+          "type": "vector",
+          "url": "https://api.maptiler.com/tiles/countries/tiles.json?key=__MAPTILER_KEY__"
+        },
+        "sourceLayer": "administrative",
+        "filter": [
+          "all",
+          [
+            "==",
+            [
+              "get",
+              "level"
+            ],
+            0
+          ],
+          [
+            "match",
+            [
+              "get",
+              "iso_a2"
+            ],
+            [
+              "BY",
+              "CY",
+              "MT",
+              "MD",
+              "MK",
+              "PL",
+              "RU",
+              "RS"
+            ],
+            true,
+            false
+          ]
+        ],
+        "paint": {
+          "fill-color": "#182953",
+          "fill-opacity": 0
+        },
+        "bindings": {
+          "fill-opacity": [
+            "*",
+            [
+              "max",
+              0,
+              [
+                "min",
+                1,
+                [
+                  "-",
+                  [
+                    "*",
+                    {
+                      "$state": "classes"
+                    },
+                    6
+                  ],
+                  0
+                ]
+              ]
+            ],
+            [
+              "-",
+              1,
+              [
+                "max",
+                0,
+                [
+                  "min",
+                  1,
+                  [
+                    "-",
+                    [
+                      "*",
+                      {
+                        "$state": "filter"
+                      },
+                      5
+                    ],
+                    0
+                  ]
+                ]
+              ]
+            ]
+          ]
+        }
+      },
+      {
+        "id": "class-0-small",
+        "type": "fill",
+        "beneath": "water",
+        "source": {
+          "type": "vector",
+          "url": "https://api.maptiler.com/tiles/countries/tiles.json?key=__MAPTILER_KEY__"
+        },
+        "sourceLayer": "administrative",
+        "maxzoom": 4,
+        "filter": [
+          "all",
+          [
+            "==",
+            [
+              "get",
+              "level"
+            ],
+            1
+          ],
+          [
+            "match",
+            [
+              "get",
+              "iso_a2"
+            ],
+            [
+              "MT"
+            ],
+            true,
+            false
+          ]
+        ],
+        "paint": {
+          "fill-color": "#182953",
+          "fill-opacity": 0
+        },
+        "bindings": {
+          "fill-opacity": [
+            "*",
+            [
+              "max",
+              0,
+              [
+                "min",
+                1,
+                [
+                  "-",
+                  [
+                    "*",
+                    {
+                      "$state": "classes"
+                    },
+                    6
+                  ],
+                  0
+                ]
+              ]
+            ],
+            [
+              "-",
+              1,
+              [
+                "max",
+                0,
+                [
+                  "min",
+                  1,
+                  [
+                    "-",
+                    [
+                      "*",
+                      {
+                        "$state": "filter"
+                      },
+                      5
+                    ],
+                    0
+                  ]
+                ]
+              ]
+            ]
+          ]
+        }
+      },
+      {
+        "id": "class-1",
+        "type": "fill",
+        "beneath": "water",
+        "source": {
+          "type": "vector",
+          "url": "https://api.maptiler.com/tiles/countries/tiles.json?key=__MAPTILER_KEY__"
+        },
+        "sourceLayer": "administrative",
+        "filter": [
+          "all",
+          [
+            "==",
+            [
+              "get",
+              "level"
+            ],
+            0
+          ],
+          [
+            "match",
+            [
+              "get",
+              "iso_a2"
+            ],
+            [
+              "BA",
+              "GR",
+              "IE",
+              "IT",
+              "NL",
+              "TR"
+            ],
+            true,
+            false
+          ]
+        ],
+        "paint": {
+          "fill-color": "#2e4f6d",
+          "fill-opacity": 0
+        },
+        "bindings": {
+          "fill-opacity": [
+            "*",
+            [
+              "max",
+              0,
+              [
+                "min",
+                1,
+                [
+                  "-",
+                  [
+                    "*",
+                    {
+                      "$state": "classes"
+                    },
+                    6
+                  ],
+                  1
+                ]
+              ]
+            ],
+            [
+              "-",
+              1,
+              [
+                "max",
+                0,
+                [
+                  "min",
+                  1,
+                  [
+                    "-",
+                    [
+                      "*",
+                      {
+                        "$state": "filter"
+                      },
+                      5
+                    ],
+                    1
+                  ]
+                ]
+              ]
+            ]
+          ]
+        }
+      },
+      {
+        "id": "class-2",
+        "type": "fill",
+        "beneath": "water",
+        "source": {
+          "type": "vector",
+          "url": "https://api.maptiler.com/tiles/countries/tiles.json?key=__MAPTILER_KEY__"
+        },
+        "sourceLayer": "administrative",
+        "filter": [
+          "all",
+          [
+            "==",
+            [
+              "get",
+              "level"
+            ],
+            0
+          ],
+          [
+            "match",
+            [
+              "get",
+              "iso_a2"
+            ],
+            [
+              "CZ",
+              "EE",
+              "DE",
+              "ME",
+              "RO",
+              "GB"
+            ],
+            true,
+            false
+          ]
+        ],
+        "paint": {
+          "fill-color": "#437686",
+          "fill-opacity": 0
+        },
+        "bindings": {
+          "fill-opacity": [
+            "*",
+            [
+              "max",
+              0,
+              [
+                "min",
+                1,
+                [
+                  "-",
+                  [
+                    "*",
+                    {
+                      "$state": "classes"
+                    },
+                    6
+                  ],
+                  2
+                ]
+              ]
+            ],
+            [
+              "-",
+              1,
+              [
+                "max",
+                0,
+                [
+                  "min",
+                  1,
+                  [
+                    "-",
+                    [
+                      "*",
+                      {
+                        "$state": "filter"
+                      },
+                      5
+                    ],
+                    2
+                  ]
+                ]
+              ]
+            ]
+          ]
+        }
+      },
+      {
+        "id": "class-3",
+        "type": "fill",
+        "beneath": "water",
+        "source": {
+          "type": "vector",
+          "url": "https://api.maptiler.com/tiles/countries/tiles.json?key=__MAPTILER_KEY__"
+        },
+        "sourceLayer": "administrative",
+        "filter": [
+          "all",
+          [
+            "==",
+            [
+              "get",
+              "level"
+            ],
+            0
+          ],
+          [
+            "match",
+            [
+              "get",
+              "iso_a2"
+            ],
+            [
+              "BE",
+              "BG",
+              "HR",
+              "HU",
+              "LV",
+              "LT",
+              "SI",
+              "ES"
+            ],
+            true,
+            false
+          ]
+        ],
+        "paint": {
+          "fill-color": "#599ca0",
+          "fill-opacity": 0
+        },
+        "bindings": {
+          "fill-opacity": [
+            "*",
+            [
+              "max",
+              0,
+              [
+                "min",
+                1,
+                [
+                  "-",
+                  [
+                    "*",
+                    {
+                      "$state": "classes"
+                    },
+                    6
+                  ],
+                  3
+                ]
+              ]
+            ],
+            [
+              "-",
+              1,
+              [
+                "max",
+                0,
+                [
+                  "min",
+                  1,
+                  [
+                    "-",
+                    [
+                      "*",
+                      {
+                        "$state": "filter"
+                      },
+                      5
+                    ],
+                    3
+                  ]
+                ]
+              ]
+            ]
+          ]
+        }
+      },
+      {
+        "id": "class-4",
+        "type": "fill",
+        "beneath": "water",
+        "source": {
+          "type": "vector",
+          "url": "https://api.maptiler.com/tiles/countries/tiles.json?key=__MAPTILER_KEY__"
+        },
+        "sourceLayer": "administrative",
+        "filter": [
+          "all",
+          [
+            "==",
+            [
+              "get",
+              "level"
+            ],
+            0
+          ],
+          [
+            "match",
+            [
+              "get",
+              "iso_a2"
+            ],
+            [
+              "AT",
+              "DK",
+              "LU",
+              "PT",
+              "SK"
+            ],
+            true,
+            false
+          ]
+        ],
+        "paint": {
+          "fill-color": "#6ec3b9",
+          "fill-opacity": 0
+        },
+        "bindings": {
+          "fill-opacity": [
+            "*",
+            [
+              "max",
+              0,
+              [
+                "min",
+                1,
+                [
+                  "-",
+                  [
+                    "*",
+                    {
+                      "$state": "classes"
+                    },
+                    6
+                  ],
+                  4
+                ]
+              ]
+            ],
+            [
+              "-",
+              1,
+              [
+                "max",
+                0,
+                [
+                  "min",
+                  1,
+                  [
+                    "-",
+                    [
+                      "*",
+                      {
+                        "$state": "filter"
+                      },
+                      5
+                    ],
+                    4
+                  ]
+                ]
+              ]
+            ]
+          ]
+        }
+      },
+      {
+        "id": "class-5-kept",
+        "type": "fill",
+        "beneath": "water",
+        "source": {
+          "type": "vector",
+          "url": "https://api.maptiler.com/tiles/countries/tiles.json?key=__MAPTILER_KEY__"
+        },
+        "sourceLayer": "administrative",
+        "filter": [
+          "all",
+          [
+            "==",
+            [
+              "get",
+              "level"
+            ],
+            0
+          ],
+          [
+            "match",
+            [
+              "get",
+              "iso_a2"
+            ],
+            [
+              "AL",
+              "FI",
+              "FR",
+              "IS",
+              "NO",
+              "SE",
+              "CH"
+            ],
+            true,
+            false
+          ]
+        ],
+        "paint": {
+          "fill-color": "#84e9d3",
+          "fill-opacity": 0
+        },
+        "bindings": {
+          "fill-opacity": [
+            "max",
+            0,
+            [
+              "min",
+              1,
+              [
+                "-",
+                [
+                  "*",
+                  {
+                    "$state": "classes"
+                  },
+                  6
+                ],
+                5
+              ]
+            ]
+          ]
+        }
+      },
+      {
+        "id": "missing",
+        "type": "fill",
+        "beneath": "water",
+        "source": {
+          "type": "vector",
+          "url": "https://api.maptiler.com/tiles/countries/tiles.json?key=__MAPTILER_KEY__"
+        },
+        "sourceLayer": "administrative",
+        "filter": [
+          "all",
+          [
+            "==",
+            [
+              "get",
+              "level"
+            ],
+            0
+          ],
+          [
+            "match",
+            [
+              "get",
+              "iso_a2"
+            ],
+            [
+              "UA"
+            ],
+            true,
+            false
+          ]
+        ],
+        "paint": {
+          "fill-color": "#302f5c",
+          "fill-opacity": 0
+        },
+        "bindings": {
+          "fill-opacity": [
+            "max",
+            0,
+            [
+              "min",
+              1,
+              [
+                "*",
+                {
+                  "$state": "classes"
+                },
+                6
+              ]
+            ]
+          ]
+        }
+      },
+      {
+        "id": "regions",
+        "type": "line",
+        "beneath": "water",
+        "source": {
+          "type": "vector",
+          "url": "https://api.maptiler.com/tiles/countries/tiles.json?key=__MAPTILER_KEY__"
+        },
+        "sourceLayer": "administrative",
+        "filter": [
+          "==",
+          [
+            "get",
+            "level"
+          ],
+          1
+        ],
+        "paint": {
+          "line-color": "#3c3b66",
+          "line-width": 0.24,
+          "line-opacity": 0
+        },
+        "bindings": {
+          "line-opacity": [
+            "max",
+            0,
+            [
+              "min",
+              1,
+              [
+                "/",
+                [
+                  "-",
+                  [
+                    "case",
+                    [
+                      "<",
+                      [
+                        "max",
+                        0,
+                        [
+                          "min",
+                          1,
+                          {
+                            "$state": "zoom"
+                          }
+                        ]
+                      ],
+                      0.5
+                    ],
+                    [
+                      "*",
+                      2,
+                      [
+                        "max",
+                        0,
+                        [
+                          "min",
+                          1,
+                          {
+                            "$state": "zoom"
+                          }
+                        ]
+                      ],
+                      [
+                        "max",
+                        0,
+                        [
+                          "min",
+                          1,
+                          {
+                            "$state": "zoom"
+                          }
+                        ]
+                      ]
+                    ],
+                    [
+                      "-",
+                      1,
+                      [
+                        "/",
+                        [
+                          "^",
+                          [
+                            "+",
+                            [
+                              "*",
+                              -2,
+                              [
+                                "max",
+                                0,
+                                [
+                                  "min",
+                                  1,
+                                  {
+                                    "$state": "zoom"
+                                  }
+                                ]
+                              ]
+                            ],
+                            2
+                          ],
+                          2
+                        ],
+                        2
+                      ]
+                    ]
+                  ],
+                  0.75
+                ],
+                0.25
+              ]
+            ]
+          ]
+        }
+      },
+      {
+        "id": "borders",
+        "type": "line",
+        "beneath": "water",
+        "source": {
+          "type": "vector",
+          "url": "https://api.maptiler.com/tiles/countries/tiles.json?key=__MAPTILER_KEY__"
+        },
+        "sourceLayer": "administrative",
+        "filter": [
+          "==",
+          [
+            "get",
+            "level"
+          ],
+          0
+        ],
+        "paint": {
+          "line-color": [
+            "case",
+            [
+              "==",
+              [
+                "match",
+                [
+                  "get",
+                  "iso_a2"
+                ],
+                [
+                  "AL",
+                  "AT",
+                  "BY",
+                  "BE",
+                  "BA",
+                  "BG",
+                  "HR",
+                  "CY",
+                  "CZ",
+                  "DK",
+                  "EE",
+                  "FI",
+                  "FR",
+                  "DE",
+                  "GR",
+                  "HU",
+                  "IS",
+                  "IE",
+                  "IT",
+                  "LV",
+                  "LT",
+                  "LU",
+                  "MT",
+                  "MD",
+                  "ME",
+                  "NL",
+                  "MK",
+                  "NO",
+                  "PL",
+                  "PT",
+                  "RO",
+                  "RU",
+                  "RS",
+                  "SK",
+                  "SI",
+                  "ES",
+                  "SE",
+                  "CH",
+                  "TR",
+                  "UA",
+                  "GB"
+                ],
+                1,
+                0
+              ],
+              1
+            ],
+            "#3c3b66",
+            "#292856"
+          ],
+          "line-width": 0.48
+        }
+      },
+      {
+        "id": "water-names",
+        "type": "symbol",
+        "data": {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "properties": {
+                "text": "Mer du Nord"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  3,
+                  56.5
+                ]
+              }
+            },
+            {
+              "type": "Feature",
+              "properties": {
+                "text": "Méditerranée"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  15,
+                  36
+                ]
+              }
+            },
+            {
+              "type": "Feature",
+              "properties": {
+                "text": "Baltique"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  19.5,
+                  58
+                ]
+              }
+            }
+          ]
+        },
+        "layout": {
+          "text-field": [
+            "get",
+            "text"
+          ],
+          "text-font": [
+            "Montserrat Italic"
+          ],
+          "text-size": 37.89,
+          "text-letter-spacing": 0,
+          "text-max-width": 100,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true
+        },
+        "paint": {
+          "text-color": "#6ba0cc",
+          "text-halo-color": "#152e67",
+          "text-halo-width": 1.5,
+          "text-opacity": 0
+        },
+        "bindings": {
+          "text-opacity": [
+            "-",
+            1,
+            [
+              "case",
+              [
+                "<",
+                [
+                  "max",
+                  0,
+                  [
+                    "min",
+                    1,
+                    {
+                      "$state": "zoom"
+                    }
+                  ]
+                ],
+                0.5
+              ],
+              [
+                "*",
+                2,
+                [
+                  "max",
+                  0,
+                  [
+                    "min",
+                    1,
+                    {
+                      "$state": "zoom"
+                    }
+                  ]
+                ],
+                [
+                  "max",
+                  0,
+                  [
+                    "min",
+                    1,
+                    {
+                      "$state": "zoom"
+                    }
+                  ]
+                ]
+              ],
+              [
+                "-",
+                1,
+                [
+                  "/",
+                  [
+                    "^",
+                    [
+                      "+",
+                      [
+                        "*",
+                        -2,
+                        [
+                          "max",
+                          0,
+                          [
+                            "min",
+                            1,
+                            {
+                              "$state": "zoom"
+                            }
+                          ]
+                        ]
+                      ],
+                      2
+                    ],
+                    2
+                  ],
+                  2
+                ]
+              ]
+            ]
+          ]
+        }
+      },
+      {
+        "id": "odd-ring",
+        "type": "circle",
+        "data": {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "properties": {
+                "text": "ALBANIE"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  20.0842,
+                  40.6691
+                ]
+              }
+            }
+          ]
+        },
+        "paint": {
+          "circle-radius": [
+            "interpolate",
+            [
+              "exponential",
+              2
+            ],
+            [
+              "zoom"
+            ],
+            0,
+            2.373658654194022,
+            12,
+            9722.505847578714
+          ],
+          "circle-color": "rgba(0,0,0,0)",
+          "circle-stroke-color": "#53e1c1",
+          "circle-stroke-width": 2,
+          "circle-stroke-opacity": 0
+        },
+        "bindings": {
+          "circle-stroke-opacity": [
+            "*",
+            {
+              "$state": "odd"
+            },
+            [
+              "max",
+              [
+                "max",
+                0,
+                [
+                  "min",
+                  1,
+                  [
+                    "/",
+                    [
+                      "-",
+                      [
+                        "case",
+                        [
+                          "<",
+                          [
+                            "max",
+                            0,
+                            [
+                              "min",
+                              1,
+                              {
+                                "$state": "zoom"
+                              }
+                            ]
+                          ],
+                          0.5
+                        ],
+                        [
+                          "*",
+                          2,
+                          [
+                            "max",
+                            0,
+                            [
+                              "min",
+                              1,
+                              {
+                                "$state": "zoom"
+                              }
+                            ]
+                          ],
+                          [
+                            "max",
+                            0,
+                            [
+                              "min",
+                              1,
+                              {
+                                "$state": "zoom"
+                              }
+                            ]
+                          ]
+                        ],
+                        [
+                          "-",
+                          1,
+                          [
+                            "/",
+                            [
+                              "^",
+                              [
+                                "+",
+                                [
+                                  "*",
+                                  -2,
+                                  [
+                                    "max",
+                                    0,
+                                    [
+                                      "min",
+                                      1,
+                                      {
+                                        "$state": "zoom"
+                                      }
+                                    ]
+                                  ]
+                                ],
+                                2
+                              ],
+                              2
+                            ],
+                            2
+                          ]
+                        ]
+                      ],
+                      0.75
+                    ],
+                    0.25
+                  ]
+                ]
+              ],
+              [
+                "max",
+                0,
+                [
+                  "min",
+                  1,
+                  [
+                    "/",
+                    [
+                      "-",
+                      0.08,
+                      [
+                        "case",
+                        [
+                          "<",
+                          [
+                            "max",
+                            0,
+                            [
+                              "min",
+                              1,
+                              {
+                                "$state": "zoom"
+                              }
+                            ]
+                          ],
+                          0.5
+                        ],
+                        [
+                          "*",
+                          2,
+                          [
+                            "max",
+                            0,
+                            [
+                              "min",
+                              1,
+                              {
+                                "$state": "zoom"
+                              }
+                            ]
+                          ],
+                          [
+                            "max",
+                            0,
+                            [
+                              "min",
+                              1,
+                              {
+                                "$state": "zoom"
+                              }
+                            ]
+                          ]
+                        ],
+                        [
+                          "-",
+                          1,
+                          [
+                            "/",
+                            [
+                              "^",
+                              [
+                                "+",
+                                [
+                                  "*",
+                                  -2,
+                                  [
+                                    "max",
+                                    0,
+                                    [
+                                      "min",
+                                      1,
+                                      {
+                                        "$state": "zoom"
+                                      }
+                                    ]
+                                  ]
+                                ],
+                                2
+                              ],
+                              2
+                            ],
+                            2
+                          ]
+                        ]
+                      ]
+                    ],
+                    0.08
+                  ]
+                ]
+              ]
+            ]
+          ]
+        }
+      },
+      {
+        "id": "top-names",
+        "type": "symbol",
+        "data": {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "properties": {
+                "text": "ISLANDE"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  -19.0154,
+                  64.7521
+                ]
+              }
+            },
+            {
+              "type": "Feature",
+              "properties": {
+                "text": "SUÈDE"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  19.8187,
+                  66.6883
+                ]
+              }
+            },
+            {
+              "type": "Feature",
+              "properties": {
+                "text": "NORVÈGE"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  9.251,
+                  61.9081
+                ]
+              }
+            },
+            {
+              "type": "Feature",
+              "properties": {
+                "text": "SUISSE"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  7.6503,
+                  46.8105
+                ]
+              }
+            },
+            {
+              "type": "Feature",
+              "properties": {
+                "text": "FINLANDE"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  26.5326,
+                  62.7604
+                ]
+              }
+            },
+            {
+              "type": "Feature",
+              "properties": {
+                "text": "FRANCE"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  0.5,
+                  43.6
+                ]
+              }
+            }
+          ]
+        },
+        "layout": {
+          "text-field": [
+            "get",
+            "text"
+          ],
+          "text-font": [
+            "Montserrat Bold"
+          ],
+          "text-size": 37.89,
+          "text-letter-spacing": 0.11999999999999998,
+          "text-max-width": 100,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true
+        },
+        "paint": {
+          "text-color": "#19483d",
+          "text-halo-color": "#84e9d3",
+          "text-halo-width": 1.5,
+          "text-opacity": 0
+        },
+        "bindings": {
+          "text-opacity": [
+            "*",
+            {
+              "$state": "top"
+            },
+            [
+              "max",
+              0,
+              [
+                "min",
+                1,
+                [
+                  "/",
+                  [
+                    "-",
+                    0.08,
+                    [
+                      "case",
+                      [
+                        "<",
+                        [
+                          "max",
+                          0,
+                          [
+                            "min",
+                            1,
+                            {
+                              "$state": "zoom"
+                            }
+                          ]
+                        ],
+                        0.5
+                      ],
+                      [
+                        "*",
+                        2,
+                        [
+                          "max",
+                          0,
+                          [
+                            "min",
+                            1,
+                            {
+                              "$state": "zoom"
+                            }
+                          ]
+                        ],
+                        [
+                          "max",
+                          0,
+                          [
+                            "min",
+                            1,
+                            {
+                              "$state": "zoom"
+                            }
+                          ]
+                        ]
+                      ],
+                      [
+                        "-",
+                        1,
+                        [
+                          "/",
+                          [
+                            "^",
+                            [
+                              "+",
+                              [
+                                "*",
+                                -2,
+                                [
+                                  "max",
+                                  0,
+                                  [
+                                    "min",
+                                    1,
+                                    {
+                                      "$state": "zoom"
+                                    }
+                                  ]
+                                ]
+                              ],
+                              2
+                            ],
+                            2
+                          ],
+                          2
+                        ]
+                      ]
+                    ]
+                  ],
+                  0.08
+                ]
+              ]
+            ]
+          ]
+        }
+      },
+      {
+        "id": "neighbour-names",
+        "type": "symbol",
+        "data": {
+          "type": "FeatureCollection",
+          "features": []
+        },
+        "layout": {
+          "text-field": [
+            "get",
+            "text"
+          ],
+          "text-font": [
+            "Montserrat Bold"
+          ],
+          "text-size": 37.89,
+          "text-letter-spacing": 0.11999999999999998,
+          "text-max-width": 100,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true
+        },
+        "paint": {
+          "text-color": "#ffffff",
+          "text-halo-color": "#1c1b4c",
+          "text-halo-width": 1.5,
+          "text-opacity": 0
+        },
+        "bindings": {
+          "text-opacity": [
+            "*",
+            {
+              "$state": "odd"
+            },
+            [
+              "max",
+              0,
+              [
+                "min",
+                1,
+                [
+                  "/",
+                  [
+                    "-",
+                    [
+                      "case",
+                      [
+                        "<",
+                        [
+                          "max",
+                          0,
+                          [
+                            "min",
+                            1,
+                            {
+                              "$state": "zoom"
+                            }
+                          ]
+                        ],
+                        0.5
+                      ],
+                      [
+                        "*",
+                        2,
+                        [
+                          "max",
+                          0,
+                          [
+                            "min",
+                            1,
+                            {
+                              "$state": "zoom"
+                            }
+                          ]
+                        ],
+                        [
+                          "max",
+                          0,
+                          [
+                            "min",
+                            1,
+                            {
+                              "$state": "zoom"
+                            }
+                          ]
+                        ]
+                      ],
+                      [
+                        "-",
+                        1,
+                        [
+                          "/",
+                          [
+                            "^",
+                            [
+                              "+",
+                              [
+                                "*",
+                                -2,
+                                [
+                                  "max",
+                                  0,
+                                  [
+                                    "min",
+                                    1,
+                                    {
+                                      "$state": "zoom"
+                                    }
+                                  ]
+                                ]
+                              ],
+                              2
+                            ],
+                            2
+                          ],
+                          2
+                        ]
+                      ]
+                    ],
+                    0.75
+                  ],
+                  0.25
+                ]
+              ]
+            ]
+          ]
+        }
+      }
+    ],
+    "camera": {
+      "view": {
+        "center": [
+          8.5,
+          54.35616149109981
+        ],
+        "zoom": 3.3233504489986054,
+        "bearing": 0,
+        "pitch": 0
+      }
+    }
+  },
+  "states": [
+    {
+      "title": 1,
+      "furniture": 0,
+      "classes": 0,
+      "filter": 0,
+      "floor": 0,
+      "count": 0,
+      "top": 0,
+      "context": 0,
+      "zoom": 0,
+      "odd": 0,
+      "neighbours": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "classes": 1,
+      "filter": 0,
+      "floor": 0,
+      "count": 1,
+      "top": 0,
+      "context": 1,
+      "zoom": 0,
+      "odd": 0,
+      "neighbours": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "classes": 1,
+      "filter": 1,
+      "floor": 1,
+      "count": 1,
+      "top": 1,
+      "context": 0,
+      "zoom": 0,
+      "odd": 0,
+      "neighbours": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 0,
+      "classes": 1,
+      "filter": 0,
+      "floor": 1,
+      "count": 1,
+      "top": 0,
+      "context": 0,
+      "zoom": 1,
+      "odd": 1,
+      "neighbours": 1,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "classes": 1,
+      "filter": 0,
+      "floor": 1,
+      "count": 1,
+      "top": 1,
+      "context": 1,
+      "zoom": 0,
+      "odd": 1,
+      "neighbours": 0,
+      "source": 1
+    },
+    {
+      "title": 0,
+      "furniture": 1,
+      "classes": 1,
+      "filter": 0,
+      "floor": 1,
+      "count": 1,
+      "top": 1,
+      "context": 1,
+      "zoom": 0,
+      "odd": 1,
+      "neighbours": 0,
+      "source": 1
+    }
+  ],
+  "timing": {
+    "fps": 30,
+    "total": 579,
+    "establish": {
+      "start": 0,
+      "duration": 45
+    },
+    "reference": {
+      "start": 45,
+      "duration": 72
+    },
+    "reveal": {
+      "start": 120,
+      "duration": 144
+    },
+    "subject": {
+      "start": 267,
+      "duration": 165
+    },
+    "conclusion": {
+      "start": 435,
+      "duration": 84
+    },
+    "hold": {
+      "start": 519,
+      "duration": 60
+    }
+  },
+  "fontFamily": null,
+  "faces": [
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 400,
+      "weightTo": 400,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 500,
+      "weightTo": 500,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 600,
+      "weightTo": 600,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 700,
+      "weightTo": 700,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    }
+  ]
+}

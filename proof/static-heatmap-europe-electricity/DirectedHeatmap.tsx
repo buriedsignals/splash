@@ -51,7 +51,7 @@ const FRAME = { width: 960, height: 540 };
 
 type RegisterName = "display" | "eyebrow" | "body" | "axis" | "annot" | "value";
 
-export type Source = { key: string; label: string; family: string };
+export type Source = { key: string; label: string; short?: string; family: string };
 export type Row = {
   key: string;
   label: string;
@@ -82,7 +82,7 @@ export function DirectedHeatmap({
 }: {
   rows: Row[];
   sources: Source[];
-  families: Array<{ name: string; from: number; to: number }>;
+  families: Array<{ name: string; short?: string; from: number; to: number }>;
   breaks: number[];
   region: Region;
   shareHead: string;
@@ -198,9 +198,36 @@ export function DirectedHeatmap({
       ...rows.map((r) => widthOf(set(format(r.lowCarbon), value), value)),
       widthOf(set(shareHead, axis), axis),
     ) + 12;
+  /** THE FRAME IS NARROWER THAN THE ONE THIS PLATE WAS TUNED AT. Everything below that reads this
+   *  leaves landscape exactly as it was accepted; 960px is the width every number here was measured
+   *  against. */
+  const NARROW = width < FRAME.width;
+
+  /** THE SHORT FORM OF A NAME, SPENT ONLY WHERE THE PLATE IS NARROW. The copy writes both; the
+   *  renderer picks, and never invents one by cutting a string. */
+  const shortly = <T extends { label?: string; name?: string; short?: string }>(
+    x: T,
+  ) => (NARROW && x.short ? x.short : ((x.label ?? x.name) as string));
+
+  /** THE BRACKET'S COLUMN IS CAPPED WHERE THE PLATE IS NARROW, because the label WRAPS inside it and
+   *  the bracket is seven rows tall. Reserving the label's full one-line width spent 110px of a
+   *  540px plate on a caption that then used four lines of a column it never needed — measured at
+   *  1080x1080, it left the nine sources 23px of cell each, where « Hydraulique » is 55px, and the
+   *  column heads printed through each other. The floor is the widest WORD, so capping it can never
+   *  clip one. */
+  const regionFull = widthOf(set(region.label, annot), annot);
+  const regionWord = Math.max(
+    ...region.label.split(/\s+/).map((w) => widthOf(set(w, annot), annot)),
+  );
   const regionRoom = on("the-cell-value-is-printed-or-the-region-is-named")
-    ? widthOf(set(region.label, annot), annot) + 22
+    ? NARROW
+      ? 8
+      : regionFull + 22
     : 0;
+  /** WHERE THE BRACKET'S LABEL GOES WHEN IT HAS NO COLUMN. Under the grid, on its own line, in the
+   *  accent it already brackets with — 117px of a 540px plate is a quarter of the width, and the
+   *  same sentence costs one line of height instead. */
+  const regionUnderGrid = regionRoom > 0 && NARROW;
 
   const gridLeft = PAD + nameRoom;
   const gridRight = width - PAD - shareRoom - regionRoom;
@@ -208,10 +235,32 @@ export function DirectedHeatmap({
 
   /** COLUMN HEADS STAGGER, THEY NEVER ROTATE OR DROP — Reuters' rule, filed as
    *  `a-narrow-cell-degrades-its-label-rather-than-dropping-it`. A head wider than its column drops
-   *  to a second line rather than turning ninety degrees. */
+   *  to a second line rather than turning ninety degrees.
+   *
+   *  AND ONE EXTRA LINE IS NOT A LADDER. At 960px every wide head moved to the same second line and
+   *  that was enough, because two columns of width was more than any name needed. At 540px it is
+   *  not: measured at 1080x1080 and 1080x1920, all five renewable heads went to line two and printed
+   *  straight through each other — « Hydraulique » and « Éolien » shared 100% of the smaller run.
+   *  So where the plate is narrow the stagger is a DEPTH: heads step round `1, 2, … d, 1, 2, …`, so
+   *  two heads on one line are `d` columns apart, and `d` is the smallest depth at which every such
+   *  pair measures clear. Landscape keeps the rule it was accepted under, untouched. */
+  const headWidthOf = (i: number) => widthOf(set(shortly(sources[i]), axis), axis);
+  const clearsAtDepth = (d: number) =>
+    sources.every(
+      (_, i) =>
+        i + d >= sources.length ||
+        (headWidthOf(i) + headWidthOf(i + d)) / 2 + 4 <= d * cellW,
+    );
+  const HEAD_DEPTH_MAX = 3;
+  let headDepth = 1;
+  while (headDepth < HEAD_DEPTH_MAX && !clearsAtDepth(headDepth)) headDepth++;
   const headRow = (i: number) =>
-    widthOf(set(sources[i].label, axis), axis) > cellW - 2 ? 1 : 0;
-  const staggered = sources.some((_, i) => headRow(i) === 1);
+    NARROW ? i % headDepth : headWidthOf(i) > cellW - 2 ? 1 : 0;
+  const headRows = NARROW
+    ? headDepth
+    : sources.some((_, i) => headWidthOf(i) > cellW - 2)
+      ? 2
+      : 1;
 
   /** THE ROW PITCH IS A MEASURED FLOOR, NOT A HOPE. Eighteen rows each carry a name in the axis
    *  register, and a name is only a name if it does not sit on its neighbour. The ladder spends the
@@ -225,15 +274,38 @@ export function DirectedHeatmap({
    *  on top of `renouvelables`. Every number below is used twice, once here and once at the mark. */
   const HEAD_DROP = 4;
   const HEAD_STEP = axisBand.ascent + 2;
-  const headTopmost = HEAD_DROP + (staggered ? HEAD_STEP : 0) + axisBand.ascent;
+  const headTopmost = HEAD_DROP + (headRows - 1) * HEAD_STEP + axisBand.ascent;
   const familyRuleUp = headTopmost + 5;
   const familyBaselineUp = familyRuleUp + 4;
   const columnHeadRoom = familyBaselineUp + annotBand.ascent + 4;
-  const keyRoom = axisBand.ascent * 2 + axisBand.descent + 14;
+  /** THE KEY TAKES THE WHOLE COLUMN WHERE THE PLATE IS NARROW, AND THE UNIT TAKES ITS OWN LINE.
+   *  At 960px the six swatches sat under the grid with « part de la production du pays » beside
+   *  them. At 540px the grid is 252px wide, so a swatch is 42px and « 10,0 % » is 35px centred on
+   *  each edge: measured at 1080x1080 the break labels printed « 2,0 %5,0 %10,0 % » through each
+   *  other and the unit ran to the frame edge. Given the full column the swatches are 71px, which
+   *  is wider than any break label, and the unit drops below them. */
+  const keyFullWidth = NARROW;
+  const axisLead = leadOf(axis);
+  const keyRoom =
+    axisBand.ascent * 2 +
+    axisBand.descent +
+    14 +
+    (keyFullWidth ? axisLead : 0) +
+    (regionUnderGrid ? annotLead : 0);
+
+  /** THE CREDIT IS A PARAGRAPH, NOT A LINE — and at 960px wide nothing ever noticed. Measured at
+   *  1080x1920 and 1080x1080: « Source : Ember, Energy Institute – Statistical Review of World
+   *  Energy (2025), via Our World in Data » is 587px of ink laid at x=PAD into a 540px plate, so it
+   *  ran 93px off the right edge in all three directions and `assertTextWithinFrame` refused every
+   *  one of them. It wraps into the same column as the standfirst, and its baselines are stepped UP
+   *  from the foot so the last line still sits on PAD — which is why landscape, where it is one
+   *  line, is untouched. */
+  const sourceLines = wrap(set(source, body), column, body);
 
   const layoutFor = (titleIndex: number, limitIndex: number, readingIndex: number) => {
     const titleLines = wrap(set(title[titleIndex], display), column, display);
-    const limitLines = wrap(set(limits[limitIndex], body), column, body);
+    const limitLines =
+      limitIndex < 0 ? [] : wrap(set(limits[limitIndex], body), column, body);
     const readingLines =
       readingIndex < 0
         ? []
@@ -243,11 +315,14 @@ export function DirectedHeatmap({
       eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
     const limitsTop =
       titleTop + titleLines.length * titleLead + gapOf(body, 0.4828);
-    const sourceTop = height - PAD;
+    const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
     const readingTop = readingLines.length
       ? sourceTop - bodyLead - readingLines.length * annotLead
       : sourceTop - bodyLead * 0.4;
-    const top = limitsTop + limitLines.length * bodyLead + columnHeadRoom;
+    const top =
+      (limitLines.length
+        ? limitsTop + limitLines.length * bodyLead
+        : titleTop + titleLines.length * titleLead) + columnHeadRoom;
     const bottom = readingTop - gapOf(annot, 0.8571) - keyRoom;
     return {
       titleLines,
@@ -276,12 +351,40 @@ export function DirectedHeatmap({
       for (let r = 0; r < reading.length; r++) rungs.push({ title: t, limit: l, reading: r });
       rungs.push({ title: t, limit: l, reading: -1 });
     }
+  /** AND THE LAST RUNG DROPS THE STANDFIRST ALTOGETHER — the ladder's R7, which this component had
+   *  no rung for. Measured at 1080x1080: with every other rung spent, the best pitch `creme` could
+   *  reach was 12.3px against the 13.0px its axis register owes, and `nocturne` reached 9.0px
+   *  against 11.5px. Four lines of standfirst on a 540px plate ARE four rows of the grid. It is
+   *  spent after every headline form because it is the only line that says what the numbers are;
+   *  what it costs is stated on the ladder note, so nobody has to guess that it went. */
+  for (let t = 0; t < title.length; t++) rungs.push({ title: t, limit: -1, reading: -1 });
 
   const chosen = rungs.map((rung) => ({
     rung,
     layout: layoutFor(rung.title, rung.limit, rung.reading),
   }));
-  const fits = chosen.find(({ layout }) => layout.pitch >= rowsOwe);
+  /** AND ON A TALL PLATE, CLEARING THE FLOOR IS NOT THE SAME AS BEING A CHART. The ladder stops at
+   *  the first rung that fits, which is right on a 960px plate and wrong on a 1080x1920 one:
+   *  measured there, rung 1 cleared the 11.5px floor at 13.5px and the grid came out a 121px band
+   *  across the middle of a 960px frame, with eight lines of headline above it and a six-line
+   *  reading note below. Nothing was clipped and nothing collided — the plate simply was not a
+   *  heatmap any more.
+   *
+   *  So where the plate is narrow the grid is OWED a third of the frame, which is the share
+   *  `proof/static-choropleth-europe-lowcarbon` gives its map at the same size and for the same
+   *  reason. The ladder keeps its order: it takes the first rung that pays both the floor and the
+   *  third, and only if no rung can pay the third does it take the rung that leaves the grid the
+   *  most — which is what a 540px square, where a third is out of reach, gets. */
+  const gridOwed = NARROW ? height / 3 : 0;
+  const clears = chosen.filter(({ layout }) => layout.pitch >= rowsOwe);
+  const fits =
+    clears.find(({ layout }) => layout.pitch * rows.length >= gridOwed) ??
+    (NARROW
+      ? clears.reduce(
+          (a, b) => (b.layout.pitch > (a?.layout.pitch ?? -1) ? b : a),
+          undefined as (typeof clears)[number] | undefined,
+        )
+      : clears[0]);
   if (!fits) {
     const best = chosen.reduce((a, b) =>
       b.layout.pitch > a.layout.pitch ? b : a,
@@ -294,7 +397,9 @@ export function DirectedHeatmap({
   }
   const layout = fits.layout;
   onLadder?.(
-    `ladder: headline ${fits.rung.title + 1}, standfirst ${fits.rung.limit + 1}, reading ` +
+    `ladder: headline ${fits.rung.title + 1}, standfirst ` +
+      (fits.rung.limit < 0 ? "dropped" : `${fits.rung.limit + 1}`) +
+      `, reading ` +
       (fits.rung.reading < 0 ? "dropped" : `form ${fits.rung.reading + 1}`) +
       ` · pitch ${layout.pitch.toFixed(1)}px, owed ${rowsOwe.toFixed(1)}px`,
   );
@@ -366,9 +471,16 @@ export function DirectedHeatmap({
           {l}
         </text>
       ))}
-      <text x={PAD} y={layout.sourceTop} {...line(body)}>
-        {set(source, body)}
-      </text>
+      {sourceLines.map((l, i) => (
+        <text
+          key={`s${i}`}
+          x={PAD}
+          y={layout.sourceTop + i * bodyLead}
+          {...line(body)}
+        >
+          {l}
+        </text>
+      ))}
 
       {/* THE FAMILY BOUNDARY, DRAWN — never a second hue. On a heatmap the hue is the scale, so a
           column group is carried by its position and by a rule above it. */}
@@ -392,15 +504,26 @@ export function DirectedHeatmap({
               {...line(annot)}
               fill={mutedInk}
             >
-              {set(f.name, annot)}
+              {set(shortly(f), annot)}
             </text>
           </g>
         );
       })}
 
+      {/* THE SHARE COLUMN'S OWN HEAD JOINS THE STAGGER. Measured at 1080x1080: with the source
+          heads stepping round two lines, « Pétrole » landed on the bottom line and « bas-carbone »
+          starts 8px past the grid's right edge on that same line — the two ran together. It takes
+          the line the LAST source head is not on, so the two can never share one. Landscape keeps
+          the single line it was accepted with. */}
       <text
         x={gridRight + 8}
-        y={layout.top - HEAD_DROP}
+        y={
+          layout.top -
+          HEAD_DROP -
+          (NARROW
+            ? ((headRow(sources.length - 1) + 1) % headRows) * HEAD_STEP
+            : 0)
+        }
         {...line(axis)}
         fill={mutedInk}
       >
@@ -416,7 +539,7 @@ export function DirectedHeatmap({
           {...line(axis)}
           fill={mutedInk}
         >
-          {set(s.label, axis)}
+          {set(shortly(s), axis)}
         </text>
       ))}
 
@@ -483,6 +606,16 @@ export function DirectedHeatmap({
       {/* THE REGION, NAMED — the pin-code poster's answer for a grid too dense to print. The finding
           in a heatmap is a SHAPE, and a callout on one cell cannot say it. The bracket is drawn in
           the ink, outside the ramp entirely, so it can never be read as a value. */}
+      {namesRegion && regionUnderGrid && (
+        <text
+          x={gridLeft}
+          y={layout.bottom + 6 + annotBand.ascent}
+          {...line(annot)}
+          fill={accentInk}
+        >
+          {set(region.label, annot)}
+        </text>
+      )}
       {namesRegion &&
         (() => {
           const top = yOf(region.from) - gap;
@@ -496,7 +629,10 @@ export function DirectedHeatmap({
                 stroke={accentInk}
                 strokeWidth={direction.stroke.rule}
               />
-              {wrap(set(region.label, annot), regionRoom - 12, annot).map(
+              {(regionUnderGrid
+                ? []
+                : wrap(set(region.label, annot), regionRoom - 12, annot)
+              ).map(
                 (l, i, all) => (
                   <text
                     key={`region-${i}`}
@@ -523,9 +659,12 @@ export function DirectedHeatmap({
           without becoming a different colour. The caption IS the swatch. */}
       {on("the-scale-is-stepped-not-continuous") &&
         (() => {
-          const swatchW = Math.max(cellW * 0.8, 30);
-          const top = layout.bottom + 10;
-          const left = gridLeft;
+          const left = keyFullWidth ? PAD : gridLeft;
+          const swatchW = keyFullWidth
+            ? (width - PAD * 2) / classCount
+            : Math.max(cellW * 0.8, 30);
+          const top =
+            layout.bottom + 10 + (regionUnderGrid ? annotLead : 0);
           return (
             <g>
               {Array.from({ length: classCount }, (_, i) => (
@@ -557,8 +696,12 @@ export function DirectedHeatmap({
                 </g>
               ))}
               <text
-                x={left + classCount * swatchW + 8}
-                y={top + axisBand.ascent}
+                x={keyFullWidth ? left : left + classCount * swatchW + 8}
+                y={
+                  keyFullWidth
+                    ? top + axisBand.ascent * 2 + 2 + axisLead
+                    : top + axisBand.ascent
+                }
                 {...line(axis)}
                 fill={mutedInk}
               >

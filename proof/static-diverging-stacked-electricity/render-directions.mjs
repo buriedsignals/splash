@@ -141,28 +141,48 @@ const one = (v) =>
   plainSpaces(v.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }));
 const format = (v) => (v < 0.05 ? "0" : one(v));
 
-const title = `Le nucléaire tient le centre : en ${french(subject.key)} il pèse plus que le fossile et le renouvelable réunis`;
-const limits =
+/** THE COPY LADDERS — every form the layout may spend, longest first.
+ *
+ *  This beat filed one form of each block, and one form is a ladder with nothing on it: at 540x540
+ *  the headline alone set in six lines of display type and the rows had no band left to stand in.
+ *  The rungs below give up, in order, the second half of the headline's claim, then the standfirst's
+ *  worked examples, then its orientation sentence, then the reading line's colour note. What NO rung
+ *  gives up is the subject and what it is claimed to do — that is the beat. */
+const title = [
+  `Le nucléaire tient le centre : en ${french(subject.key)} il pèse plus que le fossile et le renouvelable réunis`,
+  `En ${french(subject.key)}, le nucléaire pèse plus que le fossile et le renouvelable réunis`,
+  `En ${french(subject.key)}, le nucléaire pèse plus que les deux autres réunis`,
+  `Le nucléaire tient le centre`,
+];
+const limits = [
   `Mix électrique ${YEAR}, en parts de la production de chaque pays. À gauche le fossile, à droite ` +
-  `le renouvelable, et au centre le nucléaire — qui n’est ni l’un ni l’autre. ` +
-  `${french(subject.key)} : ${one(subject.centre.value)} % de nucléaire contre ` +
-  `${one(subject.fossil)} % de fossile et ${one(subject.renewable)} % de renouvelable. ` +
-  `${french(leaningLeft.key)} penche le plus à gauche (${one(leaningLeft.fossil)} %), ` +
-  `${french(leaningRight.key)} le plus à droite (${one(leaningRight.renewable)} %).`;
-const reading =
+    `le renouvelable, et au centre le nucléaire — qui n’est ni l’un ni l’autre. ` +
+    `${french(subject.key)} : ${one(subject.centre.value)} % de nucléaire contre ` +
+    `${one(subject.fossil)} % de fossile et ${one(subject.renewable)} % de renouvelable. ` +
+    `${french(leaningLeft.key)} penche le plus à gauche (${one(leaningLeft.fossil)} %), ` +
+    `${french(leaningRight.key)} le plus à droite (${one(leaningRight.renewable)} %).`,
+  `Mix électrique ${YEAR}, en parts de la production de chaque pays. À gauche le fossile, à droite ` +
+    `le renouvelable, et au centre le nucléaire — qui n’est ni l’un ni l’autre.`,
+  `Mix électrique ${YEAR} : fossile à gauche, renouvelable à droite, nucléaire au centre.`,
+];
+const reading = [
   `Lecture : chaque rang fait 100 %. La masse nucléaire est posée À CHEVAL sur l’axe, moitié de ` +
-  `chaque côté, donc elle ne fait pencher ni l’un ni l’autre — le penchant se lit au côté le plus ` +
-  `long. Dans chaque camp, la teinte fonce vers l’extérieur : gaz, pétrole, charbon à gauche ; ` +
-  `bioénergie, autres, hydraulique, solaire, éolien à droite.`;
+    `chaque côté, donc elle ne fait pencher ni l’un ni l’autre — le penchant se lit au côté le plus ` +
+    `long. Dans chaque camp, la teinte fonce vers l’extérieur : gaz, pétrole, charbon à gauche ; ` +
+    `bioénergie, autres, hydraulique, solaire, éolien à droite.`,
+  `Lecture : chaque rang fait 100 %. La masse nucléaire est posée à cheval sur l’axe, donc elle ne ` +
+    `fait pencher ni l’un ni l’autre — le penchant se lit au côté le plus long.`,
+  `Lecture : chaque rang fait 100 % ; le penchant se lit au côté le plus long.`,
+];
 const source =
   "Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data";
 
 const textPerRegister = {
-  display: title,
+  display: title.join(" "),
   eyebrow: EYEBROW,
-  body: `${limits} ${source}`,
+  body: `${limits.join(" ")} ${source}`,
   axis: "100 50 0 50 100 %",
-  annot: `${rows.map((r) => r.label).join(" ")} ${reading} Fossile Renouvelable Nucléaire`,
+  annot: `${rows.map((r) => r.label).join(" ")} ${reading.join(" ")} Fossile Renouvelable Nucléaire`,
   value: rows.map((r) => `${format(r.fossil)} ${format(r.renewable)}`).join(" "),
 };
 
@@ -207,6 +227,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
         limits,
         reading,
         source,
+        onLadder: (l) => console.log(`  ${l}`),
         alt:
           `Barres empilées divergentes : le mix électrique de six pays européens en ${YEAR}, fossile ` +
           `à gauche, renouvelable à droite, nucléaire à cheval sur l’axe. ` +
@@ -227,9 +248,10 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       name: nameAtSize(id, SIZE),
       scale: FRAME.scale,
     });
-    console.log(`  -> renders/${id}.png\n`);
+    console.log(`  -> renders/${nameAtSize(id, SIZE)}.png\n`);
   } catch (error) {
-    for (const ext of ["png", "svg"]) await rm(join(OUT, `${id}.${ext}`), { force: true });
+    for (const ext of ["png", "svg"])
+      await rm(join(OUT, `${nameAtSize(id, SIZE)}.${ext}`), { force: true });
     refused.push({ id, why: error.message });
     console.log(`  REFUSED — ${error.message}\n`);
   }

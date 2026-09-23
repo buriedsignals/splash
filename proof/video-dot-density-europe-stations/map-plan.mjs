@@ -30,7 +30,7 @@ const latOfWorldY = (y) => (2 * Math.atan(Math.exp((1 - 2 * y) * Math.PI)) * 180
  * frame fitted here is the beat's own: the static window's longitudes and every station's latitude, fitted "meet"
  * into the stage's content box. The camera never moves.
  */
-export function camerasOf(subject, content) {
+export function camerasOf(subject, content, stage = REFERENCE) {
   const { bounds } = JSON.parse(readFileSync(join(STATIC_DIR, "plate", "creme", "geometry.json"), "utf8"));
   const lats = subject.stations.map((s) => s.lat);
   const lons = subject.stations.map((s) => s.lon);
@@ -40,8 +40,12 @@ export function camerasOf(subject, content) {
   const north = Math.max(...lats);
   const worldPx = Math.min(content.w / (worldX(east) - worldX(west)), content.h / (worldY(south) - worldY(north)));
   const zoom = Math.log2(worldPx / 512);
-  // The content box is centred on the stage: so is the frame.
-  const center = [(west + east) / 2, latOfWorldY((worldY(south) + worldY(north)) / 2)];
+  // THE FRAME IS CENTRED ON THE CONTENT BOX, and the content box is no longer always centred on the stage: a frame
+  // that is not 16:9 reserves a band for the key (`contentOf`), and the map is fitted below it. MapLibre centres its
+  // camera on the stage, so the camera's centre carries the offset between the two centres.
+  const offX = (content.x + content.w / 2 - stage.width / 2) / worldPx;
+  const offY = (content.y + content.h / 2 - stage.height / 2) / worldPx;
+  const center = [((worldX(west) + worldX(east)) / 2 - offX) * 360 - 180, latOfWorldY((worldY(south) + worldY(north)) / 2 - offY)];
   return { whole: cameraFields({ center, zoom }), bounds: [[west, south], [east, north]] };
 }
 
@@ -94,7 +98,7 @@ const grownRadius = (r0, r1) => ["sqrt", ["+", ["*", ["-", 1, W], r0 * r0], ["*"
  * @param {{ fuels: Array<{ fuel: string }>, stations: Record<string, Array<{ lon: number, lat: number, w: number }>>,
  *   colours: any, strokes: { hairline: number, ring: number }, dotR: number, ringR: number, cameras: { whole: any } }} input
  */
-export function mapPlanFor({ fuels, stations, colours, strokes, dotR, ringR, cameras }) {
+export function mapPlanFor({ fuels, stations, colours, strokes, dotR, ringR, cameras, stage = REFERENCE }) {
   const layers = [];
   const rings = [];
   fuels.forEach(({ fuel }, i) => {
@@ -134,8 +138,11 @@ export function mapPlanFor({ fuels, stations, colours, strokes, dotR, ringR, cam
     styleName: "dataviz",
     projection: "mercator",
     tints: { water: colours.sea, land: colours.land },
-    referenceWidth: REFERENCE.width,
-    referenceHeight: REFERENCE.height,
+    // THE STAGE THE CAMERA WAS AUTHORED FOR, which is the stage this run draws at — not 1920 x 1080. A consumer that
+    // re-fits a plan to its own stage (`zoomShiftFor`) shifts the zoom by the ratio to these numbers, so a portrait
+    // plan that declared the landscape frame would hand it a ratio it never had.
+    referenceWidth: stage.width,
+    referenceHeight: stage.height,
     degreesPerPixel: 1,
     camera: { view: viewOf(cameras.whole) },
     layers: [...layers, ...rings],

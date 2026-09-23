@@ -41,7 +41,8 @@ import {
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
 import { mix, contrast } from "#shared/chart-beat/colour.mjs";
-import { applyCase } from "#shared/chart-beat/registers.mjs";
+import { applyCase, DERIVED_SIZE_RATIO } from "#shared/chart-beat/registers.mjs";
+import { frameInsetFor, viewedAtCssPx } from "#shared/chart-beat/sizes.mjs";
 import {
   EYEBROW_TO_DISPLAY,
   gapOf,
@@ -94,8 +95,26 @@ export function DirectedDotStrips({
   frame?: { width: number; height: number };
 }) {
   const { width, height } = frame ?? FRAME;
+  const SIZE =
+    width > height ? "landscape" : width === height ? "square" : "portrait";
   const { ink, muted } = deriveFurniture(direction.ground);
-  const PAD = direction.pad;
+  /**
+   * THE MARGIN IS A PROPORTION OF THE PLATE, AND THE DIRECTION FILED ITS OWN ON A 960-WIDE ONE.
+   *
+   * On this beat it is not only vertical room: the margin is subtracted from the AXIS, and a shorter
+   * axis stacks the sixteen chips into more rows, so a landscape margin carried to a 540-wide plate
+   * costs height twice — once at the top and foot, once in every extra row of chips the shorter
+   * strip forces. Measured 2026-09-23 at square: `nocturne`'s 56 left 206px for two strips that owed
+   * 248. It is scaled rather than replaced, so the directions still differ, and it never falls below
+   * the toolchain's own inset for the size (`frameInsetFor`, two type floors).
+   */
+  const PAD =
+    SIZE === "landscape"
+      ? direction.pad
+      : Math.max(
+          frameInsetFor(SIZE) / 2,
+          Math.round((direction.pad * width) / FRAME.width),
+        );
 
   const reg = (name: RegisterName) => registerOf(direction, name);
   const display = reg("display");
@@ -152,25 +171,74 @@ export function DirectedDotStrips({
 
   // ── the ladder ────────────────────────────────────────────────────────────
   const column = width - PAD * 2;
-  const titleLead = leadOf(display);
   const bodyLead = leadOf(body);
   const annotLead = leadOf(annot);
 
+  /**
+   * HOW SMALL A HEADLINE MAY GET AND STILL BE ONE — the two floors
+   * `static-choropleth-europe-lowcarbon` states. The filed display size is a decision taken on a
+   * 960-wide plate; set in 540 the same headline takes twice the lines, and on this beat every line
+   * of it comes out of the strips' own room. The large-text relaxation binds only where the filed
+   * size already clears it: at square one user unit is 1.5 CSS px, so large text starts at 36 units
+   * while two of the three filed displays are 30 and 32, and a headline that is already not large
+   * text cannot be held to large text. Landscape never walks this ladder — it is the frame this beat
+   * was accepted at.
+   */
+  const LARGE_TEXT_CSS_PX = 24;
+  const LARGE_TEXT_BOLD_CSS_PX = 18.66;
+  const displayAt = (fontSize: number) => ({
+    ...display,
+    fontSize,
+    letterSpacing: (display.letterSpacing * fontSize) / display.fontSize,
+  });
+  const displayRungs: Array<typeof display> =
+    SIZE === "landscape"
+      ? [display]
+      : (() => {
+          const largeText =
+            (Number(display.fontWeight) >= 700
+              ? LARGE_TEXT_BOLD_CSS_PX
+              : LARGE_TEXT_CSS_PX) *
+            (width / viewedAtCssPx(SIZE));
+          const floor =
+            display.fontSize >= largeText
+              ? Math.max(largeText, display.fontSize * DERIVED_SIZE_RATIO)
+              : display.fontSize * DERIVED_SIZE_RATIO;
+          const out: Array<typeof display> = [display];
+          for (let s = display.fontSize - 0.5; s >= floor - 1e-9; s -= 0.5)
+            out.push(displayAt(Math.round(s * 100) / 100));
+          return out;
+        })();
+
   const CHIP_PAD = 5;
   const chipH = axisBand.ascent + axisBand.descent + 5;
-  const chipLead = chipH + 3;
-  const STEM = 9;
+  /** The air between two stacked chips, and the stem that holds a chip off its rail. Both are
+   *  landscape numbers, and at a reflowed frame the sixteen chips stack into four rows per strip
+   *  instead of two — so every pixel of air is spent eight times over. Measured at square: the
+   *  filed 3 and 9 left `creme` two pixels short of its own floor and refused the size outright. */
+  const chipLead = chipH + (SIZE === "landscape" ? 3 : 2);
+  const STEM = SIZE === "landscape" ? 9 : 7;
 
-  const layoutFor = (t: number, l: number, r: number) => {
-    const titleLines = wrap(set(title[t], display), column, display);
+  /** THE FOOT LINE IS A PARAGRAPH, NOT A RUN. It was drawn as one unwrapped `<text>`, which on a
+   *  960-wide plate happens to fit and at 540 does not: « part de bas-carbone dans l'électricité
+   *  d… » ran from 52 to 602 in a 540px frame and all three directions refused at portrait. It is
+   *  wrapped now, and the lines it takes are subtracted from the strips' room — a row that is drawn
+   *  has to be a row that is budgeted. At one line the arithmetic is the one landscape was tuned on. */
+  const footText = set(`${unit} · ${scaleNote}`, axis);
+  const unitLead = axisBand.ascent + axisBand.descent + 2;
+
+  const layoutFor = (t: number, l: number, r: number, dsp: typeof display) => {
+    const titleLines = wrap(set(title[t], dsp), column, dsp);
+    const dspLead = leadOf(dsp);
+    const unitLines = wrap(footText, column, axis);
     const limitLines = wrap(set(limits[l], body), column, body);
     const readingLines = r < 0 ? [] : wrap(set(reading[r], annot), column, annot);
     const sourceLines = wrap(set(source, body), column, body);
     const eyebrowBaseline = PAD + eyebrowReg.fontSize;
     const titleTop =
-      eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
+      eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + dsp.fontSize;
     const limitsTop =
-      titleTop + titleLines.length * titleLead + gapOf(body, 0.5517);
+      titleTop + titleLines.length * dspLead + gapOf(body, 0.5517);
     const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
     const readingTop = sourceTop - bodyLead * 1.1 - Math.max(0, readingLines.length - 1) * annotLead;
     const top = limitsTop + limitLines.length * bodyLead + annotBand.ascent * 1.6;
@@ -180,9 +248,12 @@ export function DirectedDotStrips({
         : sourceTop - bodyLead * 1.2) -
       axisBand.ascent -
       axisBand.descent -
-      6;
+      6 -
+      (unitLines.length - 1) * unitLead;
     return {
       titleLines,
+      titleLead: dspLead,
+      unitLines,
       limitLines,
       readingLines,
       sourceLines,
@@ -197,12 +268,21 @@ export function DirectedDotStrips({
     };
   };
 
-  const rungs: Array<{ title: number; limit: number; reading: number }> = [];
+  /** THE CUT ORDER IS THE DESK'S: the reading line first, then the standfirst, then the headline's
+   *  SIZE, and a shorter headline last of all. */
+  const rungs: Array<{
+    title: number;
+    limit: number;
+    reading: number;
+    display: typeof display;
+  }> = [];
   for (let t = 0; t < title.length; t++)
-    for (let l = 0; l < limits.length; l++) {
-      for (let r = 0; r < reading.length; r++) rungs.push({ title: t, limit: l, reading: r });
-      rungs.push({ title: t, limit: l, reading: -1 });
-    }
+    for (const dsp of displayRungs)
+      for (let l = 0; l < limits.length; l++) {
+        for (let r = 0; r < reading.length; r++)
+          rungs.push({ title: t, limit: l, reading: r, display: dsp });
+        rungs.push({ title: t, limit: l, reading: -1, display: dsp });
+      }
 
   /** ONE SCALE, BUILT ONCE, USED BY BOTH STRIPS. The reference's own record asks a beat drawing this
    *  form to guarantee it rather than to appear to. */
@@ -246,12 +326,15 @@ export function DirectedDotStrips({
   /** THE PLATE OWES BOTH STACKS THEIR ROWS, both rails, both tick rows, and a corridor between them
    *  wide enough for a leader to be read as a leader. Under that the chips overlap the axis they
    *  belong to, which is the one thing this form may not do. */
-  const CORRIDOR = valueBand.ascent + valueBand.descent + 26;
+  /** Tighter at a reflowed frame: the corridor exists so a leader reads as a leader, and 26px of it
+   *  is a landscape number on a plate with half the width to spend. */
+  const CORRIDOR =
+    valueBand.ascent + valueBand.descent + (SIZE === "landscape" ? 26 : 18);
   const stripRoom = (rows: number) =>
     rows * chipLead + STEM + 6 + axisBand.ascent + axisBand.descent + 4;
   const owed = stripRoom(beforeStack.rows) + stripRoom(afterStack.rows) + CORRIDOR;
   for (const rung of rungs) {
-    const l = layoutFor(rung.title, rung.limit, rung.reading);
+    const l = layoutFor(rung.title, rung.limit, rung.reading, rung.display);
     if (l.room > best) best = l.room;
     if (l.room >= owed) {
       fits = { rung, layout: l };
@@ -265,6 +348,8 @@ export function DirectedDotStrips({
         `corridor. Below that the chips sit on the axis they are pinned to.`,
     );
   const layout = fits.layout;
+  const drawnDisplay = fits.rung.display;
+  const titleLead = layout.titleLead;
 
   const railBefore = layout.top + beforeStack.rows * chipLead + STEM;
   const ticksBeforeY = railBefore + 4 + axisBand.ascent;
@@ -418,7 +503,7 @@ export function DirectedDotStrips({
         {set(eyebrow, eyebrowReg)}
       </text>
       {layout.titleLines.map((l, i) => (
-        <text key={l + i} x={PAD} y={layout.titleTop + i * titleLead} {...line(display)}>
+        <text key={l + i} x={PAD} y={layout.titleTop + i * titleLead} {...line(drawnDisplay)}>
           {l}
         </text>
       ))}
@@ -481,9 +566,17 @@ export function DirectedDotStrips({
       {strip(railBefore, ticksBeforeY, beforeStack, true, from)}
       {strip(railAfter, ticksAfterY, afterStack, true, to)}
 
-      <text x={PAD} y={layout.bottom + axisBand.ascent + 2} {...line(axis)} fill={mutedInk}>
-        {set(`${unit} · ${scaleNote}`, axis)}
-      </text>
+      {layout.unitLines.map((l, i) => (
+        <text
+          key={`u${i}`}
+          x={PAD}
+          y={layout.bottom + axisBand.ascent + 2 + i * unitLead}
+          {...line(axis)}
+          fill={mutedInk}
+        >
+          {l}
+        </text>
+      ))}
 
       {layout.readingLines.map((l, i) => (
         <text key={`r${i}`} x={PAD} y={layout.readingTop + i * annotLead} {...line(annot)} fill={mutedInk}>

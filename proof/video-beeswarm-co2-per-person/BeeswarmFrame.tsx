@@ -18,7 +18,7 @@ type Register = {
   lead: number;
 };
 type Line = { text: string; x: number; y: number; width: number };
-type Slot = "display" | "eyebrow" | "axis" | "value" | "source";
+type Slot = "display" | "eyebrow" | "axis" | "value" | "name" | "source";
 
 export type BeeswarmFrameProps = {
   frame: { width: number; height: number };
@@ -62,6 +62,8 @@ export type BeeswarmFrameProps = {
   };
   counter: Record<string, Line>;
   halo: number;
+  /** The names' own halo: the naming ladder may set them in the axis voice, and a halo is the register's. */
+  nameHalo: number;
   states: Record<string, number>[];
   timing: unknown;
 };
@@ -116,6 +118,7 @@ export function BeeswarmFrame(
   } = props;
   const scene = sceneAt(props as never, props.at);
   const halo = { colour: colours.ground, width: props.halo };
+  const nameHalo = { colour: colours.ground, width: props.nameHalo };
   const highs = props.members.filter((m) => m.high);
 
   return (
@@ -198,10 +201,10 @@ export function BeeswarmFrame(
           <Text
             key={`name${m.code}`}
             line={m.name}
-            register={r.value}
+            register={r.name}
             fill={colours.text.name}
             opacity={scene.members[i].arrived}
-            halo={halo}
+            halo={nameHalo}
           />
         ) : null,
       )}

@@ -34,7 +34,8 @@ import {
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
 import { mix } from "#shared/chart-beat/colour.mjs";
-import { applyCase } from "#shared/chart-beat/registers.mjs";
+import { applyCase, DERIVED_SIZE_RATIO } from "#shared/chart-beat/registers.mjs";
+import { frameInsetFor, viewedAtCssPx } from "#shared/chart-beat/sizes.mjs";
 import {
   EYEBROW_TO_DISPLAY,
   gapOf,
@@ -101,7 +102,23 @@ export function DirectedFlowMap({
 }) {
   const { width, height } = frame ?? FRAME;
   const { ink, muted } = deriveFurniture(direction.ground);
-  const PAD = direction.pad;
+  const SIZE =
+    width > height ? "landscape" : width === height ? "square" : "portrait";
+  /**
+   * THE MARGIN IS A PROPORTION OF THE PLATE, AND THE DIRECTION FILED ITS OWN ON A 960-WIDE ONE.
+   *
+   * `nocturne`'s filed 56 is 12 % of the plate it was measured on and 21 % of a 540-wide one, and
+   * at a reflowed frame it is spent twice: height the map's band comes out of, and width the copy
+   * is set across. Scaled rather than replaced, and never below the toolchain's own inset for the
+   * size (`frameInsetFor`, two type floors).
+   */
+  const PAD =
+    SIZE === "landscape"
+      ? direction.pad
+      : Math.max(
+          frameInsetFor(SIZE) / 2,
+          Math.round((direction.pad * width) / FRAME.width),
+        );
 
   const reg = (name: RegisterName) => registerOf(direction, name);
   const display = reg("display");
@@ -163,45 +180,148 @@ export function DirectedFlowMap({
   const nodeInk = adjustToContrast(ink, direction.ground, TEXT_CONTRAST_MIN);
 
   // ── the ladder ────────────────────────────────────────────────────────────
-  const titleLead = leadOf(display);
   const bodyLead = leadOf(body);
   const annotLead = leadOf(annot);
   const SHARES = [0.3, 0.34, 0.38, 0.42, 0.46];
-  const DOTTED_ROWS = 4;
   const GUTTER = 24;
   const panelFor = (share: number) => Math.round((width - PAD * 2) * share);
 
-  const layoutFor = (panel: number, t: number, l: number, r: number) => {
-    const titleLines = wrap(set(title[t], display), panel, display);
+  /**
+   * TWO LAYOUTS, AND THE FRAME CHOOSES — `static-choropleth-europe-lowcarbon`'s worked answer.
+   *
+   * Beside the map is right at landscape: a map's aspect is fixed by the ground it shows, so the
+   * copy takes the column the map does not need. At a square or tall plate there is no such column.
+   * Measured 2026-09-23 at 540x540: the panel came to 131px and two of the three directions refused
+   * outright — « the panel's copy does not fit its column, at any share » — while at 540x960 the
+   * footnote could not be wrapped into the rows the layout had budgeted for it.
+   *
+   * So below the width where a column can hold a map at least as wide as it is tall, the copy goes
+   * on top at full width and the map takes a measured band underneath.
+   */
+  const besideWidth = width - PAD * 2 - panelFor(SHARES[0]) - GUTTER;
+  const STACKED = besideWidth < height - PAD * 2;
+  /** THE MAP IS THE SUBJECT, so a stacked ladder has to leave a map-sized band, not merely clear
+   *  the foot. A third of the usable height is the choropleth's own statement about what a map beat
+   *  IS, rather than a number tuned to make one plate pass. */
+  const MIN_MAP_SHARE = 1 / 3;
+  const mapBandFloor = STACKED ? (height - PAD * 2) * MIN_MAP_SHARE : 0;
+  /** AND THE BAND STARTS WHERE THE INK STOPS, NOT WHERE A DROPPED LINE WOULD HAVE BEEN. `footTop`
+   *  is the reading line's baseline, and the ladder drops that line at square — so the band began
+   *  a whole reading block below the last thing drawn, and this map fills its band on both axes, so
+   *  every pixel of that came straight off the map. `spare` keeps reading `footTop`: it is the
+   *  number the beside ladder was accepted on. */
+  const mapBandOf = (l: { copyBottom: number; sourceTop: number }) => {
+    const top = l.copyBottom + annotLead * BAND_AIR;
+    return { top, height: l.sourceTop - bodyLead - top };
+  };
+
+  /** THE FOOTNOTE'S ROWS ARE BUDGETED BEFORE ITS SENTENCE EXISTS — its wording depends on the band
+   *  floor, which depends on the node's radius, which depends on this very layout. Landscape keeps
+   *  the flat 4 it was tuned at. At a reflowed frame the budget is taken from the sentence's own
+   *  WORST case instead — the widest numbers it can carry — because at 540 the real one needed five
+   *  rows against the four reserved and all that was left was a refusal. */
+  /** AND THE FOOTNOTE ITSELF TAKES A SHORTER FORM AT A REFLOWED FRAME. It is the same statement —
+   *  how many countries are under the band floor and what share they hold — said in one row instead
+   *  of two, which is the « give the beat shorter forms » the refusal asks for rather than dropping
+   *  the fact. The one sentence it loses says that the ones inside the frame carry a dot, and the
+   *  dots are on the plate for a reader to see. */
+  const dottedNoteFor = (count: number, share: string) =>
+    SIZE === "landscape"
+      ? `Les ${count} autres pays, ${share} % du total : ruban trop fin, ou pays hors cadre. ` +
+        `Ceux qui sont dans le cadre portent un point.`
+      : `Les ${count} autres pays (${share} % du total) : ruban trop fin, ou hors cadre.`;
+  const WORST_DOTTED_NOTE = dottedNoteFor(999, "99");
+
+  /** THE AIR INSIDE THE COPY BLOCK, TIGHTENED AT A REFLOWED FRAME. Every one of these is a gap
+   *  measured on a 960-wide plate, and stacked they are spent against a band the map owes a third
+   *  of the plate for. Measured at square: the copy left 135px where the map owed 156, and this is
+   *  where the difference was. Landscape keeps the numbers it was accepted at. */
+  const KEY_ROW_AIR = SIZE === "landscape" ? 6 : 3;
+  const KEY_GAP = SIZE === "landscape" ? 0.8571 : 0.6;
+  const READING_GAP = SIZE === "landscape" ? 1 : 0.7;
+  const BAND_AIR = SIZE === "landscape" ? 0.9 : 0.6;
+
+  /**
+   * HOW SMALL A HEADLINE MAY GET AND STILL BE ONE — the two floors the choropleth states. The large
+   * text relaxation binds only where the filed size already clears it; landscape never walks this
+   * ladder, and stacked the headline is the last thing spent after the panel share has ceased to
+   * exist as a rung.
+   */
+  const LARGE_TEXT_CSS_PX = 24;
+  const LARGE_TEXT_BOLD_CSS_PX = 18.66;
+  const displayAt = (fontSize: number) => ({
+    ...display,
+    fontSize,
+    letterSpacing: (display.letterSpacing * fontSize) / display.fontSize,
+  });
+  const displayRungs: Array<typeof display> =
+    SIZE === "landscape"
+      ? [display]
+      : (() => {
+          const largeText =
+            (Number(display.fontWeight) >= 700
+              ? LARGE_TEXT_BOLD_CSS_PX
+              : LARGE_TEXT_CSS_PX) *
+            (width / viewedAtCssPx(SIZE));
+          const floor =
+            display.fontSize >= largeText
+              ? Math.max(largeText, display.fontSize * DERIVED_SIZE_RATIO)
+              : display.fontSize * DERIVED_SIZE_RATIO;
+          const out: Array<typeof display> = [display];
+          for (let s = display.fontSize - 0.5; s >= floor - 1e-9; s -= 0.5)
+            out.push(displayAt(Math.round(s * 100) / 100));
+          return out;
+        })();
+
+  const layoutFor = (
+    panel: number,
+    t: number,
+    l: number,
+    r: number,
+    dsp: typeof display,
+  ) => {
+    const titleLines = wrap(set(title[t], dsp), panel, dsp);
+    const dspLead = leadOf(dsp);
     const limitLines = wrap(set(limits[l], body), panel, body);
     /** ROOM IS RESERVED FOR THE FOOTNOTE BEFORE IT EXISTS. Its text depends on the node's radius,
      *  which depends on the map box, which depends on this layout — so the rows are budgeted here
      *  and the component throws below if the finished sentence needs more than the budget. A panel
      *  is a frame too, and this note ran under the map on its first render. */
-    const dottedLines = DOTTED_ROWS;
+    const dottedLines =
+      SIZE === "landscape"
+        ? 4
+        : wrap(set(WORST_DOTTED_NOTE, axis), panel, axis).length;
     const readingLines = r < 0 ? [] : wrap(set(reading[r], annot), panel, annot);
     const sourceLines = wrap(set(source, body), panel, body);
     const eyebrowBaseline = PAD + eyebrowReg.fontSize;
     const titleTop =
-      eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
+      eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + dsp.fontSize;
     const limitsTop =
-      titleTop + titleLines.length * titleLead + gapOf(body, 0.5517);
+      titleTop + titleLines.length * dspLead + gapOf(body, 0.5517);
     const keyTop =
-      limitsTop + limitLines.length * bodyLead + gapOf(annot, 0.8571) + annotBand.ascent;
+      limitsTop + limitLines.length * bodyLead + gapOf(annot, KEY_GAP) + annotBand.ascent;
     const keyRows = 3;
     const dottedTop =
-      keyTop + keyRows * (annotBand.ascent + annotBand.descent + 6) + axisBand.ascent;
+      keyTop + keyRows * (annotBand.ascent + annotBand.descent + KEY_ROW_AIR) + axisBand.ascent;
     const dottedLead = axisBand.ascent + axisBand.descent + 2;
     const readingTop =
       dottedTop +
       Math.max(0, dottedLines - 1) * dottedLead +
       axisBand.descent +
-      gapOf(annot, 1) +
+      gapOf(annot, READING_GAP) +
       annotBand.ascent;
     const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
     const footTop = readingTop + Math.max(0, readingLines.length - 1) * annotLead;
+    /** The last descender the copy actually draws: the reading line's when there is one, and the
+     *  footnote's own last budgeted row when the ladder has spent it. */
+    const copyBottom = readingLines.length
+      ? readingTop + (readingLines.length - 1) * annotLead + annotBand.descent
+      : dottedTop + Math.max(0, dottedLines - 1) * dottedLead + axisBand.descent;
     return {
       titleLines,
+      titleLead: dspLead,
+      footTop,
+      copyBottom,
       limitLines,
       readingLines,
       sourceLines,
@@ -218,39 +338,68 @@ export function DirectedFlowMap({
     };
   };
 
-  const rungs: Array<{ share: number; title: number; limit: number; reading: number }> = [];
+  const rungs: Array<{
+    share: number;
+    title: number;
+    limit: number;
+    reading: number;
+    display: typeof display;
+  }> = [];
   /** THE HEADLINE IS SPENT LAST, NOT FIRST. Ordered with the panel's share outermost — which is what
    *  the sibling map beats do, because there the map is the whole subject — this plate gave up its
    *  claim ("4,5 millions… la moitié") to keep the narrowest panel, and shipped a title that says
    *  only what the plate is about. A wider panel costs the map some ground; a shorter headline costs
    *  the beat its sentence. */
   for (let t = 0; t < title.length; t++)
-    for (const share of SHARES)
-      for (let l = 0; l < limits.length; l++) {
-        for (let r = 0; r < reading.length; r++) rungs.push({ share, title: t, limit: l, reading: r });
-        rungs.push({ share, title: t, limit: l, reading: -1 });
-      }
+    for (const share of STACKED ? [1] : SHARES)
+      for (const dsp of displayRungs)
+        for (let l = 0; l < limits.length; l++) {
+          for (let r = 0; r < reading.length; r++)
+            rungs.push({ share, title: t, limit: l, reading: r, display: dsp });
+          rungs.push({ share, title: t, limit: l, reading: -1, display: dsp });
+        }
   let fits: { rung: (typeof rungs)[number]; layout: ReturnType<typeof layoutFor> } | null = null;
   for (const rung of rungs) {
-    const l = layoutFor(panelFor(rung.share), rung.title, rung.limit, rung.reading);
-    if (l.spare >= 0) {
+    const l = layoutFor(
+      STACKED ? width - PAD * 2 : panelFor(rung.share),
+      rung.title,
+      rung.limit,
+      rung.reading,
+      rung.display,
+    );
+    if ((STACKED ? mapBandOf(l).height : l.spare) >= mapBandFloor) {
       fits = { rung, layout: l };
       break;
     }
   }
   if (!fits)
     throw new Error(
-      `the panel's copy does not fit its column in this direction, at any share. Give the beat ` +
-        `shorter forms — do not shrink the map, which is the subject.`,
+      (STACKED
+        ? `the copy leaves no room for the map in this direction: the shortest rung at the smallest ` +
+          `headline leaves ${rungs
+            .map((rung) =>
+              mapBandOf(
+                layoutFor(width - PAD * 2, rung.title, rung.limit, rung.reading, rung.display),
+              ).height,
+            )
+            .reduce((a, b) => Math.max(a, b), 0)
+            .toFixed(0)}px where the map owes ${mapBandFloor.toFixed(0)}. `
+        : `the panel's copy does not fit its column in this direction, at any share. `) +
+        `Give the beat shorter forms — do not shrink the map, which is the subject.`,
     );
   const layout = fits.layout;
-  const panel = panelFor(fits.rung.share);
-  const mapBox = {
-    x: PAD + panel + GUTTER,
-    y: PAD,
-    width: width - PAD * 2 - panel - GUTTER,
-    height: height - PAD * 2,
-  };
+  const drawnDisplay = fits.rung.display;
+  const titleLead = layout.titleLead;
+  const panel = STACKED ? width - PAD * 2 : panelFor(fits.rung.share);
+  const band = mapBandOf(layout);
+  const mapBox = STACKED
+    ? { x: PAD, y: band.top, width: width - PAD * 2, height: band.height }
+    : {
+        x: PAD + panel + GUTTER,
+        y: PAD,
+        width: width - PAD * 2 - panel - GUTTER,
+        height: height - PAD * 2,
+      };
   /** THE CAMERA IS THE BOX THE FLOWS NEED. `render-directions.mjs` computes it from the origin and
    *  the ten largest hosts; here it is fitted into the map box without distortion — the map fills the
    *  box and crops whatever the aspect ratios do not share, which for a fitted box is very little. */
@@ -396,22 +545,22 @@ export function DirectedFlowMap({
 
   const dottedNote =
     dotted.length > 0
-      ? `Les ${dotted.length} autres pays, ${(100 - drawnShare).toFixed(0)} % du total : ruban trop ` +
-        `fin, ou pays hors cadre. Ceux qui sont dans le cadre portent un point.`
+      ? dottedNoteFor(dotted.length, (100 - drawnShare).toFixed(0))
       : "";
   const keyNote = `${drawn.length} rubans dessinés, ${Math.round(drawnShare)} % des ${grouped(total)} personnes.`;
   const dottedLines = dottedNote ? wrap(set(dottedNote, axis), panel, axis) : [];
-  if (dottedLines.length > DOTTED_ROWS)
+  if (dottedLines.length > layout.dottedLines)
     throw new Error(
       `the footnote naming the countries under the floor needs ${dottedLines.length} lines and the ` +
-        `layout reserved ${DOTTED_ROWS}. A row that is drawn has to be a row that is budgeted.`,
+        `layout reserved ${layout.dottedLines}. A row that is drawn has to be a row that is budgeted.`,
     );
 
   onLadder?.(
     `ladder: headline ${fits.rung.title + 1}, standfirst ${fits.rung.limit + 1}, reading ` +
       (fits.rung.reading < 0 ? "dropped" : `form ${fits.rung.reading + 1}`) +
       ` · node r=${NODE_RADIUS.toFixed(0)}px, ${Math.round(perPixel)} people per pixel · ` +
-      `${drawn.length} bands drawn, ${dotted.length} under the floor, ${unnamed} unnamed · panel ${panel}px`,
+      `${drawn.length} bands drawn, ${dotted.length} under the floor, ${unnamed} unnamed · ` +
+      `${STACKED ? "stacked" : `panel ${panel}px`} · headline ${drawnDisplay.fontSize.toFixed(1)}px`,
   );
 
   return (
@@ -429,7 +578,7 @@ export function DirectedFlowMap({
         {set(eyebrow, eyebrowReg)}
       </text>
       {layout.titleLines.map((l, i) => (
-        <text key={l + i} x={PAD} y={layout.titleTop + i * titleLead} {...line(display)}>
+        <text key={l + i} x={PAD} y={layout.titleTop + i * titleLead} {...line(drawnDisplay)}>
           {l}
         </text>
       ))}
@@ -447,14 +596,14 @@ export function DirectedFlowMap({
           <line
             x1={PAD}
             x2={PAD + 26}
-            y1={layout.keyTop - annotBand.ascent * 0.35 + i * (annotBand.ascent + annotBand.descent + 6)}
-            y2={layout.keyTop - annotBand.ascent * 0.35 + i * (annotBand.ascent + annotBand.descent + 6)}
+            y1={layout.keyTop - annotBand.ascent * 0.35 + i * (annotBand.ascent + annotBand.descent + KEY_ROW_AIR)}
+            y2={layout.keyTop - annotBand.ascent * 0.35 + i * (annotBand.ascent + annotBand.descent + KEY_ROW_AIR)}
             stroke={flow}
             strokeWidth={widthOfPeople(n)}
           />
           <text
             x={PAD + 34}
-            y={layout.keyTop + i * (annotBand.ascent + annotBand.descent + 6)}
+            y={layout.keyTop + i * (annotBand.ascent + annotBand.descent + KEY_ROW_AIR)}
             {...line(axis)}
             fill={mutedInk}
           >
@@ -464,7 +613,7 @@ export function DirectedFlowMap({
       ))}
       <text
         x={PAD}
-        y={layout.keyTop + 2 * (annotBand.ascent + annotBand.descent + 6) + 2}
+        y={layout.keyTop + 2 * (annotBand.ascent + annotBand.descent + KEY_ROW_AIR) + 2}
         {...line(axis)}
         fill={mutedInk}
       >

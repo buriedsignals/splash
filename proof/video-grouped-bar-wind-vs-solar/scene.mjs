@@ -4,7 +4,7 @@
 //   - MIX: each country's whole electricity rises as one column, source on source, to 100 %; wind and solar on top.
 //   - OTHERS: every other source fades out of the columns, leaving wind and solar where they were.
 //   - SPLIT: the column's width parts into two bars side by side where wind and solar stand, then the two slide down to the
-//     baseline.
+//     baseline of its own tier.
 //   - CAMERA: the scale closes geometrically from 100 % onto the two; their shares land over them.
 //   - COMPARE: group after group, wind's level is carried across over solar as a line; the lead is counted where solar ends
 //     under it.
@@ -45,9 +45,9 @@ export const shareText = (v) => v.toFixed(1).replace(".", ",");
 const lerp = (a, b, t) => a + (b - a) * t;
 
 /**
- * @param {{ states: any[], timing: any, subject: string, baseline: number, units: { whole: number, close: number },
+ * @param {{ states: any[], timing: any, subject: string, units: { whole: number, close: number },
  *   colW: number, barW: number,
- *   groups: Array<{ name: string, wind: number, solar: number, colX: number, windX: number, solarX: number,
+ *   groups: Array<{ name: string, wind: number, solar: number, baseline: number, colX: number, windX: number, solarX: number,
  *     mix: Array<{ source: string, share: number }> }> }} props
  */
 export function sceneAt(props, frame) {
@@ -70,12 +70,12 @@ export function sceneAt(props, frame) {
       const span = { source: m.source, low, high: low + m.share };
       low += m.share;
       const shown = Math.max(0, Math.min(span.high, risen) - span.low);
-      return { source: m.source, y: props.baseline - (span.low + shown) * unit, h: shown * unit, fade: m.source === "Wind" || m.source === "Solar" ? 0 : others };
+      return { source: m.source, y: g.baseline - (span.low + shown) * unit, h: shown * unit, fade: m.source === "Wind" || m.source === "Solar" ? 0 : others };
     });
     const bar = (key, targetX) => {
       const seg = segments.find((s) => s.source === (key === "wind" ? "Wind" : "Solar"));
       const value = g[key];
-      const stackBottom = props.baseline - seg.y - seg.h;
+      const stackBottom = g.baseline - seg.y - seg.h;
       // The column parts side by side where it stands, then the two descend: they never cross.
       const part = ease(clamp01(split * 2));
       const fall = ease(clamp01(split * 2 - 1));
@@ -84,7 +84,7 @@ export function sceneAt(props, frame) {
         w: lerp(props.colW, props.barW, part),
         y: seg.y + stackBottom * fall,
         h: seg.h,
-        top: props.baseline - value * unit,
+        top: g.baseline - value * unit,
         value,
       };
     };
@@ -94,7 +94,7 @@ export function sceneAt(props, frame) {
       segments,
       wind: bar("wind", g.windX),
       solar: bar("solar", g.solarX),
-      level: { y: props.baseline - g.wind * unit, reach: ease(raw) },
+      level: { y: g.baseline - g.wind * unit, reach: ease(raw) },
       shares: clamp01((camera - 0.5) / 0.5),
       stepBack: g.name === props.subject ? 0 : focus,
     };

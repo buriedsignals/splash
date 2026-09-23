@@ -46,6 +46,8 @@ export type ContourFrameProps = {
   /** The curve: the share of the land within each distance of the sea, traced to the sweep's front. */
   chart: { x: number; y: number; width: number; height: number; plot: { left: number; right: number; top: number; bottom: number }; maxKm: number; path: string; area: string; median: { x: number; y: number } };
   layoutInset: { x: number; y: number };
+  /** The ground band under the map — the square frame's own composition (`build.mjs`, `bandFor`); `null` elsewhere. */
+  band: { x: number; y: number; width: number; height: number } | null;
   levels: Array<{ level: number }>;
   medianLevel: number;
   yielding: number[];
@@ -87,7 +89,7 @@ function Word({ line, register, fill, opacity = 1, anchor, halo, measured = true
 }
 
 export function ContourFrame(props: ContourFrameProps & { at: number; liveMap: (frame: number) => ReactNode; svgRef?: Ref<SVGSVGElement> }) {
-  const { frame, registers: r, colours, strokes, legend, credit, titleCard } = props;
+  const { frame, registers: r, colours, strokes, legend, credit, titleCard, band } = props;
   const scene = sceneAt(props as never, props.at);
   const counted = scene.count;
   const countText = legend.template.replace("{p}", String(counted.p)).replace("{km}", String(counted.km));
@@ -96,6 +98,12 @@ export function ContourFrame(props: ContourFrameProps & { at: number; liveMap: (
     <div style={{ position: "absolute", left: 0, top: 0, width: frame.width, height: frame.height, background: colours.ground }}>
       {props.liveMap(props.at)}
       <svg ref={props.svgRef} style={{ position: "absolute", left: 0, top: 0 }} xmlns="http://www.w3.org/2000/svg" width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
+        {/* ── THE GROUND BAND: the square frame's foot, the key and the credit on the direction's own ground rather
+            than on water the square map does not have. It is drawn over the live map because the map is mounted on
+            the WHOLE frame and measured there; the camera is fitted and raised into the band above it
+            (`map-plan.mjs`, `camerasOf`), so what this covers is the ground that fit left over. ── */}
+        {band ? <rect x={band.x} y={band.y} width={band.width} height={band.height} fill={colours.ground} /> : null}
+
         {/* ── THE KEY: the count, and « hors mesure ». ── */}
         <g transform={`translate(${legend.at.x} ${legend.at.y})`} opacity={scene.furniture}>
           <Word line={{ text: legend.widths[countText].text, x: legend.count.x, y: legend.count.y, width: legend.widths[countText].width }} register={r.value} fill={colours.text.count} halo={{ colour: colours.ground, width: legend.valueHalo }} />

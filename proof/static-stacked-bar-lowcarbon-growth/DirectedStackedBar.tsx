@@ -21,6 +21,10 @@
  */
 
 import { scaleLinear } from "d3-scale";
+import { formForSize } from "#shared/chart-beat/type-at-size.mjs";
+
+/** This beat's own type, as its BRIEF declares it — what decides whether a tall frame asks for the twin form. */
+const TYPE = "stacked-bar";
 import {
   deriveFurniture,
   measureText,
@@ -162,6 +166,31 @@ export function DirectedStackedBar({
   const levelFill = mix(direction.accent, direction.ground, 0.62);
   const growthFill = direction.accent;
 
+  /**
+   * THE TWIN FORM — WHICH THIS BEAT WAS ALREADY DRAWING.
+   *
+   * `type-at-size.mjs` answers `transpose` for a stacked bar at a tall frame: rows running down the
+   * frame, every category name horizontal on one line, read top to bottom. That is what this plate
+   * has drawn since it was written — the magnitude runs across, the twelve countries run down — so
+   * `ROWS` rotates nothing. A component that does not ASK is refused all the same, and the refusal
+   * is right: nothing in the file said the form was deliberate rather than a landscape accident.
+   *
+   * What `ROWS` carries is the part of the row form a 960px frame never had to pay for. Measured at
+   * 540 x 960 (1080 x 1920 at scale 2, creme): the plot comes out 229px wide against 660px at
+   * landscape, sixteen of the twenty-four segment numbers no longer fit inside their own segment
+   * against ten at landscape, and the two lanes past the bar — the spill lane and the total lane —
+   * stop being affordable to overlap. Landscape got away with printing the total at `plotRight + 10`,
+   * the first pixel of the lane the spills were reserved, because none of its five spillers was the
+   * longest bar; at portrait France spills too, `483 + 50` is printed into exactly that place, and
+   * it lands on its own `533` — 100% of the smaller run, refused in creme and in nocturne.
+   *
+   * The size is read off the frame rather than passed in, because the frame is what the component is
+   * already given and the three are distinguishable by their own proportions.
+   */
+  const SIZE =
+    width > height ? "landscape" : width === height ? "square" : "portrait";
+  const ROWS = formForSize(TYPE, SIZE).verdict === "transpose";
+
   // ── the ladder ────────────────────────────────────────────────────────────
   const column = width - PAD * 2;
   const titleLead = leadOf(display);
@@ -176,13 +205,16 @@ export function DirectedStackedBar({
 
   const layoutFor = (t: number, l: number, r: number) => {
     const titleLines = wrap(set(title[t], display), column, display);
-    const limitLines = wrap(set(limits[l], body), column, body);
+    /** `l < 0` IS R7 — the standfirst dropped entirely, not shortened again. See the rungs below. */
+    const limitLines = l < 0 ? [] : wrap(set(limits[l], body), column, body);
     const readingLines =
       r < 0 ? [] : wrap(set(reading[r], annot), column, annot);
     const sourceLines = wrap(set(source, body), column, body);
     const eyebrowBaseline = PAD + eyebrowReg.fontSize;
     const titleTop =
-      eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
+      eyebrowBaseline +
+      gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) +
+      display.fontSize;
     const limitsTop =
       titleTop + titleLines.length * titleLead + gapOf(body, 0.4828);
     const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
@@ -207,13 +239,37 @@ export function DirectedStackedBar({
     };
   };
 
+  /**
+   * THE RUNGS, IN `REMOVAL_LADDER` ORDER — AND R7 WAS MISSING FROM THEM.
+   *
+   * R3 takes the standfirst's last sentence, repeatedly, down to one; R4 then takes the reading
+   * line, which is an annotation in prose. This plate stopped there, and at 1080x1080 that was one
+   * rung short: measured 2026-09-23, the most generous rung it could reach left the twelve rows a
+   * pitch of 16.8px in creme and 13.3px in nocturne, against the 18.3px and 14.0px a bar that has
+   * to hold its own number owes — so both directions REFUSED with the plot 18px and 8px short of a
+   * frame that is otherwise 45 % header.
+   *
+   * R7 is the documented answer and it is the one nothing here implemented: drop the standfirst
+   * ENTIRELY rather than shorten it a fourth time. It costs the line that says what the numbers
+   * are — except that on this plate it very nearly does not, because the key row above the bars
+   * names both segments in their own fill AND carries the unit at its right edge. What is lost is
+   * the comparison stated in prose (Spain's addition against France's), which the headline states
+   * and the bars show. It recovers 38px in creme and 36px in nocturne, and both then hold with
+   * room: 20.0px of pitch against 18.3px owed, 16.3px against 14.0px.
+   *
+   * It is enumerated LAST for each headline form, after every shorter standfirst and after the
+   * reading line has already gone, so a plate only ever reaches it having spent everything cheaper.
+   * Landscape fits on the first rung and never sees it.
+   */
   const rungs: Array<{ title: number; limit: number; reading: number }> = [];
-  for (let t = 0; t < title.length; t++)
+  for (let t = 0; t < title.length; t++) {
     for (let l = 0; l < limits.length; l++) {
       for (let r = 0; r < reading.length; r++)
         rungs.push({ title: t, limit: l, reading: r });
       rungs.push({ title: t, limit: l, reading: -1 });
     }
+    rungs.push({ title: t, limit: -1, reading: -1 });
+  }
   let fits: {
     rung: (typeof rungs)[number];
     layout: ReturnType<typeof layoutFor>;
@@ -235,12 +291,15 @@ export function DirectedStackedBar({
     throw new Error(
       `${rows.length} rows do not fit this direction: the widest rung reaches a pitch of ` +
         `${best.layout.pitch.toFixed(1)}px and a bar that must hold its own number owes ` +
-        `${rowsOwe.toFixed(1)}px. Draw fewer rows.`,
+        `${rowsOwe.toFixed(1)}px, with the standfirst already dropped whole (R7). What is left is ` +
+        `R8 — draw fewer rows, and say on the plate that fewer are drawn.`,
     );
   }
   const layout = fits.layout;
   onLadder?.(
-    `ladder: headline ${fits.rung.title + 1}, standfirst ${fits.rung.limit + 1}, reading ` +
+    `ladder: headline ${fits.rung.title + 1}, standfirst ` +
+      (fits.rung.limit < 0 ? "dropped" : `${fits.rung.limit + 1}`) +
+      `, reading ` +
       (fits.rung.reading < 0 ? "dropped" : `form ${fits.rung.reading + 1}`) +
       ` · pitch ${layout.pitch.toFixed(1)}px, owed ${rowsOwe.toFixed(1)}px`,
   );
@@ -257,7 +316,9 @@ export function DirectedStackedBar({
    *  beside the bar. One pass cannot answer both, so the first finds the spills and the second
    *  reserves their room. */
   const domain = [0, Math.max(...rows.map((d) => d.total))] as [number, number];
-  const trial = scaleLinear().domain(domain).range([plotLeft, width - PAD - totalRoom]);
+  const trial = scaleLinear()
+    .domain(domain)
+    .range([plotLeft, width - PAD - totalRoom]);
 
   const insideFits = (w: number, text: string) =>
     widthOf(set(text, annot), annot) + 8 <= w;
@@ -266,9 +327,49 @@ export function DirectedStackedBar({
     !insideFits(scale(d.level) - scale(0), format(d.level)) ||
     !insideFits(scale(d.total) - scale(d.level), format(d.growth));
   const trialSpills = rows.filter(spillsAt(trial));
-  const spillRoom = trialSpills.length
-    ? Math.max(...trialSpills.map((d) => widthOf(set(spillOf(d), annot), annot))) + 16
-    : 0;
+  /**
+   * THE LONGEST BAR IS ITSELF A SPILLER — WHICH IS WHAT MAKES THE TWO LANES COLLIDE, AND IT IS NOT
+   * A PROPERTY OF THE FORM.
+   *
+   * This was first attributed to the row form, because portrait was where it was measured. It is
+   * not: landscape prints the total at `plotRight + 10`, the FIRST PIXEL of the lane the spills are
+   * reserved, and gets away with it only because none of its five spillers is the longest bar, so
+   * nothing is ever already written there. Narrow the frame and that stops being true — at
+   * 1080x1080, sixteen of the twenty-four numbers spill and France spills too, so `483 + 50` was
+   * printed at `plotRight + 8` and its own `533` at `plotRight + 10`: two runs on one baseline
+   * sharing 100 % of the smaller, refused in creme and in nocturne exactly as at portrait.
+   *
+   * So the question is asked of the DATA rather than of the frame, and landscape answers no by
+   * itself — its pixels are unchanged, which is checked by rendering it.
+   *
+   * It is asked at the NARROWEST plot this layout can produce — the one whose lane is sized for
+   * every row — and not at the trial width, because the trial is a third wider than what ships and
+   * France's `483 + 50` fits there and does not here: asked at the trial, square answered no and
+   * collided anyway. The narrowest is monotone the right way round. A bar that does not spill in
+   * it cannot spill in anything wider, so a no here is a no for the plot that actually gets drawn.
+   */
+  const spillRoomForEveryRow =
+    Math.max(...rows.map((d) => widthOf(set(spillOf(d), annot), annot))) + 16;
+  const narrowest = scaleLinear()
+    .domain(domain)
+    .range([plotLeft, width - PAD - totalRoom - spillRoomForEveryRow]);
+  const widest = rows.reduce((a, b) => (b.total > a.total ? b : a));
+  const ownLane = ROWS || spillsAt(narrowest)(widest);
+  /** WHEN THE TOTAL TAKES ITS OWN LANE, THE SPILL LANE IS SIZED FOR EVERY ROW, because the two
+   *  passes disagree about who spills and the second pass is the one that ships. The trial plot is
+   *  the final one plus the lane — 298px against 231px at portrait, a third wider — so France's
+   *  `483 + 50` fits inside its segments at the trial width and does not at the real one, and the
+   *  lane it then has to occupy was measured without it: 51px reserved for a 53px run, which clears
+   *  the total's lane by six pixels and by luck. A third pass would only move the disagreement
+   *  along. Reserving the widest run ANY row could need cannot be wrong, and it costs 2px of plot
+   *  here (231px to 229px) — not a reading. */
+  const spillRoom = ownLane
+    ? spillRoomForEveryRow
+    : trialSpills.length
+      ? Math.max(
+          ...trialSpills.map((d) => widthOf(set(spillOf(d), annot), annot)),
+        ) + 16
+      : 0;
 
   const plotRight = width - PAD - totalRoom - spillRoom;
   const x = scaleLinear().domain(domain).range([plotLeft, plotRight]);
@@ -465,10 +566,21 @@ export function DirectedStackedBar({
             )}
 
             {/* THE TOTAL, GIVEN BACK — past the stack's end, in the value register the segments do
-                not use, so the part and the whole never read as one column of numbers. */}
+                not use, so the part and the whole never read as one column of numbers.
+
+                WHEN THE LONGEST BAR SPILLS, IT TAKES ITS OWN LANE AT THE FRAME'S EDGE.
+                `plotRight + 10` is the first pixel of the lane the SPILLS were reserved, and at
+                landscape that is free money: ten numbers spill, none of them on the longest bar.
+                At portrait and at square sixteen spill and the longest bar IS a spiller, so
+                `483 + 50` was printed at `plotRight + 8` and `533` at `plotRight + 10` — two runs
+                on one baseline sharing 100% of the smaller, refused in creme and nocturne at both
+                frames. Right-aligned at `width - PAD` the total sits in the `totalRoom` the layout
+                already withholds for it, the spills get the lane that is theirs, and the ~70px of
+                dead paper past the totals — reserved, never drawn in — comes back to the picture. */}
             {on("the-stack-gives-back-the-total-it-hides") && (
               <text
-                x={plotRight + 10}
+                x={ownLane ? width - PAD : plotRight + 10}
+                textAnchor={ownLane ? "end" : undefined}
                 y={mid + (valueBand.ascent - valueBand.descent) / 2}
                 {...line(value)}
                 fill={d.thread ? accentInk : mutedInk}

@@ -1,0 +1,462 @@
+{
+  "frame": {
+    "width": 1080,
+    "height": 1080
+  },
+  "inset": 72,
+  "slot": 468,
+  "valueBand": 59.5220947265625,
+  "registers": {
+    "display": {
+      "fontFamily": "Montserrat",
+      "fontSize": 69.75,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 7.4109375,
+      "transform": "uppercase",
+      "lead": 85.09327019999999,
+      "fill": "#FFFFFF"
+    },
+    "eyebrow": {
+      "fontFamily": "Montserrat",
+      "fontSize": 36,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 9.852631578947369,
+      "transform": "uppercase",
+      "lead": 43.1994096,
+      "fill": "#4FE0C0"
+    },
+    "axis": {
+      "fontFamily": "Montserrat",
+      "fontSize": 37.89,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 4.546799999999999,
+      "transform": "none",
+      "lead": 45.467378604000004,
+      "fill": "#a5a4b8"
+    },
+    "value": {
+      "fontFamily": "Montserrat",
+      "fontSize": 53.05,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 63.65912998,
+      "fill": "#4FE0C0"
+    },
+    "annot": {
+      "fontFamily": "Montserrat",
+      "fontSize": 37.89,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 6.8202,
+      "transform": "uppercase",
+      "lead": 53.04681463500001,
+      "fill": "#FFFFFF"
+    },
+    "source": {
+      "fontFamily": "Montserrat",
+      "fontSize": 36,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 4.319999999999999,
+      "transform": "none",
+      "lead": 43.1994096,
+      "fill": "#a5a4b8"
+    }
+  },
+  "titleCard": {
+    "form": 1,
+    "register": {
+      "fontFamily": "Montserrat",
+      "fontSize": 69.75,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 7.4109375,
+      "transform": "uppercase",
+      "lead": 85.09327019999999,
+      "fill": "#FFFFFF"
+    },
+    "eyebrow": {
+      "text": "CLIMAT · MONDE",
+      "x": 72,
+      "y": 289.4880065917969,
+      "width": 441.5361789577886
+    },
+    "title": [
+      {
+        "text": "LA CHINE ET",
+        "x": 72,
+        "y": 383.6253109841797,
+        "width": 518.7656483650208
+      },
+      {
+        "text": "LES ÉTATS-UNIS",
+        "x": 72,
+        "y": 468.7185811841797,
+        "width": 659.7827626228333
+      },
+      {
+        "text": "ONT ÉCHANGÉ",
+        "x": 72,
+        "y": 553.8118513841797,
+        "width": 603.4421246051788
+      },
+      {
+        "text": "LEURS PARTS",
+        "x": 72,
+        "y": 638.9051215841796,
+        "width": 554.2684254646301
+      },
+      {
+        "text": "DU CO₂",
+        "x": 72,
+        "y": 723.9983917841796,
+        "width": 299.9424366950989
+      },
+      {
+        "text": "MONDIAL",
+        "x": 72,
+        "y": 809.0916619841796,
+        "width": 395.44761247634887
+      }
+    ]
+  },
+  "credit": {
+    "form": 2,
+    "lines": [
+      {
+        "text": "Les 2 premiers émetteurs de 2023 ·",
+        "x": 5.391720581054688,
+        "y": 32.10372619628906,
+        "width": 766.6559429740905
+      },
+      {
+        "text": "Global Carbon Budget, Our World in Data",
+        "x": 5.391720581054688,
+        "y": 75.30313579628907,
+        "width": 907.1641410923004
+      }
+    ],
+    "halo": 10.783441162109376,
+    "width": 937,
+    "height": 88,
+    "at": {
+      "x": 72,
+      "y": 920
+    }
+  },
+  "colours": {
+    "ground": "#111044",
+    "past": "#676787",
+    "present": "#53e1c1",
+    "track": "#262655",
+    "text": {
+      "eyebrow": "#53e1c1",
+      "title": "#ffffff",
+      "name": "#ffffff",
+      "muted": "#a7a6b9",
+      "accent": "#53e1c1"
+    }
+  },
+  "strokes": {
+    "ring": 2.72808
+  },
+  "world": {
+    "x": 540,
+    "y": 540,
+    "r0": 244.53847918859952,
+    "r1": 366,
+    "width": 43.056000000000004,
+    "seam": 12.9168,
+    "pxPerGt": 62.14743625565814,
+    "labels": {
+      "before": [
+        {
+          "code": "CHN",
+          "text": "Chine 14,7 %",
+          "width": 333.9497699737549,
+          "x": 587.4537856381355,
+          "y": 247.201377487852,
+          "box": {
+            "x0": 587.4537856381355,
+            "x1": 928.0825510113655,
+            "y0": 199.77468071050825,
+            "y1": 259.2967754370708
+          }
+        },
+        {
+          "code": "USA",
+          "text": "États-Unis 24,4 %",
+          "width": 468.749792098999,
+          "x": 529.875212059021,
+          "y": 871.6801274075433,
+          "box": {
+            "x0": 529.875212059021,
+            "x1": 1008,
+            "y0": 824.2534306301995,
+            "y1": 883.775525356762
+          }
+        }
+      ],
+      "after": [
+        {
+          "code": "CHN",
+          "text": "Chine 32,9 %",
+          "width": 340.47488594055176,
+          "x": 660.7156163406372,
+          "y": 140.56449078581045,
+          "box": {
+            "x0": 660.7156163406372,
+            "x1": 1008,
+            "y0": 93.1377940084667,
+            "y1": 152.6598887350292
+          }
+        },
+        {
+          "code": "USA",
+          "text": "États-Unis 13,3 %",
+          "width": 448.32550621032715,
+          "x": 550.7079836654664,
+          "y": 993.0003163694962,
+          "box": {
+            "x0": 550.7079836654664,
+            "x1": 1008,
+            "y0": 945.5736195921525,
+            "y1": 1005.095714318715
+          }
+        }
+      ]
+    },
+    "centre": {
+      "before": {
+        "text": "2000 · 24,7 Gt",
+        "width": 370.81948056817055,
+        "x": 350.882064910233,
+        "y": 523.3578641903812
+      },
+      "after": {
+        "text": "2023 · 37,0 Gt",
+        "width": 357.5039593279362,
+        "x": 357.67298074275254,
+        "y": 591.9734346377437
+      }
+    }
+  },
+  "small": {
+    "width": 21.528000000000002,
+    "outer": 204.516,
+    "inner": 174.3768,
+    "holeRing": 97.49444604781613
+  },
+  "countries": [
+    {
+      "code": "CHN",
+      "subject": true,
+      "gt0": 3.643809692523312,
+      "gt1": 12.172007955746729,
+      "share0": 14.738450561529307,
+      "share1": 32.89459103465517,
+      "seat": {
+        "x": 306,
+        "y": 408.6262798432656
+      },
+      "hole": {
+        "text": "32,9 %",
+        "width": 166.68310065940022,
+        "x": 220.99161866370588,
+        "y": 426.2919292573281
+      },
+      "name": {
+        "text": "CHINE",
+        "width": 150.8022023590088,
+        "x": 229.09087679690552,
+        "y": 675.7016602399437
+      },
+      "tonnes": [
+        {
+          "text": "2000 · 3,6 Gt",
+          "width": 286.1831798854828,
+          "x": 160.04657825840377,
+          "y": 726.663605199025
+        },
+        {
+          "text": "2023 · 12,2 Gt",
+          "width": 296.9060205348968,
+          "x": 154.57792952720263,
+          "y": 772.1309838030251
+        }
+      ]
+    },
+    {
+      "code": "USA",
+      "subject": false,
+      "gt0": 6.023157920370361,
+      "gt1": 4.918406453068499,
+      "share0": 24.36241810756814,
+      "share1": 13.291888191669502,
+      "seat": {
+        "x": 774,
+        "y": 408.6262798432656
+      },
+      "hole": {
+        "text": "13,3 %",
+        "width": 153.89806333184242,
+        "x": 695.5119877007603,
+        "y": 426.2919292573281
+      },
+      "name": {
+        "text": "ÉTATS-UNIS",
+        "width": 289.13857013397217,
+        "x": 626.5393292316742,
+        "y": 675.7016602399437
+      },
+      "tonnes": [
+        {
+          "text": "2000 · 6,0 Gt",
+          "width": 290.27528193626404,
+          "x": 625.9596062125054,
+          "y": 726.663605199025
+        },
+        {
+          "text": "2023 · 4,9 Gt",
+          "width": 283.7582073513031,
+          "x": 629.2833142508355,
+          "y": 772.1309838030251
+        }
+      ]
+    }
+  ],
+  "states": [
+    {
+      "title": 1,
+      "world": 0,
+      "grow": 0,
+      "relabel": 0,
+      "split": 0,
+      "ring": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "world": 1,
+      "grow": 0,
+      "relabel": 0,
+      "split": 0,
+      "ring": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "world": 1,
+      "grow": 1,
+      "relabel": 1,
+      "split": 0,
+      "ring": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "world": 1,
+      "grow": 1,
+      "relabel": 1,
+      "split": 1,
+      "ring": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "world": 1,
+      "grow": 1,
+      "relabel": 1,
+      "split": 1,
+      "ring": 1,
+      "source": 1
+    },
+    {
+      "title": 0,
+      "world": 1,
+      "grow": 1,
+      "relabel": 1,
+      "split": 1,
+      "ring": 1,
+      "source": 1
+    }
+  ],
+  "timing": {
+    "fps": 30,
+    "total": 540,
+    "establish": {
+      "start": 0,
+      "duration": 45
+    },
+    "reference": {
+      "start": 45,
+      "duration": 60
+    },
+    "reveal": {
+      "start": 105,
+      "duration": 135
+    },
+    "subject": {
+      "start": 240,
+      "duration": 180
+    },
+    "conclusion": {
+      "start": 420,
+      "duration": 60
+    },
+    "hold": {
+      "start": 480,
+      "duration": 60
+    }
+  },
+  "fontFamily": null,
+  "faces": [
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 400,
+      "weightTo": 400,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 400,
+      "weightTo": 400,
+      "unicodeRange": "U+2082"
+    },
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 500,
+      "weightTo": 500,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 500,
+      "weightTo": 500,
+      "unicodeRange": "U+2082"
+    },
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 600,
+      "weightTo": 600,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 600,
+      "weightTo": 600,
+      "unicodeRange": "U+2082"
+    }
+  ]
+}

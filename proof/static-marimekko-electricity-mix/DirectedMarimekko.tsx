@@ -68,6 +68,7 @@ export function DirectedMarimekko({
   percent,
   direction,
   treatments,
+  onLadder,
   frame,
 }: {
   columns: Column[];
@@ -79,9 +80,9 @@ export function DirectedMarimekko({
   tracked: string;
   unit: string;
   widthName: string;
-  title: string;
-  limits: string;
-  reading: string;
+  title: string[];
+  limits: string[];
+  reading: string[];
   source: string;
   alt: string;
   eyebrow: string;
@@ -89,6 +90,8 @@ export function DirectedMarimekko({
   percent: (v: number) => string;
   direction: any;
   treatments: string[];
+  /** Every rung the ladder spends is a decision, so it is reported rather than taken quietly. */
+  onLadder?: (note: string) => void;
   /** The frame this render draws at — `sizeFor(size)` halved, so one component
    *  serves landscape, portrait and square. Absent means the landscape this beat was accepted at. */
   frame?: { width: number; height: number };
@@ -130,20 +133,32 @@ export function DirectedMarimekko({
     return lines;
   }
 
+  /** THE FORM THE FRAME ASKS FOR, taken off the frame itself; landscape reads none of what follows. */
+  const SIZE = width > height ? "landscape" : width === height ? "square" : "portrait";
+
   // ── header and footer ─────────────────────────────────────────────────────
   const column = width - PAD * 2;
-  const titleLines = wrap(set(title, display), column, display);
   const titleLead = leadOf(display);
   const bodyLead = leadOf(body);
-  const limitLines = wrap(set(limits, body), column, body);
   const sourceLines = wrap(set(source, body), column, body);
-  const readingLines = wrap(set(reading, annot), column, annot);
 
   const eyebrowBaseline = PAD + eyebrowReg.fontSize;
-  const titleTop = eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
-  const limitsTop = titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
+  /** THE EYEBROW IS THE LAST COPY RUNG, and it is only reachable off landscape. « Énergie · Europe »
+   *  is the one line on this plate that names nothing the plate cannot be read without: the
+   *  headline says which fuel, the standfirst says which year and which quantity, the credit says
+   *  who counted. Dropping it buys the display register's own gap plus the eyebrow's line —
+   *  measured at 1080x1080 in `nocturne`, 47px of a plot that was 47px short. */
+  const titleTopWithEyebrow =
+    eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
+  const titleTopWithout = PAD + display.fontSize;
   const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
-  const readingTop = sourceTop - readingLines.length * bodyLead - gapOf(annot, READING_TO_SOURCE);
+  const readingFor = (r: number) => {
+    const lines = wrap(set(reading[r], annot), column, annot);
+    return {
+      lines,
+      top: sourceTop - lines.length * bodyLead - gapOf(annot, READING_TO_SOURCE),
+    };
+  };
 
   // ── the columns ───────────────────────────────────────────────────────────
   const named = on("the-width-dimension-is-named-on-the-plate");
@@ -154,12 +169,97 @@ export function DirectedMarimekko({
   const labelFor = (key: string) =>
     columns[0].bands.find((b) => b.key === key)?.label ?? key;
 
-  const plotTop = limitsTop + limitLines.length * bodyLead + annotBand.ascent * 2.6;
   /** The brace and its total live under the plot; that is the width's own axis. */
   const braceRoom = named
     ? annotBand.ascent + annotBand.descent + valueBand.ascent + valueBand.descent + 26
     : annotBand.ascent + 8;
-  const plotBottom = readingTop - gapOf(annot, 1) - braceRoom;
+
+  /**
+   * THE REMOVAL LADDER. Measured at 1080x1080: the headline runs to four lines and the standfirst
+   * to five, the plot's top landed BELOW its own bottom, and the band names — which sit at band
+   * positions in the right gutter — were drawn straight through the standfirst: « Production
+   * électrique 2024, par » shared 68 % of « Bioénergie ». Nothing was mis-set; there was no plot.
+   *
+   * So the plot is owed a third of the frame, the share this tree gives a map at the same size, and
+   * the ladder removes until it is paid: the standfirst's shorter forms, then the headline's. There
+   * is no rung that drops the standfirst here — it is the only line that says the WIDTH is a
+   * quantity, which is the one thing a reader of this form must be told.
+   */
+  const CANDIDATE_ROWS: Array<{
+    title: number;
+    limit: number;
+    reading: number;
+    eyebrow: number;
+  }> = [];
+  const EYEBROW_RUNGS = SIZE === "landscape" ? [0] : [0, 1];
+  for (const e of EYEBROW_RUNGS)
+    for (let t = 0; t < title.length; t++)
+      for (let l = 0; l < limits.length; l++)
+        for (let r = 0; r < reading.length; r++)
+          CANDIDATE_ROWS.push({ title: t, limit: l, reading: r, eyebrow: e });
+  // The eyebrow comes first in the comparator, so it varies slowest and is therefore spent LAST:
+  // every combination of headline, standfirst and reading line is tried with the eyebrow on the
+  // plate before any of them is tried with it gone.
+  CANDIDATE_ROWS.sort(
+    (a, b) =>
+      a.eyebrow - b.eyebrow || a.reading - b.reading || a.limit - b.limit || a.title - b.title,
+  );
+  const headerFor = (t: number, l: number, e: number) => {
+    const titleTop = e ? titleTopWithout : titleTopWithEyebrow;
+    const titleLines = wrap(set(title[t], display), column, display);
+    const limitLines = wrap(set(limits[l], body), column, body);
+    const limitsTop = titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
+    return {
+      titleTop,
+      titleLines,
+      limitLines,
+      limitsTop,
+      plotTop: limitsTop + limitLines.length * bodyLead + annotBand.ascent * 2.6,
+    };
+  };
+  const plotOwed = SIZE === "landscape" ? 0 : height / 3;
+  const headers = CANDIDATE_ROWS.map((rung) => {
+    const head = headerFor(rung.title, rung.limit, rung.eyebrow);
+    const read = readingFor(rung.reading);
+    return { rung, head, read, bottom: read.top - gapOf(annot, 1) - braceRoom };
+  });
+  const chosen =
+    headers.find((h) => h.bottom - h.head.plotTop >= plotOwed) ??
+    headers.reduce((a, b) => (b.bottom - b.head.plotTop > a.bottom - a.head.plotTop ? b : a));
+  const { titleTop, titleLines, limitLines, limitsTop, plotTop } = chosen.head;
+  const eyebrowShown = chosen.rung.eyebrow === 0;
+  const readingLines = chosen.read.lines;
+  const readingTop = chosen.read.top;
+  const plotBottom = chosen.bottom;
+  /**
+   * AND THE OTHER AXIS HAS A FLOOR TOO, for the same reason the widths do.
+   *
+   * `NARROWEST_COLUMN_PX` refuses a column too narrow to encode its width. A stacked column that
+   * cannot give each of its bands one line of the register that prints its share has stopped
+   * encoding its HEIGHT in exactly the same way: the bands are drawn, the plate looks informative,
+   * and no share on it can be read. The floor is therefore the value register's own band, once per
+   * stacked band — measured, not chosen.
+   *
+   * MEASURED at 1080x1080 with every rung of the ladder spent: the plot comes to 109px in
+   * `rapport`, 69px in `creme` and 23px in `nocturne`, against the 112px eight bands owe. It is not
+   * a layout problem. The header, the width brace, the reading line and the credit are 466px of a
+   * 540px plate at their shortest forms, and this beat ships portrait and landscape instead.
+   */
+  const stackFloor =
+    SIZE === "landscape" ? 0 : bandOrder.length * (valueBand.ascent + valueBand.descent);
+  if (plotBottom - plotTop < stackFloor)
+    throw new Error(
+      `the plot is ${(plotBottom - plotTop).toFixed(0)}px tall at ${SIZE} with every rung of the ` +
+        `ladder spent, and ${bandOrder.length} stacked bands owe ${stackFloor.toFixed(0)}px — one ` +
+        `line of the value register each. Under that the height has stopped encoding anything, ` +
+        `which is `+`the width floor's own argument on the other axis. Ship the sizes that do work.`,
+    );
+  onLadder?.(
+    `ladder: headline ${chosen.rung.title + 1}, standfirst ${chosen.rung.limit + 1}, reading ` +
+      `${chosen.rung.reading + 1}, eyebrow ${eyebrowShown ? "kept" : "dropped"} \u00b7 plot ` +
+      `${(plotBottom - plotTop).toFixed(0)}px tall` +
+      (plotOwed ? `, owed ${plotOwed.toFixed(0)}` : ""),
+  );
 
   const GAP = 6;
   /** A GUTTER FOR THE NAMES, on the right. The bands are named once — every column stacks in the
@@ -281,9 +381,11 @@ export function DirectedMarimekko({
     >
       <rect x={0} y={0} width={width} height={height} fill={direction.ground} />
 
-      <text x={PAD} y={eyebrowBaseline} {...line(eyebrowReg)}>
-        {set(eyebrow, eyebrowReg)}
-      </text>
+      {eyebrowShown && (
+        <text x={PAD} y={eyebrowBaseline} {...line(eyebrowReg)}>
+          {set(eyebrow, eyebrowReg)}
+        </text>
+      )}
       {titleLines.map((l, i) => (
         <text key={l + i} x={PAD} y={titleTop + i * titleLead} {...line(display)}>
           {l}
@@ -321,30 +423,48 @@ export function DirectedMarimekko({
           names, on the other axis: push apart in order, then pull the overflow back inside the
           frame, and drop a tick from each name to the column it belongs to. */}
       {(() => {
-        const placed = laid.map((c) => ({
+        const all = laid.map((c) => ({
           column: c,
           x: c.x + c.w / 2,
           half: widthOf(set(c.label, annot), annot) / 2,
+          row: 0,
         }));
-        for (let i = 1; i < placed.length; i++)
-          placed[i].x = Math.max(placed[i].x, placed[i - 1].x + placed[i - 1].half + placed[i].half + 8);
         // The names may not spill into the band-name gutter: pushed against `width - PAD`, `SUISSE`
         // sat against `ÉOLIEN` in the direction whose annot register is tracked capitals.
         const rightEdge = width - PAD - nameGutter - 6;
-        const overflow = placed[placed.length - 1].x + placed[placed.length - 1].half - rightEdge;
-        if (overflow > 0) {
-          placed[placed.length - 1].x -= overflow;
-          for (let i = placed.length - 2; i >= 0; i--)
-            placed[i].x = Math.min(
-              placed[i].x,
-              placed[i + 1].x - placed[i + 1].half - placed[i].half - 8,
-            );
+        /** AND THEY MAY NOT SPILL OFF THE LEFT EITHER. One row of names needs the sum of their own
+         *  widths; on a 540px plate five of them need more than the band is wide, so the pull-back
+         *  pass walked the first one off the plate — measured at 1080x1920, « FRANCE » ran from -40
+         *  to -3. When one row will not hold them the names take TWO, alternating, so neighbours on
+         *  a row are two columns apart; it costs one line of the annot register above the plot and
+         *  it is the same move the heatmap's column heads make for the same reason. */
+        const needed =
+          all.reduce((sum, p) => sum + p.half * 2, 0) + 8 * (all.length - 1);
+        const rows = needed > rightEdge - PAD ? 2 : 1;
+        for (const [i, p] of all.entries()) p.row = i % rows;
+        for (let r = 0; r < rows; r++) {
+          const placed = all.filter((p) => p.row === r);
+          for (let i = 1; i < placed.length; i++)
+            placed[i].x = Math.max(placed[i].x, placed[i - 1].x + placed[i - 1].half + placed[i].half + 8);
+          const overflow = placed[placed.length - 1].x + placed[placed.length - 1].half - rightEdge;
+          if (overflow > 0) {
+            placed[placed.length - 1].x -= overflow;
+            for (let i = placed.length - 2; i >= 0; i--)
+              placed[i].x = Math.min(
+                placed[i].x,
+                placed[i + 1].x - placed[i + 1].half - placed[i].half - 8,
+              );
+          }
+          // and never off the left margin, whatever the pull-back did — the defect this whole pass
+          // exists for. Clamping alone, with no second push, keeps every name as near its own
+          // column as the row allows; a name moved further than that is a name a reader mis-reads.
+          for (const p of placed) p.x = Math.max(p.x, PAD + p.half);
         }
-        return placed.map(({ column: c, x: nameX }) => (
+        return all.map(({ column: c, x: nameX, row: nameRow }) => (
           <g key={`name-${c.key}`}>
             <text
               x={nameX}
-              y={plotTop - annotBand.ascent * 0.9}
+              y={plotTop - annotBand.ascent * 0.9 - nameRow * (annotBand.ascent + annotBand.descent + 3)}
               textAnchor="middle"
               {...line(annot)}
               fill={annot.fill}

@@ -77,14 +77,28 @@ console.log(
 );
 
 const share = Math.round(facts.shareBelowThreshold * 10);
-const title = `${share} in 10 European countries generated under ${THRESHOLD} TWh of solar power in 2024`;
-const limits = `Distribution of ${facts.observationCount} European countries' 2024 solar generation — each counts as one, unweighted by population or grid size. A handful of large producers sit far out to the right.`;
+/** THREE FORMS OF THE HEADLINE AND THREE OF THE STANDFIRST, LONGEST FIRST — the component's own
+ *  removal ladder spends them, and it spends the standfirst before the headline because that is the
+ *  order a desk cuts in. It has to spend them at all: measured at 1080x1080, the long forms run to
+ *  five lines each and leave the plot 25px of height against 390px of width, where the type's
+ *  measured range stops at 2.9:1. The short forms say less; what would be a defect is a
+ *  distribution flattened until its shape is gone, which is the one thing no counter here can see. */
+const title = [
+  `${share} in 10 European countries generated under ${THRESHOLD} TWh of solar power in 2024`,
+  `${share} in 10 European countries are under ${THRESHOLD} TWh of solar`,
+  `Europe's solar generation is concentrated in a few countries`,
+];
+const limits = [
+  `Distribution of ${facts.observationCount} European countries' 2024 solar generation — each counts as one, unweighted by population or grid size. A handful of large producers sit far out to the right.`,
+  `${facts.observationCount} European countries, each counting as one — unweighted by population or grid size. A handful of large producers sit far out to the right.`,
+  `${facts.observationCount} European countries, each counting as one.`,
+];
 const source = "Source: Ember, via Our World in Data (2024)";
 
 const textPerRegister = {
-  display: title,
+  display: title.join(" "),
   eyebrow: EYEBROW,
-  body: `${limits} ${source}`,
+  body: `${limits.join(" ")} ${source}`,
   axis: `${bins.map((b) => (b.open ? `${b.lo}+` : `${b.lo}–${b.hi}`)).join(" ")} ${UNIT}`,
   annot: `${facts.countBelowThreshold} of ${facts.observationCount} countries under ${THRESHOLD} ${UNIT}`,
   value: bins.map((b) => String(b.count)).join(" "),
@@ -154,6 +168,7 @@ for (const { label: id, direction: chosenDirection } of chosen) {
       eyebrow: EYEBROW,
       direction,
       treatments: offered.map((t) => t.id),
+      onLadder: (note) => console.log(`  ${note}`),
     }),
     // The beat pins `landscape` (1920 x 1080); 960 x 540 at scale 2 delivers exactly that.
     // THE SLOT'S OWN SIZE. `--size` picks it; landscape is what an article's column asks for.
@@ -163,5 +178,5 @@ for (const { label: id, direction: chosenDirection } of chosen) {
     name: nameAtSize(id, SIZE),
     scale: EXPORT_FRAME.scale,
   });
-  console.log(`  -> renders/${id}.png\n`);
+  console.log(`  -> renders/${nameAtSize(id, SIZE)}.png\n`);
 }

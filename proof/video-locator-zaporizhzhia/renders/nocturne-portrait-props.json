@@ -1,0 +1,1534 @@
+{
+  "frame": {
+    "width": 1080,
+    "height": 1920
+  },
+  "registers": {
+    "display": {
+      "fontFamily": "Montserrat",
+      "fontSize": 75.75,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 8.048437499999999,
+      "transform": "uppercase",
+      "lead": 92.4131214,
+      "fill": "#FFFFFF"
+    },
+    "eyebrow": {
+      "fontFamily": "Montserrat",
+      "fontSize": 36,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 9.852631578947369,
+      "transform": "uppercase",
+      "lead": 43.1994096,
+      "fill": "#4FE0C0"
+    },
+    "value": {
+      "fontFamily": "Montserrat",
+      "fontSize": 53.05,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 63.65912998,
+      "fill": "#4FE0C0"
+    },
+    "source": {
+      "fontFamily": "Montserrat",
+      "fontSize": 36,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 4.319999999999999,
+      "transform": "none",
+      "lead": 43.1994096,
+      "fill": "#a5a4b8"
+    }
+  },
+  "titleCard": {
+    "form": 0,
+    "register": {
+      "fontFamily": "Montserrat",
+      "fontSize": 75.75,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 8.048437499999999,
+      "transform": "uppercase",
+      "lead": 92.4131214,
+      "fill": "#FFFFFF"
+    },
+    "eyebrow": {
+      "text": "ÉNERGIE · EUROPE",
+      "x": 72,
+      "y": 699.9320068359375,
+      "width": 500.19343581952546
+    },
+    "title": [
+      {
+        "text": "LA PLUS",
+        "x": 72,
+        "y": 789.2048092751953,
+        "width": 367.34961738586424
+      },
+      {
+        "text": "GROSSE",
+        "x": 72,
+        "y": 881.6179306751953,
+        "width": 356.42267322540283
+      },
+      {
+        "text": "CENTRALE",
+        "x": 72,
+        "y": 974.0310520751952,
+        "width": 465.6163194656372
+      },
+      {
+        "text": "BAS-CARBONE",
+        "x": 72,
+        "y": 1066.4441734751954,
+        "width": 658.9114398956299
+      },
+      {
+        "text": "D’EUROPE EST",
+        "x": 72,
+        "y": 1158.8572948751953,
+        "width": 658.8545917510986
+      },
+      {
+        "text": "EN UKRAINE",
+        "x": 72,
+        "y": 1251.2704162751952,
+        "width": 558.0691791534424
+      }
+    ]
+  },
+  "credit": {
+    "form": 0,
+    "lines": [
+      {
+        "text": "WRI · Natural Earth · © MapTiler",
+        "x": 5.391720581054688,
+        "y": 32.10372619628906,
+        "width": 698.1480570268631
+      },
+      {
+        "text": "© OpenStreetMap",
+        "x": 5.391720581054688,
+        "y": 75.30313579628907,
+        "width": 386.92798874855043
+      }
+    ],
+    "halo": 10.783441162109376,
+    "width": 723,
+    "height": 88,
+    "at": {
+      "x": 112,
+      "y": 1727
+    },
+    "haloColour": "#152e67"
+  },
+  "colours": {
+    "ground": "#111044",
+    "sea": "#152e67",
+    "land": "#1c1b4c",
+    "story": "#30305c",
+    "border": "#3c3b66",
+    "region": "#535378",
+    "ring": "#4FE0C0",
+    "text": {
+      "eyebrow": "#4FE0C0",
+      "title": "#FFFFFF",
+      "area": "#a5a4b8",
+      "settlement": "#FFFFFF",
+      "water": "#6ba0cc",
+      "station": "#4FE0C0",
+      "source": "#a5a4b8"
+    }
+  },
+  "strokes": {
+    "border": 1.81872,
+    "region": 1.091232,
+    "ring": 4.849920000000001
+  },
+  "station": {
+    "lines": {
+      "name": {
+        "text": "Zaporijjia",
+        "width": 250.07769894599915,
+        "x": 520.1224555298796,
+        "y": 595.200883599935
+      },
+      "capacity": {
+        "x": 520.1224555298796,
+        "y": 654.7229783264975
+      },
+      "halo": 16.125076904296876,
+      "haloColour": "#1c1b4c"
+    },
+    "capacityTexts": {
+      "0": {
+        "text": "0 MW installés",
+        "width": 397.768892288208
+      },
+      "100": {
+        "text": "100 MW installés",
+        "width": 453.6835857927799
+      },
+      "200": {
+        "text": "200 MW installés",
+        "width": 464.3466412127018
+      },
+      "300": {
+        "text": "300 MW installés",
+        "width": 464.34665961936116
+      },
+      "400": {
+        "text": "400 MW installés",
+        "width": 469.4924511909485
+      },
+      "500": {
+        "text": "500 MW installés",
+        "width": 464.4527420401573
+      },
+      "600": {
+        "text": "600 MW installés",
+        "width": 466.73391914367676
+      },
+      "700": {
+        "text": "700 MW installés",
+        "width": 464.66493487358093
+      },
+      "800": {
+        "text": "800 MW installés",
+        "width": 468.0601408481598
+      },
+      "900": {
+        "text": "900 MW installés",
+        "width": 466.73392391204834
+      },
+      "1000": {
+        "text": "1 000 MW installés",
+        "width": 503.97499814629555
+      },
+      "1100": {
+        "text": "1 100 MW installés",
+        "width": 488.48439756035805
+      },
+      "1200": {
+        "text": "1 200 MW installés",
+        "width": 499.14748349785805
+      },
+      "1300": {
+        "text": "1 300 MW installés",
+        "width": 499.14748349785805
+      },
+      "1400": {
+        "text": "1 400 MW installés",
+        "width": 504.2932964861393
+      },
+      "1500": {
+        "text": "1 500 MW installés",
+        "width": 499.25356259942055
+      },
+      "1600": {
+        "text": "1 600 MW installés",
+        "width": 501.53469052910805
+      },
+      "1700": {
+        "text": "1 700 MW installés",
+        "width": 499.4657818377018
+      },
+      "1800": {
+        "text": "1 800 MW installés",
+        "width": 502.86098447442055
+      },
+      "1900": {
+        "text": "1 900 MW installés",
+        "width": 501.53469052910805
+      },
+      "2000": {
+        "text": "2 000 MW installés",
+        "width": 514.6381451189518
+      },
+      "2100": {
+        "text": "2 100 MW installés",
+        "width": 499.14748349785805
+      },
+      "2200": {
+        "text": "2 200 MW installés",
+        "width": 509.8105084002018
+      },
+      "2300": {
+        "text": "2 300 MW installés",
+        "width": 509.8105084002018
+      },
+      "2400": {
+        "text": "2 400 MW installés",
+        "width": 514.9564434587955
+      },
+      "2500": {
+        "text": "2 500 MW installés",
+        "width": 509.9165875017643
+      },
+      "2600": {
+        "text": "2 600 MW installés",
+        "width": 512.1978069841862
+      },
+      "2700": {
+        "text": "2 700 MW installés",
+        "width": 510.12880674004555
+      },
+      "2800": {
+        "text": "2 800 MW installés",
+        "width": 513.5240704119205
+      },
+      "2900": {
+        "text": "2 900 MW installés",
+        "width": 512.1978069841862
+      },
+      "3000": {
+        "text": "3 000 MW installés",
+        "width": 514.638133008033
+      },
+      "3100": {
+        "text": "3 100 MW installés",
+        "width": 499.1475019045174
+      },
+      "3200": {
+        "text": "3 200 MW installés",
+        "width": 509.81052680686116
+      },
+      "3300": {
+        "text": "3 300 MW installés",
+        "width": 509.81052680686116
+      },
+      "3400": {
+        "text": "3 400 MW installés",
+        "width": 514.9564313478768
+      },
+      "3500": {
+        "text": "3 500 MW installés",
+        "width": 509.91660590842366
+      },
+      "3600": {
+        "text": "3 600 MW installés",
+        "width": 512.1978253908455
+      },
+      "3700": {
+        "text": "3 700 MW installés",
+        "width": 510.1288251467049
+      },
+      "3800": {
+        "text": "3 800 MW installés",
+        "width": 513.5240583010018
+      },
+      "3900": {
+        "text": "3 900 MW installés",
+        "width": 512.1978253908455
+      },
+      "4000": {
+        "text": "4 000 MW installés",
+        "width": 519.7839245796204
+      },
+      "4100": {
+        "text": "4 100 MW installés",
+        "width": 504.29329347610474
+      },
+      "4200": {
+        "text": "4 200 MW installés",
+        "width": 514.9564099311829
+      },
+      "4300": {
+        "text": "4 300 MW installés",
+        "width": 514.9564099311829
+      },
+      "4400": {
+        "text": "4 400 MW installés",
+        "width": 520.1022229194641
+      },
+      "4500": {
+        "text": "4 500 MW installés",
+        "width": 515.0624890327454
+      },
+      "4600": {
+        "text": "4 600 MW installés",
+        "width": 517.3436169624329
+      },
+      "4700": {
+        "text": "4 700 MW installés",
+        "width": 515.2747082710266
+      },
+      "4800": {
+        "text": "4 800 MW installés",
+        "width": 518.6699109077454
+      },
+      "4900": {
+        "text": "4 900 MW installés",
+        "width": 517.3436169624329
+      },
+      "5000": {
+        "text": "5 000 MW installés",
+        "width": 514.7442154288292
+      },
+      "5100": {
+        "text": "5 100 MW installés",
+        "width": 499.25358432531357
+      },
+      "5200": {
+        "text": "5 200 MW installés",
+        "width": 509.9166092276573
+      },
+      "5300": {
+        "text": "5 300 MW installés",
+        "width": 509.9166092276573
+      },
+      "5400": {
+        "text": "5 400 MW installés",
+        "width": 515.0625137686729
+      },
+      "5500": {
+        "text": "5 500 MW installés",
+        "width": 510.02274936437607
+      },
+      "5600": {
+        "text": "5 600 MW installés",
+        "width": 512.3039078116417
+      },
+      "5700": {
+        "text": "5 700 MW installés",
+        "width": 510.23490756750107
+      },
+      "5800": {
+        "text": "5 800 MW installés",
+        "width": 513.6301407217979
+      },
+      "5900": {
+        "text": "5 900 MW installés",
+        "width": 512.3039078116417
+      },
+      "6000": {
+        "text": "6 000 MW installés",
+        "width": 517.0253009796143
+      }
+    }
+  },
+  "layoutInset": {
+    "x": 72,
+    "y": 85
+  },
+  "mapPlan": {
+    "styleUrl": "https://api.maptiler.com/maps/dataviz/style.json?key=__MAPTILER_KEY__",
+    "styleName": "dataviz",
+    "projection": "mercator",
+    "tints": {
+      "water": "#152e67",
+      "land": "#1c1b4c"
+    },
+    "referenceWidth": 1080,
+    "referenceHeight": 1920,
+    "degreesPerPixel": 1,
+    "camera": {
+      "view": {
+        "center": [
+          10,
+          57.63482299453212
+        ],
+        "zoom": 3.4393856764355393,
+        "bearing": 0,
+        "pitch": 0
+      }
+    },
+    "layers": [
+      {
+        "id": "story",
+        "type": "fill",
+        "beneath": "water",
+        "source": {
+          "type": "vector",
+          "url": "https://api.maptiler.com/tiles/countries/tiles.json?key=__MAPTILER_KEY__"
+        },
+        "sourceLayer": "administrative",
+        "filter": [
+          "all",
+          [
+            "==",
+            [
+              "get",
+              "level"
+            ],
+            0
+          ],
+          [
+            "==",
+            [
+              "get",
+              "iso_a2"
+            ],
+            "UA"
+          ]
+        ],
+        "paint": {
+          "fill-color": "#30305c",
+          "fill-opacity": 0
+        },
+        "bindings": {
+          "fill-opacity": {
+            "$state": "country"
+          }
+        }
+      },
+      {
+        "id": "regions",
+        "type": "line",
+        "beneath": "water",
+        "source": {
+          "type": "vector",
+          "url": "https://api.maptiler.com/tiles/countries/tiles.json?key=__MAPTILER_KEY__"
+        },
+        "sourceLayer": "administrative",
+        "filter": [
+          "all",
+          [
+            "==",
+            [
+              "get",
+              "level"
+            ],
+            1
+          ],
+          [
+            "==",
+            [
+              "get",
+              "iso_a2"
+            ],
+            "UA"
+          ]
+        ],
+        "layout": {
+          "line-join": "round",
+          "line-cap": "round"
+        },
+        "paint": {
+          "line-color": "#535378",
+          "line-width": 1.091232,
+          "line-opacity": 0
+        },
+        "bindings": {
+          "line-opacity": {
+            "$state": "regions"
+          }
+        }
+      },
+      {
+        "id": "borders",
+        "type": "line",
+        "beneath": "water",
+        "source": {
+          "type": "vector",
+          "url": "https://api.maptiler.com/tiles/countries/tiles.json?key=__MAPTILER_KEY__"
+        },
+        "sourceLayer": "administrative",
+        "filter": [
+          "==",
+          [
+            "get",
+            "level"
+          ],
+          0
+        ],
+        "layout": {
+          "line-join": "round"
+        },
+        "paint": {
+          "line-color": "#3c3b66",
+          "line-width": 1.81872
+        }
+      },
+      {
+        "id": "place-dots",
+        "type": "circle",
+        "data": {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "properties": {},
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  30.5147,
+                  50.4353
+                ]
+              }
+            },
+            {
+              "type": "Feature",
+              "properties": {},
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  26.098,
+                  44.4353
+                ]
+              }
+            },
+            {
+              "type": "Feature",
+              "properties": {},
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  36.2481,
+                  50.0019
+                ]
+              }
+            },
+            {
+              "type": "Feature",
+              "properties": {},
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  39.7107,
+                  47.2366
+                ]
+              }
+            },
+            {
+              "type": "Feature",
+              "properties": {},
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  34.9981,
+                  48.4819
+                ]
+              }
+            },
+            {
+              "type": "Feature",
+              "properties": {},
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  30.7081,
+                  46.492
+                ]
+              }
+            }
+          ]
+        },
+        "paint": {
+          "circle-color": "#1c1b4c",
+          "circle-radius": 5.001393004560001,
+          "circle-opacity": 0,
+          "circle-stroke-color": "#FFFFFF",
+          "circle-stroke-width": 2.72808,
+          "circle-stroke-opacity": 0
+        },
+        "bindings": {
+          "circle-opacity": {
+            "$state": "names"
+          },
+          "circle-stroke-opacity": {
+            "$state": "names"
+          }
+        }
+      },
+      {
+        "id": "name-water:Mer Noire",
+        "type": "symbol",
+        "data": {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "properties": {
+                "text": "Mer Noire"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  33.5,
+                  43.6
+                ]
+              }
+            }
+          ]
+        },
+        "layout": {
+          "text-field": [
+            "get",
+            "text"
+          ],
+          "text-font": [
+            "Montserrat Medium Italic"
+          ],
+          "text-size": 37.89,
+          "text-letter-spacing": 0,
+          "text-anchor": "center",
+          "text-max-width": 100,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true
+        },
+        "paint": {
+          "text-color": "#6ba0cc",
+          "text-halo-color": "#152e67",
+          "text-halo-width": 5.713432922363282,
+          "text-opacity": 0
+        },
+        "bindings": {
+          "text-opacity": {
+            "$state": "names"
+          }
+        }
+      },
+      {
+        "id": "name-water:Mer d’Azov",
+        "type": "symbol",
+        "data": {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "properties": {
+                "text": "Mer d’Azov"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  36.5,
+                  46.2
+                ]
+              }
+            }
+          ]
+        },
+        "layout": {
+          "text-field": [
+            "get",
+            "text"
+          ],
+          "text-font": [
+            "Montserrat Medium Italic"
+          ],
+          "text-size": 37.89,
+          "text-letter-spacing": 0,
+          "text-anchor": "center",
+          "text-max-width": 100,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true
+        },
+        "paint": {
+          "text-color": "#6ba0cc",
+          "text-halo-color": "#152e67",
+          "text-halo-width": 5.713432922363282,
+          "text-opacity": 0
+        },
+        "bindings": {
+          "text-opacity": {
+            "$state": "names"
+          }
+        }
+      },
+      {
+        "id": "name-water:Dniepr",
+        "type": "symbol",
+        "data": {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "properties": {
+                "text": "Dniepr"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  33.1,
+                  46.8
+                ]
+              }
+            }
+          ]
+        },
+        "layout": {
+          "text-field": [
+            "get",
+            "text"
+          ],
+          "text-font": [
+            "Montserrat Medium Italic"
+          ],
+          "text-size": 37.89,
+          "text-letter-spacing": 0,
+          "text-anchor": "center",
+          "text-max-width": 100,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true
+        },
+        "paint": {
+          "text-color": "#6ba0cc",
+          "text-halo-color": "#30305c",
+          "text-halo-width": 5.713432922363282,
+          "text-opacity": 0
+        },
+        "bindings": {
+          "text-opacity": {
+            "$state": "names"
+          }
+        }
+      },
+      {
+        "id": "name-place:Kyiv",
+        "type": "symbol",
+        "data": {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "properties": {
+                "text": "Kiev"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  31.863433,
+                  50.4353
+                ]
+              }
+            }
+          ]
+        },
+        "layout": {
+          "text-field": [
+            "get",
+            "text"
+          ],
+          "text-font": [
+            "Montserrat Medium"
+          ],
+          "text-size": 37.89,
+          "text-letter-spacing": 0.18,
+          "text-anchor": "center",
+          "text-max-width": 100,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true
+        },
+        "paint": {
+          "text-color": "#FFFFFF",
+          "text-halo-color": "#30305c",
+          "text-halo-width": 5.67478759765625,
+          "text-opacity": 0
+        },
+        "bindings": {
+          "text-opacity": {
+            "$state": "names"
+          }
+        }
+      },
+      {
+        "id": "name-place:Bucharest",
+        "type": "symbol",
+        "data": {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "properties": {
+                "text": "Bucarest"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  28.413876,
+                  44.4353
+                ]
+              }
+            }
+          ]
+        },
+        "layout": {
+          "text-field": [
+            "get",
+            "text"
+          ],
+          "text-font": [
+            "Montserrat Medium"
+          ],
+          "text-size": 37.89,
+          "text-letter-spacing": 0.18,
+          "text-anchor": "center",
+          "text-max-width": 100,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true
+        },
+        "paint": {
+          "text-color": "#FFFFFF",
+          "text-halo-color": "#1c1b4c",
+          "text-halo-width": 5.67478759765625,
+          "text-opacity": 0
+        },
+        "bindings": {
+          "text-opacity": {
+            "$state": "names"
+          }
+        }
+      },
+      {
+        "id": "name-place:Kharkiv",
+        "type": "symbol",
+        "data": {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "properties": {
+                "text": "Kharkiv"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  38.302535,
+                  50.0019
+                ]
+              }
+            }
+          ]
+        },
+        "layout": {
+          "text-field": [
+            "get",
+            "text"
+          ],
+          "text-font": [
+            "Montserrat Medium"
+          ],
+          "text-size": 37.89,
+          "text-letter-spacing": 0.18,
+          "text-anchor": "center",
+          "text-max-width": 100,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true
+        },
+        "paint": {
+          "text-color": "#FFFFFF",
+          "text-halo-color": "#30305c",
+          "text-halo-width": 5.67478759765625,
+          "text-opacity": 0
+        },
+        "bindings": {
+          "text-opacity": {
+            "$state": "names"
+          }
+        }
+      },
+      {
+        "id": "name-place:Rostov",
+        "type": "symbol",
+        "data": {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "properties": {
+                "text": "Rostov"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  41.576948,
+                  47.2366
+                ]
+              }
+            }
+          ]
+        },
+        "layout": {
+          "text-field": [
+            "get",
+            "text"
+          ],
+          "text-font": [
+            "Montserrat Medium"
+          ],
+          "text-size": 37.89,
+          "text-letter-spacing": 0.18,
+          "text-anchor": "center",
+          "text-max-width": 100,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true
+        },
+        "paint": {
+          "text-color": "#FFFFFF",
+          "text-halo-color": "#1c1b4c",
+          "text-halo-width": 5.67478759765625,
+          "text-opacity": 0
+        },
+        "bindings": {
+          "text-opacity": {
+            "$state": "names"
+          }
+        }
+      },
+      {
+        "id": "name-place:Dnipro",
+        "type": "symbol",
+        "data": {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "properties": {
+                "text": "Dnipro"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  36.870663,
+                  48.4819
+                ]
+              }
+            }
+          ]
+        },
+        "layout": {
+          "text-field": [
+            "get",
+            "text"
+          ],
+          "text-font": [
+            "Montserrat Medium"
+          ],
+          "text-size": 37.89,
+          "text-letter-spacing": 0.18,
+          "text-anchor": "center",
+          "text-max-width": 100,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true
+        },
+        "paint": {
+          "text-color": "#FFFFFF",
+          "text-halo-color": "#30305c",
+          "text-halo-width": 5.67478759765625,
+          "text-opacity": 0
+        },
+        "bindings": {
+          "text-opacity": {
+            "$state": "names"
+          }
+        }
+      },
+      {
+        "id": "name-place:Odessa",
+        "type": "symbol",
+        "data": {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "properties": {
+                "text": "Odessa"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  32.640023,
+                  46.055466
+                ]
+              }
+            }
+          ]
+        },
+        "layout": {
+          "text-field": [
+            "get",
+            "text"
+          ],
+          "text-font": [
+            "Montserrat Medium"
+          ],
+          "text-size": 37.89,
+          "text-letter-spacing": 0.18,
+          "text-anchor": "center",
+          "text-max-width": 100,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true
+        },
+        "paint": {
+          "text-color": "#FFFFFF",
+          "text-halo-color": "#30305c",
+          "text-halo-width": 5.67478759765625,
+          "text-opacity": 0
+        },
+        "bindings": {
+          "text-opacity": {
+            "$state": "names"
+          }
+        }
+      },
+      {
+        "id": "name-area:UKR",
+        "type": "symbol",
+        "data": {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "properties": {
+                "text": "UKRAINE"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  32.755756,
+                  48.531855
+                ]
+              }
+            }
+          ]
+        },
+        "layout": {
+          "text-field": [
+            "get",
+            "text"
+          ],
+          "text-font": [
+            "Montserrat Regular"
+          ],
+          "text-size": 37.89,
+          "text-letter-spacing": 0.11999999999999998,
+          "text-anchor": "center",
+          "text-max-width": 100,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true
+        },
+        "paint": {
+          "text-color": "#a5a4b8",
+          "text-halo-color": "#30305c",
+          "text-halo-width": 5.67478759765625,
+          "text-opacity": 0
+        },
+        "bindings": {
+          "text-opacity": {
+            "$state": "names"
+          }
+        }
+      },
+      {
+        "id": "name-area:RUS",
+        "type": "symbol",
+        "data": {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "properties": {
+                "text": "RUSSIE"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  39.990323,
+                  46.500266
+                ]
+              }
+            }
+          ]
+        },
+        "layout": {
+          "text-field": [
+            "get",
+            "text"
+          ],
+          "text-font": [
+            "Montserrat Regular"
+          ],
+          "text-size": 37.89,
+          "text-letter-spacing": 0.11999999999999998,
+          "text-anchor": "center",
+          "text-max-width": 100,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true
+        },
+        "paint": {
+          "text-color": "#a5a4b8",
+          "text-halo-color": "#1c1b4c",
+          "text-halo-width": 5.67478759765625,
+          "text-opacity": 0
+        },
+        "bindings": {
+          "text-opacity": {
+            "$state": "names"
+          }
+        }
+      },
+      {
+        "id": "name-area:ROU",
+        "type": "symbol",
+        "data": {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "properties": {
+                "text": "ROUMANIE"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  28.023225,
+                  46.938836
+                ]
+              }
+            }
+          ]
+        },
+        "layout": {
+          "text-field": [
+            "get",
+            "text"
+          ],
+          "text-font": [
+            "Montserrat Regular"
+          ],
+          "text-size": 37.89,
+          "text-letter-spacing": 0.11999999999999998,
+          "text-anchor": "center",
+          "text-max-width": 100,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true
+        },
+        "paint": {
+          "text-color": "#a5a4b8",
+          "text-halo-color": "#1c1b4c",
+          "text-halo-width": 5.67478759765625,
+          "text-opacity": 0
+        },
+        "bindings": {
+          "text-opacity": {
+            "$state": "names"
+          }
+        }
+      },
+      {
+        "id": "name-area:BLR",
+        "type": "symbol",
+        "data": {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "properties": {
+                "text": "BIÉLORUSSIE"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  29.324188,
+                  51.993994
+                ]
+              }
+            }
+          ]
+        },
+        "layout": {
+          "text-field": [
+            "get",
+            "text"
+          ],
+          "text-font": [
+            "Montserrat Regular"
+          ],
+          "text-size": 37.89,
+          "text-letter-spacing": 0.11999999999999998,
+          "text-anchor": "center",
+          "text-max-width": 100,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true
+        },
+        "paint": {
+          "text-color": "#a5a4b8",
+          "text-halo-color": "#1c1b4c",
+          "text-halo-width": 5.67478759765625,
+          "text-opacity": 0
+        },
+        "bindings": {
+          "text-opacity": {
+            "$state": "names"
+          }
+        }
+      },
+      {
+        "id": "station-ring",
+        "type": "circle",
+        "data": {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "properties": {},
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  34.5863,
+                  47.5119
+                ]
+              }
+            }
+          ]
+        },
+        "paint": {
+          "circle-color": "#4FE0C0",
+          "circle-opacity": 0,
+          "circle-radius": 37.57504,
+          "circle-stroke-color": "#4FE0C0",
+          "circle-stroke-width": 4.849920000000001,
+          "circle-stroke-opacity": 0
+        },
+        "bindings": {
+          "circle-radius": [
+            "-",
+            [
+              "+",
+              40,
+              [
+                "*",
+                -18,
+                {
+                  "$state": "zoom"
+                }
+              ]
+            ],
+            2.4249600000000004
+          ],
+          "circle-stroke-opacity": {
+            "$state": "country"
+          }
+        }
+      },
+      {
+        "id": "station-dot",
+        "type": "circle",
+        "data": {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "properties": {},
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  34.5863,
+                  47.5119
+                ]
+              }
+            }
+          ]
+        },
+        "paint": {
+          "circle-color": "#4FE0C0",
+          "circle-radius": 11.457779408208001,
+          "circle-opacity": 0
+        },
+        "bindings": {
+          "circle-opacity": {
+            "$state": "country"
+          }
+        }
+      },
+      {
+        "id": "overview-name",
+        "type": "symbol",
+        "data": {
+          "type": "FeatureCollection",
+          "features": [
+            {
+              "type": "Feature",
+              "properties": {
+                "text": "UKRAINE"
+              },
+              "geometry": {
+                "type": "Point",
+                "coordinates": [
+                  31.006212,
+                  50.811933
+                ]
+              }
+            }
+          ]
+        },
+        "layout": {
+          "text-field": [
+            "get",
+            "text"
+          ],
+          "text-font": [
+            "Montserrat Regular"
+          ],
+          "text-size": 37.89,
+          "text-letter-spacing": 0.11999999999999998,
+          "text-anchor": "center",
+          "text-max-width": 100,
+          "text-allow-overlap": true,
+          "text-ignore-placement": true
+        },
+        "paint": {
+          "text-color": "#a5a4b8",
+          "text-halo-color": "#30305c",
+          "text-halo-width": 5.67478759765625,
+          "text-opacity": 0
+        },
+        "bindings": {
+          "text-opacity": [
+            "*",
+            {
+              "$state": "country"
+            },
+            [
+              "-",
+              1,
+              [
+                "min",
+                1,
+                [
+                  "*",
+                  3,
+                  {
+                    "$state": "zoom"
+                  }
+                ]
+              ]
+            ]
+          ]
+        }
+      }
+    ]
+  },
+  "cameras": {
+    "whole": {
+      "camX": 0.5277777777777778,
+      "camY": 0.30309444703048355,
+      "camZoom": 3.4393856764355393,
+      "camBearing": 0,
+      "camPitch": 0
+    },
+    "closeUp": {
+      "camX": 0.5960730555555556,
+      "camY": 0.3496311755571549,
+      "camZoom": 5.398743691938192,
+      "camBearing": 0,
+      "camPitch": 0
+    }
+  },
+  "capacity": 6000,
+  "states": [
+    {
+      "title": 1,
+      "country": 0,
+      "zoom": 0,
+      "regions": 0,
+      "names": 0,
+      "subject": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "country": 1,
+      "zoom": 0,
+      "regions": 0,
+      "names": 0,
+      "subject": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "country": 1,
+      "zoom": 1,
+      "regions": 1,
+      "names": 1,
+      "subject": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "country": 1,
+      "zoom": 1,
+      "regions": 1,
+      "names": 1,
+      "subject": 1,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "country": 1,
+      "zoom": 1,
+      "regions": 1,
+      "names": 1,
+      "subject": 1,
+      "source": 1
+    },
+    {
+      "title": 0,
+      "country": 1,
+      "zoom": 1,
+      "regions": 1,
+      "names": 1,
+      "subject": 1,
+      "source": 1
+    }
+  ],
+  "timing": {
+    "fps": 30,
+    "total": 528,
+    "establish": {
+      "start": 0,
+      "duration": 45
+    },
+    "reference": {
+      "start": 51,
+      "duration": 75
+    },
+    "reveal": {
+      "start": 132,
+      "duration": 135
+    },
+    "subject": {
+      "start": 273,
+      "duration": 105
+    },
+    "conclusion": {
+      "start": 378,
+      "duration": 60
+    },
+    "hold": {
+      "start": 438,
+      "duration": 90
+    }
+  },
+  "fontFamily": null,
+  "faces": [
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 400,
+      "weightTo": 400,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 500,
+      "weightTo": 500,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 600,
+      "weightTo": 600,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    }
+  ]
+}

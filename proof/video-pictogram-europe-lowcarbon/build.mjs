@@ -8,7 +8,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { adjustToContrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
+import { frameInsetFor, sizeFor, videoExportSize } from "#shared/chart-video/sizes.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
@@ -23,7 +23,9 @@ import { PICTOGRAM_VIDEO_TIMING } from "./timing-contract.ts";
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const ROOT = join(HERE, "..", "..");
 export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
-export const SIZE = "landscape";
+/** The size this run exports at — `--size`, landscape when nothing asks. R2 names three and
+ *  everything under it already answered per size; only this line pinned the beat to one. */
+export const SIZE = videoExportSize();
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 const NB = "\u00A0";
 const LABEL_GAP = 0.4;
@@ -47,7 +49,11 @@ export function copyOf(subject) {
     title: [`L’Europe électrique est aux deux bouts${NB}: ${subject.counts[1]}${NB}pays seulement au milieu`, `Aux deux bouts, ${subject.counts[1]}${NB}pays au milieu`],
     count: (n) => `${n}${NB}pays`,
     zero: `0${NB}%`,
-    hundred: `100${NB}% bas-carbone`,
+    /** THE AXIS'S FAR END IS A MEASURE, NOT A STRING. It shares one line with « 0 % » and the two cut words, and the line is
+     *  the axis's own width: 1750px at 1920 holds the unit spelled out, 936px at 1080 does not — measured 2026-09-23, where
+     *  « 100 % bas-carbone » ran into « 60 % » the moment the axis parted. The forms are tried in order and the first that
+     *  clears every word at every moment is the one drawn; landscape takes the first, so nothing delivered moves. */
+    hundred: [`100${NB}% bas-carbone`, `100${NB}%`],
     cuts: [`${LOW}${NB}%`, `${HIGH}${NB}%`],
     source: [
       "Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data",
@@ -63,7 +69,7 @@ export function textPerRegisterOf(copy, subject) {
     body: copy.source.join(" "),
     annot: "",
     value: `${subject.counts.map(copy.count).join(" ")} 0123456789`,
-    axis: `${copy.zero} ${copy.hundred} ${copy.cuts.join(" ")} ${copy.source.join(" ")}`,
+    axis: `${copy.zero} ${copy.hundred.join(" ")} ${copy.cuts.join(" ")} ${copy.source.join(" ")}`,
   };
 }
 
@@ -97,11 +103,31 @@ export function buildDirection(id, { subject, states, copy }) {
 
   // THE CELL: the largest that lays the twenty columns and both gaps across the content width, and stands the tallest column,
   // its count over it and the axis words under it between the top margin and the credit.
-  const rows = subject.tallest;
   const above = gapText + valueBand.ascent + valueBand.descent;
   const below = gapText + band.ascent + band.descent;
   /** The picture keeps a lead of air over the credit. */
   const room = creditAt.y - axis.lead - vInset;
+  /** The ring stands over the middle's count: its reach is room the closed picture keeps above it. */
+  const ringReach = RING_PAD * value.fontSize + rule * k * 2.5;
+
+  // HOW DEEP A BLOCK STACKS IS A LADDER, NOT THE TALLEST COLUMN OF THE AXIS.
+  //
+  // The axis's own picture is as tall as its tallest five-point column — six countries — and that is data. How deep the
+  // three blocks stack once the parts gather is not: eighteen countries are three columns of six, or two of nine, or one
+  // of eighteen, and each shape asks the frame for a different rectangle. Six was the right depth for 1920x1080, where
+  // the closed picture came out 936x432. At 1080x1920 the same six leave a 432px band adrift in 1617px of frame
+  // (measured 2026-09-23) — the drawing is not wrong, it is a strip in the middle of nothing.
+  //
+  // So the depth is stepped and the one that draws the LARGEST SQUARE wins: a square is the unit this form counts in, and
+  // the largest square is the shape that fills its frame. The step starts at the axis's own tallest column and only rises
+  // where rising strictly wins, so 1920x1080 keeps the six it was cut with.
+  const deepest = Math.max(...subject.counts);
+  const cellFAt = (r) => {
+    const units = subject.counts.reduce((t, n) => t + Math.ceil(n / r), 0) + 2 * CLOSED_GAP_CELLS;
+    return Math.min((stage.width - 2 * inset) / units, (room - ringReach - above - below) / r);
+  };
+  let rows = subject.tallest;
+  for (let r = subject.tallest + 1; r <= deepest; r++) if (cellFAt(r) > cellFAt(rows)) rows = r;
   const cell = Math.min((stage.width - 2 * inset) / (COLUMNS + 2 * SPLIT_CELLS), (room - above - below) / rows);
   const gap = SPLIT_CELLS * cell;
   const inner = (cell * SEPARATION) / 2;
@@ -181,8 +207,6 @@ export function buildDirection(id, { subject, states, copy }) {
   // words between the top margin and the credit.
   const blockColumns = subject.counts.map((n) => Math.ceil(n / rows));
   const units = blockColumns.reduce((t, n) => t + n, 0) + 2 * CLOSED_GAP_CELLS;
-  // The ring stands over the middle's count: its reach is room the closed picture keeps above it.
-  const ringReach = RING_PAD * value.fontSize + rule * k * 2.5;
   const cellF = Math.min((stage.width - 2 * inset) / units, (room - ringReach - above - below) / rows);
   const innerF = (cellF * SEPARATION) / 2;
   const sideF = cellF - 2 * innerF;
@@ -205,30 +229,36 @@ export function buildDirection(id, { subject, states, copy }) {
     { from: [cuts[1].from, axisRight], final: [blockX[2] - cellF / 2, blockX[2] + blockColumns[2] * cellF] },
   ];
   const cutsAll = cuts.map((c, n) => ({ ...c, final: blockX[n] + blockColumns[n] * cellF + gapF / 2, top: baseline - rows * cell, topF: baselineF - rows * cellF }));
+  // A COUNT IS CENTRED ON ITS BLOCK AND PULLED BACK INSIDE THE FRAME. Measured 2026-09-23: at 1080 the first block stands
+  // four columns wide against the left margin, so « 18 pays » centred on it hangs 17px off the frame. The pull-back is
+  // measured on the WIDEST word the counter ever shows, so a count does not shuffle sideways as it climbs. Nothing moves
+  // at 1920, where no count reaches a margin.
   const counters = subject.counts.map((count, b) => {
     const e = extentOf(b, slots);
     const f = extentOf(b, finals);
-    return { count, centre: (e.from + e.to + side) / 2, centreF: (f.from + f.to + sideF) / 2, words: counterWords[b] };
+    const half = Math.max(...Object.values(counterWords[b]).map((w) => drawn(w.width))) / 2;
+    const held = (x) => Math.min(Math.max(x, inset + half), stage.width - inset - half);
+    return { count, centre: held((e.from + e.to + side) / 2), centreF: held((f.from + f.to + sideF) / 2), words: counterWords[b] };
   });
 
   // THE AXIS WORDS.
   const wordsLift = gapText + band.ascent;
   const zero = measure(copy.zero, axis);
-  const hundred = measure(copy.hundred, axis);
-  const ends = {
-    zero: { ...zero, x: axisLeft, finalX: blockX[0] },
-    hundred: { ...hundred, x: axisRight - drawn(hundred.width), finalX: blockX[2] + blockColumns[2] * cellF - drawn(hundred.width) },
-  };
   const cutWords = copy.cuts.map((t) => {
     const w = measure(t, axis);
     return { ...w, half: drawn(w.width) / 2 };
   });
-  const layout = { baseline, baselineF, shift, segments, cuts: cutsAll, ends, cutWords, wordsLift, counters, counterLift, counterLiftF: rows * cellF + gapText + valueBand.descent, cell, cellF, side, sideF };
+  const counterLiftF = rows * cellF + gapText + valueBand.descent;
+  const layoutOf = (ends) => ({ baseline, baselineF, shift, segments, cuts: cutsAll, ends, cutWords, wordsLift, counters, counterLift, counterLiftF, cell, cellF, side, sideF });
+  const endsFor = (hundred) => ({
+    zero: { ...zero, x: axisLeft, finalX: blockX[0] },
+    hundred: { ...hundred, x: axisRight - drawn(hundred.width), finalX: blockX[2] + blockColumns[2] * cellF - drawn(hundred.width) },
+  });
 
   // THE RING round the middle's count, where the pictogram closes.
   const middle = counterWords[1][String(subject.counts[1])];
   const ringH = valueBand.ascent + valueBand.descent + 2 * RING_PAD * value.fontSize;
-  const ring = { x: counters[1].centreF - drawn(middle.width) / 2 - ringH / 2, y: baselineF - layout.counterLiftF - valueBand.ascent - RING_PAD * value.fontSize, w: drawn(middle.width) + ringH, h: ringH };
+  const ring = { x: counters[1].centreF - drawn(middle.width) / 2 - ringH / 2, y: baselineF - counterLiftF - valueBand.ascent - RING_PAD * value.fontSize, w: drawn(middle.width) + ringH, h: ringH };
   if (!(ring.y + ring.h < baselineF - rows * cellF)) throw new Error("the ring reaches down to the squares");
 
   // EVERY WORD CLEAR OF EVERY OTHER, the frame's margins held: as the axis parts (a cut's word arriving once it has parted
@@ -237,6 +267,7 @@ export function buildDirection(id, { subject, states, copy }) {
     ...[0, CUT_WORDS_FROM, 1].map((split) => ({ split, close: 0, counts: false })),
     ...[0, 0.25, 0.5, 0.75, 1].map((close) => ({ split: 1, close, counts: true })),
   ];
+  const clashesFor = (hundred, layout) => {
   for (const m of moments) {
     const at = layoutAt(layout, m.split, m.close);
     const words = [
@@ -250,13 +281,29 @@ export function buildDirection(id, { subject, states, copy }) {
       ...(m.close === 1 ? [{ what: "the ring", box: ring }] : []),
       { what: "the credit", box: { x: creditAt.x, y: creditAt.y, w: credit.width, h: credit.height } },
     ];
-    words.forEach((a, i) => {
-      if (a.box.y < vInset) throw new Error(`${a.what} rises above the frame's top margin`);
-      if (a.box.x < inset - 1 || a.box.x + a.box.w > stage.width - inset + 1) throw new Error(`${a.what} runs past the side margin`);
+    for (const [i, a] of words.entries()) {
+      if (a.box.y < vInset) return `${a.what} rises above the frame's top margin`;
+      if (a.box.x < inset - 1 || a.box.x + a.box.w > stage.width - inset + 1) return `${a.what} runs past the side margin`;
       for (const b of words.slice(i + 1))
-        if (!(b.what === "the ring" && a.what.includes(middle.text)) && overlaps(a.box, b.box)) throw new Error(`${a.what} runs into ${b.what} (split ${m.split}, close ${m.close})`);
-    });
+        if (!(b.what === "the ring" && a.what.includes(middle.text)) && overlaps(a.box, b.box)) return `${a.what} runs into ${b.what} (split ${m.split}, close ${m.close})`;
+    }
   }
+    return null;
+  };
+  let chosen = null;
+  const refusedForms = [];
+  for (const [form, text] of copy.hundred.entries()) {
+    const hundred = measure(text, axis);
+    const layout = layoutOf(endsFor(hundred));
+    const clash = clashesFor(hundred, layout);
+    if (!clash) {
+      chosen = { form, hundred, layout };
+      break;
+    }
+    refusedForms.push(`« ${hundred.text} »: ${clash}`);
+  }
+  if (!chosen) throw new Error(`no form of the axis's far end holds — ${refusedForms.join("; ")}`);
+  const { hundred, layout } = chosen;
 
   const { ground, accent } = direction;
   const { ink, muted, grid } = deriveFurniture(ground);
@@ -312,5 +359,5 @@ export function buildDirection(id, { subject, states, copy }) {
     states,
     timing: PICTOGRAM_VIDEO_TIMING,
   };
-  return { id, direction, props, report: { k, titleForm: titleCard.form, sourceForm: credit.form, cell: cell.toFixed(1), cellF: cellF.toFixed(1), rows } };
+  return { id, direction, props, report: { k, titleForm: titleCard.form, sourceForm: credit.form, cell: cell.toFixed(1), cellF: cellF.toFixed(1), rows, tallest: subject.tallest } };
 }

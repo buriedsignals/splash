@@ -185,7 +185,22 @@ export function DirectedContourField({
   const annotLead = leadOf(annot);
   const SHARES = [0.3, 0.34, 0.38, 0.42];
   const GUTTER = 24;
-  const panelFor = (share: number) => Math.round((width - PAD * 2) * share);
+  /** TWO LAYOUTS, AND THE FRAME CHOOSES — the condition and the reasoning are the choropleth's, in
+   *  `proof/static-choropleth-europe-lowcarbon/DirectedChoroplethMap.tsx`, because it is the same
+   *  question about the same shape. Beside the map is right at 960x540. At 540x540 the column comes
+   *  to 145px, no rung of the copy fits it, and the beat refused outright; at 540x960 the column
+   *  fits but the map box is 315 wide by 848 tall, so filling it crops away everything east of
+   *  Iberia — including the summit the headline names, which is how this beat refused portrait with
+   *  "the deepest point of the field has no room for its own number". Stacked, the copy takes the
+   *  full width and the map takes the band under it. */
+  const STACKED =
+    width - PAD * 2 - Math.round((width - PAD * 2) * SHARES[0]) - GUTTER < height - PAD * 2;
+  const panelFor = (share: number) =>
+    STACKED ? width - PAD * 2 : Math.round((width - PAD * 2) * share);
+  /** A MAP BEAT WHOSE MAP IS NOT THE LARGEST THING ON THE PAGE IS A CAPTION WITH AN ILLUSTRATION.
+   *  A third of the usable height, the choropleth's own statement of what a map beat IS. */
+  const MIN_MAP_SHARE = 1 / 3;
+  const mapBandFloor = STACKED ? (height - PAD * 2) * MIN_MAP_SHARE : 0;
 
   const layoutFor = (panel: number, t: number, l: number, r: number) => {
     const titleLines = wrap(set(title[t], display), panel, display);
@@ -208,7 +223,15 @@ export function DirectedContourField({
     const readingTop =
       limitTop + limitLines.length * limitLead + annotBand.ascent + gapOf(annot, 0.4286);
     const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
-    const footTop = readingTop + Math.max(0, readingLines.length - 1) * annotLead;
+    /** WHERE THE COPY ACTUALLY STOPS — and when the reading line is dropped, that is the bottom of
+     *  the LIMIT note, not the baseline a reading line would have had. It was
+     *  `readingTop + max(0, lines - 1) * annotLead`, which for one line and for none is the same
+     *  number: the `reading: -1` rung, the first the cut order spends, recovered nothing at all.
+     *  Measured at 540x540 on `creme`, the band was 7px short and taking the gap and the ascent
+     *  back with the line frees 15. */
+    const footTop = readingLines.length
+      ? readingTop + (readingLines.length - 1) * annotLead
+      : limitTop + limitLines.length * limitLead;
     return {
       titleLines,
       standfirstLines,
@@ -224,12 +247,21 @@ export function DirectedContourField({
       limitLead,
       readingTop,
       sourceTop,
+      footTop,
       spare: sourceTop - bodyLead * 0.9 - footTop,
     };
   };
 
+  /** THE BAND THE MAP GETS IN A STACKED FRAME: between where the copy stops and where the source's
+   *  own line begins, with air at both edges. `spare` is measured to the source's BASELINE, which
+   *  is a lead too generous at the bottom and drew the source's ascenders through the map. */
+  const mapBandOf = (l: { footTop: number; sourceTop: number }) => {
+    const top = l.footTop + annotLead * 0.9;
+    return { top, height: l.sourceTop - bodyLead - top };
+  };
+
   const rungs: Array<{ share: number; title: number; limit: number; reading: number }> = [];
-  for (const share of SHARES)
+  for (const share of STACKED ? [1] : SHARES)
     for (let t = 0; t < title.length; t++)
       for (let l = 0; l < limits.length; l++) {
         for (let r = 0; r < reading.length; r++) rungs.push({ share, title: t, limit: l, reading: r });
@@ -238,31 +270,53 @@ export function DirectedContourField({
   let fits: { rung: (typeof rungs)[number]; layout: ReturnType<typeof layoutFor> } | null = null;
   for (const rung of rungs) {
     const l = layoutFor(panelFor(rung.share), rung.title, rung.limit, rung.reading);
-    if (l.spare >= 0) {
+    if ((STACKED ? mapBandOf(l).height : l.spare) >= mapBandFloor) {
       fits = { rung, layout: l };
       break;
     }
   }
   if (!fits)
     throw new Error(
-      `the panel's copy does not fit its column in this direction, at any share. Give the beat ` +
-        `shorter forms — do not shrink the map, which is the subject.`,
+      (STACKED
+        ? `the copy leaves no room for the map in this direction: the shortest rung still leaves ` +
+          `only ${mapBandOf(layoutFor(panelFor(1), title.length - 1, limits.length - 1, -1)).height.toFixed(0)}px ` +
+          `where the map needs ${mapBandFloor.toFixed(0)}. `
+        : `the panel's copy does not fit its column in this direction, at any share. `) +
+        `Give the beat shorter forms — do not shrink the map, which is the subject.`,
     );
   const layout = fits.layout;
   const panel = panelFor(fits.rung.share);
-  const mapBox = {
-    x: PAD + panel + GUTTER,
-    y: PAD,
-    width: width - PAD * 2 - panel - GUTTER,
-    height: height - PAD * 2,
-  };
-  /** FILL THE BOX AND CROP, never letterbox — the map is the subject. The crop is anchored west,
-   *  because the ground it gives up is the far east and the field it must not lose is Iberia. */
-  const fill = Math.max(mapBox.width, mapBox.height * aspect);
+  const band = mapBandOf(layout);
+  const mapBox = STACKED
+    ? { x: PAD, y: band.top, width: width - PAD * 2, height: band.height }
+    : {
+        x: PAD + panel + GUTTER,
+        y: PAD,
+        width: width - PAD * 2 - panel - GUTTER,
+        height: height - PAD * 2,
+      };
+  /** BESIDE: FILL THE BOX AND CROP, never letterbox — the map is the subject, the box is as tall as
+   *  the plate, and the ground it gives up is the far east. STACKED: FIT inside the band instead.
+   *  The box is only as tall as the copy left it, so filling it would run the field straight through
+   *  the source line, and cropping a field whose summit is the headline's own number is how this
+   *  beat refused a tall frame. A whole field that is smaller is a field; a cropped strip is not. */
+  const fill = STACKED
+    ? Math.min(mapBox.width, mapBox.height * aspect)
+    : Math.max(mapBox.width, mapBox.height * aspect);
   const mapW = fill;
   const mapH = fill / aspect;
-  const mapX = mapBox.x;
+  const mapX = STACKED ? mapBox.x + (mapBox.width - mapW) / 2 : mapBox.x;
   const mapY = mapBox.y + (mapBox.height - mapH) / 2;
+  /** THE CAMERA IS WHAT THE MAP ACTUALLY COVERS, which in a FIT layout is not its box.
+   *
+   *  `shapes.geojson` reaches well beyond the window this beat frames — Greenland, the Maghreb, the
+   *  Russian interior. Beside the map that surplus is cropped by the box, because the map FILLS it.
+   *  Stacked, the map is fitted inside a band wider than itself, and clipping to the box let the
+   *  surplus land draw into the letterbox margins either side: measured at 540x540, Greenland and
+   *  Asia appeared on the page outside the map's own rectangle. */
+  const camera = STACKED
+    ? { x: mapX, y: mapY, width: mapW, height: mapH }
+    : mapBox;
   const at = ([x, y]: number[]) => [mapX + (x / 1000) * mapW, mapY + (y / 1000) * mapW];
 
   /** THE LADDER IS THE LEVEL SET, AND ITS FLOOR IS THAT EVERY DRAWN LINE CARRIES ITS OWN NUMBER.
@@ -272,10 +326,10 @@ export function DirectedContourField({
    *  the beat steps to a coarser set rather than shipping an unlabelled line. */
   const overlaps = (a: Box, b: Box) => a.x0 < b.x1 && b.x0 < a.x1 && a.y0 < b.y1 && b.y0 < a.y1;
   const inMap = (b: Box) =>
-    b.x0 >= mapBox.x + 2 &&
-    b.x1 <= mapBox.x + mapBox.width - 2 &&
-    b.y0 >= mapBox.y + 2 &&
-    b.y1 <= mapBox.y + mapBox.height - 2;
+    b.x0 >= camera.x + 2 &&
+    b.x1 <= camera.x + camera.width - 2 &&
+    b.y0 >= camera.y + 2 &&
+    b.y1 <= camera.y + camera.height - 2;
 
   type Placed = { level: number; label: string; x: number; y: number; box: Box };
   const placeSet = (set_: Contour[]) => {
@@ -499,7 +553,7 @@ export function DirectedContourField({
 
       <defs>
         <clipPath id="camera">
-          <rect x={mapBox.x} y={mapBox.y} width={mapBox.width} height={mapBox.height} />
+          <rect x={camera.x} y={camera.y} width={camera.width} height={camera.height} />
         </clipPath>
       </defs>
 

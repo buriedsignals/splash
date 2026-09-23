@@ -8,7 +8,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { adjustToContrast, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
-import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
+import { frameInsetFor, sizeFor, videoExportSize } from "#shared/chart-video/sizes.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
@@ -23,7 +23,9 @@ import { RADAR_VIDEO_TIMING } from "./timing-contract.ts";
 const HERE = dirname(fileURLToPath(import.meta.url));
 export const ROOT = join(HERE, "..", "..");
 export const DIRECTIONS = join(ROOT, "docs", "design-base", "directions");
-export const SIZE = "landscape";
+/** The size this run exports at — `--size`, landscape when nothing asks. R2 names three and
+ *  everything under it already answered per size; only this line pinned the beat to one. */
+export const SIZE = videoExportSize();
 export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
 const NB = "\u00A0";
 /** The static plate is 960 wide; its strokes are scaled to the frame by this. */
@@ -61,6 +63,17 @@ export function copyOf() {
     full: `100${NB}%`,
     ceiling: (v) => `${fr(v, 0)}${NB}%`,
     shares: (a, b) => [fr(a), `${NB}·${NB}`, fr(b)],
+    /** A SHORTER NAME FOR A SPOKE, WHERE THE FULL ONE LEAVES NO WHEEL. The nine names stand at the rim, so a horizontal
+     *  spoke's name is spent out of the half-frame the wheel has to share with it: « Autres renouv. » is 367px of 875 at
+     *  1920 and 441px of 468 at 1080 (measured 2026-09-23), which leaves a radius of nothing. The full names are tried
+     *  first and 1920 keeps them; these are the fallback, and the same device `video-parallel-coordinates` uses for
+     *  « R.-U. » where a full country name would cross a neighbouring rail. */
+    shortSpoke: {
+      Hydropower: `Hydro.`,
+      Bioenergy: `Bio.`,
+      "Other renewables": `Autres`,
+      Nuclear: `Nucl.`,
+    },
     source: [
       "Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data",
       "Source : Ember, Energy Institute – Statistical Review of World Energy, via Our World in Data",
@@ -117,14 +130,17 @@ export function buildDirection(id, { subject, states, copy }) {
   const keyBox = { x0: inset, x1: inset + Math.max(...names.map(drawn)), y0: vInset, y1: vInset + nBand.ascent + annot.lead + nBand.descent };
 
   // ── THE SPOKES' WORDS: the name, the two shares under it, at the spoke's outer end ──
-  const labels = spokes.map((s, j) => ({
-    name: measure(s.label, annot),
-    parts: copy.shares(countries[0].shares[j], countries[1].shares[j]).map((t) => applyCase(t, value.transform)),
-  }));
-  for (const l of labels) l.values = { text: l.parts.join(""), width: widthOf(l.parts.join(""), value) };
+  const labelsFor = (form) => {
+    const made = spokes.map((sp, j) => ({
+      name: measure(form === 0 ? sp.label : (copy.shortSpoke[sp.column] ?? sp.label), annot),
+      parts: copy.shares(countries[0].shares[j], countries[1].shares[j]).map((t) => applyCase(t, value.transform)),
+    }));
+    for (const l of made) l.values = { text: l.parts.join(""), width: widthOf(l.parts.join(""), value) };
+    return made;
+  };
   const nameGap = LABEL_GAP * annot.lead;
   const lineGap = LINE_GAP * value.lead;
-  const seatLabels = (cx, cy, R) =>
+  const seatLabels = (labels, cx, cy, R) =>
     labels.map((l, j) => {
       const theta = spokeAngle(j, n);
       const cos = Math.cos(theta);
@@ -149,30 +165,50 @@ export function buildDirection(id, { subject, states, copy }) {
   // ── THE WHEEL: centred on the frame's width; the largest radius whose words sit inside the frame, clear of all else ──
   const cx = stage.width / 2;
   const bottomLimit = creditAt.y - LABEL_GAP * axis.lead;
+  // THE BARS ASK FOR THE FRAME'S WIDTH TOO, and they are drawn on the WHEEL's own scale — 100 % is `pxPerPct × 100` — so a
+  // radius the spokes' words allow can still be a radius the bars cannot be drawn at. Measured 2026-09-23: at 1080 two
+  // directions seated their nine spokes at a radius that then left the bars and their words needing 1.02x to 1.14x the
+  // frame, and the beat refused after the wheel had been chosen. The two demands are one ladder and not two: a radius is
+  // taken only where the bars hold the frame at it unmagnified.
+  const barLabelGap = LABEL_GAP * value.lead;
+  const barTotals = countries.map((c) => [measure(copy.twh(c.total), value), measure(copy.full, value)]);
+  const barWords = Math.max(...names.map(drawn)) + nameGap + barLabelGap + Math.max(...barTotals.flat().map(drawn));
+  const barsHold = (R) => stage.width - 2 * inset - barWords >= (100 * R) / ceiling + (n - 1) * CUT * R;
   let wheel = null;
+  let labels = null;
+  let labelForm = 0;
   const refusals = [];
-  for (let R = Math.floor((stage.height - 2 * vInset) / 2); R > 150; R -= 4) {
-    const probe = seatLabels(cx, 0, R);
-    const top = Math.min(...probe.map((l) => l.box.y0));
-    const bottom = Math.max(...probe.map((l) => l.box.y1));
-    if (bottom - top > bottomLimit - vInset) {
-      refusals.push(`${R}: too tall`);
-      continue;
+  for (let form = 0; form < 2 && !wheel; form++) {
+    const made = labelsFor(form);
+    for (let R = Math.floor((stage.height - 2 * vInset) / 2); R > 150; R -= 4) {
+      const probe = seatLabels(made, cx, 0, R);
+      const top = Math.min(...probe.map((l) => l.box.y0));
+      const bottom = Math.max(...probe.map((l) => l.box.y1));
+      if (bottom - top > bottomLimit - vInset) {
+        refusals.push(`${form === 0 ? "full" : "short"} ${R}: too tall`);
+        continue;
+      }
+      const cy = Math.round(vInset + (bottomLimit - vInset - (bottom - top)) / 2 - top);
+      const seated = seatLabels(made, cx, cy, R);
+      const boxes = seated.map((l) => l.box);
+      const why =
+        boxes.some((b) => b.x0 < inset || b.x1 > stage.width - inset) ? "a spoke's words leave the frame"
+        : boxes.some((b) => overlap(b, keyBox) || overlap(b, creditBox)) ? "a spoke's words run into the key or the credit"
+        : boxes.some((b, i) => boxes.some((o, j) => j > i && overlap(b, o))) ? "two spokes' words collide"
+        : null;
+      if (why) {
+        refusals.push(`${form === 0 ? "full" : "short"} ${R}: ${why}`);
+        continue;
+      }
+      if (!barsHold(R)) {
+        refusals.push(`${form === 0 ? "full" : "short"} ${R}: the bars and their words run wider than the frame`);
+        continue;
+      }
+      wheel = { x: cx, y: cy, radius: R, pxPerPct: R / ceiling, labels: seated };
+      labels = made;
+      labelForm = form;
+      break;
     }
-    const cy = Math.round(vInset + (bottomLimit - vInset - (bottom - top)) / 2 - top);
-    const seated = seatLabels(cx, cy, R);
-    const boxes = seated.map((l) => l.box);
-    const why =
-      boxes.some((b) => b.x0 < inset || b.x1 > stage.width - inset) ? "a spoke's words leave the frame"
-      : boxes.some((b) => overlap(b, keyBox) || overlap(b, creditBox)) ? "a spoke's words run into the key or the credit"
-      : boxes.some((b, i) => boxes.some((o, j) => j > i && overlap(b, o))) ? "two spokes' words collide"
-      : null;
-    if (why) {
-      refusals.push(`${R}: ${why}`);
-      continue;
-    }
-    wheel = { x: cx, y: cy, radius: R, pxPerPct: R / ceiling, labels: seated };
-    break;
   }
   if (!wheel) throw new Error(`no wheel radius fits this frame: ${refusals.slice(-3).join("; ")}`);
   const { radius: R } = wheel;
@@ -200,8 +236,8 @@ export function buildDirection(id, { subject, states, copy }) {
   const L100 = 100 * wheel.pxPerPct;
   const thickness = BAR * R;
   const gap = CUT * R;
-  const labelGap = LABEL_GAP * value.lead;
-  const totals = countries.map((c) => [measure(copy.twh(c.total), value), measure(copy.full, value)]);
+  const labelGap = barLabelGap;
+  const totals = barTotals;
   const widest = Math.max(...totals.flat().map(drawn));
   const namesWidth = Math.max(...names.map(drawn));
   const words = namesWidth + nameGap + labelGap + widest;
@@ -268,6 +304,6 @@ export function buildDirection(id, { subject, states, copy }) {
     id,
     direction,
     props,
-    report: { k, titleForm: titleCard.form, sourceForm: credit.form, radius: R, zoom: zoom.toFixed(2), year: YEAR },
+    report: { k, labelForm, titleForm: titleCard.form, sourceForm: credit.form, radius: R, zoom: zoom.toFixed(2), year: YEAR },
   };
 }

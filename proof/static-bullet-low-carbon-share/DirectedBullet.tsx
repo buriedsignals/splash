@@ -76,9 +76,11 @@ export function DirectedBullet({
   markerName: string;
   measureName: string;
   unit: string;
-  title: string;
-  limits: string;
-  reading: string;
+  /** The headline, the standfirst and the reading line in FORMS, longest first — R3's rung and
+   *  R4's. Landscape takes the first of each and has never needed another. */
+  title: string[];
+  limits: string[];
+  reading: string[];
   source: string;
   alt: string;
   eyebrow: string;
@@ -91,6 +93,9 @@ export function DirectedBullet({
   frame?: { width: number; height: number };
 }) {
   const { width, height } = frame ?? FRAME;
+  /** THE FORM THE FRAME ASKS FOR, read off the frame rather than passed in, so one component serves
+   *  the three export sizes without the runner having to tell it which it is drawing. */
+  const SIZE = width > height ? "landscape" : width === height ? "square" : "portrait";
   const { ink, muted, grid } = deriveFurniture(direction.ground);
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);
@@ -130,21 +135,14 @@ export function DirectedBullet({
 
   // ── header and footer ─────────────────────────────────────────────────────
   const column = width - PAD * 2;
-  const titleLines = wrap(set(title, display), column, display);
   const titleLead = leadOf(display);
   const bodyLead = leadOf(body);
-  const limitLines = wrap(set(limits, body), column, body);
   const sourceLines = wrap(set(source, body), column, body);
-  const readingLines = wrap(set(reading, annot), column, annot);
 
   const eyebrowBaseline = PAD + eyebrowReg.fontSize;
   const titleTop =
     eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
-  const limitsTop =
-    titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
   const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
-  const readingTop =
-    sourceTop - readingLines.length * bodyLead - gapOf(annot, READING_TO_SOURCE);
 
   // ── the rows ──────────────────────────────────────────────────────────────
   const tracked = on("the-track-runs-the-full-scale-so-the-remainder-is-legible");
@@ -158,14 +156,75 @@ export function DirectedBullet({
     ? Math.max(...rows.map((r) => widthOf(set(verdict(r), value), value))) + 16
     : 0;
 
-  const plotTop =
-    limitsTop + limitLines.length * bodyLead + annotBand.ascent * 2.6;
-  const plotBottom =
-    readingTop -
-    gapOf(annot, 0.8571) -
-    bandOf(axis).ascent -
-    bandOf(axis).descent -
-    8;
+  /** WHAT ONE ROW OWES, AND WHY IT IS A MEASUREMENT AND NOT A NUMBER. Every row prints its country
+   *  on the left and its change on the right, both on the row's own midline, so the pitch cannot be
+   *  smaller than the taller of those two runs or one row prints into the next. At 1920x1080 the
+   *  pitch is 45px against a 16px run and nothing ever came close; at 1080x1080 the same header
+   *  left the six rows 36px between them and the names ran together — « Pologne » through
+   *  « Allemagne », « +17,3 pts » through « +14,8 pts », measured in all three directions, which
+   *  REFUSED. The row keeps 60 % of its own band as clear air above and below. */
+  const rowOwes =
+    Math.max(
+      annotBand.ascent + annotBand.descent,
+      valueBand.ascent + valueBand.descent,
+    ) * 1.6;
+  const plotOwes = SIZE === "landscape" ? 0 : rows.length * rowOwes;
+
+  const layoutFor = (t: number, l: number, r: number) => {
+    const titleLines = wrap(set(title[t], display), column, display);
+    const limitLines = wrap(set(limits[l], body), column, body);
+    const readingLines = r < 0 ? [] : wrap(set(reading[r], annot), column, annot);
+    const limitsTop = titleTop + titleLines.length * titleLead + gapOf(body, 0.4138);
+    const readingTop =
+      sourceTop - readingLines.length * bodyLead - gapOf(annot, READING_TO_SOURCE);
+    const plotTop = limitsTop + limitLines.length * bodyLead + annotBand.ascent * 2.6;
+    const plotBottom =
+      (readingLines.length ? readingTop : sourceTop - bodyLead * 1.2) -
+      gapOf(annot, 0.8571) -
+      bandOf(axis).ascent -
+      bandOf(axis).descent -
+      8;
+    return {
+      titleLines,
+      limitLines,
+      readingLines,
+      limitsTop,
+      readingTop,
+      plotTop,
+      plotBottom,
+      plot: plotBottom - plotTop,
+    };
+  };
+  const rungs: Array<{ title: number; limit: number; reading: number }> = [];
+  for (let t = 0; t < title.length; t++)
+    for (let l = 0; l < limits.length; l++) {
+      for (let r = 0; r < reading.length; r++) rungs.push({ title: t, limit: l, reading: r });
+      rungs.push({ title: t, limit: l, reading: -1 });
+    }
+  let taken = rungs[0];
+  let layout = layoutFor(taken.title, taken.limit, taken.reading);
+  let best = layout.plot;
+  for (const rung of rungs) {
+    const candidate = layoutFor(rung.title, rung.limit, rung.reading);
+    best = Math.max(best, candidate.plot);
+    taken = rung;
+    layout = candidate;
+    if (candidate.plot >= plotOwes) break;
+  }
+  if (layout.plot < plotOwes)
+    throw new Error(
+      `the copy leaves the ${rows.length} rows ${best.toFixed(0)}px at its most generous rung and ` +
+        `they owe ${plotOwes.toFixed(0)}px at ${width}x${height} — ${rowOwes.toFixed(0)}px each, ` +
+        `which is what a country's name and its change need not to print into the next row.`,
+    );
+  const { titleLines, limitLines, readingLines, limitsTop, readingTop, plotTop, plotBottom } = layout;
+  if (SIZE !== "landscape")
+    console.log(
+      `  ladder: headline ${taken.title + 1}, standfirst ${taken.limit + 1}, reading ` +
+        (taken.reading < 0 ? "dropped" : `form ${taken.reading + 1}`) +
+        ` · rows ${layout.plot.toFixed(0)}px, floor ${plotOwes.toFixed(0)}px`,
+    );
+
   const plotLeft = PAD + nameRoom;
   const plotRight = width - PAD - verdictRoom;
 

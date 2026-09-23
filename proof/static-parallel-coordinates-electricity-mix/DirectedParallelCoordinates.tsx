@@ -88,6 +88,10 @@ export function DirectedParallelCoordinates({
   frame?: { width: number; height: number };
 }) {
   const { width, height } = frame ?? FRAME;
+  /** THE FORM THIS FRAME ASKS FOR, read off the frame rather than passed in. A square plate is half
+   *  the width landscape was tuned at, and everything below that is size-conditional keeps landscape
+   *  exactly as it was accepted. */
+  const SIZE = width > height ? "landscape" : width === height ? "square" : "portrait";
   const { ink, muted } = deriveFurniture(direction.ground);
   const PAD = direction.pad;
 
@@ -146,13 +150,45 @@ export function DirectedParallelCoordinates({
     field = lifted;
   }
 
+  /** THE RAILS ARE INSET FROM THE PLATE'S EDGES BY WHAT THEIR OWN NAMES NEED, so the first and last
+   *  axis names do not hang off the frame — the outer two are the ones with nothing beside them.
+   *  This sits ABOVE the ladder because the ladder now has to know whether the names fit on one row:
+   *  at 540 wide they do not, and the row's height is part of what the rails are left with. */
+  const halfFirst = widthOf(set(axes[0].name, axisReg), axisReg) / 2;
+  const halfLast = widthOf(set(axes[axes.length - 1].name, axisReg), axisReg) / 2;
+  const left = PAD + Math.max(0, halfFirst - 6);
+  const right = width - PAD - Math.max(0, halfLast - 6);
+  const railX = (i: number) => left + ((right - left) * i) / (axes.length - 1);
+
+  /** THE NAMES ROW IS STAGGERED WHEN ITS OWN NAMES DO NOT FIT SIDE BY SIDE, and whether they fit is
+   *  MEASURED rather than assumed. At 960 the seven names clear each other and this is a no-op — the
+   *  landscape plate is drawn exactly as it was accepted. At 540 the rails sit 73px apart and
+   *  « Hydraulique » ran into « Bioénergie »: the square and portrait renders printed
+   *  « HydrauliquBioénergie », one word made of two axis names, which is the worst thing this row can
+   *  do because a reader cannot even tell which rail carries which source. Dropping a name is not an
+   *  option here — the axis ORDER is this beat's argument, so every name has to stay — and shrinking
+   *  the type is the rule that fails at the moment it is needed. Two rows is the move that costs one
+   *  band of height and keeps all seven names horizontal and whole. */
+  const nameHalf = axes.map((a) => widthOf(set(a.name, axisReg), axisReg) / 2);
+  const clears = (gap: number) =>
+    axes.every((_, i) => i + gap >= axes.length ||
+      railX(i) + nameHalf[i] + 6 <= railX(i + gap) - nameHalf[i + gap]);
+  const nameRows = clears(1) ? 1 : 2;
+  if (nameRows === 2 && !clears(2))
+    throw new Error(
+      `the axis names do not clear each other even two rows apart at ${width}px wide — ` +
+        `${axes.map((a) => a.name).join(", ")}. A third row would put a name further from its own rail ` +
+        `than from its neighbour's; give the beat shorter axis names instead.`,
+    );
+  const nameLead = axisBand.ascent + axisBand.descent + 2;
+
   // ── the ladder ────────────────────────────────────────────────────────────
   const column = width - PAD * 2;
   const titleLead = leadOf(display);
   const bodyLead = leadOf(body);
   const annotLead = leadOf(annot);
 
-  const layoutFor = (t: number, l: number, r: number) => {
+  const layoutFor = (t: number, l: number, r: number, u: boolean) => {
     const titleLines = wrap(set(title[t], display), column, display);
     const limitLines = wrap(set(limits[l], body), column, body);
     const readingLines = r < 0 ? [] : wrap(set(reading[r], annot), column, annot);
@@ -163,10 +199,19 @@ export function DirectedParallelCoordinates({
     const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
     const readingTop = sourceTop - bodyLead * 1.1 - Math.max(0, readingLines.length - 1) * annotLead;
     const noteTop = readingTop - annotBand.ascent - gapOf(annot, 0.5714);
-    /** The axis NAMES are a row of their own above the rails, and the unit a row above that. */
+    /** The axis NAMES are a row of their own above the rails, and the unit a row above that.
+     *  `u` is R1 — the axis title, whose unit the ceiling labels already carry in full (`70 %`). It
+     *  is the cheapest thing on this plate to remove and the first rung a tall or square frame
+     *  spends. */
     const unitTop = limitsTop + limitLines.length * bodyLead + annotBand.ascent * 1.3;
-    const namesTop = unitTop + axisBand.descent + 8 + axisBand.ascent;
-    const top = namesTop + axisBand.descent + 8 + axisBand.ascent + axisBand.descent;
+    const namesTop = (u ? unitTop + axisBand.descent + 8 : unitTop) + axisBand.ascent;
+    const top =
+      namesTop +
+      (nameRows - 1) * nameLead +
+      axisBand.descent +
+      8 +
+      axisBand.ascent +
+      axisBand.descent;
     const bottom = noteTop - axisBand.ascent - axisBand.descent - 12;
     return {
       titleLines,
@@ -176,6 +221,7 @@ export function DirectedParallelCoordinates({
       eyebrowBaseline,
       titleTop,
       limitsTop,
+      unit: u,
       unitTop,
       namesTop,
       noteTop,
@@ -187,19 +233,38 @@ export function DirectedParallelCoordinates({
     };
   };
 
-  const rungs: Array<{ title: number; limit: number; reading: number }> = [];
+  const rungs: Array<{ title: number; limit: number; reading: number; unit: boolean }> = [];
   for (let t = 0; t < title.length; t++)
     for (let l = 0; l < limits.length; l++) {
-      for (let r = 0; r < reading.length; r++) rungs.push({ title: t, limit: l, reading: r });
-      rungs.push({ title: t, limit: l, reading: -1 });
+      for (let r = 0; r < reading.length; r++) rungs.push({ title: t, limit: l, reading: r, unit: true });
+      rungs.push({ title: t, limit: l, reading: -1, unit: true });
     }
-  /** THE RAIL'S OWN FLOOR. A parallel-coordinates plate is read by where a line SITS on each rail;
-   *  a rail too short to separate sixteen positions is a row of dots. The floor is six axis-bands. */
-  const railOwes = (axisBand.ascent + axisBand.descent) * 6;
+  /** R1 LAST, NOT FIRST. The removal ladder puts the axis title at the top because it is cheap, but
+   *  on this plate the unit row is the only line that says the seven scales are SHARES of the
+   *  country's own production — without it a reader can take `70 %` for a share of Europe. So it is
+   *  spent only once every copy rung has been, which is the order a square frame actually needs. */
+  for (const rung of [...rungs]) rungs.push({ ...rung, unit: false });
+  /** THE RAIL'S OWN FLOOR, AND WHY A SQUARE FRAME OWES MORE THAN SIX BANDS.
+   *  A parallel-coordinates plate is read by where a line SITS on each rail; a rail too short to
+   *  separate sixteen positions is a row of dots. Six axis-bands is what landscape was accepted at
+   *  and it stays landscape's floor. At 540 x 540 six bands is 54px, and the ladder stopped at the
+   *  FIRST rung that cleared it: the square render put three lines of display type over a 63px rail
+   *  and left the bottom tenth of the frame empty — sixteen polylines flattened into a strip, with
+   *  every assertion green. So a frame that is not landscape owes its rails a SIXTH of its own
+   *  height, and the copy above pays for it — the same lever
+   *  `static-choropleth-europe-lowcarbon` gives its map, at the fraction this plate's copy can
+   *  actually afford. A sixth is not a round number chosen for its looks: a third and a quarter were
+   *  both tried and both REFUSED the nocturne direction, whose tracked capitals cannot give the
+   *  rails more than 94px at 540 square however deep the ladder goes. A floor no direction can
+   *  clear is a refusal dressed as a standard. */
+  const railOwes =
+    SIZE === "landscape"
+      ? (axisBand.ascent + axisBand.descent) * 6
+      : Math.max((axisBand.ascent + axisBand.descent) * 6, height / 6);
   let fits: { rung: (typeof rungs)[number]; layout: ReturnType<typeof layoutFor> } | null = null;
   let best = -Infinity;
   for (const rung of rungs) {
-    const l = layoutFor(rung.title, rung.limit, rung.reading);
+    const l = layoutFor(rung.title, rung.limit, rung.reading, rung.unit);
     if (l.rail > best) best = l.rail;
     if (l.rail >= railOwes) {
       fits = { rung, layout: l };
@@ -209,17 +274,10 @@ export function DirectedParallelCoordinates({
   if (!fits)
     throw new Error(
       `the copy leaves the rails ${best.toFixed(0)}px and a rail that has to separate ${lines.length} ` +
-        `positions owes ${railOwes.toFixed(0)}px.`,
+        `positions owes ${railOwes.toFixed(0)}px at ${width} x ${height}.`,
     );
   const layout = fits.layout;
 
-  /** THE RAILS ARE INSET FROM THE PLATE'S EDGES BY WHAT THEIR OWN NAMES NEED, so the first and last
-   *  axis names do not hang off the frame — the outer two are the ones with nothing beside them. */
-  const halfFirst = widthOf(set(axes[0].name, axisReg), axisReg) / 2;
-  const halfLast = widthOf(set(axes[axes.length - 1].name, axisReg), axisReg) / 2;
-  const left = PAD + Math.max(0, halfFirst - 6);
-  const right = width - PAD - Math.max(0, halfLast - 6);
-  const railX = (i: number) => left + ((right - left) * i) / (axes.length - 1);
   const scales = axes.map((a) =>
     scaleLinear().domain([0, a.ceiling]).range([layout.bottom, layout.top]),
   );
@@ -271,8 +329,10 @@ export function DirectedParallelCoordinates({
   onLadder?.(
     `ladder: headline ${fits.rung.title + 1}, standfirst ${fits.rung.limit + 1}, reading ` +
       (fits.rung.reading < 0 ? "dropped" : `form ${fits.rung.reading + 1}`) +
-      ` · rails ${layout.rail.toFixed(0)}px, floor ${railOwes.toFixed(0)}px · ${axes.length} axes, ` +
-      `${lines.length} lines, ${unnamed} unnamed`,
+      (fits.rung.unit ? "" : ", unit row dropped") +
+      ` · rails ${layout.rail.toFixed(0)}px, floor ${railOwes.toFixed(0)}px · ${axes.length} axes` +
+      (nameRows === 2 ? " on 2 name rows" : "") +
+      `, ${lines.length} lines, ${unnamed} unnamed`,
   );
 
   return (
@@ -300,9 +360,11 @@ export function DirectedParallelCoordinates({
         </text>
       ))}
 
-      <text x={PAD} y={layout.unitTop} {...line(axisReg)} fontWeight={700} fill={mutedInk}>
-        {set(unit, axisReg)}
-      </text>
+      {layout.unit ? (
+        <text x={PAD} y={layout.unitTop} {...line(axisReg)} fontWeight={700} fill={mutedInk}>
+          {set(unit, axisReg)}
+        </text>
+      ) : null}
 
       {/* THE RAILS, each with its own scale and its own name at the top. */}
       {axes.map((a, i) => (
@@ -317,7 +379,7 @@ export function DirectedParallelCoordinates({
           />
           <text
             x={railX(i)}
-            y={layout.namesTop}
+            y={layout.namesTop + (i % nameRows) * nameLead}
             textAnchor="middle"
             {...line(axisReg)}
             fontWeight={700}

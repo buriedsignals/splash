@@ -92,7 +92,7 @@ const textLayout = (r, anchor = "center") => ({
  *   node: { seat: number[], r: number, text: string }, colours: any, strokes: { node: number }, registers: { axis: any },
  *   camera: any }} input
  */
-export function mapPlanFor({ bands, node, colours, strokes, registers, camera }) {
+export function mapPlanFor({ bands, node, colours, strokes, registers, camera, stage = REFERENCE }) {
   const lines = bands
     .filter((b) => b.drawn)
     .reverse()
@@ -129,8 +129,11 @@ export function mapPlanFor({ bands, node, colours, strokes, registers, camera })
     projection: "mercator",
     // The water convention is declined (PALETTE.md): the sea is the bare ground, the land one step off it.
     tints: { water: colours.ground, land: colours.land },
-    referenceWidth: REFERENCE.width,
-    referenceHeight: REFERENCE.height,
+    // THE STAGE THE CAMERA WAS AUTHORED FOR, which is the stage this run draws at — not 1920 x 1080. A consumer that
+    // re-fits a plan to its own stage (`zoomShiftFor`) shifts the zoom by the ratio to these numbers, so a portrait
+    // plan that declared the landscape frame would hand it a ratio it never had.
+    referenceWidth: stage.width,
+    referenceHeight: stage.height,
     degreesPerPixel: 1,
     camera: { view: viewOf(camera) },
     layers: [...lines, ...origin],

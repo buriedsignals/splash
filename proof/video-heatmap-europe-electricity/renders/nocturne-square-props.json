@@ -1,0 +1,785 @@
+{
+  "frame": {
+    "width": 1080,
+    "height": 1080
+  },
+  "registers": {
+    "display": {
+      "fontFamily": "Montserrat",
+      "fontSize": 55.75,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 5.9234374999999995,
+      "transform": "uppercase",
+      "lead": 68.0136174,
+      "fill": "#FFFFFF"
+    },
+    "eyebrow": {
+      "fontFamily": "Montserrat",
+      "fontSize": 36,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 9.852631578947369,
+      "transform": "uppercase",
+      "lead": 43.1994096,
+      "fill": "#4FE0C0"
+    },
+    "value": {
+      "fontFamily": "Montserrat",
+      "fontSize": 53.05,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 63.65912998,
+      "fill": "#4FE0C0"
+    },
+    "axis": {
+      "fontFamily": "Montserrat",
+      "fontSize": 37.89,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 4.546799999999999,
+      "transform": "none",
+      "lead": 45.467378604000004,
+      "fill": "#a5a4b8"
+    },
+    "annot": {
+      "fontFamily": "Montserrat",
+      "fontSize": 37.89,
+      "fontWeight": 500,
+      "fontStyle": "normal",
+      "letterSpacing": 6.8202,
+      "transform": "uppercase",
+      "lead": 53.04681463500001,
+      "fill": "#FFFFFF"
+    },
+    "source": {
+      "fontFamily": "Montserrat",
+      "fontSize": 36,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 4.319999999999999,
+      "transform": "none",
+      "lead": 43.1994096,
+      "fill": "#a5a4b8"
+    }
+  },
+  "titleCard": {
+    "form": 0,
+    "register": {
+      "fontFamily": "Montserrat",
+      "fontSize": 55.75,
+      "fontWeight": 400,
+      "fontStyle": "normal",
+      "letterSpacing": 5.9234374999999995,
+      "transform": "uppercase",
+      "lead": 68.0136174,
+      "fill": "#FFFFFF"
+    },
+    "eyebrow": {
+      "text": "ÉNERGIE · EUROPE",
+      "x": 72,
+      "y": 340.9320068359375,
+      "width": 500.19343581952546
+    },
+    "title": [
+      {
+        "text": "SEPT PAYS",
+        "x": 72,
+        "y": 422.73531159453125,
+        "width": 344.59075779914855
+      },
+      {
+        "text": "EUROPÉENS",
+        "x": 72,
+        "y": 490.74892899453124,
+        "width": 406.9750253677368
+      },
+      {
+        "text": "DÉPASSENT 94 %",
+        "x": 72,
+        "y": 558.7625463945312,
+        "width": 564.9286996841431
+      },
+      {
+        "text": "D’ÉLECTRICITÉ",
+        "x": 72,
+        "y": 626.7761637945313,
+        "width": 485.5824716567993
+      },
+      {
+        "text": "BAS-CARBONE, PAR",
+        "x": 72,
+        "y": 694.7897811945313,
+        "width": 659.8988351821899
+      },
+      {
+        "text": "TROIS CHEMINS",
+        "x": 72,
+        "y": 762.8033985945312,
+        "width": 525.1092731982469
+      }
+    ]
+  },
+  "credit": {
+    "form": 3,
+    "lines": [
+      {
+        "text": "Ember, via OWID · neuf sources en trois",
+        "x": 5.391720581054688,
+        "y": 32.28371887207031,
+        "width": 872.7480694389343
+      },
+      {
+        "text": "familles · 7 pays sur 12",
+        "x": 5.391720581054688,
+        "y": 75.48312847207032,
+        "width": 486.4319609260559
+      }
+    ],
+    "halo": 10.783441162109376,
+    "width": 901,
+    "height": 89,
+    "at": {
+      "x": 72,
+      "y": 919
+    }
+  },
+  "colours": {
+    "ground": "#111044",
+    "ramp": [
+      "#172550",
+      "#2d4c6a",
+      "#437384",
+      "#589b9f",
+      "#6ec2b9",
+      "#84e9d3"
+    ],
+    "hairline": "#3c3b66",
+    "lowBar": "#53e1c1",
+    "fossilBar": "#7c7b97",
+    "stepped": "#292857",
+    "outline": "#ffffff",
+    "text": {
+      "eyebrow": "#53e1c1",
+      "title": "#ffffff",
+      "axis": "#a7a6b9",
+      "ink": "#ffffff",
+      "accent": "#53e1c1"
+    }
+  },
+  "grid": {
+    "left": 290.73039280164636,
+    "right": 756.584731373644,
+    "top": 219.46701315106876,
+    "pitch": 60.94423546038466,
+    "gapH": 51.80260014132696,
+    "cellW": 155.28477952399922,
+    "gap": 4.266096482226927
+  },
+  "gapRows": 0.85,
+  "floor": 94,
+  "sources": [
+    {
+      "lowCarbon": true
+    },
+    {
+      "lowCarbon": true
+    },
+    {
+      "lowCarbon": false
+    }
+  ],
+  "rows": [
+    {
+      "lowCarbon": 100.00000000000001,
+      "route": 0,
+      "routeSlot": 0,
+      "shares": [
+        100.00000000000001,
+        0,
+        0
+      ],
+      "cells": [
+        {
+          "bin": 5
+        },
+        {
+          "bin": 0
+        },
+        {
+          "bin": 0
+        }
+      ],
+      "name": {
+        "text": "Islande",
+        "width": 162.2070866973877,
+        "x": 107.1,
+        "dy": 40.9
+      },
+      "share": {
+        "text": "100,0 %",
+        "width": 197.4521099627018,
+        "x": 774.8,
+        "dy": 46
+      }
+    },
+    {
+      "lowCarbon": 100,
+      "route": 0,
+      "routeSlot": 1,
+      "shares": [
+        100,
+        0,
+        0
+      ],
+      "cells": [
+        {
+          "bin": 5
+        },
+        {
+          "bin": 0
+        },
+        {
+          "bin": 0
+        }
+      ],
+      "name": {
+        "text": "Albanie",
+        "width": 169.51986429857016,
+        "x": 99.6,
+        "dy": 40.9
+      },
+      "share": {
+        "text": "100,0 %",
+        "width": 197.4521099627018,
+        "x": 774.8,
+        "dy": 46
+      }
+    },
+    {
+      "lowCarbon": 98.7917513796108,
+      "route": 1,
+      "routeSlot": 3,
+      "shares": [
+        69.35811792041824,
+        29.433633459192563,
+        1.2082486203891953
+      ],
+      "cells": [
+        {
+          "bin": 5
+        },
+        {
+          "bin": 4
+        },
+        {
+          "bin": 0
+        }
+      ],
+      "name": {
+        "text": "Suède",
+        "width": 136.66921704025268,
+        "x": 133.1,
+        "dy": 40.9
+      },
+      "share": {
+        "text": "98,8 %",
+        "width": 174.9058599472046,
+        "x": 797.8,
+        "dy": 46
+      }
+    },
+    {
+      "lowCarbon": 98.60607217872828,
+      "route": 0,
+      "routeSlot": 2,
+      "shares": [
+        98.60607217872828,
+        0,
+        1.39392782127172
+      ],
+      "cells": [
+        {
+          "bin": 5
+        },
+        {
+          "bin": 0
+        },
+        {
+          "bin": 0
+        }
+      ],
+      "name": {
+        "text": "Norvège",
+        "width": 187.55550588684082,
+        "x": 81.2,
+        "dy": 40.9
+      },
+      "share": {
+        "text": "98,6 %",
+        "width": 172.41251277923584,
+        "x": 800.3,
+        "dy": 46
+      }
+    },
+    {
+      "lowCarbon": 98.09876228148528,
+      "route": 1,
+      "routeSlot": 4,
+      "shares": [
+        67.44927906086514,
+        30.649483220620137,
+        1.901237718514738
+      ],
+      "cells": [
+        {
+          "bin": 5
+        },
+        {
+          "bin": 4
+        },
+        {
+          "bin": 0
+        }
+      ],
+      "name": {
+        "text": "Suisse",
+        "width": 139.81409290695188,
+        "x": 129.9,
+        "dy": 40.9
+      },
+      "share": {
+        "text": "98,1 %",
+        "width": 159.20307064056396,
+        "x": 813.8,
+        "dy": 46
+      }
+    },
+    {
+      "lowCarbon": 95.34827377347064,
+      "route": 1,
+      "routeSlot": 5,
+      "shares": [
+        55.85705632949728,
+        39.491217443973355,
+        4.651726226529377
+      ],
+      "cells": [
+        {
+          "bin": 5
+        },
+        {
+          "bin": 4
+        },
+        {
+          "bin": 1
+        }
+      ],
+      "name": {
+        "text": "Finlande",
+        "width": 196.6112170196533,
+        "x": 72,
+        "dy": 40.9
+      },
+      "share": {
+        "text": "95,3 %",
+        "width": 167.05446529388428,
+        "x": 805.8,
+        "dy": 46
+      }
+    },
+    {
+      "lowCarbon": 94.8983587881377,
+      "route": 2,
+      "routeSlot": 6,
+      "shares": [
+        27.176118765352985,
+        67.72224002278472,
+        5.101641211862296
+      ],
+      "cells": [
+        {
+          "bin": 4
+        },
+        {
+          "bin": 5
+        },
+        {
+          "bin": 2
+        }
+      ],
+      "name": {
+        "text": "France",
+        "width": 150.08228376770018,
+        "x": 119.5,
+        "dy": 40.9
+      },
+      "share": {
+        "text": "94,9 %",
+        "width": 175.01195430755615,
+        "x": 797.7,
+        "dy": 46
+      }
+    },
+    {
+      "lowCarbon": 35.93536810247166,
+      "route": null,
+      "routeSlot": 7,
+      "shares": [
+        18.09792360933094,
+        17.83744449314072,
+        64.06463189752834
+      ],
+      "cells": [
+        {
+          "bin": 3
+        },
+        {
+          "bin": 3
+        },
+        {
+          "bin": 5
+        }
+      ],
+      "name": {
+        "text": "Russie",
+        "width": 143.90620497131346,
+        "x": 125.8,
+        "dy": 40.9
+      },
+      "share": {
+        "text": "35,9 %",
+        "width": 165.9934491701424,
+        "x": 806.9,
+        "dy": 46
+      }
+    }
+  ],
+  "heads": [
+    {
+      "text": "Renouvelables",
+      "width": 331.158617288208,
+      "x": 200.7,
+      "y": 150.8
+    },
+    {
+      "text": "Nucléaire",
+      "width": 214.57107243957518,
+      "x": 414.2,
+      "y": 105.4
+    },
+    {
+      "text": "Fossiles",
+      "width": 176.45373105773925,
+      "x": 588.6,
+      "y": 150.8
+    }
+  ],
+  "families": [],
+  "shareHead": {
+    "text": "bas-carbone",
+    "width": 281.5226987056732,
+    "x": 689,
+    "y": 105.4
+  },
+  "floorLine": {
+    "x": 728.6334710593242,
+    "top": 219.46701315106876,
+    "bottom": 810.6260971167999,
+    "label": {
+      "text": "94 %",
+      "width": 101.50730413951874,
+      "x": 677.8798189895648,
+      "y": 150.848482119625
+    }
+  },
+  "bracket": {
+    "x": 1008,
+    "tick": 13.640213581200001,
+    "labelX": 72,
+    "caption": {
+      "annot": 19.1,
+      "value": 24.8
+    }
+  },
+  "counter": {
+    "texts": {
+      "0": {
+        "text": "0 pays",
+        "width": 174.05705451965332
+      },
+      "1": {
+        "text": "1 pays",
+        "width": 158.56645932793617
+      },
+      "2": {
+        "text": "2 pays",
+        "width": 169.22951474785805
+      },
+      "3": {
+        "text": "3 pays",
+        "width": 169.2295026369393
+      },
+      "4": {
+        "text": "4 pays",
+        "width": 174.37535524368286
+      },
+      "5": {
+        "text": "5 pays",
+        "width": 169.3356003165245
+      },
+      "6": {
+        "text": "6 pays",
+        "width": 171.61676216125488
+      },
+      "7": {
+        "text": "7 pays",
+        "width": 170.60879778862
+      }
+    },
+    "dy": 17.6656494140625,
+    "near": 774.8
+  },
+  "routeNames": [
+    {
+      "text": "RENOUVELABLES",
+      "width": 427.92961446990967,
+      "dy": 12.560531616210938
+    },
+    {
+      "text": "LES DEUX",
+      "width": 240.63937496795654,
+      "dy": 12.560531616210938
+    },
+    {
+      "text": "NUCLÉAIRE",
+      "width": 280.4617417160034,
+      "dy": 12.560531616210938
+    }
+  ],
+  "nuclear": {
+    "x": 446.0151723256456,
+    "w": 151.0186830417723,
+    "pad": 5.45608543248
+  },
+  "legend": {
+    "width": 784,
+    "height": 72,
+    "halo": 11.3495751953125,
+    "valueHalo": 16.125076904296876,
+    "counters": [],
+    "swatches": [
+      {
+        "x": 5.67478759765625,
+        "y": 5.67478759765625,
+        "width": 123.97579451997811,
+        "height": 18.1869514416
+      },
+      {
+        "x": 131.92395104783435,
+        "y": 5.67478759765625,
+        "width": 123.97579451997811,
+        "height": 18.1869514416
+      },
+      {
+        "x": 258.17311449801247,
+        "y": 5.67478759765625,
+        "width": 123.97579451997811,
+        "height": 18.1869514416
+      },
+      {
+        "x": 384.4222779481905,
+        "y": 5.67478759765625,
+        "width": 123.97579451997811,
+        "height": 18.1869514416
+      },
+      {
+        "x": 510.67144139836864,
+        "y": 5.67478759765625,
+        "width": 123.97579451997811,
+        "height": 18.1869514416
+      },
+      {
+        "x": 636.9206048485468,
+        "y": 5.67478759765625,
+        "width": 123.97579451997811,
+        "height": 18.1869514416
+      }
+    ],
+    "bornes": [
+      {
+        "text": "2",
+        "x": 121.8831014813747,
+        "y": 57.24284255488125,
+        "width": 20.08169913291931
+      },
+      {
+        "text": "5",
+        "x": 248.1891000167064,
+        "y": 57.24284255488125,
+        "width": 19.968028962612152
+      },
+      {
+        "text": "10",
+        "x": 363.73433914747415,
+        "y": 57.24284255488125,
+        "width": 41.3758776014328
+      },
+      {
+        "text": "20",
+        "x": 486.09977701409895,
+        "y": 57.24284255488125,
+        "width": 49.143328768539426
+      },
+      {
+        "text": "40 %",
+        "x": 585.1628677744577,
+        "y": 57.24284255488125,
+        "width": 103.5154741481781
+      }
+    ],
+    "missingSwatch": null,
+    "missingLabel": null,
+    "at": {
+      "x": 72,
+      "y": 828.8130485583999
+    }
+  },
+  "strokes": {
+    "outline": 4.849920000000001,
+    "hairline": 1.81872
+  },
+  "halo": {
+    "value": 16.125076904296876,
+    "axis": 11.3495751953125,
+    "annot": 11.426865844726564
+  },
+  "states": [
+    {
+      "title": 1,
+      "grow": 0,
+      "floor": 0,
+      "split": 0,
+      "grid": 0,
+      "filter": 0,
+      "swap": 0,
+      "part": 0,
+      "routes": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "grow": 1,
+      "floor": 1,
+      "split": 0,
+      "grid": 0,
+      "filter": 0,
+      "swap": 0,
+      "part": 0,
+      "routes": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "grow": 1,
+      "floor": 0,
+      "split": 1,
+      "grid": 1,
+      "filter": 0,
+      "swap": 0,
+      "part": 0,
+      "routes": 0,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "grow": 1,
+      "floor": 0,
+      "split": 1,
+      "grid": 1,
+      "filter": 1,
+      "swap": 1,
+      "part": 1,
+      "routes": 1,
+      "source": 0
+    },
+    {
+      "title": 0,
+      "grow": 1,
+      "floor": 0,
+      "split": 1,
+      "grid": 1,
+      "filter": 0,
+      "swap": 0,
+      "part": 0,
+      "routes": 0,
+      "source": 1
+    },
+    {
+      "title": 0,
+      "grow": 1,
+      "floor": 0,
+      "split": 1,
+      "grid": 1,
+      "filter": 0,
+      "swap": 0,
+      "part": 0,
+      "routes": 0,
+      "source": 1
+    }
+  ],
+  "timing": {
+    "fps": 30,
+    "total": 621,
+    "establish": {
+      "start": 0,
+      "duration": 45
+    },
+    "reference": {
+      "start": 51,
+      "duration": 135
+    },
+    "reveal": {
+      "start": 186,
+      "duration": 135
+    },
+    "subject": {
+      "start": 321,
+      "duration": 150
+    },
+    "conclusion": {
+      "start": 471,
+      "duration": 90
+    },
+    "hold": {
+      "start": 561,
+      "duration": 60
+    }
+  },
+  "fontFamily": null,
+  "faces": [
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 400,
+      "weightTo": 400,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 500,
+      "weightTo": 500,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    },
+    {
+      "family": "Montserrat",
+      "style": "normal",
+      "weight": 600,
+      "weightTo": 600,
+      "unicodeRange": "U+21-7E, U+A1-AC, U+AE-FF, U+2013-2014, U+2019, U+2212"
+    }
+  ]
+}

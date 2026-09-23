@@ -36,8 +36,11 @@ import { placeLabels } from "#shared/chart-beat/arbiter.mjs";
 import { inkThatReadsOver } from "#shared/chart-beat/annotation-ink.mjs";
 import { NON_TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { leadOf, registerOf } from "#shared/design-base/register.mjs";
+import { MEASURED_ASPECT } from "#shared/chart-beat/type-at-size.mjs";
 
 const FRAME = { width: 900, height: 560 };
+/** The type this beat draws, so the measured aspect range can be looked up rather than guessed. */
+const TYPE = "line";
 const UNIT = "Mt";
 const Y_TICK_HINT = 5;
 const X_TICK_HINT = 6;
@@ -108,12 +111,25 @@ export function DirectedLine({
     fontFamily: r.fontFamily,
   });
 
+  /**
+   * TRACKING IS WIDTH, AND `measureText` HAS NOWHERE TO PUT IT.
+   *
+   * Every other directed component in this tree carries this helper; this one measured with
+   * `measureText` alone and wrapped its display line against a width that ignored the register's
+   * own letter-spacing. Measured on the committed landscape render (1800x1120) and again on the new
+   * one (1920x1080): « EN 2024, LA SUISSE A ÉMIS MOINS DE CO2 SUR SON » ran off BOTH edges of the
+   * frame, in all three directions, because forty-six characters of tracking are about a hundred
+   * points of width that nothing counted.
+   */
+  const widthOf = (text: string, r: any) =>
+    measureText(text, sizeOf(r)) + Number(r.letterSpacing ?? 0) * Math.max(0, text.length - 1);
+
   function wrap(text: string, maxWidth: number, r: any): string[] {
     const lines: string[] = [];
     let current = "";
     for (const word of text.split(/\s+/)) {
       const trial = current ? `${current} ${word}` : word;
-      if (current && measureText(trial, sizeOf(r)) > maxWidth) {
+      if (current && widthOf(trial, r) > maxWidth) {
         lines.push(current);
         current = word;
       } else current = trial;
@@ -146,31 +162,58 @@ export function DirectedLine({
   const endLabel = `${last.year} · ${fr(last.mt)} ${UNIT}`;
   const [floor, , ceiling] = yTickValues(data, reference);
   const plotTop = ruleY + (direction.headRule ? 34 : 26);
-  const plotBottom = height - (PAD + 26 + body.fontSize + 10);
-  const gridScale = scaleLinear()
+  const naturalBottom = height - (PAD + 26 + body.fontSize + 10);
+  /** Which ticks to draw is settled on the band the page offers, because the gutter they measure is
+   *  an input to the clamp below and the clamp is an input to the band they are finally drawn on. */
+  const offeredScale = scaleLinear()
     .domain([floor, ceiling])
-    .range([plotBottom, plotTop]);
-  const referenceYProvisional = gridScale(reference);
-  const regularTicks = gridScale
+    .range([naturalBottom, plotTop]);
+  const referenceYProvisional = offeredScale(reference);
+  const regularTicks = offeredScale
     .ticks(Y_TICK_HINT)
     .filter(
       (v) =>
-        Math.abs(gridScale(v) - referenceYProvisional) >= MIN_GRIDLINE_GAP_PX,
+        Math.abs(offeredScale(v) - referenceYProvisional) >= MIN_GRIDLINE_GAP_PX,
     );
   const yTicks = [...regularTicks, reference].sort((a, b) => a - b);
   const topValue = Math.max(...yTicks);
   const tickLabels = yTicks.map((v) =>
     v === topValue ? `${fr(v, 0)} ${UNIT}` : fr(v, v === reference ? 1 : 0),
   );
+  const gutterRight = PAD + 12 + widthOf(endLabel, value);
+  const gutterLeft = PAD + 12 + Math.max(...tickLabels.map((l) => widthOf(l, axis)));
+
+  /**
+   * THE MEASURED CLAMP, CARRIED OUT.
+   *
+   * `type-at-size.mjs` gives `line` an aspect range of 0.8 to 1.8 — plot width over plot height —
+   * and answers `clamp` at portrait and square. That verdict is an INSTRUCTION, and nothing was
+   * executing it: measured at 1080x1920, this plot came out 380 x 600 in component units, an aspect
+   * of 0.63, and fifty years of Swiss emissions read as a cliff rather than as a rise and a fall.
+   * Cleveland's banking is the reason the range exists; a slope is the whole argument of a line.
+   *
+   * So the plot keeps its width and REFUSES the extra height, and the slack is split above and
+   * below so the drawing sits where a reader expects it rather than hanging from the standfirst.
+   */
+  const plotWidthAt = width - gutterLeft - gutterRight;
+  const naturalHeight = naturalBottom - plotTop;
+  const floorAspect = MEASURED_ASPECT[TYPE]?.min;
+  const heldHeight = floorAspect
+    ? Math.min(naturalHeight, plotWidthAt / floorAspect)
+    : naturalHeight;
+  const slack = Math.max(0, naturalHeight - heldHeight);
+
+  const plotBottom = naturalBottom - slack / 2;
   const padding = {
-    top: plotTop,
-    right: PAD + 12 + measureText(endLabel, sizeOf(value)),
-    bottom: PAD + 26 + body.fontSize + 10,
-    left:
-      PAD +
-      12 +
-      Math.max(...tickLabels.map((l) => measureText(l, sizeOf(axis)))),
+    top: plotTop + slack / 2,
+    right: gutterRight,
+    bottom: PAD + 26 + body.fontSize + 10 + slack / 2,
+    left: gutterLeft,
   };
+  /** The band everything is finally measured against. */
+  const gridScale = scaleLinear()
+    .domain([floor, ceiling])
+    .range([plotBottom, padding.top]);
 
   /** RUNS ON ONE LINE SHARE A BASELINE, NOT AN INK-BOX EDGE — and the difference is visible.
    *
@@ -270,7 +313,10 @@ export function DirectedLine({
       id: "reference",
       treatment: "accent-marks-the-thread",
       text: set(referenceLabel, annot),
-      at: { x: g.plot.left + 60, y: g.referenceY },
+      // 60pt in from the left edge of the plot, or 8% of it when the plot is narrower than the
+      // frame that number was tuned on — at 1080x1920 a fixed 60 lands 16% in, which is where the
+      // curve crosses the reference, and the label was drawn over the rise.
+      at: { x: g.plot.left + Math.min(60, (g.plot.right - g.plot.left) * 0.08), y: g.referenceY },
       priority: 5,
       register: annot,
     },
@@ -318,6 +364,32 @@ export function DirectedLine({
     })),
     { x: g.peak.x - 4, y: g.peak.y - 4, width: 8, height: 8 },
     { x: g.end.x - 5, y: g.end.y - 5, width: 10, height: 10 },
+    // THE AXIS IS INK TOO, and the arbiter could not see it. Measured at 1080x1080: « Niveau de
+    // 1967 » took the `left` anchor, ran out of the plot and landed on the y tick « 32,5 » — 97% of
+    // the smaller run shared. A tick label sits at a box this component already knows, so it
+    // belongs in `avoid` exactly like a mark; nothing else was needed to clear it.
+    ...yTicks.map((v, i) => {
+      const text = set(tickLabels[i], axis);
+      const b = measureTextBand(text, sizeOf(axis));
+      const w = widthOf(text, axis);
+      return {
+        x: g.plot.left - 12 - w,
+        y: gridScale(v) + 4 - b.ascent,
+        width: w,
+        height: b.ascent + b.descent,
+      };
+    }),
+    ...ticksX.map((t) => {
+      const text = String(t.year);
+      const b = measureTextBand(text, sizeOf(axis));
+      const w = widthOf(text, axis);
+      return {
+        x: t.x - w / 2,
+        y: g.plot.bottom + 24 - b.ascent,
+        width: w,
+        height: b.ascent + b.descent,
+      };
+    }),
   ];
 
   const { placed, dropped } = placeLabels(
@@ -340,7 +412,7 @@ export function DirectedLine({
         const request = requests.find((r) => r.text === text)!;
         const band = measureTextBand(text, sizeOf(request.register));
         return {
-          width: measureText(text, sizeOf(request.register)),
+          width: widthOf(text, request.register),
           height: band.ascent + band.descent,
         };
       },

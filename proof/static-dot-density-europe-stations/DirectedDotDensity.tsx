@@ -32,7 +32,8 @@ import {
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
 import { mix } from "#shared/chart-beat/colour.mjs";
-import { applyCase } from "#shared/chart-beat/registers.mjs";
+import { applyCase, DERIVED_SIZE_RATIO } from "#shared/chart-beat/registers.mjs";
+import { frameInsetFor, viewedAtCssPx } from "#shared/chart-beat/sizes.mjs";
 import {
   EYEBROW_TO_DISPLAY,
   gapOf,
@@ -90,8 +91,25 @@ export function DirectedDotDensity({
   frame?: { width: number; height: number };
 }) {
   const { width, height } = frame ?? FRAME;
+  const SIZE =
+    width > height ? "landscape" : width === height ? "square" : "portrait";
   const { ink, muted } = deriveFurniture(direction.ground);
-  const PAD = direction.pad;
+  /**
+   * THE MARGIN IS A PROPORTION OF THE PLATE, AND THE DIRECTION FILED ITS OWN ON A 960-WIDE ONE.
+   *
+   * Stacked, it is spent twice over: height at the top and foot, which is the band the map has to
+   * come out of, and width on the column the headline sets across. `nocturne`'s filed 56 is 12 % of
+   * the plate it was measured on and 21 % of a 540-wide one. Scaled rather than replaced, so the
+   * directions still differ from each other, and never below the toolchain's own inset for the size
+   * (`frameInsetFor`, two type floors).
+   */
+  const PAD =
+    SIZE === "landscape"
+      ? direction.pad
+      : Math.max(
+          frameInsetFor(SIZE) / 2,
+          Math.round((direction.pad * width) / FRAME.width),
+        );
   const on = (id: string) => treatments.includes(id);
 
   const reg = (name: RegisterName) => registerOf(direction, name);
@@ -173,15 +191,94 @@ export function DirectedDotDensity({
   const subjectInk = accentInk;
 
   // ── the layout: the map is the subject, so the text sits beside it ─────────
-  const titleLead = leadOf(display);
   const bodyLead = leadOf(body);
   const annotLead = leadOf(annot);
   const SHARES = [0.3, 0.34, 0.38, 0.42];
   const GUTTER = 24;
   const panelFor = (share: number) => Math.round((width - PAD * 2) * share);
 
-  const layoutFor = (panel: number, t: number, l: number, r: number) => {
-    const titleLines = wrap(set(title[t], display), panel, display);
+  /**
+   * TWO LAYOUTS, AND THE FRAME CHOOSES — the answer `static-choropleth-europe-lowcarbon` worked and
+   * this beat had not taken.
+   *
+   * Beside the map is right at landscape: a map's aspect is fixed by the ground it shows, so the
+   * copy goes in the column the map does not need. At a square or tall plate the arithmetic inverts
+   * and there IS no such column. Measured 2026-09-23 at 540x960: the panel came to 131px, « 72 »
+   * and « RÉACTEURS » do not fit in it as single WORDS, and the headline was drawn straight off the
+   * end of its own column — « RÉACTE », « CENTRA », « BAS-CAR », « PUISSAN » — while the map beside
+   * it was cropped to a sliver of Iceland and the Norwegian coast. The render succeeded: nothing in
+   * this project measures a run against a PANEL's edge, only against the plate's.
+   *
+   * So below the width where a column can hold a map at least as wide as it is tall, the copy goes
+   * on top at full width and the map takes a measured band underneath.
+   */
+  const besideWidth = width - PAD * 2 - panelFor(SHARES[0]) - GUTTER;
+  const STACKED = besideWidth < height - PAD * 2;
+  /** THE MAP IS THE SUBJECT, so a stacked ladder does not merely have to CLEAR the foot — it has to
+   *  leave a map-sized band. A third of the usable height, which is the choropleth's own statement
+   *  about what a map beat IS rather than a number tuned to make one plate pass. */
+  const MIN_MAP_SHARE = 1 / 3;
+  const mapBandFloor = STACKED ? (height - PAD * 2) * MIN_MAP_SHARE : 0;
+  /** The room between where the copy stops and where the source's own line begins, with air at both
+   *  edges — not `spare`, which answers what the panel had left over the plate's foot and is a lead
+   *  too generous at the bottom. */
+  /**
+   * AND THE BAND STARTS WHERE THE INK STOPS, NOT WHERE A DROPPED LINE WOULD HAVE BEEN.
+   *
+   * `footTop` is the reading line's own baseline, and when the ladder DROPS the reading line it is
+   * still the baseline that line would have had — a gap reserved above a block that is not drawn,
+   * plus the block's own ascent and the gap before it. Measured on the square render of 2026-09-23:
+   * the last copy baseline sat at 273 and the map's band began at 309.6, so 33px of the plate
+   * belonged to nobody, and because the band is what sets the map's height on this frame, the map
+   * was 208 x 158 where it could have been 237 x 180. `spare` keeps reading `footTop`, because that
+   * is the number the BESIDE ladder was accepted on and landscape is not being re-tuned here.
+   */
+  const mapBandOf = (l: { copyBottom: number; sourceTop: number }) => {
+    const top = l.copyBottom + annotLead * 0.9;
+    return { top, height: l.sourceTop - bodyLead - top };
+  };
+
+  /**
+   * HOW SMALL A HEADLINE MAY GET AND STILL BE ONE — the two floors the choropleth states. Stacked,
+   * the headline is set across the whole plate instead of a third of it, and at 540 that is still
+   * half the lines the 960 plate takes. The large-text relaxation binds only where the filed size
+   * already clears it. Landscape never walks this ladder.
+   */
+  const LARGE_TEXT_CSS_PX = 24;
+  const LARGE_TEXT_BOLD_CSS_PX = 18.66;
+  const displayAt = (fontSize: number) => ({
+    ...display,
+    fontSize,
+    letterSpacing: (display.letterSpacing * fontSize) / display.fontSize,
+  });
+  const displayRungs: Array<typeof display> =
+    SIZE === "landscape"
+      ? [display]
+      : (() => {
+          const largeText =
+            (Number(display.fontWeight) >= 700
+              ? LARGE_TEXT_BOLD_CSS_PX
+              : LARGE_TEXT_CSS_PX) *
+            (width / viewedAtCssPx(SIZE));
+          const floor =
+            display.fontSize >= largeText
+              ? Math.max(largeText, display.fontSize * DERIVED_SIZE_RATIO)
+              : display.fontSize * DERIVED_SIZE_RATIO;
+          const out: Array<typeof display> = [display];
+          for (let s = display.fontSize - 0.5; s >= floor - 1e-9; s -= 0.5)
+            out.push(displayAt(Math.round(s * 100) / 100));
+          return out;
+        })();
+
+  const layoutFor = (
+    panel: number,
+    t: number,
+    l: number,
+    r: number,
+    dsp: typeof display,
+  ) => {
+    const titleLines = wrap(set(title[t], dsp), panel, dsp);
+    const dspLead = leadOf(dsp);
     const standfirstLines = wrap(set(limits[l], body), panel, body);
     const readingLines =
       r < 0 ? [] : wrap(set(reading[r], annot), panel, annot);
@@ -200,9 +297,9 @@ export function DirectedDotDensity({
     const subjectLines = wrap(set(subjectNote, annot), panel - swatchInset, annot);
     const eyebrowBaseline = PAD + eyebrowReg.fontSize;
     const titleTop =
-      eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + display.fontSize;
+      eyebrowBaseline + gapOf(eyebrowReg, EYEBROW_TO_DISPLAY) + dsp.fontSize;
     const limitsTop =
-      titleTop + titleLines.length * titleLead + gapOf(body, 0.5517);
+      titleTop + titleLines.length * dspLead + gapOf(body, 0.5517);
     const keyTop =
       limitsTop +
       standfirstLines.length * bodyLead +
@@ -215,8 +312,16 @@ export function DirectedDotDensity({
     const sourceTop = height - PAD - (sourceLines.length - 1) * bodyLead;
     const footTop =
       readingTop + Math.max(0, readingLines.length - 1) * annotLead;
+    /** The last descender the copy actually draws: the reading line's when there is one, and the
+     *  limit note's when the ladder has spent it. */
+    const copyBottom = readingLines.length
+      ? readingTop + (readingLines.length - 1) * annotLead + annotBand.descent
+      : limitTop + Math.max(0, limitLines.length - 1) * limitLead + axisBand.descent;
     return {
       titleLines,
+      titleLead: dspLead,
+      footTop,
+      copyBottom,
       standfirstLines,
       dotLines,
       subjectLines,
@@ -241,14 +346,18 @@ export function DirectedDotDensity({
     title: number;
     limit: number;
     reading: number;
+    display: typeof display;
   }> = [];
-  for (const share of SHARES)
+  /** Stacked there is one column and it is the whole plate, so the share rung does not exist; the
+   *  headline's SIZE takes its place as the last thing spent. */
+  for (const share of STACKED ? [1] : SHARES)
     for (let t = 0; t < title.length; t++)
-      for (let l = 0; l < limits.length; l++) {
-        for (let r = 0; r < reading.length; r++)
-          rungs.push({ share, title: t, limit: l, reading: r });
-        rungs.push({ share, title: t, limit: l, reading: -1 });
-      }
+      for (const dsp of displayRungs)
+        for (let l = 0; l < limits.length; l++) {
+          for (let r = 0; r < reading.length; r++)
+            rungs.push({ share, title: t, limit: l, reading: r, display: dsp });
+          rungs.push({ share, title: t, limit: l, reading: -1, display: dsp });
+        }
   let fits: {
     rung: (typeof rungs)[number];
     layout: ReturnType<typeof layoutFor>;
@@ -259,36 +368,72 @@ export function DirectedDotDensity({
       rung.title,
       rung.limit,
       rung.reading,
+      rung.display,
     );
-    if (l.spare >= 0) {
+    if ((STACKED ? mapBandOf(l).height : l.spare) >= mapBandFloor) {
       fits = { rung, layout: l };
       break;
     }
   }
   if (!fits)
     throw new Error(
-      `the panel's copy does not fit its column in this direction, at any share. Give the beat ` +
-        `shorter forms — do not shrink the map, which is the subject.`,
+      (STACKED
+        ? `the copy leaves no room for the map in this direction: the shortest rung at the smallest ` +
+          `headline still leaves less than the ${mapBandFloor.toFixed(0)}px band a map beat owes. `
+        : `the panel's copy does not fit its column in this direction, at any share. `) +
+        `Give the beat shorter forms — do not shrink the map, which is the subject.`,
     );
   const layout = fits.layout;
-  const panel = panelFor(fits.rung.share);
-  const mapBox = {
-    x: PAD + panel + GUTTER,
-    y: PAD,
-    width: width - PAD * 2 - panel - GUTTER,
-    height: height - PAD * 2,
-  };
-  /** FILL THE BOX AND CROP, never letterbox — the map is the subject. The crop is anchored west,
-   *  because the ground it gives up is the far east and the field it must not lose is Iberia. */
-  const fill = Math.max(mapBox.width, mapBox.height * aspect);
+  const drawnDisplay = fits.rung.display;
+  const titleLead = layout.titleLead;
+  const panel = STACKED ? width - PAD * 2 : panelFor(fits.rung.share);
+  const band = mapBandOf(layout);
+  const mapBox = STACKED
+    ? { x: PAD, y: band.top, width: width - PAD * 2, height: band.height }
+    : {
+        x: PAD + panel + GUTTER,
+        y: PAD,
+        width: width - PAD * 2 - panel - GUTTER,
+        height: height - PAD * 2,
+      };
+  /** BESIDE: FILL THE BOX AND CROP, never letterbox — the map is the subject, the box is as tall as
+   *  the plate, and the ground it gives up is the far east. STACKED: FIT inside the band instead.
+   *  The box is only as tall as the copy left it, so filling it would draw the map through the
+   *  source line. A whole map that is smaller is a map; a cropped strip of one is not. */
+  const fill = STACKED
+    ? Math.min(mapBox.width, mapBox.height * aspect)
+    : Math.max(mapBox.width, mapBox.height * aspect);
   const mapW = fill;
   const mapH = fill / aspect;
-  const mapX = mapBox.x;
+  /** STACKED: the fitted map is CENTRED in its band. At square the copy leaves a band 468 wide and
+   *  158 tall, and Europe at 1.32:1 comes to 208 across — left-anchored, the other 260px of the band
+   *  were a slab of the backstop's water with nothing in it. The choropleth stacks a map that fills
+   *  its band's width and never meets this case; here the band's shape and the camera's are far
+   *  enough apart that the map is an object on the plate rather than a full-width strip, and an
+   *  object is centred. */
+  const mapX = STACKED
+    ? mapBox.x + (mapBox.width - mapW) / 2
+    : mapBox.x;
   const mapY = mapBox.y + (mapBox.height - mapH) / 2;
+  /** WHERE THE BAKED PLATE IS DRAWN. Beside, it is stretched to the box, which is what this beat
+   *  has always done and what landscape was accepted on — the box's 1.30:1 and the camera's 1.32:1
+   *  differ by a percent there and the coastlines sit on their own ground. Stacked, the box's shape
+   *  is whatever the copy left and the two no longer agree at all, so the plate is drawn at the
+   *  MAP's own rect: one geometry for the basemap, the outlines and the dots, and the clip does the
+   *  cropping instead of `preserveAspectRatio`. */
+  const plateRect = STACKED
+    ? { x: mapX, y: mapY, width: mapW, height: mapH }
+    : mapBox;
+  /** AND THE CAMERA IS THE PLATE'S OWN RECT WHEN IT IS FITTED. The clip and the water backstop are
+   *  the box in the beside layout, where the map fills it and overflows; stacked they are the map
+   *  itself, so nothing paints sea where the plate has no map. */
+  const camera = plateRect;
   onLadder?.(
     `ladder: headline ${fits.rung.title + 1}, standfirst ${fits.rung.limit + 1}, reading ` +
       (fits.rung.reading < 0 ? "dropped" : `form ${fits.rung.reading + 1}`) +
-      ` · panel ${panel}px · map ${mapW.toFixed(0)} x ${mapH.toFixed(0)} · ${dots.length} dots`,
+      ` · ${STACKED ? "stacked" : `panel ${panel}px`} · headline ` +
+      `${drawnDisplay.fontSize.toFixed(1)}px · map ${mapW.toFixed(0)} x ${mapH.toFixed(0)} · ` +
+      `${dots.length} dots`,
   );
 
   /** THE DOT'S SIZE IS A MEASUREMENT, NOT A TASTE. At this camera a station is a point, and the
@@ -315,7 +460,7 @@ export function DirectedDotDensity({
           key={l + i}
           x={PAD}
           y={layout.titleTop + i * titleLead}
-          {...line(display)}
+          {...line(drawnDisplay)}
         >
           {l}
         </text>
@@ -409,10 +554,10 @@ export function DirectedDotDensity({
       <defs>
         <clipPath id="camera">
           <rect
-            x={mapBox.x}
-            y={mapBox.y}
-            width={mapBox.width}
-            height={mapBox.height}
+            x={camera.x}
+            y={camera.y}
+            width={camera.width}
+            height={camera.height}
           />
         </clipPath>
       </defs>
@@ -423,18 +568,18 @@ export function DirectedDotDensity({
             covers the box exactly, so a short bake would show the plate's own water rather than
             white paper. */}
         <rect
-          x={mapBox.x}
-          y={mapBox.y}
-          width={mapBox.width}
-          height={mapBox.height}
+          x={camera.x}
+          y={camera.y}
+          width={camera.width}
+          height={camera.height}
           fill={water}
         />
         <image
           href={plate}
-          x={mapBox.x}
-          y={mapBox.y}
-          width={mapBox.width}
-          height={mapBox.height}
+          x={plateRect.x}
+          y={plateRect.y}
+          width={plateRect.width}
+          height={plateRect.height}
           preserveAspectRatio="none"
         />
         {shapes.map((s) => (
