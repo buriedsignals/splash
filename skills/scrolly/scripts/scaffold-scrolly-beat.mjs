@@ -35,6 +35,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { defaultLanguage, depthIndependentPaths, languageAwareNumbers, missingAssetsMessage, paletteReachable, paletteRefusalMessage, requiredLocalAssets } from "./depth-independent.mjs";
+import { eachThroughSkillScript } from "#shared/design-base/skill-import.mjs";
 
 // ── THE EDITORIAL CHAIN, WIRED (spec `docs/splash/2026-09-17-editorial-chain-spec.md` §4) ──────
 //
@@ -271,11 +272,11 @@ export function adaptFromBeat({ root, fromBeat, values }) {
   tsx = languageAwareNumbers(depthIndependentPaths(tsx), lang, { typed: true });
   drive = languageAwareNumbers(depthIndependentPaths(drive), lang);
 
-  return {
+  return eachThroughSkillScript({
     [runnerFile]: runner,
     [`Directed${values.Name}Scrolly.tsx`]: tsx,
     [driveNames[0]]: drive,
-  };
+  });
 }
 
 /**

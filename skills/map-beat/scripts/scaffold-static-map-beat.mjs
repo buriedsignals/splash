@@ -37,6 +37,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { composedDirectionDefault, markBefore, markDividers, missingAssetsMessage, paletteReachable, paletteRefusalMessage, prependBanner, requiredLocalAssets, topBanner } from "./static-plumbing.mjs";
+import { eachThroughSkillScript } from "#shared/design-base/skill-import.mjs";
 
 // ── THE EDITORIAL CHAIN, WIRED (spec `docs/splash/2026-09-17-editorial-chain-spec.md` §4) ──────
 //
@@ -237,7 +238,7 @@ export function adaptFromBeat({ root, fromBeat, beatPath, component }) {
     content = prependBanner(content, topBanner(fromBeat));
     out[sib] = content;
   }
-  return { files: out, name };
+  return { files: eachThroughSkillScript(out), name };
 }
 
 export function scaffoldBeat({ root = DEFAULT_ROOT, templates, files, type, beat, component, from, generic = false, filed = false }) {

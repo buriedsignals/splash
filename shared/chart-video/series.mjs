@@ -1,4 +1,4 @@
-// twin/skills/chart-video/scripts/series.mjs
+// twin/shared/chart-video/series.mjs
 //
 // THE TYPE-FAMILY MATHS A CHART VIDEO BEAT KEPT RE-TYPING — pure functions, nothing else.
 //

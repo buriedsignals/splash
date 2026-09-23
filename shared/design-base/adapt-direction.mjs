@@ -24,9 +24,15 @@
 const SHAPES = [
   {
     // scrolly, chart-web and map-web: `for (const file of readdirSync(DIRECTIONS)…) { const id = …`
-    head: /for \(const file of readdirSync\(DIRECTIONS\)\.filter\(\(f\) => f\.endsWith\("\.md"\)\)\) \{\n(\s*)const id = file\.replace\(\/\\\.md\$\/, ""\);\n\s*const (\w+) = resolveDirectionFamilies\(readDirection\(join\(DIRECTIONS, file\)\), textPerRegister\);/,
-    rewrite: (m, indent, name) =>
-      `for (const { id, base } of RUN_DIRECTIONS) {\n${indent}const ${name} = resolveDirectionFamilies(base, textPerRegister);`,
+    //
+    // The `--only` line between the two is a MAP beat's: every scrolly map and static map worked
+    // example filters the loop to one direction when asked, and a chart beat does not. Requiring the
+    // two lines to be adjacent made this transform refuse all eight scrolly map proofs, which is
+    // every worked example that scaffold can adapt — measured 2026-09-23. It is kept, not dropped:
+    // `RUN_DIRECTIONS` carries the same `id`, so the filter still means what it meant.
+    head: /for \(const file of readdirSync\(DIRECTIONS\)\.filter\(\(f\) => f\.endsWith\("\.md"\)\)\) \{\n(\s*)const id = file\.replace\(\/\\\.md\$\/, ""\);\n(\s*if \(ONLY && id !== ONLY\) continue;\n)?\s*const (\w+) = resolveDirectionFamilies\(readDirection\(join\(DIRECTIONS, file\)\), textPerRegister\);/,
+    rewrite: (m, indent, filter, name) =>
+      `for (const { id, base } of RUN_DIRECTIONS) {\n${filter ?? ""}${indent}const ${name} = resolveDirectionFamilies(base, textPerRegister);`,
   },
 ];
 

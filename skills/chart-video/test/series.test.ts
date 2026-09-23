@@ -1,5 +1,5 @@
 /**
- * EVERY HELPER IN `scripts/series.mjs`, HELD TO THE BEATS IT WAS HARVESTED FROM.
+ * EVERY HELPER IN `shared/chart-video/series.mjs`, HELD TO THE BEATS IT WAS HARVESTED FROM.
  *
  * The point of this file is not that the helpers compute SOMETHING; it is that each one computes what a shipped beat
  * already computed by hand, on that beat's own frozen data. So each test carries one of two kinds of oracle:
@@ -39,7 +39,7 @@ import {
   round1,
   standsClearOfCurve,
   widestOf,
-} from "../scripts/series.mjs";
+} from "#shared/chart-video/series.mjs";
 
 import {
   fieldAt as areaFieldAt,

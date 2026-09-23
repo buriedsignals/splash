@@ -4,14 +4,14 @@
 // The shared mechanics: one state per event (`states.mjs`), each field's change run through its WINDOW inside the
 // event (shares of the event's duration), eased unless the field is LINEAR. `sceneAt` is this beat's own.
 //
-// THE SUBJECT-AGNOSTIC MATHS IS NOT WRITTEN HERE. `skills/chart-video/scripts/series.mjs` carries what every beat
+// THE SUBJECT-AGNOSTIC MATHS IS NOT WRITTEN HERE. `#shared/chart-video/series.mjs` carries what every beat
 // needs and no beat should own: the easing, the field accumulator, a series drawn to a clock (`drawnTo`), its
 // outline and surface (`polylinePath`, `areaPath`), staggered moves (`moveOf`), the room a word has over a curve
 // (`curveTopOver`, `standsClearOfCurve`), the widest measured text (`widestOf`), a crossing (`firstCrossing`).
 // The ARGUMENT, the gestures, the layout and the composition stay here — they are this beat's, and only this beat's.
 
 import { EVENT_ORDER, progressOf } from "#shared/chart-video/timing.ts";
-import { clamp01, ease, fieldAtOf, lerp } from "../../skills/chart-video/scripts/series.mjs";
+import { clamp01, ease, fieldAtOf, lerp } from "#shared/chart-video/series.mjs";
 
 export { clamp01, ease, lerp };
 

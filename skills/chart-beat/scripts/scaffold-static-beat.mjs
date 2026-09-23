@@ -39,6 +39,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { composedDirectionDefault, markBefore, markDividers, missingAssetsMessage, paletteReachable, paletteRefusalMessage, prependBanner, requiredLocalAssets, topBanner } from "./static-plumbing.mjs";
+import { eachThroughSkillScript } from "#shared/design-base/skill-import.mjs";
 
 // ── THE EDITORIAL CHAIN, WIRED (spec `docs/splash/2026-09-17-editorial-chain-spec.md` §4) ──────
 //
@@ -235,7 +236,7 @@ export function adaptFromBeat({ root, fromBeat, beatPath, component }) {
   let tsx = markDividers(read(tsxNames[0]));
   tsx = prependBanner(tsx, topBanner(fromBeat, [`This is ${fromBeat}'s own geometry: the marks it draws for ITS OWN data shape are not necessarily this`, `beat's own — read them before assuming they carry over unchanged.`]));
 
-  return { [runnerFile]: runner, [`Directed${name}.tsx`]: tsx, name };
+  return eachThroughSkillScript({ [runnerFile]: runner, [`Directed${name}.tsx`]: tsx, name });
 }
 
 /**

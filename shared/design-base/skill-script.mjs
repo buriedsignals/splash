@@ -17,7 +17,7 @@
 
 import { existsSync } from "node:fs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 
 /** The product namespace the Engine projects Splash's skills under. */
 const AGENTS_STORE = () => join(homedir(), ".agents", "skills", "splash");
@@ -42,6 +42,44 @@ export function skillScript(root, skill, ...parts) {
     join(root, "skills", skill, ...parts),
     join(AGENTS_STORE(), skill, ...parts),
   ];
+  for (const candidate of candidates) {
+    looked.push(candidate);
+    if (existsSync(candidate)) return candidate;
+  }
+  throw new Error(
+    `this beat cannot find ${skill}/${parts.join("/")} — the skill that produces it. An installed ` +
+      "stories root vendors `shared/` and not `skills/`; the Engine projects the skills into its own " +
+      "namespaced store instead. Set SPLASH_CHECKOUT_ROOT to the Splash checkout, or run this beat " +
+      `from one. Looked in:\n  ${looked.join("\n  ")}`,
+  );
+}
+
+/**
+ * The same script, asked from a beat's own directory rather than from a root it already found.
+ *
+ * Not every file that reaches into a skill has a root to hand: a beat's `beat.mjs` imports its
+ * shared code through `#shared/*` and never walks up for anything, so there is no `ROOT` for
+ * `skillScript` to be given. Rather than make every such file grow a walk-up of its own — which is
+ * how a rewritten import lands above the declaration it depends on — this walks the ancestors
+ * itself, asking each one the only question that matters: is the skill under here?
+ *
+ * Same order as `skillScript`, with the single root widened to every ancestor, nearest first.
+ *
+ * @param {string} startDir the directory of the file asking, i.e. `import.meta.dirname`
+ * @param {string} skill e.g. `"palette"`
+ * @param {...string} parts the path inside the skill, e.g. `"scripts", "palette.mjs"`
+ */
+export function skillScriptFrom(startDir, skill, ...parts) {
+  const looked = [];
+  const fromEnv = process.env.SPLASH_CHECKOUT_ROOT;
+  const candidates = fromEnv ? [join(fromEnv, "skills", skill, ...parts)] : [];
+  for (let dir = resolve(startDir); ; ) {
+    candidates.push(join(dir, "skills", skill, ...parts));
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  candidates.push(join(AGENTS_STORE(), skill, ...parts));
   for (const candidate of candidates) {
     looked.push(candidate);
     if (existsSync(candidate)) return candidate;

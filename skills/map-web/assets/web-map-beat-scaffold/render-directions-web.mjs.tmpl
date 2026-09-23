@@ -25,13 +25,19 @@ import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
-import { MAP_DRAWING_SHARE, renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
+// The renderer lives in the chart-web SKILL, not in `shared/`, and a beat reaches it through
+// `skillScriptFrom` rather than by counting `../` — a story beat sits one level deeper than a
+// catalogue proof, and an installed stories root has no `skills/` at any depth at all.
+const { skillScriptFrom } = await import("#shared/design-base/skill-script.mjs");
+const { MAP_DRAWING_SHARE, renderWeb } = await import(
+  skillScriptFrom(import.meta.dirname, "chart-web", "scripts", "render-web.mjs")
+);
 // SCAFFOLD · THE VOCABULARY AND THE LIVE MOUNT THIS TYPE SPENDS. The menu is in the SKILL.md's
 // "The map vocabularies"; the type sheet `skills/map-web/references/types/%%TYPE%%.md` names the
 // one its worked example spent. A type that deserves NONE of them, or deserves a new one, is a
 // legitimate outcome — the gesture is the beat's design decision, not the scaffold's.
-// import { … } from "../../skills/map-web/assets/<vocabulary>.ts";
-// import { live%%Name%%Plan, live%%Name%%Script } from "../../skills/map-web/assets/live-<type>.ts";
+// const { … } = await import(skillScriptFrom(import.meta.dirname, "map-web", "assets", "<vocabulary>.ts"));
+// const { live%%Name%%Plan, live%%Name%%Script } = await import(skillScriptFrom(import.meta.dirname, "map-web", "assets", "live-<type>.ts"));
 import { CHANGE_MS, Directed%%Name%%Web } from "./Directed%%Name%%Web.tsx";
 import { WINDOW, CAMERA_ASPECT as MEASURE_ASPECT } from "./camera.ts";
 
