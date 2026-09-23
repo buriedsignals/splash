@@ -43,7 +43,7 @@ if (lookAt !== -1 && !lookDir) throw new Error("--look takes a directory");
 const beat = loadBeat();
 const { subject } = beat;
 const textPerRegister = textPerRegisterOf(beat.copy, beat.subject);
-const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
+const newsroom = readPalette(HERE);
 const BEAT_FACTS = { evidenceLevels: 3 };
 console.log(
   reportComposition(

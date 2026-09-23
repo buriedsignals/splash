@@ -59,7 +59,7 @@ if (!key) throw new Error("no MapTiler key in the environment: run with the work
 const beat = loadBeat();
 const { subject } = beat;
 const textPerRegister = textPerRegisterOf(beat.copy, subject);
-const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
+const newsroom = readPalette(HERE);
 const BEAT_FACTS = { evidenceLevels: 3 };
 console.log(
   reportComposition(

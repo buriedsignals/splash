@@ -76,7 +76,7 @@ async function main() {
     `${outlier.name} is the reverse: solar ${outlier.solar.toFixed(1)}%, wind ${outlier.wind.toFixed(1)}%.`;
   console.log(`alt: ${alt}`);
 
-  const palette = readPalette(HERE, { stopAt: join(HERE, "..") });
+  const palette = readPalette(HERE);
   const { ground, accent, origin, source: paletteSource } = palette;
   console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
   // One ink per series, in the order the accents were recorded: wind first, solar second.

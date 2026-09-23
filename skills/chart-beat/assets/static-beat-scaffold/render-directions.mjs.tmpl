@@ -74,7 +74,7 @@ if (ONLY_AT !== -1 && (!ONLY || ONLY.startsWith("--"))) throw new Error("--only 
 // is the catalogue, which composes its own; `--filed` stays the catalogue's escape to the three.
 const labelOf = (id) => id.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const all = filedDirections();
-const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
+const newsroom = readPalette(HERE);
 /** SCAFFOLD: how many ranked levels of evidence this beat's own claim distinguishes — the composer
  *  wants that many distinguishable voices. */
 const BEAT_FACTS = { evidenceLevels: 3 };

@@ -57,7 +57,7 @@ const key = mapTilerKeyIn(process.env);
 if (!key) throw new Error("no MapTiler key in the environment: run with the worktree's .env loaded (set -a && . ./.env && set +a)");
 const beat = loadBeat();
 const textPerRegister = textPerRegisterOf(beat.copy);
-const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
+const newsroom = readPalette(HERE);
 const BEAT_FACTS = { evidenceLevels: 3 };
 console.log(
   reportComposition(

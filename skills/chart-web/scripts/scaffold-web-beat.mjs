@@ -606,7 +606,7 @@ const CATALOGUE_DIRECTION_SOURCE = `// A CATALOGUE PROOF, WHICH IS R-A's NAMED E
 // that the art direction is a parameter of the run rather than a value baked into this beat.
 const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
 const filedDirections = readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"));
-const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
+const newsroom = readPalette(HERE);
 console.log(report(composeDirections({ newsroom, filed: filedDirections.map((f) => readDirection(join(DIRECTIONS, f))), beat: BEAT_FACTS, textPerRegister }), { beat: BEAT_FACTS }));
 console.log("");
 const directions = filedDirections.map((f) => ({

@@ -68,7 +68,7 @@ const textPerRegister = {
 const filed = readdirSync(DIRECTIONS)
   .filter((f) => f.endsWith(".md"))
   .map((f) => readDirection(join(DIRECTIONS, f)));
-const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
+const newsroom = readPalette(HERE);
 // `BRIEF.md` ranks this beat's evidence in four levels: the 2024 point, the 1967 reference, the
 // curve, the muted peak. That number is the beat's own, not a default.
 const BEAT_FACTS = { evidenceLevels: 4 };

@@ -139,7 +139,7 @@ export const copy = {
 const filed = readdirSync(DIRECTIONS)
   .filter((f) => f.endsWith(".md"))
   .map((f) => readDirection(join(DIRECTIONS, f)));
-const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
+const newsroom = readPalette(HERE);
 const BEAT_FACTS = { evidenceLevels: BREAKS.length + 1 };
 console.log(
   reportComposition(composeDirections({ newsroom, filed, beat: BEAT_FACTS, textPerRegister }), {

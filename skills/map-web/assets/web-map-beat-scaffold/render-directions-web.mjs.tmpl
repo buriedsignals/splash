@@ -236,7 +236,7 @@ const textPerRegister = {
 for (const key of Object.keys(textPerRegister)) textPerRegister[key] = plain(textPerRegister[key]);
 
 const filed = readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md")).map((f) => readDirection(join(DIRECTIONS, f)));
-const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
+const newsroom = readPalette(HERE);
 const BEAT_FACTS = {};
 console.log(report(composeDirections({ newsroom, filed, beat: BEAT_FACTS, textPerRegister }), { beat: BEAT_FACTS }));
 console.log("");

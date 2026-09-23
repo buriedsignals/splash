@@ -112,7 +112,7 @@ async function main() {
     `${LAST_YEAR} — a net drop of ${twh(netChange)}.`;
   console.log(`alt: ${alt}`);
 
-  const palette = readPalette(HERE, { stopAt: join(HERE, "..") });
+  const palette = readPalette(HERE);
   const { ground, accent, origin, source: paletteSource } = palette;
   console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
   // One fill per direction of change, in the order the accents were recorded.

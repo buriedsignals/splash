@@ -153,7 +153,7 @@ const textPerRegister = {
 const filed = readdirSync(DIRECTIONS)
   .filter((file) => file.endsWith(".md"))
   .map((file) => readDirection(join(DIRECTIONS, file)));
-const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
+const newsroom = readPalette(HERE);
 const BEAT_FACTS = { evidenceLevels: 3 };
 console.log(report(composeDirections({ newsroom, filed, beat: BEAT_FACTS, textPerRegister }), { beat: BEAT_FACTS }));
 console.log("");

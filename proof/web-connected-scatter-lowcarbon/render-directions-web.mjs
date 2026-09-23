@@ -452,7 +452,7 @@ const facts = beatFacts(
 console.log(`treatments applicable: ${applicableTreatments(facts).map((t) => t.id).join(", ") || "(none)"}\n`);
 
 const filed = filedFiles.map((f) => readDirection(join(DIRECTIONS, f)));
-const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
+const newsroom = readPalette(HERE);
 const BEAT_FACTS = { evidenceLevels: 2 };
 console.log(report(composeDirections({ newsroom, filed, beat: BEAT_FACTS, textPerRegister }), { beat: BEAT_FACTS }));
 console.log("");

@@ -103,7 +103,7 @@ if (ONLY_AT !== -1 && (!ONLY || ONLY.startsWith("--"))) throw new Error("--only 
 // this beat's own `renders/<label>.png`.
 const labelOf = (id) => id.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const all = filedDirections();
-const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
+const newsroom = readPalette(HERE);
 // Three distinguishable voices: the distribution's bars, the threshold reference line, and the
 // accented count/share it names.
 const BEAT_FACTS = { evidenceLevels: 3 };

@@ -77,7 +77,7 @@ async function main() {
   }
   console.log(`female > male from ${crossover.ageBand} upward`);
 
-  const palette = readPalette(HERE, { stopAt: join(HERE, "..") });
+  const palette = readPalette(HERE);
   const { ground, accent, origin, source: paletteSource } = palette;
   console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
   // One ink per side of the spine, in the order the accents were recorded.

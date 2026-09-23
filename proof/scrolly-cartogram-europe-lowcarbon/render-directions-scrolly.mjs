@@ -201,7 +201,7 @@ const textPerRegister = {
 const filed = readdirSync(DIRECTIONS)
   .filter((f) => f.endsWith(".md"))
   .map((f) => readDirection(join(DIRECTIONS, f)));
-const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
+const newsroom = readPalette(HERE);
 const BEAT_FACTS = { evidenceLevels: CLASS_COUNT };
 console.log(report(composeDirections({ newsroom, filed, beat: BEAT_FACTS, textPerRegister }), { beat: BEAT_FACTS }));
 console.log(`par pays ${byCountry.toFixed(1)} · au kWh ${byProduction.toFixed(1)} · au km² ${byArea.toFixed(1)} · ${widest[0]} ${widestShare.toFixed(0)} % du territoire\n`);

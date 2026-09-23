@@ -165,7 +165,7 @@ async function run() {
     accent,
     origin,
     source: paletteSource,
-  } = readPalette(HERE, { stopAt: join(HERE, "..") });
+  } = readPalette(HERE);
   console.log(
     `palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`,
   );

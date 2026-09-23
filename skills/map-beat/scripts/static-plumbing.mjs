@@ -128,7 +128,7 @@ const DIRECTIONS_CONST_RE = /^const DIRECTIONS = join\(HERE(?:, "\.\.")+, "docs"
 // The block every worked static beat computes ALL THREE filed directions and only ever prints the
 // composition report from — never uses it to pick which direction(s) actually render.
 const COMPOSE_BLOCK_RE =
-  /const filed = readdirSync\(DIRECTIONS\)\r?\n\s*\.filter\(\(f\) => f\.endsWith\("\.md"\)\)\r?\n\s*\.map\(\(f\) => readDirection\(join\(DIRECTIONS, f\)\)\);\r?\nconst newsroom = readPalette\(HERE, \{ stopAt: join\(HERE, "\.\."\) \}\);\r?\nconst BEAT_FACTS = (\{[^\n]*\});\r?\nconsole\.log\(\r?\n\s*\w+\(composeDirections\(\{ newsroom, filed, beat: BEAT_FACTS, textPerRegister \}\), \{\r?\n\s*beat: BEAT_FACTS,\r?\n\s*\}\),\r?\n\);\r?\nconsole\.log\(""\);\r?\n/;
+  /const filed = readdirSync\(DIRECTIONS\)\r?\n\s*\.filter\(\(f\) => f\.endsWith\("\.md"\)\)\r?\n\s*\.map\(\(f\) => readDirection\(join\(DIRECTIONS, f\)\)\);\r?\nconst newsroom = readPalette\(HERE\);\r?\nconst BEAT_FACTS = (\{[^\n]*\});\r?\nconsole\.log\(\r?\n\s*\w+\(composeDirections\(\{ newsroom, filed, beat: BEAT_FACTS, textPerRegister \}\), \{\r?\n\s*beat: BEAT_FACTS,\r?\n\s*\}\),\r?\n\);\r?\nconsole\.log\(""\);\r?\n/;
 
 // The loop every worked static beat opens with, over ALL THREE filed directions.
 const LOOP_HEADER_RE =
@@ -153,7 +153,7 @@ if (ONLY_AT !== -1 && (!ONLY || ONLY.startsWith("--"))) throw new Error("--only 
 // this beat's own \`renders/<label>.png\`.
 const labelOf = (id) => id.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 const all = filedDirections();
-const newsroom = readPalette(HERE, { stopAt: join(HERE, "..") });
+const newsroom = readPalette(HERE);
 /** SCAFFOLD: how many ranked levels of evidence this beat's own claim distinguishes — the composer
  *  wants that many distinguishable voices. */
 const BEAT_FACTS = ${beatFactsExpr};

@@ -133,7 +133,7 @@ async function main() {
     `rose from ${least.y2000.toFixed(1)} to ${least.y2023.toFixed(1)} years, the smallest gain ` +
     `(+${least.gap.toFixed(1)}).`;
 
-  const palette = readPalette(HERE, { stopAt: join(HERE, "..") });
+  const palette = readPalette(HERE);
   const { ground, accent, origin, source: paletteSource } = palette;
   console.log(`palette from ${paletteSource} — ground ${ground}, accent ${accent}, chosen by ${origin}`);
   // One ink per year: the recorded accents in the order they were recorded, earlier year first.

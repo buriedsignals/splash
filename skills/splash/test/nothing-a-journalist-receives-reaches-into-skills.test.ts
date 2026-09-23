@@ -195,4 +195,26 @@ describe("the code a scaffold writes into a story", () => {
     }
     expect(reaching.sort()).toEqual([]);
   });
+
+  /**
+   * AND THE SAME SHAPE AGAIN, ON THE STORY'S OWN ANSWERS.
+   *
+   * A worked example is its own story: `proof/<beat>/` carries its PALETTE.md, and its runner pins
+   * the walk to the beat's own parent — `readPalette(HERE, { stopAt: join(HERE, "..") })` — so it
+   * cannot drift into a neighbouring proof's colours. A STORY beat sits at
+   * `stories/<story>/beats/<beat>/`, and the answers it is supposed to read sit at the story root,
+   * one level above the pin. Measured 2026-09-23, rendering a real story's map:
+   *
+   *   No PALETTE.md found … Looked in: …/beats/eu-inequality-map/PALETTE.md, …/beats/PALETTE.md
+   *
+   * The scaffold's own reachability check walks to the filesystem root, so it said yes and the
+   * render said no — preflight green where production fails, which is its own recurring defect.
+   */
+  it("reads the story's own answers, and not only the ones sitting beside the beat", async () => {
+    const pinned = (await produced())
+      .filter(({ file }) => file.endsWith(".mjs"))
+      .filter(({ source }) => /stopAt:\s*join\(HERE,\s*"\.\."\)/.test(source))
+      .map(({ scaffold, beat, file }) => `${scaffold} ← ${beat}/${file}`);
+    expect([...new Set(pinned)]).toEqual([]);
+  });
 });
