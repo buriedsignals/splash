@@ -1208,13 +1208,28 @@ ${
 /* THE STANDFIRST IS THE ADJUSTING VARIABLE, NOT THE MAP. One line on the page; the sentence itself
    is untouched in the markup, still read out whole by a screen reader and still copied whole.
    Measured at 1512x860: every map beat's standfirst set two lines, and the second cost 18 px of
-   drawing on every one of them. */
+   drawing on every one of them.
+
+   …UNTIL ONE LINE STOPS HOLDING THE SENTENCE. The clamp was measured on a 1512px page, and a map
+   beat's caveat is required to carry a DERIVED NUMBER — what this beat's own projection costs its
+   own subject. At a narrower width that number is the half that gets cut: measured 2026-09-23 at
+   375px, the delivered page read « Coefficient de Gini du revenu disponible équivalisé, 2… » and
+   the projection's cost was gone. Two rules in one toolchain, one silently overruling the other.
+
+   So the clamp holds where it was measured and lets go below it. Two lines cost 18px of drawing;
+   a sentence that stops mid-word costs the reader the number the format exists to make them see. */
 .chart-caveat {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 1;
   line-clamp: 1;
   overflow: hidden;
+}
+@media (max-width: 1100px) {
+  .chart-caveat {
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+  }
 }
 /* AND THE CONTROL'S NOTE ROW STOPS BEING RESERVED AT ITS WORST CASE. 'stacked' notes already put
    every sentence in one grid cell, so the row is as tall as the one showing and the drawing never

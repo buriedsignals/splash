@@ -185,7 +185,9 @@ if (!key) throw new Error(`no MAPTILER_KEY in ${keyPath}`);
 const collection = JSON.parse(await readFile(countriesPath, "utf8"));
 const shapes = collection.features.map((f) => ({
   key: f.properties.ADM0_A3, // SCAFFOLD: the join key this beat is frozen on — see the type sheet's JOIN note
-  name: f.properties.NAME_FR ?? f.properties.NAME,
+  // SCAFFOLD: the property this beat reads its shape names from. It was `NAME_FR ?? NAME`, which
+    // seeds French into every new beat whatever language the newsroom publishes in.
+    name: f.properties.NAME ?? f.properties.name,
   geometry: f.geometry,
 }));
 
