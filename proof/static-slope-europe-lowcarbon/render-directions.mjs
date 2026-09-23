@@ -14,7 +14,7 @@
 
 import { readdirSync } from "node:fs";
 import { readFile, rm } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderStill } from "#shared/chart-beat/render-still.mjs";
@@ -24,10 +24,17 @@ import { readDirection } from "../../scripts/design-base/read-direction.mjs";
 import { composeDirections, report } from "../../scripts/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "../../scripts/design-base/resolve-families.mjs";
 import { DirectedSlope } from "./DirectedSlope.tsx";
+import { assertBeatMayEnter, directedFrame, exportSizeFromArgv, nameAtSize } from "#shared/chart-beat/directed-size.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
 const OUT = join(HERE, "renders");
+/** THE SIZE THIS RUN DRAWS AT, and whether this beat's own type may enter it at all: a tall frame is a
+ *  different drawing, not a stretched one, and `type-at-size.mjs` refuses a type whose range nobody has
+ *  measured rather than shipping an aspect nobody chose. */
+const SIZE = exportSizeFromArgv();
+const FRAME = directedFrame(SIZE);
+assertBeatMayEnter(HERE, SIZE, { what: basename(HERE) });
 const FROM = 2000;
 const TO = 2024;
 const EYEBROW = "Énergie · Europe";
@@ -260,6 +267,9 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   try {
     await renderStill({
       element: createElement(DirectedSlope, {
+        // THE FRAME THIS RENDER DRAWS IN. The component used to hold a module constant; it takes the
+        // run's own frame now, so one component serves landscape, portrait and square.
+        frame: { width: FRAME.width, height: FRAME.height },
         lines: drawn,
         rails: { left: String(FROM), right: String(TO) },
         title,
@@ -281,12 +291,13 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
         treatments: offered.map((t) => t.id),
         onLadder: (note) => console.log(`  ${note}`),
       }),
-      // The beat pins `landscape` (1920 x 1080); 960 x 540 at scale 2 delivers exactly that.
-      width: 960,
-      height: 540,
+      // THE SLOT'S OWN SIZE. `--size` picks it; landscape is what an article's column asks for and
+      // what this lineage's tuning was measured at. The frame is half the export size at scale 2.
+      width: FRAME.width,
+      height: FRAME.height,
       outDir: OUT,
-      name: id,
-      scale: 2,
+      name: nameAtSize(id, SIZE),
+      scale: FRAME.scale,
     });
     console.log(`  -> renders/${id}.png\n`);
   } catch (error) {

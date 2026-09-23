@@ -17,7 +17,7 @@ import { readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { dirname, join } from "node:path";
+import { basename, dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import {
@@ -34,6 +34,7 @@ import { BEAT } from "./bake.mjs";
 import { readDirection } from "../../scripts/design-base/read-direction.mjs";
 import { composeDirections, report as reportComposition } from "../../scripts/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "../../scripts/design-base/resolve-families.mjs";
+import { assertBeatMayEnter, directedFrame, exportSizeFromArgv, nameAtSize } from "#shared/chart-beat/directed-size.mjs";
 import {
   DirectedChoroplethMap,
   mapGeometryFor,
@@ -53,6 +54,12 @@ import {
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
 const OUT = join(HERE, "renders");
+/** THE SIZE THIS RUN DRAWS AT, and whether this beat's own type may enter it at all: a tall frame is a
+ *  different drawing, not a stretched one, and `type-at-size.mjs` refuses a type whose range nobody has
+ *  measured rather than shipping an aspect nobody chose. */
+const SIZE = exportSizeFromArgv();
+const FRAME = directedFrame(SIZE);
+assertBeatMayEnter(HERE, SIZE, { what: basename(HERE) });
 /** THE PLANS GO TO A TEMP DIRECTORY, not beside the beat. A plan is ~2 MB of study geometry per
  *  direction — it is a bake INPUT, derived in full from the frozen data and shapes on every run, and
  *  committing three copies of the same rings would be committing a build artifact. What is committed
@@ -271,6 +278,9 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   try {
     await renderStill({
       element: createElement(DirectedChoroplethMap, {
+        // THE FRAME THIS RENDER DRAWS IN. The component used to hold a module constant; it takes the
+        // run's own frame now, so one component serves landscape, portrait and square.
+        frame: { width: FRAME.width, height: FRAME.height },
         // The plate is inlined as a data URI because the rasteriser has no network and no CWD: a
         // plate referenced by path renders as a blank box and says nothing about it. It is no longer
         // only a basemap — the classes, the borders, the leaders, the ring and every placed word are
@@ -298,12 +308,13 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
         treatments: offered.map((t) => t.id),
         onLadder: (note) => console.log(`  ${note}`),
       }),
-      // The beat pins `landscape` (1920 x 1080); 960 x 540 at scale 2 delivers exactly that.
-      width: 960,
-      height: 540,
+      // THE SLOT'S OWN SIZE. `--size` picks it; landscape is what an article's column asks for and
+      // what this lineage's tuning was measured at. The frame is half the export size at scale 2.
+      width: FRAME.width,
+      height: FRAME.height,
       outDir: OUT,
-      name: id,
-      scale: 2,
+      name: nameAtSize(id, SIZE),
+      scale: FRAME.scale,
     });
     console.log(`  -> renders/${id}.png\n`);
   } catch (error) {
