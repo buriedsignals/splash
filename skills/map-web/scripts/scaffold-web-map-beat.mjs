@@ -330,12 +330,28 @@ export function scaffoldBeat({ root = DEFAULT_ROOT, templates = TEMPLATES, files
   // filesystem fact, and asking it twice is cheaper than a variable that can go stale.
   const paletteAlreadyReachable = paletteReachableFrom(beatDir);
   if (!paletteAlreadyReachable) copyFileSync(join(staticDir, "PALETTE.md"), join(beatDir, "PALETTE.md"), 1 /* COPYFILE_EXCL */);
+  /**
+   * THE FROZEN DATA AND THE GEOMETRY COME ACROSS, because the runner this scaffold just wrote reads them
+   * from beside itself: `readFileSync(join(HERE, "data.csv"))` and `--countries join(HERE, "shapes.geojson")`.
+   * `tokensFor` already VALIDATED that the static sibling carries them and computed `DATA_FILE` — and then
+   * nothing copied them, so a new beat's first run was ENOENT on a file the scaffold had just checked existed.
+   * Measured 2026-09-23 taking a real story's map into the web format.
+   *
+   * A beat that already carries its own is left alone: in a story the analyst may have frozen this slot's
+   * own population, which is not always the sibling's.
+   */
+  const brought = [];
+  for (const [from, to] of [[values.DATA_FILE, "data.csv"], ["shapes.geojson", "shapes.geojson"]]) {
+    if (existsSync(join(beatDir, to)) || !existsSync(join(staticDir, from))) continue;
+    copyFileSync(join(staticDir, from), join(beatDir, to), 1 /* COPYFILE_EXCL */);
+    brought.push(to);
+  }
   // NAME ONLY WHAT WAS WRITTEN. This list is the whole inventory a new user gets of what the
   // scaffold just created, and it named PALETTE.md unconditionally — including on the branch that
   // deliberately did not copy one because the story root already answers. Someone told a file
   // exists that does not goes looking for it, or edits the story-wide palette believing it is the
   // beat's own.
-  return [...planned.map(([target]) => target), ...(paletteAlreadyReachable ? [] : ["PALETTE.md"])].sort();
+  return [...planned.map(([target]) => target), ...(paletteAlreadyReachable ? [] : ["PALETTE.md"]), ...brought].sort();
 }
 
 export function parseArgs(argv) {
