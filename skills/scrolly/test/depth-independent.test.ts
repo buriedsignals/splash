@@ -40,6 +40,14 @@ const COMPONENT_HEAD = [
   "export function Widget() { return null; }",
 ].join("\n");
 
+/**
+ * THE DYNAMIC IMPORT NOW GOES THROUGH `skillScript`, not `join(ROOT, "skills", …)`.
+ *
+ * `join(ROOT, …)` resolves in a CHECKOUT, where the stories live in the same tree as the skills,
+ * and nowhere else. An installed stories root vendors `shared/` and not `skills/` — the Engine
+ * projects the skills into its own namespaced store — so an adapted scrolly beat run from one
+ * failed on its very first import. Measured 2026-09-23 on a real story.
+ */
 describe("depthIndependentPaths — the runner's own DIRECTIONS constant and skills/scrolly imports", () => {
   it("should replace the depth-counted DIRECTIONS constant with a splashRoot()-derived one", () => {
     const out = depthIndependentPaths(RUNNER_HEAD);
@@ -68,10 +76,10 @@ describe("depthIndependentPaths — the runner's own DIRECTIONS constant and ski
       const out = depthIndependentPaths(src);
       expect(out).not.toMatch(/from "(?:\.\.\/)+skills\/scrolly\/scripts/);
       expect(out).toContain(
-        'const { renderScrolly } = await import(join(ROOT, "skills", "scrolly", "scripts", "render-scrolly.mjs"));',
+        'const { renderScrolly } = await import(skillScript(ROOT, "scrolly", "scripts", "render-scrolly.mjs"));',
       );
       expect(out).toContain(
-        'const { openLiveMapCards, renderWithCardImages } = await import(join(ROOT, "skills", "scrolly", "scripts", "live-map-cards-bake.mjs"));',
+        'const { openLiveMapCards, renderWithCardImages } = await import(skillScript(ROOT, "scrolly", "scripts", "live-map-cards-bake.mjs"));',
       );
     }
   });
@@ -91,7 +99,7 @@ describe("depthIndependentPaths — the runner's own DIRECTIONS constant and ski
     );
     expect(out).toContain("const ROOT = splashRoot(HERE);");
     expect(out).toContain(
-      'const { CardImages, noScriptCss } = await import(join(ROOT, "skills", "scrolly", "scripts", "live-map-cards.mjs"));',
+      'const { CardImages, noScriptCss } = await import(skillScript(ROOT, "scrolly", "scripts", "live-map-cards.mjs"));',
     );
     expect(out).not.toMatch(/from "(?:\.\.\/)+skills\/scrolly\/scripts/);
   });

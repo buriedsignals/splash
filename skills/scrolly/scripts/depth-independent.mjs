@@ -22,7 +22,7 @@ import { readPalette } from "#shared/chart-beat/colour.mjs";
 // `skills/` — the same rule that keeps every skill directory copy-pasteable on its own. So the shared
 // runner/live-map machinery is reached the way the already-fixed worked example
 // (proof/scrolly-choropleth-europe-nuclear) and the map scaffold's own `.tmpl` already reach
-// `render-scrolly.mjs`/`live-map-cards-bake.mjs`: a DYNAMIC import built from `join(ROOT, "skills", "scrolly",
+// `render-scrolly.mjs`/`live-map-cards-bake.mjs`: a DYNAMIC import built from `skillScript(ROOT, "scrolly",
 // "scripts", "…")`, resolved at runtime after `splashRoot()` walks up — never a literal specifier a static
 // scanner (or a copy-pasted skill) could see leaving its own tree.
 
@@ -57,6 +57,10 @@ const SPLASH_ROOT_FN = [
 ].join("\n");
 
 /** `A, B` from a captured multi-line import clause, collapsed to one line. */
+/** A beat finds the skill that produces it through this, never by assuming `skills/` sits under the
+ *  root it found: an installed stories root vendors `shared/` and nothing else. */
+const SKILL_SCRIPT_IMPORT = 'const { skillScript } = await import("#shared/design-base/skill-script.mjs");';
+
 function collapseNames(names) {
   return names
     .split(",")
@@ -65,12 +69,17 @@ function collapseNames(names) {
     .join(", ");
 }
 
-/** `join(ROOT, "skills", "scrolly", "scripts", "X.mjs")` from a captured `skills/scrolly/scripts/X.mjs`. */
+/**
+ * `skillScript(ROOT, "scrolly", "scripts", "X.mjs")` from a captured `skills/scrolly/scripts/X.mjs`.
+ *
+ * It USED to emit `join(ROOT, …)`, which resolves in a checkout — where the stories live inside the
+ * same tree as the skills — and nowhere else. An installed stories root vendors `shared/` and not
+ * `skills/`, because the Engine projects the skills into its own namespaced store, so an adapted
+ * scrolly beat run from one failed on its very first import. Measured 2026-09-23 on a real story.
+ */
 function joinFromRoot(pathFromRoot) {
-  return `join(ROOT, ${pathFromRoot
-    .split("/")
-    .map((p) => JSON.stringify(p))
-    .join(", ")})`;
+  const [, skill, ...rest] = pathFromRoot.split("/");
+  return `skillScript(ROOT, ${[skill, ...rest].map((p) => JSON.stringify(p)).join(", ")})`;
 }
 
 function insertAfterLastImport(content, block) {
@@ -104,7 +113,7 @@ export function depthIndependentPaths(content) {
   const needsRoot = dynamicImports.length > 0 || OLD_DIRECTIONS.test(out);
   if (needsRoot && !/function splashRoot\(/.test(out)) {
     if (HERE_DECL.test(out)) {
-      out = out.replace(HERE_DECL, (m) => `${m}\n\n${SPLASH_ROOT_FN}\n\nconst ROOT = splashRoot(HERE);${dynamicImports.length ? `\n${dynamicImports.join("\n")}` : ""}`);
+      out = out.replace(HERE_DECL, (m) => `${m}\n\n${SPLASH_ROOT_FN}\n\nconst ROOT = splashRoot(HERE);\n${SKILL_SCRIPT_IMPORT}${dynamicImports.length ? `\n${dynamicImports.join("\n")}` : ""}`);
       out = out.replace(FS_IMPORT, (_m, names) => {
         const set = new Set(names.split(",").map((s) => s.trim()).filter(Boolean));
         set.add("existsSync");
@@ -122,6 +131,7 @@ export function depthIndependentPaths(content) {
         SPLASH_ROOT_FN,
         "",
         "const ROOT = splashRoot(HERE);",
+        SKILL_SCRIPT_IMPORT,
         ...dynamicImports,
       ].join("\n");
       out = insertAfterLastImport(out, `${preamble}\n`);

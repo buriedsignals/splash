@@ -82,16 +82,37 @@ export async function checkDependencies(root, templateRoot = ROOT_TEMPLATE_DIR) 
   const declared = await declaredDependencyNames(templateRoot);
   const unresolvedPackages = declared.filter((name) => !resolveDepInTree(name, root));
 
+  /**
+   * PRESENT IS NOT THE SAME AS CURRENT, and this check only ever asked the first question.
+   *
+   * A Splash root VENDORS the craft files — `shared/` is a copy of the root template's, not a link
+   * to it — so a root created six months ago carries six-month-old code and says `pass`. Measured
+   * 2026-09-23 on a real install: the Engine creates a stories root once and never refreshes it, so
+   * after the checkout was brought up to date five vendored files had drifted, and a beat run in
+   * that root was running last week's renderer while every check reported green. Two of the five
+   * were absent entirely, which this did catch; three had simply changed, which it did not.
+   *
+   * The template is the source of truth, so a file whose bytes differ is STALE, and the refusal
+   * names each one and the copy that repairs it.
+   */
   const declaredShared = await declaredSharedFiles(templateRoot);
   const missingShared = [];
+  const staleShared = [];
   for (const relPath of declaredShared) {
-    if (!(await exists(join(root, "shared", relPath)))) {
+    const vendored = join(root, "shared", relPath);
+    if (!(await exists(vendored))) {
       missingShared.push(join("shared", relPath));
+      continue;
     }
+    const [theirs, ours] = await Promise.all([
+      readFile(vendored),
+      readFile(join(templateRoot, "shared", relPath)),
+    ]);
+    if (!theirs.equals(ours)) staleShared.push(join("shared", relPath));
   }
 
-  if (unresolvedPackages.length === 0 && missingShared.length === 0) {
-    return { id: "dependencies", status: "pass", detail: "root dependencies are installed" };
+  if (unresolvedPackages.length === 0 && missingShared.length === 0 && staleShared.length === 0) {
+    return { id: "dependencies", status: "pass", detail: "root dependencies are installed and current" };
   }
 
   const details = [];
@@ -100,6 +121,13 @@ export async function checkDependencies(root, templateRoot = ROOT_TEMPLATE_DIR) 
   }
   if (missingShared.length > 0) {
     details.push(`missing vendored craft files: ${missingShared.join(", ")} — re-copy the root template's shared/ directory`);
+  }
+  if (staleShared.length > 0) {
+    details.push(
+      `stale vendored craft files: ${staleShared.join(", ")} — this root's copies differ from the ` +
+        "installed checkout's, so it is producing with older code than the one that was verified. " +
+        "Re-copy the root template's shared/ directory over this root's",
+    );
   }
   return { id: "dependencies", status: "fail", detail: details.join("; ") };
 }

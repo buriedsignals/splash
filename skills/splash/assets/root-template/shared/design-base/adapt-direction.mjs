@@ -53,6 +53,36 @@ const RUN_DIRECTIONS = (() => {
 })();
 `;
 
+/**
+ * THE FILED DIRECTIONS ARE READ EAGERLY BY EVERY WORKED EXAMPLE, and an installed root has none.
+ *
+ * A proof's runner opens with `const filed = readdirSync(DIRECTIONS)…` and prints the composer's
+ * report, before anything decides which direction to render in. That is fine in a checkout, where
+ * `docs/design-base/directions` sits under the root — and an installed stories root vendors
+ * `shared/` and nothing else, so the read throws ENOENT before the run direction is ever consulted.
+ * Measured 2026-09-23, immediately after the import was fixed: the next line failed the same way,
+ * for the same reason.
+ *
+ * So the eager read becomes lazy. In a story it never runs; in a catalogue proof it runs exactly as
+ * it did.
+ */
+const EAGER_FILED = new RegExp(
+  [
+    "\\nconst filed = readdirSync\\(DIRECTIONS\\)",
+    "\\s*\\.filter\\(\\(f\\) => f\\.endsWith\\(\"\\.md\"\\)\\)",
+    "\\s*\\.map\\(\\(f\\) => readDirection\\(join\\(DIRECTIONS, f\\)\\)\\);\\n",
+  ].join("\\n"),
+);
+
+const LAZY_FILED = `
+// The filed demo directions, read only if this beat turns out to need them — a story reads its own
+// DIRECTION.md and an installed root has no \`docs/design-base/directions\` to read at all.
+const filedDirectionsOf = () =>
+  readdirSync(DIRECTIONS)
+    .filter((f) => f.endsWith(".md"))
+    .map((f) => readDirection(join(DIRECTIONS, f)));
+`;
+
 /** True when this source already reads the run's direction — a template, or an already-adapted file. */
 export function readsTheRunDirection(source) {
   return /\breadRunDirection\b/.test(String(source));
@@ -72,7 +102,24 @@ export function oneRunDirection(source, what = "this runner") {
     if (!found) continue;
     const declaresFiled = /\bconst FILED\b/.test(text);
     const preamble = declaresFiled ? PREAMBLE : PREAMBLE.replace("!FILED && ", "");
-    return text.slice(0, found.index) + preamble + "\n" + text.slice(found.index).replace(shape.head, shape.rewrite);
+    // THE PREAMBLE GOES HIGH, not just above the loop it replaces. The composer's own report sits
+    // between the two and has to know whether this beat composes at all, so `RUN_DIRECTIONS` must be
+    // in scope by then — a const declared below it is a temporal dead zone, which is how the first
+    // version of this transform failed.
+    const anchor = /\nconst ROOT = splashRoot\(HERE\);\n/.exec(text);
+    const at = anchor ? anchor.index + anchor[0].length : found.index;
+    let out =
+      text.slice(0, at) + preamble + "\n" + text.slice(at).replace(shape.head, shape.rewrite);
+    // And the composer's own report, which only a beat that composes can produce.
+    if (EAGER_FILED.test(out)) {
+      out = out.replace(EAGER_FILED, LAZY_FILED);
+      out = out.replace(
+        new RegExp("\\nconsole\\.log\\(report\\(composeDirections\\(\\{ newsroom, filed, beat: BEAT_FACTS, textPerRegister \\}\\), \\{ beat: BEAT_FACTS \\}\\)\\);\\n"),
+      "\nif (RUN_DIRECTIONS.length > 1)\n  console.log(report(composeDirections({ newsroom, filed: filedDirectionsOf(), beat: BEAT_FACTS, textPerRegister }), { beat: BEAT_FACTS }));\n",
+      );
+      out = out.replace(/\bfiled\.map\(/g, "filedDirectionsOf().map(");
+    }
+    return out;
   }
   throw new Error(
     `${what} carries no direction loop this transform recognises, so it cannot be given the run's ` +

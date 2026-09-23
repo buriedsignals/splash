@@ -6,6 +6,7 @@ import {
   rm,
   readFile,
   readdir,
+  copyFile,
 } from "node:fs/promises";
 import { readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -84,13 +85,18 @@ async function installResolvableDependency(name: string): Promise<void> {
   await writeFile(join(dir, "index.js"), "export default {};\n");
 }
 
-// Stubs every vendored shared file the template declares, so a test that only cares about
-// dependency RESOLUTION does not fail on a check it isn't exercising.
+// VENDORS every shared file the template declares, so a test that only cares about dependency
+// RESOLUTION does not fail on a check it isn't exercising.
+//
+// It used to write `// stub` into each one, which was fine while the check only asked whether a
+// file EXISTED. `checkDependencies` now compares the bytes — a vendored copy that merely CHANGED is
+// a root producing with older code than the one that was verified — so a stub IS a stale root, and
+// these fixtures copy the template's own file instead.
 async function installAllSharedFiles(): Promise<void> {
   for (const relPath of await declaredSharedFiles()) {
     const dest = join(root, "shared", relPath);
     await mkdir(join(dest, ".."), { recursive: true });
-    await writeFile(dest, "// stub\n");
+    await copyFile(join(ROOT_TEMPLATE_SHARED_DIR, relPath), dest);
   }
 }
 
@@ -504,11 +510,14 @@ describe("runPreflight — dependency-checking behaviour carried over unchanged"
     expect(declaredShared).toContain(
       join("chart-beat", "inspect-render.mjs"),
     );
+    // The template's own bytes, so the only thing wrong with this root is the ONE absent file —
+    // a stub would now make every other file stale as well and the assertion below would be
+    // measuring the new check rather than this one.
     for (const relPath of declaredShared) {
       if (relPath === join("chart-beat", "inspect-render.mjs")) continue;
       const dest = join(root, "shared", relPath);
       await mkdir(join(dest, ".."), { recursive: true });
-      await writeFile(dest, "// stub\n");
+      await copyFile(join(ROOT_TEMPLATE_SHARED_DIR, relPath), dest);
     }
     const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
     const check = report.checks.find((c) => c.id === "dependencies");
