@@ -173,8 +173,9 @@ export function mapGeometryFor({
   reading: string[];
   source: string;
   direction: any;
-  /** The frame this render draws at — `sizeFor(size)` halved, so one component
-   *  serves landscape, portrait and square. Absent means the landscape this beat was accepted at. */
+  /** The frame this render draws at. THE GEOMETRY IS WHERE THE MAP'S OWN AREA IS DECIDED, so a frame
+   *  handed only to the component leaves the plate baked at the old one: the square render came out
+   *  with a 563x428 map cropped inside a 540px frame, showing Iceland and Iberia and no Europe. */
   frame?: { width: number; height: number };
 }) {
   const { width, height } = frame ?? FRAME;
@@ -260,8 +261,29 @@ export function mapGeometryFor({
    *  camera fills the plate's whole height and there is no slack above or below it, which is the
    *  point of putting the text beside it. Wider shares are the ladder's last rungs, spent only when
    *  the copy will not fit. */
+  /**
+   * TWO LAYOUTS, AND THE FRAME CHOOSES — not taste.
+   *
+   * Beside the map is right at landscape, for the reason written above: a map's aspect is fixed by the
+   * ground it shows, so stacking a 1.39:1 Europe under a header on a 960x540 plate left it 306x220 with two
+   * thirds of the width empty. At a SQUARE or TALL frame the same arithmetic inverts. Measured 2026-09-23 at
+   * 540x540: the text column comes to 200px, no rung of the copy fits it — the beat refused outright — and
+   * even if it had, the map beside it would be 314x226 where stacking gives it 492x354.
+   *
+   * The condition is the one the reasoning is actually about: is there room, beside the widest panel this
+   * ladder will spend, for a map at least as wide as it is tall? Below that there is no column to put text
+   * in, and the header goes on top.
+   */
   const SHARES = [0.26, 0.29, 0.33, 0.37, 0.41, 0.45];
   const GUTTER = 26;
+  const besideWidth = width - PAD * 2 - Math.round((width - PAD * 2) * SHARES[0]) - GUTTER;
+  const STACKED = besideWidth < height - PAD * 2;
+  /** THE MAP IS THE SUBJECT, so in a stacked frame the ladder does not merely have to CLEAR the foot —
+   *  it has to leave a map-sized band. Without this the copy took everything it wanted, `spare` came to
+   *  7px, and the map was drawn as a sliver through the source line. Two fifths of the usable height is
+   *  what the beside layout gives it at landscape, so it is what the stack owes it. */
+  const MIN_MAP_SHARE = 0.42;
+  const mapBandFloor = STACKED ? (height - PAD * 2) * MIN_MAP_SHARE : 0;
   const panelFor = (share: number) => Math.round((width - PAD * 2) * share);
 
   /** THE PANEL IS A STACK, AND EVERY BLOCK IN IT IS MEASURED. The first version placed the callout
@@ -326,6 +348,8 @@ export function mapGeometryFor({
       readingTop,
       sourceTop,
       /** What the panel has left over the plate's own foot. */
+      /** Where the copy's last line ends — the top of the map's band in a stacked frame. */
+      footTop,
       spare: sourceTop - bodyLead * 0.9 - footTop,
     };
   };
@@ -413,7 +437,7 @@ export function mapGeometryFor({
     limit: number;
     reading: number;
   }> = [];
-  for (const share of SHARES) {
+  for (const share of STACKED ? [1] : SHARES) {
     const panel = panelFor(share);
     for (let t = 0; t < title.length; t++) {
       const budgets: Array<number | null> = [];
@@ -475,7 +499,7 @@ export function mapGeometryFor({
       rung.display,
       "filed",
     );
-    if (layout.spare >= 0) {
+    if (layout.spare >= mapBandFloor) {
       fits = { rung, layout };
       break;
     }
@@ -495,8 +519,12 @@ export function mapGeometryFor({
       }))
       .reduce((a, b) => (b.layout.spare > a.layout.spare ? b : a));
     throw new Error(
-      `the panel's copy does not fit its column in this direction: the shortest rung at the widest ` +
-        `panel still overruns the foot by ${(-best.layout.spare).toFixed(0)}px. Give the beat ` +
+      (STACKED
+        ? `the copy leaves no room for the map in this direction: the shortest rung still leaves only ` +
+          `${best.layout.spare.toFixed(0)}px where the map needs ${mapBandFloor.toFixed(0)}. `
+        : `the panel's copy does not fit its column in this direction: the shortest rung at the widest ` +
+          `panel still overruns the foot by ${(-best.layout.spare).toFixed(0)}px. `) +
+        `Give the beat ` +
         `shorter forms — do not shrink the map, which is the subject.`,
     );
   }
@@ -518,12 +546,22 @@ export function mapGeometryFor({
         `${(-layout.spare).toFixed(1)} px on ${fits.rung.display.fontFamily} — the ladder chose on ` +
         `the filed rhythm (spec §8)`,
     );
-  const mapBox = {
-    x: PAD + panel + GUTTER,
-    y: PAD,
-    width: width - PAD * 2 - panel - GUTTER,
-    height: height - PAD * 2,
-  };
+  /** STACKED: the map takes the band the copy left between its last line and the source, full width.
+   *  BESIDE: the map takes the column next to the panel, full height. `spare` is the same number in
+   *  both readings — what the panel did not spend — so one ladder serves both shapes. */
+  const mapBox = STACKED
+    ? {
+        x: PAD,
+        y: layout.footTop + leadOf(annot) * 0.9,
+        width: width - PAD * 2,
+        height: layout.spare,
+      }
+    : {
+        x: PAD + panel + GUTTER,
+        y: PAD,
+        width: width - PAD * 2 - panel - GUTTER,
+        height: height - PAD * 2,
+      };
   /** ONE SCALE FOR BOTH AXES, AND THE BOX IS FILLED — the map covers its whole box and the surplus
    *  is CROPPED, rather than the map being letterboxed inside it.
    *
@@ -541,6 +579,7 @@ export function mapGeometryFor({
   return {
     rung: fits.rung,
     layout,
+    stacked: STACKED,
     panel,
     mapBox,
     mapX,
@@ -686,6 +725,7 @@ export function placementsFor({
   inkFor,
   namesWater,
   onNote,
+  waterRequired = true,
 }: {
   shapes: Shape[];
   geometry: ReturnType<typeof mapGeometryFor>;
@@ -707,6 +747,9 @@ export function placementsFor({
    *  measuring a different picture. */
   inkFor: (klass: "feature" | "area", cell: string) => string | null;
   namesWater: boolean;
+  /** Whether a beat that names water must NAME SOME — true at the frame the treatment was accepted
+   *  at, false at any other, where the same bounds show less water than the choice was made about. */
+  waterRequired?: boolean;
   onNote?: (note: string) => void;
 }) {
   const { mapBox, mapX, mapY, mapW, axisBand } = geometry;
@@ -926,12 +969,27 @@ export function placementsFor({
       if (!done) unplacedWaters.push(w.forms[0]);
     }
   }
-  if (namesWater && !placedWaters.length)
-    throw new Error(
-      `none of the ${waters.length} declared seas can be named in open water at this camera, in any ` +
-        `form the beat supplies. Move the camera or declare seas it can carry — do not move a label ` +
-        `onto a country to keep a legend honest.`,
+  /**
+   * A TREATMENT IS CHOSEN FOR A PICTURE, AND A FRAME IS PART OF THE PICTURE.
+   *
+   * `water-is-a-tint-not-a-grey` was accepted against a camera that showed three seas. At a square or tall
+   * frame the same bounds show less water, and the beat refused outright rather than draw a sea name on
+   * land — which is right, and is not the only option. The refusal stands where the treatment was CHOSEN;
+   * at another frame the treatment is dropped out loud, because a choice made about one camera cannot be
+   * enforced on a different one. Measured 2026-09-23 taking the validated choropleth to 1080x1080.
+   */
+  if (namesWater && !placedWaters.length) {
+    if (waterRequired)
+      throw new Error(
+        `none of the ${waters.length} declared seas can be named in open water at this camera, in any ` +
+          `form the beat supplies. Move the camera or declare seas it can carry — do not move a label ` +
+          `onto a country to keep a legend honest.`,
+      );
+    onNote?.(
+      `waters: none of the ${waters.length} declared seas fits this camera in any form, so the beat does ` +
+        `not name water at this frame — the treatment was chosen against the frame it was accepted at.`,
     );
+  }
   onNote?.(
     `waters: ${placedWaters.map((w) => w.text).join(", ") || "none"}` +
       (unplacedWaters.length
@@ -1154,6 +1212,7 @@ export function DirectedChoroplethMap({
   direction,
   treatments,
   onLadder,
+  frame,
 }: {
   /** The baked MapTiler basemap for THIS direction, already a data URI — and it is no longer only
    *  a basemap. The classes, the borders, the leaders, the ring and every word the beat placed are
@@ -1174,8 +1233,11 @@ export function DirectedChoroplethMap({
   direction: any;
   treatments: string[];
   onLadder?: (note: string) => void;
+  /** The frame this render draws at — `sizeFor(size)` halved, so one component serves landscape,
+   *  portrait and square. Absent means the landscape this beat was accepted at. */
+  frame?: { width: number; height: number };
 }) {
-  const { width, height } = FRAME;
+  const { width, height } = frame ?? FRAME;
   const { ink, muted, grid } = deriveFurniture(direction.ground);
   const PAD = direction.pad;
   const on = (id: string) => treatments.includes(id);
@@ -1221,6 +1283,8 @@ export function DirectedChoroplethMap({
     display,
     displayFloor,
   } = mapGeometryFor({
+    // THE COMPONENT ASKS THE SAME QUESTION THE RUNNER DID, so it must ask it about the same frame.
+    frame,
     aspect,
     callout,
     title,

@@ -195,6 +195,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
    *  than guessed here, and carrying the plate rectangle beside the map rectangle so the two can be
    *  compared instead of assumed equal. */
   const g = mapGeometryFor({
+    frame: { width: FRAME.width, height: FRAME.height },
     aspect: CAMERA_ASPECT,
     callout: CALLOUT,
     title,
@@ -246,6 +247,8 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
     inkFor: rampFor(direction, subject).inkFor,
     subject: ODD_ONE,
     namesWater: offered.some((t) => t.id === "water-is-a-tint-not-a-grey"),
+    // The treatment was accepted against the landscape camera; another frame shows less water.
+    waterRequired: SIZE === "landscape",
     onNote: (note) => console.log(`  ${note}`),
   });
   placements[id] = { placement, geometry: geometry[id], registers: placement.registers };
