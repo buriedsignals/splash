@@ -488,7 +488,15 @@ export async function verifyLiveMap({ htmlPath, key }) {
   // The plate's own ground scale, read out of the delivered page rather than passed in, so the
   // second opinion below is built from what actually shipped.
   const plan = JSON.parse(
-    /<script type="application\/json" id="mw-live-plan">([\s\S]*?)<\/script>/.exec(readFileSync(htmlPath, "utf8"))[1],
+    // ATTRIBUTE ORDER IS NOT PART OF THE CONTRACT. The trunk's own `render-web.mjs` writes
+    // `type` then `id`; a directed component writes the JSX in its own order and React emits `id`
+    // first — so this pinned pair matched the seed page and NO directed beat, and the skill's own
+    // live-layer probe had never run against one. Measured 2026-09-23 across every committed
+    // directed proof.
+    /<script\b[^>]*\bid="mw-live-plan"[^>]*>([\s\S]*?)<\/script>/.exec(readFileSync(htmlPath, "utf8"))?.[1] ??
+      (() => {
+        throw new Error(`${htmlPath} carries no <script id="mw-live-plan"> — the live layer's plan is not on the page`);
+      })(),
   );
   const keyedPath = keyedCopy(htmlPath, key);
   // Printed, because a committed page is deliberately unkeyed (R1b) and therefore shows its

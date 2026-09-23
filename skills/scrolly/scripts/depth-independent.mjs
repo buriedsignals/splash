@@ -12,7 +12,7 @@
 // stays exactly as validated.
 
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { readPalette } from "#shared/chart-beat/colour.mjs";
 
 // ── path depth ───────────────────────────────────────────────────────────────────────────────────
@@ -174,8 +174,35 @@ ${sig}
  * TypeScript signature for a `.tsx` file; a plain one for a `.mjs` driver, which has no type stripping. A
  * no-op on content carrying neither pattern.
  */
-export function languageAwareNumbers(content, lang, { typed = false } = {}) {
+export function languageAwareNumbers(content, lang, { typed = false, declared = false } = {}) {
   let out = content;
+  /**
+   * A LOCALE TYPED INTO THE COPY DECIDES THE PAGE'S OWN `lang`, and says so out loud.
+   *
+   * `HARD_FRENCH_DECIMAL` only sees `x.toFixed(n).replace(".", ",")`. The choropleth worked example
+   * — the one its own scaffold always copies — formats with `toLocaleString("fr-FR", …)`, so this
+   * function was a complete no-op on it and the page still got `lang: "en"` stamped on it from the
+   * newsroom's declared language, over prose and numbers that were French throughout. Measured
+   * 2026-09-23.
+   *
+   * Refusing to scaffold was the first answer and it was wrong: it blocked every French worked
+   * example under a newsroom that publishes in English, which is the ordinary case for a journalist
+   * adapting this catalogue. Rewriting the locale would be guessing at their language. So the page
+   * is made SELF-CONSISTENT — it declares the language its own numbers are actually printed in —
+   * and the disagreement is reported rather than resolved silently.
+   */
+  const typedLocale = /\.toLocaleString\(\s*"([a-z]{2})-[A-Z]{2}"/.exec(out);
+  const printed = typedLocale && !HARD_FRENCH_DECIMAL.test(out) ? typedLocale[1] : null;
+  HARD_FRENCH_DECIMAL.lastIndex = 0;
+  if (printed && printed !== lang) {
+    if (declared)
+      console.log(
+        `  the newsroom publishes in ${lang} and this beat's adapted code prints its numbers in ` +
+          `${printed} (toLocaleString). The page is written as ${printed} so it does not lie about ` +
+          `itself — rewrite the formatting for ${lang}, or record ${printed} in NEWSROOM.md.`,
+      );
+    lang = printed;
+  }
   if (HARD_FRENCH_DECIMAL.test(out)) {
     HARD_FRENCH_DECIMAL.lastIndex = 0;
     out = out.replace(HARD_FRENCH_DECIMAL, (_m, expr, decimals) => `${lang}(${expr.trim()}, ${decimals})`);
@@ -199,13 +226,38 @@ function parseFrontmatter(text) {
   return record;
 }
 
-/** `{ name, brandColor, ground, languages }` off the Splash root's own NEWSROOM.md, or `null` when it does not
+/**
+ * The nearest `NEWSROOM.md` at or above `dir`, the way `readPalette` finds a palette.
+ *
+ * It used to look in ONE directory. An installed stories root ships `NEWSROOM.example.md` and the
+ * real one may sit anywhere the journalist put it, so a French story was scaffolded with
+ * `lang: "en"` stamped on French prose — the default this function falls back to. Measured
+ * 2026-09-23: the beat's own sibling was French and its page declared English.
+ */
+function nearestNewsroom(dir) {
+  for (let at = resolve(dir); ; ) {
+    const candidate = join(at, "NEWSROOM.md");
+    if (existsSync(candidate)) return candidate;
+    const parent = dirname(at);
+    if (parent === at) return null;
+    at = parent;
+  }
+}
+
+/** `{ name, brandColor, ground, languages }` off the nearest NEWSROOM.md at or above `root`, or `null` when it does not
  *  exist yet (preflight's own concern, not this one). */
 export function readNewsroomBasics(root) {
-  const path = join(root, "NEWSROOM.md");
-  if (!existsSync(path)) return null;
+  const path = nearestNewsroom(root);
+  if (!path) return null;
   const record = parseFrontmatter(readFileSync(path, "utf8"));
   return { name: record.name, brandColor: record.brandColor, ground: record.ground, languages: record.languages ?? record.language };
+}
+
+/** Whether a reachable NEWSROOM.md actually declares a language, as opposed to `defaultLanguage`
+ *  falling back to "en". The difference is what separates a refusal from a guess. */
+export function languageIsDeclared(root) {
+  const basics = readNewsroomBasics(root);
+  return Boolean(basics?.languages?.split(",")[0]?.trim());
 }
 
 /** The newsroom's own primary language (the first of `languages`/`language`), defaulting to "en" when
