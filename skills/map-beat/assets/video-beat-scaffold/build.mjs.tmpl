@@ -288,6 +288,11 @@ export function buildDirection({ label, direction: chosen }, { subject, states, 
     sizes: sources,
     within: { x: inset, y: vInset, width: frame.width - 2 * inset, height: frame.height - 2 * vInset },
     step: CREDIT_STEP,
+ 
+    // A CREDIT ANCHORS TO THE BOTTOM, so the search may spend a third of the band climbing and no more.
+    // Beyond that there is no seat, and the pill below is the answer — which is a placement somebody
+    // chose, unlike a credit that silently walked to the top of the frame because the bottom was land.
+    rise: 0.34,
   });
   /**
    * AND WHEN NO FORM FINDS OPEN SEA, THE CREDIT GETS A PILL — it is not a dead end.

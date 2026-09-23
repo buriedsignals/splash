@@ -13,7 +13,7 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
-import { startMapTilerProxy, DEFAULT_CACHE_DIR } from "./maptiler-proxy.mjs";
+import { assertMapTilerKey, startMapTilerProxy, DEFAULT_CACHE_DIR } from "./maptiler-proxy.mjs";
 import { splashRoot } from "./splash-root.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -72,6 +72,9 @@ export function throughProxy(value, origin) {
 
 export async function measureLiveMap({ plan, states, seats, size, mapTilerKey, cacheDir = DEFAULT_CACHE_DIR, cell = 16, tints }) {
   if (!mapTilerKey) throw new Error("measureLiveMap needs the MapTiler key, read by the caller from the environment");
+  // The key is checked once before the first request: a warm cache never reaches MapTiler, so without
+  // this a dead key produces a complete, correct render and says nothing.
+  await assertMapTilerKey(mapTilerKey, { onNote: (n) => console.log(`  ${n}`) });
   const proxy = startMapTilerProxy({ key: mapTilerKey, cacheDir });
   const browser = await puppeteer.launch({ executablePath: resolveChrome(), args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--hide-scrollbars"] });
   try {

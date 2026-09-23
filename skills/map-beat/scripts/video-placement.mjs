@@ -76,11 +76,25 @@ export function shareUnder(grid, box, predicate) {
  *   air?: number, landShare?: number, tolerance?: number }} input
  * @returns {{ index: number, box: {x: number, y: number, width: number, height: number} } | null}
  */
-export function seatOnSea({ grids, sea, sizes, within, step = { x: 20, y: 5 }, avoid = [], air = 0, landShare = 0, tolerance = SAME_CELL }) {
+export function seatOnSea({ grids, sea, sizes, within, step = { x: 20, y: 5 }, avoid = [], air = 0, landShare = 0, tolerance = SAME_CELL, rise = 1 }) {
   if (!(step.x > 0 && step.y > 0)) throw new Error(`seatOnSea: a step must be positive, got ${JSON.stringify(step)}`);
+  if (!(rise > 0 && rise <= 1)) throw new Error(`seatOnSea: rise is a share of the band, 0 < rise <= 1, got ${rise}`);
   const isLand = (c) => !nearColour(c, sea, tolerance);
+  /**
+   * HOW FAR THE SEARCH MAY CLIMB, and it used to be "the whole frame, silently".
+   *
+   * The contract this function states in its own first line is that a credit ANCHORS TO THE FRAME'S BOTTOM.
+   * The search walks rows upward and returns the first fit — so when the bottom of a tall frame is land, it
+   * climbed past the map, past the subject, and seated the credit at the very top, still reporting success.
+   * Measured 2026-09-23 on a portrait map video: the credit came to rest on the northern Atlantic, four
+   * fifths of the frame above where the template says it belongs.
+   *
+   * `rise` is the share of `within` the search may spend climbing. Beyond it there is no seat, which is an
+   * answer a caller can act on — seat it on a pill at the bottom — rather than a placement nobody chose.
+   */
+  const ceiling = within.y + within.height * (1 - rise);
   for (const [index, size] of sizes.entries())
-    for (let y = within.y + within.height - size.height; y >= within.y; y -= step.y)
+    for (let y = within.y + within.height - size.height; y >= Math.max(within.y, ceiling); y -= step.y)
       for (let x = within.x; x + size.width <= within.x + within.width; x += step.x) {
         const box = { x, y, width: size.width, height: size.height };
         if (avoid.some((b) => touches(box, b, air))) continue;

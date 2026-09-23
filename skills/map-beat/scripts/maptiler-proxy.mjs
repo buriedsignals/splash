@@ -81,6 +81,38 @@ function kindOf(pathname) {
  * origin other than the one it is given — a request can change the path and query it asks for, never
  * the host the proxy talks to.
  */
+/**
+ * THE KEY IS CHECKED ONCE, BECAUSE A WARM CACHE CHECKS NOTHING.
+ *
+ * `cacheStemFor` hashes the path and query with the KEY STRIPPED — deliberately, so a cache is shared
+ * across keys — and a run whose every request hits that cache never reaches MapTiler at all. Measured
+ * 2026-09-23: `MAPTILER_KEY=not-a-real-key` produced a full, correct twenty-second mp4 with a real basemap
+ * and 29 cache hits. The gate is symmetric-broken — warm, it passes anything; cold, it refuses even where
+ * the cache could have served the whole render — and neither behaviour is written down anywhere.
+ *
+ * One cheap upstream probe answers it. A 401 or 403 is a dead key and refuses; anything else, including no
+ * network at all, is not this function's business to adjudicate, so it says what it saw and carries on —
+ * a bake on a train with a warm cache is a legitimate run.
+ */
+export async function assertMapTilerKey(key, { upstreamBase = "https://api.maptiler.com", onNote = () => {} } = {}) {
+  if (!key) throw new Error("no MapTiler key to check");
+  let res;
+  try {
+    res = await fetch(`${upstreamBase}/maps/dataviz/style.json?key=${encodeURIComponent(key)}`, { method: "GET" });
+  } catch (error) {
+    onNote(`the MapTiler key could not be checked (${error.message}) — serving from the cache where it can`);
+    return { checked: false, status: null };
+  }
+  if (res.status === 401 || res.status === 403)
+    throw new Error(
+      `MapTiler refused this key (HTTP ${res.status}). A warm tile cache would have served this render ` +
+        "anyway and told you nothing, so it is checked once before the first request. Put a working key in " +
+        "the root's .env (MAPTILER_KEY) or in the environment.",
+    );
+  onNote(`MapTiler key checked: HTTP ${res.status}`);
+  return { checked: true, status: res.status };
+}
+
 export function startMapTilerProxy({ key, upstreamBase = "https://api.maptiler.com", cacheDir = null }) {
   const counts = {};
   let origin = "";

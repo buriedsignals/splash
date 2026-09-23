@@ -27,7 +27,7 @@ import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { startMapTilerProxy } from "./maptiler-proxy.mjs";
+import { assertMapTilerKey, startMapTilerProxy } from "./maptiler-proxy.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const PACKAGE_ROOT = resolve(HERE, "../../..");
@@ -66,6 +66,9 @@ export async function renderVideoMap({
 
   await mkdir(outDir, { recursive: true });
 
+  // The key is checked once before the first request: a warm cache never reaches MapTiler, so without
+  // this a dead key produces a complete, correct render and says nothing.
+  await assertMapTilerKey(mapTilerKey, { onNote: (n) => console.log(`  ${n}`) });
   const proxy = startMapTilerProxy({ key: mapTilerKey, cacheDir });
   const envFileDir = await mkdtemp(join(tmpdir(), "video-map-env-"));
   try {
