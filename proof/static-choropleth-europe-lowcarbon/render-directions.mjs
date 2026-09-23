@@ -96,7 +96,10 @@ const {
   eyebrow: EYEBROW,
 } = copyOf(subject);
 
-const plateDir = (id) => join(HERE, "plate", id);
+/** A PLATE BELONGS TO A DIRECTION AND A SIZE. Keyed on the direction alone, a square run re-baked
+ *  over the landscape plate and the next landscape run re-baked over that — the two sizes thrashing
+ *  one directory, and whichever ran last was the only one whose plate matched its own render. */
+const plateDir = (id) => join(HERE, "plate", SIZE === "landscape" ? id : `${id}-${SIZE}`);
 /** THE CACHE IS KEYED ON WHAT THE PLATE IS, NOT ON WHETHER A FILE IS THERE. It used to be existence
  *  alone, and that is a cache that cannot be invalidated: re-tinting the basemap, or baking at
  *  another size, left the old plate in place and the whole change appeared to work while nothing

@@ -278,12 +278,27 @@ export function mapGeometryFor({
   const GUTTER = 26;
   const besideWidth = width - PAD * 2 - Math.round((width - PAD * 2) * SHARES[0]) - GUTTER;
   const STACKED = besideWidth < height - PAD * 2;
-  /** THE MAP IS THE SUBJECT, so in a stacked frame the ladder does not merely have to CLEAR the foot —
-   *  it has to leave a map-sized band. Without this the copy took everything it wanted, `spare` came to
-   *  7px, and the map was drawn as a sliver through the source line. Two fifths of the usable height is
-   *  what the beside layout gives it at landscape, so it is what the stack owes it. */
-  const MIN_MAP_SHARE = 0.38;
+  /** THE MAP IS THE SUBJECT, so a stacked ladder does not merely have to CLEAR the foot — it has to
+   *  leave a map-sized band. Without it the copy took everything, `spare` came to 7px, and the map was
+   *  drawn as a sliver through the source line.
+   *
+   *  A THIRD OF THE USABLE HEIGHT, and it is a principle rather than a tuned number: below a third the
+   *  map stops being the largest single thing on the page and the beat is a caption with an
+   *  illustration. The first value here was 0.42, then 0.38, each chosen to make one beat pass — which
+   *  is how a constant becomes a fudge. A third is a statement about what a map beat IS, and a beat
+   *  whose copy cannot leave it is refused with the number it fell short by. */
+  const MIN_MAP_SHARE = 1 / 3;
   const mapBandFloor = STACKED ? (height - PAD * 2) * MIN_MAP_SHARE : 0;
+  /** THE BAND, MEASURED RATHER THAN BORROWED. It was `layout.spare`, which answers a different
+   *  question — what the panel has left over the plate's own foot — and it is a lead too generous at
+   *  the bottom: the plate's own image ended at 468.6 with the source's baseline at 469.1, so the
+   *  source's ascenders were drawn straight through the map's lower third while the geometry
+   *  reported no overlap, because by its own arithmetic there was none. A band is the room between
+   *  where the copy stops and where the source's own line begins, with air at both edges. */
+  const mapBandOf = (l: { footTop: number; sourceTop: number }) => {
+    const top = l.footTop + leadOf(annot) * 0.9;
+    return { top, height: l.sourceTop - leadOf(body) - top };
+  };
   const panelFor = (share: number) => Math.round((width - PAD * 2) * share);
 
   /** THE PANEL IS A STACK, AND EVERY BLOCK IN IT IS MEASURED. The first version placed the callout
@@ -499,7 +514,7 @@ export function mapGeometryFor({
       rung.display,
       "filed",
     );
-    if (layout.spare >= mapBandFloor) {
+    if ((STACKED ? mapBandOf(layout).height : layout.spare) >= mapBandFloor) {
       fits = { rung, layout };
       break;
     }
@@ -521,7 +536,7 @@ export function mapGeometryFor({
     throw new Error(
       (STACKED
         ? `the copy leaves no room for the map in this direction: the shortest rung still leaves only ` +
-          `${best.layout.spare.toFixed(0)}px where the map needs ${mapBandFloor.toFixed(0)}. `
+          `${mapBandOf(best.layout).height.toFixed(0)}px where the map needs ${mapBandFloor.toFixed(0)}. `
         : `the panel's copy does not fit its column in this direction: the shortest rung at the widest ` +
           `panel still overruns the foot by ${(-best.layout.spare).toFixed(0)}px. `) +
         `Give the beat ` +
@@ -581,7 +596,7 @@ export function mapGeometryFor({
     : Math.max(mapBox.width, mapBox.height * aspect);
   const mapW = fill;
   const mapH = fill / aspect;
-  const mapX = STACKED ? mapBox.x + (mapBox.width - mapW) / 2 : mapBox.x;
+  const mapX = mapBox.x;
   const mapY = mapBox.y + (mapBox.height - mapH) / 2;
   return {
     rung: fits.rung,

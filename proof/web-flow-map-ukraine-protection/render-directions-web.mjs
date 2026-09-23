@@ -381,7 +381,10 @@ const KEY_RUNGS = flowKeyForMarkup(measureDeclaration).map((variants, rung) => (
 // so the two layers are one camera rather than two pictures that agree today.
 const PLATE_FRAME = [1600, 1216];
 const PLATE_SIZE = PLATE_FRAME.join("x");
-const plateDir = (id) => join(HERE, "plate", id);
+/** A PLATE BELONGS TO A DIRECTION AND A SIZE. Keyed on the direction alone, a square run re-baked
+ *  over the landscape plate and the next landscape run re-baked over that — the two sizes thrashing
+ *  one directory, and whichever ran last was the only one whose plate matched its own render. */
+const plateDir = (id) => join(HERE, "plate", SIZE === "landscape" ? id : `${id}-${SIZE}`);
 function ensurePlate(id, water, land) {
   const dir = plateDir(id);
   // THE CACHE IS KEYED ON THE FRAME AND ON THE WINDOW, and the window is checked in BOTH directions.

@@ -110,7 +110,10 @@ const geo = JSON.parse(await readFile(join(HERE, "shapes.geojson"), "utf8"));
 // construction, and that is asserted below rather than assumed: three plates that disagreed about
 // where 10°E is would put the same mark in three places and nothing here would notice.
 const PLATE_SIZE = "1600x1216";
-const plateDir = (id) => join(HERE, "plate", id);
+/** A PLATE BELONGS TO A DIRECTION AND A SIZE. Keyed on the direction alone, a square run re-baked
+ *  over the landscape plate and the next landscape run re-baked over that — the two sizes thrashing
+ *  one directory, and whichever ran last was the only one whose plate matched its own render. */
+const plateDir = (id) => join(HERE, "plate", SIZE === "landscape" ? id : `${id}-${SIZE}`);
 function ensurePlate(id, water, land) {
   const dir = plateDir(id);
   // AND IN THE TINTS IT WAS PAINTED WITH, not merely that a file is there. A plate cached on

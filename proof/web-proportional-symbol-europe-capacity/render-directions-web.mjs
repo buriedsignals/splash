@@ -185,7 +185,10 @@ console.table(topFive.map((r) => ({ pays: NAMES[r.country], GW: fr(r.mw / 1000),
 // page's own live map, baked below. The three plates are asserted to share one camera, because three
 // records that disagreed about where a degree is would hand the live map three windows.
 const PLATE_SIZE = "1824x1216";
-const plateDir = (id) => join(HERE, "plate", id);
+/** A PLATE BELONGS TO A DIRECTION AND A SIZE. Keyed on the direction alone, a square run re-baked
+ *  over the landscape plate and the next landscape run re-baked over that — the two sizes thrashing
+ *  one directory, and whichever ran last was the only one whose plate matched its own render. */
+const plateDir = (id) => join(HERE, "plate", SIZE === "landscape" ? id : `${id}-${SIZE}`);
 function ensurePlate(id, water, land) {
   const dir = plateDir(id);
   // AND IN THE TINTS IT WAS PAINTED WITH, not merely that a file is there. A plate cached on

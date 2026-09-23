@@ -571,7 +571,10 @@ const interaction = {
 // records is the fact the page opens on.
 const PLATE_FRAME = [1600, 1216];
 const PLATE_SIZE = PLATE_FRAME.join("x");
-const plateDir = (id) => join(HERE, "plate", id);
+/** A PLATE BELONGS TO A DIRECTION AND A SIZE. Keyed on the direction alone, a square run re-baked
+ *  over the landscape plate and the next landscape run re-baked over that — the two sizes thrashing
+ *  one directory, and whichever ran last was the only one whose plate matched its own render. */
+const plateDir = (id) => join(HERE, "plate", SIZE === "landscape" ? id : `${id}-${SIZE}`);
 const PLATE_BOUNDS = [
   published.window.west,
   published.window.south,

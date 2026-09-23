@@ -133,7 +133,10 @@ const VIEW = 1000;
  *  is to say WHERE, and at this scale — 18° across — Mercator's inflation is a fraction of a percent
  *  across the frame, so the projection argument the continental beats have to make does not arise. */
 const PLATE_SIZE = "1000x760";
-const plateDir = (id) => join(HERE, "plate", id);
+/** A PLATE BELONGS TO A DIRECTION AND A SIZE. Keyed on the direction alone, a square run re-baked
+ *  over the landscape plate and the next landscape run re-baked over that — the two sizes thrashing
+ *  one directory, and whichever ran last was the only one whose plate matched its own render. */
+const plateDir = (id) => join(HERE, "plate", SIZE === "landscape" ? id : `${id}-${SIZE}`);
 const BOUNDS = [WINDOW.west, WINDOW.south, WINDOW.east, WINDOW.north].map((v) => v.toFixed(4)).join(",");
 function ensurePlate(id, water, land) {
   const dir = plateDir(id);

@@ -155,7 +155,10 @@ const VIEW = 1000;
  *  destination is now a Mercator seat — and the seat is still the centre of the part of that country
  *  actually IN FRAME, which is the correction this beat already carried. */
 const PLATE_SIZE = "1000x760";
-const plateDir = (id) => join(HERE, "plate", id);
+/** A PLATE BELONGS TO A DIRECTION AND A SIZE. Keyed on the direction alone, a square run re-baked
+ *  over the landscape plate and the next landscape run re-baked over that — the two sizes thrashing
+ *  one directory, and whichever ran last was the only one whose plate matched its own render. */
+const plateDir = (id) => join(HERE, "plate", SIZE === "landscape" ? id : `${id}-${SIZE}`);
 function ensurePlate(id, water, land) {
   const dir = plateDir(id);
   // AND IN THE TINTS IT WAS PAINTED WITH, not merely that a file is there. A plate cached on

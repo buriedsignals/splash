@@ -563,6 +563,9 @@ export function copyOf(subject) {
       `et l’Albanie`,
     `Le bas-carbone européen est au nord-ouest — et en Albanie`,
     `Le bas-carbone européen, et son exception`,
+    // THE SQUARE'S OWN RUNG. The eyebrow above already says « Énergie · Europe », so a 1080px square
+    // does not have to carry the subject twice — and it has room for one line of display type.
+    `Le nord-ouest, et l’Albanie`,
   ];
   const limits = [
     `Part de l’électricité produite à partir de sources bas-carbone — renouvelables et nucléaire ` +
@@ -577,9 +580,14 @@ export function copyOf(subject) {
       `La Russie et la Turquie sont colorées sur leur part nationale, dont le cadre ne montre que ` +
       `l’extrémité occidentale.`,
     `Lecture : la couleur est une classe ; ses bornes sont sous la carte.`,
+    // The tightest rung, for a frame where the map needs every line the copy can give back.
+    `Lecture : la couleur est une classe.`,
   ];
+  // THE CREDIT ATTRIBUTES; IT DOES NOT EXPLAIN. The publication's full title and the route it
+  // travelled are the BRIEF's business — spelled here they cost three lines of source at 540px, and
+  // at a square frame those three lines are the map's.
   const source =
-    "Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data · fond de carte MapTiler (dataviz), teinté par la direction";
+    "Source : Ember / Energy Institute (2025), via Our World in Data · carte MapTiler";
 
   const textPerRegister = {
     display: title.join(" "),

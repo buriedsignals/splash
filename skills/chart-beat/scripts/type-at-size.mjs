@@ -131,7 +131,18 @@ export const MEASURED_HOLDS = {
   },
   // NOTHING HAS BEEN ACCEPTED AT PORTRAIT. 1080x1920 is the frame the band-scale types have a twin form for
   // and no other type was looked at there; an empty row is the honest record of that, not an oversight.
-  portrait: {},
+  portrait: {
+    /** THE STACKED LAYOUT'S OWN PROOF. A map has no plot rectangle to clamp, so it was refused at every
+     *  tall frame by name — and the refusal was about the CLAMP, not about the map. Given a layout that
+     *  stacks the header over the map and a ladder that owes the map a third of the height, the
+     *  validated choropleth draws at 1080x1920 with both subjects ringed, its seas named and its source
+     *  on the foot. Opened and read 2026-09-23.
+     *
+     *  IT IS STILL REFUSED AT SQUARE, and by two pixels: at 540 wide this beat's callout and key are
+     *  fixed blocks that no rung shortens, and they leave 143px where a third of the height is 145.
+     *  Putting the callout on the ladder is what opens it — the same lever the title already has. */
+    choropleth: "proof/static-choropleth-europe-lowcarbon/renders/creme-portrait.png",
+  },
 };
 
 /** Types whose refusal has a reason of its own, rather than "nobody has measured it yet". */
