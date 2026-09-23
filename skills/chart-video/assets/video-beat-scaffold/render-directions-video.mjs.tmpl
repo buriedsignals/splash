@@ -20,6 +20,7 @@ import { join, relative } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { assertDeliveredSize, assertTypeFloor, readPngSize } from "#shared/chart-video/sizes.mjs";
+import { assertEventsMove } from "#shared/chart-video/moves.mjs";
 import { EVENT_ORDER, endOf } from "#shared/chart-video/timing.ts";
 import { report as reportComposition } from "#shared/design-base/compose.mjs";
 import { wantedOf, writeRenderProps } from "%%UP%%/skills/chart-video/scripts/video-faces.mjs";
@@ -103,6 +104,10 @@ for (const entry of chosen) {
     const movieStarted = Date.now();
     remotion(["render", entryPoint, COMPOSITION_ID, movie, "--concurrency=1"], "inherit");
     assertDeliveredSize(mp4Size(movie), SIZE, { what: `renders/${label}.mp4` });
+    // AND THE PICTURE ACTUALLY MOVES, measured on the delivered file. `assertEventStates` refuses
+    // an event whose declared STATE equals the one before it; only the mp4 knows whether that
+    // change produced pixels a viewer can find.
+    assertEventsMove(movie, props.timing, { what: `renders/${label}.mp4` });
     console.log(`  -> renders/${label}.mp4 (${Math.round((Date.now() - movieStarted) / 1000)}s)\n`);
   } catch (error) {
     if (!args.look) for (const path of outputs) await rm(path, { force: true });

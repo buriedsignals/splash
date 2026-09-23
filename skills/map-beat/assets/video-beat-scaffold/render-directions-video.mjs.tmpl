@@ -22,6 +22,7 @@ import { join, relative } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { assertDeliveredSize, assertTypeFloor, readPngSize } from "#shared/chart-video/sizes.mjs";
+import { assertEventsMove } from "#shared/chart-video/moves.mjs";
 import { EVENT_ORDER, endOf } from "#shared/chart-video/timing.ts";
 import { report as reportComposition } from "#shared/design-base/compose.mjs";
 import { mapTilerKeyIn } from "#shared/map-beat/glyphs.mjs";
@@ -102,6 +103,10 @@ for (const entry of chosen) {
 
     const movie = await renderVideoMap({ ...common, outDir: OUT, name: label, mode: "mp4" });
     assertDeliveredSize(mp4Size(movie.path), SIZE, { what: `renders/${label}.mp4` });
+    // AND THE PICTURE ACTUALLY MOVES, measured on the delivered file. `assertEventStates` refuses
+    // an event whose declared STATE equals the one before it; only the mp4 knows whether that
+    // change produced pixels a viewer can find.
+    assertEventsMove(movie.path, props.timing, { what: `renders/${label}.mp4` });
     console.log(`  -> renders/${label}.mp4 (${movie.seconds}s) · ${Object.entries(movie.proxyCounts).map(([k, v]) => `${k}: ${v}`).join(", ")}\n`);
   } catch (error) {
     if (!args.look) for (const path of outputs) await rm(path, { force: true });
