@@ -45,6 +45,43 @@ export class MissingIso2CodesError extends Error {
   }
 }
 
+/**
+ * EUROSTAT DOES NOT USE ISO FOR TWO OF ITS OWN MEMBERS, and a join that assumes it does loses them
+ * without saying so.
+ *
+ * Eurostat writes **EL** for Greece and **UK** for the United Kingdom, where ISO 3166-1 says GR and
+ * GB. Measured 2026-09-23 freezing `ilc_di12` — the Gini coefficient, the EU's own inequality
+ * series — against this tree's own Europe geometry: Greece matched nothing, rendered as "no data",
+ * and nothing anywhere said why. A European newsroom's commonest single source is Eurostat, so the
+ * two exceptions belong here rather than in each beat that meets them.
+ *
+ * XK (Kosovo) is Eurostat's too and has no ISO 3166-1 code at all; it is listed so a reader looking
+ * for it finds the reason rather than a gap.
+ */
+export const EUROSTAT_TO_ISO2 = Object.freeze({
+  EL: "GR",
+  UK: "GB",
+});
+
+/** Eurostat's own geo code as an ISO 3166-1 alpha-2, which for every code but two is itself. */
+export function iso2OfEurostat(code) {
+  return EUROSTAT_TO_ISO2[code] ?? code;
+}
+
+/** Eurostat's own geo code as an ISO 3166-1 alpha-3 — the key this tree's geometry is drawn on. */
+export function iso3OfEurostat(code) {
+  const two = iso2OfEurostat(code);
+  const found = Object.entries(ISO3_TO_ISO2).find(([, alpha2]) => alpha2 === two);
+  if (!found)
+    throw new Error(
+      `Eurostat's geo code ${JSON.stringify(code)} has no ISO 3166-1 alpha-3 in this table. ` +
+        "Eurostat writes EL for Greece and UK for the United Kingdom, which are not ISO, and XK for " +
+        "Kosovo, which has no ISO code at all — those three are the ones worth checking first " +
+        "(shared/map-beat/iso-codes.mjs, EUROSTAT_TO_ISO2).",
+    );
+  return found[0];
+}
+
 /** One ISO 3166-1 alpha-3 code's own alpha-2, or a named, single-code `MissingIso2CodesError`. Kept for a
  *  single lookup (an "origin" country, say) — a beat placing several countries should call `iso2CodesFor`
  *  instead, so every gap is reported together rather than one refusal at a time. */
