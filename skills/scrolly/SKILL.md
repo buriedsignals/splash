@@ -5,6 +5,25 @@ description: Use to produce a scroll-driven interactive (scrollytelling) — a F
 
 # scrolly — the graphic is the fixed ground, the prose is pinned in a lane over it, drive a real browser through a CONTINUOUS scroll to check both
 
+## Where these commands live
+
+Every command below is written `bun skills/<skill>/…`, which is the path inside a Splash **checkout**.
+An installed stories root is not a checkout: it vendors `shared/` and the Engine projects the skills
+into its own store, so that path resolves to nothing and the first command a new reader runs fails
+with `Module not found`. Set this once, in whichever root you are working in, and every command below
+works verbatim with `$SPLASH_SKILLS` in place of `skills`:
+
+```sh
+# an installed stories root (the Engine's projection)
+export SPLASH_SKILLS=~/.agents/skills/splash
+# …or a development checkout
+export SPLASH_SKILLS="$PWD/skills"
+```
+
+Beat paths are the other half: in a checkout a worked example sits at `proof/<beat>/`, and a
+journalist's own beat always sits at `stories/<story>/beats/<beat>/`. Where a command below says
+`proof/…`, it is naming the catalogue; your own beat goes under `stories/`.
+
 ## Overview
 
 The scroll-driven vehicle: a FIXED graphic filling the frame behind the reader's own scroll, with a
