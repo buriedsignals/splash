@@ -66,6 +66,7 @@ import { join as chainJoin, relative as chainRelative } from "node:path";
 import { choreographyFrame, parseTypeSheet } from "#shared/editorial/frame.mjs";
 import { replaceSection } from "#shared/editorial/derived.mjs";
 import { directionReachable, directionRefusalMessage } from "#shared/design-base/run-direction.mjs";
+import { workingRoot } from "#shared/design-base/working-root.mjs";
 import { EXPORT_SIZE_NAMES, sizeFor } from "#shared/chart-video/sizes.mjs";
 import { checkChoreography, renderChoreographySection } from "./choreography.mjs";
 import { readPalette } from "./colour.mjs";
@@ -323,7 +324,7 @@ export function parseArgs(argv) {
 if (import.meta.main) {
   try {
     const args = parseArgs(process.argv.slice(2));
-    const written = scaffoldBeat({ templates: TEMPLATES, files: FILES, skill: SKILL, medium: "chart", type: args.type, beat: args.beat, staticBeat: args.static, component: args.component, filed: Boolean(args.filed), size: args.size ?? DEFAULT_SIZE });
+    const written = scaffoldBeat({ root: workingRoot(process.cwd(), DEFAULT_ROOT), templates: TEMPLATES, files: FILES, skill: SKILL, medium: "chart", type: args.type, beat: args.beat, staticBeat: args.static, component: args.component, filed: Boolean(args.filed), size: args.size ?? DEFAULT_SIZE });
     console.log(`scaffolded ${args.beat}:\n  ${written.join("\n  ")}\n\nNext: BRIEF.md's choreography, then the SCAFFOLD stubs (grep -n SCAFFOLD ${args.beat}).`);
   } catch (error) {
     console.error(`refused — ${error.message}`);

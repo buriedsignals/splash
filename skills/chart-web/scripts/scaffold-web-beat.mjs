@@ -76,6 +76,7 @@ import { join as chainJoin, relative as chainRelative } from "node:path";
 import { choreographyFrame, parseTypeSheet } from "#shared/editorial/frame.mjs";
 import { replaceSection } from "#shared/editorial/derived.mjs";
 import { directionReachable, directionRefusalMessage } from "#shared/design-base/run-direction.mjs";
+import { workingRoot } from "#shared/design-base/working-root.mjs";
 import { checkChoreography, renderChoreographySection } from "./choreography.mjs";
 import { readPalette } from "./colour.mjs";
 import { checkPrecision, renderPrecisionSection, scaffoldRequirements } from "./precision.mjs";
@@ -701,7 +702,7 @@ export function parseArgs(argv) {
 if (import.meta.main) {
   try {
     const args = parseArgs(process.argv.slice(2));
-    const written = scaffoldBeat({ type: args.type, beat: args.beat, staticBeat: args.static, component: args.component, filed: Boolean(args.filed) });
+    const written = scaffoldBeat({ root: workingRoot(process.cwd(), DEFAULT_ROOT), type: args.type, beat: args.beat, staticBeat: args.static, component: args.component, filed: Boolean(args.filed) });
     console.log(
       `scaffolded ${args.beat}:\n  ${written.join("\n  ")}\n\n` +
         `Next, IN THIS ORDER — the scaffold removed the typing, not the thinking:\n` +

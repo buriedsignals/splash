@@ -62,6 +62,7 @@ import { join as chainJoin, relative as chainRelative } from "node:path";
 import { choreographyFrame, parseTypeSheet } from "#shared/editorial/frame.mjs";
 import { replaceSection } from "#shared/editorial/derived.mjs";
 import { directionReachable, directionRefusalMessage } from "#shared/design-base/run-direction.mjs";
+import { workingRoot } from "#shared/design-base/working-root.mjs";
 import { oneRunDirection } from "#shared/design-base/adapt-direction.mjs";
 import { checkChoreography, renderChoreographySection } from "./choreography.mjs";
 import { checkPrecision, renderPrecisionSection, scaffoldRequirements } from "./precision.mjs";
@@ -118,6 +119,21 @@ const HERE = import.meta.dirname;
 const TEMPLATES = join(HERE, "..", "assets", "scrolly-beat-scaffold");
 export const DEFAULT_ROOT = resolve(HERE, "..", "..", "..");
 
+// THE TYPE SHEETS AND THE WORKED EXAMPLES LIVE WITH THE SKILL, never under the root the journalist
+// is working in — an installed stories root has no `skills/` and no `proof/` at all.
+const SHEETS = join(HERE, "..", "references", "types");
+
+/** A `--from` beat, looked for in the journalist's own root first and in this skill's checkout
+ *  second, since the default one is a catalogue proof and a caller's own is not. */
+function beatSource(root, fromBeat) {
+  const here = resolve(root, fromBeat);
+  if (existsSync(here)) return here;
+  const catalogue = resolve(DEFAULT_ROOT, fromBeat);
+  if (existsSync(catalogue)) return catalogue;
+  throw new Error(`--from ${fromBeat} does not exist — looked in:\n  ${here}\n  ${catalogue}`);
+}
+
+
 /** Template file → the file it becomes; `%%Name%%`/`%%TYPE%%` are filled from the beat's own names. Used only in
  *  `--generic` mode, or to generate BRIEF.md (always template-driven — see the header). */
 const FILES = Object.freeze({
@@ -158,7 +174,7 @@ function beatDirOf(root, given, flag) {
 /** Every value the templates carry, derived and validated; refuses a `--type` with no sheet under `references/types/`. */
 export function tokensFor({ root, type, beat, component }) {
   if (!KEBAB.test(type ?? "")) throw new Error(`--type must be a kebab-case chart type, got ${JSON.stringify(type)}`);
-  const sheet = join(root, "skills", "scrolly", "references", "types", `${type}.md`);
+  const sheet = join(SHEETS, `${type}.md`);
   if (!existsSync(sheet)) throw new Error(`--type ${JSON.stringify(type)} has no sheet at skills/scrolly/references/types/${type}.md — see the per-type list in skills/scrolly/SKILL.md`);
   const beatDir = beatDirOf(root, beat, "--beat");
   // The templates already append "Scrolly" to %%Name%% (Directed%%Name%%Scrolly) — strip a caller-supplied
@@ -191,7 +207,7 @@ export function fill(template, values) {
  *  — parsed here (a backtick-quoted `proof/scrolly-…` path) rather than hardcoded, so the scaffold and the sheet
  *  cannot drift apart. Returns null when the sheet carries no such section (a type with no worked example yet). */
 export function workedExampleOf(root, type) {
-  const sheet = join(root, "skills", "scrolly", "references", "types", `${type}.md`);
+  const sheet = join(SHEETS, `${type}.md`);
   if (!existsSync(sheet)) return null;
   const text = readFileSync(sheet, "utf8");
   const heading = text.indexOf("## Worked example");
@@ -237,8 +253,7 @@ const DRIVE_FN_ANCHOR = /^export function \w+\(/m;
  *  gesture the owner's cold-run method always used (read the worked beat's code, adapt it), encoded instead of
  *  left tacit. Returns `{ filename: content }`, ready to write beside a fresh BRIEF.md. */
 export function adaptFromBeat({ root, fromBeat, values }) {
-  const sourceDir = resolve(root, fromBeat);
-  if (!existsSync(sourceDir)) throw new Error(`--from ${fromBeat} does not exist`);
+  const sourceDir = beatSource(root, fromBeat);
   const entries = readdirSync(sourceDir);
   const runnerFile = "render-directions-scrolly.mjs";
   if (!entries.includes(runnerFile)) throw new Error(`--from ${fromBeat} has no ${runnerFile}`);
@@ -308,7 +323,7 @@ export function scaffoldBeat({ root = DEFAULT_ROOT, templates, files, type, beat
     const brief = briefTemplate;
     planned = Object.entries({ ...adapted, "BRIEF.md": brief });
     const missing = requiredLocalAssets(Object.values(adapted), Object.keys(adapted)).filter((name) => !existsSync(join(beatDir, name)));
-    if (missing.length) throw new Error(missingAssetsMessage({ relBeatDir: relative(root, beatDir), fromBeat, sourceDir: resolve(root, fromBeat), missing }));
+    if (missing.length) throw new Error(missingAssetsMessage({ relBeatDir: relative(root, beatDir), fromBeat, sourceDir: beatSource(root, fromBeat), missing }));
   }
   if (!paletteReachable(beatDir)) throw new Error(paletteRefusalMessage({ root, relBeatDir: relative(root, beatDir) }));
   const collisions = planned.map(([target]) => target).filter((target) => existsSync(join(beatDir, target))).sort();
@@ -351,7 +366,7 @@ if (import.meta.main) {
   try {
     const args = parseArgs(process.argv.slice(2));
     const generic = Boolean(args.generic);
-    const written = scaffoldBeat({ templates: TEMPLATES, files: FILES, type: args.type, beat: args.beat, component: args.component, filed: Boolean(args.filed), from: args.from, generic });
+    const written = scaffoldBeat({ root: workingRoot(process.cwd(), DEFAULT_ROOT), templates: TEMPLATES, files: FILES, type: args.type, beat: args.beat, component: args.component, filed: Boolean(args.filed), from: args.from, generic });
     const next = generic
       ? `Next: read skills/scrolly/references/types/${args.type}.md, write BRIEF.md's choreography, then the SCAFFOLD stubs (grep -rn SCAFFOLD ${args.beat}).`
       : `Next: grep -rn SCAFFOLD ${args.beat} and work through each marked region; BRIEF.md names the beat it was adapted from — read its own BRIEF.md too.`;
