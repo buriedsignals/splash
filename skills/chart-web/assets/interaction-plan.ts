@@ -168,7 +168,9 @@ export type ControlKind =
   | "filter"
   | "stack"
   | "level"
-  | "cutoff";
+  | "cutoff"
+  /** A control this file has no name for — a beat's own vocabulary. See `ownVocabularies`. */
+  | "own";
 
 const DECODE: [RegExp, string][] = [
   [/&nbsp;/g, " "],
@@ -206,27 +208,23 @@ export function defaultPrintedText(html: string): string {
     /<details[\s\S]*?<\/details>/g,
     (block) => block.match(/<summary[\s\S]*?<\/summary>/)?.[0] ?? " ",
   );
-  // A narrowing note is revealed by the same `:checked` that narrows the marks (`filter.ts`).
-  text = text.replace(/<[^>]*data-filter-note="[^"]*"[^>]*>[\s\S]*?<\/[a-z]+>/g, " ");
-  // A stack's sentence is revealed by the same `:checked` that moves the columns (`stack.ts`), and
-  // it is the whole reading that control gives a reader who is not looking at the picture. Counting
-  // it as printed would make the one channel its count and its running total are on look dead —
-  // the same mistake the choropleth's 41 native `<title>`s cost a round of, one control to the left.
-  text = text.replace(/<[^>]*data-stack-note="[^"]*"[^>]*>[\s\S]*?<\/[a-z]+>/g, " ");
-  // A yardstick's sentence is revealed by the same `:checked` that lays its references across the
-  // plot (`level.ts`), and it is where that control's DERIVED readings live — the rank among the
-  // drawn data, the ratio between two series. The rules themselves are read against the axis the
-  // plate already draws, so the sentence is the only channel those numbers are on; counting it as
-  // printed would make the whole control look dead for exactly the reason the choropleth's 41
-  // native `<title>`s and the stack's own sentence each cost a round of.
-  text = text.replace(/<[^>]*data-level-note="[^"]*"[^>]*>[\s\S]*?<\/[a-z]+>/g, " ");
-  // A cutoff's sentence is revealed by the same `:checked` that redraws the region its line selects
-  // (`cutoff.ts`), and it is where that control's DERIVED readings live — how long the selected run
-  // is, where it starts and ends, how much of the whole the line lets through. The outline itself is
-  // geometry and nothing here can see one, so the sentence is the only channel those numbers are on;
-  // counting it as printed would make the whole control look dead for exactly the reason the
-  // choropleth's 41 native `<title>`s, the stack's sentence and the yardstick's each cost a round of.
-  text = text.replace(/<[^>]*data-cutoff-note="[^"]*"[^>]*>[\s\S]*?<\/[a-z]+>/g, " ");
+  // ── EVERY CONTROL'S OWN SENTENCE IS REVEALED, NEVER PRINTED ───────────────────────────────────
+  //
+  // A note is shown by the same `:checked` that changes the picture — the narrowing note of
+  // `filter.ts`, the stack's running total, the yardstick's rank and ratio, the cutoff's run — and
+  // it is usually the ONLY channel those derived numbers are on. The marks themselves are geometry
+  // and nothing in this file can see geometry, so counting a note as printed makes the control that
+  // owns it look dead. That mistake cost a round of work four times over: the choropleth's 41
+  // native `<title>`s, then the stack's sentence, then the yardstick's, then the cutoff's.
+  //
+  // IT USED TO BE FOUR RULES, ONE PER KNOWN VOCABULARY, and that list was the fifth instance of the
+  // same mistake. The format's own contract says a beat may write its own vocabulary — `verify-web`
+  // discovers a control because there is a `<fieldset>`, not because it recognises the name — and a
+  // beat that did exactly that shipped `data-frame-note`, which was in no list, so its sentences
+  // counted as printed and its live, driven, CSS-only control read as dead. Measured 2026-09-23.
+  //
+  // So it is one rule over ANY `data-<name>-note`, which is what the four were spelling out.
+  text = text.replace(/<[^>]*\bdata-[a-z][a-z0-9-]*-note="[^"]*"[^>]*>[\s\S]*?<\/[a-z]+>/g, " ");
   return decodeText(text.replace(/<[^>]*>/g, " "));
 }
 
@@ -474,6 +472,77 @@ export type ShippedControl = {
 };
 
 /**
+ * Every `<fieldset class="chart-NAME">` on the page, with its stem, its option slugs, its notes —
+ * and the ATTRIBUTE those notes are written with, which is not always the fieldset's own stem.
+ *
+ * Measured 2026-09-23: `proof/web-stacked-bar-lowcarbon-growth` ships `<fieldset class=
+ * "chart-rebase">` whose sentences are `data-stack-note`. The notes are found through the
+ * `.<stem>-notes` container the chrome reserves — which is the contract — and whatever `data-…-note`
+ * they happen to carry is read back, because that name is what says which branch already owns them.
+ */
+export function fieldsetControls(
+  html: string,
+): { stem: string; slugs: string[]; notes: Map<string, string>; noteAttr: string | null }[] {
+  const out: { stem: string; slugs: string[]; notes: Map<string, string>; noteAttr: string | null }[] = [];
+  const page = String(html);
+  for (const m of page.matchAll(/<fieldset[^>]*\bclass="chart-([a-z][a-z0-9-]*)"[\s\S]*?<\/fieldset>/g)) {
+    const stem = m[1];
+    const slugs = [
+      ...new Set([...m[0].matchAll(/<input[^>]*\btype="radio"[^>]*\bvalue="([^"]*)"/g)].map((r) => r[1])),
+    ].filter(Boolean);
+    if (slugs.length < 2) continue;
+    const container = new RegExp(`<[^>]*\\bclass="${stem}-notes"[\\s\\S]*?</div>`).exec(page);
+    const notes = new Map<string, string>();
+    let noteAttr: string | null = null;
+    if (container)
+      for (const n of container[0].matchAll(/<p[^>]*\bdata-([a-z][a-z0-9-]*)-note="([^"]*)"[^>]*>([\s\S]*?)<\/p>/g)) {
+        noteAttr = n[1];
+        notes.set(n[2], decodeText(n[3].replace(/<[^>]*>/g, "")).trim());
+      }
+    out.push({ stem, slugs, notes, noteAttr });
+  }
+  return out;
+}
+
+/**
+ * The fieldset controls no named branch has already claimed — a beat's own vocabulary.
+ *
+ * Measured the same way every named branch measures: an option changes the picture when the
+ * sentence it reveals carries a reading the page does not already print at rest.
+ */
+export function ownVocabularies(html: string, already: ShippedControl[]): ShippedControl[] {
+  const printed = defaultPrintedText(html);
+  // A fieldset is a beat's OWN only when no named branch already accounts for it. The branches key
+  // off the note attribute, not off the fieldset's class — `chart-rebase` writes `data-stack-note`
+  // and is the stack branch's — so that attribute is what says who owns it.
+  const NAMED = new Set<string>(["filter", "stack", "level", "cutoff"]);
+  const out: ShippedControl[] = [];
+  for (const { stem, slugs, notes, noteAttr } of fieldsetControls(html)) {
+    if (NAMED.has(stem) || (noteAttr && NAMED.has(noteAttr))) continue;
+    const adding = slugs.filter((slug) => {
+      const note = notes.get(slug);
+      if (!note) return false;
+      return answerPieces(note).some((piece) => !printed.includes(piece));
+    });
+    out.push({
+      kind: "own",
+      label: `the ${slugs.length} option(s) of this beat's own .chart-${stem}`,
+      // OPEN, because this file cannot know what a vocabulary nobody has written yet is for. A beat
+      // that writes one declares which gesture it spends, and the declaration is what is checked.
+      gestures: [...(Object.keys(GESTURES) as Gesture[])],
+      changes: adding.length,
+      measured: slugs.length,
+      why:
+        `all ${slugs.length} option(s) of .chart-${stem} reveal a sentence the page already prints, ` +
+        `or reveal none at all — a reader who works through every one of them is told nothing they ` +
+        `could not read at rest`,
+    });
+  }
+  return out;
+}
+
+
+/**
  * WHAT THE PAGE ACTUALLY SHIPS, and for each one whether its state differs from the default.
  *
  * Nothing is registered and nothing is passed in: a control is present because the markup carries
@@ -596,6 +665,25 @@ export function shippedControls(html: string): ShippedControl[] {
         `they could not read at rest`,
     });
   }
+
+  // ── A BEAT'S OWN VOCABULARY ───────────────────────────────────────────────────────────────────
+  //
+  // `verify-web.mjs` discovers a control because there is a `<fieldset>`, deliberately and in its
+  // own words: "a beat may write its own vocabulary (measured: `proof/web-flow-map-danube` ships
+  // `chart-measure`, which exists in no assets directory), and a verifier that enumerated stems
+  // would have gone quiet on exactly the beat nobody else checked."
+  //
+  // THIS CENSUS ENUMERATED STEMS. Measured 2026-09-23 on a real story: a beat shipped `chart-frame`
+  // — a live, driven, CSS-only control that the verifier exercised through 188 checks — and this
+  // file could not see it, so declaring it was refused as "the plan declares a control and the page
+  // ships none". The format permitted the vocabulary and the guard in front of it did not.
+  //
+  // So the last branch is the general one: any `<fieldset class="chart-…">` with two or more radios
+  // that no branch above has already claimed. Its gestures are OPEN, because this file cannot know
+  // what a vocabulary nobody has written yet is for — what it can still ask is the question every
+  // other branch asks, and the one that matters: does an option reveal a reading the page does not
+  // already print.
+  for (const own of ownVocabularies(html, out)) out.push(own);
 
   const cutoffSlugs = cutoffOptionSlugs(html);
   if (cutoffSlugs.length) {

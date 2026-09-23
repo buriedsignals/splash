@@ -153,12 +153,20 @@ describe("the census: what the committed web corpus does when a reader asks", ()
     // makes the marks outside its set LEAVE, and on a calendar heatmap the filtered dimension IS the
     // encoded one; a level's primitive is a rule at a coordinate, and this plot has no coordinate
     // for 20 °C.
+    // `own` is the last kind and it is not a vocabulary: it is EVERY fieldset no named branch
+    // accounts for. The format's contract has always said a beat may write its own — `verify-web`
+    // discovers a control because there is a `<fieldset>`, not because it recognises the name — and
+    // this census enumerated stems, so a beat that took the contract at its word shipped a live,
+    // driven, CSS-only control that the census read as absent. Measured 2026-09-23 on a real
+    // story's `chart-frame`, and the refusal it produced was "the plan declares a control and the
+    // page ships none".
     const kinds = new Set(CONTROLS.map((entry) => entry.control.kind));
     expect([...kinds].sort()).toEqual([
       "ask",
       "cutoff",
       "filter",
       "level",
+      "own",
       "stack",
       "table",
     ]);
