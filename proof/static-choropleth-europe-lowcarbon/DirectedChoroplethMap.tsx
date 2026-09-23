@@ -282,7 +282,7 @@ export function mapGeometryFor({
    *  it has to leave a map-sized band. Without this the copy took everything it wanted, `spare` came to
    *  7px, and the map was drawn as a sliver through the source line. Two fifths of the usable height is
    *  what the beside layout gives it at landscape, so it is what the stack owes it. */
-  const MIN_MAP_SHARE = 0.42;
+  const MIN_MAP_SHARE = 0.38;
   const mapBandFloor = STACKED ? (height - PAD * 2) * MIN_MAP_SHARE : 0;
   const panelFor = (share: number) => Math.round((width - PAD * 2) * share);
 
@@ -571,10 +571,17 @@ export function mapGeometryFor({
    *  stretched — the frame simply shows less ground on one axis. The crop is anchored WEST, because
    *  the ground it gives up is the far east of Russia and the ground it must not give up is Iceland,
    *  which is one of the seven the headline is about. */
-  const fill = Math.max(mapBox.width, mapBox.height * aspect);
+  /** BESIDE: fill the box and crop, because the box is as tall as the plate and the ground it gives
+   *  up is the far east of Russia. STACKED: FIT inside the band instead. The box is only as tall as
+   *  the copy left it, so filling it would draw the map straight through the source line — measured,
+   *  it overran a 183px band by 148px. A whole map that is smaller is a map; a cropped strip of one
+   *  is not. */
+  const fill = STACKED
+    ? Math.min(mapBox.width, mapBox.height * aspect)
+    : Math.max(mapBox.width, mapBox.height * aspect);
   const mapW = fill;
   const mapH = fill / aspect;
-  const mapX = mapBox.x;
+  const mapX = STACKED ? mapBox.x + (mapBox.width - mapW) / 2 : mapBox.x;
   const mapY = mapBox.y + (mapBox.height - mapH) / 2;
   return {
     rung: fits.rung,
