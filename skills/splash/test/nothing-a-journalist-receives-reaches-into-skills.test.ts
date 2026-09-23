@@ -259,4 +259,22 @@ describe("the code a scaffold writes into a story", () => {
       .map(({ scaffold, beat, file }) => `${scaffold} ← ${beat}/${file}`);
     expect([...new Set(mute)]).toEqual([]);
   });
+
+  /**
+   * AND A SCROLLY IS FITTED TO THE CARD IT IS READ ON, not to a plate it does not have.
+   *
+   * Every worked scrolly map carries `const FRAME = { width: 1000, height: 760 }` with a comment saying it
+   * is "the static plate's own bake bounds and camera aspect". A scrolly has no plate: its stage is the
+   * card, about 2.5:1, and fitting a 1.32 reference onto it binds by height and pulls the whole-map camera
+   * back by most of a zoom level. Measured 2026-09-23 on a fresh beat, whose first render of
+   * `[[-11, 34], [35, 70]]` showed Greenland and Kazakhstan.
+   */
+  it("fits a scrolly's camera to the card's own stage, not to a static plate's", async () => {
+    const plateShaped = (await produced())
+      .filter(({ scaffold }) => scaffold.includes("scrolly-map"))
+      .filter(({ file }) => file.endsWith(".mjs"))
+      .filter(({ source }) => /const FRAME = \{ width: 1000, height: 760 \}/.test(source))
+      .map(({ scaffold, beat, file }) => `${scaffold} ← ${beat}/${file}`);
+    expect([...new Set(plateShaped)]).toEqual([]);
+  });
 });

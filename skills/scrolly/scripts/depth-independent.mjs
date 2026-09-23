@@ -366,3 +366,40 @@ export function missingAssetsMessage({ relBeatDir, fromBeat, sourceDir, missing 
   });
   return [`${relBeatDir} is missing the data ${fromBeat}'s own render-directions-scrolly.mjs assumes sits beside it:`, lines.join("\n"), `Place these beside the beat, then scaffold again.`].join("\n\n");
 }
+
+// ── the reference frame a SCROLLY is read at ──────────────────────────────────────────────────────
+
+/** `const FRAME = { width: N, height: M };` — a copied beat's camera reference. */
+const FRAME_DECL = /^\/\*\*[^\n]*\*\/\n?const FRAME = \{ width: \d+, height: \d+ \};$|^const FRAME = \{ width: \d+, height: \d+ \};$/m;
+
+/**
+ * THE FRAME A SCROLLY IS READ AT IS THE CARD'S, NOT A STATIC PLATE'S.
+ *
+ * Every worked scrolly map carries `const FRAME = { width: 1000, height: 760 }` with a comment saying so
+ * out loud: "the static plate's own bake bounds and camera aspect". `REFERENCE` is derived from that aspect
+ * (1.32) and `zoomShiftFor` fits the authored camera onto the real stage — which is about 2.5:1. Fitting a
+ * 1.32 reference onto a 2.5 stage binds by HEIGHT and pulls the whole-map camera back by roughly four fifths
+ * of a zoom level. Measured 2026-09-23 on a fresh beat: bounds of `[[-11, 34], [35, 70]]` rendered a map
+ * showing Greenland and Kazakhstan.
+ *
+ * A scrolly has no plate. Its stage is the card, and the card's shape is `SHAPE_ASPECTS.wide` at
+ * `MEASURED_VIEWPORTS.wide` — both already declared in `live-map-cards.mjs`, both already what the bake
+ * uses. The copy is given that, and told why in the region marker so the author can refit rather than
+ * inherit a number from a vehicle this beat does not have.
+ */
+export function scrollyStageFrame(content) {
+  if (!FRAME_DECL.test(content)) return content;
+  const width = 1280;
+  const height = Math.round(width / 2.5);
+  return content.replace(
+    FRAME_DECL,
+    [
+      "// SCAFFOLD: cameras — this is the frame the camera is FITTED to, and for a scrolly it is the CARD's",
+      "// stage, not a static plate's. `MEASURED_VIEWPORTS.wide` x `SHAPE_ASPECTS.wide`",
+      "// (skills/scrolly/scripts/live-map-cards.mjs), which is what the card bake itself uses. The worked",
+      "// example this was copied from carried its own static sibling's plate aspect, and a 1.32 reference",
+      "// fitted onto a 2.5 stage binds by height and pulls the whole-map camera back by most of a zoom level.",
+      `const FRAME = { width: ${width}, height: ${height} };`,
+    ].join("\n"),
+  );
+}

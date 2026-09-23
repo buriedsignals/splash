@@ -35,7 +35,7 @@
 
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, join, relative, resolve, sep } from "node:path";
-import { defaultLanguage, depthIndependentPaths, languageIsDeclared, languageAwareNumbers, missingAssetsMessage, paletteReachable, paletteRefusalMessage, requiredLocalAssets } from "./depth-independent.mjs";
+import { defaultLanguage, depthIndependentPaths, languageIsDeclared, scrollyStageFrame, languageAwareNumbers, missingAssetsMessage, paletteReachable, paletteRefusalMessage, requiredLocalAssets } from "./depth-independent.mjs";
 import { eachThroughSkillScript } from "#shared/design-base/skill-import.mjs";
 
 // ── THE EDITORIAL CHAIN, WIRED (spec `docs/splash/2026-09-17-editorial-chain-spec.md` §4) ──────
@@ -444,7 +444,7 @@ export function adaptFromBeat({ root, fromBeat, values, shapeMismatch = null }) 
   // formatter matching this beat's own default language, defaulted from NEWSROOM.md — see depth-independent.mjs.
   const lang = defaultLanguage(root);
   const declared = languageIsDeclared(root);
-  runner = oneRunDirection(languageAwareNumbers(depthIndependentPaths(runner), lang, { declared }), runnerFile);
+  runner = scrollyStageFrame(oneRunDirection(languageAwareNumbers(depthIndependentPaths(runner), lang, { declared }), runnerFile));
   plan = languageAwareNumbers(depthIndependentPaths(plan), lang, { declared });
   tsx = languageAwareNumbers(depthIndependentPaths(tsx), lang, { typed: true, declared });
   drive = languageAwareNumbers(depthIndependentPaths(drive), lang, { declared });
