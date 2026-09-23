@@ -1202,8 +1202,23 @@ ${
    The rule is a floor, not a height. In a tall window the plot's own aspect-ratio is already larger
    and this changes nothing at all. */
 .chart-plot {
-  min-height: max(${PLOT_FLOOR_PX}px, calc((100vh - ${FRAME_PAD_PX * 2}px) * ${drawing.share}));
-  min-height: max(${PLOT_FLOOR_PX}px, calc((100dvh - ${FRAME_PAD_PX * 2}px) * ${drawing.share}));
+  /* THE SHARE IS WHAT THE DRAWING ASKS FOR, NOT A FLOOR IT HOLDS AGAINST THE WORDS THEMSELVES.
+     As a hard `min-height` it could not be overruled by anything, so a narrow column — where the
+     title, the caveat, the control and its note all wrap onto more lines and the words simply
+     cannot shrink further — produced a figure taller than the window it declares it fits in, and
+     `assertDrawingShare` never saw it because it only ever opened one window. Measured 2026-09-23
+     on a delivered choropleth: at 1512x860 the words took 177 px and it fitted; at 375x812 they
+     took 442 px against the 260 px the 66 % share left them, and the page ran 198 px past the fold
+     with the claim, the reading, the source and the table all below it.
+
+     `flex-basis` says the same thing and can be overruled by arithmetic instead of by nobody: the
+     drawing is HANDED its share wherever the column affords it — every window the share was
+     measured at, unchanged — and gives back only what the words physically need, down to the
+     honest-scrollbar floor. The text is still the adjusting variable; it is no longer asked to
+     adjust below the height of its own lines. */
+  flex: 1 1 calc((100vh - ${FRAME_PAD_PX * 2}px) * ${drawing.share});
+  flex: 1 1 calc((100dvh - ${FRAME_PAD_PX * 2}px) * ${drawing.share});
+  min-height: ${PLOT_FLOOR_PX}px;
 }
 /* THE STANDFIRST IS THE ADJUSTING VARIABLE, NOT THE MAP. One line on the page; the sentence itself
    is untouched in the markup, still read out whole by a screen reader and still copied whole.
