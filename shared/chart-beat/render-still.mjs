@@ -593,6 +593,95 @@ function transformedSpans(svg) {
  * are and not where a MARK is; rotated runs and runs inside a transformed group are skipped, and a
  * beat that leans on them is told this guard went quiet rather than green.
  */
+/**
+ * TWO LINES THAT LAND ON EACH OTHER, and nothing in this tree looked for them.
+ *
+ * `assertWithinFrame` checks a run against the frame's sides and `assertWithinHeight` against its
+ * top and foot. Neither asks whether two runs occupy the same pixels, and a plate whose closing
+ * block is laid out in two halves — one positioned from the plot above it, one from the credit
+ * below — will eventually put them in the same place. Measured 2026-09-23 on a real story's still:
+ * "5.7× less than Romania alone" at y=1174.8 and "85% of the EU's 30,001 reported cases" at
+ * y=1182.0, seven pixels apart at 36px, printed one through the other. The render reported success
+ * and every other guard was green.
+ *
+ * TWO RUNS COLLIDE WHEN THEIR INK OVERLAPS ON BOTH AXES. The vertical band is the same cap-height
+ * and descender the height guard uses; the horizontal one is measured, so two columns side by side
+ * at the same height are not a collision and are not reported.
+ *
+ * ONE WORD DRAWN TWICE IS NOT TWO WORDS COLLIDING. The tree haloes a label by drawing it as a
+ * stroke and again as a fill at the same coordinates. The first sweep reported 42 of 118 delivered
+ * SVGs, and every pair at a perfect overlap was exactly that — a guard that refused the tree's own
+ * halo would have been useless. A pair with the same words at the same place is one run.
+ *
+ * THE THRESHOLD IS MEASURED, NOT CHOSEN. Swept over the 118 delivered stills with haloes excluded,
+ * the worst overlap anything already shipped carries is 0.27 — adjacent lines set tight, which is
+ * typography and not a defect. The collision this guard was written from overlapped 0.80 of its own
+ * type. A half is clear of the first by a wide margin and clear of the second by a wider one.
+ *
+ * SAME STATED LIMITS as its siblings: `<text>` baselines only, so it sees where WORDS are and not
+ * where a MARK is, and rotated or transformed runs are skipped and counted in the refusal.
+ */
+export function assertNoOverlappingText(svg, { what = "this render", most = 0.5 } = {}) {
+  const runs = [];
+  let skipped = 0;
+  const moved = transformedSpans(svg);
+  const isMoved = (at) => moved.some(([from, to]) => at >= from && at < to);
+  for (const m of svg.matchAll(/<text\b([^>]*)>([\s\S]*?)<\/text>/g)) {
+    const attrs = m[1];
+    if (/transform="/.test(attrs) || isMoved(m.index)) {
+      skipped += 1;
+      continue;
+    }
+    const x = Number(/\bx="(-?\d+(?:\.\d+)?)"/.exec(attrs)?.[1]);
+    const y = Number(/\by="(-?\d+(?:\.\d+)?)"/.exec(attrs)?.[1]);
+    const fontSize = Number(/font-size="(\d+(?:\.\d+)?)"/.exec(attrs)?.[1] ?? 0);
+    const words = unescapeXml(m[2].replace(/<[^>]*>/g, "")).trim();
+    if (!Number.isFinite(x) || !Number.isFinite(y) || !fontSize || !words) continue;
+    const fontWeight = Number(/font-weight="(\d+)"/.exec(attrs)?.[1] ?? 400);
+    const drawn = measureText(words, { fontSize, fontWeight });
+    const anchor = /text-anchor="(start|middle|end)"/.exec(attrs)?.[1] ?? "start";
+    const left = anchor === "middle" ? x - drawn / 2 : anchor === "end" ? x - drawn : x;
+    runs.push({
+      words,
+      fontSize,
+      left,
+      right: left + drawn,
+      top: y - fontSize * 0.75,
+      bottom: y + fontSize * 0.25,
+      y,
+    });
+  }
+  const hits = [];
+  for (let i = 0; i < runs.length; i++)
+    for (let j = i + 1; j < runs.length; j++) {
+      const a = runs[i];
+      const b = runs[j];
+      // One run haloed: the same words at the same place, drawn twice.
+      if (a.words === b.words && Math.abs(a.left - b.left) < 1 && Math.abs(a.top - b.top) < 1) continue;
+      const across = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+      const down = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+      if (across <= 0 || down <= 0) continue;
+      const share = Math.min(
+        across / Math.min(a.right - a.left, b.right - b.left),
+        down / Math.min(a.fontSize, b.fontSize),
+      );
+      if (share > most)
+        hits.push(
+          `"${a.words.slice(0, 32)}" (baseline ${Math.round(a.y)}, ${a.fontSize}px) and ` +
+            `"${b.words.slice(0, 32)}" (baseline ${Math.round(b.y)}) share ` +
+            `${Math.round(across)}x${Math.round(down)}px of ink (${(share * 100).toFixed(0)}% of the smaller run)`,
+        );
+    }
+  if (hits.length)
+    throw new Error(
+      `${what} prints ${hits.length} pair(s) of words through each other: ${hits.slice(0, 3).join("; ")}` +
+        (hits.length > 3 ? `, and ${hits.length - 3} more` : "") +
+        ". Lay the block out from ONE baseline and step by the register's own lead, so two lines " +
+        "cannot land on each other rather than merely being unlikely to" +
+        (skipped ? ` (${skipped} rotated or transformed run(s) were not measured)` : ""),
+    );
+}
+
 export function assertWithinHeight(svg, height, { what = "this render" } = {}) {
   const outside = [];
   let skipped = 0;
@@ -693,6 +782,7 @@ export async function renderStill({
 
   assertWithinFrame(svg, width, { what: `the render named ${JSON.stringify(name)}` });
   assertWithinHeight(svg, height, { what: `the render named ${JSON.stringify(name)}` });
+  assertNoOverlappingText(svg, { what: `the render named ${JSON.stringify(name)}` });
 
   await mkdir(outDir, { recursive: true });
   const svgPath = join(outDir, `${name}.svg`);
