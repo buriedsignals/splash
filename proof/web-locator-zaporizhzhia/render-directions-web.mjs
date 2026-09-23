@@ -22,7 +22,7 @@ import { tmpdir } from "node:os";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 import { fileURLToPath } from "node:url";
 import {
   mix,

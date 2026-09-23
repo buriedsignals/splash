@@ -25,7 +25,7 @@ import { mkdir, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { extname, join, resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "..");

@@ -76,7 +76,7 @@ import { describe, it, expect, setDefaultTimeout } from "bun:test";
 import { existsSync, readdirSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, relative, resolve } from "node:path";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 
 const TWIN = resolve(import.meta.dirname, "../../..");
 const PROOF = join(TWIN, "proof");

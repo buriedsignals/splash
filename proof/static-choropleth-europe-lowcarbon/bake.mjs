@@ -29,7 +29,7 @@ import { createHash } from "node:crypto";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 import { bakePlan, assertRangesServed, rangesNeededBy } from "#shared/map-beat/bake.mjs";
 import { validateExpressions } from "#shared/map-beat/mount.mjs";
 import { scrollyMapScript } from "#shared/map-beat/inline.mjs";

@@ -66,7 +66,7 @@ import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { execFileSync } from "node:child_process";
 import { homedir } from "node:os";
 import { join } from "node:path";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 
 /** A DUPLICATE of `map-web/scripts/verify-interaction.mjs`'s own `resolveChrome`, for the same
  *  reason that one duplicates `bake-plate.mjs`'s: importing either runs it. This machine has no

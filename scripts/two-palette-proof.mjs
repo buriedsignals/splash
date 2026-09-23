@@ -45,7 +45,7 @@ import {
 import { homedir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { Resvg } from "@resvg/resvg-js";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 import {
   contrast,
   adjustToContrast,

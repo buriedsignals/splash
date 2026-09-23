@@ -83,7 +83,7 @@ import {
 } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
-import puppeteer, { type Browser } from "puppeteer";
+import puppeteer, { type Browser } from "puppeteer-core";
 import { readPixelPalette } from "../../../scripts/design-base/pixel-palette.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { composeDirection } from "#shared/design-base/compose.mjs";

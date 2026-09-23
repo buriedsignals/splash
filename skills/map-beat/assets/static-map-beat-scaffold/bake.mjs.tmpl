@@ -13,7 +13,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 import { assertRangesServed, bakePlan, rangesNeededBy } from "#shared/map-beat/bake.mjs";
 import { assertNotFallback, DEFAULT_RANGES, maptilerGlyphs } from "#shared/map-beat/glyphs.mjs";
 import { scrollyMapScript } from "#shared/map-beat/inline.mjs";

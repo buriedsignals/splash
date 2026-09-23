@@ -41,7 +41,7 @@ import {
 } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
 import { comparePngBuffers } from "../scripts/compare-png.mjs";
 
 const SKILL_DIR = resolve(import.meta.dirname, "..");
