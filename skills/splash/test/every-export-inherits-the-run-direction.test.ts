@@ -63,12 +63,17 @@ function scaffoldBundles(): { name: string; source: string }[] {
 }
 
 /**
- * THE ONE EXPORT FAMILY STILL EXEMPT, by name and with its reason — the same shape as the `proof/`
- * prefix, never a heuristic. A web MAP bakes a basemap plate per filed direction, upstream of any
- * render, and its whole plate pipeline is keyed to the three; giving it the run's one direction
- * means baking that direction's plate first, which is a different piece of work from this one.
+ * NO FAMILY IS EXEMPT ANY MORE, and the last one was the worst kind of exemption.
+ *
+ * `map-web` was excused because it bakes a basemap plate per filed direction, upstream of any
+ * render, and giving it the run's one direction meant baking that direction's plate first. The
+ * static map family had already done exactly that work, so the excuse had expired — and what the
+ * exemption was actually costing was measured on 2026-09-23: the scaffold REFUSES to write a beat
+ * that cannot reach a DIRECTION.md, the runner then printed the run's composed direction, and the
+ * page came out in the filed `creme` instead. The run's one direction was computed, printed and
+ * thrown away, which is worse than never reading it: the console says the rule held.
  */
-const STILL_OWED = new Set(["map-web/assets/web-map-beat-scaffold"]);
+const STILL_OWED = new Set<string>([]);
 
 describe("every runner a journalist is handed", () => {
   it("finds the templates at all, so this file cannot pass by looking at nothing", () => {
