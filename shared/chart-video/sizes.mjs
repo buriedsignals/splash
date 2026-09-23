@@ -378,3 +378,34 @@ export async function readPinnedSize(startDir, { readFile, dirname, join } = {})
       `Looked in:\n  ${searched.join("\n  ")}`,
   );
 }
+
+/**
+ * THE SIZE THIS RUN EXPORTS AT, taken from the command line.
+ *
+ * R2 names three and this table has carried all three from the start — `typeScale`, `stage`,
+ * `frameInset` and the type floors all answer per size. What pinned every beat to one was the
+ * runners: measured 2026-09-23, all forty `build.mjs` in `proof/` read `export const SIZE =
+ * "landscape"` and all forty Remotion roots registered a single `…-landscape` composition, so a
+ * story's video could be produced in landscape and in nothing else while the rest of the machinery
+ * was already size-aware.
+ *
+ * The DEFAULT is landscape, because a journalist who asks for no size is asking for the article's
+ * own shape. An unknown name is refused rather than rounded to the nearest one.
+ */
+export function videoExportSize(argv = process.argv.slice(2)) {
+  const at = argv.indexOf("--size");
+  if (at === -1) return "landscape";
+  const size = argv[at + 1];
+  if (!EXPORT_SIZE_NAMES.includes(size))
+    throw new Error(
+      `--size takes one of ${EXPORT_SIZE_NAMES.join(", ")}, got ${JSON.stringify(size)}. It is chosen at ` +
+        "gate 2c and recorded on the slot in STORYBOARD.md; it is not a default anything may fall back to.",
+    );
+  return size;
+}
+
+/** `<id>` in landscape, `<id>-portrait` and `<id>-square` beside it — so one beat's three sizes can
+ *  sit in one `renders/` without a run overwriting the one before it. */
+export function nameAtSize(id, size) {
+  return size === "landscape" ? id : `${id}-${size}`;
+}

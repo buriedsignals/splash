@@ -53,9 +53,13 @@ describe("a size a type holds at", () => {
   it("is what makes the type answer `as-is` at that size, and nothing else does", () => {
     for (const [size, type] of held())
       expect(formForSize(type, size).verdict).toBe("as-is");
-    // And a type with no record is still refused, so the record is the only door.
-    expect(formForSize("beeswarm", "square").verdict).toBe("refuse");
-    expect(formForSize("treemap", "portrait").verdict).toBe("refuse");
+    // And a type with no record is still refused, so the record is the only door. Both controls are
+    // now a type this corpus does not draw: every type it DOES draw has been read at both sizes, so
+    // a drawn type can no longer serve as the control. That is the record finished, not weakened.
+    expect(formForSize("sunburst", "square").verdict).toBe("refuse");
+    // Portrait now holds for every type this corpus draws, so the second control is a type the
+    // corpus does not draw at all — the record has to be the door for a stranger too.
+    expect(formForSize("sunburst", "portrait").verdict).toBe("refuse");
   });
 
   it("says why every other type was turned down, so the next pass starts from what was seen", () => {

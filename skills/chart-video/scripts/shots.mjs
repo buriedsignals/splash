@@ -151,7 +151,24 @@ export function titleCardFor({ registers, eyebrow, title: forms, size, eyebrowTo
   const inset = frameInsetFor(size);
   const measure = (CARD_MEASURE * (row.width - 2 * inset)) / (1 + DRAWN_WIDER);
   const eyebrowR = registers.eyebrow;
-  const title = cardTextFor(forms, registers, { measure });
+  /**
+   * THE CARD'S LINE BUDGET IS A MEASURE TOO.
+   *
+   * `CARD_MAX_LINES` is three, and three is a statement about a HEADLINE — a card, not a paragraph —
+   * made against 1254px of landscape reading measure. A portrait frame offers 661, so the same
+   * headline needs the lines the narrower measure costs it; and the size ladder cannot pay for them,
+   * because it stops at the largest other register (a headline smaller than the voice under it has
+   * stopped being the headline). Measured 2026-09-23: four beats refused at portrait and at square
+   * with « no card form wraps into 3 lines of 660.7px above 53.25px », and none of them had a
+   * headline problem — they had a frame the budget had never been asked about.
+   *
+   * Landscape's ratio is 1, so nothing already delivered moves. The ceiling is twice the landscape
+   * budget: past that the card has stopped being a card whatever the frame.
+   */
+  const wide = sizeFor("landscape");
+  const wideMeasure = (CARD_MEASURE * (wide.width - 2 * frameInsetFor("landscape"))) / (1 + DRAWN_WIDER);
+  const maxLines = Math.min(CARD_MAX_LINES * 2, Math.max(CARD_MAX_LINES, Math.ceil((CARD_MAX_LINES * wideMeasure) / measure)));
+  const title = cardTextFor(forms, registers, { measure, maxLines });
   const eyebrowText = applyCase(eyebrow, eyebrowR.transform);
   const eyebrowBand = bandOf(eyebrowText, eyebrowR);
   const titleBand = bandOf(title.lines.map((l) => l.text).join(" "), title.register);
@@ -179,7 +196,26 @@ export function sourceCreditFor({ registers, forms, size, k, measure = CREDIT_ME
   const content = row.width - 2 * frameInsetFor(size);
   const r = registerAt(registers.axis, row.minTypePx);
   const halo = haloOf(r, k);
-  const block = blockFor(forms, r, (measure * content) / (1 + DRAWN_WIDER), maxLines);
+  /**
+   * THE LINE BUDGET IS A MEASURE, NOT A NUMBER.
+   *
+   * `CREDIT_ONE_LINE` says a credit is one line, and every beat cut since 2026-09-14 passes it. It was
+   * written against the landscape frame and it is a statement about the SHAPE of a credit — a line
+   * set on the picture, not a paragraph — which is why a portrait frame breaks it: measured
+   * 2026-09-23, the same credit that holds one line across 1824px of landscape content wants 1683px
+   * and a portrait frame offers 910, so every video beat refused at portrait and at square with
+   * « no form wraps into 1 lines of 917.6px ».
+   *
+   * So the budget is carried across in READING terms: the same credit, at the same type floor, given
+   * the lines the narrower frame costs it, and never more than `CREDIT_MAX_LINES`. Landscape is
+   * arithmetically unchanged — the ratio is 1 — so nothing already delivered moves.
+   */
+  const wide = sizeFor("landscape");
+  const budget = Math.min(
+    CREDIT_MAX_LINES,
+    Math.max(maxLines, Math.ceil((maxLines * (wide.width - 2 * frameInsetFor("landscape"))) / content)),
+  );
+  const block = blockFor(forms, r, (measure * content) / (1 + DRAWN_WIDER), budget);
   const band = bandOf(block.lines.map((l) => l.text).join(" "), r);
   const lines = block.lines.map((l, i) => lineOf(l.text, r, halo / 2, halo / 2 + band.ascent + i * r.lead, l.width));
   return {

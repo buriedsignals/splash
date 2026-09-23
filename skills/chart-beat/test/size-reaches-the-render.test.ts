@@ -329,8 +329,11 @@ describe("whether a type can enter a size at all", () => {
     );
   });
 
+  /** The stand-in for "nobody has measured this" is a type this corpus does not draw. `beeswarm`
+   *  used to stand here and stopped being unmeasured on 2026-09-23, when its portrait render was
+   *  opened and recorded — which is the record working, not the test breaking. */
   it("should REFUSE an unmeasured type rather than borrow a range", () => {
-    const form = formForSize("beeswarm", "portrait");
+    const form = formForSize("sunburst", "portrait");
     expect(form.verdict).toBe("refuse");
     expect(form.reason).toContain("no aspect range has been measured");
     // The refusal names the method, so reversing it is a probe run and not a debate.
@@ -340,7 +343,7 @@ describe("whether a type can enter a size at all", () => {
   it("should offer the sizes that DO work in the same breath as the refusal", () => {
     let message = "";
     try {
-      assertTypeMayEnter("beeswarm", "portrait");
+      assertTypeMayEnter("sunburst", "portrait");
     } catch (e) {
       message = (e as Error).message;
     }

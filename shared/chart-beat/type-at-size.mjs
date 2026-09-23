@@ -120,34 +120,96 @@ export const MEASURED_ASPECT = {
 export const MEASURED_HOLDS = {
   square: {
     area: "proof/static-area-swiss-co2/renders/creme-square.png",
+    beeswarm: "proof/static-beeswarm-co2-per-person/renders/nocturne-square.png",
+    boxplot: "proof/more-boxplot-france-co2-decades/renders/nocturne-square.png",
+    bullet: "proof/static-bullet-low-carbon-share/renders/nocturne-square.png",
     bump: "proof/static-bump-emitter-rank/renders/creme-square.png",
     "calendar-heatmap": "proof/static-calendar-heatmap-geneva/renders/rapport-square.png",
     cartogram: "proof/static-cartogram-europe-lowcarbon/renders/creme-square.png",
+    choropleth: "proof/static-choropleth-europe-lowcarbon/renders/nocturne-square.png",
+    "connected-scatter": "proof/static-connected-scatter-lowcarbon/renders/creme-square.png",
+    contour: "proof/static-contour-europe-distance/renders/nocturne-square.png",
+    "diverging-stacked-bar": "proof/static-diverging-stacked-electricity/renders/nocturne-square.png",
+    donut: "proof/static-donut-world-co2-share/renders/nocturne-square.png",
+    "dot-density": "proof/static-dot-density-europe-stations/renders/nocturne-square.png",
+    "dot-strip": "proof/static-dot-strip-lowcarbon-spread/renders/nocturne-square.png",
     dumbbell: "proof/more-dumbbell-life-expectancy-gains/renders/rapport-square.png",
-    gantt: "proof/static-gantt-top-ten-tenure/renders/rapport-square.png",
+    "flow-map": "proof/static-flow-map-ukraine-protection/renders/nocturne-square.png",
+    gantt: "proof/static-gantt-top-ten-tenure/renders/nocturne-square.png",
     "grouped-bar": "proof/static-wind-vs-solar/renders/creme-square.png",
+    heatmap: "proof/static-heatmap-europe-electricity/renders/nocturne-square.png",
+    "hex-grid": "proof/static-hex-grid-europe-protection/renders/nocturne-square.png",
+    locator: "proof/static-locator-zaporizhzhia/renders/nocturne-square.png",
     lollipop: "proof/static-lollipop-co2-per-person/renders/creme-square.png",
-    pictogram: "proof/static-pictogram-europe-lowcarbon/renders/creme-square.png",
-    sankey: "proof/static-sankey-electricity-sources/renders/creme-square.png",
-    scatter: "proof/static-income-life-expectancy/renders/creme-square.png",
-    slope: "proof/static-slope-europe-lowcarbon/renders/nocturne-square.png",
+    marimekko: "proof/static-marimekko-electricity-mix/renders/nocturne-square.png",
+    "parallel-coordinates": "proof/static-parallel-coordinates-electricity-mix/renders/nocturne-square.png",
+    pictogram: "proof/static-pictogram-europe-lowcarbon/renders/nocturne-square.png",
+    "population-pyramid": "proof/static-swiss-age-pyramid/renders/nocturne-square.png",
+    "proportional-symbol": "proof/static-proportional-symbol-europe-capacity/renders/nocturne-square.png",
+    radar: "proof/static-radar-electricity-mix/renders/nocturne-square.png",
+    sankey: "proof/static-sankey-electricity-sources/renders/nocturne-square.png",
+    scatter: "proof/static-income-life-expectancy/renders/nocturne-square.png",
+    slope: "proof/static-slope-europe-lowcarbon/renders/creme-square.png",
+    "small-multiples": "proof/static-small-multiples-lowcarbon/renders/nocturne-square.png",
     "stacked-bar": "proof/static-stacked-bar-lowcarbon-growth/renders/rapport-square.png",
-    treemap: "proof/static-treemap-europe-capacity/renders/rapport-square.png",
+    streamgraph: "proof/static-streamgraph-swiss-electricity/renders/nocturne-square.png",
+    treemap: "proof/static-treemap-europe-capacity/renders/creme-square.png",
     waterfall: "proof/static-germany-electricity-bridge/renders/creme-square.png",
   },
-  // NOTHING HAS BEEN ACCEPTED AT PORTRAIT. 1080x1920 is the frame the band-scale types have a twin form for
-  // and no other type was looked at there; an empty row is the honest record of that, not an oversight.
+  /**
+   * PORTRAIT, OPENED ONE READ RENDER AT A TIME.
+   *
+   * This row was empty until 2026-09-23 and the emptiness was honest: 1080x1920 is the frame the
+   * band-scale types have a twin FORM for, and no other type had been drawn there and looked at.
+   * What opened it was not a decision — it was six beats whose copy laid itself out at full length
+   * and handed the drawing whatever was left. Stating each plot's floor as a share of the frame puts
+   * the copy on the ladder first, which is the order `REMOVAL_LADDER` already asked for; the renders
+   * named below are what that produced, opened and read.
+   */
   portrait: {
+    area: "proof/static-area-swiss-co2/renders/nocturne-portrait.png",
+    beeswarm: "proof/static-beeswarm-co2-per-person/renders/nocturne-portrait.png",
+    boxplot: "proof/more-boxplot-france-co2-decades/renders/nocturne-portrait.png",
+    bullet: "proof/static-bullet-low-carbon-share/renders/nocturne-portrait.png",
+    bump: "proof/static-bump-emitter-rank/renders/nocturne-portrait.png",
+    "calendar-heatmap": "proof/static-calendar-heatmap-geneva/renders/nocturne-portrait.png",
+    cartogram: "proof/static-cartogram-europe-lowcarbon/renders/creme-portrait.png",
     /** THE STACKED LAYOUT'S OWN PROOF. A map has no plot rectangle to clamp, so it was refused at every
      *  tall frame by name — and the refusal was about the CLAMP, not about the map. Given a layout that
      *  stacks the header over the map and a ladder that owes the map a third of the height, the
      *  validated choropleth draws at 1080x1920 with both subjects ringed, its seas named and its source
      *  on the foot. Opened and read 2026-09-23.
      *
-     *  IT IS STILL REFUSED AT SQUARE, and by two pixels: at 540 wide this beat's callout and key are
-     *  fixed blocks that no rung shortens, and they leave 143px where a third of the height is 145.
-     *  Putting the callout on the ladder is what opens it — the same lever the title already has. */
+     *  IT IS OPEN AT SQUARE TOO, since 2026-09-23. It was refused there by two pixels — 143px of band
+     *  where a third of the height is 145 — because the callout and the key were fixed blocks that no
+     *  rung shortened. The callout is on the ladder now (three forms, cut after the standfirst and
+     *  before the headline gives up size), and the `reading: -1` rung, which used to leave the foot
+     *  exactly where a one-line reading would have put it, recovers its own gap and ascent. */
     choropleth: "proof/static-choropleth-europe-lowcarbon/renders/creme-portrait.png",
+    "connected-scatter": "proof/static-connected-scatter-lowcarbon/renders/nocturne-portrait.png",
+    contour: "proof/static-contour-europe-distance/renders/nocturne-portrait.png",
+    "diverging-stacked-bar": "proof/static-diverging-stacked-electricity/renders/nocturne-portrait.png",
+    donut: "proof/static-donut-world-co2-share/renders/nocturne-portrait.png",
+    "dot-density": "proof/static-dot-density-europe-stations/renders/nocturne-portrait.png",
+    "dot-strip": "proof/static-dot-strip-lowcarbon-spread/renders/nocturne-portrait.png",
+    "flow-map": "proof/static-flow-map-ukraine-protection/renders/nocturne-portrait.png",
+    gantt: "proof/static-gantt-top-ten-tenure/renders/nocturne-portrait.png",
+    heatmap: "proof/static-heatmap-europe-electricity/renders/nocturne-portrait.png",
+    "hex-grid": "proof/static-hex-grid-europe-protection/renders/nocturne-portrait.png",
+    locator: "proof/static-locator-zaporizhzhia/renders/nocturne-portrait.png",
+    marimekko: "proof/static-marimekko-electricity-mix/renders/nocturne-portrait.png",
+    "parallel-coordinates": "proof/static-parallel-coordinates-electricity-mix/renders/nocturne-portrait.png",
+    pictogram: "proof/static-pictogram-europe-lowcarbon/renders/creme-portrait.png",
+    "population-pyramid": "proof/static-swiss-age-pyramid/renders/nocturne-portrait.png",
+    "proportional-symbol": "proof/static-proportional-symbol-europe-capacity/renders/nocturne-portrait.png",
+    radar: "proof/static-radar-electricity-mix/renders/nocturne-portrait.png",
+    sankey: "proof/static-sankey-electricity-sources/renders/nocturne-portrait.png",
+    scatter: "proof/static-income-life-expectancy/renders/nocturne-portrait.png",
+    slope: "proof/static-slope-europe-lowcarbon/renders/nocturne-portrait.png",
+    "small-multiples": "proof/static-small-multiples-lowcarbon/renders/nocturne-portrait.png",
+    streamgraph: "proof/static-streamgraph-swiss-electricity/renders/nocturne-portrait.png",
+    treemap: "proof/static-treemap-europe-capacity/renders/nocturne-portrait.png",
+    waterfall: "proof/static-germany-electricity-bridge/renders/nocturne-portrait.png",
   },
 };
 
