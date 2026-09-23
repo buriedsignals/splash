@@ -20,6 +20,7 @@ import { describe, expect, it } from "bun:test";
 import {
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   readdirSync,
   symlinkSync,
   writeFileSync,
@@ -83,13 +84,17 @@ const SCAFFOLDS: Scaffold[] = [
   {
     name: "chart-beat",
     script: "chart-beat/scripts/scaffold-static-beat.mjs",
-    type: firstType("chart-beat"),
+    // Named: a type whose worked example this scaffold can actually adapt. `area` is first
+    // alphabetically and its proof carries plumbing the rewrite does not recognise — a real gap in
+    // the catalogue, and not this file's subject.
+    type: "bar-and-column",
     adapts: true,
   },
   {
     name: "map-beat",
     script: "map-beat/scripts/scaffold-static-map-beat.mjs",
-    type: firstType("map-beat"),
+    // Named for the same reason: `cartogram` is first and draws no basemap, so it has no bake.mjs.
+    type: "choropleth",
     adapts: true,
   },
   {
@@ -101,7 +106,9 @@ const SCAFFOLDS: Scaffold[] = [
   {
     name: "scrolly-map",
     script: "scrolly/scripts/scaffold-scrolly-map-beat.mjs",
-    type: firstType("scrolly"),
+    // Named, not first: this scaffold shares the scrolly sheets with the chart one and accepts only
+    // the map types among them — a chart type's worked example carries no plan for it to adapt.
+    type: "choropleth",
     adapts: true,
   },
   {
@@ -151,11 +158,52 @@ describe("a scaffold aimed at an installed root", () => {
       expect(values.BEAT_PATH).not.toContain("..");
     });
 
-    if (adapts)
+    if (adapts) {
       it(`${name} still finds its own worked example, which no installed root carries`, async () => {
         const mod = await import(join(ROOT, "skills", script));
         expect(mod.workedExampleOf(installedRoot(), type)).toMatch(/^proof\//);
       });
+
+      /**
+       * AND THE COPY TAKES THE NEW BEAT'S IDENTITY, not the proof's.
+       *
+       * A worked example spells its own location in its code — `// twin/proof/<beat>/beat.mjs` and
+       * every path it records about itself — and the adapter renames that by measuring the source
+       * against a root. Measured against the JOURNALIST'S root, `proof/<beat>` is a path that does
+       * not exist there, so the rename matched nothing and the written beat kept calling itself by
+       * the proof's name. Measured 2026-09-23 on the first scaffold run that worked at all.
+       */
+      it(`${name} renames the copy for the beat it is becoming`, async () => {
+        const mod = await import(join(ROOT, "skills", script));
+        const home = installedRoot();
+        const beatPath = "stories/a-story/beats/a-beat";
+        const fromBeat = mod.workedExampleOf(home, type);
+        const adapted = mod.adaptFromBeat({
+          root: home,
+          fromBeat,
+          beatPath,
+          component: "ABeat",
+          values: { Name: "ABeat", BEAT_PATH: beatPath },
+        });
+        const files = Object.entries((adapted.files ?? adapted) as Record<string, string>).filter(
+          ([f]) => f.endsWith(".mjs"),
+        );
+        expect(files.length).toBeGreaterThan(0);
+        // The provenance banner names the proof on purpose; the canonical `twin/` line must not.
+        // How many there should be is read off the SOURCE beat, so a family whose runners carry no
+        // such line (every scrolly one) is not quietly asserting nothing.
+        const canonicalOf = (source: string) => /^\/\/ twin\/(.+)$/m.exec(source)?.[1] ?? null;
+        const owed = files.filter(([file]) =>
+          canonicalOf(readFileSync(join(ROOT, fromBeat, file), "utf8")),
+        );
+        for (const [file, source] of files) {
+          const canonical = canonicalOf(source);
+          if (canonical === null) continue;
+          expect(`${file}: ${canonical}`).toBe(`${file}: ${beatPath}/${file}`);
+        }
+        expect(files.filter(([, source]) => canonicalOf(source)).length).toBe(owed.length);
+      });
+    }
   }
 
   /** And the question the CLI asks on the journalist's behalf, since nothing else does. */

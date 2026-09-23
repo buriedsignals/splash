@@ -124,13 +124,20 @@ export const DEFAULT_ROOT = resolve(HERE, "..", "..", "..");
 // is working in — an installed stories root has no `skills/` and no `proof/` at all.
 const SHEETS = join(HERE, "..", "references", "types");
 
-/** A `--from` beat, looked for in the journalist's own root first and in this skill's checkout
- *  second, since the default one is a catalogue proof and a caller's own is not. */
+/**
+ * A `--from` beat, looked for in the journalist's own root first and in this skill's checkout
+ * second, since the default one is a catalogue proof and a caller's own is not.
+ *
+ * It returns the ROOT it was found under as well as the directory, because the copied code spells
+ * its own location relative to that root — `// twin/proof/<beat>/beat.mjs`, and every path the beat
+ * records about itself. Measuring that against the journalist's root instead names a beat that does
+ * not exist there, so the rename matches nothing and the copy keeps the proof's identity.
+ */
 function beatSource(root, fromBeat) {
   const here = resolve(root, fromBeat);
-  if (existsSync(here)) return here;
+  if (existsSync(here)) return { dir: here, root };
   const catalogue = resolve(DEFAULT_ROOT, fromBeat);
-  if (existsSync(catalogue)) return catalogue;
+  if (existsSync(catalogue)) return { dir: catalogue, root: DEFAULT_ROOT };
   throw new Error(`--from ${fromBeat} does not exist — looked in:\n  ${here}\n  ${catalogue}`);
 }
 
@@ -209,7 +216,7 @@ const LOCAL_IMPORT_RE = /from "\.\/([A-Za-z0-9_-]+\.mjs)"/g;
  *  when it has one) — renamed for this beat's own name and path, and re-marked SCAFFOLD over the regions that
  *  are `fromBeat`'s own subject. Returns `{ filename: content }` plus the resolved component `name`. */
 export function adaptFromBeat({ root, fromBeat, beatPath, component }) {
-  const sourceDir = beatSource(root, fromBeat);
+  const { dir: sourceDir, root: sourceRoot } = beatSource(root, fromBeat);
   const entries = readdirSync(sourceDir);
   const runnerFile = "render-directions.mjs";
   if (!entries.includes(runnerFile)) throw new Error(`--from ${fromBeat} has no ${runnerFile}`);
@@ -217,7 +224,7 @@ export function adaptFromBeat({ root, fromBeat, beatPath, component }) {
   const tsxNames = entries.filter((f) => /^Directed[A-Za-z0-9]+\.tsx$/.test(f));
   if (tsxNames.length !== 1) throw new Error(`--from ${fromBeat} must carry exactly one Directed*.tsx, found ${tsxNames.length}`);
   const sourceName = /^Directed([A-Za-z0-9]+)\.tsx$/.exec(tsxNames[0])[1];
-  const oldPath = relative(root, sourceDir).split(sep).join("/");
+  const oldPath = relative(sourceRoot, sourceDir).split(sep).join("/");
   const name = component ?? sourceName;
   // Renames the component IDENTIFIER, never bare prose that happens to share its letters — every
   // worked static beat spells its component only as `Directed<sourceName>` (the filename, the
@@ -275,7 +282,7 @@ export function scaffoldBeat({ root = DEFAULT_ROOT, templates, files, type, beat
     const brief = briefTemplate;
     planned = Object.entries({ ...adapted.files, "BRIEF.md": brief });
     const missing = requiredLocalAssets(Object.values(adapted.files), Object.keys(adapted.files)).filter((n) => !existsSync(join(beatDir, n)));
-    if (missing.length) throw new Error(missingAssetsMessage({ relBeatDir: relative(root, beatDir), fromBeat, sourceDir: beatSource(root, fromBeat), missing }));
+    if (missing.length) throw new Error(missingAssetsMessage({ relBeatDir: relative(root, beatDir), fromBeat, sourceDir: beatSource(root, fromBeat).dir, missing }));
   }
   if (!paletteReachable(beatDir)) throw new Error(paletteRefusalMessage({ root, relBeatDir: relative(root, beatDir) }));
   const collisions = planned.map(([target]) => target).filter((target) => existsSync(join(beatDir, target))).sort();
