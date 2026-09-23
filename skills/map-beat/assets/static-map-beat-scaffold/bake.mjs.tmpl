@@ -14,6 +14,7 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
+import { splashEnvPath } from "#shared/design-base/splash-root.mjs";
 import { assertRangesServed, bakePlan, rangesNeededBy } from "#shared/map-beat/bake.mjs";
 import { assertNotFallback, DEFAULT_RANGES, maptilerGlyphs } from "#shared/map-beat/glyphs.mjs";
 import { scrollyMapScript } from "#shared/map-beat/inline.mjs";
@@ -106,7 +107,7 @@ async function bake() {
   const sizeArg = flag("--size", null);
   const outDir = flag("--out", join(HERE, "plate"));
   const planPath = flag("--plan", null);
-  const keyPath = flag("--env", join(HERE, "../../.env"));
+  const keyPath = flag("--env", splashEnvPath(HERE));
   const styleName = flag("--style", BEAT.style);
   const water = flag("--water", null);
   const land = flag("--land", null);

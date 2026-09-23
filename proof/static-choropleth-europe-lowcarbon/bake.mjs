@@ -30,6 +30,7 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
+import { splashEnvPath } from "#shared/design-base/splash-root.mjs";
 import { bakePlan, assertRangesServed, rangesNeededBy } from "#shared/map-beat/bake.mjs";
 import { validateExpressions } from "#shared/map-beat/mount.mjs";
 import { scrollyMapScript } from "#shared/map-beat/inline.mjs";
@@ -251,7 +252,7 @@ async function bake() {
   const sizeArg = flag("--size", null);
   const outDir = flag("--out", join(HERE, "plate"));
   const planPath = flag("--plan", null);
-  const keyPath = flag("--env", join(HERE, "../../.env"));
+  const keyPath = flag("--env", splashEnvPath(HERE));
   const styleName = flag("--style", BEAT.style);
   /** THE PLATE IS BAKED IN THE DIRECTION'S OWN TINTS, and that is what makes a MapTiler basemap
    *  compatible with a filed direction at all. `the-basemap-gives-up-its-contrast` cannot be

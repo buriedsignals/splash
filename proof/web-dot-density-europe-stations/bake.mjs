@@ -21,6 +21,7 @@ import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
+import { splashEnvPath } from "#shared/design-base/splash-root.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -61,7 +62,7 @@ const [width, height] = flag("--size", "860x760").split("x").map(Number);
 const outDir = flag("--out", join(HERE, "plate"));
 const countriesPath = flag("--countries", join(HERE, "countries.geojson"));
 const settleMs = Number(flag("--settle", "20000"));
-const keyPath = flag("--env", join(HERE, "../../.env"));
+const keyPath = flag("--env", splashEnvPath(HERE));
 /** THE PLATE IS BAKED ONCE PER GROUND, not once per beat. A directed beat renders under three filed
  *  directions and two of them sit on a light ground while `nocturne` sits on a deep navy: a light
  *  basemap under a dark plate is the one thing `the-basemap-gives-up-its-contrast` forbids, because
