@@ -11,7 +11,7 @@
 // `scaffold-scrolly-map-beat.mjs`) is about to write elsewhere — never a proof/scrolly-* beat on disk, which
 // stays exactly as validated.
 
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { readPalette } from "#shared/chart-beat/colour.mjs";
 
@@ -274,11 +274,40 @@ export function requiredLocalAssets(sources, exclude) {
  *  line per missing asset, saying whether the worked example's own copy of it looks reusable verbatim (a
  *  geometry file, sitting in `fromBeat` too) or must be this beat's own (the same name exists there only
  *  because it is `fromBeat`'s own frozen data, not because the file travels). */
+/**
+ * The sibling `.mjs` in the worked example that WRITES `name`, if there is one.
+ *
+ * Not every missing asset is frozen data. `seats.json` is DERIVED — a worked example computes it and
+ * writes it beside itself — and the refusal told a journalist to "freeze it before scaffolding", a
+ * file whose generator they had never seen and whose shape they could not guess. Measured
+ * 2026-09-23: the only way through was to go read the proof and copy its `seats.mjs` by hand.
+ */
+function generatorOf(sourceDir, name) {
+  let entries;
+  try {
+    entries = readdirSync(sourceDir).filter((f) => f.endsWith(".mjs"));
+  } catch {
+    return null;
+  }
+  // The write has to name the file. Anything looser matched every asset the generator merely READS
+  // — `seats.mjs` reads `data.csv` and `shapes.geojson` to compute its seats, and a hint that says
+  // "run seats.mjs to produce your data.csv" is worse than no hint at all.
+  const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const writes = new RegExp(`(?:writeFileSync|writeFile)\\((?:[^)]*?)${escaped}`);
+  for (const file of entries) {
+    if (writes.test(readFileSync(join(sourceDir, file), "utf8"))) return file;
+  }
+  return null;
+}
+
 export function missingAssetsMessage({ relBeatDir, fromBeat, sourceDir, missing }) {
   const lines = missing.map((name) => {
     const inSource = existsSync(join(sourceDir, name));
-    const hint =
-      /\.geojson$/.test(name) && inSource
+    const generator = generatorOf(sourceDir, name);
+    const hint = generator
+      ? `DERIVED, not frozen — ${fromBeat}/${generator} writes it. Copy that file beside this beat, ` +
+        `point it at this beat's own data, and run it (\`bun ${relBeatDir}/${generator}\`) before scaffolding`
+      : /\.geojson$/.test(name) && inSource
         ? `likely reusable verbatim if this subject shares its map window — copy ${fromBeat}/${name}, or provide this beat's own`
         : `this beat's own frozen data — freeze it as ${relBeatDir}/${name} before scaffolding (the task's own instruction to copy it beside the beat)`;
     return `  - ${name}: ${hint}`;

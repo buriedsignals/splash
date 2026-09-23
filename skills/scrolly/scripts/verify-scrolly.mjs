@@ -125,7 +125,7 @@ import puppeteer from "puppeteer-core";
 import { existsSync, readdirSync } from "node:fs";
 import { probeTypefaces } from "./typefaces.mjs";
 import { homedir } from "node:os";
-import { join } from "node:path";
+import { join, resolve } from "node:path";
 
 /** A DUPLICATE of the `resolveChrome` every capture script in this tree carries — see
  *  `map-web/test/standalone.test.ts`'s own copy for why these are duplicated rather than
@@ -950,7 +950,11 @@ if (import.meta.main) {
     ? WIDTHS.filter((s) => String(s.w) === only.split("=")[1])
     : WIDTHS;
   const { failures, notes } = await verifyAll(
-    argv.filter((a) => !a.startsWith("--")),
+    // RESOLVED, because the page is opened as `file://${path}` and a relative path makes that a URL
+    // with the first segment as its HOST. A journalist typing the path the SKILL shows got
+    // `net::ERR_INVALID_URL` out of puppeteer, naming neither this script nor the mistake. The
+    // sibling `verify-live-map-scrolly.mjs` already resolves and has always worked relative.
+    argv.filter((a) => !a.startsWith("--")).map((a) => resolve(a)),
     widths,
   );
   for (const n of notes) console.log(`note   ${n}`);

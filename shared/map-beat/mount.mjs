@@ -13,6 +13,23 @@ const PAIR_PROPERTIES = ["text-offset", "icon-offset", "text-translate", "icon-t
 
 const isExpression = (v) => Array.isArray(v) && typeof v[0] === "string";
 
+/**
+ * `["match", input, labels, then, …, fallback]` with NO LABELS — the shape a `per-area` plan writes
+ * the day its subject happens to have nothing in the set it was filtering for.
+ *
+ * MapLibre rejects an empty branch-label list, and it rejects it at mount time through its own error
+ * event, so the beat's refusal read `layer "missing" was refused by the map and is not drawn — its
+ * spec is invalid (see the map's error event)` with no expression, no property and no way to reach
+ * that event from a CLI. Measured 2026-09-23 on an EU-27 choropleth where every member state
+ * reports: the "no data" layer became `["match", ["get","iso_a2"], [], true, false]`. It is the
+ * ordinary case for any complete dataset, not an edge one.
+ */
+function emptyMatchIn(value) {
+  if (!Array.isArray(value)) return false;
+  if (value[0] === "match" && Array.isArray(value[2]) && value[2].length === 0) return true;
+  return value.some((v) => emptyMatchIn(v));
+}
+
 export function validateExpressions(plan) {
   const out = [];
   for (const layer of plan.layers) {
@@ -25,6 +42,18 @@ export function validateExpressions(plan) {
         `layer "${layer.id}": "${prop}" is an array of expressions — MapLibre rejects it and the layer draws nothing`,
       );
     }
+    // `filter` was never walked, which is where this shape lives most of the time.
+    for (const [where, value] of [
+      ["filter", layer.filter],
+      ...Object.entries(layer.layout ?? {}).map(([k, v]) => [`layout.${k}`, v]),
+      ...Object.entries(layer.paint ?? {}).map(([k, v]) => [`paint.${k}`, v]),
+    ])
+      if (emptyMatchIn(value))
+        out.push(
+          `layer "${layer.id}": "${where}" carries a ["match", …] with no branch labels — MapLibre ` +
+            `rejects it and the whole layer draws nothing. A set that turned out to be empty is a ` +
+            `layer this beat should not emit at all, not a match over nothing.`,
+        );
   }
   return out;
 }

@@ -362,7 +362,11 @@ const prependBanner = (content, lines) => `// ${lines.join("\n// ")}\n${content}
 // missing code at a time (cold run 6, 2026-09-16: GBR, then ALB, discovered serially) because nothing marked
 // it as a region to replace. Matched here so the scaffold can swap it for the shared canonical table instead
 // of copying the partial one forward again.
-const ISO2_TABLE_RE = /(?:\/\*\*[^]*?\*\/\n)?const ISO2 = \{[^]*?\n\};\nexport const iso2Of = \(iso\) => \{\n(?:.*\n)*?\};\n/;
+// The `export` is optional, and that mattered: the CHOROPLETH worked example — the one this type's
+// default `--from` copies — keeps its table in the RUNNER and does not export `iso2Of`, so the swap
+// could never fire for it and the beat inherited a 41-country partial table anyway. Measured
+// 2026-09-23, the same defect the comment above says this exists to prevent.
+const ISO2_TABLE_RE = /(?:\/\*\*[^]*?\*\/\n)?const ISO2 = \{[^]*?\n\};\n(?:export )?const iso2Of = \(iso\) => \{\n(?:.*\n)*?\};\n/;
 
 /** Swaps a copied worked example's own local ISO A2 table for the shared canonical one (`iso-codes.mjs`),
  *  named as a SCAFFOLD region so it is never again silently inherited. A no-op when the source beat's plan
@@ -374,7 +378,7 @@ function replaceIso2Table(content, fromBeat) {
     `replaced here by the shared canonical table (shared/map-beat/iso-codes.mjs). Call`,
     `iso2CodesFor(<this beat's own whole country list>) ONCE, before any per-country lookup, so every code`,
     `this beat needs is validated together and every missing one is named in one message — never one`,
-    `refusal at a time. See proof/scrolly-hex-grid-europe-wind-2024/plan.mjs for the worked pattern.`,
+    `refusal at a time. See proof/scrolly-hex-grid-europe-protection/plan.mjs for the worked pattern.`,
   ]
     .map((l) => `// ${l}`)
     .join("\n");
@@ -423,6 +427,8 @@ export function adaptFromBeat({ root, fromBeat, values, shapeMismatch = null }) 
 
   let plan = markDividers(read(planNames[0]));
   plan = replaceIso2Table(plan, fromBeat);
+  // …and the runner, which is where the choropleth keeps its own.
+  runner = replaceIso2Table(runner, fromBeat);
   plan = markBefore(plan, PLAN_FN_ANCHOR, [...(shapeMismatch ? shapeMismatchLines(shapeMismatch) : []), `SCAFFOLD: marks — the layers this function returns are ${fromBeat}'s own. Adapt the geometry, the`, `bindings and the buckets for this beat's own subject; keep the $state contract (a binding must stay`, `data-constant — validateScrollyPlan refuses one that reads a per-feature property).`]);
   plan = prependBanner(plan, topBanner(fromBeat));
 
