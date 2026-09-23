@@ -106,14 +106,30 @@ export function oneRunDirection(source, what = "this runner") {
   for (const shape of SHAPES) {
     const found = shape.head.exec(text);
     if (!found) continue;
+    /** `--filed` IS DECLARED, NOT ASSUMED. A runner with no `const FILED` of its own used to get
+     *  the guard DELETED — so the beat lost the escape entirely, while its own BRIEF.md and the
+     *  SKILL both promised `--filed renders creme, nocturne, rapport instead`. A journalist
+     *  following the brief got silence. Declaring it costs one line and keeps the promise. */
     const declaresFiled = /\bconst FILED\b/.test(text);
-    const preamble = declaresFiled ? PREAMBLE : PREAMBLE.replace("!FILED && ", "");
-    // THE PREAMBLE GOES HIGH, not just above the loop it replaces. The composer's own report sits
-    // between the two and has to know whether this beat composes at all, so `RUN_DIRECTIONS` must be
-    // in scope by then — a const declared below it is a temporal dead zone, which is how the first
-    // version of this transform failed.
-    const anchor = /\nconst ROOT = splashRoot\(HERE\);\n/.exec(text);
-    const at = anchor ? anchor.index + anchor[0].length : found.index;
+    const preamble = declaresFiled
+      ? PREAMBLE
+      : `\nconst FILED = process.argv.includes("--filed");\n${PREAMBLE}`;
+    // THE PREAMBLE GOES BELOW EVERYTHING IT READS, not just above the loop it replaces. The
+    // composer's own report sits between the two and has to know whether this beat composes at all,
+    // so `RUN_DIRECTIONS` must be in scope by then; and its own fallback branch reads `DIRECTIONS`,
+    // which `depthIndependentPaths` has already pushed BELOW the `splashRoot` block. Anchoring on
+    // the root alone put the preamble above that declaration, so every run where no DIRECTION.md is
+    // reachable — a proof, or a story before its direction is written — got
+    // `Cannot access 'DIRECTIONS' before initialization` instead of the filed fallback the block
+    // exists to provide. That is the same temporal dead zone this transform shipped once already,
+    // one declaration further down.
+    const anchors = [
+      /\nconst ROOT = splashRoot\(HERE\);\n/.exec(text),
+      /\nconst DIRECTIONS = [^\n]*;\n/.exec(text),
+    ].filter(Boolean);
+    const at = anchors.length
+      ? Math.max(...anchors.map((a) => a.index + a[0].length))
+      : found.index;
     let out =
       text.slice(0, at) + preamble + "\n" + text.slice(at).replace(shape.head, shape.rewrite);
     // And the composer's own report, which only a beat that composes can produce.

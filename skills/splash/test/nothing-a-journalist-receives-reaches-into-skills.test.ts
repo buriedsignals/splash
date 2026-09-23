@@ -223,4 +223,40 @@ describe("the code a scaffold writes into a story", () => {
       .map(({ scaffold, beat, file }) => `${scaffold} ← ${beat}/${file}`);
     expect([...new Set(pinned)]).toEqual([]);
   });
+
+  /**
+   * AND THE RUN-DIRECTION BLOCK READS NOTHING THAT IS DECLARED BELOW IT.
+   *
+   * `oneRunDirection` inserts a block that resolves the run's one art direction and, when there is
+   * none, falls back to the filed demo ones by reading `DIRECTIONS`. It anchored itself on the
+   * beat's `ROOT` — but `depthIndependentPaths` has already pushed `const DIRECTIONS` below that,
+   * so the fallback read a constant declared nine lines further down. Every run where no
+   * DIRECTION.md is reachable — a proof, or a story before its direction is written — got
+   * `Cannot access 'DIRECTIONS' before initialization` instead of the fallback. Measured
+   * 2026-09-23. It is the third temporal dead zone in this family of transforms, so it is held by
+   * position rather than by reading the code again.
+   */
+  it("declares everything the run-direction block reads before the block reads it", async () => {
+    const wrong = (await produced())
+      .filter(({ source }) => /RUN_DIRECTIONS/.test(source))
+      .filter(({ source }) => {
+        const decl = source.indexOf("\nconst DIRECTIONS = ");
+        return decl !== -1 && decl > source.indexOf("const RUN_DIRECTIONS");
+      })
+      .map(({ scaffold, beat, file }) => `${scaffold} ← ${beat}/${file}`);
+    expect([...new Set(wrong)]).toEqual([]);
+  });
+
+  /**
+   * AND `--filed` EXISTS IN THE BEAT THAT PROMISES IT. A runner with no `const FILED` of its own
+   * had the guard deleted rather than declared, so the escape the beat's own BRIEF.md and the SKILL
+   * both document was silently absent.
+   */
+  it("gives every beat the --filed escape its own brief promises", async () => {
+    const mute = (await produced())
+      .filter(({ source }) => /RUN_DIRECTIONS/.test(source))
+      .filter(({ source }) => !/\bconst FILED\b/.test(source))
+      .map(({ scaffold, beat, file }) => `${scaffold} ← ${beat}/${file}`);
+    expect([...new Set(mute)]).toEqual([]);
+  });
 });
