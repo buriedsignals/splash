@@ -43,7 +43,7 @@ if (import.meta.main) {
   const out = existsSync(MEASURED) ? JSON.parse(readFileSync(MEASURED, "utf8")) : { size: { width: STAGE.width, height: STAGE.height }, planDigest: {}, cameras: {} };
   for (const entry of directions) {
     const { props } = buildDirection(entry, beat, { measured: null });
-    const states = Object.fromEntries(Object.entries(MEASURED_FRAMES).map(([name, frameOf]) => [name, mapStateAt({ cameras: props.cameras, states: beat.states, timing }, frameOf(timing))]));
+    const states = Object.fromEntries(Object.entries(MEASURED_FRAMES).map(([name, frameOf]) => [name, mapStateAt({ cameras: props.cameras, mapPlan: props.mapPlan, states: beat.states, timing }, frameOf(timing))]));
     const cameras = await measureLiveMap({ plan: props.mapPlan, states, seats: beat.mapSeats, size: out.size, mapTilerKey: key, tints: props.mapPlan.tints });
     out.cameras[entry.label] = assertTilesLoaded(entry.label, cameras);
     out.planDigest[entry.label] = planDigestOf(props.mapPlan);

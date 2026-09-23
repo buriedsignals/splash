@@ -310,11 +310,13 @@ export function buildDirection({ label, direction: chosen }, { subject, states, 
     credit = sources[seated.index];
   } else {
     credit = sources[sources.length - 1];
-    creditPill = pillOf(credit.text, credit.register);
+    // A credit is a BLOCK of measured lines (`sourceCreditFor`), not a string: the pill is built from the
+    // one line it holds, in the register that block already resolved.
+    creditPill = pillOf(credit.lines[0].text, credit.register);
     console.log(
       `${label}: no one-line form of the source finds open sea on the whole map — the shortest ` +
-        `(${Math.round(widthOf(credit.text, credit.register))}px) is seated on a pill at the frame's ` +
-        `bottom instead. Widen FIT in map-plan.mjs to open more water if the pill is unwanted.`,
+        `(${Math.round(credit.lines[0].width)}px) is seated on a pill at the frame's bottom instead. ` +
+        `Widen FIT in map-plan.mjs to open more water if the pill is unwanted.`,
     );
   }
   registers.source = credit.register;

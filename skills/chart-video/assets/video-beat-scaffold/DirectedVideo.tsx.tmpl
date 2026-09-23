@@ -1,7 +1,7 @@
 // The Remotion composition: `%%Name%%Frame` at the current frame, drawn only once the embedded faces are in.
 import { AbsoluteFill, useCurrentFrame } from "remotion";
-import { useEmbeddedFaces } from "#shared/chart-video/embedded-faces";
-import type { EmbeddedFace } from "#shared/chart-video/face-coverage";
+import { useEmbeddedFaces } from "#shared/chart-video/embedded-faces.ts";
+import type { EmbeddedFace } from "#shared/chart-video/face-coverage.ts";
 import { %%Name%%Frame, type %%Name%%FrameProps } from "./%%Name%%Frame";
 
 export type Directed%%Name%%VideoProps = %%Name%%FrameProps & { faces: EmbeddedFace[] };
