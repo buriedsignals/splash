@@ -245,3 +245,45 @@ describe("operation cancellation", () => {
     expect(operations.running).toBe(0);
   });
 });
+
+describe("stubborn Engine children", () => {
+  // A child that ignores SIGTERM stands in for an Engine blocked in a synchronous keychain read.
+  const STUBBORN = `echo $$ > "$(dirname "$0")/pid"\ntrap '' TERM\nwhile :; do sleep 1; done`;
+
+  it("kills a SIGTERM-resistant child that overflows the output limit before rejecting", async () => {
+    const { root, engine } = await fakeEngine(`echo $$ > "$(dirname "$0")/pid"\ntrap '' TERM\nhead -c ${MAX_LINE_BYTES + 16} /dev/zero | tr '\\0' 'a'\nwhile :; do sleep 1; done`);
+    await expect(
+      runEngineOperation({ executable: engine, operation: "map-bake", request: {}, environment: environment(root) }),
+    ).rejects.toMatchObject({ code: "output-limit" });
+    const pid = Number((await readFile(join(root, "pid"), "utf8")).trim());
+    expect(await gone(pid)).toBe(true);
+  }, 15_000);
+
+  it("waits for a SIGTERM-resistant child to be killed before the server exits", async () => {
+    const { EventEmitter } = await import("node:events");
+    const { root, engine } = await fakeEngine(STUBBORN);
+    const operations = createOperationRunner({ executable: engine, environment: environment(root) });
+    const running = operations.run("datawrapper-produce", {});
+    running.catch(() => {});
+    while (!existsSync(join(root, "pid"))) await new Promise((resolve) => setTimeout(resolve, 20));
+    const pid = Number((await readFile(join(root, "pid"), "utf8")).trim());
+    const studio = { async start() {}, async openLocally() { return { ok: true }; }, close() {} };
+    const server = createServer({ statusProvider: { read: async () => ({}) }, studio, operations });
+    const stdin = new EventEmitter();
+    let exited = false;
+    const exitedAt = new Promise<void>((resolve) => {
+      wireShutdown(server, studio, { stdin: stdin as never, exit: () => { exited = true; resolve(); }, signals: new EventEmitter() as never, operations });
+    });
+    stdin.emit("end");
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    expect(exited).toBe(false); // still waiting: the child ignored SIGTERM
+    await exitedAt;
+    let alive = true;
+    try {
+      process.kill(pid, 0);
+    } catch {
+      alive = false;
+    }
+    expect(alive).toBe(false);
+  }, 15_000);
+});

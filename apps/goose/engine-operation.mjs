@@ -141,7 +141,7 @@ export async function runEngineOperation({
  * stops them all, as well as the per-call MCP cancellation signal.
  */
 export function createOperationRunner({ executable, invoke = invokeEngine, environment = process.env } = {}) {
-  const running = new Set();
+  const running = new Map();
   let closed = false;
   return Object.freeze({
     async run(operation, request, { signal = null, onHeartbeat = null } = {}) {
@@ -150,11 +150,12 @@ export function createOperationRunner({ executable, invoke = invokeEngine, envir
       const forward = () => controller.abort();
       if (signal?.aborted) controller.abort();
       signal?.addEventListener("abort", forward, { once: true });
-      running.add(controller);
       const heartbeat = onHeartbeat ? setInterval(() => onHeartbeat(), HEARTBEAT_MS) : null;
       heartbeat?.unref?.();
+      const pending = runEngineOperation({ executable, operation, request, signal: controller.signal, invoke, environment });
+      running.set(controller, pending);
       try {
-        return await runEngineOperation({ executable, operation, request, signal: controller.signal, invoke, environment });
+        return await pending;
       } finally {
         clearInterval(heartbeat);
         signal?.removeEventListener("abort", forward);
@@ -164,9 +165,15 @@ export function createOperationRunner({ executable, invoke = invokeEngine, envir
     get running() {
       return running.size;
     },
+    /** Stops every running operation; resolves once each Engine child has exited. */
     close() {
       closed = true;
-      for (const controller of running) controller.abort();
+      const settled = [];
+      for (const [controller, pending] of running) {
+        controller.abort();
+        settled.push(pending);
+      }
+      return Promise.allSettled(settled);
     },
   });
 }
