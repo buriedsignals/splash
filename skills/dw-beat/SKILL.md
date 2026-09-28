@@ -28,8 +28,9 @@ upstream in `storyboard/references/datawrapper-chart-types.json`; this skill rec
 `switch (spec.chartType)` in this skill's own code, that is the signal this skill has stopped being
 thin and needs to say so, not quietly become one.
 
-In an Engine-managed installation, the production call is `bsig run splash datawrapper-produce`
-with story identity, format, and size in bounded JSON on stdin. Engine verifies the adopted checkout
+In an Engine-managed installation, the production call is the Splash MCP server's `run_operation`
+tool with operation `datawrapper-produce` and story identity, format, and size in its `request`.
+Engine verifies the adopted checkout
 and injects only the broker-backed `DATAWRAPPER_TOKEN` into `scripts/sealed-produce.mjs`; the model,
 MCP app, terminal command, and story files never carry it. Calling `produce(..., {token})` directly
 is the implementation and test interface retained underneath that boundary, not the managed
@@ -142,14 +143,14 @@ established it.
 ## Managed production
 
 Write the reviewed specification to
-`<storiesRoot>/<storyId>/beats/<outputId>/spec.json`, then invoke the closed operation. For example:
+`<storiesRoot>/<storyId>/beats/<outputId>/spec.json`, then call the `run_operation` tool with
+operation `datawrapper-produce` and this request:
 
-```bash
-printf '%s\n' '{"storyId":"swiss-co2","outputId":"1-co2-line","parameters":{"format":"static","size":"landscape"}}' \
-  | bsig run splash datawrapper-produce
+```json
+{"storyId":"swiss-co2","outputId":"1-co2-line","parameters":{"format":"static","size":"landscape"}}
 ```
 
-The command contains no credential. `scripts/prove-co2.mjs` and the direct `produce` CLI remain
+The request contains no credential. `scripts/prove-co2.mjs` and the direct `produce` CLI remain
 maintainer proof and compatibility surfaces; they are not new-install instructions.
 
 ## Tuning knobs

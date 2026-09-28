@@ -58,14 +58,32 @@ export function engineEnvironment(source = process.env) {
   return env;
 }
 
-async function readBounded(stream, child, label) {
+function outputLimitError(label) {
+  const error = new Error(`${label} exceeded the bounded control-channel limit`);
+  error.code = "ENGINE_OUTPUT_LIMIT";
+  return error;
+}
+
+async function readBounded(stream, child, label, maxBytes = MAX_OUTPUT_BYTES, maxLineBytes = null) {
   const chunks = [];
   let total = 0;
+  let line = 0;
   for await (const chunk of stream) {
     total += chunk.byteLength;
-    if (total > MAX_OUTPUT_BYTES) {
+    if (total > maxBytes) {
       child.kill();
-      throw new Error(`${label} exceeded the bounded control-channel limit`);
+      throw outputLimitError(label);
+    }
+    if (maxLineBytes !== null) {
+      // One NDJSON event per line: a line that never ends is refused while it streams, not
+      // after the whole channel has been buffered.
+      for (const byte of chunk) {
+        line = byte === 0x0a ? 0 : line + 1;
+        if (line > maxLineBytes) {
+          child.kill();
+          throw outputLimitError(label);
+        }
+      }
     }
     chunks.push(chunk);
   }
@@ -104,9 +122,21 @@ function isSameExecutableIdentity(actual, expected) {
     && actual.inode === expected.inode;
 }
 
-async function runEngineProcess(programPath, args, input, timeoutMs = 90_000) {
+const KILL_GRACE_MS = 5_000;
+
+async function runEngineProcess(programPath, args, input, timeoutMs = 90_000, {
+  signal = null,
+  maxOutputBytes = MAX_OUTPUT_BYTES,
+  maxLineBytes = null,
+  environment = process.env,
+} = {}) {
+  if (signal?.aborted) {
+    const error = new Error("Engine operation was cancelled before it started");
+    error.code = "ENGINE_CANCELLED";
+    throw error;
+  }
   const child = Bun.spawn([programPath, "--json", ...args], {
-    env: engineEnvironment(),
+    env: engineEnvironment(environment),
     stdin: "pipe",
     stdout: "pipe",
     stderr: "pipe",
@@ -114,16 +144,34 @@ async function runEngineProcess(programPath, args, input, timeoutMs = 90_000) {
   child.stdin.write(input);
   child.stdin.end();
   let timedOut = false;
+  let cancelled = false;
+  let escalation = null;
+  // SIGTERM lets Engine cancel its own child and clean up; SIGKILL follows if it does not exit.
+  const stop = () => {
+    child.kill();
+    escalation ??= setTimeout(() => child.kill("SIGKILL"), KILL_GRACE_MS);
+    escalation.unref?.();
+  };
   const timer = setTimeout(() => {
     timedOut = true;
-    child.kill();
+    stop();
   }, timeoutMs);
+  const onAbort = () => {
+    cancelled = true;
+    stop();
+  };
+  signal?.addEventListener("abort", onAbort, { once: true });
   try {
     const [stdout, stderr, exitCode] = await Promise.all([
-      readBounded(child.stdout, child, "Engine stdout"),
-      readBounded(child.stderr, child, "Engine stderr"),
+      readBounded(child.stdout, child, "Engine stdout", maxOutputBytes, maxLineBytes),
+      readBounded(child.stderr, child, "Engine stderr", maxOutputBytes),
       child.exited,
     ]);
+    if (cancelled) {
+      const error = new Error("Engine operation was cancelled");
+      error.code = "ENGINE_CANCELLED";
+      throw error;
+    }
     if (timedOut) {
       const error = new Error("Engine credential operation timed out");
       error.code = "ENGINE_TIMEOUT";
@@ -132,6 +180,8 @@ async function runEngineProcess(programPath, args, input, timeoutMs = 90_000) {
     return { events: parseEvents(stdout), stderr, exitCode };
   } finally {
     clearTimeout(timer);
+    signal?.removeEventListener("abort", onAbort);
+    if (child.exitCode !== null || child.signalCode !== null) clearTimeout(escalation);
   }
 }
 
@@ -139,7 +189,7 @@ export async function invokeEngine(
   executable,
   args,
   stdin = "",
-  { timeoutMs = 90_000, expectedExecutableIdentity = null } = {},
+  { timeoutMs = 90_000, expectedExecutableIdentity = null, ...processOptions } = {},
 ) {
   if (!isAbsolute(executable)) throw new Error("Engine executable must be absolute");
   const canonical = await realpath(executable);
@@ -151,7 +201,7 @@ export async function invokeEngine(
   if (expectedExecutableIdentity && !isSameExecutableIdentity(identity, expectedExecutableIdentity)) {
     throw new Error("Engine executable changed after the credential contract handshake");
   }
-  return { ...await runEngineProcess(canonical, args, stdin, timeoutMs), executableIdentity: identity };
+  return { ...await runEngineProcess(canonical, args, stdin, timeoutMs, processOptions), executableIdentity: identity };
 }
 
 const MAX_EXECUTABLE_BYTES = 128 << 20;
