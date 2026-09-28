@@ -342,14 +342,20 @@ export async function productionDependencies({
  * and stdin EOF close the studio and exit; the studio child closes on its
  * own parent-EOF as well, so nothing listens after this returns.
  */
+// Longer than the bridge's SIGTERM-to-SIGKILL grace period, so a stubborn child is killed first.
+const OPERATION_SHUTDOWN_BOUND_MS = 8_000;
+
 export function wireShutdown(server, studio, { stdin = process.stdin, exit = (code) => process.exit(code), signals = process, operations = null } = {}) {
   let done = false;
   const shutdown = () => {
     if (done) return;
     done = true;
+    // A running Engine operation is stopped with the server, never left orphaned: wait until each
+    // child has exited (the bridge escalates to SIGKILL after its grace period), bounded so a
+    // wedged wait cannot keep the server alive.
+    let stopping = Promise.resolve();
     try {
-      // A running Engine operation is stopped with the server, never left orphaned.
-      operations?.close();
+      stopping = Promise.resolve(operations?.close()).catch(() => {});
     } catch {
       // stopping is best effort; the process ends either way
     }
@@ -358,7 +364,8 @@ export function wireShutdown(server, studio, { stdin = process.stdin, exit = (co
     } catch {
       // closing is best effort; the process ends either way
     }
-    setTimeout(() => exit(0), 250).unref?.();
+    const bound = new Promise((resolve) => setTimeout(resolve, OPERATION_SHUTDOWN_BOUND_MS));
+    Promise.race([stopping, bound]).then(() => setTimeout(() => exit(0), 250));
   };
   stdin.on("end", shutdown);
   stdin.on("close", shutdown);

@@ -64,14 +64,14 @@ function outputLimitError(label) {
   return error;
 }
 
-async function readBounded(stream, child, label, maxBytes = MAX_OUTPUT_BYTES, maxLineBytes = null) {
+async function readBounded(stream, stop, label, maxBytes = MAX_OUTPUT_BYTES, maxLineBytes = null) {
   const chunks = [];
   let total = 0;
   let line = 0;
   for await (const chunk of stream) {
     total += chunk.byteLength;
     if (total > maxBytes) {
-      child.kill();
+      stop();
       throw outputLimitError(label);
     }
     if (maxLineBytes !== null) {
@@ -80,7 +80,7 @@ async function readBounded(stream, child, label, maxBytes = MAX_OUTPUT_BYTES, ma
       for (const byte of chunk) {
         line = byte === 0x0a ? 0 : line + 1;
         if (line > maxLineBytes) {
-          child.kill();
+          stop();
           throw outputLimitError(label);
         }
       }
@@ -162,11 +162,22 @@ async function runEngineProcess(programPath, args, input, timeoutMs = 90_000, {
   };
   signal?.addEventListener("abort", onAbort, { once: true });
   try {
-    const [stdout, stderr, exitCode] = await Promise.all([
-      readBounded(child.stdout, child, "Engine stdout", maxOutputBytes, maxLineBytes),
-      readBounded(child.stderr, child, "Engine stderr", maxOutputBytes),
-      child.exited,
-    ]);
+    let stdout;
+    let stderr;
+    let exitCode;
+    try {
+      [stdout, stderr, exitCode] = await Promise.all([
+        readBounded(child.stdout, stop, "Engine stdout", maxOutputBytes, maxLineBytes),
+        readBounded(child.stderr, stop, "Engine stderr", maxOutputBytes),
+        child.exited,
+      ]);
+    } catch (error) {
+      // A refused channel must not leave Engine running: stop it (SIGKILL follows the grace
+      // period) and wait until it has exited before reporting the failure.
+      stop();
+      await child.exited;
+      throw error;
+    }
     if (cancelled) {
       const error = new Error("Engine operation was cancelled");
       error.code = "ENGINE_CANCELLED";
