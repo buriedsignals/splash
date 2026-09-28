@@ -16,9 +16,9 @@ derive the source and `export/<outputId>/` destination from the separately decla
 and stable IDs; neither accepts a caller-selected source or recursive replacement path.
 
 For a managed installation, these JavaScript APIs remain the implementation layer. Any delivery
-that needs a credential crosses Engine's closed stdin boundary: `maptiler-delivery` for the final
-client-publishable map key and `cloudflare-deploy` for the complete **Deploy and receive embed
-code** form. Engine verifies the adopted checkout, validates the structured story/output/review
+that needs a credential crosses Engine's closed boundary: call the Splash MCP server's
+`run_operation` tool with operation `maptiler-delivery` for the final client-publishable map key or
+`cloudflare-deploy` for the complete **Deploy and receive embed code** form. Engine verifies the adopted checkout, validates the structured story/output/review
 request before reading a credential, and injects only that operation's broker record into
 `scripts/sealed-operation.mjs`. Do not source a repository `.env` or pass a key in chat, argv, or a
 story file.

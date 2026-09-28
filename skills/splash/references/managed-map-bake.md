@@ -4,15 +4,14 @@ Use this contract only after Storyboard has confirmed a map treatment and format
 still writes the bespoke visual; this contract gives Engine one fixed, non-executable description of
 the basemap plate and projected geometry that visual needs.
 
-Write `beats/<outputId>/MAP-BAKE.json`, then invoke the closed operation from the agent or
-maintainer boundary. Never ask the journalist to type this command:
+Write `beats/<outputId>/MAP-BAKE.json`, then call the Splash MCP server's `run_operation` tool with
+operation `map-bake` and this request. Never ask the journalist to run it:
 
-```sh
-printf '%s\n' '{"storyId":"<storyId>","outputId":"<outputId>","parameters":{"contractDigest":"sha256:<digest>"}}' \
-  | bsig run splash map-bake
+```json
+{"storyId":"<storyId>","outputId":"<outputId>","parameters":{"contractDigest":"sha256:<digest>"}}
 ```
 
-Do not place a credential in the command, contract, story, or environment. Engine verifies the
+Do not place a credential in the request, contract, story, or environment. Engine verifies the
 story, contract, declared input digests, installed runtime, and managed browser before it reads
 `MAPTILER_KEY` from the credential broker.
 

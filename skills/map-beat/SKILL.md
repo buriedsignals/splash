@@ -408,8 +408,8 @@ Beats still owing an authored declaration: `docs/splash/2026-09-17-declarations-
 MapLibre, and an Engine-recorded compatible browser as part of the complete root runtime. The bake
 has a sealed mode that accepts only that browser, the installed local MapLibre files, and an
 Engine-injected `MAPTILER_KEY`. For a real story's still, write the declarative
-`beats/<outputId>/MAP-BAKE.json` described by Splash's `references/managed-map-bake.md`, then use the
-closed `bsig run splash map-bake` operation. A live video reads the key from the process environment
+`beats/<outputId>/MAP-BAKE.json` described by Splash's `references/managed-map-bake.md`, then call
+the Splash MCP server's `run_operation` tool with operation `map-bake`. A live video reads the key from the process environment
 (`set -a && . ./.env && set +a`) and never hands it to Remotion.
 
 ## How it works (the shape)

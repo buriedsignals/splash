@@ -59,15 +59,18 @@ journalist's own beat always sits at `stories/<story>/beats/<beat>/`. Where a co
   then call `whereIs` for the first time. `createStory` (`scripts/new-story.mjs`) is a function, not
   a CLI — no `bin`/`import.meta.main` entrypoint — import and call it.
 - Once per session, open the Splash studio in the journalist's browser rather
-  than collecting readiness or visual choices in chat. From the Splash checkout,
-  with Engine environment (`SPLASH_CHECKOUT_ROOT`, `SPLASH_BSIG_PATH`,
-  `SPLASH_NEWSROOM_PATH`), run `bun --no-env-file apps/goose/studio/open.mjs`.
-  Self-installs leave `SPLASH_BSIG_PATH` unset and supply credentials through the
+  than collecting readiness or visual choices in chat. In an Engine-managed
+  installation, call the Splash MCP server's `open_splash` tool: the agent's shell
+  carries no Engine environment. Run keyed production and delivery through the same
+  server's `run_operation` tool, never through `bsig` in a shell.
+  Self-installs leave `SPLASH_BSIG_PATH` unset, run
+  `bun --no-env-file apps/goose/studio/open.mjs` from the Splash checkout (or call
+  `open_splash`), and supply credentials through the
   process environment, using their agent configuration, secret manager, or any
   private `.env` loaded with `bun --env-file=/path/to/.env apps/goose/studio/open.mjs`.
   Recommend a private file outside the checkout; storage location is the user’s choice.
   Pass that same environment to craft scripts. Never require Engine for a self-install.
-  Goose may instead call `open_splash`. The studio is a loopback page: the
+  The studio is a loopback page: the
   journalist confirms the story and treatment there; this skill resumes from
   `whereIs` after that. Never put the studio URL or its capability token in
   chat.

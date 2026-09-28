@@ -16,6 +16,11 @@ import {
   ENGINE_SPLASH_CONTRACT_MIN,
   textSummary,
 } from "./contract.mjs";
+import {
+  createOperationRunner,
+  ENGINE_OPERATIONS,
+  EngineOperationError,
+} from "./engine-operation.mjs";
 import { createInspirationService } from "./inspiration.mjs";
 import { createRecommendationService } from "./recommendation.mjs";
 import { renderAppHtml } from "./resources/render.mjs";
@@ -94,7 +99,7 @@ async function readStableProfile(story) {
   return profile;
 }
 
-export function createServer({ statusProvider, studio, onToolCall = () => {}, inspiration } = {}) {
+export function createServer({ statusProvider, studio, onToolCall = () => {}, inspiration, operations } = {}) {
   if (!statusProvider || typeof statusProvider.read !== "function")
     throw new Error("Splash MCP requires a status provider");
   if (
@@ -159,7 +164,58 @@ export function createServer({ statusProvider, studio, onToolCall = () => {}, in
       },
     );
   }
+  if (operations) registerRunOperation(server, operations, onToolCall);
   return server;
+}
+
+/**
+ * Engine-managed installs only. The agent's shell has no `bsig` and no Engine environment in most
+ * hosts, so the sealed operations run through the server Engine itself launched.
+ */
+function registerRunOperation(server, operations, onToolCall) {
+  server.registerTool(
+    "run_operation",
+    {
+      title: "Run a Splash operation",
+      description:
+        "Run one sealed Splash operation through Engine: production (map-bake, datawrapper-produce), delivery (maptiler-delivery, cloudflare-deploy), checks (preflight, provider-check-*) or story-inspect. `request` is the operation's JSON request, e.g. {\"storyId\":\"…\",\"outputId\":\"…\",\"parameters\":{…}}. Engine binds the story and supplies any credential itself: never pass a credential. Returns Engine's result. Do not run the operation another way if it fails.",
+      inputSchema: exactObject({
+        operation: z.enum(ENGINE_OPERATIONS),
+        request: z.record(z.string(), z.unknown()).optional(),
+      }),
+    },
+    async ({ operation, request }, extra) => {
+      onToolCall("run_operation");
+      const progressToken = extra?._meta?.progressToken;
+      let beats = 0;
+      const onHeartbeat = progressToken === undefined
+        ? null
+        : () => {
+            beats += 1;
+            extra
+              .sendNotification({
+                method: "notifications/progress",
+                params: { progressToken, progress: beats, message: `Engine is still running ${operation}.` },
+              })
+              .catch(() => {});
+          };
+      try {
+        const data = await operations.run(operation, request ?? {}, { signal: extra?.signal, onHeartbeat });
+        return textResult(JSON.stringify({ operation, result: data }), { operation, result: data });
+      } catch (error) {
+        const known = error instanceof EngineOperationError;
+        const message = known ? error.message : `Engine could not run ${operation}.`;
+        const detail = known ? error.detail : null;
+        return {
+          isError: true,
+          ...textResult(
+            detail ? `${message}\n${JSON.stringify(detail)}` : message,
+            { operation, error: { code: known ? error.code : "engine-error", message, ...(detail ? { detail } : {}) } },
+          ),
+        };
+      }
+    },
+  );
 }
 
 export async function productionDependencies({
@@ -274,6 +330,7 @@ export async function productionDependencies({
     selection,
     recommendation,
     studio,
+    operations: createOperationRunner({ executable: bsigPath }),
   };
 }
 
@@ -285,11 +342,17 @@ export async function productionDependencies({
  * and stdin EOF close the studio and exit; the studio child closes on its
  * own parent-EOF as well, so nothing listens after this returns.
  */
-export function wireShutdown(server, studio, { stdin = process.stdin, exit = (code) => process.exit(code), signals = process } = {}) {
+export function wireShutdown(server, studio, { stdin = process.stdin, exit = (code) => process.exit(code), signals = process, operations = null } = {}) {
   let done = false;
   const shutdown = () => {
     if (done) return;
     done = true;
+    try {
+      // A running Engine operation is stopped with the server, never left orphaned.
+      operations?.close();
+    } catch {
+      // stopping is best effort; the process ends either way
+    }
     try {
       studio.close();
     } catch {
@@ -315,9 +378,10 @@ export async function main() {
     statusProvider: dependencies.statusProvider,
     studio: dependencies.studio,
     inspiration: createInspirationService(),
+    operations: dependencies.operations,
   });
   await server.connect(new StdioServerTransport());
-  wireShutdown(server, dependencies.studio);
+  wireShutdown(server, dependencies.studio, { operations: dependencies.operations });
   console.error(`Splash MCP server running on stdio (contract ${ENGINE_SPLASH_CONTRACT_MIN})`);
 }
 
