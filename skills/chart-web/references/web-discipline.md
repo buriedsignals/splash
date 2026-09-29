@@ -198,7 +198,9 @@ floor is doing the work), and **a container query styles a container's descendan
 container itself** — a rule that sets a custom property on the queried element silently never
 matches, and every width gets the base value. `web-annotation-clears-its-marks.test.ts` measures the
 result: painted-fill sampling under the label, plus label-over-label, at four widths. It is also the
-corpus's only measurement of label collision outside video.
+corpus's only measurement of label collision outside video — and the same measurement
+(`scripts/annotation-clearance.mjs`) runs in `verify-web.mjs` as `checkAnnotationsClear`, so a
+journalist's own page FAILS on it too, not only the committed proof pages.
 
 **Where no position in the plot clears the marks, the annotation leaves the plot, keyed — it is
 never shrunk, never printed over the evidence, and never dropped.** A plot scales with its width and
@@ -998,7 +1000,8 @@ small-multiples grid do not — this one crashed the script outright). **Run a n
 beat before believing what it says about one.**
 
 **What the script does not reach, so a human still looks.** It reads text, geometry, opacity and
-colour; it does not look at the picture. A label colliding with a line, a clipped mark, a squat plot
+colour; it does not look at the picture. Beyond a `.note` printed over another word or into a filled
+mark (`checkAnnotationsClear`), a label colliding with a stroked line, a clipped mark, a squat plot
 on a phone — none of that is visible from inside it, and `--shots` exists so those frames get looked
 at by an eye. It drives one engine (Chrome); `:has()`, `dvh` and `@supports selector()` are all
 Baseline but none is verified here on Safari or Firefox. Touch is exercised as a pointer, not as a

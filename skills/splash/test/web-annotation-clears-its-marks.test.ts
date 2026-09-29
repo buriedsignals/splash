@@ -79,22 +79,19 @@ import { existsSync, readdirSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join, relative, resolve } from "node:path";
 import puppeteer from "puppeteer-core";
+// The measurement itself lives in the skill that ships it, so the format's own verifier
+// (`chart-web/scripts/verify-web.mjs`) reports a journalist's page by the same definition (#78).
+import {
+  ANNOTATION_VIEWPORTS,
+  MARK_CONTRAST_FLOOR,
+  annotationFindings,
+  readAnnotations,
+} from "../../chart-web/scripts/annotation-clearance.mjs";
 
 const TWIN = resolve(import.meta.dirname, "../../..");
 const PROOF = join(TWIN, "proof");
 
 setDefaultTimeout(600000);
-
-const WIDTHS = [
-  { w: 375, h: 812 },
-  { w: 768, h: 1024 },
-  { w: 1400, h: 900 },
-  { w: 1600, h: 800 },
-];
-
-/** Below this against the page ground, a filled shape is a wash rather than a mark — see the header
- *  for the artifact this exists for and its measured 1.19 : 1. */
-const MARK_CONTRAST_FLOOR = 1.5;
 
 /** A DUPLICATE of the `resolveChrome` every browser-driving file in this tree carries — duplicated,
  *  not imported, for the reason `map-web/test/standalone.test.ts`'s own copy states. */
@@ -137,86 +134,6 @@ function deliveredHtml(dir: string, out: string[] = []): string[] {
   }
   return out.sort();
 }
-
-/** Reads every annotation in the page against every painted mark it intersects. Everything that
- *  crosses the CDP boundary is a plain object. */
-const READ_ANNOTATIONS = (floor: number) => `(() => {
-  const lum = (c) => {
-    const m = c.match(/\\d+(\\.\\d+)?/g) || [];
-    const [r, g, b] = m.slice(0, 3).map((v) => {
-      const s = Number(v) / 255;
-      return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
-    });
-    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
-  };
-  const ratio = (a, b) => {
-    const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p);
-    return (x + 0.05) / (y + 0.05);
-  };
-  const vis = (e) => {
-    const s = getComputedStyle(e);
-    return s.display !== "none" && s.visibility !== "hidden" && Number(s.opacity) > 0.05;
-  };
-  const ground = getComputedStyle(document.body).backgroundColor;
-  const marks = [...document.querySelectorAll("svg rect, svg circle, svg path, svg polygon")].filter((e) => {
-    const f = getComputedStyle(e).fill;
-    if (!f || f === "none" || f === "rgba(0, 0, 0, 0)" || f === "transparent") return false;
-    if (ratio(f, ground) < ${floor}) return false;
-    const r = e.getBoundingClientRect();
-    return r.width > 2 && r.height > 2 && vis(e);
-  });
-  const inFill = (m, cx, cy) => {
-    const svg = m.ownerSVGElement;
-    if (!svg || !m.isPointInFill || !m.getScreenCTM) return false;
-    const pt = svg.createSVGPoint();
-    pt.x = cx; pt.y = cy;
-    try { return m.isPointInFill(pt.matrixTransform(m.getScreenCTM().inverse())); }
-    catch (e) { return false; }
-  };
-  const leader = document.querySelector(".peak-leader-v");
-  // Every word this format draws, by the class contract the shared stylesheet and every component
-  // agree on. A label overlapping another label is unreadable whichever of the two you meant.
-  const WORDS = ".chart-title, .chart-caveat, .chart-source, .chart-legend span, .axis-label," +
-    " .note, .end-label, .band-label, .name-label, .crossing-label, .slope-label," +
-    " .period-label, .cell-value, .legend-caption, .legend-min, .legend-max";
-  const words = [...document.querySelectorAll(WORDS)].filter(
-    (e) => vis(e) && (e.textContent || "").trim().length > 0 && e.getBoundingClientRect().width > 0,
-  );
-  return [...document.querySelectorAll(".note")].filter(vis).map((n) => {
-    const nb = n.getBoundingClientRect();
-    let worst = null;
-    for (const m of marks) {
-      const mb = m.getBoundingClientRect();
-      if (mb.right < nb.left || mb.left > nb.right || mb.bottom < nb.top || mb.top > nb.bottom) continue;
-      let covered = 0;
-      for (let i = 0; i <= 4; i++) for (let j = 0; j <= 4; j++) {
-        const cx = nb.left + (nb.width * i) / 4, cy = nb.top + (nb.height * j) / 4;
-        if (cx < mb.left || cx > mb.right || cy < mb.top || cy > mb.bottom) continue;
-        if (inFill(m, cx, cy)) covered++;
-      }
-      if (covered > 0 && (!worst || covered > worst.covered))
-        worst = { covered, fill: getComputedStyle(m).fill, tag: m.tagName };
-    }
-    // Which other WORD this one is printed on top of. A parent/child pair (a note and the line
-    // inside it) is not an overlap; only two independent runs are.
-    let collides = null;
-    for (const other of words) {
-      if (other === n || n.contains(other) || other.contains(n)) continue;
-      const ob = other.getBoundingClientRect();
-      if (ob.right <= nb.left || ob.left >= nb.right || ob.bottom <= nb.top || ob.top >= nb.bottom)
-        continue;
-      collides = (other.textContent || "").replace(/\\s+/g, " ").trim().slice(0, 40);
-      break;
-    }
-    return {
-      peak: n.classList.contains("peak-label"),
-      text: (n.textContent || "").replace(/\\s+/g, " ").trim().slice(0, 60),
-      worst,
-      collides,
-      leaderPx: leader ? Math.round(leader.getBoundingClientRect().height) : -1,
-    };
-  });
-})()`;
 
 /**
  * OWED — the standing findings on committed proof pages, the debt counted. A RATCHET: this list may
@@ -335,14 +252,6 @@ const OWED = new Set<string>([
   // web-streamgraph-swiss-electricity — 25
 ]);
 
-type Annotation = {
-  peak: boolean;
-  text: string;
-  worst: { covered: number; fill: string; tag: string } | null;
-  collides: string | null;
-  leaderPx: number;
-};
-
 describe("a web annotation is placed by the shape it annotates", () => {
   it("clears the marks it sits over, stays inside the plot, and its leader reaches", async () => {
     const files = deliveredHtml(PROOF);
@@ -357,45 +266,18 @@ describe("a web annotation is placed by the shape it annotates", () => {
     let peaksSeen = 0;
     try {
       const page = await browser.newPage();
-      for (const { w, h } of WIDTHS) {
+      for (const { w, h } of ANNOTATION_VIEWPORTS) {
         await page.setViewport({ width: w, height: h, deviceScaleFactor: 1 });
         for (const file of files) {
           await page.goto(`file://${file}`, { waitUntil: "load" });
-          const notes = (await page.evaluate(
-            READ_ANNOTATIONS(MARK_CONTRAST_FLOOR),
-          )) as Annotation[];
-          const rel = relative(TWIN, file);
-          for (const n of notes) {
-            if (!n.peak) {
-              if (n.worst)
-                reported.push(
-                  `${rel} @ ${w}: "${n.text}" covers a ${n.worst.tag} filled ${n.worst.fill} ` +
-                    `at ${n.worst.covered}/25 sample points`,
-                );
-              if (n.collides)
-                reported.push(
-                  `${rel} @ ${w}: "${n.text}" is printed over "${n.collides}"`,
-                );
-              continue;
-            }
-            peaksSeen += 1;
-            if (n.worst)
-              failures.push(
-                `${rel} @ ${w}: the annotation "${n.text}" punches its own ground chip into a ` +
-                  `${n.worst.tag} filled ${n.worst.fill} — ${n.worst.covered} of 25 points across ` +
-                  `its own box are inside that mark's painted fill`,
-              );
-            if (n.collides)
-              failures.push(
-                `${rel} @ ${w}: the annotation "${n.text}" is printed over "${n.collides}" — two ` +
-                  `runs of type on the same pixels, and neither is readable`,
-              );
-            if (n.leaderPx === 0)
-              failures.push(
-                `${rel} @ ${w}: the annotation "${n.text}" has a leader of zero height — it points ` +
-                  `at nothing, or its own calc() went negative and rendered as nothing`,
-              );
-          }
+          const found = annotationFindings(
+            relative(TWIN, file),
+            w,
+            await readAnnotations(page, MARK_CONTRAST_FLOOR),
+          );
+          reported.push(...found.standing);
+          failures.push(...found.peak);
+          peaksSeen += found.peaks;
         }
       }
     } finally {

@@ -25,9 +25,11 @@
 // answer with that year's own reading.
 //
 // WHAT IT DOES NOT COVER, stated so it is not trusted past what it verifies:
-//   - It reads text, geometry, opacity and colour. It does not look at the picture. A label
-//     colliding with a line, a clipped mark, an ugly squat plot on a phone: none of that is
-//     reachable from here. `--shots` writes PNGs at every width so a human still looks.
+//   - It reads text, geometry, opacity and colour. It does not look at the picture. ONE collision
+//     is measured (`checkAnnotationsClear`): a `.note` printed over another word, or punched into
+//     a FILLED mark. A label over a stroked line or a rule, any label that is not a `.note`, a
+//     clipped mark, an ugly squat plot on a phone: none of that is reachable from here. `--shots`
+//     writes PNGs at every width so a human still looks.
 //   - One engine (Chrome). `:has()`, `dvh` and `@supports selector()` are the three features this
 //     format leans on; all three are Baseline, none is verified here on Safari or Firefox.
 //   - Touch is exercised as a pointer, not as a real finger: no multi-touch, no scroll-vs-tap
@@ -2208,6 +2210,54 @@ async function checkRevealedTypefaces(page) {
   }
 }
 
+// Imported here, beside the one check that uses them, rather than in the block at the top: an ES
+// module's imports are hoisted wherever they are written, and this keeps the check self-contained.
+import { relative } from "node:path";
+import {
+  ANNOTATION_VIEWPORTS,
+  MARK_CONTRAST_FLOOR,
+  annotationFindings,
+  readAnnotations,
+} from "./annotation-clearance.mjs";
+
+/** ITEM: every annotation clears the words and the marks it sits over (issue #78).
+ *
+ *  The corpus guard `web-annotation-clears-its-marks.test.ts` measured this on the committed proof
+ *  pages only, so a journalist's own beat — which is never in `proof/` — shipped through this
+ *  script with a note printed over another label at phone width and nothing went red. Measured on
+ *  2026-09-29 before this check existed: `web-dumbbell-life-expectancy-gains/renders/creme.html`
+ *  exited 0 here (489 passed, 0 failed) while the guard counted ten notes printed over other words
+ *  on it at 375; `web-diverging-bar-eu-per-capita/renders/creme.html` exited 0 with one.
+ *
+ *  It is the guard's measurement, imported rather than re-stated (`annotation-clearance.mjs`), at
+ *  the guard's four widths, and every finding is worded exactly as the guard words it. Every finding
+ *  is a FAIL: `web-discipline.md` holds that an annotation is "never printed over the evidence", and
+ *  `doctrine`'s design rubric that a FAIL is fixed before the journalist is asked — a warning in a
+ *  long log is how an overprinted note ships. The repair is the one `web-discipline.md` names: place
+ *  the note from the marks at the width it is drawn, or key it under the plot (`keyed-note.ts`).
+ *  A page with no `.note` is a passing measurement that says so, never a skip. */
+async function checkAnnotationsClear(browser, file) {
+  const where = relative(process.cwd(), file) || basename(file);
+  const page = await browser.newPage();
+  try {
+    for (const vp of ANNOTATION_VIEWPORTS) {
+      await page.setViewport({ width: vp.w, height: vp.h, deviceScaleFactor: 1 });
+      await page.goto(`file://${file}`, { waitUntil: "load" });
+      const notes = await readAnnotations(page, MARK_CONTRAST_FLOOR);
+      const { standing, peak } = annotationFindings(where, vp.w, notes);
+      for (const line of [...peak, ...standing]) check(false, line);
+      if (peak.length + standing.length === 0)
+        check(
+          true,
+          `${vp.w}x${vp.h}: every annotation clears the words and the marks it sits over`,
+          notes.length > 0 ? `${notes.length} drawn .note measured` : "this beat draws no .note",
+        );
+    }
+  } finally {
+    await page.close();
+  }
+}
+
 // ===== the run =====
 
 const argv = process.argv.slice(2);
@@ -2419,6 +2469,9 @@ try {
     }
     await page.close();
   }
+
+  console.log(`\nANNOTATIONS — every note clears the words and the marks it sits over`);
+  await checkAnnotationsClear(browser, filePath);
 } finally {
   await browser.close();
 }

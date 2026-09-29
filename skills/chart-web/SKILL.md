@@ -345,7 +345,7 @@ stops reading it breaks a named test rather than degrading quietly. Spec: `docs/
 | Vocabularies | `assets/{aim,align,benchmark,brush,carry,count,cutoff,datum,descend,filter,floor,fold,follow,hold,level,qualify,rebase,reorder,side,stack,trace,unit,weigh,withdraw}.ts` | The twenty-five declarations a beat can make, each with its own arithmetic and its own refusals (`interaction-plan.ts`'s census measures six of them by design). Table under "The vocabularies" |
 | Render | `scripts/render-web.mjs` | Exports the format's generic `renderWeb({ component, props, outDir, name })` — SSRs the one component once, derives furniture/measures the y-axis gutter in node (this skill's OWN `scripts/render-still.mjs` copy — a skill never imports another skill), inlines the interaction script, writes one self-contained HTML file. It never imports a story's own numbers, and never a story's component; the caller hands both in |
 | Preview | `scripts/render-preview.mjs` | Rasterises `ChartWebPreviewSvg` (SVG-only, baked text) to `assets/preview.png` — NOT what a real beat ships; see that component's own doc-comment in `assets/ChartWebSeed.tsx` |
-| Verify | `scripts/verify-web.mjs` | The format's evidence, not its documentation: drives Chrome over a rendered beat — `checkFit` (the window fit at seven `VIEWPORTS`), `checkHover` (real `page.mouse.move` over marks discovered by `[data-detail]`, at each of `POINTER_VIEWPORTS`), `checkFilter` (real `page.mouse.click` on every option, with scripting on and with JavaScript disabled), `checkControlAffordance` (Tab reach, focus ring measured in pixels, checked-pill contrast). Every check is conditional on the beat's own shape and every skip is announced; `probe` rounds each coordinate. 158 checks on the seed, 43–56 on a real beat. Exit 0 only when every check passed |
+| Verify | `scripts/verify-web.mjs` | The format's evidence, not its documentation: drives Chrome over a rendered beat — `checkFit` (the window fit at seven `VIEWPORTS`), `checkHover` (real `page.mouse.move` over marks discovered by `[data-detail]`, at each of `POINTER_VIEWPORTS`), `checkFilter` (real `page.mouse.click` on every option, with scripting on and with JavaScript disabled), `checkControlAffordance` (Tab reach, focus ring measured in pixels, checked-pill contrast), `checkAnnotationsClear` (every drawn `.note` at the four `ANNOTATION_VIEWPORTS`: FAIL when it is printed over another word or punches into a filled mark — the measurement `scripts/annotation-clearance.mjs` shares with the corpus guard). Every check is conditional on the beat's own shape and every skip is announced; `probe` rounds each coordinate. 158 checks on the seed, 43–56 on a real beat. Exit 0 only when every check passed |
 | Test | `test/render-web.test.ts` | CSV parsing, the CO₂ story component's own SSR output (palette, point count, exact per-point values, unconditional furniture), the pure `nearestIndex` helper, a direct cross-check against `crossingGeometry` |
 
 **Where the furniture and the measurement live.** Same pattern `render-video.mjs` set:
@@ -449,11 +449,20 @@ its canonical geometry is.
 6. **Render the HTML, then run `scripts/verify-web.mjs --file <your beat>.html`** — it drives Chrome
    over your own beat and measures the fit at seven viewport sizes, dispatches real pointer events
    over every reading, clicks every filter option with scripting on and with JavaScript disabled,
-   and checks the control's keyboard reach, focus ring and contrast. A claim not driven is not
+   and checks the control's keyboard reach, focus ring and contrast. Its ANNOTATIONS section loads
+   the page at 375, 768, 1400 and 1600 and FAILS every drawn `.note` that is printed over another
+   run of type (`"<note>" is printed over "<other>"`) or whose ground chip covers a filled mark
+   (`"<note>" covers a <tag> filled <fill> at <n>/25 sample points`) — the same measurement, and the
+   same words, as the corpus guard `splash/test/web-annotation-clears-its-marks.test.ts`, now run on
+   YOUR page. It is a FAIL, not a warning: an annotation is "never printed over the evidence"
+   (`web-discipline.md`), and a FAIL is fixed before the journalist is asked (the design rubric
+   below). Fix it by placing the note from the marks at that width, or by keying it under the plot
+   (`assets/keyed-note.ts`) — never by shrinking or dropping it. A claim not driven is not
    evidence — the same rule `doctrine`'s verification section states for every format.
 7. **Then look at the screenshots yourself** (`--shots --out <dir>`). The script reads text,
-   geometry, opacity and colour; it cannot see a label colliding with a line, a clipped mark, or a
-   plot that is technically fine and visually squat. Every defect this format has shipped that a
+   geometry, opacity and colour; beyond a `.note` over a word or a filled mark, it cannot see a
+   label colliding with a stroked line or a rule, two labels that are not `.note`s colliding with
+   each other, a clipped mark, or a plot that is technically fine and visually squat. Every defect this format has shipped that a
    script could not have caught was caught by an eye on a frame.
   Before the beat is surfaced for approval (G3), apply `doctrine`'s design rubric
   (`doctrine/references/design-rubric.md`) to what you just looked at: mark contrast at 3:1,
@@ -481,6 +490,8 @@ bun skills/chart-web/scripts/verify-web.mjs --shots --out /tmp/canon-web-verify
 #             the title/caveat/source/reference/peak/end label are fully drawn in every state
 #   CONTROL — Tab reaches the group, ArrowRight moves it, the focus ring changes real pixels,
 #             the checked pill's own text clears 4.5:1, the target is at least 24x24
+#   ANNOTATIONS — at 375/768/1400/1600, every drawn .note clears the other words and the filled
+#             marks it sits over (the corpus guard's own measurement, on this page)
 # exit 0 only when every check passed.
 
 # then OPEN THE SCREENSHOTS AND LOOK. The script cannot see a collision, a clipped mark, or a
@@ -523,6 +534,7 @@ skill into a journalist's root — the whole premise — did not build.
 | The segmented filter pill's own padding and corner (the whole treatment sits behind `@supports selector(:has(*))`) | `5px 12px` / `999px` | `.chart-filter label`, `render-web.mjs` |
 | The viewport sizes the verification drives, and the two it dispatches pointers at | 7 sizes / 2 sizes | `VIEWPORTS`, `POINTER_VIEWPORTS`, `verify-web.mjs` |
 | How many marks a hover sweep probes before it starts sampling an even spread | `40` | `MAX_PROBES`, `verify-web.mjs` |
+| The widths annotation clearance is measured at, and the contrast below which a filled shape is a wash rather than a mark | 4 sizes / `1.5` | `ANNOTATION_VIEWPORTS`, `MARK_CONTRAST_FLOOR`, `annotation-clearance.mjs` |
 | The invisible hit target's radius per point (keyboard focus outline, not the touch target — see `web-discipline.md`) | `5` | `.pt` circle `r`, the story's own composition file |
 | How the `#tooltip` is positioned relative to the pointer/focused point | `14px` above, clamped `8px` from the viewport edge | `show()`, `interaction.mjs` |
 | The level the seed's reference rule holds against | `2015` | `REFERENCE_YEAR`, `ChartWebSeed.tsx` |
@@ -616,7 +628,8 @@ skill into a journalist's root — the whole premise — did not build.
   candidate-list shape every other script in this repository that drives a browser carries —
   duplicated, because nothing in a skill imports out of it) over a rendered beat and reports every
   measurement with its number: `checkFit` across `VIEWPORTS`, `checkHover` and `checkFilter` across
-  `POINTER_VIEWPORTS`, `checkControlAffordance`. It dispatches ONLY `page.mouse.move` and
+  `POINTER_VIEWPORTS`, `checkControlAffordance`, `checkAnnotationsClear` across
+  `ANNOTATION_VIEWPORTS`. It dispatches ONLY `page.mouse.move` and
   `page.mouse.click` at real client coordinates — never `.focus()`, `.click()` or a synthesised
   `MouseEvent` — because this format once shipped a hover that was completely dead while keyboard
   focus still worked, and every one of those three would have passed in that world. `--file` to
@@ -624,6 +637,13 @@ skill into a journalist's root — the whole premise — did not build.
   own checks were each proven against a deliberately broken copy of the rendered HTML in `/tmp`;
   the focus-ring check FAILED that exercise the first time (it accepted the user agent's outline on
   an `opacity: 0` input, which paints nothing) and was rewritten to compare rendered frames instead.
+- `scripts/annotation-clearance.mjs` — `readAnnotations`, `annotationFindings`, `READ_ANNOTATIONS`:
+  the one definition of an annotation that collides — a drawn `.note` whose box overlaps another
+  word the format draws, or whose 25 sample points fall inside a filled mark's painted fill
+  (`isPointInFill`), plus a peak label's zero-height leader — and the one wording its findings are
+  reported in. `verify-web.mjs` FAILS on every finding; `splash/test/web-annotation-clears-its-marks.test.ts`
+  imports the same file and holds the proof pages to its `OWED` ratchet. It takes a page and launches
+  no browser. Approximate by construction: 25 points per label, and a word's box is not its ink.
 - `scripts/render-preview.mjs` — renders THIS skill's seed from THIS skill's sample data (never a
   story's render) to `assets/preview.png` or `--out <dir>` to write the proof to that directory
   instead, via `ChartWebPreviewSvg`. Derives `ink`/`muted`/`grid` with `deriveFurniture` and
