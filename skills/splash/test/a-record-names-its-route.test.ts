@@ -98,7 +98,11 @@ describe("every harvested record", () => {
     }
   });
 
-  it("should say which archive it was drawn from, and carry a visual trace", () => {
+  // The full-page screenshots are not committed: they were third-party pages
+  // photographed whole, and the record needs only the image its pixels were
+  // measured from. A record measured by pixel keeps that image; a record read
+  // from styles alone carries none.
+  it("should say which archive it was drawn from, and keep the image it was measured from", () => {
     for (const { family, id, dir } of records()) {
       const where = `${family}/${id}`;
       const record = JSON.parse(
@@ -115,10 +119,14 @@ describe("every harvested record", () => {
         record.id,
         `${where} record disagrees with its own directory`,
       ).toBe(id);
-      expect(
-        existsSync(join(dir, "screenshot.png")),
-        `${where} has no visual trace`,
-      ).toBe(true);
+      if (record.routes?.pixel?.state === "ok") {
+        const from = record.routes.pixel.measuredFrom;
+        expect(from, `${where} pixel route names no image`).toBeTruthy();
+        expect(
+          existsSync(join(dir, from)),
+          `${where} was measured from ${from}, which is missing`,
+        ).toBe(true);
+      }
     }
   });
 });

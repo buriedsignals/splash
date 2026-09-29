@@ -50,3 +50,7 @@ brand.json
 # key, so the pattern is anchored to the suffix rather than to `proof/` — a story beat under
 # `stories/` used to fall outside it and could be staged by a wide `git add`.
 *.local.html
+
+# design-base harvest: the full-page screenshot of a third-party page stays on the harvesting
+# machine. A record keeps only the image its pixels were measured from (usually graphic.png).
+docs/design-base/references/*/*/screenshot.png
