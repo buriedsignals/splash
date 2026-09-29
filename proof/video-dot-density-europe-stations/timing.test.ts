@@ -1,8 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { checkTiming, type BeatTiming } from "#shared/chart-video/timing.ts";
+import { checkTiming } from "#shared/chart-video/timing.ts";
 import { DOT_VIDEO_TIMING as T } from "./timing-contract";
-
-const broken = (patch: Partial<BeatTiming>): BeatTiming => ({ ...T, ...patch });
 
 describe("the shipped dot density video timing", () => {
   it("should pass every structural rule of the motion grammar", () => {
@@ -17,9 +15,5 @@ describe("the shipped dot density video timing", () => {
 
   it("should give the growth into weight at least three seconds", () => {
     expect(T.subject.duration * 0.6).toBeGreaterThanOrEqual(T.fps * 3);
-  });
-
-  it("should refuse a subject that starts before the reveal has finished", () => {
-    expect(checkTiming(broken({ subject: { start: 200, duration: 150 } })).join(" ")).toContain("subject starts at 200");
   });
 });

@@ -1,12 +1,6 @@
 // twin/skills/palette/scripts/palette.mjs
 //
 // Dependency-free. Proposes a palette; never renders one, never writes one.
-//
-// The colour maths below (`channels`, `luminance`, `contrast`) is a VERBATIM copy of the block in
-// `chart-beat/scripts/render-still.mjs`. That is the canon here: a skill stays
-// copy-pasteable on its own, so helpers are duplicated rather than imported. The risk that buys —
-// silent divergence — is guarded by `splash/test/helper-parity.test.ts`, which compares this
-// copy against every other one in the tree.
 
 import { readFileSync, existsSync } from "node:fs";
 import { join, dirname, resolve } from "node:path";

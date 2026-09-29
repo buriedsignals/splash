@@ -25,8 +25,8 @@
 //
 // The CSV reader and the profiler are carried copies of `intake`'s own (`csv.mjs`, `profile.mjs`),
 // byte-identical on purpose: Splash skills install independently and never import across a skill
-// boundary at runtime. `test/parity.test.ts` guards the two copies from drifting apart — the same
-// convention `splash/test/root-template-shared.test.ts` established.
+// boundary at runtime. `splash/test/carried-copies.test.ts` guards the two copies from drifting
+// apart.
 
 import { createHash } from "node:crypto";
 import { readFile, writeFile, mkdir } from "node:fs/promises";

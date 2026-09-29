@@ -9,7 +9,7 @@
 //
 // It reaches here now. `csvSplitByHand` below is the catalogue's own decision, copied
 // byte-identically from `map-web/scripts/verify-guards.mjs` (no cross-skill runtime import;
-// `splash/test/guard-copies-parity.test.ts` is what holds the copies to one decision), and
+// no test compares the copies), and
 // `check-frozen-csv.mjs` beside this file is the command that runs it over this skill's own source.
 //
 // WHAT IT FINDS TODAY: nothing, and that is the honest state of this cell — `scripts/csv.mjs` is
@@ -59,8 +59,8 @@ export function csvSplitByHand(source) {
  *  lines above the function — so a sweep that read raw text would report the guard itself as the
  *  offender on its first run. That is the same trap `map-beat`'s credential sweep fell into, and it
  *  is the reason a check whose subject is a skill's own source has to read code as code. Whole-line
- *  `//` and block comments only, which is `render-still-parity.test.ts`'s own normalisation and is
- *  argued there: a trailing `//` cannot be cut safely out of a file this full of regex literals.
+ *  `//` and block comments only: a trailing `//` cannot be cut safely out of a file this full of
+ *  regex literals.
  *
  *  `test/` IS EXCLUDED, and the exclusion is the rule rather than a convenience: a test builds a
  *  torn row on purpose to watch the decision refuse it, so counting one would make every sweep here

@@ -11,9 +11,8 @@
  * on its own, into a journalist's root, so nothing under it may import out of it. This file used to
  * reach into `proof/co2-suisse/crossing-geometry.ts`, a story workspace that no copy of this skill
  * would carry with it. Skills duplicate; they never link. A story's own static beat keeps its own
- * copy of the same arithmetic, and `splash/test/helper-parity.test.ts` is what keeps the copies
- * honest. What this file adds that a still cannot have is an order in time: every window in that
- * order derives from `timing.ts`, and there is no frame literal below.
+ * copy of the same arithmetic. What this file adds that a still cannot have is an order in time:
+ * every window in that order derives from `timing.ts`, and there is no frame literal below.
  *
  * The furniture colours (ink, muted, grid) are NOT derived here. `deriveFurniture` lives in this
  * skill's own `scripts/render-still.mjs`, which loads a native rasteriser at module scope and
@@ -21,10 +20,11 @@
  * them in as props, so one render never carries two implementations of the colour rule.
  *
  * `FONT_FAMILY`, `measureText`, `wrap` and `drawnSoFar` are exported so this skill's own tests, and
- * `splash/test/helper-parity.test.ts`, can exercise this copy against every other copy in the
- * tree without a browser. They are NOT a library for another beat to import: the two beats that
- * began beside this one (`LifeExpectancyVideo.tsx`, `MigrationVideo.tsx`) left for `proof/` and each
- * carries its own copy, which is what the duplicate-do-not-link rule requires of them.
+ * `splash/test/video-helper-parity.test.ts` (`measureText`, `wrap`), can exercise this copy against
+ * the other video copies without a browser. They are NOT a library for another beat to import:
+ * the two beats that began beside this one (`LifeExpectancyVideo.tsx`, `MigrationVideo.tsx`) left
+ * for `proof/` and each carries its own copy, which is what the duplicate-do-not-link rule requires
+ * of them.
  */
 
 import { extent } from "d3-array";

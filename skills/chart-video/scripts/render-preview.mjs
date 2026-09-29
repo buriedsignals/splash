@@ -56,9 +56,8 @@ const data = rainfallRaw.map(row => ({ year: row.year, mt: row.value }));
 //
 // This skill shipped a `TYPEFACE.md` and called neither reader, so it drew in the built-in default
 // whatever the newsroom or the journalist had recorded — silently, which is the exact outcome
-// `useTypeface`'s probe-string refusal exists to prevent. Found by
-// `splash/test/typeface-gate-is-documented.test.ts`, which derives its roster from the call sites:
-// this skill had the gate file and the machinery and no caller.
+// `useTypeface`'s probe-string refusal exists to prevent. Found by deriving the roster from the
+// call sites: this skill had the gate file and the machinery and no caller.
 useTypeface(readTypeface(join(HERE, "..", "assets"), { stopAt: join(HERE, "..") }));
 
 const { ground, accent } = readPalette(join(HERE, "..", "assets"), {

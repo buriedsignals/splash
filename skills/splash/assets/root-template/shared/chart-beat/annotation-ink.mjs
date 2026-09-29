@@ -32,9 +32,9 @@
 // VENDORED, NOT IMPORTED ACROSS SKILLS. Three byte-identical copies live in the tree — this one,
 // `twin/shared/chart-beat/` (what a `proof/` beat reaches through `#shared/…`) and
 // `skills/splash/assets/root-template/shared/chart-beat/` (what a journalist's fresh
-// root gets at install). `annotation-ink-parity.test.ts` WALKS the tree for the basename and
-// compares them, so a fourth copy is guarded the day it is created and none of them has to be
-// remembered.
+// root gets at install). `splash/test/carried-copies.test.ts` walks the tree for the `// twin/`
+// line and holds every copy to this one, so a fourth copy is guarded the day it is created and
+// none of them has to be remembered.
 
 import { contrast } from "./render-still.mjs";
 

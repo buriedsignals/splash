@@ -8,19 +8,14 @@
  * `chart-web`, whose renderer imported the CO₂ story's component — neither of which any copy of
  * those skills would carry with it. Both were caught by review, not by the suite.
  *
- * Two checks, cheapest first:
- *
- * 1. NO SPECIFIER UNDER `assets/` OR `scripts/` RESOLVES INTO `proof/`. A named-family check, kept
- *    even though `no-cross-skill-imports.test.ts` now covers the whole boundary: this one states the
- *    specific failure that happened, so a reader of a red build sees the story-workspace import named
- *    rather than inferring it from a general rule.
- *
- * 2. THE SEED ACTUALLY RENDERS IN ISOLATION. The skill directory is copied into a fresh temporary
- *    root that contains nothing else — no `proof/`, no `shared/`, no sibling skill, no repository —
- *    and its own `scripts/render-preview.mjs` is run there. The result must be byte-identical to the
- *    `assets/preview.png` this repository ships, which makes this a stronger claim than "it exits 0":
- *    the isolated copy draws THE SAME PICTURE, so nothing it needed was silently supplied from
- *    outside the directory.
+ * An import that leaves the skill directory — into `proof/` or anywhere else — is refused by
+ * `no-cross-skill-imports.test.ts`. What this file adds is that THE SEED ACTUALLY RENDERS IN
+ * ISOLATION. The skill directory is copied into a fresh temporary root that contains nothing else —
+ * no `proof/`, no `shared/`, no sibling skill, no repository — and its own
+ * `scripts/render-preview.mjs` is run there. The result must be byte-identical to the
+ * `assets/preview.png` this repository ships, which makes this a stronger claim than "it exits 0":
+ * the isolated copy draws THE SAME PICTURE, so nothing it needed was silently supplied from outside
+ * the directory.
  *
  * What the temporary root does carry, and why neither weakens the claim:
  *   - `node_modules`, symlinked. A skill's own `SKILL.md` declares its npm dependencies; a
@@ -43,11 +38,10 @@ import {
   symlinkSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, resolve, sep } from "node:path";
+import { join, resolve } from "node:path";
 
 const SKILLS = join(import.meta.dirname, "..", "..");
 const TWIN = resolve(SKILLS, "..");
-const PROOF = join(TWIN, "proof");
 
 /**
  * SHIPS A SEED, AND IS THEREFORE MAKING THE CLAIM — discovered, not listed.
@@ -119,78 +113,6 @@ describe("every craft skill that ships a seed is proven by somebody", () => {
     }
     expect(CRAFT.length).toBe(SEEDED.length - PROVEN_ELSEWHERE.size);
   });
-});
-
-/** Every string literal in `src`, comments removed first — the same single-pass scanner
- *  `no-cross-skill-imports.test.ts` carries, duplicated rather than imported because that is this
- *  project's own rule for anything a copied directory would otherwise have to reach out for. */
-function stringLiterals(src: string): string[] {
-  const literals: string[] = [];
-  const n = src.length;
-  let i = 0;
-  while (i < n) {
-    const c = src[i];
-    const next = src[i + 1];
-    if (c === "/" && next === "/") {
-      i += 2;
-      while (i < n && src[i] !== "\n") i++;
-      continue;
-    }
-    if (c === "/" && next === "*") {
-      i += 2;
-      while (i < n && !(src[i] === "*" && src[i + 1] === "/")) i++;
-      i += 2;
-      continue;
-    }
-    if (c === "'" || c === '"' || c === "`") {
-      const quote = c;
-      let j = i + 1;
-      let value = "";
-      while (j < n && src[j] !== quote) {
-        if (src[j] === "\\") {
-          value += src[j] + (src[j + 1] ?? "");
-          j += 2;
-          continue;
-        }
-        value += src[j];
-        j++;
-      }
-      literals.push(value);
-      i = j + 1;
-      continue;
-    }
-    i++;
-  }
-  return literals;
-}
-
-function* sourceFiles(dir: string): Generator<string> {
-  if (!existsSync(dir)) return;
-  for (const e of readdirSync(dir, { withFileTypes: true })) {
-    const p = join(dir, e.name);
-    if (e.isDirectory()) yield* sourceFiles(p);
-    else if (/\.(mjs|mts|cjs|cts|ts|tsx|js|jsx)$/.test(e.name)) yield p;
-  }
-}
-
-describe("a craft skill never reaches into a story workspace", () => {
-  for (const skill of CRAFT) {
-    it(`${skill} should have no specifier under assets/ or scripts/ that lands in proof/`, () => {
-      const offenders: string[] = [];
-      for (const sub of ["assets", "scripts"]) {
-        for (const file of sourceFiles(join(SKILLS, skill, sub))) {
-          for (const literal of stringLiterals(readFileSync(file, "utf8"))) {
-            if (/\s/.test(literal)) continue;
-            if (!literal.startsWith(".") && !literal.startsWith("/")) continue;
-            const resolved = resolve(dirname(file), literal);
-            if (resolved === PROOF || resolved.startsWith(PROOF + sep))
-              offenders.push(`${file} → ${literal}`);
-          }
-        }
-      }
-      expect(offenders).toEqual([]);
-    });
-  }
 });
 
 describe("a craft skill's seed renders from its own sample-data, alone", () => {

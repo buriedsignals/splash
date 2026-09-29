@@ -102,10 +102,11 @@ Engine-owned state.
 Run checks in proportion to the change. The suite has two lanes, derived by
 `scripts/test-lanes.mjs` from what each test imports or spawns (never from a list):
 
-- `bun run test` — the fast lane (about 120 files, seconds). Run it while iterating.
+- `bun run test` — the fast lane (seconds). Run it while iterating.
 - `bun run test:heavy` — the tests that render, measure pixels, drive Chrome or spawn a
-  process (about 65 files, minutes). Run it before a commit; CI runs only the fast lane
+  process (minutes). Run it before a commit; CI runs only the fast lane
   because its hosts carry no browser. `bun run test:all` runs both.
+- `bun scripts/test-lanes.mjs --check` prints the current file count of each lane.
 - `bun run test:live` — credential- or browser-gated `*.live.test.ts`.
 
 The release baseline is:

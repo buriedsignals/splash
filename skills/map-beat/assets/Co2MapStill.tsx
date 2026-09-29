@@ -75,11 +75,11 @@ export type Co2MapStillProps = {
 /**
  * A WORD WIDER THAN ITS OWN MEASURE — hyphen-broken, never broken mid-syllable.
  *
- * Carried verbatim across the wrap family (`splash/test/helper-parity.test.ts` compares them
- * case for case). `wrap` breaks between words, so a token wider than the measure was emitted whole
- * and ran off the frame — invisible at 900x560 and a 219px overflow the moment a phone frame put
- * 78px type on a 1080px canvas. A hyphen is already a break and already reads as one, so a
- * hyphenated token is split at its own hyphens and `wrap` re-joins without a space after one.
+ * Carried verbatim across the wrap family. `wrap` breaks between words, so a token wider than the
+ * measure was emitted whole and ran off the frame — invisible at 900x560 and a 219px overflow the
+ * moment a phone frame put 78px type on a 1080px canvas. A hyphen is already a break and already
+ * reads as one, so a hyphenated token is split at its own hyphens and `wrap` re-joins without a
+ * space after one.
  *
  * A token with no hyphen and no room is emitted WHOLE and not refused: breaking a word
  * mid-syllable is a decision about somebody's name, and a throw here would be a contract change

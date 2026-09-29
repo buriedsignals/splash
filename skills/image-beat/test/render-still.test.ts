@@ -3,54 +3,11 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { deriveFurniture, contrast, measureText } from "../scripts/render-still.mjs";
+import { deriveFurniture } from "../scripts/render-still.mjs";
 import { readImageMeta, readOrientation, checkOrientation, fitBox, toDataUri, checkWeight, WEIGHT_LIMIT_BYTES } from "../scripts/image-raster.mjs";
 import { imageBeatLayout, ImageBeatSeed } from "../assets/ImageBeatSeed.tsx";
 
 const SAMPLE = join(import.meta.dirname, "..", "assets", "sample-data");
-
-// ---- rasteriser copy: same rule the sibling skills' own copies carry ----
-
-describe("deriveFurniture / contrast — this skill's own copy", () => {
-  it("should pick the ink pole that measures higher, not the one a luminance threshold would pick", () => {
-    const { ink } = deriveFurniture("#808080");
-    expect(ink).toBe("#000000");
-    expect(contrast("#000000", "#808080")).toBeGreaterThan(
-      contrast("#FFFFFF", "#808080"),
-    );
-  });
-
-  it("should always produce a muted tone clearing 4.5:1 against the ground", () => {
-    for (const ground of [
-      "#FFFFFF",
-      "#000000",
-      "#808080",
-      "#F2E9DC",
-      "#1A1A2E",
-      "#0B7A75",
-    ]) {
-      const { muted } = deriveFurniture(ground);
-      expect(contrast(muted, ground)).toBeGreaterThanOrEqual(4.5);
-    }
-  });
-
-  it("should throw on a ground that is not #rrggbb", () => {
-    expect(() => deriveFurniture("white")).toThrow();
-  });
-});
-
-describe("measureText — this skill's own copy", () => {
-  it("should throw when the options argument is missing or a bare number", () => {
-    // @ts-expect-error deliberately calling with the wrong shape
-    expect(() => measureText("Solar 7.2 %", 40)).toThrow();
-  });
-
-  it("should measure a non-empty string wider than an empty one", () => {
-    expect(
-      measureText("A caption of some length", { fontSize: 15 }),
-    ).toBeGreaterThan(measureText("", { fontSize: 15 }));
-  });
-});
 
 // ---- format-specific additions: no sibling in chart-beat's own copy ----
 

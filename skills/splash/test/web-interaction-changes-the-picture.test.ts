@@ -25,10 +25,9 @@
  * wiring itself is asserted below, because a guard nobody calls is the failure this branch met
  * three times.
  *
- * THE LIST IS EXACT, on purpose, for the reason `web-entrance-is-an-addition.test.ts` gives for
- * `ENTRANCE_PENDING`: a page that ships a control changing nothing reddens this without anybody
- * remembering, and a page landing tomorrow reddens it too. Fixing an entry means deleting its line
- * here, in the same commit that fixes the beat.
+ * THE LIST IS EXACT, on purpose: a page that ships a control changing nothing reddens this without
+ * anybody remembering, and a page landing tomorrow reddens it too. Fixing an entry means deleting
+ * its line here, in the same commit that fixes the beat.
  *
  * WHAT THIS PROVABLY DOES NOT CATCH, so it is not trusted past its reach.
  *
@@ -39,8 +38,8 @@
  *      decide whether one changes anything already exists and is not duplicated here —
  *      `map-web`'s `separationHeadroom`, which is what `mapgen-symbol-web` used to decline a zoom
  *      its own geometry could not justify.
- *   3. THE ENTRANCE, which is motion rather than a question — `web-entrance-is-an-addition.test.ts`
- *      owns it, geometry twice.
+ *   3. THE ENTRANCE, which is motion rather than a question — outside this census, and no test
+ *      currently holds it.
  *   4. THE FIVE STANDALONE `proof/mapgen-*-web` RENDERERS. Each assembles its own page rather than
  *      calling the skill's, by design ("nothing here imports out of"), so the render-time guard
  *      does not reach them. They are held by this census alone until the walk through the type

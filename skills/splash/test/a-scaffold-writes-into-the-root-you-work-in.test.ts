@@ -18,6 +18,7 @@
  */
 import { describe, expect, it } from "bun:test";
 import {
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -139,7 +140,17 @@ const SCAFFOLDS: Scaffold[] = [
 
 describe("a scaffold aimed at an installed root", () => {
   it("covers every producer a journalist can be sent to", () => {
-    expect(SCAFFOLDS.length).toBe(8);
+    // Discovered, not counted: every `scaffold-*.mjs` a skill ships must be driven below, so a new
+    // producer that is not added to SCAFFOLDS reddens here instead of going untested.
+    const skills = join(ROOT, "skills");
+    const shipped = readdirSync(skills, { withFileTypes: true })
+      .filter((e) => e.isDirectory() && existsSync(join(skills, e.name, "scripts")))
+      .flatMap((e) =>
+        readdirSync(join(skills, e.name, "scripts"))
+          .filter((f) => /^scaffold-.*\.mjs$/.test(f))
+          .map((f) => `${e.name}/scripts/${f}`),
+      );
+    expect(SCAFFOLDS.map((s) => s.script).sort()).toEqual(shipped.sort());
   });
 
   for (const { name, script, type, adapts } of SCAFFOLDS) {

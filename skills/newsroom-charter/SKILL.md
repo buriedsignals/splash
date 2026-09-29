@@ -94,7 +94,7 @@ video-player mode, not the site's own default background.
 | Pure readers | `scripts/extract.mjs` | `extractThemeColor`, `extractName`, `extractLanguage`, `extractStylesheetHrefs`, `extractInlineStyleBlocks`, `extractRootCustomProperties`, `extractBackgroundDeclarations`, `extractFontFamilies` — no network, text in, evidence out |
 | Orchestrator | `scripts/derive-charter.mjs` | `deriveCharter({url, fetchFn, timeoutMs, maxStylesheets})` — fetches the page and its stylesheets, runs every reader, picks the highest-confidence candidate per field, names every field it couldn't |
 | Renderer | `scripts/format-proposal.mjs` | `formatProposal(proposal)` — the human-facing markdown: the NEWSROOM.md front-matter shape, every value's evidence, every unresolved field as a question, and what each accent measures against the ground |
-| Legibility | `scripts/derive-charter.mjs` | `contrast`, `adjustToContrast`, `measureLegibility(fields)` — every accent against the proposed ground, the 3:1 mark floor, and the nearest passing variant offered beside a failure. Duplicated from `palette`, held in step by `helper-parity.test.ts` |
+| Legibility | `scripts/derive-charter.mjs` | `contrast`, `adjustToContrast`, `measureLegibility(fields)` — every accent against the proposed ground, the 3:1 mark floor, and the nearest passing variant offered beside a failure. The colour maths is `scripts/colour.mjs`, carried from `chart-beat` and held in step by `splash/test/carried-copies.test.ts` |
 
 ## How it works (the shape)
 

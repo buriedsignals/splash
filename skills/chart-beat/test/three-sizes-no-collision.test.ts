@@ -328,7 +328,7 @@ describe("the seed draws cleanly at every size the table offers", () => {
 
     it(`should draw at least the title, the source, the end label and the axes at ${size}`, () => {
       // The premise, pinned rather than assumed: with no runs, both assertions below go vacuously
-      // green. This is `render-still-parity.test.ts:152-163`'s discipline on a different axis.
+      // green.
       expect([size, runs.length > 8]).toEqual([size, true]);
     });
 

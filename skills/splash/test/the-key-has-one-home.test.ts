@@ -2,9 +2,9 @@
  * LEGACY ENV ROOT — read-only compatibility for copied roots.
  *
  * Managed Engine operations hydrate scoped credentials and never load a checkout `.env`. Explicit
- * legacy map runs still resolve `<root>/.env`; this guard keeps every vendored root helper identical,
- * verifies flat and namespaced skill layouts resolve the same root, and prevents the former fixed
- * `../../../.env` climb from returning.
+ * legacy map runs still resolve `<root>/.env`; `carried-copies.test.ts` keeps every vendored root
+ * helper identical, and this guard verifies flat and namespaced skill layouts resolve the same root
+ * and prevents the former fixed `../../../.env` climb from returning.
  */
 import { describe, it, expect } from "bun:test";
 import {
@@ -22,7 +22,7 @@ const SPLASH_TWIN = join(import.meta.dirname, "..");
 const SKILLS = join(SPLASH_TWIN, "..");
 const CANONICAL = join(SPLASH_TWIN, "scripts", "splash-root.mjs");
 
-/** Every `splash-root.mjs` in the tree, canonical first — walked, never listed. */
+/** Every `splash-root.mjs` in the tree — walked, never listed. */
 async function copies(): Promise<string[]> {
   const found: string[] = [];
   for (const skill of await readdir(SKILLS)) {
@@ -36,19 +36,6 @@ async function copies(): Promise<string[]> {
   }
   return found.sort();
 }
-
-describe("splash-root.mjs — the duplicated copies stay in step", () => {
-  it("should be byte-identical everywhere it is vendored", async () => {
-    const canonical = await readFile(CANONICAL, "utf8");
-    const all = await copies();
-    expect(all.length).toBeGreaterThan(1); // it is actually duplicated, not just present once
-    for (const path of all) {
-      expect(`${relative(SKILLS, path)}: ${await readFile(path, "utf8")}`).toBe(
-        `${relative(SKILLS, path)}: ${canonical}`,
-      );
-    }
-  });
-});
 
 describe("a legacy producer resolves the Splash root .env", () => {
   it("should resolve the same root file from every vendored copy", async () => {

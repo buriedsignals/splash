@@ -371,9 +371,7 @@ by an ordinary relative path — that import is for this skill's own tests
 
   **Which formats require it:** the four that rasterise type themselves — `chart-beat`,
   `chart-video`, `chart-web`, `map-beat`. `dw-beat` lays out type server-side, and `map-web`,
-  `scrolly` and `image-beat` draw theirs as HTML in a stylesheet. Measured, not assumed:
-  `splash/test/typeface-gate-is-documented.test.ts` derives that roster from the call sites and
-  refuses a skill that gains the gate without documenting it.
+  `scrolly` and `image-beat` draw theirs as HTML in a stylesheet.
 
   **Still open, and deliberately not fixed here:** the typeface has no gate POSITION the way the
   palette does. Movement (9) of `references/exchange.md` is titled "The palette and the typeface"
@@ -409,7 +407,7 @@ by an ordinary relative path — that import is for this skill's own tests
   canonical copy. **Vendored** (physical copy, not a symlink or a workspace dependency) by
   `splash`'s root template at `assets/root-template/shared/chart-beat/render-still.mjs`
   — that vendored copy, not this one, is what an installed beat actually imports, via
-  `#shared/chart-beat/render-still.mjs`. `splash/test/root-template-shared.test.ts`
+  `#shared/chart-beat/render-still.mjs`. `splash/test/carried-copies.test.ts`
   guards the two copies from drifting apart.
 - `scripts/annotation-ink.mjs` — `NON_TEXT_CONTRAST_FLOOR`, `TEXT_CONTRAST_FLOOR`,
   `textContrastFloor`, `inkBox`, `overlaps`, `marksUnder`, `worstContrast`,
@@ -420,9 +418,9 @@ by an ordinary relative path — that import is for this skill's own tests
   peak callout at **4.05:1** with 57 % of its ink box on a `#0072B2` band, and 21 of the 32 dashed
   rules in the corpus that cross a mark at all under the 3:1 floor. Vendored the same way as
   `render-still.mjs`, at `shared/chart-beat/` and
-  `assets/root-template/shared/chart-beat/`; `splash/test/annotation-ink-parity.test.ts`
-  WALKS the tree for the basename rather than taking a list, so a fourth copy is guarded the day it
-  lands. What reads the ARTIFACT rather than the arithmetic is
+  `assets/root-template/shared/chart-beat/`; `splash/test/carried-copies.test.ts`
+  walks the tree for the `// twin/` line rather than taking a list, so a fourth copy is guarded the
+  day it lands. What reads the ARTIFACT rather than the arithmetic is
   `splash/test/annotation-reads-over-what-it-crosses.test.ts`, which parses every committed
   static SVG and measures what is really under each dashed rule and each line of text — by sampling
   at pixel centres strictly inside the mark, never at its endpoints, because a waterfall's connector

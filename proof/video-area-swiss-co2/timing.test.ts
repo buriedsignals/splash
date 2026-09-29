@@ -1,9 +1,7 @@
 import { describe, expect, it } from "bun:test";
-import { checkTiming, type BeatTiming } from "#shared/chart-video/timing.ts";
+import { checkTiming } from "#shared/chart-video/timing.ts";
 import { WINDOWS } from "./scene.mjs";
 import { AREA_VIDEO_TIMING as T } from "./timing-contract";
-
-const broken = (patch: Partial<BeatTiming>): BeatTiming => ({ ...T, ...patch });
 const framesOf = (event: "reveal" | "subject", [a, b]: number[]) =>
   T[event].duration * (b - a);
 
@@ -25,11 +23,5 @@ describe("the shipped area video timing", () => {
       T.fps * 2,
     );
     expect(T.total).toBeLessThanOrEqual(T.fps * 22);
-  });
-
-  it("should refuse a subject that starts before the reveal has finished", () => {
-    expect(
-      checkTiming(broken({ subject: { start: 200, duration: 186 } })).join(" "),
-    ).toContain("subject starts at 200");
   });
 });

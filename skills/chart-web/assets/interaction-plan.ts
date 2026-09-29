@@ -53,7 +53,7 @@
 //     marks comes apart, and `mapgen-symbol-web` declined to ship a zoom on its measurement (34 km
 //     apart on an 83-degree camera: no bounded multiplier this format allows closes it).
 //   - THE ENTRANCE. It is motion, not a question — the page answering before it is asked — and
-//     `splash/test/web-entrance-is-an-addition.test.ts` already holds it, geometry twice.
+//     it is outside this census.
 //   - WHETHER THE QUESTION IS THE READER'S. It can see that hovering adds a reading. It cannot see
 //     whether that reading is the one a reader of THIS claim wants. That is the `BRIEF.md` half of
 //     the rule, and it is held by a person reading the brief before the code is written.

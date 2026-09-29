@@ -526,9 +526,9 @@ describe("groundTakeaway — a part-to-whole totality claim checked against the 
 // ---------------------------------------------------------------------------------------------
 
 // FINDING 4 — the number reader. `readNumericToken` is COPIED, not imported, from
-// `intake/scripts/profile.mjs` (registered in `skills/splash/test/guard-copies-parity.test.ts`'s
-// `COPIES`). This is the one place a cross-skill import is allowed (see the block earlier in this
-// file), and only to prove the two copies still agree.
+// `intake/scripts/profile.mjs`, and the block below is what holds the two together. This is the
+// one place a cross-skill import is allowed (see the block earlier in this file), and only to prove
+// the two copies still agree.
 import { readNumericToken as readNumericTokenFromIntake } from "../../intake/scripts/profile.mjs";
 import { readNumericToken as readNumericTokenFromStoryboard } from "../scripts/ground-claim.mjs";
 

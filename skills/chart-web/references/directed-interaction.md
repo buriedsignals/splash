@@ -73,7 +73,7 @@ actually shipped when this file was written (143 delivered pages, 154 controls).
 | **Find your own case** | the reader's own row is named and ringed among marks that are otherwise anonymous | the reader is in the data — a country, a canton, a year they lived through | none |
 | **Sort or reorder** | the same marks move into the order that answers the question | the default order hides the answer. **Costs a script**: unlike a filter, no CSS expresses it, so the default order must be the complete argument | none |
 | **Brush a range** | a span of one axis is chosen and everything outside it steps back | a long series where the interesting window is the reader's to pick. **Costs a script** for the same reason; named bands (`filter.ts`, "a threshold as named bands") give most of it with none | none |
-| **Reveal on scroll** | the picture builds in the argument's order as the reader reaches it | the one gesture the reader does not ask for. It is motion, not a question, and it has its own guard — see `web-discipline.md`, "The entrance", and `splash/test/web-entrance-is-an-addition.test.ts` | declared per beat |
+| **Reveal on scroll** | the picture builds in the argument's order as the reader reaches it | the one gesture the reader does not ask for. It is motion, not a question — see `web-discipline.md`, "The entrance" | declared per beat |
 
 Four of these ship nowhere yet. That is recorded as a fact about the corpus, not as a backlog: a
 gesture is reached for because a claim needs it, and a page that adds one to fill a row in this table

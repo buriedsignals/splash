@@ -25,17 +25,17 @@
  * (`vidy-heatmap-renewables-europe/HeatmapVideo.tsx`'s outline grid inside a single
  * `<g opacity={axisOpacity}>`). Nothing walked, so nothing travelled.
  *
- * WHY IT READS A RENDERED DOCUMENT AND NOT SOURCE TEXT. The sites are correctly
- * different from one another — different components, different props, different arithmetic — and
- * each is wrong on its own terms. A source-text parity guard over them either passes everything
- * or turns red for a correct change, which is `helper-parity.test.ts`'s failure exactly. So this
- * one evaluates the beat's ACTUAL arithmetic: `mock.module` replaces `useCurrentFrame` and
+ * WHY IT READS A RENDERED DOCUMENT AND NOT SOURCE TEXT. The sites are correctly different from one
+ * another — different components, different props, different arithmetic — and each is wrong on its
+ * own terms. A source-text parity guard over them either passes everything or turns red for a
+ * correct change, which was the retired `helper-parity.test.ts`'s failure exactly. So this one
+ * evaluates the beat's ACTUAL arithmetic: `mock.module` replaces `useCurrentFrame` and
  * `useVideoConfig` with stubs and leaves `interpolate`, `spring` and `Easing` real, the component
- * is server-rendered at a chosen frame with the beat's own committed props, and the assertions
- * read opacities off the resulting document. It walks every `proof/<beat>` folder holding a
- * capitalised `…Video.tsx`, and takes no list of beats to walk:
- * a thirty-eighth crossfade in a beat written next month is the failure it exists to prevent. The
- * one list it does hold, `OWED`, names defects already known on 2026-09-29 and may only shrink.
+ * is server-rendered at a chosen frame with the beat's own committed props, and the assertions read
+ * opacities off the resulting document. It walks every `proof/<beat>` folder holding a capitalised
+ * `…Video.tsx`, and takes no list of beats to walk: a thirty-eighth crossfade in a beat written
+ * next month is the failure it exists to prevent. The one list it does hold, `OWED`, names defects
+ * already known on 2026-09-29 and may only shrink.
  *
  * WHAT IT CHECKS, exactly. Per beat: the frames of `reveal`, `subject` and `conclusion` (each
  * padded by one frame either side) plus frame 0, sampled at STEP. Every node's EFFECTIVE opacity

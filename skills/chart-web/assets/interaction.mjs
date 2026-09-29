@@ -6,7 +6,7 @@
 // keeps working in a CMS iframe or a sandboxed embed that restricts module scripts).
 //
 // `nearestIndex` is exported and pure — no DOM — so it is unit-tested directly
-// (`test/interaction.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
+// (`test/render-web.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
 // per `doctrine`'s own verification rule, an interactive format is verified by driving a real
 // browser, not by asserting against a DOM emulation nobody looked at
 // (`references/web-discipline.md`, "Verification").

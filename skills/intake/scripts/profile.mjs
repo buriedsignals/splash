@@ -197,9 +197,9 @@ const UNIT_COLUMN_NAME_RE = /^unit(e|é)?s?$/i;
 // THE LEXICON DECLARATION, COPIED FROM `storyboard/scripts/ground-claim.mjs` BYTE FOR BYTE.
 //
 // This tree allows no cross-skill runtime import, so a decision that reaches a second skill is
-// written out again where its reader can see it and held identical by
-// `splash/test/guard-copies-parity.test.ts` — the same arrangement `readNumericToken` and the
-// denominator tokens below already have. What follows is that file's own lexicon policy and its
+// written out again where its reader can see it — the same arrangement `readNumericToken` and the
+// denominator tokens below already have. `intake/test/denominator-languages.test.ts` holds the two
+// `LEXICON_LANGUAGES` equal. What follows is that file's own lexicon policy and its
 // two coverage nets; this profiler's denominator detector is bound to the same four languages and
 // so owes the same answer when it meets a fifth.
 // ─────────────────────────────────────────────────────────────────────────────────────────────
@@ -705,10 +705,10 @@ const SEQUENCE_TOTAL_WITHHELD =
   "no total: this column is a sequence (see gaps), and the sum of a period is not a measure of anything";
 
 // ==================================================================================================
-// COPIED FROM `storyboard/scripts/ground-claim.mjs`, BYTE FOR BYTE (see COPIES in
-// `splash/test/guard-copies-parity.test.ts`). Two skills must not answer "is this a panel, and which
-// column names its subject" differently about the same frozen file: the profiler would say panel and
-// the grounding check would say flat table, and the second is the one that decides a gate.
+// COPIED FROM `storyboard/scripts/ground-claim.mjs`, BYTE FOR BYTE. Two skills must not answer "is
+// this a panel, and which column names its subject" differently about the same frozen file: the
+// profiler would say panel and the grounding check would say flat table, and the second is the one
+// that decides a gate.
 //
 // `findYearColumn` comes with it because `panelShapeOf` calls it and nothing else here does. It is
 // NOT yet walked by the copies test: that test anchors a declaration on the doc comment immediately

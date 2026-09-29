@@ -115,16 +115,14 @@ describe("readHeader", () => {
     expect(found.says).toMatch(/no header/i);
   });
 
-  // THE DEFECT `splash/test/a-frozen-source-is-what-its-name-says.test.ts` WAS WRITTEN FOR, PUT TO
-  // THE NEW READER. `stories/stress-h-site-photographs/source/data.csv` was a JSON document, and it
-  // had been one since intake froze it, through five rounds and a delivered beat. That guard now
-  // asks its question through `readHeader`, so it is only still a guard if a JSON document comes
-  // back as something no table can be made of: ONE column named `{`.
+  // A JSON DOCUMENT FROZEN AS A CSV, PUT TO THE NEW READER. `stories/stress-h-site-photographs/
+  // source/data.csv` was a JSON document, and it had been one since intake froze it, through five
+  // rounds and a delivered beat. A guard that asks through `readHeader` only catches that if a JSON
+  // document comes back as something no table can be made of: ONE column named `{`.
   it("does not turn a JSON document into a table", () => {
     const json = JSON.stringify({ site: "A", photographs: [{ file: "a.jpg" }] }, null, 2);
-    // Read with intake's OWN reader, not with a hand roll: `splash/test/csv-hand-split.test.ts`
-    // walks this repository for a file that cuts rows on a newline and fields on a bare comma, and
-    // a test that demonstrates the defect by committing it is still committing it.
+    // Read with intake's OWN reader, not with a hand roll: a test that demonstrates the defect by
+    // committing it is still committing it.
     const found = readHeader(parseCsv(json.trim()));
     expect(found.names).toEqual(["{"]);
     expect(found.names.length).toBeLessThan(2);

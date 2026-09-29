@@ -40,12 +40,6 @@ describe("the shipped choropleth video timing", () => {
 });
 
 describe("checkTiming on a mutated choropleth video timing", () => {
-  it("should refuse a subject that starts before the reveal has finished", () => {
-    expect(
-      checkTiming(broken({ subject: { start: 250, duration: 160 } })).join(" "),
-    ).toContain("subject starts at 250");
-  });
-
   it("should refuse a composition that ends on a transition instead of a hold", () => {
     expect(
       checkTiming(broken({ hold: { start: T.hold.start, duration: 40 } })).join(" "),

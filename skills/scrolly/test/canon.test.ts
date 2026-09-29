@@ -1,6 +1,7 @@
 import { describe, it, expect } from "bun:test";
 import { existsSync } from "node:fs";
-import { readFile } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 const ASSETS = join(import.meta.dirname, "..", "assets");
@@ -62,17 +63,21 @@ describe("scrolly — the canon's assets", () => {
     // writes to a caller-supplied --out directory: nothing here depends on a story, another skill,
     // or a file outside this skill's own root. Proven by pointing --out at an otherwise-empty tmp
     // directory and confirming a real PNG lands there.
-    const outDir = "/tmp/scrolly-empty-root-test";
-    const proc = Bun.spawn(
-      ["bun", "scripts/render-preview.mjs", "--out", outDir],
-      { cwd: join(import.meta.dirname, "..") },
-    );
-    expect(await proc.exited).toBe(0);
-    expect(existsSync(join(outDir, "preview.png"))).toBe(true);
-    const png = await readFile(join(outDir, "preview.png"));
-    expect(png.subarray(0, 8)).toEqual(
-      Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
-    );
+    const outDir = await mkdtemp(join(tmpdir(), "scrolly-empty-root-"));
+    try {
+      const proc = Bun.spawn(
+        ["bun", "scripts/render-preview.mjs", "--out", outDir],
+        { cwd: join(import.meta.dirname, "..") },
+      );
+      expect(await proc.exited).toBe(0);
+      expect(existsSync(join(outDir, "preview.png"))).toBe(true);
+      const png = await readFile(join(outDir, "preview.png"));
+      expect(png.subarray(0, 8)).toEqual(
+        Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]),
+      );
+    } finally {
+      await rm(outDir, { recursive: true, force: true });
+    }
   });
 });
 
@@ -101,32 +106,6 @@ describe("scrolly — a vehicle, not a new format of chart", () => {
     for await (const file of glob.scan({ cwd: SKILL_ROOT })) {
       if (file.startsWith("test/")) continue;
       if (/registry|dispatcher/i.test(file)) offenders.push(file);
-    }
-    expect(offenders).toEqual([]);
-  });
-
-  it("should have no import leaving the skill directory outside test/", async () => {
-    // The whole boundary is covered by splash/test/no-cross-skill-imports.test.ts, which scans
-    // every skill directory automatically. This is a narrower, named check kept here so a reader of
-    // THIS skill's own red build sees the failure without having to know that other file exists —
-    // the same reasoning chart-web/SKILL.md gives for its own equivalent guard.
-    const glob = new Bun.Glob("**/*.{ts,tsx,mjs,js}");
-    const SKILL_ROOT = join(import.meta.dirname, "..");
-    const offenders: string[] = [];
-    for await (const file of glob.scan({ cwd: SKILL_ROOT })) {
-      if (file.startsWith("test/")) continue;
-      // Comments are stripped first: this skill's own scripts document the relative-path trap they
-      // exist to solve, and an illustrative specifier inside a comment crosses no boundary.
-      const src = (await readFile(join(SKILL_ROOT, file), "utf8"))
-        .replace(/\/\*[\s\S]*?\*\//g, "")
-        .replace(/(^|[^:])\/\/.*$/gm, "$1");
-      // A cheap, narrow probe (not the full literal/escape-aware scan the shared guard runs): an
-      // import or export specifier that climbs above this skill's own root. Only specifiers count —
-      // a filesystem path handed to join()/readFile() crosses no module boundary.
-      const climbs = src.match(
-        /\b(?:from|import|require\s*\()\s*["'`]\.\.\/\.\.\//g,
-      );
-      if (climbs) offenders.push(`${file}: ${climbs.join(", ")}`);
     }
     expect(offenders).toEqual([]);
   });

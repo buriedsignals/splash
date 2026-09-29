@@ -1,6 +1,5 @@
 import { describe, expect, it } from "bun:test";
 import { EVENT_ORDER } from "#shared/chart-video/timing.ts";
-import { assertEventStates } from "../../skills/map-beat/scripts/choreography.mjs";
 import { statesFor } from "./states.mjs";
 
 /** The choreography of BRIEF.md as numbers, hand-copied from its table. */
@@ -32,11 +31,5 @@ describe("statesFor", () => {
   it("should set the credit at conclusion, and hold it exactly", () => {
     expect(conclusion).toEqual({ ...subject, source: 1 });
     expect(hold).toEqual(conclusion);
-  });
-
-  it("should refuse a subject that changes nothing from reveal (the guard it runs through)", () => {
-    const mutated = [...states];
-    mutated[3] = { ...mutated[2] };
-    expect(() => assertEventStates(mutated, [...EVENT_ORDER])).toThrow(/subject changes nothing/);
   });
 });

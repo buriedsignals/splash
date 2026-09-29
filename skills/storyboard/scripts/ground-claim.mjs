@@ -105,9 +105,9 @@
 // NOT cover):
 //   0. Every numeral token in this file — inside shapes 1a/1b and every other shape below that
 //      reads a raw digit run out of the takeaway — is resolved through `readNumericToken`, COPIED
-//      verbatim from `intake/scripts/profile.mjs` (registered in
-//      `skills/splash/test/guard-copies-parity.test.ts`'s `COPIES`, this tree's rule against a
-//      cross-skill import for a shared decision). A thousands-grouped integer ("14,205") or a
+//      verbatim from `intake/scripts/profile.mjs` (a copy, not an import — this tree's rule against
+//      a cross-skill import for a shared decision; `storyboard/test/ground-claim.test.ts` runs both
+//      copies over the same strings). A thousands-grouped integer ("14,205") or a
 //      French decimal ("1,7") is ONE claim or none, never two independent fragments each tested
 //      against a column's range by coincidence — the 2026-08-20/21 stress test's finding 4.
 //   1a. A numeric token in the takeaway that falls INSIDE the range of some numeric column —
@@ -214,8 +214,7 @@
 const NUMERIC_RE = /^[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?$/i;
 
 // A number a human wrote with US/UK thousands grouping — copied verbatim from
-// `intake/scripts/profile.mjs`, the other half of this decision (registered in
-// `skills/splash/test/guard-copies-parity.test.ts`'s `COPIES`).
+// `intake/scripts/profile.mjs`, the other half of this decision.
 const THOUSANDS_RE = /^[+-]?\d{1,3}(,\d{3})+(\.\d+)?$/;
 
 // A number a human wrote with the SI thousands SPACE — groups of exactly three digits separated by
@@ -293,8 +292,7 @@ export function readNumericToken(raw) {
 
 // A CARRIED COPY of `intake/scripts/csv.mjs`'s own reader, byte for byte — not an import, because a
 // skill directory has to stay copy-pasteable on its own, and not a second reader, because a second
-// reader is what this seam already cost once. `splash/test/guard-copies-parity.test.ts` is what
-// holds the two to one decision.
+// reader is what this seam already cost once.
 //
 // WHAT WAS HERE UNTIL 2026-08-23 and why it had to go: `splitCsvLine`, a per-LINE quote-aware
 // splitter over the text cut into lines first. It read a quoted comma correctly and a quoted
@@ -995,7 +993,7 @@ function rowHolding(rows, column, value) {
  * writes two decimal commas in one number.
  *
  * `readNumericToken` itself is NOT touched. It is copied byte-for-byte from `intake/scripts/profile.mjs`
- * (registered in `skills/splash/test/guard-copies-parity.test.ts`'s `COPIES`) and it answers a
+ * (`storyboard/test/ground-claim.test.ts` holds the two copies to the same answers) and it answers a
  * question about a token; this answers a different question, about a token AND a table, and lives
  * only here because only this file has the table.
  *

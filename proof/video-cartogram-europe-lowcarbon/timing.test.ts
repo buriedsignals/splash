@@ -31,10 +31,6 @@ describe("the shipped cartogram video timing", () => {
 });
 
 describe("checkTiming on a mutated cartogram video timing", () => {
-  it("should refuse a subject that starts before the reveal has finished", () => {
-    expect(checkTiming(broken({ subject: { start: 200, duration: 180 } })).join(" ")).toContain("subject starts at 200");
-  });
-
   it("should refuse a composition that ends on a transition instead of a hold", () => {
     expect(checkTiming(broken({ hold: { start: T.hold.start, duration: 40 } })).join(" ")).toContain(`hold ends at ${T.hold.start + 40}`);
   });

@@ -61,13 +61,9 @@
  * implementation of the colour or measurement rule per beat.
  *
  * `wrap` below is UNCHANGED from this seed's first build and is still exported even though
- * `ChartWebSeed` no longer calls it: `../../splash/test/helper-parity.test.ts` cross-checks it,
- * byte-for-byte, against every other `wrap` copy in this repository (the "static family" — copies
- * that close over, or are handed, the resvg measurer) to prove the greedy word-wrap RULE has not
- * silently drifted between the ~10 duplicates this project carries. Removing the export, even though
- * nothing here calls it any more, would blind that guard rather than satisfy it. Title, caveat and
- * source no longer need server-side wrapping because they are plain flowing HTML now — the browser
- * wraps them the same way it wraps any paragraph, at whatever width its own container ends up.
+ * `ChartWebSeed` no longer calls it. Title, caveat and source no longer need server-side wrapping
+ * because they are plain flowing HTML now — the browser wraps them the same way it wraps any
+ * paragraph, at whatever width its own container ends up.
  */
 
 import { extent, tickStep } from "d3-array";
@@ -311,17 +307,17 @@ export function segments(
   return segs;
 }
 
-/** Wrap on the measured width of the real string, never on a character count. Kept for the
- *  cross-skill parity guard this file's own doc-comment explains (`helper-parity.test.ts`) — not
- *  called by `ChartWebSeed` below, whose furniture is plain HTML the browser wraps itself. */
+/** Wrap on the measured width of the real string, never on a character count. Kept exported
+ *  (see this file's own doc-comment) — not called by `ChartWebSeed` below, whose furniture is
+ *  plain HTML the browser wraps itself. */
 /**
  * A WORD WIDER THAN ITS OWN MEASURE — hyphen-broken, never broken mid-syllable.
  *
- * Carried verbatim across the wrap family (`splash/test/helper-parity.test.ts` compares them
- * case for case). `wrap` breaks between words, so a token wider than the measure was emitted whole
- * and ran off the frame — invisible at 900x560 and a 219px overflow the moment a phone frame put
- * 78px type on a 1080px canvas. A hyphen is already a break and already reads as one, so a
- * hyphenated token is split at its own hyphens and `wrap` re-joins without a space after one.
+ * Carried verbatim across the wrap family. `wrap` breaks between words, so a token wider than the
+ * measure was emitted whole and ran off the frame — invisible at 900x560 and a 219px overflow the
+ * moment a phone frame put 78px type on a 1080px canvas. A hyphen is already a break and already
+ * reads as one, so a hyphenated token is split at its own hyphens and `wrap` re-joins without a
+ * space after one.
  *
  * A token with no hyphen and no room is emitted WHOLE and not refused: breaking a word
  * mid-syllable is a decision about somebody's name, and a throw here would be a contract change
@@ -393,8 +389,7 @@ function pct(value: number, total: number): number {
  * ends. A slope's connector says "Germany fell from 12.4 t to 5.7 t, −6.7 t, −54 %", which no
  * per-endpoint tooltip can say however many endpoints it answers; a route's segment says which
  * territory it crosses and how far along the journey it is. Both were asked for by name and both
- * need the same thing, so it is written once here and duplicated into the beats that draw one
- * (`hoverable-line-parity.test.ts` walks every copy and fails if two bodies disagree).
+ * need the same thing, so it is written once here and duplicated into the beats that draw one.
  *
  * HOW IT WORKS. A TRANSPARENT STROKED TWIN of the visible path, drawn immediately after it, with
  * `pointer-events: stroke` so the hit region is the stroke and not the bounding box — the bounding

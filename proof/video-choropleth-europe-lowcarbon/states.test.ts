@@ -1,7 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { join } from "node:path";
 import { EVENT_ORDER } from "#shared/chart-video/timing.ts";
-import { assertEventStates } from "../../skills/chart-video/scripts/choreography.mjs";
 import { loadSubject } from "../static-choropleth-europe-lowcarbon/beat.mjs";
 import { SEATS } from "./map-plan.mjs";
 import { assertDerivedValues, statesFor } from "./states.mjs";
@@ -47,14 +46,6 @@ describe("statesFor", () => {
 
   it("should pull back, name the six, Albania and the three lowest, and set the source on the map at conclusion (card 6)", () => {
     expect(conclusion).toEqual({ ...subjectState, furniture: 1, zoom: 0, neighbours: 0, top: 1, context: 1, source: 1 });
-  });
-
-  it("should refuse a subject that changes nothing from reveal (the guard it runs through)", () => {
-    const mutated = [...states];
-    mutated[3] = { ...mutated[2] };
-    expect(() => assertEventStates(mutated, [...EVENT_ORDER])).toThrow(
-      /subject changes nothing/,
-    );
   });
 });
 

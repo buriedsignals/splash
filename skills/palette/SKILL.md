@@ -220,7 +220,7 @@ const { ground, accent } = readPalette(import.meta.dirname, { stopAt: process.cw
 
 `readPalette` is vendored into `render-still.mjs` alongside `deriveFurniture` — a beat already
 imports that module to render at all, and a second import path for two colours would be one more
-thing to get wrong. The copies are guarded against drift by `helper-parity.test.ts`.
+thing to get wrong. The copies are guarded against drift by `splash/test/carried-copies.test.ts`.
 
 ## Tuning knobs
 

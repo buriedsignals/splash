@@ -21,7 +21,7 @@
 // skill — which no browser bundle can load. Deriving here and passing ink/muted/grid/measure in as
 // props keeps ONE implementation of the colour rule and the text-measurement rule per render,
 // exactly the pattern `render-video.mjs` already set; the copies are kept in step by
-// `splash/test/helper-parity.test.ts`.
+// `splash/test/carried-copies.test.ts`.
 //
 // `renderWeb` below is the format's own machinery and knows nothing of any one story: it takes the
 // component and the props to call it with as arguments, and it never reaches into the component's

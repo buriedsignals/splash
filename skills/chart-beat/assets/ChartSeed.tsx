@@ -331,13 +331,12 @@ export function wrap(
  *
  * A token with no hyphen and no room is EMITTED WHOLE, deliberately, and this is the one place a
  * refusal was written and then taken back out. Two reasons, both measured rather than argued.
- * First, breaking a word mid-syllable is a decision about somebody's name and is not this file's
- * to take. Second, `wrap` is a CARRIED helper — six copies across the static and web families,
- * compared case for case by `splash/test/helper-parity.test.ts` — and a throw is a contract
- * change for all six, including the fluid web frame, where a transient 1px measure during layout
- * is ordinary and must not be fatal. The overflow it would have caught is already refused where it
- * can be SEEN: `three-sizes-no-collision.test.ts` measures every run's real ink box against the
- * frame edge and fails the render.
+ * First, breaking a word mid-syllable is a decision about somebody's name and is not this file's to
+ * take. Second, `wrap` is a CARRIED helper — six copies across the static and web families — and a
+ * throw is a contract change for all six, including the fluid web frame, where a transient 1px
+ * measure during layout is ordinary and must not be fatal. The overflow it would have caught is
+ * already refused where it can be SEEN: `three-sizes-no-collision.test.ts` measures every run's
+ * real ink box against the frame edge and fails the render.
  */
 function breakLongTokens(
   words: string[],

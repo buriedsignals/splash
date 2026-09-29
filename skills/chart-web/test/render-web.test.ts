@@ -59,7 +59,7 @@ import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 // THIS skill's own copy of the rasteriser helpers, not `chart-beat`'s (which the previous
 // version of this file reached for). Both copies are held byte-identical by
-// `splash/test/helper-parity.test.ts`; using the local one keeps this file's own dependency
+// `splash/test/carried-copies.test.ts`; using the local one keeps this file's own dependency
 // inside the skill it tests.
 import { deriveFurniture, measureText } from "../scripts/render-still.mjs";
 import { webDocument } from "../scripts/render-web.mjs";

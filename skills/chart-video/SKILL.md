@@ -231,7 +231,7 @@ reads files or derives furniture runs in `build.mjs`, in Bun, and reaches the co
 **Across the skill boundary it is copy, not import.** A skill directory has to build on its own in a
 journalist's root, so the seed carries its own copy of its pure core (`fr`, `yTickValues`,
 `crossingGeometry` in `assets/EmissionsVideo.tsx`); `splash/test/no-cross-skill-imports.test.ts` fails
-on any specifier leaving a skill, `splash/test/helper-parity.test.ts` keeps copies in step and
+on any specifier leaving a skill and
 `splash/test/seed-renders-standalone.test.ts` renders the seed alone. Beats under `proof/` are not
 skills and do import from skills (table above).
 
@@ -381,9 +381,7 @@ The seed's `CO2_TIMING` and composition. A directed beat's knobs are its own `ti
 
   **Which formats require it:** the four that rasterise type themselves — `chart-beat`,
   `chart-video`, `chart-web`, `map-beat`. `dw-beat` lays out type server-side, and `map-web`,
-  `scrolly` and `image-beat` draw theirs as HTML in a stylesheet. Measured, not assumed:
-  `splash/test/typeface-gate-is-documented.test.ts` derives that roster from the call sites and
-  refuses a skill that gains the gate without documenting it.
+  `scrolly` and `image-beat` draw theirs as HTML in a stylesheet.
 
   **Still open, and deliberately not fixed here:** the typeface has no gate POSITION the way the
   palette does. Movement (9) of `references/exchange.md` is titled "The palette and the typeface"
@@ -412,7 +410,7 @@ The seed's `CO2_TIMING` and composition. A directed beat's knobs are its own `ti
 - `assets/EmissionsVideo.tsx` — the seed beat's composition. **Replace per story**; do not
   parameterise it into a general video chart. Carries its own copy of the pure core it draws (`fr`,
   `yTickValues`, `crossingGeometry`). Exports `FONT_FAMILY`, `measureText`, `wrap` and
-  `drawnSoFar` so this skill's own tests and `splash/test/helper-parity.test.ts` can exercise
+  `drawnSoFar` so this skill's own tests and `splash/test/video-helper-parity.test.ts` can exercise
   them without a browser — not as a library for another beat to import.
 - `assets/Root.tsx` — the Remotion root; registers the seed composition (`co2-suisse`), sized and
   timed from its own contract.

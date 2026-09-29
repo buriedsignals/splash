@@ -11,9 +11,10 @@
  * module load, after the journalist had been told the environment was fine.
  *
  * So this guard WALKS the tree and derives the requirement, rather than restating it. That is not
- * style: `helper-parity.test.ts` is this repository's standing counter-example, where a hand-kept
- * list turned the suite red for a correct change and two agents kept a dead export alive to satisfy
- * it. A list cannot know about an import added after it was written; a walk cannot fail to.
+ * style: the retired `helper-parity.test.ts` was this repository's standing counter-example, where
+ * a hand-kept list turned the suite red for a correct change and two agents kept a dead export
+ * alive to satisfy it. A list cannot know about an import added after it was written; a walk
+ * cannot fail to.
  *
  * FOUR THINGS IT ASSERTS, each with the mutation that reddens it (all four run and verified in a
  * copy of the tree under /tmp — invariant 4 of PLAN-2026-08-10.md):
@@ -314,7 +315,7 @@ describe("the root template vendors every #shared file the tree actually imports
    * The dev root and a journalist's root must run the SAME shared code. `twin/shared/` is what
    * every proof beat in this repository loads; `root-template/shared/` is what a newsroom's beats
    * load. A fix applied to one and not the other means this repository can no longer reproduce
-   * what it ships — the drift `root-template-shared.test.ts` guards file by file, asserted here as
+   * what it ships — the drift `carried-copies.test.ts` guards file by file, asserted here as
    * whole trees so a NEW file cannot land on one side alone.
    */
   it("should mirror twin/shared exactly, file for file and byte for byte", async () => {

@@ -21,7 +21,7 @@
  *
  * THE RESIDUE, stated rather than hidden. Those three are real, un-migrated, and named in
  * `FEEDBACK-2026-08-10.md`'s B1.3 row with the reason: vendoring the mechanism into them is a
- * change to a SHARED function body, which `render-still-parity.test.ts` then requires in all 22
+ * change to a SHARED function body, which the parity guard of the day then required in all 22
  * copies at once — and seven of those copies were being actively edited by other sessions when
  * this landed. The video and web substrates are a second, separate step: a Remotion composition
  * needs `delayRender` + `document.fonts.load` before its measuring canvas exists, and a

@@ -1,8 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { checkTiming, type BeatTiming } from "#shared/chart-video/timing.ts";
+import { checkTiming } from "#shared/chart-video/timing.ts";
 import { SLOPE_VIDEO_TIMING as T } from "./timing-contract";
-
-const broken = (patch: Partial<BeatTiming>): BeatTiming => ({ ...T, ...patch });
 
 describe("the shipped slope video timing", () => {
   it("should pass every structural rule of the motion grammar", () => {
@@ -16,9 +14,5 @@ describe("the shipped slope video timing", () => {
 
   it("should give the lines at least three seconds to travel", () => {
     expect(T.reveal.duration * 0.85).toBeGreaterThanOrEqual(T.fps * 3);
-  });
-
-  it("should refuse a subject that starts before the reveal has finished", () => {
-    expect(checkTiming(broken({ subject: { start: 240, duration: 180 } })).join(" ")).toContain("subject starts at 240");
   });
 });

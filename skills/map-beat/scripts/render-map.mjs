@@ -10,7 +10,7 @@
 // build after being copied on its own into a journalist's root, so nothing under a skill may import
 // out of it (`splash/test/no-cross-skill-imports.test.ts` fails loud on any specifier that
 // does). One implementation of the colour rule per render; the copies are kept in step by
-// `splash/test/helper-parity.test.ts`.
+// `splash/test/carried-copies.test.ts`.
 //
 // It also runs the two checks that a render cannot make for itself:
 //   · the JOIN, which fails loud naming any shape that found no value (`geo-discipline.md` rule 5);
@@ -196,7 +196,7 @@ if (wantStill) {
   // element is handed over — a second `renderToStaticMarkup` of a pure component, which is
   // deterministic and costs microseconds against the rasterise that follows it. The check
   // cannot live inside `renderStill` itself: that is a SHARED function body, and
-  // `render-still-parity.test.ts` would then require the change in all 22 copies at once.
+  // `splash/test/carried-copies.test.ts` would then require the change in every copy at once.
   const element = createElement(Co2MapStill, { ...shared, geometry, plate });
   assertDrawnInActiveTypeface(renderToStaticMarkup(element), {
     where: "the map seed",

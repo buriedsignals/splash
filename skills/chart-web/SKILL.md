@@ -559,9 +559,7 @@ skill into a journalist's root — the whole premise — did not build.
 
   **Which formats require it:** the four that rasterise type themselves — `chart-beat`,
   `chart-video`, `chart-web`, `map-beat`. `dw-beat` lays out type server-side, and `map-web`,
-  `scrolly` and `image-beat` draw theirs as HTML in a stylesheet. Measured, not assumed:
-  `splash/test/typeface-gate-is-documented.test.ts` derives that roster from the call sites and
-  refuses a skill that gains the gate without documenting it.
+  `scrolly` and `image-beat` draw theirs as HTML in a stylesheet.
 
   **Still open, and deliberately not fixed here:** the typeface has no gate POSITION the way the
   palette does. Movement (9) of `references/exchange.md` is titled "The palette and the typeface"
@@ -587,7 +585,7 @@ skill into a journalist's root — the whole premise — did not build.
   vendoring path (see the seed's own doc-comment). Like `proof/co2-suisse/EmissionsWeb.tsx`, the
   component never imports the rasteriser — `ink`/`muted`/`grid`/`measure` are props, derived in node
   by whoever calls it (`scripts/render-preview.mjs` for this skill's own preview). `wrap` is kept,
-  unchanged, only for `helper-parity.test.ts`'s own cross-skill guard — `ChartWebSeed` no longer
+  unchanged and exported, though `ChartWebSeed` no longer
   calls it, since its furniture is plain HTML the browser wraps itself.
 - `assets/sample-data/rainfall.json` — eleven annual readings for the seed's sample town
   (2015–2025, 912mm → 604mm), the seed's data. **Not** the same file as

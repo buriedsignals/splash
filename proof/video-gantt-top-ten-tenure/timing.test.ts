@@ -1,8 +1,6 @@
 import { describe, expect, it } from "bun:test";
-import { checkTiming, type BeatTiming } from "#shared/chart-video/timing.ts";
+import { checkTiming } from "#shared/chart-video/timing.ts";
 import { GANTT_VIDEO_TIMING as T } from "./timing-contract";
-
-const broken = (patch: Partial<BeatTiming>): BeatTiming => ({ ...T, ...patch });
 
 describe("the shipped gantt video timing", () => {
   it("should pass every structural rule of the motion grammar", () => {
@@ -16,9 +14,5 @@ describe("the shipped gantt video timing", () => {
 
   it("should give each year at least six frames of the clock", () => {
     expect((T.reveal.duration * 0.88) / 34).toBeGreaterThanOrEqual(6);
-  });
-
-  it("should refuse a subject that starts before the reveal has finished", () => {
-    expect(checkTiming(broken({ subject: { start: 300, duration: 75 } })).join(" ")).toContain("subject starts at 300");
   });
 });

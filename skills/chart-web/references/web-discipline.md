@@ -173,8 +173,7 @@ this file continues to reject exactly as its first build did.
 format was a point or a shared `.hit-area` rect resolved by nearest-x, and a slope chart's connector
 — which exists precisely to say what LINKS its two ends — could not be pointed at. The primitive is
 three pieces, all in this skill: a transparent stroked twin drawn immediately after the visible path
-(`hoverableLineProps` in `assets/ChartWebSeed.tsx`, duplicated into the beats that draw one and
-walked by `hoverable-line-parity.test.ts`), the `.line-hit` rule in `buildCss` whose
+(`hoverableLineProps` in `assets/ChartWebSeed.tsx`), the `.line-hit` rule in `buildCss` whose
 `pointer-events: stroke` makes the STROKE the hit region instead of the bounding box, and `initLines`
 in `assets/interaction.mjs`.
 
@@ -922,8 +921,7 @@ order, under its ordering rule — rather than inventing a second animation gram
 from the first. The vocabulary is not decoration on this decision, it *is* the decision: borrowing
 it is what makes the entrance carry the ARGUMENT'S order. An entrance that fades the whole figure in
 as one layer is `motion-grammar.md`'s first anti-pattern, "motion added for energy", with a CSS
-property attached — and `web-entrance-is-an-addition.test.ts` refuses it mechanically by requiring
-at least three distinct delays.
+property attached.
 
 **The contract is copied, not imported** (`assets/entrance.ts`), because nothing under a skill may
 import out of it. What was copied verbatim, what was deliberately changed (`hold` dropped,

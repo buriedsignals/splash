@@ -11,11 +11,8 @@
  * It is a COPY and not an import because nothing under a skill may import out of the skill
  * (`splash/test/no-cross-skill-imports.test.ts`) — a skill directory has to build after being
  * copied, on its own, into a journalist's root, and no copy of THIS directory carries
- * `chart-video` with it. What keeps the two honest is
- * `splash/test/web-entrance-parity.test.ts`, which walks both files, compares the shared
- * arithmetic character for character, and — because a text comparison cannot see a rule that has
- * quietly changed meaning — runs the SAME fixtures through both order checks and fails when the two
- * disagree about what is legal.
+ * `chart-video` with it. No test compares the two, so a change to either is owed to the other by
+ * hand.
  *
  * ── WHAT WAS COPIED, VERBATIM ────────────────────────────────────────────────────────────────
  *
@@ -65,9 +62,8 @@
  *   4. **A ceiling exists, and it is stated rather than measured.** `ENTRANCE_CEILING_MS` is the
  *      number this format is held to, not a number read off an experiment: an entrance nobody watched
  *      to the end is a worse artifact than a static chart, so the whole build has to fit inside the
- *      time a reader spends arriving at a graphic. 2400ms is a judgement. It is enforced
- *      (`checkEntrance`, and again in a real browser by
- *      `splash/test/web-entrance-is-an-addition.test.ts`), and it is a knob.
+ *      time a reader spends arriving at a graphic. 2400ms is a judgement. `checkEntrance` checks
+ *      it, and it is a knob.
  *
  * ── WHAT THIS FILE DOES NOT DECIDE ───────────────────────────────────────────────────────────
  *
@@ -296,9 +292,8 @@ export const LABEL_FADE_MS = 110;
  * animation, and the second beat would reveal itself when the first entered the viewport.
  *
  * FNV-1a over the beat's own title, which is the one string a runner always has and never shares
- * with another beat in the same article. A collision here costs the same defect, so the guard
- * (`splash/test/web-entrance-is-an-addition.test.ts`) asserts every `clipPath` id in a page is
- * unique and referenced rather than trusting 32 bits.
+ * with another beat in the same article. A collision here costs the same defect, and no test
+ * currently asserts that every `clipPath` id in a page is unique.
  */
 /** The three motions the shared stylesheet defines. See `render-web.mjs`'s `entranceCss` for what
  *  each one is for and why there are exactly three. */
