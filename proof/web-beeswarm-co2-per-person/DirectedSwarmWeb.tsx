@@ -72,6 +72,16 @@ import {
   weighOptionsForMarkup,
   weighSlugOf,
 } from "../../skills/chart-web/assets/weigh.ts";
+import {
+  keyedNoteCss,
+  cellWidthPx,
+  labelBoxPx,
+  leavesBelow,
+  overlaps,
+  PLOT_FLOOR_PX,
+  type KeyedNote,
+  type Rect,
+} from "../../skills/chart-web/assets/keyed-note.ts";
 
 /** The frame, and the top band is part of the contract rather than a margin that happened.
  *  `TOP_BAND` units are reserved above every packing for four staggered rows of annotation — the two
@@ -226,11 +236,14 @@ export function DirectedSwarmWeb({
    * cell — rather than the rows being printed into the swarm or into each other. Each callout is ONE
    * line, measured, so its row is exactly one line tall.
    *
-   * WHERE IT DOES NOT APPLY: a phone. At 375 px the plot is already held at the format's height
-   * clamp (146 px of an 812 px window, 19 px over it on `nocturne`), and the four callouts need
-   * 4 × 20–26 px of rows against a 20–25 px band. There is no room to give them that the window-fit
-   * rule would allow, so below the plot solved here (`rowsApply`) the page keeps the placement it
-   * has always had — owed, and named, in `web-annotation-clears-its-marks.test.ts`.
+   * WHERE IT DOES NOT APPLY: a phone. At 375 px the cell is 260 × 104 (195 × 78 on `nocturne`,
+   * whose page already stood 19 px past an 812 px window), the band is 20 px (15), and the four
+   * callouts need 3 × 19–26 px of rows. Growing the band is height the window-fit rule does not
+   * have, and the format's row floor is not this beat's tool: it stretches the cell vertically, and a
+   * circle whose AREA is the reading would print as an ellipse (it also refuses any visible circle
+   * wider than a row, which this swarm's largest marks are). So below the width the rows need, the
+   * notes that cannot stand in one row LEAVE THE PLOT, keyed (`web-discipline.md`, "Where no
+   * position in the plot clears the marks"); see `keyed` below.
    */
   const annotReg = registerOf(direction, "annot", { family: "chart" });
   const annotStyle = regs.annot as Record<string, unknown>;
@@ -320,6 +333,112 @@ export function DirectedSwarmWeb({
   }
   const rowsApply = steps.map((st) => `((min-width: ${st.from}px) and (min-height: ${st.height}px))`).join(" or ");
 
+  /**
+   * BELOW THE ROWS, WHAT LEAVES AND WHAT STAYS — measured, not chosen.
+   *
+   * A plot narrower than the rows need has ONE row of room: the band, 15–20 px at a phone's width,
+   * which the packer keeps empty in every weighting. In it the right-hand case stands alone at its own
+   * x, as it always did, and stays direct (`visual-system.md`: a direct annotation wherever it is
+   * spatially possible). The other three cannot: the left-hand case, the median and the average sit
+   * 12, 18 and 26 px from the axis's zero at 375 px — three marks in 14 px, under three lines of
+   * 137–295 px. So they leave the plot for the list under it, keyed (`assets/keyed-note.ts`).
+   *
+   * THE KEYS, AND WHY THE TWO LEVELS SHARE ONE. A numeral is ~19 px wide and the cluster holds two:
+   * one left of the median rule, one right of the average rule, with both rules left bare between
+   * them. So the left-hand case takes « 1 », standing on its own leader, and the pair of levels takes
+   * « 2 » beside the pair of rules. Under the plot each level is still told apart — by its own value
+   * on the axis (3,14 sits left of 4,58) and by a swatch of its own rule's dash.
+   *
+   * WHERE THE LINE FALLS: a note stays in the plot exactly where the rows above apply, asked of the
+   * plot's own unclamped height (`leavesBelow` over the same staircase `rowsApply` is written from).
+   * The residue is `keyed-note.ts`'s named gap: a window short enough to clamp the plot's height
+   * (a phone on its side) keeps the width's answer, and there the rows do not apply either.
+   */
+  const rowsApplyAt = (plotWidthPx: number) => {
+    const plotHeightPx = Math.max(PLOT_FLOOR_PX, plotRatio * plotWidthPx);
+    return steps.some((st) => plotWidthPx >= st.from && plotHeightPx >= st.height);
+  };
+  const keysBelow = leavesBelow(rowsApplyAt, { where: "the swarm's callout rows" });
+  const keyed: KeyedNote[] = [
+    { id: "left-case", key: "1", printed: false, below: keysBelow },
+    { id: "levels", key: "2", printed: false, below: keysBelow },
+  ];
+  /** The numeral, set the same at both ends, in the annot register's OWN face — family, size, weight
+   *  and style — rather than `keyedNoteCss`'s bold upright: that is a face the page may not embed
+   *  (Montserrat 700 on `nocturne`, measured drawing its fallback). On a line of 1.2 rather than the
+   *  shared 1.3: at the floor's cell the swarm's highest circle under the keys is 18,2 px down and a
+   *  13 px key on 1.3 is 18,9 px tall. */
+  const annotSize = Number.parseFloat(String(annotStyle.fontSize));
+  const KEY_LINE = 1.2;
+  const keyStyle = {
+    fontFamily: annotStyle.fontFamily as string,
+    fontSize: annotStyle.fontSize as string,
+    fontWeight: annotStyle.fontWeight as number,
+    fontStyle: annotStyle.fontStyle as string,
+    letterSpacing: 0,
+    textTransform: "none" as const,
+    lineHeight: KEY_LINE,
+    color: labelInk,
+  };
+  const keyBox = (numeral: string) => ({
+    // `keyedNoteCss`: `min-width: 1.45em; padding: 0 0.3em; border: 1px`, under `border-box`.
+    w: Math.max(
+      1.45 * annotSize,
+      measureText(numeral, {
+        fontSize: annotSize,
+        fontWeight: annotStyle.fontWeight as number,
+        fontFamily: String(annotStyle.fontFamily).split(",")[0].replace(/["']/g, "").trim(),
+        fontStyle: (annotStyle.fontStyle as string) ?? "normal",
+      }) +
+        2 +
+        0.6 * annotSize +
+        2,
+    ),
+    h: annotSize * KEY_LINE + 2,
+  });
+  const key1 = keyBox("1");
+  const key2 = keyBox("2");
+  const KEY_AIR = 1.5;
+  const rightCase = rightCases[0];
+  const rightBox = labelBoxPx(rightCase.text, annotStyle as never, measureText as never);
+  const medianX = x(median.value);
+  const averageX = x(average.value);
+  /**
+   * REFUSED, NOT SHIPPED, if the one row does not hold: at every plot width the keys apply at, in
+   * the cell the width draws AND in the floor's cell (the smallest a window can clamp it to — the
+   * cell a phone actually gets once the keyed lines take their height), the right-hand case and
+   * both keys must clear each other and every circle of every weighting, and the left key must stay
+   * inside the plot's own slack left of the cell.
+   */
+  const box = { width: FRAME.width, height: FRAME.height + FRAME.xAxisRowPx };
+  const circles = plates.flatMap((p) => p.marks.map((m) => ({ slug: p.slug, key: m.key, cx: m.cx, cy: m.cy, r: m.r })));
+  const hits = (rect: Rect, s: number) =>
+    circles.find((c) => {
+      const px = c.cx * s;
+      const py = c.cy * s;
+      const nx = Math.max(rect.l, Math.min(px, rect.r));
+      const ny = Math.max(rect.t, Math.min(py, rect.b));
+      return (px - nx) ** 2 + (py - ny) ** 2 < (c.r * s) ** 2;
+    });
+  for (let w = 240; w < keysBelow; w++) {
+    const floorCell = Math.min(w, ((PLOT_FLOOR_PX - FRAME.xAxisRowPx) * FRAME.width) / FRAME.height);
+    for (const cellW of [cellWidthPx(w, { frame: FRAME, box, axisPx: FRAME.xAxisRowPx }), floorCell]) {
+      const s = cellW / FRAME.width;
+      const slack = (w - cellW) / 2;
+      const right: Rect = { l: rightCase.xPct / 100 * cellW - rightBox.w, r: rightCase.xPct / 100 * cellW, t: 0, b: rightBox.h };
+      const k1: Rect = { l: medianX * s - KEY_AIR - key1.w, r: medianX * s - KEY_AIR, t: 0, b: key1.h };
+      const k2: Rect = { l: averageX * s + KEY_AIR, r: averageX * s + KEY_AIR + key2.w, t: 0, b: key2.h };
+      const where = `at a ${w}px plot (a ${Math.round(cellW)}px cell)`;
+      if (k1.l < -slack) throw new Error(`the « 1 » key leaves the plot ${where}`);
+      if (overlaps(k1, k2) || overlaps(k2, right) || overlaps(k1, right))
+        throw new Error(`the band's one row does not hold the two keys and ${rightCase.text} ${where}`);
+      for (const [name, rect] of [["« 1 »", k1], ["« 2 »", k2], [rightCase.text, right]] as const) {
+        const c = hits(rect, s);
+        if (c) throw new Error(`${name} covers ${c.key} in the ${c.slug} weighting ${where}`);
+      }
+    }
+  }
+
   const oldAnchor = (c: Callout) => {
     const a = noteAnchor(c.xPct) as Record<string, string>;
     return [
@@ -364,6 +483,18 @@ export function DirectedSwarmWeb({
       ),
     ),
     `}`,
+    // THE KEYED LAYOUT: one row, the band's own top edge. The keys are displayed only below
+    // `keysBelow` (`keyedNoteCss`); the right-hand case is re-set on one line in the same query,
+    // because the wrapped two-line box it had there reached 15 px into the swarm on `nocturne`.
+    `${SCOPE} .chart-plot .overlay [data-keyed-note-key="left-case"] { top: 0; left: auto; right: calc(${100 - pct(medianX, FRAME.width)}% + ${KEY_AIR}px); }`,
+    `${SCOPE} .chart-plot .overlay [data-keyed-note-key="levels"] { top: 0; left: calc(${pct(averageX, FRAME.width)}% + ${KEY_AIR}px); right: auto; }`,
+    `@container (width < ${keysBelow}px) {`,
+    `  ${SCOPE} .chart-plot .overlay .note[data-callout="${rightCase.key}"] { top: 0; left: auto; right: ${100 - rightCase.xPct}%; transform: none; white-space: nowrap; max-width: none; }`,
+    `}`,
+    keyedNoteCss(keyed, { scope: SCOPE }),
+    // The run-in gap separates a note from the NEXT one; the last has none, and on `creme` at 375 px
+    // its 13 px was what pushed « 4,58 » onto a third line and the page 1 px past the window.
+    `${SCOPE} .chart-notes > li:last-child { margin-right: 0; }`,
   ];
 
   const css = [
@@ -605,12 +736,20 @@ export function DirectedSwarmWeb({
               key={c.key}
               className="note"
               data-callout={c.key}
+              data-keyed-note-plot={
+                levelCallouts.includes(c) ? "levels" : c === leftCases[0] ? "left-case" : undefined
+              }
               style={{
                 ...regs.annot,
                 color: labelInk,
               }}
             >
               {c.text}
+            </span>
+          ))}
+          {keyed.map((k) => (
+            <span key={`key-${k.id}`} className="note note-key" data-keyed-note-key={k.id} style={keyStyle}>
+              {k.key}
             </span>
           ))}
         </div>
@@ -629,6 +768,55 @@ export function DirectedSwarmWeb({
           </span>
         </div>
       </div>
+
+      {/* WHAT THE PLOT CANNOT HOLD BELOW THE ROWS, keyed: « 1 » stands on the left-hand case's own
+          leader, « 2 » beside the pair of rules, and each level is set with a swatch of its own
+          rule's dash. Drawn only below the width computed above. */}
+      <ol className="chart-notes">
+        <li data-keyed-note-under="left-case" style={{ ...regs.annot, color: labelInk }}>
+          {/* The key and the first word never part at a line end: a key left alone at the end of
+              one line and its sentence on the next pairs with nothing. */}
+          <span style={{ whiteSpace: "nowrap" }}>
+            <span className="note-key" data-keyed-note-lead="" style={keyStyle}>{keyed[0].key}</span>
+            {leftCases[0].text.split(" ")[0]}
+          </span>
+          {leftCases[0].text.slice(leftCases[0].text.split(" ")[0].length)}
+          {/* The notes run in, and two inline items with no space between them give the line no
+              place to break: the next key's run would drag this note's last word with it. */}
+          {" "}
+        </li>
+        <li data-keyed-note-under="levels" style={{ ...regs.annot, color: labelInk }}>
+          {levelCallouts.map((c, i) => (
+            <span key={c.key}>
+              {i > 0 ? " · " : null}
+              {/* A swatch (and the first one's key) never parts from its level's first word. */}
+              <span style={{ whiteSpace: "nowrap" }}>
+              {i === 0 ? (
+                <span className="note-key" data-keyed-note-lead="" style={keyStyle}>{keyed[1].key}</span>
+              ) : null}
+              <svg
+                aria-hidden="true"
+                width={5}
+                height={Math.round(annotSize)}
+                style={{ display: "inline-block", verticalAlign: "-2px", marginRight: "0.35em" }}
+              >
+                <line
+                  x1={2.5}
+                  x2={2.5}
+                  y1={0}
+                  y2={Math.round(annotSize)}
+                  stroke={rule}
+                  strokeWidth={direction.stroke?.rule ?? 0.8}
+                  strokeDasharray={i === 0 ? "5 4" : "2 3"}
+                />
+              </svg>
+              {c.text.split(" ")[0]}
+              </span>
+              {c.text.slice(c.text.split(" ")[0].length)}
+            </span>
+          ))}
+        </li>
+      </ol>
 
       <p className="chart-reading" style={{ ...regs.body, margin: "10px 0 0" }}>{reading}</p>
       <p className="chart-source" style={{ ...regs.body, margin: "6px 0 0" }}>{source}</p>
