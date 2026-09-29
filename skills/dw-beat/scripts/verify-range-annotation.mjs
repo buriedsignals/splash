@@ -7,8 +7,8 @@
 //   DATAWRAPPER_TOKEN=... bun run scripts/verify-range-annotation.mjs /tmp/dw-beat/probe.png
 //
 // This does not run in `bun test` against the real network — bun:test's copy
-// (test/verify-range-annotation.test.ts) is `it.skipIf(!token)`, the same convention
-// `splash/test/keys.test.ts` already uses for its real-endpoint probe.
+// (test/verify-range-annotation.live.test.ts, live lane only) is `it.skipIf(!token)`, the same
+// convention `splash/test/keys.live.test.ts` already uses for its real-endpoint probe.
 
 import { writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";

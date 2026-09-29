@@ -61,11 +61,13 @@ import { join, relative } from "node:path";
 
 const TWIN = join(import.meta.dirname, "..", "..", "..");
 const SOURCE_EXT = [".ts", ".tsx", ".mjs"];
+/** Dot-directories hold tooling, agent worktrees and scratch, never shipped code. */
+const skipped = (name: string) =>
+  name === "node_modules" || name.startsWith(".");
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
-    if (e.name === "node_modules" || e.name === ".git" || e.name === "dist")
-      continue;
+    if (skipped(e.name) || e.name === "dist") continue;
     const p = join(dir, e.name);
     if (e.isDirectory()) walk(p, out);
     else if (SOURCE_EXT.some((x) => e.name.endsWith(x))) out.push(p);

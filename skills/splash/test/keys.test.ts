@@ -211,26 +211,3 @@ describe("probeCloudflare", () => {
     expect(result.detail).toContain("ECONNREFUSED");
   });
 });
-
-describe("probeMapTiler against the real endpoint", () => {
-  const key = process.env.MAPTILER_KEY ?? "";
-  if (!key) {
-    console.log(
-      "Skipping real MapTiler probe: MAPTILER_KEY is not set in the environment.",
-    );
-  }
-
-  it.skipIf(!key)(
-    "should return a concrete verdict using the key in the environment",
-    async () => {
-      const result = await probeMapTiler(key, fetch);
-      expect(typeof result.ok).toBe("boolean");
-      expect(result.status).not.toBe(null);
-      expect(result.detail.length).toBeGreaterThan(0);
-      console.log(
-        `MapTiler verdict: ok=${result.ok} status=${result.status} — ${result.detail}`,
-      );
-    },
-  );
-});
-

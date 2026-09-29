@@ -107,7 +107,7 @@ describe("fetchWithTimeout", () => {
 describe("fetchWithTimeout against the real network", () => {
   // No API key, no secret — a bare GET is the whole contract, so this runs unconditionally,
   // the same way this repository's other live-network tests run when nothing needs skipping
-  // (splash/test/keys.test.ts). It is written to be a useful assertion whether or not THIS
+  // (splash/test/keys.live.test.ts). It is written to be a useful assertion whether or not THIS
   // machine can currently reach the internet: a real page comes back ok with real HTML, or the
   // real network failure comes back as a structured, bounded verdict — never a hang, never a
   // thrown exception. Either outcome is the contract holding.

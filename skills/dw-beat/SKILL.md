@@ -200,6 +200,8 @@ maintainer proof and compatibility surfaces; they are not new-install instructio
   also records the live-tested findings on vendor attribution (plan-gated, not fixable from code)
   and the fitted y-axis (confirmed working).
 - `test/{validate-spec,map-spec,csv,dw-client,produce,verify-range-annotation,prove-co2}.test.ts` —
-  `bun:test` coverage. Every real-network assertion follows `splash/test/keys.test.ts`'s own
+  `bun:test` coverage. The real-network assertions live apart, in
+  `test/{dw-client,produce,verify-range-annotation}.live.test.ts` (the live lane only), and follow
+  `splash/test/keys.live.test.ts`'s own
   `it.skipIf(!token)` convention: skipped, never faked, when `DATAWRAPPER_TOKEN` is absent from the
   environment; the actual proof the moment it is present.

@@ -70,7 +70,7 @@
 // defect is invisible when the container's aspect matches the plate's, because then the box-derived
 // scale and the camera-derived one agree. A square-ish container would have passed the whole time.
 //
-// Needs the network and a real MapTiler key, so it is gated exactly as `keys.test.ts` gates its own
+// Needs the network and a real MapTiler key, so it is gated exactly as `keys.live.test.ts` gates its own
 // live probe: with a key it runs for real, without one it says plainly that it did not.
 //
 // Usage:

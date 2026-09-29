@@ -57,6 +57,9 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join, relative } from "node:path";
 
 const TWIN = join(import.meta.dirname, "..", "..", "..");
+/** Dot-directories hold tooling, agent worktrees and scratch, never shipped code. */
+const skipped = (name: string) =>
+  name === "node_modules" || name.startsWith(".");
 
 function findAll(
   dir: string,
@@ -64,7 +67,7 @@ function findAll(
   out: string[] = [],
 ): string[] {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
-    if (e.name === "node_modules" || e.name === ".git") continue;
+    if (skipped(e.name)) continue;
     const p = join(dir, e.name);
     if (e.isDirectory()) findAll(p, matches, out);
     else if (matches(e.name)) out.push(p);

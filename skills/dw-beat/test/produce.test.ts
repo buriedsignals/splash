@@ -478,34 +478,6 @@ describe("produce", () => {
   });
 });
 
-describe("produce against the real Datawrapper API", () => {
-  const token = process.env.DATAWRAPPER_TOKEN ?? "";
-  if (!token) {
-    console.log(
-      "Skipping real produce() round-trip: DATAWRAPPER_TOKEN is not set in the environment.",
-    );
-  }
-
-  it.skipIf(!token)(
-    "should produce a real static PNG for a small spec with a range annotation",
-    async () => {
-      const outDir = await mkdtemp(join(tmpdir(), "dw-beat-real-"));
-      try {
-        const result = await produce(
-          baseSpec({ rangeAnnotations: [{ value: 20, label: "reference" }] }),
-          { outDir, name: "real", size: "landscape", token, fetchFn: fetch },
-        );
-        expect(result.format).toBe("static");
-        const bytes = await readFile(result.pngPath);
-        expect(bytes.length).toBeGreaterThan(0);
-      } finally {
-        await rm(outDir, { recursive: true, force: true });
-      }
-    },
-    30000,
-  );
-});
-
 // ── W4 Task 4: one pinned export size, and the export is checked against it ────────────────────
 //
 // WHY THIS IS A CHECK AND NOT A PINNED CONSTANT. The spec asked for "measure once what Datawrapper
@@ -514,8 +486,8 @@ describe("produce against the real Datawrapper API", () => {
 // pinning a number nobody has seen is the reasoning-from-source this whole chantier exists to stop.
 // So the first real run against the API IS the measurement, and `assertExportedSize` makes it loud:
 // either the export is the size that was chosen, or produce throws naming both. What is genuinely
-// left undone is recording what Datawrapper does; the test below marks that with a live case that
-// skips without a token, exactly like the other live cases in this file.
+// left undone is recording what Datawrapper does; produce.live.test.ts is that live case, and it
+// skips without a token.
 //
 // THE MUTATIONS THAT REDDEN THESE, run in a copy under /tmp, 2026-08-10:
 //   drop `assertExportedSize(png, size, row)` from produce.mjs   RED — the wrong-size case

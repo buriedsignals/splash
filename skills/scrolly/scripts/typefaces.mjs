@@ -198,6 +198,11 @@ export function nearestFace(faces, weight, italic) {
   return pool.reduce((best, f) => (Math.abs(f.weight - weight) < Math.abs(best.weight - weight) ? f : best));
 }
 
+/** Paths already resolved this process. A memo of a PATH is only as good as the file under it, so
+ *  it is keyed on the cache directory as well as the request (`SPLASH_TYPEFACE_CACHE` may point
+ *  somewhere else by the next call), and a hit is re-checked on disk before it is handed back: a
+ *  test that pointed the cache at a temp directory and deleted it afterwards left every later
+ *  caller in the same process holding a path to nothing — eleven ENOENTs in one heavy run. */
 const resolved = new Map();
 
 /**
@@ -216,11 +221,11 @@ const resolved = new Map();
 export function typefaceFile(family, weight = 400, { italic = false } = {}) {
   const name = assertFamily(family);
   const value = assertWeight(weight);
-  const key = `${name}|${value}|${italic ? "italic" : "normal"}`;
-  const hit = resolved.get(key);
-  if (hit) return hit;
-
   const dir = typefaceCacheDir();
+  const key = `${dir}|${name}|${value}|${italic ? "italic" : "normal"}`;
+  const hit = resolved.get(key);
+  if (hit && existsSync(hit)) return hit;
+
   const path = join(dir, `${name.replace(/\s+/g, "-")}-${value}${italic ? "italic" : ""}.ttf`);
   if (existsSync(path) && statSync(path).size > 0) {
     const bytes = readFileSync(path);

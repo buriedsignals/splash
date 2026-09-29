@@ -121,9 +121,13 @@ const CANONICAL = join(
 // deriving the answer from the thing it is checking.
 const ROWS = ["landscape", "square", "portrait"];
 
+/** Dot-directories hold tooling, agent worktrees and scratch, never shipped code. */
+const skipped = (name: string) =>
+  name === "node_modules" || name.startsWith(".");
+
 function findAll(dir: string, basename: string, out: string[] = []): string[] {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
-    if (e.name === "node_modules" || e.name === ".git") continue;
+    if (skipped(e.name)) continue;
     const p = join(dir, e.name);
     if (e.isDirectory()) findAll(p, basename, out);
     else if (e.name === basename) out.push(p);
@@ -134,7 +138,7 @@ function findAll(dir: string, basename: string, out: string[] = []): string[] {
 /** Every source file under a directory, for reading import specifiers out of `proof/`. */
 function findAllSource(dir: string, out: string[] = []): string[] {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
-    if (e.name === "node_modules" || e.name === ".git") continue;
+    if (skipped(e.name)) continue;
     const p = join(dir, e.name);
     if (e.isDirectory()) findAllSource(p, out);
     else if (/\.(mjs|ts|tsx|js|jsx)$/.test(e.name)) out.push(p);

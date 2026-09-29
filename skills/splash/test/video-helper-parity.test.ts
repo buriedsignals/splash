@@ -71,9 +71,13 @@ const FAMILY = ["measureText", "wrap"];
 // measuring context. A component without it is not part of this family.
 const SUBSTRATE = "measuringContext";
 
+/** Dot-directories hold tooling, agent worktrees and scratch, never shipped code. */
+const skipped = (name: string) =>
+  name === "node_modules" || name.startsWith(".");
+
 function findComponents(dir: string, out: string[] = []): string[] {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
-    if (e.name === "node_modules" || e.name === ".git") continue;
+    if (skipped(e.name)) continue;
     const p = join(dir, e.name);
     if (e.isDirectory()) findComponents(p, out);
     else if (

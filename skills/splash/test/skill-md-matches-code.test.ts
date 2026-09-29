@@ -241,7 +241,10 @@ function findByBasename(root: string, basename: string): string[] {
       return;
     }
     for (const e of entries) {
-      if (e.name === "node_modules" || e.name === ".git") continue;
+      if (e.name === "node_modules") continue;
+      // Dot-directories hold tooling, agent worktrees and scratch, never shipped code. Only
+      // DIRECTORIES: a SKILL.md names dotfiles such as `.delivery-manifest.json` by basename.
+      if (e.isDirectory() && e.name.startsWith(".")) continue;
       const p = join(dir, e.name);
       if (e.isDirectory()) walk(p);
       else if (e.name === basename) results.push(p);

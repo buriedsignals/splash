@@ -5,7 +5,7 @@
  * gets is the map the arithmetic describes — the defect that started this was a map drawing a 36px
  * disc on cartography that had grown by 1.57x, and every half of it was internally consistent. That
  * is measured in a real browser by `scripts/verify-live-map.mjs`, which this file runs when a key is
- * present and says plainly that it did not when one is absent — the same gate `keys.test.ts` puts on
+ * present and says plainly that it did not when one is absent — the same gate `keys.live.test.ts` puts on
  * its own live probe.
  *
  * Read that file's header before changing anything here: its FIRST version compared the drawn radius
