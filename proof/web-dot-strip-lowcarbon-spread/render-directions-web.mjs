@@ -25,8 +25,9 @@ import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
 import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
+import { deriveFurniture, measureText } from "../../skills/chart-web/scripts/render-still.mjs";
 import { assertOneQualifying, qualifySlugOf } from "../../skills/chart-web/assets/qualify.ts";
-import { DirectedDotStripWeb, FRAME } from "./DirectedDotStripWeb.tsx";
+import { DirectedDotStripWeb, FRAME, rowFloorFor } from "./DirectedDotStripWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
@@ -365,6 +366,21 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const id = file.replace(/\.md$/, "");
   const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, file)), textPerRegister);
   const outPath = join(OUT, `${id}.html`);
+  // THE ROW FLOOR, derived from this direction's own annot register and the real strings by the
+  // component's own arithmetic (`rowFloorFor`) — never typed. Handed to the trunk, which grows the
+  // cell to it where the ratio falls short, and to the component, which refuses one it did not derive.
+  const furniture = deriveFurniture(direction.ground);
+  const { floor: rowFloor, lines, lead, cellPx } = rowFloorFor({
+    direction,
+    ink: { ink: furniture.ink, muted: furniture.muted, accent: direction.accent },
+    measure: measureText,
+    stats,
+    lanes: LANES,
+    laneHeadings,
+  });
+  console.log(
+    `${id}: row floor ${rowFloor.px}px a lane (${lines} lines × ${lead.toFixed(1)}px at a ${cellPx.toFixed(0)}px cell)`,
+  );
   try {
     await renderWeb({
       // This catalogue is written in French; the renderer defaults to English and never guesses.
@@ -379,11 +395,15 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
         xTicks,
         title, eyebrow: EYEBROW, caveat, source, reading: readingLine, alt,
         direction,
+        rowFloor,
         ground: direction.ground,
         accent: direction.accent,
       },
       outDir: OUT,
       name: `${id}.html`,
+      // A dot strip's lanes are its rows, and the year and its statistics row head each one. See
+      // `rowFloorFor`: the one reason this page may scroll.
+      rowFloor,
     });
     // The three refusals only the WRITTEN page can carry: a half-tagged datum, a vocabulary that
     // emitted no rules at all, and a blanket hide that landed after the default rail's own reveal.

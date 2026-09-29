@@ -100,6 +100,12 @@ import {
   qualifyPlace,
   qualifyStatRow,
 } from "../../skills/chart-web/assets/qualify.ts";
+import {
+  cellWidthPx,
+  labelBoxPx,
+  rowFloorCellPx,
+  type Measure,
+} from "../../skills/chart-web/assets/keyed-note.ts";
 
 /** The frame. `laneH` is the room one rail owns, `statTop` the row of numbers heading it, `railDy`
  *  where the rail itself sits inside that room and `spanDy` where its span bar does. Every one of
@@ -137,6 +143,116 @@ const R = 6;
  *  type needs eats exactly this separation. Taken here: 1,64:1 on creme, 1,64 on rapport, 1,96 on
  *  nocturne — where the floor is not binding, the direction's own accent stands. */
 const CASE_VS_FIELD_MIN = 1.6;
+
+/** The air between a lane's heading and its statistics row when the two are stacked, and between the
+ *  row's last line and the lane's own ticks. */
+const HEAD_GAP_PX = 2;
+/** The air between the year and the row it heads when the row hangs beside it (below `widePx`). */
+const HANG_GAP_PX = 6;
+/** The narrowest plot this format is verified at: a 375 px window less 2 × 24 px of frame padding. */
+const NARROWEST_PLOT_PX = 327;
+/** The band above a lane's dots and ticks, in geometry units: from the heading's top to the top of
+ *  the ticks, which reach `jitter + 8` above the rail. */
+const BAND_UNITS = FRAME.railDy - FRAME.jitter - 8 - FRAME.statTop;
+
+/**
+ * THE LANE PITCH THIS PLATE'S WORDS NEED, AND WHY A PHONE PAGE MAY SCROLL FOR IT.
+ *
+ * Each lane is headed by its year and by a row of four statistics. Both are words, at the
+ * direction's fixed pixel size; the lane is geometry, and on a phone it closes up with the cell. At
+ * 375 px, with the cell at its ratio, a lane is 45 px tall and the band above its ticks is 16 px, for
+ * a heading and a row that wraps to two lines: 38–54 px of type. Every rung printed the row over its
+ * year (the guard's twelve OWED sites). The owner's ruling is that legibility beats fitting the
+ * window, and a dot strip's lanes are rows, so the lane declares the pitch its words need and the
+ * trunk grows the cell to it (`render-web.mjs`, `rowFloorCss`).
+ *
+ * WHAT SITS IN THE BAND, BELOW THE WIDTH WHERE THE ROW HOLDS ONE LINE. Stacked — heading on its own
+ * line, then the row — the band has to hold one line more than the row does, and the band is only
+ * `BAND_UNITS` of the lane's `laneH`: measured, that asked for a 127–164 px pitch, a 254–328 px cell,
+ * and a page 67–165 px past its window. So there the row HANGS: it starts at the year's own top and
+ * runs beside it, indented by the year's measured width, and the year keeps its column to the left.
+ * Nothing is hidden and nothing is duplicated — the same two words and the same rows are drawn at
+ * every width, only placed — and the band then holds the row's own lines and no more. Where the cell
+ * is wide enough for the row on one line, the stacked layout (`widePx` below) comes back unchanged.
+ *
+ * The pitch is then derived, never typed: the row's line count at the narrowest plot, wrapped the way
+ * the browser wraps it, in every rung and both lanes, times the register's own line box, plus the
+ * gap to the ticks — scaled from the band to the whole lane. It is solved rather than read once,
+ * because the cell under a floor is wider than the cell at its ratio (at 375 px the ratio cell is
+ * height-bound at 264 px; the floor lifts that height and the cell takes the whole 327 px track), so
+ * the count is the smallest one that still holds in the cell its own floor draws.
+ */
+export function rowFloorFor({
+  direction,
+  ink,
+  measure,
+  stats,
+  lanes,
+  laneHeadings,
+}: {
+  direction: any;
+  ink: { ink: string; muted: string; accent: string };
+  measure: Measure;
+  stats: { lane: string; slug: string; text: string }[];
+  lanes: string[];
+  laneHeadings: Record<string, string>;
+}) {
+  const regs = webRegisters(direction, { ink });
+  const annot = regs.annot as any;
+  const lead = labelBoxPx(stats[0].text, annot, measure, { chip: false }).h;
+  // The year is set in the annot register at the heading's weight; the row hangs past the wider one.
+  const indentPx = Math.ceil(
+    Math.max(...lanes.map((l) => labelBoxPx(laneHeadings[l], { ...annot, fontWeight: 700 }, measure, { chip: false }).w)) +
+      HANG_GAP_PX,
+  );
+  // Greedy, word by word, measuring each candidate LINE whole — what the browser does with
+  // `white-space: normal`, and what `labelBoxPx` asks for (a sum of words runs short).
+  const linesOf = (text: string, widthPx: number) => {
+    let lines = 0;
+    let line = "";
+    for (const word of text.split(" ")) {
+      const next = line ? `${line} ${word}` : word;
+      if (line && labelBoxPx(next, annot, measure, { chip: false }).w > widthPx) {
+        lines += 1;
+        line = word;
+      } else line = next;
+    }
+    return lines + (line ? 1 : 0);
+  };
+  const box = { width: FRAME.width, height: FRAME.height + FRAME.xAxisRowPx };
+  const cellAt = (floorCellPx: number) =>
+    cellWidthPx(NARROWEST_PLOT_PX, { frame: FRAME, box, gutterPx: 0, axisPx: FRAME.xAxisRowPx, floorCellPx });
+  const pxFor = (n: number) => Math.ceil(((n * lead + HEAD_GAP_PX) * FRAME.laneH) / BAND_UNITS);
+  const floorCell = (n: number) => cellAt(rowFloorCellPx({ px: pxFor(n), pitch: FRAME.laneH }, FRAME.height));
+  const worstAt = (cell: number) => Math.max(...stats.map((s) => linesOf(s.text, cell - indentPx)));
+  // The smallest line count that is still true once its own floor is drawn: a floor for n lines
+  // widens the cell, and the rows must wrap to at most n lines in THAT cell.
+  let lines = 1;
+  while (lines <= 3 && worstAt(floorCell(lines)) > lines) lines += 1;
+  const px = pxFor(lines);
+  if (lines > 2)
+    throw new Error(
+      `a statistics row hung beside its year runs to ${lines} lines at the narrowest plot; the lane's band was ` +
+        "measured for two, and a pitch for three is a plate with no room left for its dots",
+    );
+  return {
+    floor: {
+      rows: lanes.length,
+      pitch: FRAME.laneH,
+      px,
+      why:
+        `Each lane is headed by its year and a row of four statistics that runs to ${lines} lines at ` +
+        `the narrowest page, in a band that is ${BAND_UNITS} of the lane's ${FRAME.laneH} units; under ` +
+        "this pitch that row is printed over its year and into the lane's own ticks.",
+    },
+    lines,
+    lead,
+    indentPx,
+    cellPx: floorCell(lines),
+  };
+}
+
+export type RowFloor = ReturnType<typeof rowFloorFor>["floor"];
 
 export type StripMark = {
   key: string;
@@ -183,6 +299,7 @@ export function DirectedDotStripWeb({
   muted,
   grid,
   measure,
+  rowFloor,
 }: {
   rails: StripRail[];
   qualify: any;
@@ -203,8 +320,18 @@ export function DirectedDotStripWeb({
   muted: string;
   grid: string;
   measure: (text: string, options: { fontSize: number; fontWeight?: number; fontFamily?: string; fontStyle?: string }) => number;
+  /** What the runner handed `renderWeb` as this page's row floor — refused unless it is the one this
+   *  component derives from the same direction and the same strings. */
+  rowFloor: RowFloor;
 }) {
   const regs = webRegisters(direction, { ink: { ink, muted, accent } });
+  const own = rowFloorFor({ direction, ink: { ink, muted, accent }, measure, stats, lanes, laneHeadings });
+  const ownFloor = own.floor;
+  if (!rowFloor || rowFloor.px !== ownFloor.px || rowFloor.pitch !== ownFloor.pitch || rowFloor.rows !== ownFloor.rows)
+    throw new Error(
+      `the row floor handed to this page (${JSON.stringify(rowFloor ?? null)}) is not the one its own ` +
+        `lanes need (${JSON.stringify(ownFloor)}) — a floor nobody derived is a scroll nobody can account for`,
+    );
 
   // THE FIELD, MEASURED AS THE READER RECEIVES IT. A dot is painted at DOT_ALPHA, so the colour that
   // reaches the eye is the fill composited onto the ground — a different colour from the fill, and
@@ -314,9 +441,15 @@ export function DirectedDotStripWeb({
    * and only while the row is still one line. Both numbers are measured here from the direction's
    * own annot register and the real strings; the query asks the plot, which is a size container, for
    * both of its dimensions, because the cell is the smaller of the width it is given and the width
-   * its height allows. Below that the page keeps its previous placement — the 375 px state, where
-   * the cell is 264 px wide and a 52-unit band is 16 px for 38 px of type, is a frame-level
-   * limitation this row cannot solve by moving, and it stays on the guard's OWED list.
+   * its height allows.
+   *
+   * BELOW IT, THE ROW HANGS BESIDE ITS YEAR AND THE LANE DECLARES ITS PITCH. At 375 px the cell at
+   * its ratio was 264 px wide and the 52-unit band 16 px, for 38–54 px of type, and every rung printed
+   * its row over its year. Moving the row could not fix that and keying it under the plot cost a page
+   * that already filled its window 33 px it could not attribute to anything. So there the row starts
+   * at the year's top, indented past the year by `own.indentPx`, and the band is guaranteed by the row
+   * floor `rowFloorFor` derives — the one reason this page may scroll. Above `widePx` the query puts
+   * the row back under its year, full width.
    */
   const annotFamily = String(regs.annot.fontFamily).split(",")[0].replace(/"/g, "").trim();
   const annotLead = statStyle.fontSize * Number(regs.annot.lineHeight ?? 1.5);
@@ -336,10 +469,8 @@ export function DirectedDotStripWeb({
       ),
     ),
   );
-  const headGapPx = 2;
-  const bandUnits = FRAME.railDy - FRAME.jitter - 8 - FRAME.statTop;
   const widePx = Math.ceil(
-    Math.max(statPx + 8, (FRAME.width * (2 * annotLead + headGapPx)) / bandUnits),
+    Math.max(statPx + 8, (FRAME.width * (2 * annotLead + HEAD_GAP_PX)) / BAND_UNITS),
   );
   const wideHeightPx = Math.ceil((widePx * FRAME.height) / FRAME.width) + FRAME.xAxisRowPx;
   const qualifyOptions = qualifyOptionsForMarkup(qualify, QUALIFY_ID_PREFIX);
@@ -364,16 +495,20 @@ export function DirectedDotStripWeb({
     // THE SPAN BAR: the reading this control hands back, drawn as a length. Always rendered, which
     // is the shape a transition needs — `display` does not interpolate.
     `${SCOPE} [data-qualify-span] { position: absolute; height: 7px; border-radius: 4px; background: ${rule}; }`,
-    // The statistics row heading each rail. Its room is what `qualifyStatRow` returned, and its
-    // content is what the same call returned; there is no second number anywhere.
+    // The statistics row heading each rail. Its content is what `qualifyStatRow` returned; its room
+    // is the band the row floor (`rowFloorFor`) and the stacked query (`widePx`) derive from the same
+    // strings in the same register.
     // `white-space: normal` overrides `.note`'s own `nowrap`, which is right for a label at a mark
     // and wrong for a row that spans the plot: unwrapped, this row measured 634 px of document in a
     // 375 px window, which the format's own fit check reports as exactly that.
-    `${SCOPE} [data-stack-total] { position: absolute; left: 0; max-width: 100%; white-space: normal; }`,
+    `${SCOPE} [data-stack-total] { position: absolute; left: ${own.indentPx}px; max-width: calc(100% - ${own.indentPx}px); white-space: normal; }`,
     // One line under its heading, in pixels — see `widePx` above. `!important` because the narrow
     // placement is the inline `top`, which beats any generated rule; the plot is the size container.
+    // Below it the row hangs beside its year, from the year's own top (the inline `top`), and the
+    // floor holds the band its lines need.
     `@container (min-width: ${widePx}px) and (min-height: ${wideHeightPx}px) {`,
-    `  ${SCOPE} .chart-plot .overlay [data-stack-total] { top: calc(var(--head-top) + ${Number((annotLead + headGapPx).toFixed(2))}px) !important; }`,
+    `  ${SCOPE} .chart-plot .overlay [data-stack-total] { top: calc(var(--head-top) + ${Number((annotLead + HEAD_GAP_PX).toFixed(2))}px) !important; }`,
+    `  ${SCOPE} .chart-plot .overlay [data-stack-total] { left: 0; max-width: 100%; }`,
     `}`,
     // The answer is four readings long and the format's box is 220px wide, which put a five-line box
     // over the control the reader had just used on a sibling beat. Bare `#tooltip`: the element is
@@ -586,7 +721,7 @@ export function DirectedDotStripWeb({
                       ...regs.annot,
                       color: labelInk,
                       ["--head-top" as string]: `${pct(laneTop(i) + FRAME.statTop, FRAME.height)}%`,
-                      top: `${pct(laneTop(i) + FRAME.statTop + row.reserve, FRAME.height)}%`,
+                      top: `${pct(laneTop(i) + FRAME.statTop, FRAME.height)}%`,
                       background: "transparent",
                       padding: 0,
                     }}
