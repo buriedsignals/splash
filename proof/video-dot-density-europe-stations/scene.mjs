@@ -98,7 +98,8 @@ export function mapStateAt(props, frame) {
     const stepped = fuel === props.subjectFuel ? 1 : 1 - (1 - STEPPED_BACK) * scene.focus;
     const shown = scene.shown[fuel] * stepped;
     state[`fill${i}`] = shown * (1 - 0.45 * scene.weight);
-    state[`edge${i}`] = scene.weight > 0 ? shown : 0;
+    // The outline arrives with the growth it separates, never in one frame (`every-map-video-glides.test.ts`).
+    state[`edge${i}`] = shown * scene.weight;
   });
   return state;
 }
