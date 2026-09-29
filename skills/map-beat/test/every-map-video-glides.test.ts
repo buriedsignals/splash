@@ -1,5 +1,3 @@
-// LANE: heavy — it builds every proof beat on its measured map, whose plan digest holds only where the beat was
-// measured (the beats' own map-plan and frame tests are heavy for the same reason); ~17 s besides.
 /**
  * EVERY MAP VIDEO GLIDES — NO BOUND PAINT CUTS, DISCOVERED, NOT LISTED.
  *
@@ -11,6 +9,11 @@
  * `paintJumps`; a story beat, which builds its own directions, carries the scaffold's `smooth.test.ts` instead. A new
  * proof beat is held to it without writing a line. A jump no reader sees is the beat's to declare as `HIDDEN_CUTS` in its
  * `scene.mjs`, with the condition that proves it hidden (`when`) and why; a declaration that hides nothing fails.
+ *
+ * Each beat is built on its measured map, so the layers placed there (names, numbers, seats) are walked too — but
+ * with the measurement re-keyed to the plan this machine builds. A measured plan's digest holds only where the beat was
+ * measured (the plan carries face metrics, and CI's faces are not the owner's); the beat's own tests guard that
+ * staleness. What is walked here is how each bound paint MOVES, which the placement never decides.
  */
 import { describe, expect, it } from "bun:test";
 import { existsSync, readdirSync } from "node:fs";
@@ -39,12 +42,15 @@ const beatDirs = subdirs(join(ROOT, "proof"))
 
 const beats = await Promise.all(
   beatDirs.map(async (dir) => {
-    const { buildDirection, loadBeat } = await import(join(dir, "build.mjs"));
+    const { buildDirection, loadBeat, readMeasured } = await import(join(dir, "build.mjs"));
+    const { planDigestOf } = await import(join(dir, "measure.mjs"));
     const { mapStateAt, HIDDEN_CUTS } = await import(join(dir, "scene.mjs"));
     return {
       beat: relative(ROOT, dir).split("\\").join("/"),
       buildDirection,
       loadBeat,
+      readMeasured,
+      planDigestOf,
       mapStateAt,
       hidden: HIDDEN_CUTS ?? [],
     };
@@ -57,12 +63,15 @@ describe("every map video glides", () => {
     expect(beats.length).toBeGreaterThanOrEqual(8);
   });
 
-  for (const { beat, buildDirection, loadBeat, mapStateAt, hidden } of beats) {
+  for (const { beat, buildDirection, loadBeat, readMeasured, planDigestOf, mapStateAt, hidden } of beats) {
     let loaded: unknown;
     for (const id of DIRECTIONS)
       it(`${beat} (${id}) should move every bound paint with a ramp — nothing cuts in one frame`, () => {
         loaded ??= loadBeat();
-        const { props } = buildDirection(id, loaded);
+        const plan = buildDirection(id, loaded, { measured: null }).props.mapPlan;
+        const measured = readMeasured();
+        const rekeyed = { ...measured, planDigest: { ...measured.planDigest, [id]: planDigestOf(plan) } };
+        const { props } = buildDirection(id, loaded, { measured: rekeyed });
         const states = Array.from({ length: props.timing.total }, (_, f) =>
           mapStateAt(props, f),
         );
