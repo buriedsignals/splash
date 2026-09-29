@@ -3,6 +3,7 @@
     "width": 1920,
     "height": 1080
   },
+  "band": null,
   "registers": {
     "display": {
       "fontFamily": "Merriweather",
@@ -701,7 +702,8 @@
       "subject": "#0f3772",
       "key": "#5f5e58",
       "source": "#5f5e58"
-    }
+    },
+    "band": null
   },
   "strokes": {
     "hairline": 1.7999999999999998,

@@ -3,6 +3,7 @@
     "width": 1920,
     "height": 1080
   },
+  "band": null,
   "registers": {
     "display": {
       "fontFamily": "Montserrat",
@@ -701,7 +702,8 @@
       "subject": "#91ebd8",
       "key": "#a7a6b9",
       "source": "#a7a6b9"
-    }
+    },
+    "band": null
   },
   "strokes": {
     "hairline": 1.5158399999999999,
