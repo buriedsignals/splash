@@ -28,6 +28,7 @@ describe("a beat that declares no floor is the page it was", () => {
     expect(explicitNull).toBe(without);
     expect(without).not.toContain("THE ROW FLOOR");
     expect(without).not.toContain("data-row-floor");
+    expect(without).not.toContain("atan2");
     expect(stampRowFloor(rowMarkup(), null)).toBe(rowMarkup());
     expect(() => rowPage()).not.toThrow();
   });
@@ -47,8 +48,19 @@ describe("rowFloorCss — the floor as CSS, scoped to the declaration", () => {
     expect(css).toContain(
       "--cell-h: min(var(--track-h), max(calc(var(--track-w) * 400 / 800), var(--row-floor-cell)));",
     );
-    // Comments aside: the note says "--cell-w is untouched" in words, and that is all it may say.
-    expect(css.replace(/\/\*[^]*?\*\//g, "")).not.toContain("--cell-w");
+    // Comments aside, --cell-w is never DECLARED here: the counter-scale below only reads it.
+    expect(css.replace(/\/\*[^]*?\*\//g, "")).not.toMatch(/--cell-w\s*:/);
+  });
+
+  it("counter-scales every circle and ellipse by what the floor added, at the viewBox's own ratio", () => {
+    // (cell-w / 800) / (cell-h / 400) as a number: 1 where the floor does not bind, < 1 where it does.
+    expect(css).toContain(
+      ".chart-figure[data-row-floor] svg.chart :is(circle, ellipse) {\n" +
+        "  transform-box: fill-box;\n" +
+        "  transform-origin: center;\n" +
+        "  transform: scale(1, round(nearest, tan(atan2(calc(var(--cell-w) * 400), calc(var(--cell-h) * 800))), 0.0001));\n" +
+        "}",
+    );
   });
 
   it("scopes every rule to the figure's data-row-floor, which is how verify-web takes it away", () => {
@@ -119,20 +131,40 @@ describe("assertRowFloor — the written page against the declaration", () => {
     expect(() =>
       assertRowFloor(html.replace("* 400 / 800), var(--row-floor-cell)", "* 500 / 800), var(--row-floor-cell)"), FLOOR),
     ).toThrow(/keep the viewBox's own ratio/);
+    expect(() => assertRowFloor(html.replace("calc(var(--cell-w) * 400)", "calc(var(--cell-w) * 500)"), FLOOR)).toThrow(
+      /counter-scale at the viewBox's own ratio \(400\/800\); the page carries 500\/800/,
+    );
+    expect(() => assertRowFloor(html.replace(/svg\.chart :is\(circle, ellipse\) \{[^}]*\}/, ""), FLOOR)).toThrow(
+      /the page carries no such rule/,
+    );
   });
 
-  it("refuses a floored plot that draws a shape the vertical stretch would distort", () => {
+  it("refuses a floored plot that draws a shape the counter-scale cannot keep, and accepts round marks of any size", () => {
     const withShape = (svgInner: string) =>
       page(stampRowFloor(rowMarkup(), FLOOR).replace("</svg>", `${svgInner}</svg>`), FLOOR);
     expect(() => assertRowFloor(withShape('<polygon points="0,0 10,0 5,8"/>'), FLOOR)).toThrow(/<polygon>/);
-    expect(() => assertRowFloor(withShape('<ellipse cx="1" cy="1" rx="2" ry="3"/>'), FLOOR)).toThrow(/<ellipse>/);
-    // A symbol wider than its row (r > pitch / 2) is a shape, not a position.
-    expect(() => assertRowFloor(withShape('<circle cx="50" cy="50" r="30" fill="#0b7a75"/>'), FLOOR)).toThrow(
-      /r=30 across rows 40 units apart/,
-    );
-    // A row marker, and an invisible hit target of any size, are not.
+    expect(() => assertRowFloor(withShape('<image href="x.png" width="4" height="4"/>'), FLOOR)).toThrow(/<image>/);
+    expect(() => assertRowFloor(withShape('<use href="#m"/>'), FLOOR)).toThrow(/<use>/);
+    // Round marks are counter-scaled, so neither a row marker nor a symbol spanning rows (r > pitch / 2)
+    // nor an ellipse is distorted any more — `row-floor-in-a-browser.test.ts` measures all three round.
     expect(() => assertRowFloor(withShape('<circle cx="50" cy="50" r="6" fill="#0b7a75"/>'), FLOOR)).not.toThrow();
+    expect(() => assertRowFloor(withShape('<circle cx="50" cy="50" r="30" fill="#0b7a75"/>'), FLOOR)).not.toThrow();
+    expect(() => assertRowFloor(withShape('<ellipse cx="1" cy="1" rx="2" ry="3"/>'), FLOOR)).not.toThrow();
     expect(() => assertRowFloor(withShape('<circle cx="50" cy="50" r="30" fill="transparent"/>'), FLOOR)).not.toThrow();
+    // …except one whose own transform the rule's would replace, or whose entrance owns the property.
+    expect(() =>
+      assertRowFloor(withShape('<circle transform="translate(4 0)" cx="50" cy="50" r="6" fill="#0b7a75"/>'), FLOOR),
+    ).toThrow(/<circle> round .* a transform of its own/);
+    expect(() =>
+      assertRowFloor(withShape('<ellipse data-entrance-motion="land" cx="1" cy="1" rx="2" ry="3"/>'), FLOOR),
+    ).toThrow(/<ellipse> round .* a data-entrance-motion of its own/);
+    expect(() =>
+      assertRowFloor(withShape('<circle style="transform:scale(2)" cx="50" cy="50" r="6" fill="#0b7a75"/>'), FLOOR),
+    ).toThrow(/an inline transform/);
+    // A transform-origin is not a transform; a group may carry either.
+    expect(() =>
+      assertRowFloor(withShape('<g transform="translate(4 0)"><circle style="transform-origin:0 0" cx="5" cy="5" r="6" fill="#0b7a75"/></g>'), FLOOR),
+    ).not.toThrow();
   });
 
   it("is run by renderWeb on every page it writes", () => {

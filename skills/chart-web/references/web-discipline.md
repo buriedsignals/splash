@@ -289,10 +289,29 @@ Four things it is not, each measured or named:
    it is not the floor's either.
 2. **It is not a stretch of shapes.** Under the floor the drawing is stretched vertically. Row
    positions, bar thicknesses and rules are LENGTHS and follow it (see "A LENGTH follows the stretch;
-   a SHAPE never does" below); a small marker confined to its own row is the old section's "5 px dot
-   reading as a 5×7 dot", a position that says nothing false. So `assertRowFloor` refuses a floored
-   plot that draws a polygon, an ellipse, an image or a `<use>`, or a visible circle wider than half a
-   row — a proxy, stated as one: an arrowhead drawn as a `<path>` is not caught.
+   a SHAPE never does" below). A round mark does not: it was first let through as the old section's
+   "5 px dot reading as a 5×7 dot", and measured at 375 × 812 it was worse than that example — the
+   dot strip's dots 4.46 × 8.88 px on `creme` (2.0 : 1), the dumbbell's heads 3.36 × 5.70 (1.7 : 1).
+   A dot's shape carries no data, so drawing it as an oval is a distortion nothing licenses. So the
+   floor now **counter-scales every `<circle>` and `<ellipse>` in the plot about its own centre**
+   (`rowFloorCss`): `transform-box: fill-box; transform-origin: center; transform: scale(1, k)`,
+   where `k = (cell-w / W) ÷ (cell-h / H)` is exactly what the floor added, read off the same
+   `--cell-w` / `--cell-h` the geometry is sized by. The centre follows the rows — it is a position —
+   and the outline is the one the unfloored cell draws at the same width. `k` is a ratio of two
+   lengths, written `tan(atan2(a, b))` rather than `calc(a / b)`: MDN's compatibility data
+   (`@mdn/browser-compat-data` 8.1.3) gives typed division Chrome 140 and Safari 26 and no Firefox,
+   and `atan2()`/`tan()` Chrome 111, Firefox 108 and Safari 15.4; both were verified in Chrome 154.
+   It is wrapped in `round(…, 0.0001)` (Chrome 125, Firefox 118, Safari 15.4), so where the floor
+   does not bind `k` is exactly 1 and the page is the page it was — measured on the three floored
+   beats, pixel-identical at 768, 1400 and 1600 px in all three directions. At 375 every dot and head
+   measures 1.000 : 1, centred to 0.0000 px where it was. A browser without these functions drops
+   the declaration and draws the oval the floor drew before, never something worse.
+   `assertRowFloor` still refuses what CSS cannot counter-scale without knowing what it means — a
+   polygon, an image or a `<use>` — and a circle or ellipse carrying a `transform` of its own (the
+   rule's would replace it), an inline one, or an entrance motion (whose keyframes own the same
+   property); put those on a group around the mark. It no longer refuses a circle wider than half a
+   row: it stays round at any size, so its size says what it said unfloored. The refusal is still a
+   proxy, stated as one: an arrowhead drawn as a `<path>` is not caught.
 3. **It is not a fix for a collision side by side.** It is vertical. Two labels on the SAME row that
    run into each other at a narrow width (a value label reaching the next column) are a placement
    question — a `@container` step, or a keyed note — whatever the pitch.

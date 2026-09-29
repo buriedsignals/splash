@@ -336,6 +336,17 @@ svg.chart { display: block; }
   min-height: max(120px, calc(var(--row-floor-cell) + var(--x-axis-h)));
   --cell-h: min(var(--track-h), max(calc(var(--track-w) * 300 / 880), var(--row-floor-cell)));
 }
+/* THE FLOOR KEEPS A ROUND MARK ROUND. Under the floor a viewBox unit is taller than it is wide, by
+   (cell-h / 300) / (cell-w / 880); every circle and ellipse is scaled back by the inverse of
+   that, vertically, about its own centre — so its centre follows the rows and its outline is the
+   one the unfloored cell would draw at this width. tan(atan2(a, b)) is a / b as a NUMBER, which
+   plain calc() will not give from two lengths in every engine; round() makes it exactly 1 where
+   the floor does not bind, so there the rule draws what the page drew without it. */
+.chart-figure[data-row-floor] svg.chart :is(circle, ellipse) {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(1, round(nearest, tan(atan2(calc(var(--cell-w) * 300), calc(var(--cell-h) * 880))), 0.0001));
+}
 /* THE FRAME'S BOTTOM MARGIN SURVIVES THE SCROLL. Under the floor the column is taller than the
    window-high figure and overflows it, and an overflow does not carry its parent's padding: the
    source line would end flush with the page. The same 24px as an item of the column is kept. */

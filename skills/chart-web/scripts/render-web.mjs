@@ -592,12 +592,16 @@ function assertFrameExtension(html, frame, name = "this beat") {
  *
  * WHAT IT COSTS, named. Under the floor the drawing is stretched vertically. Row positions, bar
  * thicknesses and rules are LENGTHS and follow the stretch honestly; a SHAPE never may
- * (`web-discipline.md`, "A LENGTH follows the stretch; a SHAPE never does"). So a floored page is
- * refused when its plot draws a polygon, an ellipse, an image or a `<use>`, or a visible circle
- * wider than half a row: a marker confined to its own row is a position, while a symbol spanning
- * rows is a shape whose size or outline says something. That is a proxy, stated as one — an
- * arrowhead drawn as a `<path>` is not caught, and the beat's own sentence must say its marks
- * survive the stretch.
+ * (`web-discipline.md`, "A LENGTH follows the stretch; a SHAPE never does"). So every `<circle>`
+ * and `<ellipse>` the floored plot draws is COUNTER-SCALED about its own centre by exactly what the
+ * floor added (`rowFloorCss`, "THE FLOOR KEEPS A ROUND MARK ROUND"): its centre follows the stretch,
+ * because a centre is a position, and its outline is the one the unfloored cell would draw at the
+ * same width. Measured at 375 px before this rule: the dot strip's dots 4.46 × 8.88 px on `creme`,
+ * the dumbbell's heads 3.36 × 5.70. What CSS cannot counter-scale without knowing what the shape
+ * means is refused: a polygon, an image or a `<use>`, and a circle or ellipse that carries a
+ * `transform` of its own (the rule's `transform` would replace it) or an entrance motion (whose
+ * keyframes own the same property). That is a proxy, stated as one — an arrowhead drawn as a
+ * `<path>` is not caught, and the beat's own sentence must say its marks survive the stretch.
  *
  * AND WHAT IT DOES NOT BUY. The floor is vertical. A label that collides with its own row's other
  * label side by side is not moved by a taller row; that is placement (`@container` steps, or
@@ -679,6 +683,17 @@ function rowFloorCss(rowFloor, plot, name = "this beat") {
   min-height: max(${PLOT_FLOOR_PX}px, calc(var(--row-floor-cell) + var(--x-axis-h)));
   --cell-h: min(var(--track-h), max(calc(var(--track-w) * ${height} / ${width}), var(--row-floor-cell)));
 }
+/* THE FLOOR KEEPS A ROUND MARK ROUND. Under the floor a viewBox unit is taller than it is wide, by
+   (cell-h / ${height}) / (cell-w / ${width}); every circle and ellipse is scaled back by the inverse of
+   that, vertically, about its own centre — so its centre follows the rows and its outline is the
+   one the unfloored cell would draw at this width. tan(atan2(a, b)) is a / b as a NUMBER, which
+   plain calc() will not give from two lengths in every engine; round() makes it exactly 1 where
+   the floor does not bind, so there the rule draws what the page drew without it. */
+.chart-figure[data-row-floor] svg.chart :is(circle, ellipse) {
+  transform-box: fill-box;
+  transform-origin: center;
+  transform: scale(1, round(nearest, tan(atan2(calc(var(--cell-w) * ${height}), calc(var(--cell-h) * ${width}))), 0.0001));
+}
 /* THE FRAME'S BOTTOM MARGIN SURVIVES THE SCROLL. Under the floor the column is taller than the
    window-high figure and overflows it, and an overflow does not carry its parent's padding: the
    source line would end flush with the page. The same 24px as an item of the column is kept. */
@@ -733,24 +748,32 @@ function assertRowFloor(html, rowFloor, name = "this beat") {
       `${name}: the row floor's --cell-h must keep the viewBox's own ratio (${height}/${width}) above ` +
         `its floor; the page carries ${override ? `${override[1]}/${override[2]}` : "no such rule"}.`,
     );
-  // THE SHAPES THE STRETCH WOULD DISTORT — read off the plot the page draws.
-  const svg = /<svg\b[^>]*\bclass="(?:[^"]*\s)?chart(?:\s[^"]*)?"[^>]*>([^]*?)<\/svg>/.exec(html)?.[1] ?? "";
-  const shape = /<(polygon|ellipse|image|use)\b/.exec(svg);
-  if (shape)
+  // THE ROUND MARKS' COUNTER-SCALE, at the same page's own ratio (see `rowFloorCss`).
+  const counter = /svg\.chart :is\(circle, ellipse\) \{\s*transform-box: fill-box;\s*transform-origin: center;\s*transform: scale\(1, round\(nearest, tan\(atan2\(calc\(var\(--cell-w\) \* ([\d.]+)\), calc\(var\(--cell-h\) \* ([\d.]+)\)\)\), 0\.0001\)\);/.exec(html);
+  if (!counter || Number(counter[1]) !== height || Number(counter[2]) !== width)
     throw new Error(
-      `${name}: a row floor stretches the plot vertically, and this plot draws a <${shape[1]}> — a ` +
-        `SHAPE, which never follows the stretch. Draw it in the HTML layer, or do not declare a floor.`,
+      `${name}: a floored plot's circles are kept round by a counter-scale at the viewBox's own ratio ` +
+        `(${height}/${width}); the page carries ${counter ? `${counter[1]}/${counter[2]}` : "no such rule"}.`,
     );
-  for (const circle of svg.matchAll(/<circle\b[^>]*>/g)) {
-    const fill = /\sfill="([^"]*)"/.exec(circle[0])?.[1];
-    if (fill === "transparent" || fill === "none") continue;
-    const r = Number(/\sr="([\d.]+)"/.exec(circle[0])?.[1] ?? 0);
-    if (r > floor.pitch / 2 + 1e-6)
+  // THE SHAPES THE STRETCH WOULD DISTORT and the counter-scale cannot keep — read off every plot the
+  // page draws (a beat may draw several <svg class="chart"> in the one cell).
+  for (const plot of html.matchAll(/<svg\b[^>]*\bclass="(?:[^"]*\s)?chart(?:\s[^"]*)?"[^>]*>([^]*?)<\/svg>/g)) {
+    const svg = plot[1];
+    const shape = /<(polygon|image|use)\b/.exec(svg);
+    if (shape)
       throw new Error(
-        `${name}: a row floor stretches the plot vertically, and this plot draws a visible circle of ` +
-          `r=${r} across rows ${floor.pitch} units apart — a symbol wider than its row is a shape, not a ` +
-          `position, and the stretch would make it an ellipse.`,
+        `${name}: a row floor stretches the plot vertically, and this plot draws a <${shape[1]}> — a ` +
+          `SHAPE, which never follows the stretch. Draw it in the HTML layer, or do not declare a floor.`,
       );
+    for (const round of svg.matchAll(/<(circle|ellipse)\b[^>]*>/g)) {
+      const own = /\s(transform|data-entrance-motion)="/.exec(round[0]) ?? /\sstyle="[^"]*\btransform\s*:/.exec(round[0]);
+      if (own)
+        throw new Error(
+          `${name}: a row floor keeps a <${round[1]}> round by setting its CSS transform, and this one carries ` +
+            `${own[1] ? `a ${own[1]} of its own` : "an inline transform"}, which that would replace or fight. ` +
+            `Position it with its own centre attributes, and put any motion on a group around it.`,
+        );
+    }
   }
 }
 

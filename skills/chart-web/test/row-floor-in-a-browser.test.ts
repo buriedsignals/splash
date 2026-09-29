@@ -1,7 +1,8 @@
 // THE ROW FLOOR, DRIVEN — the half `row-floor.test.ts` cannot hold by reading.
 //
 //   1. A declared floor grows the plot cell at 375 px and leaves it untouched at 1400 px — measured
-//      against the same page with no declaration, in Chrome.
+//      against the same page with no declaration, in Chrome — and keeps every circle and ellipse in
+//      it at the outline the unfloored cell draws (round at 375, the plain page's to the pixel at 1400).
 //   2. `verify-web.mjs`'s fit check, run on real files:
 //        - an UNDECLARED page taller than its window still fails "no vertical scroll";
 //        - a DECLARED page whose overflow is the floor's own passes it, with the reason printed;
@@ -83,6 +84,69 @@ describe("a declared row floor, in a real browser", () => {
     // 1400: the ratio already gives 645 px, far above the floor — the page is the page it was.
     expect(cells["floored@1400"]).toEqual(cells["plain@1400"]);
     expect(cells["plain@1400"].h).toBeGreaterThan(180);
+  });
+});
+
+describe("a floored plot keeps its round marks round, in a real browser", () => {
+  it("draws every circle and ellipse at the outline the unfloored cell draws, centred where the rows put it", async () => {
+    const plain = write("plain-rounds.html", rowPage({ rounds: true }));
+    const floored = write("floored-rounds.html", rowPage({ rowFloor: FLOOR, rounds: true }));
+    type Box = { w: number; h: number; cx: number; cy: number };
+    const shots: Record<string, { marks: Record<string, Box>; stretched: Record<string, Box>; cell: { w: number; h: number } }> = {};
+    const browser = await puppeteer.launch({ executablePath: resolveChrome(), args: ["--force-device-scale-factor=1"] });
+    try {
+      const page = await browser.newPage();
+      for (const [w, h] of [
+        [375, 812],
+        [1400, 900],
+      ])
+        for (const [name, file] of [
+          ["plain", plain],
+          ["floored", floored],
+        ] as const) {
+          await page.setViewport({ width: w, height: h, deviceScaleFactor: 1 });
+          await page.goto(`file://${file}`, { waitUntil: "load" });
+          shots[`${name}@${w}`] = await page.evaluate(() => {
+            const svg = document.querySelector("svg.chart")!;
+            const origin = svg.getBoundingClientRect();
+            const read = () =>
+              Object.fromEntries(
+                ["marker", "symbol", "ellipse"].map((id) => {
+                  const r = document.getElementById(id)!.getBoundingClientRect();
+                  const round = (v: number) => Math.round(v * 100) / 100;
+                  return [id, { w: round(r.width), h: round(r.height), cx: round(r.left - origin.left + r.width / 2), cy: round(r.top - origin.top + r.height / 2) }];
+                }),
+              );
+            const marks = read();
+            // The same page with the counter-scale switched off: what the floor alone would draw.
+            for (const id of ["marker", "symbol", "ellipse"]) (document.getElementById(id) as unknown as SVGElement).style.transform = "none";
+            const stretched = read();
+            return { marks, stretched, cell: { w: origin.width, h: origin.height } };
+          });
+        }
+    } finally {
+      await browser.close();
+    }
+    const at375 = shots["floored@375"];
+    // The floor binds at 375 (267 × 180 for a 267 × 133.5 ratio), and without the counter-scale it
+    // draws the r=6 marker 4 × 5.4 px and the r=60 symbol 40 × 54 — out of round by the stretch, 1.35.
+    expect(at375.cell).toEqual({ w: 267, h: 180 });
+    expect(at375.stretched.marker.h / at375.stretched.marker.w).toBeGreaterThan(1.3);
+    expect(at375.stretched.symbol.h / at375.stretched.symbol.w).toBeGreaterThan(1.3);
+    // With it, both circles are round (to the hundredth of a pixel the browser reports) and the
+    // ellipse keeps its own 2:1 — each the outline the unfloored cell draws at the same width.
+    for (const id of ["marker", "symbol"]) expect(Math.abs(at375.marks[id].h / at375.marks[id].w - 1)).toBeLessThan(0.01);
+    expect(Math.abs(at375.marks.ellipse.w / at375.marks.ellipse.h - 2)).toBeLessThan(0.02);
+    for (const id of ["marker", "symbol", "ellipse"]) {
+      expect(at375.marks[id].w).toBeCloseTo(shots["plain@375"].marks[id].w, 1);
+      expect(at375.marks[id].h).toBeCloseTo(shots["plain@375"].marks[id].h, 1);
+      // …and centred exactly where the stretched rows put it: the position follows the floor.
+      expect(at375.marks[id].cx).toBeCloseTo(at375.stretched[id].cx, 2);
+      expect(at375.marks[id].cy).toBeCloseTo(at375.stretched[id].cy, 2);
+    }
+    // 1400: the floor does not bind, the counter is exactly 1, and every mark is the plain page's.
+    expect(shots["floored@1400"].marks).toEqual(shots["plain@1400"].marks);
+    expect(shots["floored@1400"].marks).toEqual(shots["floored@1400"].stretched);
   });
 });
 

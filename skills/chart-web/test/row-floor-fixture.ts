@@ -23,7 +23,9 @@ export const FLOOR = {
   why: "Every row carries its name and a value at 12px on a ground chip; under 18px a row prints them over the next.",
 };
 
-export function rowMarkup({ spacerPx = 0, circleR = 0 }: { spacerPx?: number; circleR?: number } = {}) {
+/** `rounds` draws round marks over the bars — a row marker (r=6), a symbol spanning rows (r=60) and an
+ *  ellipse — so the browser test can measure what the floor's counter-scale keeps round. */
+export function rowMarkup({ spacerPx = 0, circleR = 0, rounds = false }: { spacerPx?: number; circleR?: number; rounds?: boolean } = {}) {
   const rows = Array.from({ length: ROWS }, (_, i) => i);
   const { width: W, height: H } = PLOT;
   return `<figure class="chart-figure" style="--title-size:24px;--title-weight:700;--subtitle-size:14px;--source-size:13px;--axis-size:12px;--note-size:12px;--label-size:14px;--label-weight:600">
@@ -32,7 +34,11 @@ export function rowMarkup({ spacerPx = 0, circleR = 0 }: { spacerPx?: number; ci
 <div class="y-axis">${rows.map((i) => `<span class="axis-label y" style="top:${(((i + 0.5) * PITCH) / H) * 100}%">Row ${i}</span>`).join("")}</div>
 <svg class="chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${rows
     .map((i) => `<rect x="0" y="${i * PITCH + 10}" width="${200 + i * 50}" height="20" fill="#555555"/>`)
-    .join("")}${circleR ? `<circle cx="100" cy="100" r="${circleR}" fill="#0b7a75"/>` : ""}</svg>
+    .join("")}${circleR ? `<circle cx="100" cy="100" r="${circleR}" fill="#0b7a75"/>` : ""}${
+    rounds
+      ? `<circle id="marker" cx="300" cy="50" r="6" fill="#0b7a75"/><circle id="symbol" cx="600" cy="200" r="60" fill="#0b7a75" fill-opacity="0.5"/><ellipse id="ellipse" cx="450" cy="300" rx="30" ry="15" fill="#0b7a75"/>`
+      : ""
+  }</svg>
 <div class="overlay"></div>
 <div class="x-axis"><span class="axis-label x" style="left:0%">0</span><span class="axis-label x" style="left:100%">100</span></div>
 </div>
@@ -43,8 +49,8 @@ export function rowMarkup({ spacerPx = 0, circleR = 0 }: { spacerPx?: number; ci
 export const FURNITURE = { ground: "#ffffff", accent: "#0b7a75", ink: "#111111", muted: "#666666", grid: "#dddddd" };
 
 /** The whole page, through the same three guards `renderWeb` runs before it writes one. */
-export function rowPage({ spacerPx = 0, rowFloor = null as typeof FLOOR | null } = {}) {
-  const markup = stampRowFloor(rowMarkup({ spacerPx }), rowFloor);
+export function rowPage({ spacerPx = 0, rowFloor = null as typeof FLOOR | null, rounds = false } = {}) {
+  const markup = stampRowFloor(rowMarkup({ spacerPx, rounds }), rowFloor);
   const css = buildCss({ ...FURNITURE, plot: PLOT, rowFloor, fontStack: "Georgia, serif" });
   const html = webDocument({ lang: "en", title: "Row floor fixture", css, markup, script: "" });
   assertPlotCellIsItsViewBox(html);
