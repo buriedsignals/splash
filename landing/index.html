@@ -335,7 +335,7 @@
   /* Le chapô porte l'argument — le titre ne porte que l'appel. Centré et
      court, il tient sur deux lignes sous un titre de 204 px. */
   .herodek{margin:0;max-width:46ch;text-align:center;
-           font-size:clamp(13px,1.05vw,15px);line-height:1.5;opacity:.62}
+           font-size:clamp(15px,1.4vw,19px);line-height:1.5;opacity:.62}
   /* Les trois boutons, au centre, sous le titre. Ils étaient en bas à droite,
      où ils étaient les derniers lus ; ici ils sont dans la même colonne que la
      phrase qui les demande. */
@@ -366,17 +366,6 @@
   .heroacts .hinspire:hover{background:var(--table)}
   .heroacts .hdemo:hover{background:rgba(237,234,227,.12);
                          border-color:rgba(237,234,227,.6)}
-  /* La démo n'est pas encore en ligne : le bouton reste à sa place mais ne
-     s'ouvre pas, et la pastille le dit. Pour la rouvrir, retirer `disabled`
-     et la pastille — le dialog et son script plus bas sont intacts. */
-  .heroacts .hdemo:disabled{cursor:default;color:rgba(237,234,227,.5)}
-  .heroacts .hdemo:disabled:hover{transform:none;background:transparent;
-                                  border-color:rgba(237,234,227,.26)}
-  .hdemo .hsoon{position:absolute;left:50%;top:0;
-                transform:translate(-50%,-50%);white-space:nowrap;
-                padding:3px 7px;border:1px solid var(--amber);border-radius:999px;
-                background:var(--ink);color:var(--amber);font-family:var(--C);
-                font-size:8.5px;letter-spacing:.14em;line-height:1.2}
   /* Le dépôt n'est plus un bouton : la marque seule, sans filet, posée après
      l'appel. Elle ne demande rien — elle dit seulement où le code se trouve. */
   .heroacts .hghi{display:inline-flex;align-items:center;justify-content:center;
@@ -1297,11 +1286,15 @@
         font-family:var(--C);font-size:11.5px;font-weight:500;
         letter-spacing:.2em;text-transform:uppercase;opacity:.55}
   .deye i{width:7px;height:7px;background:var(--blue);flex:0 0 auto}
+  .dbeat{--dh:clamp(34px,6.2vw,92px)}
   .dbeat h2{margin:0;font-family:var(--D);font-weight:300;
             letter-spacing:-.028em;line-height:1.02;
-            font-size:clamp(34px,6.2vw,92px)}
-  .dbeat p{margin:0;align-self:end;margin-bottom:16vh;max-width:62ch;
-           font-size:clamp(13.5px,1.25vw,16px);line-height:1.6;opacity:.58}
+            font-size:var(--dh)}
+  /* La phrase se range juste sous son titre, dans la même case de grille :
+     une demi-hauteur de titre, un blanc, puis sa propre demi-hauteur. */
+  .dbeat p{margin:0;align-self:center;max-width:62ch;
+           transform:translateY(calc(var(--dh) * .51 + 22px + 50%));
+           font-size:clamp(16px,1.6vw,21px);line-height:1.5;opacity:.82}
   /* Le premier temps porte le chapeau : plus long, il remonte sous le titre
      au lieu de rester en pied, sinon il flotte à dix centimètres du bord. */
   .dbeat[data-b="0"] h2{font-size:clamp(30px,5vw,74px)}
@@ -2126,7 +2119,7 @@
        plus large. La bande est resserrée plutôt que d'être laissée au hasard
        de la mesure. */
     .herocore{gap:14px}
-    .herodek{font-size:12.5px;max-width:34ch}
+    .herodek{font-size:14.5px;max-width:34ch}
     .heroacts{gap:7px}
     .heroacts a,.heroacts button{padding:12px 14px;font-size:10px;letter-spacing:.1em}
     .hfund .imj{height:19px}
@@ -2198,14 +2191,14 @@
 
     /* ---- ce que fait Splash ------------------------------------------ */
     .dbeat>*{max-width:calc(100vw - 2 * var(--gut))}
-    .dbeat h2{font-size:clamp(34px,10vw,54px)}
+    .dbeat{--dh:clamp(34px,10vw,54px)}
     /* Le chapeau porte DEUX blocs dans la même case de grille, l'un centré et
        l'autre décalé vers le bas. Sur un cadre étroit le titre passe à deux
        lignes et le chapô à huit : les deux se rejoignaient au milieu et se
        marchaient dessus. Ils s'écartent, l'un vers le haut et l'autre vers le
        bas, autour du même centre. */
     .dbeat[data-b="0"] h2{font-size:clamp(28px,7.6vw,40px);transform:translateY(-9vh)}
-    .dbeat p{font-size:14px;margin-bottom:10vh}
+    .dbeat p{font-size:15.5px}
     .dbeat[data-b="0"] p{transform:translateY(14vh);font-size:13.5px}
     .dcount,.deye{margin-top:calc(var(--bar) + 3.4vh)}
     .deye{margin-top:calc(var(--bar) + 7vh);font-size:10px;letter-spacing:.16em}
@@ -2326,7 +2319,7 @@
     .card{padding:16px 18px}
     .card p{display:none}
 
-    .dbeat p{margin-bottom:5vh;font-size:13px}
+    .dbeat p{font-size:14px}
     .dbeat[data-b="0"] h2{transform:none}
     .dbeat[data-b="0"] p{display:none}
     .dcount,.deye{margin-top:calc(var(--bar) + 1vh)}
@@ -2400,7 +2393,7 @@
     header{font-size:10.5px}
     .okick{font-size:11px}
     /* le chapô du hero, et le texte des fiches d'outils : c'est de la lecture */
-    .herodek{font-size:13.5px}
+    .herodek{font-size:15px}
     .tv.tool p{font-size:13px;line-height:1.5}
     .oaside{font-size:12.5px}
   }
@@ -2508,7 +2501,9 @@
     <div class="heroacts rise" style="--d:.66s">
       <a class="hinstall" href="https://buriedsignals.com/join" target="_blank" rel="noopener">Install</a>
       <a class="hinspire" href="inspiration.html">Find inspiration</a>
-      <button class="hdemo" type="button" id="demo-open" disabled>Demo <span class="hsoon">Coming soon</span></button>
+      <!-- Demo button hidden until the demo video is ready.
+      <button class="hdemo" type="button" id="demo-open">Demo</button>
+      -->
       <a class="hghi" href="https://github.com/buriedsignals/splash" target="_blank" rel="noopener noreferrer" aria-label="Splash on GitHub"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .7a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2.02c-3.22.7-3.9-1.37-3.9-1.37-.52-1.34-1.28-1.7-1.28-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.57-.29-5.27-1.28-5.27-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.16 1.18a10.97 10.97 0 0 1 5.76 0c2.2-1.49 3.16-1.18 3.16-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.71 5.38-5.29 5.67.42.36.79 1.06.79 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .7Z"/></svg></a>
     </div>
   </div>
