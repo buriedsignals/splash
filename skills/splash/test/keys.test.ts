@@ -201,6 +201,18 @@ describe("probeCloudflare", () => {
     expect(capturedUrl).toContain("account-123");
   });
 
+  it("should probe the Pages projects endpoint, which a Pages-only token can read", async () => {
+    let capturedUrl = "";
+    const fetchFn = async (url) => {
+      capturedUrl = String(url);
+      return new Response("{}", { status: 200 });
+    };
+    await probeCloudflare("account-123", "token", fetchFn);
+    expect(capturedUrl).toBe(
+      "https://api.cloudflare.com/client/v4/accounts/account-123/pages/projects",
+    );
+  });
+
   it("should report not ok when the network throws", async () => {
     const fetchFn = async () => {
       throw new Error("ECONNREFUSED");

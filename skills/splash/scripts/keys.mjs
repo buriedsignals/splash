@@ -68,6 +68,8 @@ export async function probeDatawrapper(token, fetchFn) {
 export async function probeCloudflare(accountId, apiToken, fetchFn) {
   if (!accountId) return { ok: false, status: null, detail: "CLOUDFLARE_ACCOUNT_ID is not set" };
   if (!apiToken) return { ok: false, status: null, detail: "CLOUDFLARE_API_TOKEN is not set" };
-  const url = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}`;
+  // The Pages projects list needs exactly the Pages scope the hosted embed deploys with;
+  // the bare account endpoint needs Account Settings: Read and refuses a Pages-only token.
+  const url = `https://api.cloudflare.com/client/v4/accounts/${encodeURIComponent(accountId)}/pages/projects`;
   return probe(url, { headers: { Authorization: `Bearer ${apiToken}` } }, fetchFn, "Cloudflare");
 }
