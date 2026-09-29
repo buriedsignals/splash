@@ -158,6 +158,29 @@ export function readDirectionFromMarkdown(text, id = "(unnamed)") {
     };
   }
 
+  // THE DISPLAY'S PHONE STEP, WHERE A DIRECTION FILES ONE. It rides on the display register itself,
+  // so it travels wherever the register does — through `resolveDirectionFamilies`, through
+  // `composeDirections` (the TYPE axis supplies the registers), into a run's `DIRECTION.md` and back.
+  // Only the web format reads it (`render-web.mjs`, `phoneTitleCss`); `resolveRegister` builds a
+  // fresh object without it, so a still or a video frame cannot see it. It is a filed SIZE, read
+  // with the same cap-height meaning as the display's own, and it must sit between the body and the
+  // display it steps down from — a step that did not shrink, or shrank past the body, would not be
+  // the same voice at a smaller measure.
+  const phoneDisplay = field(text, "phoneDisplay");
+  if (phoneDisplay !== null) {
+    const display = registers.display;
+    const phone = number(phoneDisplay);
+    if (!display)
+      throw new Error(`direction ${id} files a phoneDisplay but no display register to step down`);
+    const floor = registers.body?.size ?? 0;
+    if (!(phone < display.size && phone > floor))
+      throw new Error(
+        `direction ${id} files phoneDisplay ${phoneDisplay}; it must be smaller than its display ` +
+          `(${display.size}) and larger than its body (${floor})`,
+      );
+    display.phone = phone;
+  }
+
   const leadingSource = field(text, "leadingSource");
   if (!LEADING_SOURCES.includes(leadingSource))
     throw new Error(

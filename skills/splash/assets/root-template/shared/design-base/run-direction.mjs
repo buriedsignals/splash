@@ -105,6 +105,10 @@ export function renderRunDirection(chosen) {
     `- headRule: ${chosen.headRule ? "true" : "false"}`,
     `- leadingSource: chosen`,
   ];
+  // The display's phone step rides on the register (`read-direction.mjs`) and is written back as the
+  // same line it was read from, so a run composed in a direction that files one keeps it.
+  if (chosen.registers?.display?.phone !== undefined)
+    lines.push(`- phoneDisplay: ${chosen.registers.display.phone}`);
   if (chosen.stroke)
     lines.push(
       `- stroke: ${Object.entries(chosen.stroke)

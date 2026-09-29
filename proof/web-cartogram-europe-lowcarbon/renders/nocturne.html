@@ -112,6 +112,14 @@ body {
   font-weight: var(--title-weight);
   color: var(--ink);
 }
+/* THE DIRECTION'S PHONE STEP (nocturne): its display at 22 rather than 32,
+   below 480px, same voice. See PHONE_STEP_BELOW_PX in render-web.mjs. */
+@media (max-width: 479px) {
+  .chart-title {
+    font-size: calc(var(--title-size, 32px) * 0.6875) !important;
+    letter-spacing: 0.10625em !important;
+  }
+}
 .chart-caveat, .chart-source {
   margin: 0;
   font-size: var(--subtitle-size);
@@ -870,7 +878,7 @@ svg.chart { display: block; }
 // keeps working in a CMS iframe or a sandboxed embed that restricts module scripts).
 //
 // `nearestIndex` is exported and pure — no DOM — so it is unit-tested directly
-// (`test/interaction.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
+// (`test/render-web.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
 // per `doctrine`'s own verification rule, an interactive format is verified by driving a real
 // browser, not by asserting against a DOM emulation nobody looked at
 // (`references/web-discipline.md`, "Verification").

@@ -249,20 +249,18 @@ const interaction = {
 };
 
 const title = `Les dix ont tous gagné des années de vie depuis ${FROM} — la ${most.name} +${fr(most.gain)}, les ${least.name} +${fr(least.gain)}`;
-// TWO LINES OF CAVEAT AND TWO OF READING, NOT FIVE AND THREE — the second time this page has paid
-// for its furniture in prose, for the reason the first did. On `nocturne` at 375 × 812 the display
-// register (32 px, uppercase, tracked 3,4 px) sets the title in eight lines and 312 px, and the page
-// overflowed its window by 62 px BEFORE the row floor added anything, so the fit check could not
-// attribute the scroll to the floor (`verify-web.mjs`, `rowFloorVerdict`). Measured with the floor
-// removed: 874 px → 801 px. The caveat keeps what it must disclose — the bar is the gap, so the axis
-// does not start at zero — and loses the gloss on it; the reading line keeps the order, the control
-// and both inputs. `creme` and `rapport` already fitted and only get shorter.
+// THE CAVEAT AND THE READING LINE IN FULL. They were cut to two lines each once (#78), because on
+// `nocturne` at 375 × 812 the display register set the title in eight lines and 312 px and the page
+// overflowed before the row floor added anything. That was the direction's display, not this beat's
+// words: `nocturne` now files a phone step (`phoneDisplay`, its record), the title sets in five lines
+// at that width, and the page fits with the words it was written with.
 const caveat =
-  `Espérance de vie à la naissance, ${FROM} et ${TO}. La barre EST l'écart : l'axe ne part donc ` +
-  `pas de zéro.`;
+  `Espérance de vie à la naissance, ${FROM} et ${TO}. La barre entre les deux têtes EST l'écart : ` +
+  `un haltère répond à « de combien se sont-ils éloignés », pas à « à quelle distance de zéro » — ` +
+  `l'axe est ajusté pour cette raison et ne part pas de zéro.`;
 const readingLine =
-  `Lecture : rangées par gain. Un pays choisi dresse ses niveaux ; survolez ou tabulez une ligne ` +
-  `pour son rang.`;
+  `Lecture : lignes rangées par gain. Choisissez un pays pour dresser ses deux niveaux sur la ` +
+  `plaque ; survolez ou tabulez une ligne pour son rang.`;
 const source = `Source : UN WPP via Our World in Data`;
 
 const textPerRegister = {

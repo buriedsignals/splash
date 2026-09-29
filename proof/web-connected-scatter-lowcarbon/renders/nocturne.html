@@ -120,6 +120,14 @@ body {
   font-weight: var(--title-weight);
   color: var(--ink);
 }
+/* THE DIRECTION'S PHONE STEP (nocturne): its display at 22 rather than 32,
+   below 480px, same voice. See PHONE_STEP_BELOW_PX in render-web.mjs. */
+@media (max-width: 479px) {
+  .chart-title {
+    font-size: calc(var(--title-size, 32px) * 0.6875) !important;
+    letter-spacing: 0.10625em !important;
+  }
+}
 .chart-caveat, .chart-source {
   margin: 0;
   font-size: var(--subtitle-size);

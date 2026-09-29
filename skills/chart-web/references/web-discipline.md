@@ -503,6 +503,18 @@ So the rule is now stated as the pattern it always meant:
    those IS the argument or its provenance, and a narrow window is not a reason to stop making it.
 4. **A capability query is not a rung either**, so the `@supports selector(:has(*))` block must not
    have a width query nested inside it dressing a second layout up as a feature test.
+5. **One type step, and only where a direction files it (2026-09-29, issue #85).** Type stays fixed
+   at every width, with one exception: a direction may file a phone size for its DISPLAY register
+   (`phoneDisplay` in its record), and `render-web.mjs` then emits one `@media (max-width: 479px)`
+   block setting `.chart-title`'s size to that ratio of the drawn one and its tracking at the same
+   proportion of the size — nothing else, no layout, no removal. `nocturne` is the one that does
+   (32 → 22 px): its uppercase, tracked title ran four to ten lines at 375 × 812 and 27 of the 40
+   committed pages were taller than the window. The record says why 22; `PHONE_STEP_BELOW_PX`
+   says why 480. A direction that files no step emits none of it, so `creme` and `rapport` pages
+   are byte for byte what they were. The declarations carry `!important` because every directed
+   component sets the display register as an inline style on the `<h2>`. On a MAP beat under
+   `nocturne` this makes a second width query beside the caveat's 1100 px one; both are
+   single-purpose and neither is a second layout.
 
 The three assertions ship with the mutations that redden them, listed in the test's own header,
 including the one that stays green on purpose.

@@ -236,6 +236,9 @@ async function renderWeb({ component, props, outDir, name, frame = null, drawing
     entrance: declaresEntrance,
     fontStack: stack,
     drawing,
+    // The run's direction, which every directed runner already hands its component. Read for one
+    // thing only — a display phone step, if the direction files one (`phoneTitleCss`).
+    direction: props.direction ?? null,
   });
   const page = (css) =>
     webDocument({ lang, title: props.title, css, markup, script: inlineScript });
@@ -890,6 +893,62 @@ const FIT_WINDOWS = [
 ];
 
 /**
+ * WHERE A PHONE ENDS, FOR THE ONE REGISTER A DIRECTION MAY STEP DOWN THERE.
+ *
+ * Every type size in this format is fixed at every width, and that stays the rule. The exception is
+ * a direction's DISPLAY, and only where the direction itself files a phone size (`phoneDisplay` in
+ * its record, read onto `registers.display.phone` by `read-direction.mjs`). `nocturne` is the one
+ * that does: at 32 px, uppercase and tracked 3.4 px, the corpus titles ran four to ten lines at
+ * 375 × 812 and 27 of the 40 committed pages were taller than the window (measured 2026-09-29, row
+ * floor removed). The record says why 22 px; this file says where the step applies.
+ *
+ * 480, MEASURED. With the filed 32 px title and an 812 px window, pages overflowed only under
+ * `nocturne` — `creme` and `rapport` fitting the same words — at every width from 375 to 470
+ * (the waterfall still 12 px over at 470) and at none of the chart pages from 480 up. So the step
+ * covers the widths where the filed register is the cause and stops before the tablet (768), which
+ * with 1024, 1512 and every wider window keeps the page it had, byte for byte in its geometry.
+ *
+ * WHY `!important`. Every directed component spreads its display register onto the `<h2>` as an
+ * inline style, and a stylesheet cannot overrule an inline declaration any other way. The two
+ * declarations below are the only ones the step makes, and a page whose direction files no step
+ * carries none of this — its stylesheet is byte for byte what it was.
+ */
+const PHONE_STEP_BELOW_PX = 480;
+
+/**
+ * The step, in CSS: the title's drawn size times the filed ratio, and the tracking as the same
+ * proportion of the size the filed register keeps (so the letter-spacing follows the smaller size
+ * exactly as `registerOf` scales it when a ladder face changes the size). The line height is the
+ * register's unitless multiplier already, and follows on its own.
+ *
+ * `--title-size` is the DRAWN, cap-height-resolved size `figureVars` puts on the figure, so the ratio
+ * lands on the face the page actually uses; the filed size is only its fallback. Empty when the
+ * direction files no step, or when there is no direction at all (the seed, a fixture).
+ */
+function phoneTitleCss(direction) {
+  const display = direction?.registers?.display;
+  if (display?.phone === undefined || display?.phone === null) return "";
+  const size = Number(display.size);
+  const ratio = Number(display.phone) / size;
+  if (!(ratio > 0 && ratio < 1))
+    throw new Error(
+      `direction ${direction?.id ?? "(unnamed)"} files a phone display of ${display.phone} against ` +
+        `a display of ${display.size}; a phone step steps DOWN`,
+    );
+  const exact = (n) => Number(n.toFixed(6));
+  const trackingEm = exact(Number(display.tracking ?? 0) / size);
+  return `/* THE DIRECTION'S PHONE STEP (${direction?.id ?? "this direction"}): its display at ${display.phone} rather than ${size},
+   below ${PHONE_STEP_BELOW_PX}px, same voice. See PHONE_STEP_BELOW_PX in render-web.mjs. */
+@media (max-width: ${PHONE_STEP_BELOW_PX - 1}px) {
+  .chart-title {
+    font-size: calc(var(--title-size, ${size}px) * ${exact(ratio)}) !important;
+    letter-spacing: ${trackingEm}em !important;
+  }
+}
+`;
+}
+
+/**
  * THE READINGS GO INTO THE DISCLOSURE THE PAGE ALREADY HAS.
  *
  * Every map beat ends with `<details class="mw-readings">` — the values behind the drawing, for a
@@ -1195,8 +1254,10 @@ function entranceCss() {
 `.trim();
 }
 
-function buildCss({ ground, accent, ink, muted, grid, plot, frame = null, rowFloor = null, filter = null, entrance = false, fontStack = "sans-serif", drawing = null }) {
+function buildCss({ ground, accent, ink, muted, grid, plot, frame = null, rowFloor = null, filter = null, entrance = false, fontStack = "sans-serif", drawing = null, direction = null }) {
   const { width: plotWidth, height: plotHeight } = assertPlotGeometry(plot);
+  // The display's phone step, only for a direction that files one. See `PHONE_STEP_BELOW_PX`.
+  const phoneTitle = phoneTitleCss(direction);
   // The beat's own answer to "may this frame open?", written into the page above the rule the
   // answer is about. Empty for a beat that has not been asked. See `frameNoteCss`.
   const frameNote = frameNoteCss(frame, plot, "this beat");
@@ -1284,7 +1345,7 @@ ${frameNote ? `${frameNote}\n` : ""}/* THE FLUID FILL — the redesign this file
   font-weight: var(--title-weight);
   color: var(--ink);
 }
-.chart-caveat, .chart-source {
+${phoneTitle}.chart-caveat, .chart-source {
   margin: 0;
   font-size: var(--subtitle-size);
   color: var(--muted);
@@ -1630,4 +1691,6 @@ export {
   stampRowFloor,
   assertRowFloor,
   rowFloorVerdict,
+  phoneTitleCss,
+  PHONE_STEP_BELOW_PX,
 };
