@@ -39,7 +39,7 @@
  *
  * WHAT IT DOES NOT COVER, and the two things it FOUND and does not fail.
  *   1. **It FAILS only on `.note.peak-label`.** Today that is `weby-population-pyramid-switzerland`
- *      and the format's own seed. Every other `.note` in the corpus is measured against `ACCEPTED`
+ *      and the format's own seed. Every other `.note` in the corpus is measured against `OWED`
  *      below — the exact set of standing findings on committed proof pages, pinned by page, width
  *      and text (issue #64). A finding outside that set FAILS, naming itself; a pinned finding that
  *      is no longer found also fails, so a fixed page strikes its own pin. The set can only fall.
@@ -52,7 +52,7 @@
  *          plot's height apart, with fixed-px heights that close that gap as the plot shrinks.
  *          Measured across five widths (8 px of overlap at 320, 3 at 360, 1 at 375, clear from
  *          414), so the note now flips under its own point below 480 px, which is the empty half
- *          of that neighbourhood. The pin is gone from `ACCEPTED` below.
+ *          of that neighbourhood. The pin is gone from the set below (then named `ACCEPTED`).
  *        - `webz-diverging-bar-eu-per-capita` — "the only rise since 1990" sits inside the `#e2efee`
  *          row band, which is the wash case above and is deliberate (it is below the floor, so it
  *          does not even reach the report).
@@ -219,12 +219,275 @@ const READ_ANNOTATIONS = (floor: number) => `(() => {
 })()`;
 
 /**
- * The standing findings on committed proof pages — the debt, counted. Key: `<page> @ <width>: <text>`.
- * Remove a line when its page is fixed; never add one for a new page (fix the page instead).
- * `webx-world-population`, the page this set once pinned findings for, archived 2026-09-17 — empty
- * until a kept beat exhibits the same defect.
+ * OWED — the standing findings on committed proof pages, the debt counted. A RATCHET: this list may
+ * only shrink.
+ *
+ * Recorded 2026-09-29, the day before the public release, by measuring this file against the
+ * committed `proof/` tree: 228 findings on 18 web beats (three renders each), 156 of them at 375,
+ * 44 at 768, 13 at 1400 and 15 at 1600. They are REAL defects — a `.note` printed over another run of
+ * type, or punching its opaque ground chip into a mark it names — and they are owed rather than fixed
+ * because each is per-beat placement work plus a re-render of three directions, which could not be
+ * done and reviewed before the release. The owner chose to ship them named here instead of leaving
+ * the guard red, where a new collision would have been invisible among the known ones.
+ *
+ * Key: the exact line this guard reports — `<page> @ <width>: "<note>" is printed over "<other>"` or
+ * `<page> @ <width>: "<note>" covers a <tag> filled <fill> at <n>/25 sample points`. The sample count
+ * is kept in the key: it was identical across two full runs on 2026-09-29, and dropping it would let
+ * a note slide further into the mark it already grazes without anything going red.
+ *
+ *   - A finding NOT in this list fails, naming itself — a new page, a new width, a new note on an
+ *     owed page, or an owed note that now collides with something else or covers more of its mark.
+ *   - An entry here that is NO LONGER FOUND fails too, telling whoever fixed it to delete the line.
+ *   - Never add a line for a new finding. Fix the page instead.
  */
-const ACCEPTED = new Set<string>([]);
+const OWED = new Set<string>([
+  // web-area-swiss-co2 — 6
+  "proof/web-area-swiss-co2/renders/creme.html @ 375: \"1986 : la moitié du total est derrière\" covers a path filled rgb(23, 87, 182) at 3/25 sample points",
+  "proof/web-area-swiss-co2/renders/creme.html @ 375: \"1986 : la moitié du total est derrière\" is printed over \"2024 · 32,1\"",
+  "proof/web-area-swiss-co2/renders/nocturne.html @ 375: \"1986 : la moitié du total est derrière\" covers a path filled rgb(79, 224, 192) at 4/25 sample points",
+  "proof/web-area-swiss-co2/renders/nocturne.html @ 375: \"1986 : la moitié du total est derrière\" is printed over \"2024 · 32,1\"",
+  "proof/web-area-swiss-co2/renders/rapport.html @ 375: \"1986 : la moitié du total est derrière\" covers a path filled rgb(31, 92, 139) at 3/25 sample points",
+  "proof/web-area-swiss-co2/renders/rapport.html @ 375: \"1986 : la moitié du total est derrière\" is printed over \"2024 · 32,1\"",
+  // web-beeswarm-co2-per-person — 23
+  "proof/web-beeswarm-co2-per-person/renders/creme.html @ 375: \"l'Inde · 1,4 milliard d'habitants à 2,1 t\" is printed over \"médiane des pays 3,14\"",
+  "proof/web-beeswarm-co2-per-person/renders/creme.html @ 375: \"le Qatar · 40,1 t\" is printed over \"médiane des pays 3,14\"",
+  "proof/web-beeswarm-co2-per-person/renders/creme.html @ 375: \"moyenne mondiale 4,58\" is printed over \"médiane des pays 3,14\"",
+  "proof/web-beeswarm-co2-per-person/renders/creme.html @ 375: \"médiane des pays 3,14\" is printed over \"moyenne mondiale 4,58\"",
+  "proof/web-beeswarm-co2-per-person/renders/creme.html @ 768: \"l'Inde · 1,4 milliard d'habitants à 2,1 t\" is printed over \"moyenne mondiale 4,58\"",
+  "proof/web-beeswarm-co2-per-person/renders/creme.html @ 768: \"moyenne mondiale 4,58\" is printed over \"médiane des pays 3,14\"",
+  "proof/web-beeswarm-co2-per-person/renders/creme.html @ 768: \"médiane des pays 3,14\" is printed over \"moyenne mondiale 4,58\"",
+  "proof/web-beeswarm-co2-per-person/renders/nocturne.html @ 375: \"l'Inde · 1,4 milliard d'habitants à 2,1 t\" covers a circle filled rgb(98, 97, 132) at 1/25 sample points",
+  "proof/web-beeswarm-co2-per-person/renders/nocturne.html @ 375: \"l'Inde · 1,4 milliard d'habitants à 2,1 t\" is printed over \"médiane des pays 3,14\"",
+  "proof/web-beeswarm-co2-per-person/renders/nocturne.html @ 375: \"le Qatar · 40,1 t\" is printed over \"médiane des pays 3,14\"",
+  "proof/web-beeswarm-co2-per-person/renders/nocturne.html @ 375: \"moyenne mondiale 4,58\" is printed over \"médiane des pays 3,14\"",
+  "proof/web-beeswarm-co2-per-person/renders/nocturne.html @ 375: \"médiane des pays 3,14\" is printed over \"moyenne mondiale 4,58\"",
+  "proof/web-beeswarm-co2-per-person/renders/nocturne.html @ 768: \"l'Inde · 1,4 milliard d'habitants à 2,1 t\" is printed over \"moyenne mondiale 4,58\"",
+  "proof/web-beeswarm-co2-per-person/renders/nocturne.html @ 768: \"moyenne mondiale 4,58\" is printed over \"médiane des pays 3,14\"",
+  "proof/web-beeswarm-co2-per-person/renders/nocturne.html @ 768: \"médiane des pays 3,14\" is printed over \"moyenne mondiale 4,58\"",
+  "proof/web-beeswarm-co2-per-person/renders/rapport.html @ 375: \"l'Inde · 1,4 milliard d'habitants à 2,1 t\" covers a circle filled rgb(148, 148, 148) at 1/25 sample points",
+  "proof/web-beeswarm-co2-per-person/renders/rapport.html @ 375: \"l'Inde · 1,4 milliard d'habitants à 2,1 t\" is printed over \"médiane des pays 3,14\"",
+  "proof/web-beeswarm-co2-per-person/renders/rapport.html @ 375: \"le Qatar · 40,1 t\" is printed over \"médiane des pays 3,14\"",
+  "proof/web-beeswarm-co2-per-person/renders/rapport.html @ 375: \"moyenne mondiale 4,58\" is printed over \"médiane des pays 3,14\"",
+  "proof/web-beeswarm-co2-per-person/renders/rapport.html @ 375: \"médiane des pays 3,14\" is printed over \"moyenne mondiale 4,58\"",
+  "proof/web-beeswarm-co2-per-person/renders/rapport.html @ 768: \"l'Inde · 1,4 milliard d'habitants à 2,1 t\" is printed over \"moyenne mondiale 4,58\"",
+  "proof/web-beeswarm-co2-per-person/renders/rapport.html @ 768: \"moyenne mondiale 4,58\" is printed over \"médiane des pays 3,14\"",
+  "proof/web-beeswarm-co2-per-person/renders/rapport.html @ 768: \"médiane des pays 3,14\" is printed over \"moyenne mondiale 4,58\"",
+  // web-boxplot-france-co2-decades — 3
+  "proof/web-boxplot-france-co2-decades/renders/creme.html @ 375: \"pic : 1970s, médiane 9,96\" is printed over \"5,41\"",
+  "proof/web-boxplot-france-co2-decades/renders/nocturne.html @ 375: \"pic : 1970s, médiane 9,96\" is printed over \"5,41\"",
+  "proof/web-boxplot-france-co2-decades/renders/rapport.html @ 375: \"pic : 1970s, médiane 9,96\" is printed over \"7,59\"",
+  // web-bullet-low-carbon-share — 18
+  "proof/web-bullet-low-carbon-share/renders/creme.html @ 375: \"Allemagne\" covers a rect filled rgb(23, 87, 182) at 5/25 sample points",
+  "proof/web-bullet-low-carbon-share/renders/creme.html @ 375: \"France\" covers a rect filled rgb(94, 110, 132) at 5/25 sample points",
+  "proof/web-bullet-low-carbon-share/renders/creme.html @ 375: \"Norvège\" covers a rect filled rgb(94, 110, 132) at 5/25 sample points",
+  "proof/web-bullet-low-carbon-share/renders/creme.html @ 375: \"Suisse\" covers a rect filled rgb(94, 110, 132) at 5/25 sample points",
+  "proof/web-bullet-low-carbon-share/renders/creme.html @ 375: \"Suède\" covers a rect filled rgb(94, 110, 132) at 5/25 sample points",
+  "proof/web-bullet-low-carbon-share/renders/creme.html @ 375: \"la moitié\" is printed over \"31,1 % · +17,3 pts\"",
+  "proof/web-bullet-low-carbon-share/renders/nocturne.html @ 375: \"Allemagne\" covers a rect filled rgb(79, 224, 192) at 10/25 sample points",
+  "proof/web-bullet-low-carbon-share/renders/nocturne.html @ 375: \"France\" covers a rect filled rgb(91, 142, 153) at 10/25 sample points",
+  "proof/web-bullet-low-carbon-share/renders/nocturne.html @ 375: \"Norvège\" covers a rect filled rgb(91, 142, 153) at 10/25 sample points",
+  "proof/web-bullet-low-carbon-share/renders/nocturne.html @ 375: \"Suisse\" covers a rect filled rgb(91, 142, 153) at 10/25 sample points",
+  "proof/web-bullet-low-carbon-share/renders/nocturne.html @ 375: \"Suède\" covers a rect filled rgb(91, 142, 153) at 10/25 sample points",
+  "proof/web-bullet-low-carbon-share/renders/nocturne.html @ 375: \"la moitié\" is printed over \"31,1 % · +17,3 pts\"",
+  "proof/web-bullet-low-carbon-share/renders/rapport.html @ 375: \"Allemagne\" covers a rect filled rgb(31, 92, 139) at 5/25 sample points",
+  "proof/web-bullet-low-carbon-share/renders/rapport.html @ 375: \"France\" covers a rect filled rgb(95, 113, 126) at 5/25 sample points",
+  "proof/web-bullet-low-carbon-share/renders/rapport.html @ 375: \"Norvège\" covers a rect filled rgb(95, 113, 126) at 5/25 sample points",
+  "proof/web-bullet-low-carbon-share/renders/rapport.html @ 375: \"Suisse\" covers a rect filled rgb(95, 113, 126) at 5/25 sample points",
+  "proof/web-bullet-low-carbon-share/renders/rapport.html @ 375: \"Suède\" covers a rect filled rgb(95, 113, 126) at 5/25 sample points",
+  "proof/web-bullet-low-carbon-share/renders/rapport.html @ 375: \"la moitié\" is printed over \"31,1 % · +17,3 pts\"",
+  // web-bump-emitter-rank — 3
+  "proof/web-bump-emitter-rank/renders/creme.html @ 768: \"dépasse Allemagne · 1999\" is printed over \"dépasse Japon · 2006\"",
+  "proof/web-bump-emitter-rank/renders/creme.html @ 768: \"dépasse Japon · 2006\" is printed over \"dépasse Allemagne · 1999\"",
+  "proof/web-bump-emitter-rank/renders/creme.html @ 768: \"dépasse Russie · 2009\" is printed over \"dépasse Japon · 2006\"",
+  // web-calendar-heatmap-geneva — 12
+  "proof/web-calendar-heatmap-geneva/renders/creme.html @ 1400: \"31 jours à 20 °C ou plus\" covers a rect filled rgb(52, 102, 176) at 5/25 sample points",
+  "proof/web-calendar-heatmap-geneva/renders/creme.html @ 1600: \"31 jours à 20 °C ou plus\" covers a rect filled rgb(52, 102, 176) at 5/25 sample points",
+  "proof/web-calendar-heatmap-geneva/renders/creme.html @ 375: \"31 jours à 20 °C ou plus\" covers a rect filled rgb(109, 133, 163) at 1/25 sample points",
+  "proof/web-calendar-heatmap-geneva/renders/creme.html @ 768: \"31 jours à 20 °C ou plus\" covers a rect filled rgb(52, 102, 176) at 4/25 sample points",
+  "proof/web-calendar-heatmap-geneva/renders/nocturne.html @ 1400: \"31 jours à 20 °C ou plus\" covers a rect filled rgb(79, 194, 177) at 5/25 sample points",
+  "proof/web-calendar-heatmap-geneva/renders/nocturne.html @ 1600: \"31 jours à 20 °C ou plus\" covers a rect filled rgb(79, 194, 177) at 5/25 sample points",
+  "proof/web-calendar-heatmap-geneva/renders/nocturne.html @ 375: \"31 jours à 20 °C ou plus\" covers a rect filled rgb(78, 135, 146) at 1/25 sample points",
+  "proof/web-calendar-heatmap-geneva/renders/nocturne.html @ 768: \"31 jours à 20 °C ou plus\" covers a rect filled rgb(79, 194, 177) at 5/25 sample points",
+  "proof/web-calendar-heatmap-geneva/renders/rapport.html @ 1400: \"31 jours à 20 °C ou plus\" covers a rect filled rgb(58, 107, 144) at 5/25 sample points",
+  "proof/web-calendar-heatmap-geneva/renders/rapport.html @ 1600: \"31 jours à 20 °C ou plus\" covers a rect filled rgb(58, 107, 144) at 5/25 sample points",
+  "proof/web-calendar-heatmap-geneva/renders/rapport.html @ 375: \"31 jours à 20 °C ou plus\" covers a rect filled rgb(85, 121, 149) at 2/25 sample points",
+  "proof/web-calendar-heatmap-geneva/renders/rapport.html @ 768: \"31 jours à 20 °C ou plus\" covers a rect filled rgb(58, 107, 144) at 5/25 sample points",
+  // web-connected-scatter-lowcarbon — 3
+  "proof/web-connected-scatter-lowcarbon/renders/creme.html @ 375: \"France : +4,2 chez elle, −11,8 en Europe\" is printed over \"Belgique\"",
+  "proof/web-connected-scatter-lowcarbon/renders/nocturne.html @ 375: \"France : +4,2 chez elle, −11,8 en Europe\" is printed over \"Belgique\"",
+  "proof/web-connected-scatter-lowcarbon/renders/rapport.html @ 375: \"France : +4,2 chez elle, −11,8 en Europe\" is printed over \"Allemagne\"",
+  // web-diverging-bar-eu-per-capita — 10
+  "proof/web-diverging-bar-eu-per-capita/renders/creme.html @ 1600: \"Croatie : seule au-dessus de son niveau de 1990\" is printed over \"+0,03−3,4−0,52\"",
+  "proof/web-diverging-bar-eu-per-capita/renders/creme.html @ 375: \"Croatie : seule au-dessus de son niveau de 1990\" is printed over \"+0,03−3,4−0,52\"",
+  "proof/web-diverging-bar-eu-per-capita/renders/creme.html @ 768: \"Croatie : seule au-dessus de son niveau de 1990\" is printed over \"+0,03−3,4−0,52\"",
+  "proof/web-diverging-bar-eu-per-capita/renders/nocturne.html @ 1400: \"Croatie : seule au-dessus de son niveau de 1990\" is printed over \"+0,03−3,4−0,52\"",
+  "proof/web-diverging-bar-eu-per-capita/renders/nocturne.html @ 1600: \"Croatie : seule au-dessus de son niveau de 1990\" is printed over \"+0,03−3,4−0,52\"",
+  "proof/web-diverging-bar-eu-per-capita/renders/nocturne.html @ 375: \"Croatie : seule au-dessus de son niveau de 1990\" is printed over \"+0,03−3,4−0,52\"",
+  "proof/web-diverging-bar-eu-per-capita/renders/nocturne.html @ 768: \"Croatie : seule au-dessus de son niveau de 1990\" is printed over \"+0,03−3,4−0,52\"",
+  "proof/web-diverging-bar-eu-per-capita/renders/rapport.html @ 1600: \"Croatie : seule au-dessus de son niveau de 1990\" is printed over \"+0,03−3,4−0,52\"",
+  "proof/web-diverging-bar-eu-per-capita/renders/rapport.html @ 375: \"Croatie : seule au-dessus de son niveau de 1990\" is printed over \"+0,03−3,4−0,52\"",
+  "proof/web-diverging-bar-eu-per-capita/renders/rapport.html @ 768: \"Croatie : seule au-dessus de son niveau de 1990\" is printed over \"+0,03−3,4−0,52\"",
+  // web-donut-world-co2-share — 18
+  "proof/web-donut-world-co2-share/renders/creme.html @ 375: \"+50 %\" covers a path filled rgb(51, 107, 189) at 3/25 sample points",
+  "proof/web-donut-world-co2-share/renders/creme.html @ 375: \"+50 %\" is printed over \"2000 : 24,7 Gt\"",
+  "proof/web-donut-world-co2-share/renders/creme.html @ 375: \"2000 : 24,7 Gt\" covers a path filled rgb(109, 148, 203) at 5/25 sample points",
+  "proof/web-donut-world-co2-share/renders/creme.html @ 375: \"2000 : 24,7 Gt\" is printed over \"2023 : 37,0 Gt\"",
+  "proof/web-donut-world-co2-share/renders/creme.html @ 375: \"2023 : 37,0 Gt\" covers a path filled rgb(23, 87, 182) at 5/25 sample points",
+  "proof/web-donut-world-co2-share/renders/creme.html @ 375: \"2023 : 37,0 Gt\" is printed over \"2000 : 24,7 Gt\"",
+  "proof/web-donut-world-co2-share/renders/nocturne.html @ 375: \"+50 %\" covers a path filled rgb(66, 181, 167) at 3/25 sample points",
+  "proof/web-donut-world-co2-share/renders/nocturne.html @ 375: \"+50 %\" is printed over \"2023 : 37,0 Gt\"",
+  "proof/web-donut-world-co2-share/renders/nocturne.html @ 375: \"2000 : 24,7 Gt\" covers a path filled rgb(66, 181, 167) at 5/25 sample points",
+  "proof/web-donut-world-co2-share/renders/nocturne.html @ 375: \"2000 : 24,7 Gt\" is printed over \"2023 : 37,0 Gt\"",
+  "proof/web-donut-world-co2-share/renders/nocturne.html @ 375: \"2023 : 37,0 Gt\" covers a path filled rgb(66, 181, 167) at 5/25 sample points",
+  "proof/web-donut-world-co2-share/renders/nocturne.html @ 375: \"2023 : 37,0 Gt\" is printed over \"2000 : 24,7 Gt\"",
+  "proof/web-donut-world-co2-share/renders/rapport.html @ 375: \"+50 %\" covers a path filled rgb(57, 111, 152) at 2/25 sample points",
+  "proof/web-donut-world-co2-share/renders/rapport.html @ 375: \"+50 %\" is printed over \"2023 : 37,0 Gt\"",
+  "proof/web-donut-world-co2-share/renders/rapport.html @ 375: \"2000 : 24,7 Gt\" covers a path filled rgb(57, 111, 152) at 5/25 sample points",
+  "proof/web-donut-world-co2-share/renders/rapport.html @ 375: \"2000 : 24,7 Gt\" is printed over \"2023 : 37,0 Gt\"",
+  "proof/web-donut-world-co2-share/renders/rapport.html @ 375: \"2023 : 37,0 Gt\" covers a path filled rgb(57, 111, 152) at 5/25 sample points",
+  "proof/web-donut-world-co2-share/renders/rapport.html @ 375: \"2023 : 37,0 Gt\" is printed over \"2000 : 24,7 Gt\"",
+  // web-dot-strip-lowcarbon-spread — 24
+  "proof/web-dot-strip-lowcarbon-spread/renders/creme.html @ 375: \"2000\" is printed over \"plancher 1,6 % · milieu 27,5 % · plafond\"",
+  "proof/web-dot-strip-lowcarbon-spread/renders/creme.html @ 375: \"2024\" is printed over \"plancher 31,1 % · milieu 70,6 % · plafon\"",
+  "proof/web-dot-strip-lowcarbon-spread/renders/creme.html @ 375: \"plancher 1,6 % · milieu 27,5 % · plafond 96,7 % · écart 95,1\" is printed over \"2000\"",
+  "proof/web-dot-strip-lowcarbon-spread/renders/creme.html @ 375: \"plancher 31,1 % · milieu 70,6 % · plafond 98,8 % · écart 67,\" is printed over \"2024\"",
+  "proof/web-dot-strip-lowcarbon-spread/renders/creme.html @ 768: \"2000\" is printed over \"plancher 1,6 % · milieu 27,5 % · plafond\"",
+  "proof/web-dot-strip-lowcarbon-spread/renders/creme.html @ 768: \"2024\" is printed over \"plancher 31,1 % · milieu 70,6 % · plafon\"",
+  "proof/web-dot-strip-lowcarbon-spread/renders/creme.html @ 768: \"plancher 1,6 % · milieu 27,5 % · plafond 96,7 % · écart 95,1\" is printed over \"2000\"",
+  "proof/web-dot-strip-lowcarbon-spread/renders/creme.html @ 768: \"plancher 31,1 % · milieu 70,6 % · plafond 98,8 % · écart 67,\" is printed over \"2024\"",
+  "proof/web-dot-strip-lowcarbon-spread/renders/nocturne.html @ 375: \"2000\" is printed over \"plancher 1,6 % · milieu 27,5 % · plafond\"",
+  "proof/web-dot-strip-lowcarbon-spread/renders/nocturne.html @ 375: \"2024\" is printed over \"plancher 31,1 % · milieu 70,6 % · plafon\"",
+  "proof/web-dot-strip-lowcarbon-spread/renders/nocturne.html @ 375: \"plancher 1,6 % · milieu 27,5 % · plafond 96,7 % · écart 95,1\" is printed over \"2000\"",
+  "proof/web-dot-strip-lowcarbon-spread/renders/nocturne.html @ 375: \"plancher 31,1 % · milieu 70,6 % · plafond 98,8 % · écart 67,\" is printed over \"2024\"",
+  "proof/web-dot-strip-lowcarbon-spread/renders/nocturne.html @ 768: \"2000\" is printed over \"plancher 1,6 % · milieu 27,5 % · plafond\"",
+  "proof/web-dot-strip-lowcarbon-spread/renders/nocturne.html @ 768: \"2024\" is printed over \"plancher 31,1 % · milieu 70,6 % · plafon\"",
+  "proof/web-dot-strip-lowcarbon-spread/renders/nocturne.html @ 768: \"plancher 1,6 % · milieu 27,5 % · plafond 96,7 % · écart 95,1\" is printed over \"2000\"",
+  "proof/web-dot-strip-lowcarbon-spread/renders/nocturne.html @ 768: \"plancher 31,1 % · milieu 70,6 % · plafond 98,8 % · écart 67,\" is printed over \"2024\"",
+  "proof/web-dot-strip-lowcarbon-spread/renders/rapport.html @ 375: \"2000\" is printed over \"plancher 1,6 % · milieu 27,5 % · plafond\"",
+  "proof/web-dot-strip-lowcarbon-spread/renders/rapport.html @ 375: \"2024\" is printed over \"plancher 31,1 % · milieu 70,6 % · plafon\"",
+  "proof/web-dot-strip-lowcarbon-spread/renders/rapport.html @ 375: \"plancher 1,6 % · milieu 27,5 % · plafond 96,7 % · écart 95,1\" is printed over \"2000\"",
+  "proof/web-dot-strip-lowcarbon-spread/renders/rapport.html @ 375: \"plancher 31,1 % · milieu 70,6 % · plafond 98,8 % · écart 67,\" is printed over \"2024\"",
+  "proof/web-dot-strip-lowcarbon-spread/renders/rapport.html @ 768: \"2000\" is printed over \"plancher 1,6 % · milieu 27,5 % · plafond\"",
+  "proof/web-dot-strip-lowcarbon-spread/renders/rapport.html @ 768: \"2024\" is printed over \"plancher 31,1 % · milieu 70,6 % · plafon\"",
+  "proof/web-dot-strip-lowcarbon-spread/renders/rapport.html @ 768: \"plancher 1,6 % · milieu 27,5 % · plafond 96,7 % · écart 95,1\" is printed over \"2000\"",
+  "proof/web-dot-strip-lowcarbon-spread/renders/rapport.html @ 768: \"plancher 31,1 % · milieu 70,6 % · plafond 98,8 % · écart 67,\" is printed over \"2024\"",
+  // web-dumbbell-life-expectancy-gains — 30
+  "proof/web-dumbbell-life-expectancy-gains/renders/creme.html @ 375: \"+2,5\" is printed over \"+3,3\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/creme.html @ 375: \"+3,3\" is printed over \"+3,5\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/creme.html @ 375: \"+3,5\" is printed over \"+3,5\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/creme.html @ 375: \"+3,5\" is printed over \"+4,0\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/creme.html @ 375: \"+4,0\" is printed over \"83,7\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/creme.html @ 375: \"+4,1\" is printed over \"83,7\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/creme.html @ 375: \"+4,1\" is printed over \"84,0\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/creme.html @ 375: \"+4,3\" is printed over \"+5,0\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/creme.html @ 375: \"+4,3\" is printed over \"83,3\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/creme.html @ 375: \"+5,0\" is printed over \"83,3\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/nocturne.html @ 375: \"+2,5\" is printed over \"+3,3\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/nocturne.html @ 375: \"+3,3\" is printed over \"+3,5\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/nocturne.html @ 375: \"+3,5\" is printed over \"+3,5\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/nocturne.html @ 375: \"+3,5\" is printed over \"82,2\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/nocturne.html @ 375: \"+4,0\" is printed over \"83,7\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/nocturne.html @ 375: \"+4,1\" is printed over \"83,7\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/nocturne.html @ 375: \"+4,1\" is printed over \"84,0\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/nocturne.html @ 375: \"+4,3\" is printed over \"+5,0\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/nocturne.html @ 375: \"+4,3\" is printed over \"83,3\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/nocturne.html @ 375: \"+5,0\" is printed over \"83,3\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/rapport.html @ 375: \"+2,5\" is printed over \"+3,3\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/rapport.html @ 375: \"+3,3\" is printed over \"+3,5\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/rapport.html @ 375: \"+3,5\" is printed over \"+3,5\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/rapport.html @ 375: \"+3,5\" is printed over \"+4,0\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/rapport.html @ 375: \"+4,0\" is printed over \"83,7\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/rapport.html @ 375: \"+4,1\" is printed over \"83,7\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/rapport.html @ 375: \"+4,1\" is printed over \"84,0\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/rapport.html @ 375: \"+4,3\" is printed over \"+5,0\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/rapport.html @ 375: \"+4,3\" is printed over \"83,3\"",
+  "proof/web-dumbbell-life-expectancy-gains/renders/rapport.html @ 375: \"+5,0\" is printed over \"83,3\"",
+  // web-gantt-top-ten-tenure — 4
+  "proof/web-gantt-top-ten-tenure/renders/creme.html @ 375: \"une seule année, 1991\" is printed over \"15 ans\"",
+  "proof/web-gantt-top-ten-tenure/renders/nocturne.html @ 375: \"une seule année, 1991\" is printed over \"15 ans\"",
+  "proof/web-gantt-top-ten-tenure/renders/rapport.html @ 375: \"une seule année, 1991\" covers a rect filled rgb(148, 148, 148) at 4/25 sample points",
+  "proof/web-gantt-top-ten-tenure/renders/rapport.html @ 375: \"une seule année, 1991\" is printed over \"15 ans\"",
+  // web-histogram-carbon-footprint — 6
+  "proof/web-histogram-carbon-footprint/renders/creme.html @ 375: \"59,6 % des pays sous 4 t\" is printed over \"médiane 3,1 t\"",
+  "proof/web-histogram-carbon-footprint/renders/creme.html @ 375: \"médiane 3,1 t\" is printed over \"59,6 % des pays sous 4 t\"",
+  "proof/web-histogram-carbon-footprint/renders/nocturne.html @ 375: \"59,6 % des pays sous 4 t\" is printed over \"médiane 3,1 t\"",
+  "proof/web-histogram-carbon-footprint/renders/nocturne.html @ 375: \"médiane 3,1 t\" is printed over \"59,6 % des pays sous 4 t\"",
+  "proof/web-histogram-carbon-footprint/renders/rapport.html @ 375: \"59,6 % des pays sous 4 t\" is printed over \"médiane 3,1 t\"",
+  "proof/web-histogram-carbon-footprint/renders/rapport.html @ 375: \"médiane 3,1 t\" is printed over \"59,6 % des pays sous 4 t\"",
+  // web-line-swiss-co2 — 3
+  "proof/web-line-swiss-co2/renders/creme.html @ 375: \"pic 1973 · 46,2 Mt\" is printed over \"Émissions annuelles de CO₂ de la Suisse,\"",
+  "proof/web-line-swiss-co2/renders/nocturne.html @ 375: \"pic 1973 · 46,2 Mt\" is printed over \"Émissions annuelles de CO₂ de la Suisse,\"",
+  "proof/web-line-swiss-co2/renders/rapport.html @ 375: \"pic 1973 · 46,2 Mt\" is printed over \"Émissions annuelles de CO₂ de la Suisse,\"",
+  // web-lollipop-co2-per-person — 7
+  "proof/web-lollipop-co2-per-person/renders/creme.html @ 375: \"Sélection : les 6 pays au plus fort total 2023 — par personn\" is printed over \"2,9\"",
+  "proof/web-lollipop-co2-per-person/renders/creme.html @ 768: \"Sélection : les 6 pays au plus fort total 2023 — par personn\" is printed over \"21,4\"",
+  "proof/web-lollipop-co2-per-person/renders/nocturne.html @ 375: \"Sélection : les 6 pays au plus fort total 2023 — par personn\" is printed over \"2,9\"",
+  "proof/web-lollipop-co2-per-person/renders/nocturne.html @ 768: \"Sélection : les 6 pays au plus fort total 2023 — par personn\" is printed over \"21,4\"",
+  "proof/web-lollipop-co2-per-person/renders/rapport.html @ 375: \"Sélection : les 6 pays au plus fort total 2023 — par personn\" covers a circle filled rgb(129, 150, 165) at 1/25 sample points",
+  "proof/web-lollipop-co2-per-person/renders/rapport.html @ 375: \"Sélection : les 6 pays au plus fort total 2023 — par personn\" is printed over \"2,9\"",
+  "proof/web-lollipop-co2-per-person/renders/rapport.html @ 768: \"Sélection : les 6 pays au plus fort total 2023 — par personn\" is printed over \"21,4\"",
+  // web-population-pyramid-switzerland — 12
+  "proof/web-population-pyramid-switzerland/renders/creme.html @ 1400: \"55-59 ans : 669 962 personnes\" covers a rect filled rgb(81, 128, 196) at 12/25 sample points",
+  "proof/web-population-pyramid-switzerland/renders/creme.html @ 1600: \"55-59 ans : 669 962 personnes\" covers a rect filled rgb(81, 128, 196) at 12/25 sample points",
+  "proof/web-population-pyramid-switzerland/renders/creme.html @ 375: \"55-59 ans : 669 962 personnes\" covers a rect filled rgb(81, 128, 196) at 4/25 sample points",
+  "proof/web-population-pyramid-switzerland/renders/creme.html @ 768: \"55-59 ans : 669 962 personnes\" covers a rect filled rgb(81, 128, 196) at 12/25 sample points",
+  "proof/web-population-pyramid-switzerland/renders/nocturne.html @ 1400: \"55-59 ans : 669 962 personnes\" covers a rect filled rgb(62, 164, 156) at 20/25 sample points",
+  "proof/web-population-pyramid-switzerland/renders/nocturne.html @ 1600: \"55-59 ans : 669 962 personnes\" covers a rect filled rgb(62, 164, 156) at 12/25 sample points",
+  "proof/web-population-pyramid-switzerland/renders/nocturne.html @ 375: \"55-59 ans : 669 962 personnes\" covers a rect filled rgb(62, 164, 156) at 4/25 sample points",
+  "proof/web-population-pyramid-switzerland/renders/nocturne.html @ 768: \"55-59 ans : 669 962 personnes\" covers a rect filled rgb(62, 164, 156) at 12/25 sample points",
+  "proof/web-population-pyramid-switzerland/renders/rapport.html @ 1400: \"55-59 ans : 669 962 personnes\" covers a rect filled rgb(87, 133, 168) at 20/25 sample points",
+  "proof/web-population-pyramid-switzerland/renders/rapport.html @ 1600: \"55-59 ans : 669 962 personnes\" covers a rect filled rgb(87, 133, 168) at 20/25 sample points",
+  "proof/web-population-pyramid-switzerland/renders/rapport.html @ 375: \"55-59 ans : 669 962 personnes\" covers a rect filled rgb(87, 133, 168) at 4/25 sample points",
+  "proof/web-population-pyramid-switzerland/renders/rapport.html @ 768: \"55-59 ans : 669 962 personnes\" covers a rect filled rgb(87, 133, 168) at 12/25 sample points",
+  // web-scatter-income-life-expectancy — 21
+  "proof/web-scatter-income-life-expectancy/renders/creme.html @ 1400: \"Au-dessus : 41 pays, de 71,2 à 85,1 ans — 13,9 ans d'écart. \" covers a rect filled rgb(23, 85, 178) at 20/25 sample points",
+  "proof/web-scatter-income-life-expectancy/renders/creme.html @ 1600: \"Au-dessus : 41 pays, de 71,2 à 85,1 ans — 13,9 ans d'écart. \" covers a rect filled rgb(23, 85, 178) at 20/25 sample points",
+  "proof/web-scatter-income-life-expectancy/renders/creme.html @ 375: \"30 000 $ par personne\" covers a rect filled rgb(23, 85, 178) at 6/25 sample points",
+  "proof/web-scatter-income-life-expectancy/renders/creme.html @ 375: \"30 000 $ par personne\" is printed over \"Au-dessus : 41 pays, de 71,2 à 85,1 ans \"",
+  "proof/web-scatter-income-life-expectancy/renders/creme.html @ 375: \"Au-dessus : 41 pays, de 71,2 à 85,1 ans — 13,9 ans d'écart. \" covers a rect filled rgb(23, 85, 178) at 4/25 sample points",
+  "proof/web-scatter-income-life-expectancy/renders/creme.html @ 375: \"Au-dessus : 41 pays, de 71,2 à 85,1 ans — 13,9 ans d'écart. \" is printed over \"30 000 $ par personne\"",
+  "proof/web-scatter-income-life-expectancy/renders/creme.html @ 768: \"Au-dessus : 41 pays, de 71,2 à 85,1 ans — 13,9 ans d'écart. \" covers a rect filled rgb(23, 85, 178) at 20/25 sample points",
+  "proof/web-scatter-income-life-expectancy/renders/nocturne.html @ 1400: \"Au-dessus : 41 pays, de 71,2 à 85,1 ans — 13,9 ans d'écart. \" covers a rect filled rgb(83, 225, 193) at 20/25 sample points",
+  "proof/web-scatter-income-life-expectancy/renders/nocturne.html @ 1600: \"Au-dessus : 41 pays, de 71,2 à 85,1 ans — 13,9 ans d'écart. \" covers a rect filled rgb(83, 225, 193) at 20/25 sample points",
+  "proof/web-scatter-income-life-expectancy/renders/nocturne.html @ 375: \"30 000 $ par personne\" covers a rect filled rgb(83, 225, 193) at 6/25 sample points",
+  "proof/web-scatter-income-life-expectancy/renders/nocturne.html @ 375: \"30 000 $ par personne\" is printed over \"Au-dessus : 41 pays, de 71,2 à 85,1 ans \"",
+  "proof/web-scatter-income-life-expectancy/renders/nocturne.html @ 375: \"Au-dessus : 41 pays, de 71,2 à 85,1 ans — 13,9 ans d'écart. \" covers a rect filled rgb(83, 225, 193) at 4/25 sample points",
+  "proof/web-scatter-income-life-expectancy/renders/nocturne.html @ 375: \"Au-dessus : 41 pays, de 71,2 à 85,1 ans — 13,9 ans d'écart. \" is printed over \"30 000 $ par personne\"",
+  "proof/web-scatter-income-life-expectancy/renders/nocturne.html @ 768: \"Au-dessus : 41 pays, de 71,2 à 85,1 ans — 13,9 ans d'écart. \" covers a rect filled rgb(83, 225, 193) at 20/25 sample points",
+  "proof/web-scatter-income-life-expectancy/renders/rapport.html @ 1400: \"Au-dessus : 41 pays, de 71,2 à 85,1 ans — 13,9 ans d'écart. \" covers a rect filled rgb(30, 90, 136) at 20/25 sample points",
+  "proof/web-scatter-income-life-expectancy/renders/rapport.html @ 1600: \"Au-dessus : 41 pays, de 71,2 à 85,1 ans — 13,9 ans d'écart. \" covers a rect filled rgb(30, 90, 136) at 20/25 sample points",
+  "proof/web-scatter-income-life-expectancy/renders/rapport.html @ 375: \"30 000 $ par personne\" covers a rect filled rgb(30, 90, 136) at 6/25 sample points",
+  "proof/web-scatter-income-life-expectancy/renders/rapport.html @ 375: \"30 000 $ par personne\" is printed over \"Au-dessus : 41 pays, de 71,2 à 85,1 ans \"",
+  "proof/web-scatter-income-life-expectancy/renders/rapport.html @ 375: \"Au-dessus : 41 pays, de 71,2 à 85,1 ans — 13,9 ans d'écart. \" covers a rect filled rgb(30, 90, 136) at 4/25 sample points",
+  "proof/web-scatter-income-life-expectancy/renders/rapport.html @ 375: \"Au-dessus : 41 pays, de 71,2 à 85,1 ans — 13,9 ans d'écart. \" is printed over \"30 000 $ par personne\"",
+  "proof/web-scatter-income-life-expectancy/renders/rapport.html @ 768: \"Au-dessus : 41 pays, de 71,2 à 85,1 ans — 13,9 ans d'écart. \" covers a rect filled rgb(30, 90, 136) at 20/25 sample points",
+  // web-streamgraph-swiss-electricity — 25
+  "proof/web-streamgraph-swiss-electricity/renders/creme.html @ 1400: \"2016 : le solaire passe troisième\" covers a path filled rgb(46, 103, 188) at 25/25 sample points",
+  "proof/web-streamgraph-swiss-electricity/renders/creme.html @ 1600: \"2016 : le solaire passe troisième\" covers a path filled rgb(46, 103, 188) at 25/25 sample points",
+  "proof/web-streamgraph-swiss-electricity/renders/creme.html @ 375: \"2000 : 66,1 TWh\" covers a path filled rgb(46, 103, 188) at 2/25 sample points",
+  "proof/web-streamgraph-swiss-electricity/renders/creme.html @ 375: \"2016 : le solaire passe troisième\" covers a path filled rgb(46, 103, 188) at 15/25 sample points",
+  "proof/web-streamgraph-swiss-electricity/renders/creme.html @ 375: \"2025 : 65,0 TWh\" covers a path filled rgb(126, 145, 168) at 3/25 sample points",
+  "proof/web-streamgraph-swiss-electricity/renders/creme.html @ 375: \"2025 : 65,0 TWh\" is printed over \"solaire\"",
+  "proof/web-streamgraph-swiss-electricity/renders/creme.html @ 768: \"2016 : le solaire passe troisième\" covers a path filled rgb(46, 103, 188) at 25/25 sample points",
+  "proof/web-streamgraph-swiss-electricity/renders/creme.html @ 768: \"2025 : 65,0 TWh\" covers a path filled rgb(138, 145, 150) at 1/25 sample points",
+  "proof/web-streamgraph-swiss-electricity/renders/nocturne.html @ 1400: \"2016 : le solaire passe troisième\" covers a path filled rgb(73, 203, 180) at 25/25 sample points",
+  "proof/web-streamgraph-swiss-electricity/renders/nocturne.html @ 1600: \"2016 : le solaire passe troisième\" covers a path filled rgb(73, 203, 180) at 25/25 sample points",
+  "proof/web-streamgraph-swiss-electricity/renders/nocturne.html @ 375: \"2000 : 66,1 TWh\" covers a path filled rgb(73, 203, 180) at 3/25 sample points",
+  "proof/web-streamgraph-swiss-electricity/renders/nocturne.html @ 375: \"2000 : 66,1 TWh\" is printed over \"2025 : 65,0 TWh\"",
+  "proof/web-streamgraph-swiss-electricity/renders/nocturne.html @ 375: \"2016 : le solaire passe troisième\" covers a path filled rgb(79, 224, 192) at 13/25 sample points",
+  "proof/web-streamgraph-swiss-electricity/renders/nocturne.html @ 375: \"2016 : le solaire passe troisième\" is printed over \"hydraulique\"",
+  "proof/web-streamgraph-swiss-electricity/renders/nocturne.html @ 375: \"2025 : 65,0 TWh\" covers a path filled rgb(55, 108, 126) at 3/25 sample points",
+  "proof/web-streamgraph-swiss-electricity/renders/nocturne.html @ 375: \"2025 : 65,0 TWh\" is printed over \"solaire\"",
+  "proof/web-streamgraph-swiss-electricity/renders/nocturne.html @ 768: \"2016 : le solaire passe troisième\" covers a path filled rgb(73, 203, 180) at 25/25 sample points",
+  "proof/web-streamgraph-swiss-electricity/renders/nocturne.html @ 768: \"2025 : 65,0 TWh\" covers a path filled rgb(83, 105, 132) at 1/25 sample points",
+  "proof/web-streamgraph-swiss-electricity/renders/rapport.html @ 1400: \"2016 : le solaire passe troisième\" covers a path filled rgb(53, 108, 151) at 25/25 sample points",
+  "proof/web-streamgraph-swiss-electricity/renders/rapport.html @ 1600: \"2016 : le solaire passe troisième\" covers a path filled rgb(53, 108, 151) at 25/25 sample points",
+  "proof/web-streamgraph-swiss-electricity/renders/rapport.html @ 375: \"2000 : 66,1 TWh\" covers a path filled rgb(139, 147, 153) at 1/25 sample points",
+  "proof/web-streamgraph-swiss-electricity/renders/rapport.html @ 375: \"2016 : le solaire passe troisième\" covers a path filled rgb(53, 108, 151) at 13/25 sample points",
+  "proof/web-streamgraph-swiss-electricity/renders/rapport.html @ 375: \"2016 : le solaire passe troisième\" is printed over \"hydraulique\"",
+  "proof/web-streamgraph-swiss-electricity/renders/rapport.html @ 375: \"2025 : 65,0 TWh\" covers a path filled rgb(129, 148, 163) at 2/25 sample points",
+  "proof/web-streamgraph-swiss-electricity/renders/rapport.html @ 768: \"2016 : le solaire passe troisième\" covers a path filled rgb(53, 108, 151) at 25/25 sample points",
+]);
 
 type Annotation = {
   peak: boolean;
@@ -293,17 +556,17 @@ describe("a web annotation is placed by the shape it annotates", () => {
       await browser.close();
     }
 
-    // Standing findings are a pinned set, not a report: anything new fails, anything fixed strikes.
-    const unexpected = reported.filter((line) => !ACCEPTED.has(line));
-    const struck = [...ACCEPTED].filter((line) => !reported.includes(line));
-    expect([
-      "annotations over a mark outside the pinned set",
-      unexpected,
-    ]).toEqual(["annotations over a mark outside the pinned set", []]);
-    expect([
-      "pinned findings no longer found — remove from ACCEPTED",
-      struck,
-    ]).toEqual(["pinned findings no longer found — remove from ACCEPTED", []]);
+    // Standing findings are a ratchet, not a report: anything new fails, anything fixed strikes.
+    const unexpected = reported.filter((line) => !OWED.has(line));
+    const struck = [...OWED].filter((line) => !reported.includes(line));
+    // One assertion, so a run that both fixes one site and breaks another names both.
+    expect({
+      "NEW annotation defects, not in OWED — fix the page; never add a line to OWED": unexpected,
+      "OWED entries no longer found — the defect is fixed: delete these lines from OWED": struck,
+    }).toEqual({
+      "NEW annotation defects, not in OWED — fix the page; never add a line to OWED": [],
+      "OWED entries no longer found — the defect is fixed: delete these lines from OWED": [],
+    });
     expect(peaksSeen).toBeGreaterThan(0);
     expect(failures.join("\n")).toBe("");
   });

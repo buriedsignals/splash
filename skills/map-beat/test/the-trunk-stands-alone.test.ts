@@ -45,14 +45,26 @@ function* walk(dir: string): Generator<string> {
   }
 }
 
-/** Every relative specifier a module imports, in any of the syntaxes this tree uses. */
-function relativeSpecifiers(src: string): string[] {
-  const out: string[] = [];
-  for (const m of src.matchAll(
-    /(?:from|import|require)\s*\(?\s*["'](\.[^"']*)["']/g,
-  ))
-    out.push(m[1]);
-  return out;
+/**
+ * Every relative specifier a module imports — static, dynamic, `require`, `export … from` — read
+ * by Bun's own parser rather than a regex over the text. The regex this replaced also matched an
+ * import written in a COMMENT: `shared/design-base/skill-import.mjs` (110a8c941) documents the
+ * `import { x } from "../../skills/<skill>/…"` line it rewrites, and that prose was reported as an
+ * escape although no loader ever resolves it. Over every file under `shared/` the two agreed on
+ * every real specifier; that comment was the only difference.
+ */
+function relativeSpecifiers(src: string, file: string): string[] {
+  const loader = file.endsWith(".tsx")
+    ? "tsx"
+    : /\.[mc]?ts$/.test(file)
+      ? "ts"
+      : file.endsWith(".jsx")
+        ? "jsx"
+        : "js";
+  return new Bun.Transpiler({ loader })
+    .scanImports(src)
+    .map((i) => i.path)
+    .filter((path) => path.startsWith("."));
 }
 
 describe("the trunk stands alone — nothing under shared/ imports out of shared/", () => {
@@ -63,7 +75,7 @@ describe("the trunk stands alone — nothing under shared/ imports out of shared
   it("should resolve every relative import inside shared/, and none outside it", () => {
     const escapes: string[] = [];
     for (const file of walk(SHARED)) {
-      for (const spec of relativeSpecifiers(readFileSync(file, "utf8"))) {
+      for (const spec of relativeSpecifiers(readFileSync(file, "utf8"), file)) {
         const target = resolve(dirname(file), spec);
         if (!target.startsWith(SHARED + "/"))
           escapes.push(

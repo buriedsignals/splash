@@ -53,11 +53,31 @@
  * `web-flow-map-ukraine-protection`, `web-hex-grid-europe-protection`, and one `.offered`-sliced,
  * `static-histogram-europe-solar-spread`) — all 5 carry the composed accent. 156 filed — 152 carry
  * their own filed accent; 4 do not, all video, all a chart family whose type draws its accent only
- * as a mixed ramp (`mix(accent, ink, …)` / `mix(accent, ground, …)`), never as a solid fill: the
- * ramp reaches the final exported frame in the static genre but not in the video genre's own
- * `-final-frame.png`. That is a small, real, video-specific finding, recorded (not fixed blind) in
- * `docs/splash/2026-09-17-palette-composition-not-wired-owed.md`, rewritten down from the wrong
- * 155-beat claim this file made before.
+ * as a mixed ramp (`mix(accent, ink, …)` / `mix(accent, ground, …)`), never as a solid fill. The
+ * SAME four types in the static genre do carry the pure filed accent (a legend swatch or a tracked
+ * element's stroke, beside the ramp), so the ramp alone does not explain it; what differs is the
+ * video genre's own `renders/creme-final-frame.png`, whose most frequent chromatic pixels sit tens
+ * of RGB units darker and greyer than the accent (`video-marimekko-electricity-mix` tops out at
+ * `#4F637F` / `#092145` against `#1757B6` — not an anti-aliasing gap). Why the exported final frame
+ * falls short is NOT diagnosed: one hypothesis, unverified, is that it is captured before the last
+ * interpolation settles, which would be those beats' own timing (`states.mjs` / `scene.mjs`), not
+ * palette composition. This replaces a wrong 155-beat claim this file made before.
+ *
+ * RE-MEASURED 2026-09-29, and a composed beat has joined them. `static-histogram-europe-solar-spread`
+ * no longer carries its composed accent (`#118448`, `composeDirection` of `creme` over its own
+ * `PALETTE.md` accent `#1B7F4B`). Its committed `renders/creme.png` is the `--filed` output:
+ * commit `cfd9ae652` (2026-09-23, the `--size` sweep) re-rendered it and added `nocturne.png` and
+ * `rapport.png` beside it, and only the `--filed` branch writes three directions under the filed
+ * labels. So `creme.png` now carries creme's own filed accent `#1757B6` (measured `#1755B3`), and
+ * `nocturne.svg` / `rapport.svg` carry `#4FE0C0` / `#1F5C8B`, the filed accents, not the composed
+ * `#4FE095` / `#1E8750`. The composed and filed branches of that runner write to the SAME file name
+ * (`offered[0].id` is `creme`, so `labelOf` gives `creme` either way); the file cannot tell which
+ * branch produced it, and this guard, which classifies the beat by its runner's source, asks it for
+ * the composed accent. The original `3a8fa27aa` render carried `#118448` and passed.
+ *
+ * THOSE FIVE ARE OWED (see `OWED` below): named, pinned to what they show today, and held to it —
+ * any other beat that loses its accent still fails, and an owed beat that regains it fails too
+ * until its entry is deleted.
  *
  * MUTATION-VERIFIED, 2026-09-17, both halves, in place, reverted with `git checkout`:
  *   - composed: `static-locator-zaporizhzhia`'s `PALETTE.md` accent changed `#0B7A5E` → `#7A2E8E`;
@@ -138,6 +158,82 @@ function isComposed(beat: string): boolean {
 
 const composedBeats = allBeats().filter(isComposed);
 const filedBeats = allBeats().filter((b) => !isComposed(b));
+
+// ── OWED — THE RATCHET ──────────────────────────────────────────────────────────────────────────
+//
+// Recorded 2026-09-29, the day before a public release. Each is a REAL defect in a committed demo
+// render under `proof/` that cannot be regenerated before that release (the header says what each
+// one is and why). Every entry is pinned to the population, direction and expected accent measured
+// that day, and to `found: false`:
+//
+//   - a beat NOT listed here fails exactly as before if its accent is missing — a new regression;
+//   - a listed beat whose committed render now DOES carry its accent fails too, with a message to
+//     delete its entry — the list cannot outlive its defects;
+//   - a listed beat that has changed population, direction or expected accent fails as well: the
+//     entry described a render that no longer exists, and a changed beat must be made to carry its
+//     accent, not re-listed.
+//
+// THIS LIST MAY ONLY SHRINK. Never add to it to turn a new failure green; fix the render.
+type Owed = {
+  population: "composed" | "filed";
+  direction: (typeof DIRECTION_IDS)[number];
+  expected: string;
+};
+const OWED: Record<string, Owed> = {
+  // Its committed `creme.png` is the `--filed` render (creme's own `#1757B6`), not the composed one.
+  "static-histogram-europe-solar-spread": {
+    population: "composed",
+    direction: "creme",
+    expected: "#118448",
+  },
+  // The four video final frames that carry creme's accent only as a darker, mixed ramp.
+  "video-calendar-heatmap-geneva": {
+    population: "filed",
+    direction: "creme",
+    expected: "#1757B6",
+  },
+  "video-hex-grid-europe-protection": {
+    population: "filed",
+    direction: "creme",
+    expected: "#1757B6",
+  },
+  "video-marimekko-electricity-mix": {
+    population: "filed",
+    direction: "creme",
+    expected: "#1757B6",
+  },
+  "video-proportional-symbol-europe-capacity": {
+    population: "filed",
+    direction: "creme",
+    expected: "#1757B6",
+  },
+};
+
+/** Holds one measured beat to the rule — or, if it is owed, to exactly the defect it was owed for. */
+function holdToLedger(
+  population: Owed["population"],
+  measured: { beat: string; direction: string; expected: string; found: boolean },
+): void {
+  const owed = OWED[measured.beat];
+  if (!owed) {
+    expect(measured).toEqual({ ...measured, found: true });
+    return;
+  }
+  expect(
+    { population, direction: measured.direction, expected: measured.expected },
+    `${measured.beat} is in OWED, but it is no longer the render that entry describes. A changed ` +
+      `beat must carry its accent; make it do so and delete its OWED entry — never re-point it.`,
+  ).toEqual({
+    population: owed.population,
+    direction: owed.direction,
+    expected: owed.expected,
+  });
+  expect(
+    measured.found,
+    `${measured.beat}: its committed ${measured.direction} render now carries ${measured.expected} — ` +
+      `the owed defect is fixed. Delete its entry from OWED in this file.`,
+  ).toBe(false);
+}
 
 /** The one filed direction record behind each id, read once and reused. */
 const directions = new Map(
@@ -275,6 +371,19 @@ describe("the recorded palette reaches the pixels, not just the source", () => {
   it("finds a non-empty population of filed-direction beats", () => {
     expect(filedBeats.length).toBeGreaterThan(0);
   });
+  it("names, in OWED, only beats that exist in the population the entry states", () => {
+    const stale = Object.entries(OWED)
+      .filter(([beat, owed]) =>
+        !(owed.population === "composed" ? composedBeats : filedBeats).includes(
+          beat,
+        ),
+      )
+      .map(([beat, owed]) => `${beat} (${owed.population})`);
+    expect(
+      stale,
+      `OWED names beat(s) that are gone or have changed population — delete the entry: ${stale.join(", ")}`,
+    ).toEqual([]);
+  });
 
   for (const beat of composedBeats) {
     it(`${beat} (composed): its recorded accent is in the pixels of its own committed render`, async () => {
@@ -290,12 +399,7 @@ describe("the recorded palette reaches the pixels, not just the source", () => {
         palette,
       }).accent;
       const { direction, found } = await accentFound(beat, expected);
-      expect({ beat, direction, expected, found }).toEqual({
-        beat,
-        direction,
-        expected,
-        found: true,
-      });
+      holdToLedger("composed", { beat, direction, expected, found });
     });
   }
 
@@ -306,12 +410,7 @@ describe("the recorded palette reaches the pixels, not just the source", () => {
         throw new Error(`${beat} has no committed render under renders/`);
       const expected = directions.get(artifact.id)!.accent;
       const { direction, found } = await accentFound(beat, expected);
-      expect({ beat, direction, expected, found }).toEqual({
-        beat,
-        direction,
-        expected,
-        found: true,
-      });
+      holdToLedger("filed", { beat, direction, expected, found });
     });
   }
 });

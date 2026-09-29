@@ -33,8 +33,9 @@
  * `useVideoConfig` with stubs and leaves `interpolate`, `spring` and `Easing` real, the component
  * is server-rendered at a chosen frame with the beat's own committed props, and the assertions
  * read opacities off the resulting document. It walks every `proof/<beat>` folder holding a
- * capitalised `…Video.tsx`, and takes no list:
- * a thirty-eighth crossfade in a beat written next month is the failure it exists to prevent.
+ * capitalised `…Video.tsx`, and takes no list of beats to walk:
+ * a thirty-eighth crossfade in a beat written next month is the failure it exists to prevent. The
+ * one list it does hold, `OWED`, names defects already known on 2026-09-29 and may only shrink.
  *
  * WHAT IT CHECKS, exactly. Per beat: the frames of `reveal`, `subject` and `conclusion` (each
  * padded by one frame either side) plus frame 0, sampled at STEP. Every node's EFFECTIVE opacity
@@ -941,6 +942,198 @@ function handoverReason(group: Drawn[], ground: string | null): string | null {
   return null;
 }
 
+/**
+ * A geometry key a person can read and a list can hold: every decimal cut to one place, and a long
+ * path cut to its first stretch. Only used to NAME a site in `OWED`; pairing still uses the exact key.
+ */
+function siteGeometry(n: Drawn): string {
+  const key = (geometryKey(n) ?? n.tag).replace(/-?\d+\.\d+/g, (v) =>
+    Number(v).toFixed(1),
+  );
+  return key.length > 72 ? `${key.slice(0, 72)}…` : key;
+}
+
+/** How each member of a geometry group is inked, in document order — the other half of a site's name. */
+function siteInks(group: Drawn[]): string {
+  return group
+    .map((n) =>
+      [
+        paintsInterior(n) ? `fill ${n.attrs.fill}` : "",
+        paintsStroke(n)
+          ? `stroke ${n.attrs.stroke}/${n.attrs["stroke-width"] ?? "-"}`
+          : "",
+      ]
+        .filter(Boolean)
+        .join(" + "),
+    )
+    .join(" | ")
+    .replace(/-?\d+\.\d+/g, (v) => Number(v).toFixed(1));
+}
+
+/**
+ * One failing frame of one site. `id` is what frames of the same site share; `name` (defaulting to
+ * `id`) is how the site's FIRST frame names it in `OWED`; `line` is the full diagnosis printed.
+ */
+type Failure = { frame: number; id: string; name?: string; line: string };
+
+/** The first line of a thrown error, without the transpiled source Bun quotes after "(In '…')". */
+function throwName(error: unknown): string {
+  const message = error instanceof Error ? error.message : String(error);
+  return message.split("\n")[0].replace(/ \(In '.*$/, "");
+}
+
+// ---------------------------------------------------------------------------------------------
+// OWED — THE RATCHET. Today's known defects, by beat and by site, and nothing else.
+//
+// Recorded 2026-09-29, the day before a public release. These are REAL defects in committed
+// demo beats under `proof/` whose renders cannot be regenerated before that release; the owner
+// chose to ship them named rather than hide them behind a loosened rule. So this guard holds
+// three things at once:
+//
+//   - any site NOT listed here fails exactly as before — a new crossfade is a new regression;
+//   - any site listed here that is no longer found FAILS TOO, telling whoever fixed it to delete
+//     the entry — so the list cannot outlive its defects;
+//   - nothing about the rule itself moved: every beat is still walked, at every sampled frame,
+//     with the same tolerances.
+//
+// THIS LIST MAY ONLY SHRINK. Adding an entry to turn a new failure green is the exact move the
+// ratchet exists to forbid; fix the beat instead.
+//
+// A site is named `frame <first frame it appears>: <what>` — for a text pair, the baseline and
+// both strings ("under rising" names which one is arriving); for a shape pair, its geometry and
+// each member's ink; for a beat that cannot be rendered at all, `render throws: <error>`. Naming
+// the SITE rather than the beat is what keeps a known-bad beat honest: gaining a second crossfade
+// still fails. Two limits of that naming, stated rather than hidden: a text site is followed by
+// its two strings alone (so a label that slides while it fades stays one site), which means a
+// second crossfade of the SAME two strings elsewhere in an owed beat would be absorbed into the
+// first; and a shape site is followed by its exact geometry, so a mark that moved would read as
+// a fixed site plus a new one — red, never green. Sites used to be collapsed by stripping every
+// digit from the message, which merged distinct marks (the pyramid's twenty rects printed as six
+// "sites"); the counts below are per object, so they are larger than that older report's.
+//
+// Six beats are here for `render throws`, and that is a different defect from a crossfade: their
+// committed `renders/creme-props.json` no longer carry what their own component reads — checked
+// field by field: grouped-bar commits `baseline` where `GroupedBarFrame.tsx` reads `baselines`,
+// lollipop `zero` for `zeroLines`, choropleth names with `text` but no `lines`, beeswarm
+// `registers` without the `name` slot, parallel-coordinates `close`/`whole` without `vs`, and
+// connected-scatter `counterTexts.cleaner` entries that are one `{text, width}` where the
+// component maps over an array of words — so this guard
+// cannot draw them and checks NOTHING about their handovers until
+// they are re-rendered. When one is re-rendered its entry clears here — and any crossfade it
+// really has will then fail as new, which is correct.
+// ---------------------------------------------------------------------------------------------
+const OWED: Record<string, readonly string[]> = {
+  "video-area-swiss-co2": [
+    "frame 291: shape path:M195.4 899.8L195.4 897.3L205 896.4L214.7 894.7L224.3 892.7L234 892L…: fill #1755b2 | fill #4d5c6f | fill #1755b2",
+  ],
+  "video-bar-top-emitters-2024": [
+    'frame 122: text y≈117: "Monde" under rising "Chine"',
+  ],
+  "video-beeswarm-co2-per-person": [
+    "render throws: undefined is not an object (evaluating 'register.fontFamily')",
+  ],
+  "video-box-plot-france-co2-decades": [
+    "frame 342: shape rect:687.1|132.6|57.2|43.3@+0.0,0.0: fill #5f5e58 + stroke #5f5e58/3 | fill #1755b2 + stroke #1755b2/3",
+    "frame 342: shape line:687.1|136.1|744.3|136.1@+0.0,0.0: stroke #000000/6 | stroke #1755b2/6",
+    "frame 342: shape circle:647.6|235.8|6.1||@+0.0,0.0: stroke #5f5e58/3 | stroke #1755b2/3",
+    "frame 342: shape circle:647.6|168.8|6.1||@+0.0,0.0: stroke #5f5e58/3 | stroke #1755b2/3",
+    "frame 342: shape circle:647.6|131.4|6.1||@+0.0,0.0: stroke #5f5e58/3 | stroke #1755b2/3",
+    "frame 342: shape circle:647.6|83.6|6.1||@+0.0,0.0: stroke #5f5e58/3 | stroke #1755b2/3",
+    "frame 342: shape circle:647.6|132.5|6.1||@+0.0,0.0: stroke #5f5e58/3 | stroke #1755b2/3",
+    "frame 342: shape circle:647.6|225.8|6.1||@+0.0,0.0: stroke #5f5e58/3 | stroke #1755b2/3",
+    "frame 342: shape circle:647.6|136.8|6.1||@+0.0,0.0: stroke #5f5e58/3 | stroke #1755b2/3",
+    "frame 342: shape circle:647.6|178.3|6.1||@+0.0,0.0: stroke #5f5e58/3 | stroke #1755b2/3",
+    "frame 342: shape circle:647.6|135.4|6.1||@+0.0,0.0: stroke #5f5e58/3 | stroke #1755b2/3",
+    "frame 342: shape circle:647.6|133.0|6.1||@+0.0,0.0: stroke #5f5e58/3 | stroke #1755b2/3",
+    "frame 459: shape line:1719.1|817.0|1776.3|817.0@+0.0,0.0: stroke #000000/6 | stroke #1755b2/9",
+  ],
+  "video-bump-emitter-rank": [
+    'frame 131: text y≈106: "Ukraine" under rising "Inde · 7e"',
+    'frame 396: text y≈557: "Japon" under rising "5 Japon"',
+    'frame 396: text y≈737: "Iran" under rising "7 Iran"',
+    'frame 396: text y≈647: "Indonésie" under rising "6 Indonésie"',
+    'frame 397: text y≈288: "États-Unis" under rising "2 États-Unis"',
+    'frame 397: text y≈468: "Russie" under rising "4 Russie"',
+    'frame 397: text y≈198: "Chine" under rising "1 Chine"',
+    'frame 397: text y≈1007: "Allemagne" under rising "10 Allemagne"',
+    'frame 397: text y≈917: "Corée du Sud" under rising "9 Corée du Sud"',
+    'frame 397: text y≈827: "Arabie saoudite" under rising "8 Arabie saoudite"',
+  ],
+  "video-choropleth-europe-lowcarbon": [
+    "render throws: undefined is not an object (evaluating 'n.lines.map')",
+  ],
+  "video-connected-scatter-lowcarbon": [
+    "render throws: cleaner.map is not a function.",
+  ],
+  "video-diverging-bar-eu-per-capita": [
+    'frame 379: text y≈592: "−2,81" under rising "×200"',
+    'frame 494: text y≈828: "Estonie" under rising "−17,40"',
+    'frame 494: text y≈592: "×200" under rising "−2,81"',
+    'frame 495: text y≈887: "Luxembourg" under rising "−20,48"',
+  ],
+  "video-dumbbell-life-expectancy-gains": [
+    'frame 254: text y≈724: "Allemagne" under rising "Royaume-Uni"',
+    'frame 265: text y≈552: "Japon" under rising "Pays-Bas"',
+    "frame 290: shape line:417.5|168.0|937.6|168.0@+0.0,0.0: stroke #5d89c7/15.4 | stroke #1755b2/15.4",
+  ],
+  "video-gantt-top-ten-tenure": [
+    'frame 322: text y≈956: "2024" under rising "2024"',
+  ],
+  "video-grouped-bar-wind-vs-solar": [
+    "render throws: undefined is not an object (evaluating 'props.baselines.map')",
+  ],
+  "video-heatmap-europe-electricity": [
+    'frame 254: text y≈458: "7 pays" under rising "98,6 %"',
+  ],
+  "video-hex-grid-europe-protection": [
+    'frame 346: text y≈438: "Allemagne : 1,25 M, 1re" under rising "Allemagne : 14,8 pour 1 000, 11e"',
+    'frame 346: text y≈562: "Ukrainiens accueillis" under rising "pour 1 000 habitants"',
+    'frame 346: text y≈629: "30 k" under rising "5,0"',
+    'frame 346: text y≈629: "60 k" under rising "12,0"',
+    'frame 346: text y≈629: "150 k" under rising "18,0"',
+    'frame 346: text y≈629: "500 k" under rising "25,0"',
+  ],
+  "video-lollipop-co2-per-person": [
+    "render throws: undefined is not an object (evaluating 'props.zeroLines.map')",
+  ],
+  "video-marimekko-electricity-mix": [
+    "frame 0: the field is painted (6 non-text node(s))",
+  ],
+  "video-parallel-coordinates-electricity-mix": [
+    "render throws: undefined is not an object (evaluating 'd.vs[0]')",
+  ],
+  "video-population-pyramid-swiss-age": [
+    "frame 174: shape rect:1021.9|896.2|429.7|30.3@+0.0,0.0: fill #5f5e58 | fill #c7c5ba",
+    "frame 174: shape rect:1021.9|857.4|447.3|30.3@+0.0,0.0: fill #5f5e58 | fill #c7c5ba",
+    "frame 174: shape rect:1021.9|818.5|440.0|30.3@+0.0,0.0: fill #5f5e58 | fill #c7c5ba",
+    "frame 174: shape rect:1021.9|779.7|424.0|30.3@+0.0,0.0: fill #5f5e58 | fill #c7c5ba",
+    "frame 174: shape rect:1021.9|740.8|448.1|30.3@+0.0,0.0: fill #5f5e58 | fill #c7c5ba",
+    "frame 174: shape rect:1021.9|702.0|530.7|30.3@+0.0,0.0: fill #5f5e58 | fill #c7c5ba",
+    "frame 174: shape rect:1021.9|663.1|624.9|30.3@+0.0,0.0: fill #5f5e58 | fill #c7c5ba",
+    "frame 174: shape rect:1021.9|624.3|640.0|30.3@+0.0,0.0: fill #5f5e58 | fill #c7c5ba",
+    "frame 174: shape rect:1021.9|585.4|632.7|30.3@+0.0,0.0: fill #5f5e58 | fill #c7c5ba",
+    "frame 174: shape rect:1021.9|546.5|606.5|30.3@+0.0,0.0: fill #5f5e58 | fill #c7c5ba",
+    "frame 174: shape rect:1021.9|507.7|644.5|30.3@+0.0,0.0: fill #5f5e58 | fill #c7c5ba",
+    "frame 174: shape rect:1021.9|468.8|675.7|30.3@+0.0,0.0: fill #5f5e58 | fill #c7c5ba",
+    "frame 174: shape rect:1021.9|430.0|594.0|30.3@+0.0,0.0: fill #1755b2 | fill #c7c5ba",
+    "frame 174: shape rect:1021.9|352.3|388.1|30.3@+0.0,0.0: fill #1755b2 | fill #c7c5ba",
+    "frame 174: shape rect:1021.9|313.4|337.8|30.3@+0.0,0.0: fill #1755b2 | fill #c7c5ba",
+    "frame 174: shape rect:1021.9|274.6|224.6|30.3@+0.0,0.0: fill #1755b2 | fill #c7c5ba",
+    "frame 174: shape rect:1021.9|235.7|123.5|30.3@+0.0,0.0: fill #1755b2 | fill #c7c5ba",
+    "frame 174: shape rect:1021.9|196.9|47.1|30.3@+0.0,0.0: fill #1755b2 | fill #c7c5ba",
+    "frame 174: shape rect:1021.9|158.0|9.4|30.3@+0.0,0.0: fill #1755b2 | fill #c7c5ba",
+    "frame 174: shape rect:1021.9|119.1|0.8|30.3@+0.0,0.0: fill #1755b2 | fill #c7c5ba",
+  ],
+  "video-sankey-electricity-sources": [
+    'frame 289: text y≈655: "Nucléaire" under rising "Nucléaire"',
+    'frame 289: text y≈655: "455,1" under rising "455,1"',
+    'frame 289: text y≈227: "France" under rising "France"',
+    'frame 289: text y≈227: "561,8" under rising "561,8"',
+    "frame 289: shape rect:443.5|533.8|18|211.3@+0.0,0.0: fill #8794a2 | fill #1755b2",
+    "frame 289: shape rect:1487.5|81.1|18|260.8@+0.0,0.0: fill #5f5e58 | fill #1755b2",
+  ],
+};
+
 /** The key under which a text is followed from one frame to the next. */
 function textKey(n: Drawn): string {
   return `${n.text} ${n.attrs.fill ?? ""} ${n.attrs["text-anchor"] ?? ""} ${Math.round(n.y)}`;
@@ -1054,214 +1247,276 @@ describe("a handover between two drawings of one object is a cut, never a crossf
     expect(beats.length).toBeGreaterThanOrEqual(20);
   });
 
+  it("should name, in OWED, only beats this guard walks and only non-empty site lists", () => {
+    const walked = new Set(beats.map((b) => b.name));
+    const stale = Object.entries(OWED)
+      .filter(([name, sites]) => !walked.has(name) || sites.length === 0)
+      .map(([name]) => name);
+    expect(
+      stale,
+      `OWED names beat(s) this guard no longer walks, or with an empty list — delete the entry: ${stale.join(", ")}`,
+    ).toEqual([]);
+  });
+
   for (const beat of beats) {
     it(`should hand over with a cut in proof/${beat.name}`, async () => {
-      const timing = await loadTiming(beat.timingFiles);
-      const Component = await loadComponent(beat.componentFile);
-      const props = JSON.parse(readFileSync(beat.propsFile, "utf8"));
-      // The beat's OWN recorded ground, from its own committed props — the colour a casing is
-      // painted in. Read here rather than guessed off a background rect, because not every
-      // composition draws one.
-      const ground: string | null =
-        typeof props.ground === "string" ? props.ground.toLowerCase() : null;
-      CONFIG = {
-        fps: timing.fps,
-        width: props.width ?? 1080,
-        height: props.height ?? 1080,
-        durationInFrames: timing.total,
-      };
-
-      type Painted = { nodes: Drawn[]; width: number; height: number };
-      const rendered = new Map<number, Painted>();
-      const render = (frame: number): Painted => {
-        const cached = rendered.get(frame);
-        if (cached) return cached;
-        FRAME = frame;
-        // The metric is installed only around the render, and restored after, so no other file in
-        // this suite inherits a `document` it never asked for.
-        const hadDocument = "document" in globalThis;
-        const previous = (globalThis as any).document;
-        (globalThis as any).document = textMetricStub;
-        try {
-          const painted = drawnNodes(
-            renderToStaticMarkup(React.createElement(Component, props)),
-          );
-          rendered.set(frame, painted);
-          return painted;
-        } finally {
-          if (hadDocument) (globalThis as any).document = previous;
-          else delete (globalThis as any).document;
-        }
-      };
-
-      const failures: string[] = [];
-      const frames = framesToSample(timing);
-
-      // --- assertion 3: frame 0 is furniture only -------------------------------------------
-      const zero = render(0);
-      const atZero = zero.nodes;
-      const paintedField = atZero.filter(
-        (n) =>
-          n.tag !== "text" &&
-          n.opacity >= PAINTED &&
-          !hasNoArea(n) &&
-          !isGroundPlane(n, zero.width, zero.height),
-      );
-      if (paintedField.length > 0) {
-        const sample = paintedField
-          .slice(0, 3)
-          .map(
-            (n) =>
-              `<${n.tag} ${geometryKey(n) ?? n.attrs.src ?? ""}> at ${n.opacity.toFixed(3)}`,
-          );
-        failures.push(
-          `frame 0 paints ${paintedField.length} non-text node(s) — the field must be empty at 0:00 ` +
-            `and only the title and source drawn. e.g. ${sample.join("; ")}`,
-        );
-      }
-      const allText = atZero.filter((n) => n.tag === "text" && n.text);
-      const fullText = allText.filter((n) => n.opacity >= 0.98);
-      if (fullText.length < 2)
-        failures.push(
-          `frame 0 paints ${fullText.length} text node(s) at full opacity — the title and the ` +
-            `source must be legible on the poster frame, not gated on \`establish\``,
-        );
-      // "At least two texts" is met by a source credit that wraps onto two lines, so a poster
-      // frame carrying NO TITLE passed the count above. It was demonstrated: re-gating
-      // `ChoroplethVideo.tsx`'s `titleLines` on `furniture` — this guard's own third recorded
-      // proof — left it green, because the source line and its `OpenStreetMap` continuation are
-      // two texts. So the title is identified rather than counted, by the one property it has in
-      // every beat of this corpus: it is set in the LARGEST TYPE the frame-0 document carries.
-      // The gated node is still IN that document, at opacity 0 and at its own font size, so
-      // gating it is exactly what this sees.
-      const biggest = Math.max(0, ...allText.map((n) => n.fontSize));
-      const headline = allText.filter((n) => n.fontSize === biggest);
-      if (biggest > 0 && !headline.some((n) => n.opacity >= 0.98))
-        failures.push(
-          `frame 0 draws its largest type (${biggest}px, ${headline
-            .map((n) => `"${n.text}" at ${n.opacity.toFixed(3)}`)
-            .join(
-              "; ",
-            )}) below full opacity — the title is the poster frame's whole job and it ` +
-            `must not be gated on \`establish\`, whose progress at frame 0 is exactly 0`,
-        );
-
-      // --- assertions 1 and 2 ----------------------------------------------------------------
-      for (let i = 0; i < frames.length - 1; i++) {
-        const f = frames[i];
-        const g = frames[i + 1];
-        if (g !== f + 1) continue;
-        const frame = render(f);
-        const now = frame.nodes;
-        const next = render(g).nodes;
-
-        const nextByKey = new Map<string, number>();
-        for (const n of next)
-          if (n.tag === "text")
-            nextByKey.set(
-              textKey(n),
-              Math.max(nextByKey.get(textKey(n)) ?? 0, n.opacity),
-            );
-
-        const texts = now.filter(
-          (n) => n.tag === "text" && n.text && n.opacity >= PAINTED,
-        );
-        const sloped = texts.map((n) => ({
-          node: n,
-          slope: (nextByKey.get(textKey(n)) ?? 0) - n.opacity,
-        }));
-        for (let a = 0; a < sloped.length; a++)
-          for (let b = a + 1; b < sloped.length; b++) {
-            const A = sloped[a];
-            const B = sloped[b];
-            if (!sameBand(A.node, B.node)) continue;
-            // The rule is the SPEC's rule — two drawings of one screen object may not both be
-            // painted — not "one is falling while the other rises". Requiring a fall was a hole
-            // with a demonstration: mount both of the histogram's labels and HOLD the outgoing
-            // one at 1.0 instead of fading it, and an SSR probe at frame 170 prints
-            //     1.000  "65"
-            //     0.943  "65 countries, 75-80 years — the most of any span"
-            // — the owner's B6.4 at its own anchor, and the guard reported 26 pass / 0 fail.
-            // A held duplicate is a WORSE double exposure than a fading one, and it was the one
-            // shape the pair test could not see.
-            //
-            // What still has to be let through is a band whose texts move TOGETHER: a legend row
-            // fading up on one clock is not a handover. So the report is "one is rising while
-            // another painted text in its band is not rising with it".
-            const rising =
-              A.slope > SLOPE_EPSILON ? A : B.slope > SLOPE_EPSILON ? B : null;
-            if (!rising) continue;
-            const other = rising === A ? B : A;
-            if (other.slope > SLOPE_EPSILON) continue;
-            const verb =
-              other.slope < -SLOPE_EPSILON
-                ? `is falling (${other.node.opacity.toFixed(3)} → ${(other.node.opacity + other.slope).toFixed(3)})`
-                : `is HELD at ${other.node.opacity.toFixed(3)}`;
-            failures.push(
-              `frame ${f}: two texts are painted over each other on baseline y≈${Math.round(A.node.y)} — ` +
-                `"${other.node.text}" ${verb} while "${rising.node.text}" ` +
-                `is rising (${rising.node.opacity.toFixed(3)} → ` +
-                `${(rising.node.opacity + rising.slope).toFixed(3)}). Mount one or the other, ` +
-                `never both — \`{c > 0 ? <sentence/> : <short/>}\`.`,
-            );
-          }
-
-        const groupsNow = geometryGroups(now, frame.width, frame.height);
-        const groupsNext = geometryGroups(next, frame.width, frame.height).map(
-          signatureOf,
-        );
-        for (const group of groupsNow) {
-          const sig = signatureOf(group);
-          // Arriving as ONE — a stroke and its fill drawn as two nodes at the same opacity, or a
-          // pair fading up together. Not a handover; nothing composites to a colour nobody chose.
-          if (sig.spread <= PAINTED) continue;
-          // A settled pair — a casing under a line, drawn at a FIXED opacity ratio every frame —
-          // still reads as one object arriving once. `mapgen-flowmap-video:381-394` is the corpus's
-          // own example: a ground-coloured halo at 0.85 under an accent stroke, both permanent.
-          // What separates it from a handover is that its ratio does not move.
-          if (
-            groupsNext.some((other) => {
-              const held = new Set(other.entries);
-              return sig.entries.every((entry) => held.has(entry));
-            }) ||
-            groupsNext.some(
-              (other) =>
-                other.styles === sig.styles && other.shape === sig.shape,
-            )
-          )
-            continue;
-          const reason = handoverReason(group, ground);
-          if (!reason) continue;
-          failures.push(
-            `frame ${f}: ${group.length} nodes share the geometry ${(geometryKey(group[0]) ?? "").slice(0, 80)} ` +
-              `at moving opacities (${sig.vector.map((v) => v.toFixed(3)).join(", ")}) — ${reason}. ` +
-              `One object is drawn once: an outline and its fill are ONE node carrying both ` +
-              `\`stroke\` and \`fill\`, and a plain form handing over to an accented one is ONE ` +
-              `node whose \`fill\` switches.`,
-          );
-        }
+      const failures: Failure[] = [];
+      try {
+        await walkBeat(beat, failures);
+      } catch (error) {
+        failures.push({
+          frame: -1,
+          id: `render throws: ${throwName(error)}`,
+          line: `the beat cannot be drawn under this guard, so none of its handovers were checked — ${
+            error instanceof Error
+              ? (error.stack ?? error.message)
+              : String(error)
+          }`,
+        });
       }
 
       // One defect spans every frame of its handover window, so the raw list is dozens of lines
-      // saying the same thing. Collapse to DISTINCT sites — the message a person acts on names
-      // each site once, with the first frame it appears on and how many frames it lasts.
-      const sites = new Map<string, { first: string; frames: number }>();
-      for (const line of failures) {
-        const shape = line
-          .replace(/frame \d+/g, "frame N")
-          .replace(/[\d.]+/g, "#");
-        const seen = sites.get(shape);
+      // saying the same thing. Collapse to DISTINCT sites, each named by the first frame it
+      // appears on, with how many sampled frames it lasts.
+      const byId = new Map<string, { first: Failure; frames: number }>();
+      for (const failure of failures) {
+        const seen = byId.get(failure.id);
         if (seen) seen.frames += 1;
-        else sites.set(shape, { first: line, frames: 1 });
+        else byId.set(failure.id, { first: failure, frames: 1 });
       }
-      const distinct = [...sites.values()];
-      expect(
-        distinct.length,
-        `proof/${beat.name} hands over by crossfade — ${distinct.length} site(s):\n  ` +
-          distinct
-            .map((s) => `${s.first} [over ${s.frames} sampled frame(s)]`)
-            .join("\n  "),
-      ).toBe(0);
+      const sites = new Map(
+        [...byId.values()].map((s) => [
+          s.first.frame < 0
+            ? s.first.id
+            : `frame ${s.first.frame}: ${s.first.name ?? s.first.id}`,
+          s,
+        ]),
+      );
+
+      const owed = new Set(OWED[beat.name] ?? []);
+      const fresh = [...sites.entries()].filter(([key]) => !owed.has(key));
+      const cleared = [...owed].filter((key) => !sites.has(key));
+      const problems: string[] = [];
+      if (fresh.length > 0)
+        problems.push(
+          `proof/${beat.name} hands over by crossfade — ${fresh.length} site(s) NOT in OWED (a new defect; fix the beat, do not list it):\n  ` +
+            fresh
+              .map(
+                ([key, s]) =>
+                  `${key}\n      ${s.first.line} [over ${s.frames} sampled frame(s)]`,
+              )
+              .join("\n  "),
+        );
+      if (cleared.length > 0)
+        problems.push(
+          `proof/${beat.name}: ${cleared.length} OWED site(s) no longer found — they are fixed. ` +
+            `Delete these entries from OWED in this file:\n  ${cleared.join("\n  ")}`,
+        );
+      expect(problems.length, problems.join("\n\n")).toBe(0);
     }, 120_000);
   }
 });
+
+async function walkBeat(beat: Beat, failures: Failure[]): Promise<void> {
+  const timing = await loadTiming(beat.timingFiles);
+  const Component = await loadComponent(beat.componentFile);
+  const props = JSON.parse(readFileSync(beat.propsFile, "utf8"));
+  // The beat's OWN recorded ground, from its own committed props — the colour a casing is
+  // painted in. Read here rather than guessed off a background rect, because not every
+  // composition draws one.
+  const ground: string | null =
+    typeof props.ground === "string" ? props.ground.toLowerCase() : null;
+  CONFIG = {
+    fps: timing.fps,
+    width: props.width ?? 1080,
+    height: props.height ?? 1080,
+    durationInFrames: timing.total,
+  };
+
+  type Painted = { nodes: Drawn[]; width: number; height: number };
+  const rendered = new Map<number, Painted>();
+  const render = (frame: number): Painted => {
+    const cached = rendered.get(frame);
+    if (cached) return cached;
+    FRAME = frame;
+    // The metric is installed only around the render, and restored after, so no other file in
+    // this suite inherits a `document` it never asked for.
+    const hadDocument = "document" in globalThis;
+    const previous = (globalThis as any).document;
+    (globalThis as any).document = textMetricStub;
+    try {
+      const painted = drawnNodes(
+        renderToStaticMarkup(React.createElement(Component, props)),
+      );
+      rendered.set(frame, painted);
+      return painted;
+    } finally {
+      if (hadDocument) (globalThis as any).document = previous;
+      else delete (globalThis as any).document;
+    }
+  };
+
+  const frames = framesToSample(timing);
+
+  // --- assertion 3: frame 0 is furniture only -------------------------------------------
+  const zero = render(0);
+  const atZero = zero.nodes;
+  const paintedField = atZero.filter(
+    (n) =>
+      n.tag !== "text" &&
+      n.opacity >= PAINTED &&
+      !hasNoArea(n) &&
+      !isGroundPlane(n, zero.width, zero.height),
+  );
+  if (paintedField.length > 0) {
+    const sample = paintedField
+      .slice(0, 3)
+      .map(
+        (n) =>
+          `<${n.tag} ${geometryKey(n) ?? n.attrs.src ?? ""}> at ${n.opacity.toFixed(3)}`,
+      );
+    failures.push({
+      frame: 0,
+      id: `the field is painted (${paintedField.length} non-text node(s))`,
+      line:
+        `frame 0 paints ${paintedField.length} non-text node(s) — the field must be empty at 0:00 ` +
+        `and only the title and source drawn. e.g. ${sample.join("; ")}`,
+    });
+  }
+  const allText = atZero.filter((n) => n.tag === "text" && n.text);
+  const fullText = allText.filter((n) => n.opacity >= 0.98);
+  if (fullText.length < 2)
+    failures.push({
+      frame: 0,
+      id: `only ${fullText.length} text node(s) at full opacity`,
+      line:
+        `frame 0 paints ${fullText.length} text node(s) at full opacity — the title and the ` +
+        `source must be legible on the poster frame, not gated on \`establish\``,
+    });
+  // "At least two texts" is met by a source credit that wraps onto two lines, so a poster
+  // frame carrying NO TITLE passed the count above. It was demonstrated: re-gating
+  // `ChoroplethVideo.tsx`'s `titleLines` on `furniture` — this guard's own third recorded
+  // proof — left it green, because the source line and its `OpenStreetMap` continuation are
+  // two texts. So the title is identified rather than counted, by the one property it has in
+  // every beat of this corpus: it is set in the LARGEST TYPE the frame-0 document carries.
+  // The gated node is still IN that document, at opacity 0 and at its own font size, so
+  // gating it is exactly what this sees.
+  const biggest = Math.max(0, ...allText.map((n) => n.fontSize));
+  const headline = allText.filter((n) => n.fontSize === biggest);
+  if (biggest > 0 && !headline.some((n) => n.opacity >= 0.98))
+    failures.push({
+      frame: 0,
+      id: `the largest type (${biggest}px) is below full opacity`,
+      line:
+        `frame 0 draws its largest type (${biggest}px, ${headline
+          .map((n) => `"${n.text}" at ${n.opacity.toFixed(3)}`)
+          .join(
+            "; ",
+          )}) below full opacity — the title is the poster frame's whole job and it ` +
+        `must not be gated on \`establish\`, whose progress at frame 0 is exactly 0`,
+    });
+
+  // --- assertions 1 and 2 ----------------------------------------------------------------
+  for (let i = 0; i < frames.length - 1; i++) {
+    const f = frames[i];
+    const g = frames[i + 1];
+    if (g !== f + 1) continue;
+    const frame = render(f);
+    const now = frame.nodes;
+    const next = render(g).nodes;
+
+    const nextByKey = new Map<string, number>();
+    for (const n of next)
+      if (n.tag === "text")
+        nextByKey.set(
+          textKey(n),
+          Math.max(nextByKey.get(textKey(n)) ?? 0, n.opacity),
+        );
+
+    const texts = now.filter(
+      (n) => n.tag === "text" && n.text && n.opacity >= PAINTED,
+    );
+    const sloped = texts.map((n) => ({
+      node: n,
+      slope: (nextByKey.get(textKey(n)) ?? 0) - n.opacity,
+    }));
+    for (let a = 0; a < sloped.length; a++)
+      for (let b = a + 1; b < sloped.length; b++) {
+        const A = sloped[a];
+        const B = sloped[b];
+        if (!sameBand(A.node, B.node)) continue;
+        // The rule is the SPEC's rule — two drawings of one screen object may not both be
+        // painted — not "one is falling while the other rises". Requiring a fall was a hole
+        // with a demonstration: mount both of the histogram's labels and HOLD the outgoing
+        // one at 1.0 instead of fading it, and an SSR probe at frame 170 prints
+        //     1.000  "65"
+        //     0.943  "65 countries, 75-80 years — the most of any span"
+        // — the owner's B6.4 at its own anchor, and the guard reported 26 pass / 0 fail.
+        // A held duplicate is a WORSE double exposure than a fading one, and it was the one
+        // shape the pair test could not see.
+        //
+        // What still has to be let through is a band whose texts move TOGETHER: a legend row
+        // fading up on one clock is not a handover. So the report is "one is rising while
+        // another painted text in its band is not rising with it".
+        const rising =
+          A.slope > SLOPE_EPSILON ? A : B.slope > SLOPE_EPSILON ? B : null;
+        if (!rising) continue;
+        const other = rising === A ? B : A;
+        if (other.slope > SLOPE_EPSILON) continue;
+        const verb =
+          other.slope < -SLOPE_EPSILON
+            ? `is falling (${other.node.opacity.toFixed(3)} → ${(other.node.opacity + other.slope).toFixed(3)})`
+            : `is HELD at ${other.node.opacity.toFixed(3)}`;
+        failures.push({
+          frame: f,
+          // Followed by its two strings, not its baseline: a label that slides while it
+          // crossfades (the dumbbell's, the bump chart's) is ONE site over many frames.
+          id: `text: "${other.node.text}" under rising "${rising.node.text}"`,
+          name: `text y≈${Math.round(A.node.y)}: "${other.node.text}" under rising "${rising.node.text}"`,
+          line:
+            `frame ${f}: two texts are painted over each other on baseline y≈${Math.round(A.node.y)} — ` +
+            `"${other.node.text}" ${verb} while "${rising.node.text}" ` +
+            `is rising (${rising.node.opacity.toFixed(3)} → ` +
+            `${(rising.node.opacity + rising.slope).toFixed(3)}). Mount one or the other, ` +
+            `never both — \`{c > 0 ? <sentence/> : <short/>}\`.`,
+        });
+      }
+
+    const groupsNow = geometryGroups(now, frame.width, frame.height);
+    const groupsNext = geometryGroups(next, frame.width, frame.height).map(
+      signatureOf,
+    );
+    for (const group of groupsNow) {
+      const sig = signatureOf(group);
+      // Arriving as ONE — a stroke and its fill drawn as two nodes at the same opacity, or a
+      // pair fading up together. Not a handover; nothing composites to a colour nobody chose.
+      if (sig.spread <= PAINTED) continue;
+      // A settled pair — a casing under a line, drawn at a FIXED opacity ratio every frame —
+      // still reads as one object arriving once. `mapgen-flowmap-video:381-394` is the corpus's
+      // own example: a ground-coloured halo at 0.85 under an accent stroke, both permanent.
+      // What separates it from a handover is that its ratio does not move.
+      if (
+        groupsNext.some((other) => {
+          const held = new Set(other.entries);
+          return sig.entries.every((entry) => held.has(entry));
+        }) ||
+        groupsNext.some(
+          (other) => other.styles === sig.styles && other.shape === sig.shape,
+        )
+      )
+        continue;
+      const reason = handoverReason(group, ground);
+      if (!reason) continue;
+      failures.push({
+        frame: f,
+        id: `shape ${siteGeometry(group[0])}: ${siteInks(group)}`,
+        line:
+          `frame ${f}: ${group.length} nodes share the geometry ${(geometryKey(group[0]) ?? "").slice(0, 80)} ` +
+          `at moving opacities (${sig.vector.map((v) => v.toFixed(3)).join(", ")}) — ${reason}. ` +
+          `One object is drawn once: an outline and its fill are ONE node carrying both ` +
+          `\`stroke\` and \`fill\`, and a plain form handing over to an accented one is ONE ` +
+          `node whose \`fill\` switches.`,
+      });
+    }
+  }
+}

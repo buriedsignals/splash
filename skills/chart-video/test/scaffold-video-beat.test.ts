@@ -124,10 +124,13 @@ describe("scaffold-video-beat", () => {
   it("should refuse to scaffold over an existing beat, and change no file in it", () => {
     const before = contentsOf(BEAT);
     const again = scaffold(ARGS);
-    expect([again.status, again.stderr.includes("already exists")]).toEqual([
-      1,
-      true,
-    ]);
+    // The refusal is PER FILE since d71fb94e4 ("four producers reach a story"): a story's analyst
+    // writes into `beats/<id>/` before any producer runs, so an existing folder is allowed and only a
+    // file collision refuses — in the words `scaffoldBeat` throws, "already has … never overwrites".
+    expect([
+      again.status,
+      /already has .+ — the scaffold never overwrites a file/.test(again.stderr),
+    ]).toEqual([1, true]);
     expect(contentsOf(BEAT)).toEqual(before);
   });
 

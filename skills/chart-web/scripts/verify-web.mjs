@@ -1778,10 +1778,16 @@ async function checkControlSurface(page, darkroom, vp, { scripting = true } = {}
       );
 
     // ── R6: and what the beat said would not move, did not ──────────────────────────────────────
+    //
+    // A beat that declares nothing held has made no promise, which is a fact about the beat and is
+    // reported as a passing measurement — the same rule as "this beat declares no control" above.
+    // It was a `skip` when R6 landed, and a skip anywhere near a control is the defect this section
+    // exists to have removed (`test/the-control-surface-is-verified.test.ts`).
     if (heldSelectors.length === 0)
-      skip(
-        `${who}: what this control holds still`,
-        "the beat declares no `heldStill` selectors, so there is nothing it promised to hold",
+      check(
+        true,
+        `${who}: this beat declares nothing this control holds still`,
+        "no `heldStill` selectors, so there is nothing it promised to hold",
       );
     else
       check(

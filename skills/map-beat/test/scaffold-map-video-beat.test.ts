@@ -70,8 +70,14 @@ const SHARED_TEMPLATES = [
   "states.mjs",
   "states.test.ts",
   "subject.mjs",
-  "BRIEF.md",
 ].map((f) => `${f}.tmpl`);
+/**
+ * BRIEF.md.tmpl is shared too, except for ONE line: its front matter's `medium`, which f5fdcb988
+ * ("a scaffolded beat joins the editorial chain") wrote as a literal per skill — `map` here, `chart`
+ * in chart-video — because `a-scaffolded-beat-joins-the-chain.test.ts` reads that literal off the raw
+ * template. Everything else in it is still held byte for byte.
+ */
+const MEDIUM_LINE = /^medium: .*$/m;
 
 const scaffold = (args: string[]) =>
   spawnSync("bun", [SCRIPT, ...args], { cwd: ROOT, encoding: "utf8" });
@@ -140,10 +146,13 @@ describe("scaffold-map-video-beat", () => {
   it("should refuse to scaffold over an existing beat, and change no file in it", () => {
     const before = contentsOf(BEAT);
     const again = scaffold(ARGS);
-    expect([again.status, again.stderr.includes("already exists")]).toEqual([
-      1,
-      true,
-    ]);
+    // The refusal is PER FILE since d71fb94e4 ("four producers reach a story"): a story's analyst
+    // writes into `beats/<id>/` before any producer runs, so an existing folder is allowed and only a
+    // file collision refuses — in the words `scaffoldBeat` throws, "already has … never overwrites".
+    expect([
+      again.status,
+      /already has .+ — the scaffold never overwrites a file/.test(again.stderr),
+    ]).toEqual([1, true]);
     expect(contentsOf(BEAT)).toEqual(before);
   });
 
@@ -214,6 +223,16 @@ describe("scaffold-map-video-beat", () => {
           readFileSync(join(chart, f), "utf8"),
       ),
     ).toEqual([]);
+
+    const ownBrief = readFileSync(join(own, "BRIEF.md.tmpl"), "utf8");
+    const chartBrief = readFileSync(join(chart, "BRIEF.md.tmpl"), "utf8");
+    expect([
+      ownBrief.match(MEDIUM_LINE)?.[0],
+      chartBrief.match(MEDIUM_LINE)?.[0],
+    ]).toEqual(["medium: map", "medium: chart"]);
+    expect(ownBrief.replace(MEDIUM_LINE, "medium: *")).toBe(
+      chartBrief.replace(MEDIUM_LINE, "medium: *"),
+    );
   });
 
   it(

@@ -38,9 +38,10 @@
  *      no arithmetic run, so there is no missing member to name. An artifact with fewer than four
  *      numeric x labels is skipped for the same reason — three points do not establish a step.
  *   4. IT CANNOT SEE A LABEL THAT WAS NEVER A CANDIDATE. If a beat's axis was authored as
- *      "every decade" and a decade is genuinely absent from the data, this reads it as a hole. No
- *      such beat exists in the corpus today; the report below lists every axis it read, so a new
- *      one is visible to a person rather than silently failing.
+ *      "every decade" and a decade is genuinely absent from the data, this reads it as a hole. One
+ *      such beat exists in the corpus as of 2026-09-29 — `web-calendar-heatmap-geneva`, see `OWED`
+ *      below; the report below lists every axis it read, so a new one is visible to a person rather
+ *      than silently failing.
  *
  * THE MUTATION THAT REDDENS IT, run in a copy of the tree under `/tmp/fluid-mut/`, never here.
  * `BumpWeb.tsx`'s tick plan was reverted to the pre-fix rule — the one decision taken at
@@ -244,6 +245,36 @@ function holesIn(ticks: Tick[], step: number): Hole[] {
   return holes;
 }
 
+/**
+ * OWED — the holes this guard finds on committed proof pages today. A RATCHET: this list may only
+ * shrink.
+ *
+ * Recorded 2026-09-29, the day before the public release, by measuring this file against the
+ * committed `proof/` tree: three sites, all on `web-calendar-heatmap-geneva` (one per render) at
+ * 1600, where the day-of-month axis draws `1 5 10 15 20 25 31` and 30 sits 39–41px clear of both
+ * neighbours against the ~20px a label needs. They are owed rather than fixed because fixing them
+ * means changing the beat and re-rendering three directions, which could not be done and reviewed
+ * before the release. Read before fixing: that axis is NOT a width-dependent decision — the beat's
+ * `render-directions-web.mjs` hands the component the constant `dayTicks: [1, 5, 10, 15, 20, 25, 31]`,
+ * so 30 was never a candidate. That is blind spot 4 in the header, which said no such beat existed;
+ * this is one. The fix may be the beat's tick list (e.g. drop 31, or end the run on 30) or a guard
+ * that learns an authored terminal tick — decide which, then delete the lines.
+ *
+ * Key: `<page> @ <width>: <member> missing between <after> and <before>` — one entry per missing
+ * member, and without the clearance in px, which is a measurement of the site rather than its
+ * identity. (Both clearance and membership were identical across two full runs on 2026-09-29.)
+ *
+ *   - A hole NOT in this list fails, naming itself — a new page, a new width, or another missing
+ *     member on an owed page.
+ *   - An entry here that is NO LONGER FOUND fails too, telling whoever fixed it to delete the line.
+ *   - Never add a line for a new hole. Fix the page instead.
+ */
+const OWED = new Set<string>([
+  "proof/web-calendar-heatmap-geneva/renders/creme.html @ 1600: 30 missing between 25 and 31",
+  "proof/web-calendar-heatmap-geneva/renders/nocturne.html @ 1600: 30 missing between 25 and 31",
+  "proof/web-calendar-heatmap-geneva/renders/rapport.html @ 1600: 30 missing between 25 and 31",
+]);
+
 type AxisReading = {
   file: string;
   width: number;
@@ -317,21 +348,36 @@ describe("a fluid beat retakes its de-collision decisions at the width it is dra
           (r.skipped ? `  [skip: ${r.skipped}]` : `  [step ${r.step}]`),
       )
       .join("\n");
-    const failures = readings.flatMap((r) =>
-      r.holes.map(
-        (hole) =>
-          `${r.file} @ ${r.width}: the drawn x axis ${r.drawn.join(" ")} steps by ${r.step}, and ` +
-          `${hole.missing.join(", ")} ${hole.missing.length === 1 ? "is a member" : "are members"} ` +
-          `of that run the page does not draw. Placed between ${hole.after} and ${hole.before} at ` +
-          `its own position it would clear its neighbours by ${Math.round(hole.clearancePx)}px ` +
-          `against the ${Math.round(hole.needPx)}px a label needs — the decision that dropped it ` +
-          `was taken at a width this is not`,
+    // One site per missing member, keyed without its px so the key names WHERE, not how much.
+    const sites = readings.flatMap((r) =>
+      r.holes.flatMap((hole) =>
+        hole.missing.map((member) => ({
+          key: `${r.file} @ ${r.width}: ${member} missing between ${hole.after} and ${hole.before}`,
+          message:
+            `${r.file} @ ${r.width}: the drawn x axis ${r.drawn.join(" ")} steps by ${r.step}, and ` +
+            `${member} is a member of that run the page does not draw. Placed between ${hole.after} ` +
+            `and ${hole.before} at its own position it would clear its neighbours by ` +
+            `${Math.round(hole.clearancePx)}px against the ${Math.round(hole.needPx)}px a label ` +
+            `needs — the decision that dropped it was taken at a width this is not`,
+        })),
       ),
     );
+    const found = new Set(sites.map((site) => site.key));
+    const unexpected = sites
+      .filter((site) => !OWED.has(site.key))
+      .map((site) => site.message);
+    const struck = [...OWED].filter((key) => !found.has(key));
 
     console.log(
       `axes read at ${WIDTHS.map((v) => v.w).join(" and ")}:\n${report}`,
     );
-    expect(failures.join("\n")).toBe("");
+    // One assertion, so a run that both fixes one site and breaks another names both.
+    expect({
+      "NEW axis holes, not in OWED — fix the page; never add a line to OWED": unexpected,
+      "OWED entries no longer found — the hole is fixed: delete these lines from OWED": struck,
+    }).toEqual({
+      "NEW axis holes, not in OWED — fix the page; never add a line to OWED": [],
+      "OWED entries no longer found — the hole is fixed: delete these lines from OWED": [],
+    });
   });
 });

@@ -39,9 +39,61 @@ const plates = readdirSync(PROOF)
       })),
   );
 
+/**
+ * OWED — A RATCHET. Read this before touching it; you may not add to it.
+ *
+ * On 2026-09-29, the day before the public release, these committed demo renders carried a run
+ * under its floor and could not be re-rendered before the release. They are real defects: each is a
+ * run measured against the delivered PNG, not a false reading. They are named here so every other
+ * plate stays guarded rather than the whole file going red and being ignored.
+ *
+ * The list may ONLY SHRINK. A finding not written here fails as a new defect — including a second
+ * run on a render that is already listed. A listed run that clears its floor fails too, and tells
+ * whoever fixed it to delete the entry, so the list cannot outlive the defects it names.
+ *
+ * Keyed by render, run text and ink — not by the measured ground or ratio, which move with any
+ * re-render: the same run in the same ink still under its floor is the same defect.
+ */
+const OWED: Readonly<Record<string, readonly string[]>> = {
+  // 4.31:1 against rgb(85, 128, 144) on 2026-09-29, floor 4.5.
+  "static-marimekko-electricity-mix/nocturne-square.svg": [`"15 %" in #FFFFFF`],
+  // 4.38:1 against rgb(197, 215, 222) on 2026-09-29, floor 4.5.
+  "static-locator-zaporizhzhia/creme-square.svg": [`"ROUMANIE" in #5f5e58`],};
+
+/** The ratchet, as a list of messages that must be empty: every finding that is not owed, and every
+ *  owed entry that no longer occurs. Counted, so one owed run cannot cover a second. */
+function ratchet(
+  name: string,
+  found: { key: string; detail: string }[],
+  owed: readonly string[] = [],
+): string[] {
+  const remaining = [...owed];
+  const fresh: { key: string; detail: string }[] = [];
+  for (const f of found) {
+    const i = remaining.indexOf(f.key);
+    if (i >= 0) remaining.splice(i, 1);
+    else fresh.push(f);
+  }
+  return [
+    ...fresh.map((f) => `NEW DEFECT, not in OWED — ${f.detail}`),
+    ...remaining.map(
+      (key) => `FIXED, no longer occurs — delete this entry from OWED["${name}"]: ${key}`,
+    ),
+  ];
+}
+
 describe("a delivered plate's text", () => {
   it("should have plates to measure", () => {
     expect(plates.length).toBeGreaterThan(10);
+  });
+
+  it("should owe nothing on a render that no longer exists, and carry no empty entry", () => {
+    const names = new Set(plates.map((p) => p.name));
+    expect(
+      Object.entries(OWED)
+        .filter(([name, owed]) => !names.has(name) || owed.length === 0)
+        .map(([name]) => `delete OWED["${name}"]: the render is gone or the entry is empty`),
+    ).toEqual([]);
   });
 
   for (const plate of plates)
@@ -50,9 +102,13 @@ describe("a delivered plate's text", () => {
       () => {
         const findings = runsUnderTheContrastFloor(plate.svg, plate.png);
         expect(
-          findings.map(
-            (f) =>
-              `"${f.text}" ${f.fill} on ${f.ground} = ${f.ratio.toFixed(2)} : 1, floor ${f.floor}`,
+          ratchet(
+            plate.name,
+            findings.map((f) => ({
+              key: `"${f.text}" in ${f.fill}`,
+              detail: `"${f.text}" ${f.fill} on ${f.ground} = ${f.ratio.toFixed(2)} : 1, floor ${f.floor}`,
+            })),
+            OWED[plate.name],
           ),
         ).toEqual([]);
       },

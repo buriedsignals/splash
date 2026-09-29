@@ -16,6 +16,7 @@ describe("the choropleth subject, loaded without rendering", () => {
   });
 
   it("should hand out the static beat's own title ladder", () => {
-    expect(copyOf(subject).title.length).toBe(3);
+    // Four rungs since the square frame got its own one-line rung (6b7ea8745).
+    expect(copyOf(subject).title.length).toBe(4);
   });
 });

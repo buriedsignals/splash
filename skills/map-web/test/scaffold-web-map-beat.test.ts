@@ -114,7 +114,10 @@ const LANDMARKS = [
 ];
 
 describe("the map × web scaffold — every hole refuses, and the skeleton is well-formed", () => {
-  it("should write exactly the six files a live-map beat starts from", () => {
+  it("should write exactly the eight files a live-map beat starts from", () => {
+    // Six filled from templates or copied as the palette, plus — since 39512d125 ("the frozen data
+    // and the geometry come across with the scaffold") — the static sibling's frozen data and its
+    // shapes, because the runner this scaffold writes reads both from beside itself.
     const f = fixture();
     try {
       const name = componentNameOf(f.beat.replace("proof/", ""), "flow-map");
@@ -125,9 +128,22 @@ describe("the map × web scaffold — every hole refuses, and the skeleton is we
           "PALETTE.md",
           "bake.mjs",
           "camera.ts",
+          "data.csv",
           "render-directions-web.mjs",
+          "shapes.geojson",
         ].sort(),
       );
+      // …and they are the sibling's own bytes, not something the scaffold made up.
+      for (const file of ["data.csv", "shapes.geojson"])
+        expect({
+          file,
+          same:
+            readFileSync(join(beatDirOf(f), file), "utf8") ===
+            readFileSync(
+              join(REPO, "proof", "static-flow-map-ukraine-protection", file),
+              "utf8",
+            ),
+        }).toEqual({ file, same: true });
     } finally {
       f.cleanup();
     }
@@ -150,8 +166,9 @@ describe("the map × web scaffold — every hole refuses, and the skeleton is we
   it("should generate source every file of which parses", () => {
     const f = fixture();
     try {
+      // Source only: the frozen data and the shapes are copied, not generated, and are not code.
       for (const file of generate(f)) {
-        if (file.endsWith(".md")) continue;
+        if (!/\.(mjs|ts|tsx)$/.test(file)) continue;
         const loader = file.endsWith(".tsx")
           ? "tsx"
           : file.endsWith(".ts")
@@ -313,11 +330,24 @@ describe("the map × web scaffold — every hole refuses, and the skeleton is we
     }
   });
 
-  it("should refuse a beat folder that already exists, and never merge into one", () => {
+  it("should refuse to write over any file a beat folder already holds, and change none", () => {
+    // PER FILE, NOT PER FOLDER since d71fb94e4 ("four producers reach a story"): a story's analyst
+    // writes into `beats/<id>/` before any producer runs, so an existing folder is allowed and only
+    // a file collision refuses. Nothing in the folder may change on the refusal.
     const f = fixture();
     try {
       generate(f);
-      expect(() => generate(f)).toThrow(/already exists/);
+      const snapshot = () =>
+        Object.fromEntries(
+          readdirSync(beatDirOf(f))
+            .sort()
+            .map((x) => [x, readFileSync(join(beatDirOf(f), x), "utf8")]),
+        );
+      const before = snapshot();
+      expect(() => generate(f)).toThrow(
+        /already has .+ — the scaffold never overwrites a file/,
+      );
+      expect(snapshot()).toEqual(before);
     } finally {
       f.cleanup();
     }
@@ -346,7 +376,7 @@ describe("the map × web scaffold — every hole refuses, and the skeleton is we
       const at = { root, beat: "proof/web-flow-map-danube" };
       expect(() =>
         generate(at, { staticBeat: "proof/static-flow-map-bare" }),
-      ).toThrow(/carries no PALETTE.md/);
+      ).toThrow(/has no PALETTE\.md reachable .* carries none to copy/);
       writeFileSync(join(bare, "PALETTE.md"), "# Palette\n");
       expect(() =>
         generate(at, { staticBeat: "proof/static-flow-map-bare" }),
