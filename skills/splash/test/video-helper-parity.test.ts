@@ -51,8 +51,10 @@
  *    deciding it has a single canonical form, which is a claim about the code, not a scan.
  */
 import { describe, it, expect } from "bun:test";
-import { readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
+import { filesUnder } from "../../../tests/support/tree.ts";
+import { stripWholeLineComments } from "../../../tests/support/source-text.ts";
 
 const TWIN = join(import.meta.dirname, "..", "..", "..");
 const CANONICAL = join(
@@ -71,38 +73,9 @@ const FAMILY = ["measureText", "wrap"];
 // measuring context. A component without it is not part of this family.
 const SUBSTRATE = "measuringContext";
 
-/** Dot-directories hold tooling, agent worktrees and scratch, never shipped code. */
-const skipped = (name: string) =>
-  name === "node_modules" || name.startsWith(".");
-
-function findComponents(dir: string, out: string[] = []): string[] {
-  for (const e of readdirSync(dir, { withFileTypes: true })) {
-    if (skipped(e.name)) continue;
-    const p = join(dir, e.name);
-    if (e.isDirectory()) findComponents(p, out);
-    else if (
-      e.name.endsWith(".tsx") &&
-      readFileSync(p, "utf8").includes(SUBSTRATE)
-    )
-      out.push(p);
-  }
-  return out;
-}
-
-function stripComments(source: string): string {
-  return source
-    // Whole-line `//` comments and `/* … */` blocks only. A copy legitimately carries different
-    // explanatory prose — this guard's own header argues that for file headers, and the same is
-    // true inside a function: `image-beat`'s `renderStill` is character-identical to the
-    // canonical one except for a two-line comment, and reporting that as drift is noise.
-    //
-    // Deliberately NOT stripping trailing `//` after code, because a regex literal like
-    // `/\bwidth="(\d+)"/` contains no `//` but a URL or a divided expression could, and eating
-    // code here would make the comparison vacuously equal on both sides — a guard that always
-    // passes is worse than one that occasionally cries wolf.
-    .replace(/^[ \t]*\/\/.*$/gm, "")
-    .replace(/\/\*[\s\S]*?\*\//g, "");
-}
+// Comments are compared away with `stripWholeLineComments`: whole-line `//` and blocks only. A copy
+// legitimately carries different prose — `image-beat`'s `renderStill` is character-identical to the
+// canonical one except for a two-line comment, and reporting that as drift is noise.
 
 function normalise(source: string): string {
   return source
@@ -152,13 +125,16 @@ function topLevelFunctions(text: string): Map<string, string> {
         if (depth === 0) break;
       }
     }
-    found.set(m[1], normalise(stripComments(text.slice(m.index, end + 1))));
+    found.set(m[1], normalise(stripWholeLineComments(text.slice(m.index, end + 1))));
   }
   return found;
 }
 
 const canonical = topLevelFunctions(readFileSync(CANONICAL, "utf8"));
-const copies = findComponents(TWIN).filter((p) => p !== CANONICAL);
+const copies = filesUnder(
+  TWIN,
+  (e, p) => e.name.endsWith(".tsx") && readFileSync(p, "utf8").includes(SUBSTRATE),
+).filter((p) => p !== CANONICAL);
 
 describe("canvas-substrate helpers — every copy in the tree, discovered rather than listed", () => {
   it("should find the canonical component carrying the family this guard compares", () => {

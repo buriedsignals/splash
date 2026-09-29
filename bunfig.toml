@@ -1,0 +1,3 @@
+[test]
+# Pins the Chrome every browser-driving test and spawned render uses (scripts/chrome-for-testing.mjs).
+preload = ["./scripts/test-preload.mjs"]

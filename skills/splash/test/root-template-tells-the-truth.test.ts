@@ -60,6 +60,8 @@ import { describe, it, expect } from "bun:test";
 import { readdir, readFile } from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { join, relative, sep } from "node:path";
+import { stripComments } from "../../../tests/support/source-text.ts";
+import { filesUnder } from "../../../tests/support/tree.ts";
 
 const SPLASH_TWIN = join(import.meta.dirname, "..");
 const TWIN = join(SPLASH_TWIN, "..", "..");
@@ -86,6 +88,7 @@ describe("Engine's installed dependency receipt stays update-safe", () => {
   });
 });
 
+// Kept local, not tests/support/tree.ts: it swallows an unreadable directory, which the shared walk refuses to.
 async function* sourceFiles(dir: string): AsyncGenerator<string> {
   let entries;
   try {
@@ -101,51 +104,11 @@ async function* sourceFiles(dir: string): AsyncGenerator<string> {
   }
 }
 
-/**
- * `src` with comments removed. Necessary, not fastidious: this repository's prose is dense with
- * sentences like "a beat imports the copy that lands at #shared/chart-beat/render-still.mjs",
- * and a scan that read comments would demand packages named after English words. A first pass at
- * this guard did exactly that and asked the template to declare `no-data`.
- */
-function stripComments(src: string): string {
-  let out = "";
-  const n = src.length;
-  let i = 0;
-  while (i < n) {
-    const c = src[i];
-    const next = src[i + 1];
-    if (c === "/" && next === "/") {
-      while (i < n && src[i] !== "\n") i++;
-      continue;
-    }
-    if (c === "/" && next === "*") {
-      i += 2;
-      while (i < n && !(src[i] === "*" && src[i + 1] === "/")) i++;
-      i += 2;
-      continue;
-    }
-    if (c === "'" || c === '"' || c === "`") {
-      const quote = c;
-      out += c;
-      i++;
-      while (i < n && src[i] !== quote) {
-        if (src[i] === "\\") {
-          out += src[i] + (src[i + 1] ?? "");
-          i += 2;
-          continue;
-        }
-        out += src[i];
-        i++;
-      }
-      out += quote;
-      i++;
-      continue;
-    }
-    out += c;
-    i++;
-  }
-  return out;
-}
+// `stripComments` (tests/support/source-text.ts) is necessary, not fastidious: this repository's
+// prose is dense with sentences like "a beat imports the copy that lands at
+// #shared/chart-beat/render-still.mjs", and a scan that read comments would demand packages named
+// after English words. A first pass at this guard did exactly that and asked the template to
+// declare `no-data`.
 
 /**
  * Every module specifier in `src`, read from the SYNTAX that carries a string literal rather than
@@ -327,18 +290,12 @@ describe("the root template vendors every #shared file the tree actually imports
    * whole trees so a NEW file cannot land on one side alone.
    */
   it("should mirror twin/shared exactly, file for file and byte for byte", async () => {
-    const treeOf = async (root: string) => {
-      const files: string[] = [];
-      const walk = async (dir: string) => {
-        for (const e of await readdir(dir, { withFileTypes: true })) {
-          const p = join(dir, e.name);
-          if (e.isDirectory()) await walk(p);
-          else files.push(relative(root, p).split(sep).join("/"));
-        }
-      };
-      if (existsSync(root)) await walk(root);
-      return files.sort();
-    };
+    const treeOf = async (root: string) =>
+      existsSync(root)
+        ? filesUnder(root, () => true, () => false)
+            .map((p) => relative(root, p).split(sep).join("/"))
+            .sort()
+        : [];
     const live = await treeOf(join(TWIN, "shared"));
     const vendored = await treeOf(TEMPLATE_SHARED);
     expect(vendored).toEqual(live);

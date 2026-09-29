@@ -53,8 +53,9 @@
  * block at the foot of this file for the pasted output.
  */
 import { describe, expect, it } from "bun:test";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { beatsUnder } from "../../../tests/support/proof.ts";
 
 const TWIN = join(import.meta.dirname, "..", "..", "..");
 const PROOF = join(TWIN, "proof");
@@ -161,22 +162,18 @@ const PROBE_ONLY_RUNGS = ["country", "region"];
 
 type Beat = { name: string; corners: Corners };
 
-function beatsUnder(root: string): Beat[] {
-  return existsSync(root)
-    ? readdirSync(root, { withFileTypes: true })
-        .filter((e) => e.isDirectory())
-        .flatMap((e) => {
-          const path = join(root, e.name, "plate", "geometry.json");
-          if (!existsSync(path)) return [];
-          const geometry = JSON.parse(readFileSync(path, "utf8"));
-          return geometry.frameCorners
-            ? [{ name: e.name, corners: geometry.frameCorners as Corners }]
-            : [];
-        })
-    : [];
+function framedBeatsUnder(root: string): Beat[] {
+  return beatsUnder(root).flatMap((name) => {
+    const path = join(root, name, "plate", "geometry.json");
+    if (!existsSync(path)) return [];
+    const geometry = JSON.parse(readFileSync(path, "utf8"));
+    return geometry.frameCorners
+      ? [{ name, corners: geometry.frameCorners as Corners }]
+      : [];
+  });
 }
 
-const BEATS: Beat[] = [...beatsUnder(PROOF), ...beatsUnder(ARCHIVE)].sort(
+const BEATS: Beat[] = [...framedBeatsUnder(PROOF), ...framedBeatsUnder(ARCHIVE)].sort(
   (a, b) => a.name.localeCompare(b.name),
 );
 

@@ -73,13 +73,12 @@
  *       establishes this file can go red.
  */
 import { describe, it, expect, setDefaultTimeout } from "bun:test";
-import { existsSync, readdirSync, statSync } from "node:fs";
-import { homedir } from "node:os";
-import { join, relative, resolve } from "node:path";
+import { relative, resolve } from "node:path";
 import puppeteer from "puppeteer-core";
+import { resolveChrome } from "../../../scripts/chrome-for-testing.mjs";
+import { deliveredPages } from "../../../tests/support/proof.ts";
 
 const TWIN = resolve(import.meta.dirname, "../../..");
-const PROOF = join(TWIN, "proof");
 
 setDefaultTimeout(600000);
 
@@ -102,48 +101,6 @@ const CROSSING_PX = 1;
 /** How many numeric runs a line's reading must carry to count as linking its two ends: both values
  *  and the change. Two would be satisfied by printing the endpoints twice. */
 const NUMBERS_IN_A_LINE_READING = 3;
-
-/** A DUPLICATE of the `resolveChrome` every browser-driving file in this tree carries — duplicated,
- *  not imported, for the reason `map-web/test/standalone.test.ts`'s own copy states. */
-function resolveChrome(): string {
-  const candidates: string[] = [];
-  if (process.env.CHROME_PATH) candidates.push(process.env.CHROME_PATH);
-  const cache = join(homedir(), ".cache/puppeteer/chrome");
-  if (existsSync(cache))
-    for (const build of readdirSync(cache).sort().reverse())
-      candidates.push(
-        join(
-          cache,
-          build,
-          "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-        ),
-        join(
-          cache,
-          build,
-          "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-        ),
-        join(cache, build, "chrome-linux64/chrome"),
-      );
-  candidates.push(
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-  );
-  const found = candidates.find((path) => existsSync(path));
-  if (!found)
-    throw new Error(
-      `no Chrome to drive with. Looked in:\n  ${candidates.join("\n  ")}`,
-    );
-  return found;
-}
-
-function deliveredHtml(dir: string, out: string[] = []): string[] {
-  for (const entry of readdirSync(dir)) {
-    if (entry === "node_modules" || entry.startsWith(".")) continue;
-    const path = join(dir, entry);
-    if (statSync(path).isDirectory()) deliveredHtml(path, out);
-    else if (entry.endsWith(".html")) out.push(path);
-  }
-  return out.sort();
-}
 
 /** Discovers hoverable lines by BEHAVIOUR, never by class: a stroked geometry element carrying a
  *  `data-detail` whose computed `pointer-events` is `stroke`. A beat that renames the class keeps
@@ -214,7 +171,7 @@ const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 describe("a hoverable line answers on the line", () => {
   it("prints the reading that links its two ends, by pointer and by keyboard", async () => {
-    const files = deliveredHtml(PROOF);
+    const files = deliveredPages();
     expect(files.length).toBeGreaterThan(0);
 
     const browser = await puppeteer.launch({

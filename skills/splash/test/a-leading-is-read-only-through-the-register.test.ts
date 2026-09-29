@@ -18,15 +18,13 @@
  * in comments and a local name for unrelated things, and a guard that fires on prose gets exempted.
  */
 import { describe, it, expect } from "bun:test";
-import { readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
+import { filesUnder } from "../../../tests/support/tree.ts";
 
 const ROOT = join(import.meta.dirname, "..", "..", "..");
 const SOURCE = /\.(mjs|mts|cjs|cts|ts|tsx|js|jsx)$/;
 const TEST = /\.test\.(ts|tsx|mjs|js)$/;
-/** Dot-directories hold tooling, agent worktrees and scratch, never shipped code. */
-const skipped = (name: string) =>
-  name === "node_modules" || name.startsWith(".");
 const OWNERS = new Set([
   "shared/design-base/register.mjs",
   "shared/design-base/read-direction.mjs",
@@ -35,21 +33,10 @@ const OWNERS = new Set([
 const READS_LEADING =
   /\.leading\b|\[\s*["'`]leading["'`]\s*\]|[{,]\s*leading\s*[,}:=]/;
 
-function* walk(dir: string): Generator<string> {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (skipped(entry.name)) continue;
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) yield* walk(path);
-    else if (
-      entry.isFile() &&
-      SOURCE.test(entry.name) &&
-      !TEST.test(entry.name)
-    )
-      yield path;
-  }
-}
-
-const sources = [...walk(ROOT)].map((path) => {
+const sources = filesUnder(
+  ROOT,
+  (entry) => entry.isFile() && SOURCE.test(entry.name) && !TEST.test(entry.name),
+).map((path) => {
   const text = readFileSync(path, "utf8");
   const own = relative(ROOT, path);
   const canonical = /^\/\/ twin\/(\S+)/.exec(text)?.[1] ?? own;

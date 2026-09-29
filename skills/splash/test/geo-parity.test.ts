@@ -53,34 +53,12 @@
  * this file exists to avoid.
  */
 import { describe, it, expect } from "bun:test";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
+import { filesUnder } from "../../../tests/support/tree.ts";
+import { stripWholeLineComments } from "../../../tests/support/source-text.ts";
 
 const TWIN = join(import.meta.dirname, "..", "..", "..");
-/** Dot-directories hold tooling, agent worktrees and scratch, never shipped code. */
-const skipped = (name: string) =>
-  name === "node_modules" || name.startsWith(".");
-
-function findAll(
-  dir: string,
-  matches: (name: string) => boolean,
-  out: string[] = [],
-): string[] {
-  for (const e of readdirSync(dir, { withFileTypes: true })) {
-    if (skipped(e.name)) continue;
-    const p = join(dir, e.name);
-    if (e.isDirectory()) findAll(p, matches, out);
-    else if (matches(e.name)) out.push(p);
-  }
-  return out;
-}
-
-function stripComments(source: string): string {
-  return source
-    .replace(/^[ \t]*\/\/.*$/gm, "")
-    .replace(/\/\*[\s\S]*?\*\//g, "");
-}
-
 function normalise(source: string): string {
   return source.replace(/,(\s*[)\]}])/g, "$1").replace(/\s+/g, "");
 }
@@ -159,7 +137,7 @@ function declarations(text: string): Map<string, Declaration> {
         if (pd === 0) break;
       }
     }
-    const params = eraseParamTypes(stripComments(text.slice(paramsFrom, p)));
+    const params = eraseParamTypes(stripWholeLineComments(text.slice(paramsFrom, p)));
     const open = text.indexOf("{", p);
     if (open === -1) continue;
     let depth = 0;
@@ -187,7 +165,7 @@ function declarations(text: string): Map<string, Declaration> {
 
     found.set(m[1], {
       name: m[1],
-      body: normalise(stripComments(`(${params})` + text.slice(open, end + 1))),
+      body: normalise(stripWholeLineComments(`(${params})` + text.slice(open, end + 1))),
       tag,
       exemptReason,
     });
@@ -195,7 +173,7 @@ function declarations(text: string): Map<string, Declaration> {
   return found;
 }
 
-const files = findAll(TWIN, (n) => /^geo(-[a-z]+)?\.ts$/.test(n));
+const files = filesUnder(TWIN, (e) => /^geo(-[a-z]+)?\.ts$/.test(e.name));
 const perFile = new Map(
   files.map((f) => [f, declarations(readFileSync(f, "utf8"))] as const),
 );

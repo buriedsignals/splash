@@ -25,6 +25,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { resolve, join, relative, basename } from "node:path";
 import { Resvg } from "@resvg/resvg-js";
 import { fontFilesForSvg } from "../../../shared/design-base/typefaces.mjs";
+import { codeOf } from "../../../tests/support/source-text.ts";
 
 const TWIN = resolve(import.meta.dirname, "..", "..", "..");
 
@@ -125,6 +126,7 @@ describe("a render without its font files", () => {
     "render",
   ]);
 
+  // Kept local, not tests/support/tree.ts: it swallows an unreadable directory, which the shared walk refuses to.
   function* walk(dir: string): Generator<string> {
     let entries;
     try {
@@ -140,10 +142,7 @@ describe("a render without its font files", () => {
     }
   }
 
-  /** Comments stripped, so a `loadSystemFonts: true` quoted in prose is not mistaken for code. */
-  const codeOf = (text: string) =>
-    text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:])\/\/.*$/gm, "$1");
-
+  // Comments stripped (`codeOf`), so a `loadSystemFonts: true` quoted in prose is not mistaken for code.
   function constructionSites(): string[] {
     const found: string[] = [];
     for (const root of ["skills", "shared"]) {

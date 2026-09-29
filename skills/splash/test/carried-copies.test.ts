@@ -26,22 +26,17 @@
  * from its canonical's path while keeping the marker still compares, which is the point.
  */
 import { describe, it, expect } from "bun:test";
-import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
+import { readFileSync, statSync, existsSync } from "node:fs";
 import { join, relative, dirname, resolve } from "node:path";
+import { filesUnder } from "../../../tests/support/tree.ts";
 
 const ROOT = resolve(import.meta.dirname, "..", "..", "..");
 const ROOTS = ["skills", "shared"];
 const SOURCE = /\.(mjs|mts|cjs|cts|ts|tsx|js|jsx)$/;
 const SKIP = new Set(["node_modules", "test", "output-proof", ".git"]);
 
-function* walk(dir: string): Generator<string> {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (SKIP.has(entry.name)) continue;
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) yield* walk(path);
-    else if (entry.isFile() && SOURCE.test(entry.name)) yield path;
-  }
-}
+const walk = (dir: string) =>
+  filesUnder(dir, (entry) => entry.isFile() && SOURCE.test(entry.name), (entry) => SKIP.has(entry.name));
 
 function firstLine(path: string): string {
   return readFileSync(path, "utf8").split(/\r?\n/, 1)[0] ?? "";

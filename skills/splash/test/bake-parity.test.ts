@@ -29,8 +29,10 @@
  * of the same named function whose bodies disagree.
  */
 import { describe, it, expect } from "bun:test";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
+import { filesUnder } from "../../../tests/support/tree.ts";
+import { stripWholeLineComments } from "../../../tests/support/source-text.ts";
 
 const TWIN = join(import.meta.dirname, "..", "..", "..");
 const CANONICAL = join(
@@ -40,30 +42,6 @@ const CANONICAL = join(
   "scripts",
   "bake-plate.mjs",
 );
-
-/** Dot-directories hold tooling, agent worktrees and scratch, never shipped code. */
-const skipped = (name: string) =>
-  name === "node_modules" || name.startsWith(".");
-
-function findAll(
-  dir: string,
-  matches: (name: string) => boolean,
-  out: string[] = [],
-): string[] {
-  for (const e of readdirSync(dir, { withFileTypes: true })) {
-    if (skipped(e.name)) continue;
-    const p = join(dir, e.name);
-    if (e.isDirectory()) findAll(p, matches, out);
-    else if (matches(e.name)) out.push(p);
-  }
-  return out;
-}
-
-function stripComments(source: string): string {
-  return source
-    .replace(/^[ \t]*\/\/.*$/gm, "")
-    .replace(/\/\*[\s\S]*?\*\//g, "");
-}
 
 function normalise(source: string): string {
   return source.replace(/,(\s*[)\]}])/g, "$1").replace(/\s+/g, "");
@@ -98,15 +76,15 @@ function topLevelFunctions(text: string): Map<string, string> {
         if (depth === 0) break;
       }
     }
-    found.set(m[1], normalise(stripComments(text.slice(m.index, end + 1))));
+    found.set(m[1], normalise(stripWholeLineComments(text.slice(m.index, end + 1))));
   }
   return found;
 }
 
 const canonical = topLevelFunctions(readFileSync(CANONICAL, "utf8"));
-const copies = findAll(
+const copies = filesUnder(
   TWIN,
-  (n) => n === "bake.mjs" || n === "bake-plate.mjs",
+  (e) => e.name === "bake.mjs" || e.name === "bake-plate.mjs",
 ).filter((p) => p !== CANONICAL);
 
 describe("the bakes — every camera in the tree, discovered rather than listed", () => {

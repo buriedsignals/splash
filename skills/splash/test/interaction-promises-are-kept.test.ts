@@ -272,10 +272,11 @@
  * RUNTIME, and why it is where it is — see the note beside `CONCURRENCY`.
  */
 import { describe, it, expect, setDefaultTimeout } from "bun:test";
-import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
-import { homedir } from "node:os";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 import puppeteer, { type Browser } from "puppeteer-core";
+import { resolveChrome } from "../../../scripts/chrome-for-testing.mjs";
+import { deliveredPages } from "../../../tests/support/proof.ts";
 
 const TWIN = resolve(import.meta.dirname, "../../..");
 const PROOF = join(TWIN, "proof");
@@ -367,49 +368,6 @@ type ArtifactReport = {
   /** Marks whose own drawn shape could not be found — see blind spot 9. */
   edgesUnderivable: number;
 };
-
-/** A DUPLICATE of the `resolveChrome` every capture script in this tree carries — see
- *  `map-web/test/standalone.test.ts`'s own copy for why these are duplicated rather than
- *  imported (a skill's own scripts stay copy-pasteable). */
-function resolveChrome(): string {
-  const candidates: string[] = [];
-  if (process.env.CHROME_PATH) candidates.push(process.env.CHROME_PATH);
-  const cache = join(homedir(), ".cache/puppeteer/chrome");
-  if (existsSync(cache))
-    for (const build of readdirSync(cache).sort().reverse())
-      candidates.push(
-        join(
-          cache,
-          build,
-          "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-        ),
-        join(
-          cache,
-          build,
-          "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-        ),
-        join(cache, build, "chrome-linux64/chrome"),
-      );
-  candidates.push(
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-  );
-  const found = candidates.find((path) => existsSync(path));
-  if (!found)
-    throw new Error(
-      `no Chrome to drive with. Looked in:\n  ${candidates.join("\n  ")}`,
-    );
-  return found;
-}
-
-function deliveredHtml(dir: string, out: string[] = []): string[] {
-  for (const entry of readdirSync(dir)) {
-    if (entry === "node_modules" || entry.startsWith(".")) continue;
-    const path = join(dir, entry);
-    if (statSync(path).isDirectory()) deliveredHtml(path, out);
-    else if (entry.endsWith(".html")) out.push(path);
-  }
-  return out.sort();
-}
 
 // ── in-page helpers, all authored as strings/functions handed to `page.evaluate` ──────────────
 
@@ -937,7 +895,7 @@ async function driveAll(files: string[]): Promise<ArtifactReport[]> {
 
 // ── the run, once, at module load; the assertions read its result ─────────────────────────────
 
-const FILES = deliveredHtml(PROOF);
+const FILES = deliveredPages();
 const REPORTS = await driveAll(FILES);
 
 /** One line per artifact, so a failure message carries the whole picture rather than one probe. */

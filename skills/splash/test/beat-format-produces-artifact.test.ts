@@ -54,14 +54,16 @@
  *     extension — is the one that is large enough.
  */
 import { describe, it, expect } from "bun:test";
-import { readdirSync, statSync } from "node:fs";
+import { statSync } from "node:fs";
 import { join, basename } from "node:path";
+import { filesUnder } from "../../../tests/support/tree.ts";
+import { beatsUnder } from "../../../tests/support/proof.ts";
 
 const PROOF_ROOT = join(import.meta.dirname, "..", "..", "..", "proof");
 
 // Directories under proof/ that hold evidence about the experiment itself, not a beat's own
-// production — walking them for a missing artifact would be a category error.
-const NOT_A_BEAT = new Set(["comparison", "seance", "trial"]);
+// production — walking them for a missing artifact would be a category error: `beatsUnder` leaves
+// out NOT_A_BEAT (tests/support/proof.ts).
 
 // Floors, not checks — see the header comment for what each one does and does not prove.
 const FEW_KILOBYTES_FLOOR = 3 * 1024; // static PNG / self-contained HTML: "a few kilobytes"
@@ -91,16 +93,8 @@ const REQUIREMENT: Record<
   },
 };
 
-function walk(dir: string): string[] {
-  const out: string[] = [];
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === "node_modules" || entry.name === ".git") continue;
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...walk(full));
-    else if (entry.isFile()) out.push(full);
-  }
-  return out;
-}
+const walk = (dir: string) =>
+  filesUnder(dir, (entry) => entry.isFile(), (entry) => entry.name === "node_modules" || entry.name === ".git");
 
 function detectFormats(
   beatDirName: string,
@@ -147,10 +141,7 @@ function detectFormats(
   return results;
 }
 
-const beatDirNames = readdirSync(PROOF_ROOT, { withFileTypes: true })
-  .filter((e) => e.isDirectory() && !NOT_A_BEAT.has(e.name))
-  .map((e) => e.name)
-  .sort();
+const beatDirNames = beatsUnder(PROOF_ROOT).sort();
 
 describe("every beat under proof/ produced the artifact its declared format implies", () => {
   for (const beatDirName of beatDirNames) {

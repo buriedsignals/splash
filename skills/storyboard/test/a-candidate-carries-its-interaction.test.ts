@@ -24,8 +24,9 @@
  *     reached from production code and not only from a test" red.
  */
 import { describe, it, expect } from "bun:test";
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
+import { filesUnder } from "../../../tests/support/tree.ts";
 import {
   formatCandidates,
   formatCandidateRows,
@@ -91,19 +92,13 @@ describe("a candidate carries its interaction", () => {
   });
 
   it("should be reached from production code and not only from a test", () => {
-    const callers: string[] = [];
-    (function walk(dir: string) {
-      for (const entry of readdirSync(dir, { withFileTypes: true })) {
-        if (entry.name === "node_modules" || entry.name === "test") continue;
-        const path = join(dir, entry.name);
-        if (entry.isDirectory()) walk(path);
-        else if (
-          /\.mjs$/.test(entry.name) &&
-          readFileSync(path, "utf8").includes("visualCatalogueEntries(")
-        )
-          callers.push(path);
-      }
-    })(join(ROOT, "skills"));
+    const callers = filesUnder(
+      join(ROOT, "skills"),
+      (entry, path) =>
+        /\.mjs$/.test(entry.name) &&
+        readFileSync(path, "utf8").includes("visualCatalogueEntries("),
+      (entry) => entry.name === "node_modules" || entry.name === "test",
+    );
     expect(
       callers.some((p) => p.endsWith("storyboard/scripts/propose.mjs")),
     ).toBe(true);

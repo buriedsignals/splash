@@ -107,6 +107,12 @@ Run checks in proportion to the change. The suite has two lanes, derived by
   process (minutes). Run it before a commit; CI runs only the fast lane
   because its hosts carry no browser. `bun run test:all` runs both.
 - `bun scripts/test-lanes.mjs --check` prints the current file count of each lane.
+- `bun run chrome:install` installs the pinned Chrome for Testing build the browser guards were
+  measured on (`PINNED_CHROME` in `scripts/chrome-for-testing.mjs`) into `~/.cache/puppeteer`, where
+  every Splash script already looks before system Chrome. `bunfig.toml` preloads it as `CHROME_PATH`
+  for in-process launches; without it a run falls back to system Chrome and warns once.
+- Shared test helpers (tree walks, proof/ beat discovery, comment stripping, scaffold probes) live in
+  `tests/support/`; a skill's `test/` directory may import them.
 - `bun run test:live` — credential- or browser-gated `*.live.test.ts`.
 
 The release baseline is:

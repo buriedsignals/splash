@@ -231,6 +231,7 @@ function stripCallParens(token: string): string {
   return i === -1 ? token : token.slice(0, i);
 }
 
+// Kept local, not tests/support/tree.ts: dot-names are skipped as DIRECTORIES only, and a missing root yields nothing.
 function findByBasename(root: string, basename: string): string[] {
   const results: string[] = [];
   function walk(dir: string) {

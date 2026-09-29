@@ -16,19 +16,14 @@
  * The page is left as it was found. Only the picture changes.
  */
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { PNG } from "pngjs";
 import puppeteer from "puppeteer-core";
 import { withFloatingChromeHidden } from "../../../scripts/design-base/harvest.mjs";
 import { findGraphic } from "../../../scripts/design-base/harvest-styles.mjs";
-
-const CHROMES = [
-  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-  "/Applications/Chromium.app/Contents/MacOS/Chromium",
-  "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
-];
+import { resolveChrome } from "../../../scripts/chrome-for-testing.mjs";
 
 /**
  * Ferdio's own shape, and the height matters. Puppeteer CENTRES an element that fits, so a short
@@ -49,8 +44,7 @@ let page: Awaited<ReturnType<typeof browser.newPage>>;
 let DIR: string;
 
 beforeAll(async () => {
-  const chrome = CHROMES.find(existsSync);
-  if (!chrome) throw new Error(`no Chrome at any of: ${CHROMES.join(", ")}`);
+  const chrome = resolveChrome();
   browser = await puppeteer.launch({
     executablePath: chrome,
     headless: "new",

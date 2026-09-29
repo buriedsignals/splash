@@ -20,6 +20,7 @@
 import { describe, expect, it } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { beatsUnder } from "../../../tests/support/proof.ts";
 
 const ROOT = join(import.meta.dirname, "..", "..", "..");
 const PROOF = join(ROOT, "proof");
@@ -37,10 +38,9 @@ const REACH = /(?:from\s+"(?:\.\.\/)+skills\/|"%%UP%%\/skills\/|join\([^)]*"\.\.
 const PLAN = /(?:^|-)plan\.mjs$/;
 
 function beatsWith(predicate: (entries: string[]) => boolean): string[] {
-  return readdirSync(PROOF, { withFileTypes: true })
-    .filter((e) => e.isDirectory())
-    .filter((e) => predicate(readdirSync(join(PROOF, e.name))))
-    .map((e) => `proof/${e.name}`)
+  return beatsUnder()
+    .filter((beat) => predicate(readdirSync(join(PROOF, beat))))
+    .map((beat) => `proof/${beat}`)
     .sort();
 }
 

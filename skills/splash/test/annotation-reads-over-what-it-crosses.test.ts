@@ -138,7 +138,7 @@
  *     `more-dumbbell-life-expectancy-gains` that corrupt nothing — opened and looked at, all three.
  */
 import { describe, it, expect } from "bun:test";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { Resvg } from "@resvg/resvg-js";
 import {
@@ -147,6 +147,7 @@ import {
   textContrastFloor,
   worstContrast,
 } from "../../chart-beat/scripts/annotation-ink.mjs";
+import { filesUnder } from "../../../tests/support/tree.ts";
 
 const TWIN = join(import.meta.dirname, "..", "..", "..");
 const PROOF = join(TWIN, "proof");
@@ -374,15 +375,8 @@ function measureInk(
   return out;
 }
 
-function findSvgs(dir: string, out: string[] = []): string[] {
-  for (const e of readdirSync(dir, { withFileTypes: true })) {
-    if (e.name === "node_modules" || e.name === ".git") continue;
-    const p = join(dir, e.name);
-    if (e.isDirectory()) findSvgs(p, out);
-    else if (e.name.endsWith(".svg")) out.push(p);
-  }
-  return out;
-}
+const findSvgs = (dir: string) =>
+  filesUnder(dir, (e) => e.name.endsWith(".svg"), (e) => e.name === "node_modules" || e.name === ".git");
 
 const everySvg = findSvgs(PROOF).sort();
 const probes = everySvg.filter((p) => isProbe(relative(TWIN, p)));

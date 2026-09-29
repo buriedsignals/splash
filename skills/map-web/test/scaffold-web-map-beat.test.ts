@@ -30,6 +30,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { beatsUnder } from "../../../tests/support/proof.ts";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 
@@ -431,7 +432,7 @@ describe("the map × web scaffold — every hole refuses, and the skeleton is we
     // better arrangement, this is the line that has to be argued and moved — deliberately, not by a
     // template quietly drifting away from what authors actually write.
     const proof = join(REPO, "proof");
-    const live = readdirSync(proof)
+    const live = beatsUnder(proof)
       .filter((d) => d.startsWith("web-"))
       .filter((d) => readdirSync(join(proof, d)).includes("bake.mjs"));
     // Was 7 until `web-flow-map-danube`, a superseded duplicate, archived 2026-09-17 — 6 is the

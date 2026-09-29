@@ -27,8 +27,10 @@
 import { describe, it, expect } from "bun:test";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { codeOf } from "../../../tests/support/source-text.ts";
 
 /** Every source file a beat or the machinery is written in — never a render, which is output. */
+// Kept local, not tests/support/tree.ts: it walks cwd-relative roots and follows symlinks (statSync).
 function sources(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
     if (entry === "node_modules" || entry === "renders" || entry === "plate" || entry === "fallback")
@@ -59,9 +61,7 @@ const WATER_FROM_ACCENT = /\bwater\s*[:=]\s*[^;\n]{0,90}?\baccent\b/;
  *  from a line that runs would have reported all twelve as still defective. Stripped rather than
  *  tolerated: a defect hidden inside `/* … *\/` is not a defect this rule needs to allow. */
 function code(file: string): string {
-  return readFileSync(file, "utf8")
-    .replace(/\/\*[\s\S]*?\*\//g, " ")
-    .replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+  return codeOf(readFileSync(file, "utf8"), " ");
 }
 
 function offenders(test: RegExp): string[] {

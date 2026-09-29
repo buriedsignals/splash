@@ -16,8 +16,9 @@
  * comparison of `scripts/design-base/renders-moved.mjs` is what proves nothing else moved.
  */
 import { describe, it, expect } from "bun:test";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
+import { beatsWith } from "../../../tests/support/proof.ts";
 
 const ROOT = join(import.meta.dirname, "..", "..", "..");
 const PROOF = join(ROOT, "proof");
@@ -42,17 +43,11 @@ const PATTERNS = [
   },
 ];
 
-const directed = readdirSync(PROOF, { withFileTypes: true })
-  .filter(
-    (e) =>
-      e.isDirectory() &&
-      existsSync(join(PROOF, e.name, "render-directions.mjs")),
-  )
-  .flatMap((e) =>
-    readdirSync(join(PROOF, e.name))
-      .filter((f) => /^Directed.*\.tsx$/.test(f))
-      .map((f) => join(PROOF, e.name, f)),
-  );
+const directed = beatsWith("render-directions.mjs").flatMap((beat) =>
+  readdirSync(join(PROOF, beat))
+    .filter((f) => /^Directed.*\.tsx$/.test(f))
+    .map((f) => join(PROOF, beat, f)),
+);
 
 const offences = directed.flatMap((file) => {
   const text = readFileSync(file, "utf8").replace(/\s+/g, " ");

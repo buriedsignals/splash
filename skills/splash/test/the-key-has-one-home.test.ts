@@ -17,6 +17,8 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
+import { stripComments } from "../../../tests/support/source-text.ts";
+import { filesUnder } from "../../../tests/support/tree.ts";
 
 const SPLASH_TWIN = join(import.meta.dirname, "..");
 const SKILLS = join(SPLASH_TWIN, "..");
@@ -136,74 +138,28 @@ describe("a legacy producer resolves the Splash root .env", () => {
 
 });
 
-/** `src` with line and block comments removed; string literals are preserved untouched. */
-function stripComments(src: string): string {
-  let out = "";
-  const n = src.length;
-  let i = 0;
-  while (i < n) {
-    const c = src[i];
-    const next = src[i + 1];
-    if (c === "/" && next === "/") {
-      while (i < n && src[i] !== "\n") i++;
-      continue;
-    }
-    if (c === "/" && next === "*") {
-      i += 2;
-      while (i < n && !(src[i] === "*" && src[i + 1] === "/")) i++;
-      i += 2;
-      continue;
-    }
-    if (c === "'" || c === '"' || c === "`") {
-      const quote = c;
-      out += c;
-      i++;
-      while (i < n && src[i] !== quote) {
-        if (src[i] === "\\") {
-          out += src[i] + (src[i + 1] ?? "");
-          i += 2;
-          continue;
-        }
-        out += src[i];
-        i++;
-      }
-      out += quote;
-      i++;
-      continue;
-    }
-    out += c;
-    i++;
-  }
-  return out;
-}
-
 describe("no script reaches a .env by a fixed climb", () => {
   it("should find no hard-coded ../.env ancestry anywhere under skills/", async () => {
     const offenders: string[] = [];
-    const walk = async (dir: string) => {
-      for (const e of await readdir(dir, { withFileTypes: true })) {
-        if (e.name === "node_modules" || e.name === "test") continue;
-        const p = join(dir, e.name);
-        if (e.isDirectory()) {
-          await walk(p);
-          continue;
-        }
-        if (!/\.(mjs|mts|cjs|cts|ts|tsx|js|jsx)$/.test(e.name)) continue;
-        // COMMENTS ARE STRIPPED FIRST, and that is not a convenience. The ban is on what the code
-        // DOES, and the files that carry it also carry the paragraphs explaining why the shape was
-        // removed — which quote `../../../.env` verbatim, as they should. A scan over raw text
-        // reported those explanations as ten violations, i.e. it forbade documenting the rule it
-        // enforces. That is the failure mode where a guard makes the codebase worse.
-        const src = stripComments(await readFile(p, "utf8"));
-        // Only the CLIMB is banned. `join(root, ".env")` and `splashEnvPath(...)` are the two
-        // legitimate shapes, and the match requires a quoted literal so a path built at runtime
-        // from parts is not mistaken for one.
-        for (const m of src.matchAll(/["'`]((?:\.\.\/)+)\.env["'`]/g)) {
-          offenders.push(`${relative(SKILLS, p)} → "${m[1]}.env"`);
-        }
+    const sources = filesUnder(
+      SKILLS,
+      (e) => /\.(mjs|mts|cjs|cts|ts|tsx|js|jsx)$/.test(e.name),
+      (e) => e.name === "node_modules" || e.name === "test",
+    );
+    for (const p of sources) {
+      // COMMENTS ARE STRIPPED FIRST, and that is not a convenience. The ban is on what the code
+      // DOES, and the files that carry it also carry the paragraphs explaining why the shape was
+      // removed — which quote `../../../.env` verbatim, as they should. A scan over raw text
+      // reported those explanations as ten violations, i.e. it forbade documenting the rule it
+      // enforces. That is the failure mode where a guard makes the codebase worse.
+      const src = stripComments(await readFile(p, "utf8"));
+      // Only the CLIMB is banned. `join(root, ".env")` and `splashEnvPath(...)` are the two
+      // legitimate shapes, and the match requires a quoted literal so a path built at runtime
+      // from parts is not mistaken for one.
+      for (const m of src.matchAll(/["'`]((?:\.\.\/)+)\.env["'`]/g)) {
+        offenders.push(`${relative(SKILLS, p)} → "${m[1]}.env"`);
       }
-    };
-    await walk(SKILLS);
+    }
     expect(offenders.sort()).toEqual([]);
   });
 });

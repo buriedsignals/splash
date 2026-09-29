@@ -1,19 +1,18 @@
 // LANE: heavy
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import {
-  existsSync,
   mkdtempSync,
-  readdirSync,
   readFileSync,
   rmSync,
 } from "node:fs";
 import { createRequire } from "node:module";
-import { homedir, tmpdir } from "node:os";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import puppeteer from "puppeteer-core";
 import { bakePlan } from "#shared/map-beat/bake.mjs";
 import { mountPlan } from "#shared/map-beat/mount.mjs";
 import { scrollyMapScript } from "#shared/map-beat/inline.mjs";
+import { resolveChrome } from "../../../scripts/chrome-for-testing.mjs";
 
 // A BAKE PAGE GETS `mountPlan` WITH THE TRUNK IT CALLS. `proof/static-choropleth-europe-lowcarbon/bake.mjs`
 // injected `mountPlan.toString()` on the claim that it closed over nothing; once `mountPlan` called
@@ -21,41 +20,6 @@ import { scrollyMapScript } from "#shared/map-beat/inline.mjs";
 // The per-card bake's own live test mounts a no-op `__mountPlan`, so nothing mounted a real layer offline.
 
 const require = createRequire(import.meta.url);
-
-/** A DUPLICATE of the `resolveChrome` every capture script in this tree carries — see
- *  `skills/map-beat/test/scrolly-live.test.ts`'s own copy for why these are duplicated rather than
- *  imported (a skill's own scripts stay copy-pasteable). */
-function resolveChrome() {
-  const candidates = [];
-  if (process.env.CHROME_PATH) candidates.push(process.env.CHROME_PATH);
-  const cache = join(homedir(), ".cache/puppeteer/chrome");
-  if (existsSync(cache))
-    for (const build of readdirSync(cache).sort().reverse())
-      candidates.push(
-        join(
-          cache,
-          build,
-          "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-        ),
-        join(
-          cache,
-          build,
-          "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-        ),
-        join(cache, build, "chrome-linux64/chrome"),
-      );
-  candidates.push(
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-    "/usr/bin/google-chrome",
-  );
-  const found = candidates.find((c) => existsSync(c));
-  if (!found)
-    throw new Error(
-      `no Chrome to drive — looked at ${candidates.join(", ")}. This format is verified by driving a ` +
-        `real browser and by nothing else; there is no fallback that would prove anything.`,
-    );
-  return found;
-}
 
 const polygon = (w: number, s: number, e: number, n: number) => ({
   type: "FeatureCollection",

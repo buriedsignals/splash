@@ -57,6 +57,7 @@
 import { describe, it, expect } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { beatsUnder } from "../../../tests/support/proof.ts";
 
 const TWIN = join(import.meta.dirname, "..", "..", "..");
 const PROOF = join(TWIN, "proof");
@@ -96,11 +97,9 @@ type PointBeat = {
 };
 
 function readPointBeatsUnder(root: string): PointBeat[] {
-  if (!existsSync(root)) return [];
   const out: PointBeat[] = [];
-  for (const entry of readdirSync(root, { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue;
-    const dir = join(root, entry.name);
+  for (const entry of beatsUnder(root)) {
+    const dir = join(root, entry);
     const geometryPath = join(dir, "plate", "geometry.json");
     if (!existsSync(geometryPath)) continue;
     const geometry = JSON.parse(readFileSync(geometryPath, "utf8"));
@@ -120,7 +119,7 @@ function readPointBeatsUnder(root: string): PointBeat[] {
           rows.push({ lon, lat });
       }
       out.push({
-        name: entry.name,
+        name: entry,
         root,
         frameCorners: geometry.frameCorners,
         bakedPoints: Array.isArray(geometry.points)

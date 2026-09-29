@@ -69,8 +69,10 @@
  *           (fail) … should find every craft-skill component that positions a source line
  */
 import { describe, it, expect } from "bun:test";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
+import { filesUnder } from "../../../tests/support/tree.ts";
+import { beatsWith } from "../../../tests/support/proof.ts";
 
 const SKILLS = join(import.meta.dirname, "..", "..");
 const TWIN = join(SKILLS, "..");
@@ -93,15 +95,12 @@ const HEADER_RUNGS = [
   "noteBaseline",
 ];
 
-function* tsxFiles(dir: string): Generator<string> {
-  if (!existsSync(dir)) return;
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === "node_modules" || entry.name === ".git") continue;
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) yield* tsxFiles(path);
-    else if (entry.name.endsWith(".tsx")) yield path;
-  }
-}
+/** Every file under `dir` ending in `ext` — `[]` when `dir` is absent. */
+const filesEndingIn = (dir: string, ext: string) =>
+  existsSync(dir)
+    ? filesUnder(dir, (e) => e.name.endsWith(ext), (e) => e.name === "node_modules" || e.name === ".git")
+    : [];
+const tsxFiles = (dir: string) => filesEndingIn(dir, ".tsx");
 
 /** Every `const sourceBaseline = …;` / `const sourceTop = …;`, with its right-hand side read to
  *  the terminating semicolon so a multi-line expression is judged whole. */
@@ -121,11 +120,7 @@ function sourceAnchors(src: string): { name: string; expression: string }[] {
 }
 
 function dirsUnder(root: string): string[] {
-  if (!existsSync(root)) return [];
-  return readdirSync(root, { withFileTypes: true })
-    .filter((e) => e.isDirectory())
-    .map((e) => join(root, e.name))
-    .filter((d) => existsSync(join(d, BEAT_MARKER)));
+  return beatsWith(BEAT_MARKER, root).map((beat) => join(root, beat));
 }
 
 function beatDirs(): string[] {
@@ -256,25 +251,10 @@ const BOTTOM_EIGHTH = 0.875;
  *  colon drops that one line and not one genuine credit — no file loses the credit it had. */
 const CREDIT_OPENERS = /^\s*(Sources?|Quelle|Fonte|Fuente)\s*:/i;
 
-function* beatSvgs(dir: string): Generator<string> {
-  if (!existsSync(dir)) return;
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === "node_modules" || entry.name === ".git") continue;
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) yield* beatSvgs(path);
-    else if (entry.name.endsWith(".svg")) yield path;
-  }
-}
+const beatSvgs = (dir: string) => filesEndingIn(dir, ".svg");
 
-const BEAT_SVGS = (
-  existsSync(join(TWIN, "proof"))
-    ? readdirSync(join(TWIN, "proof"), { withFileTypes: true })
-        .filter((e) => e.isDirectory())
-        .map((e) => join(TWIN, "proof", e.name))
-        .filter((d) => existsSync(join(d, "BRIEF.md")))
-        .flatMap((d) => [...beatSvgs(d)])
-    : []
-)
+const BEAT_SVGS = beatDirs()
+  .flatMap((d) => [...beatSvgs(d)])
   .map((path) => ({ path, label: relative(TWIN, path) }))
   .sort((a, b) => a.label.localeCompare(b.label));
 
@@ -446,15 +426,7 @@ function insideHeader(html: string, at: number): boolean {
   return false;
 }
 
-function* beatHtml(dir: string): Generator<string> {
-  if (!existsSync(dir)) return;
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === "node_modules" || entry.name === ".git") continue;
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) yield* beatHtml(path);
-    else if (entry.name.endsWith(".html")) yield path;
-  }
-}
+const beatHtml = (dir: string) => filesEndingIn(dir, ".html");
 
 /**
  * A BEAT NOBODY HAS COMMITTED YET IS NOT JUDGED HERE. Seven sessions share this worktree, and the

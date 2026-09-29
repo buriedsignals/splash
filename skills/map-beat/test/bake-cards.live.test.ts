@@ -1,50 +1,16 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from "bun:test";
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
-import { homedir, tmpdir } from "node:os";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createRequire } from "node:module";
 import puppeteer from "puppeteer-core";
 import { bakeCards } from "#shared/map-beat/bake.mjs";
 import { mapTilerKeyIn } from "#shared/map-beat/glyphs.mjs";
 import { cameraFields } from "#shared/map-beat/scrolly.mjs";
+import { resolveChrome } from "../../../scripts/chrome-for-testing.mjs";
 
 const require = createRequire(import.meta.url);
 const key = mapTilerKeyIn(process.env);
-
-/** A DUPLICATE of the `resolveChrome` every capture script in this tree carries — see
- *  `skills/map-beat/test/scrolly-live.test.ts`'s own copy for why these are duplicated rather than
- *  imported (a skill's own scripts stay copy-pasteable). */
-function resolveChrome() {
-  const candidates = [];
-  if (process.env.CHROME_PATH) candidates.push(process.env.CHROME_PATH);
-  const cache = join(homedir(), ".cache/puppeteer/chrome");
-  if (existsSync(cache))
-    for (const build of readdirSync(cache).sort().reverse())
-      candidates.push(
-        join(
-          cache,
-          build,
-          "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-        ),
-        join(
-          cache,
-          build,
-          "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-        ),
-        join(cache, build, "chrome-linux64/chrome"),
-      );
-  candidates.push(
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-    "/usr/bin/google-chrome",
-  );
-  const found = candidates.find((c) => existsSync(c));
-  if (!found)
-    throw new Error(
-      `no Chrome to drive — looked at ${candidates.join(", ")}. This format is verified by driving a ` +
-        `real browser and by nothing else; there is no fallback that would prove anything.`,
-    );
-  return found;
-}
 
 const CHROME = resolveChrome();
 let browser: puppeteer.Browser;

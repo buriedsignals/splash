@@ -91,29 +91,24 @@
  */
 import { describe, it, expect } from "bun:test";
 import { spawnSync } from "node:child_process";
-import { readdirSync } from "node:fs";
 import { join, relative } from "node:path";
+import { filesUnder } from "../../../tests/support/tree.ts";
+import { beatsUnder } from "../../../tests/support/proof.ts";
 
 const PROOF_ROOT = join(import.meta.dirname, "..", "..", "..", "proof");
 
-// Evidence ABOUT the experiment, not a beat's own production — the same exclusion, for the same
-// reason, as `beat-format-produces-artifact.test.ts`.
-const NOT_A_BEAT = new Set(["comparison", "seance", "trial"]);
+// Evidence ABOUT the experiment, not a beat's own production, is left out by `beatsUnder` — the same
+// exclusion, for the same reason, as `beat-format-produces-artifact.test.ts`.
 
 // A floor, not a check. 0.25% of the frame. Smallest real frame 0 measured in this corpus: 4.68%.
 const MIN_NON_GROUND_SHARE = 0.0025;
 
-function walkMp4s(dir: string): string[] {
-  const out: string[] = [];
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === "node_modules" || entry.name === ".git") continue;
-    const full = join(dir, entry.name);
-    if (entry.isDirectory()) out.push(...walkMp4s(full));
-    else if (entry.isFile() && entry.name.toLowerCase().endsWith(".mp4"))
-      out.push(full);
-  }
-  return out;
-}
+const walkMp4s = (dir: string) =>
+  filesUnder(
+    dir,
+    (entry) => entry.isFile() && entry.name.toLowerCase().endsWith(".mp4"),
+    (entry) => entry.name === "node_modules" || entry.name === ".git",
+  );
 
 /**
  * The first frame, raw rgb24, straight off ffmpeg's stdout — no file written, no PNG decoded.
@@ -174,9 +169,8 @@ function nonGroundShare(rgb: Buffer): { share: number; ground: string } {
   };
 }
 
-const mp4s = readdirSync(PROOF_ROOT, { withFileTypes: true })
-  .filter((e) => e.isDirectory() && !NOT_A_BEAT.has(e.name))
-  .flatMap((e) => walkMp4s(join(PROOF_ROOT, e.name)))
+const mp4s = beatsUnder(PROOF_ROOT)
+  .flatMap((beat) => walkMp4s(join(PROOF_ROOT, beat)))
   .sort();
 
 describe("every beat's mp4 has something drawn on its first frame", () => {

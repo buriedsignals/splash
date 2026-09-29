@@ -258,16 +258,16 @@
  *   The limitation four paragraphs up is not hypothetical; it was executed.
  */
 import { describe, it, expect } from "bun:test";
-import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
+import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { filesUnder } from "../../../tests/support/tree.ts";
+import { beatsUnder } from "../../../tests/support/proof.ts";
+import { stripCommentsKeepingLines } from "../../../tests/support/source-text.ts";
 
 const PROOF_ROOT = join(import.meta.dirname, "..", "..", "..", "proof");
 // Archived 2026-09-17: `map-quake-density` and `static-renewables-shift`, this guard's own
 // density/sparseness illustrations, moved to `tests/fixtures/beats/`, keeping their names.
 const ARCHIVE_ROOT = join(import.meta.dirname, "..", "..", "..", "tests", "fixtures", "beats");
-
-/** Directories under proof/ that hold evidence ABOUT the experiment, not a beat's own production. */
-const NOT_A_BEAT = new Set(["comparison", "seance", "trial"]);
 
 /**
  * A BEAT SCRIPT IS RECOGNISED BY ITS NAME, NOT BY A LIST KEPT HERE.
@@ -296,52 +296,8 @@ const CLAIM_PROPS = ["title", "subtitle", "alt", "caveat", "limits", "caption"];
 /** Stands in for an interpolated hole, so the number scan cannot see across it. */
 const HOLE = "•";
 
-/**
- * Strip `//` and block comments while respecting string and template literals. A naive strip cuts
- * every `source:` credit in half at the `//` of a URL.
- */
-function stripComments(src: string): string {
-  let out = "";
-  let i = 0;
-  while (i < src.length) {
-    const c = src[i];
-    if (c === '"' || c === "'" || c === "`") {
-      const q = c;
-      out += c;
-      i++;
-      while (i < src.length) {
-        if (src[i] === "\\") {
-          out += src[i] + (src[i + 1] ?? "");
-          i += 2;
-          continue;
-        }
-        out += src[i];
-        if (src[i] === q) {
-          i++;
-          break;
-        }
-        i++;
-      }
-      continue;
-    }
-    if (c === "/" && src[i + 1] === "/") {
-      while (i < src.length && src[i] !== "\n") i++;
-      continue;
-    }
-    if (c === "/" && src[i + 1] === "*") {
-      i += 2;
-      while (i < src.length && !(src[i] === "*" && src[i + 1] === "/")) {
-        if (src[i] === "\n") out += "\n";
-        i++;
-      }
-      i += 2;
-      continue;
-    }
-    out += c;
-    i++;
-  }
-  return out;
-}
+// Comments are stripped string-aware (`stripCommentsKeepingLines`): a naive strip cuts every `source:`
+// credit in half at the `//` of a URL, and a finding's line number must still be the source's own.
 
 type ClaimString = { prop: string; literal: string; line: number };
 
@@ -435,7 +391,7 @@ function readExpression(
 }
 
 function extractClaimStrings(src: string): ClaimString[] {
-  const text = stripComments(src);
+  const text = stripCommentsKeepingLines(src);
   const out: ClaimString[] = [];
   const re = new RegExp(
     `(?:^|[\\s{,(])(${CLAIM_PROPS.join("|")})\\s*:\\s*`,
@@ -539,7 +495,7 @@ function grounded(n: number, values: Set<number>): boolean {
  */
 function assertedValues(src: string): Set<number> {
   const out = new Set<number>();
-  const text = stripComments(src);
+  const text = stripCommentsKeepingLines(src);
   for (const m of text.matchAll(/\bif\s*\(/g)) {
     let i = (m.index ?? 0) + m[0].length;
     let depth = 1;
@@ -640,9 +596,8 @@ function scanBeat(beat: string): BeatScan[] {
   });
 }
 
-const beats = readdirSync(PROOF_ROOT, { withFileTypes: true })
-  .filter((e) => e.isDirectory() && !NOT_A_BEAT.has(e.name))
-  .map((e) => e.name)
+// `beatsUnder` leaves out the directories under proof/ that hold evidence ABOUT the experiment.
+const beats = beatsUnder(PROOF_ROOT)
   .filter((name) => readdirSync(join(PROOF_ROOT, name)).some(isBeatScript))
   .sort();
 
@@ -685,15 +640,7 @@ describe("every number a beat shows a reader is reproducible from that beat's ow
 
 const ARTIFACT = /\.(png|html|mp4)$/i;
 
-function walkFiles(dir: string): string[] {
-  const out: string[] = [];
-  for (const e of readdirSync(dir, { withFileTypes: true })) {
-    const p = join(dir, e.name);
-    if (e.isDirectory()) out.push(...walkFiles(p));
-    else out.push(p);
-  }
-  return out;
-}
+const walkFiles = (dir: string) => filesUnder(dir, () => true, () => false);
 
 /** A production render or an explicitly named measurement probe that writes its own artifacts. */
 function isArtifactScript(name: string): boolean {
@@ -796,7 +743,7 @@ function packageNameOf(specifier: string): string {
 type ReadInput = { name: string; reach: "beat" | "repository" | "package" };
 
 function readFilenames(src: string): ReadInput[] {
-  const text = stripComments(src);
+  const text = stripCommentsKeepingLines(src);
   const out = new Map<string, ReadInput>();
   for (const m of text.matchAll(/\breadFile(?:Sync)?\s*\(/g)) {
     let i = (m.index ?? 0) + m[0].length;

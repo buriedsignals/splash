@@ -56,24 +56,18 @@
  *    names do not claim a locale; a badly named one would be flagged, correctly.
  */
 import { describe, it, expect } from "bun:test";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
+import { filesUnder, skipped } from "../../../tests/support/tree.ts";
 
 const TWIN = join(import.meta.dirname, "..", "..", "..");
 const SOURCE_EXT = [".ts", ".tsx", ".mjs"];
-/** Dot-directories hold tooling, agent worktrees and scratch, never shipped code. */
-const skipped = (name: string) =>
-  name === "node_modules" || name.startsWith(".");
-
-function walk(dir: string, out: string[] = []): string[] {
-  for (const e of readdirSync(dir, { withFileTypes: true })) {
-    if (skipped(e.name) || e.name === "dist") continue;
-    const p = join(dir, e.name);
-    if (e.isDirectory()) walk(p, out);
-    else if (SOURCE_EXT.some((x) => e.name.endsWith(x))) out.push(p);
-  }
-  return out;
-}
+const walk = (dir: string) =>
+  filesUnder(
+    dir,
+    (e) => SOURCE_EXT.some((x) => e.name.endsWith(x)),
+    (e) => skipped(e.name) || e.name === "dist",
+  );
 
 /** Top-level `function NAME(…) {…}` declarations, by brace matching. */
 function topLevelFunctions(text: string): Map<string, string> {

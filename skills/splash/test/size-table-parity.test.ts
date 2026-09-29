@@ -5,7 +5,7 @@
  * `shared/` mirror, because a skill directory must stay copy-pasteable on its own
  * (`no-cross-skill-imports.test.ts`). Carried data drifts. This is what stops it.
  *
- * IT WALKS, IT NEVER LISTS. `findAll(TWIN, "sizes.mjs")`, the same shape as
+ * IT WALKS, IT NEVER LISTS. Every `sizes.mjs` under the tree, the same shape as
  * `render-still-parity.test.ts` — so the copy that lands in `chart-video`, `dw-beat` or
  * `image-beat` is guarded the moment it lands, with nobody remembering to wire it up.
  * `helper-parity.test.ts`'s hand-written list is the standing counter-example: it turned the suite
@@ -104,8 +104,9 @@
  *                                                              would force one number to be wrong.
  */
 import { describe, it, expect } from "bun:test";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
+import { filesUnder } from "../../../tests/support/tree.ts";
 
 const TWIN = join(import.meta.dirname, "..", "..", "..");
 const CANONICAL = join(
@@ -120,31 +121,6 @@ const CANONICAL = join(
 // posts. Written here as well as in every copy, so the guard has an outside opinion rather than
 // deriving the answer from the thing it is checking.
 const ROWS = ["landscape", "square", "portrait"];
-
-/** Dot-directories hold tooling, agent worktrees and scratch, never shipped code. */
-const skipped = (name: string) =>
-  name === "node_modules" || name.startsWith(".");
-
-function findAll(dir: string, basename: string, out: string[] = []): string[] {
-  for (const e of readdirSync(dir, { withFileTypes: true })) {
-    if (skipped(e.name)) continue;
-    const p = join(dir, e.name);
-    if (e.isDirectory()) findAll(p, basename, out);
-    else if (e.name === basename) out.push(p);
-  }
-  return out;
-}
-
-/** Every source file under a directory, for reading import specifiers out of `proof/`. */
-function findAllSource(dir: string, out: string[] = []): string[] {
-  for (const e of readdirSync(dir, { withFileTypes: true })) {
-    if (skipped(e.name)) continue;
-    const p = join(dir, e.name);
-    if (e.isDirectory()) findAllSource(p, out);
-    else if (/\.(mjs|ts|tsx|js|jsx)$/.test(e.name)) out.push(p);
-  }
-  return out;
-}
 
 type Stage = { top: number; bottom: number } | null;
 type Row = {
@@ -166,7 +142,7 @@ type Copy = {
   readPngSize: (bytes: Uint8Array) => { width: number; height: number };
 };
 
-const paths = findAll(TWIN, "sizes.mjs");
+const paths = filesUnder(TWIN, (e) => e.name === "sizes.mjs");
 const copies: Copy[] = [];
 for (const path of paths) {
   const mod = await import(path);
@@ -230,7 +206,7 @@ describe("the export-size table — every copy in the tree, discovered rather th
     // (b) A mirror EXISTS wherever a beat actually imports one. Read off `proof/`'s own import
     // specifiers rather than assumed, so adding the import without the mirror reddens here instead
     // of at the first render.
-    const beatFiles = findAllSource(join(TWIN, "proof"));
+    const beatFiles = filesUnder(join(TWIN, "proof"), (e) => /\.(mjs|ts|tsx|js|jsx)$/.test(e.name));
     const wanted = new Set<string>();
     for (const f of beatFiles) {
       for (const m of readFileSync(f, "utf8").matchAll(

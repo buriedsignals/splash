@@ -18,8 +18,9 @@
  * when the literal is a hex or a named colour, not by this rule. It reads source text.
  */
 import { describe, expect, it } from "bun:test";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { beatsWith, PROOF } from "../../../tests/support/proof.ts";
 
 const ROOT = join(import.meta.dirname, "..", "..", "..");
 
@@ -237,11 +238,9 @@ export function typedStylesIn(source: string): string[] {
 /** Every `.ts`/`.tsx` file in a directed video beat directory, except the ones that never carry
  *  drawn style: the timing contract, tests, and the two Remotion registration files. */
 function directedVideos(): string[] {
-  const proof = join(ROOT, "proof");
   const out: string[] = [];
-  for (const dir of readdirSync(proof)) {
-    const beat = join(proof, dir);
-    if (!existsSync(join(beat, "render-directions-video.mjs"))) continue;
+  for (const dir of beatsWith("render-directions-video.mjs")) {
+    const beat = join(PROOF, dir);
     for (const file of readdirSync(beat)) {
       if (!/\.(ts|tsx)$/.test(file)) continue;
       if (/^timing.*\.ts$/.test(file)) continue;

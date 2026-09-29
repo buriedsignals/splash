@@ -12,7 +12,8 @@ import {
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
-import { basename, dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
+import { removeProbe, testCasesOf } from "../../../tests/support/scaffold-probe.ts";
 
 /**
  * THE CHART VIDEO SCAFFOLD WRITES THE PLUMBING, REFUSES TO OVERWRITE, AND ITS GUARDS RUN GREEN BUT FOR THE PLACEHOLDERS.
@@ -71,52 +72,12 @@ const contentsOf = (dir: string) =>
       .map((f) => [f, readFileSync(join(dir, f), "utf8")]),
   );
 
-function removeProbe() {
-  if (
-    dirname(BEAT) === PROOF &&
-    basename(BEAT).startsWith(".scaffold-test-") &&
-    existsSync(BEAT)
-  )
-    rmSync(BEAT, { recursive: true });
-}
-
-/** Every test case of a `bun test` run over `files`, read from its JUnit report. */
-function testCasesOf(files: string[]) {
-  const dir = mkdtempSync(join(tmpdir(), "scaffold-junit-"));
-  try {
-    const report = join(dir, "report.xml");
-    const run = spawnSync(
-      "bun",
-      ["test", ...files, "--reporter=junit", `--reporter-outfile=${report}`],
-      { cwd: ROOT, encoding: "utf8" },
-    );
-    const xml = readFileSync(report, "utf8");
-    const cases = [
-      ...xml.matchAll(
-        /<testcase name="([^"]*)"[^>]*?(?:\/>|>([\s\S]*?)<\/testcase>)/g,
-      ),
-    ].map((m) => ({
-      name: m[1]
-        .replaceAll("&apos;", "'")
-        .replaceAll("&quot;", '"')
-        .replaceAll("&amp;", "&"),
-      failed: /<failure/.test(m[2] ?? ""),
-    }));
-    const failures = Number(
-      /<testsuites[^>]*\bfailures="(\d+)"/.exec(xml)?.[1],
-    );
-    return { cases, failures, output: run.stdout + run.stderr };
-  } finally {
-    rmSync(dir, { recursive: true, force: true });
-  }
-}
-
 let first: ReturnType<typeof scaffold>;
 beforeAll(() => {
-  removeProbe();
+  removeProbe(BEAT);
   first = scaffold(ARGS);
 });
-afterAll(removeProbe);
+afterAll(() => removeProbe(BEAT));
 
 describe("scaffold-video-beat", () => {
   it("should write exactly the plumbing files, and say which", () => {

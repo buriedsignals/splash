@@ -11,6 +11,7 @@
     "test:live": "bun test $(bun scripts/test-lanes.mjs --live)",
     "test:all": "bun test",
     "test:lanes": "bun scripts/test-lanes.mjs --check",
+    "chrome:install": "bun scripts/chrome-for-testing.mjs --install",
     "landing:check": "bun scripts/landing.mjs --check",
     "matrix": "bun scripts/matrix.mjs",
     "matrix:check": "bun scripts/matrix.mjs --check",

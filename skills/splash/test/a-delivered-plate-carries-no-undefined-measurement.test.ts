@@ -18,23 +18,14 @@
  * filed `rule`; this file is what keeps the next missing field from being invisible.
  */
 import { describe, it, expect } from "bun:test";
-import { readdirSync, readFileSync, existsSync, statSync } from "node:fs";
-import { join } from "node:path";
-
-const ROOT = join(import.meta.dirname, "..", "..", "..");
-const PROOF = join(ROOT, "proof");
+import { readFileSync } from "node:fs";
+import { renderedPlates } from "../../../tests/support/proof.ts";
 
 /** `NaN`, `undefined`, `null` and `Infinity` as an attribute VALUE — the four shapes a missing
  *  number takes once React has stringified it into the markup. */
 const BROKEN = /\b[a-zA-Z-]+="(NaN|undefined|null|-?Infinity)"/g;
 
-const plates = readdirSync(PROOF).flatMap((beat) => {
-  const dir = join(PROOF, beat, "renders");
-  if (!existsSync(dir) || !statSync(dir).isDirectory()) return [];
-  return readdirSync(dir)
-    .filter((f) => f.endsWith(".svg"))
-    .map((f) => ({ beat, file: f, path: join(dir, f) }));
-});
+const plates = renderedPlates();
 
 describe("a delivered plate", () => {
   it("should have delivered plates to measure", () => {

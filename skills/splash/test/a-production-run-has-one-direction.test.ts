@@ -31,12 +31,10 @@ import { describe, it, expect, beforeAll, afterAll } from "bun:test";
 import {
   mkdtempSync,
   mkdirSync,
-  writeFileSync,
   rmSync,
   readdirSync,
   readFileSync,
   existsSync,
-  statSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative, resolve } from "node:path";
@@ -47,6 +45,7 @@ import {
   renderRunDirection,
 } from "#shared/design-base/run-direction.mjs";
 import { filedDirections } from "#shared/design-base/index.mjs";
+import { filesUnder } from "../../../tests/support/tree.ts";
 
 const ROOT = resolve(import.meta.dirname, "..", "..", "..");
 const STORIES = join(ROOT, "stories");
@@ -158,15 +157,10 @@ const EXEMPT = (path: string) => path.startsWith("proof/");
 
 const SOURCE = /\.(mjs|mts|cjs|cts|ts|tsx|js|jsx)$/;
 
-function* walk(dir: string): Generator<string> {
-  if (!existsSync(dir)) return;
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === "node_modules" || entry.name === "renders") continue;
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) yield* walk(path);
-    else if (entry.isFile()) yield path;
-  }
-}
+const walk = (dir: string) =>
+  existsSync(dir)
+    ? filesUnder(dir, (entry) => entry.isFile(), (entry) => entry.name === "node_modules" || entry.name === "renders")
+    : [];
 
 function storiesWithBeats(): string[] {
   if (!existsSync(STORIES)) return [];

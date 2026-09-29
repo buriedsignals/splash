@@ -25,25 +25,20 @@
  * MUTATION: change `WATER_HUE` by one digit, or drop an alias from `MAPTILER_KEY_ALIASES`.
  */
 import { describe, expect, it } from "bun:test";
-import { readdirSync, readFileSync, existsSync, statSync } from "node:fs";
+import { readFileSync, existsSync, statSync } from "node:fs";
 import { join, relative, resolve, dirname } from "node:path";
 import { WATER_HUE } from "#shared/map-beat/tints.mjs";
 import { mapTilerKeyIn } from "#shared/map-beat/glyphs.mjs";
 import { matchConvention } from "../../palette/scripts/palette.mjs";
 import { resolveEnvKey } from "../../splash/scripts/keys.mjs";
+import { filesUnder } from "../../../tests/support/tree.ts";
 
 const ROOT = resolve(import.meta.dirname, "..", "..", "..");
 const SHARED = join(ROOT, "shared");
 const SOURCE = /\.(mjs|mts|cjs|cts|ts|tsx|js|jsx)$/;
 
-function* walk(dir: string): Generator<string> {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === "node_modules") continue;
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) yield* walk(path);
-    else if (entry.isFile() && SOURCE.test(entry.name)) yield path;
-  }
-}
+const walk = (dir: string) =>
+  filesUnder(dir, (entry) => entry.isFile() && SOURCE.test(entry.name), (entry) => entry.name === "node_modules");
 
 /**
  * Every relative specifier a module imports — static, dynamic, `require`, `export … from` — read

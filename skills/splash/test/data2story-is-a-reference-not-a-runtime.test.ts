@@ -41,6 +41,7 @@ const INSTALL_SET = readFileSync(join(ROOT, "install-set.txt"), "utf8")
 const SKIP = new Set(["node_modules", ".git", "test"]);
 const BINARY = /\.(png|jpe?g|gif|webp|avif|ico|woff2?|ttf|otf|mp4|webm|mov|mp3|wav|pdf|zip|gz|pbf|mbtiles)$/i;
 
+// Kept local, not tests/support/tree.ts: it tolerates a missing or unreadable directory, which the shared walk refuses to.
 function* shipped(dir: string): Generator<string> {
   let entries;
   try {

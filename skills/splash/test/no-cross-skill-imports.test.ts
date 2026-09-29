@@ -106,18 +106,17 @@ import { existsSync, lstatSync, readdirSync, statSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { filesUnder } from "../../../tests/support/tree.ts";
 
 const SKILLS = join(import.meta.dirname, "..", "..");
 const TWIN = resolve(SKILLS, "..");
 
-async function* sourceFiles(dir: string): AsyncGenerator<string> {
-  for (const e of await readdir(dir, { withFileTypes: true })) {
-    if (e.name === "node_modules" || e.name === "test") continue;
-    const p = join(dir, e.name);
-    if (e.isDirectory()) yield* sourceFiles(p);
-    else if (/\.(mjs|mts|cjs|cts|ts|tsx|js|jsx)$/.test(e.name)) yield p;
-  }
-}
+const sourceFiles = (dir: string) =>
+  filesUnder(
+    dir,
+    (e) => /\.(mjs|mts|cjs|cts|ts|tsx|js|jsx)$/.test(e.name),
+    (e) => e.name === "node_modules" || e.name === "test",
+  );
 
 /**
  * Every string-literal VALUE in `src`, with comments removed first — never the syntax that carries
@@ -331,7 +330,7 @@ describe("no import ever leaves the skill it was written in", () => {
         exact: skillRoot.toLowerCase(),
         withSep: (skillRoot + sep).toLowerCase(),
       };
-      for await (const file of sourceFiles(skillRoot)) {
+      for (const file of sourceFiles(skillRoot)) {
         const src = await readFile(file, "utf8");
         for (const literal of stringLiterals(src)) {
           if (/\s/.test(literal)) continue; // cheap: prose reads as a sentence, a specifier never does

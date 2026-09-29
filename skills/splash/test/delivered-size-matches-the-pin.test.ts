@@ -47,13 +47,15 @@
  *                                                                  caught it
  */
 import { describe, it, expect } from "bun:test";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import {
   SIZES,
   parseBriefFrontMatter,
   readPngSize,
 } from "../../chart-beat/scripts/sizes.mjs";
+import { filesUnder } from "../../../tests/support/tree.ts";
+import { beatsWith } from "../../../tests/support/proof.ts";
 
 const TWIN = join(import.meta.dirname, "..", "..", "..");
 const PROOF = join(TWIN, "proof");
@@ -87,34 +89,16 @@ const PROOF = join(TWIN, "proof");
 const UNPINNED_BEATS = 1;
 
 function beatDirs(): string[] {
-  if (!existsSync(PROOF)) return [];
-  return readdirSync(PROOF, { withFileTypes: true })
-    .filter((e) => e.isDirectory())
-    .map((e) => join(PROOF, e.name))
-    .filter((d) => existsSync(join(d, "BRIEF.md")));
+  return beatsWith("BRIEF.md").map((beat) => join(PROOF, beat));
 }
 
 /** Every `.png` under a beat, at any depth — a beat's outputs live in its own folder. */
-function pngsUnder(dir: string, out: string[] = []): string[] {
-  for (const e of readdirSync(dir, { withFileTypes: true })) {
-    if (e.name === "node_modules") continue;
-    const p = join(dir, e.name);
-    if (e.isDirectory()) pngsUnder(p, out);
-    else if (e.name.endsWith(".png")) out.push(p);
-  }
-  return out;
-}
+const pngsUnder = (dir: string) =>
+  filesUnder(dir, (e) => e.name.endsWith(".png"), (e) => e.name === "node_modules");
 
 /** Every `.mp4` under a beat — the video export is a raster with a fixed frame too. */
-function mp4sUnder(dir: string, out: string[] = []): string[] {
-  for (const e of readdirSync(dir, { withFileTypes: true })) {
-    if (e.name === "node_modules") continue;
-    const p = join(dir, e.name);
-    if (e.isDirectory()) mp4sUnder(p, out);
-    else if (e.name.endsWith(".mp4")) out.push(p);
-  }
-  return out;
-}
+const mp4sUnder = (dir: string) =>
+  filesUnder(dir, (e) => e.name.endsWith(".mp4"), (e) => e.name === "node_modules");
 
 /**
  * THE BAKED BASEMAP IS NOT A DELIVERABLE, and this is the only path shape excused here.

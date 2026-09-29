@@ -55,6 +55,7 @@ function committablePaths(): string[] {
   ].sort();
 }
 
+// Kept local, not tests/support/tree.ts: it lists files the way git would, in sorted order, relative, with .git skipped at the root only.
 async function repositoryFiles(): Promise<string[]> {
   const found: string[] = [];
 

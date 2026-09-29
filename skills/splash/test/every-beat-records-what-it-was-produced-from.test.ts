@@ -31,23 +31,19 @@
  *     because no chart sheet files `choropleth`. Restored → green.
  */
 import { describe, expect, it } from "bun:test";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 // @ts-expect-error — the repository's own tooling is ESM JavaScript.
 import { chainFor, ROOT } from "../../../scripts/editorial-chain.mjs";
 // @ts-expect-error — as above.
 import { parseBriefFrontMatter } from "../../../shared/chart-beat/sizes.mjs";
+import { beatsWith } from "../../../tests/support/proof.ts";
 
 const FORMATS = ["static", "video", "web", "scrolly"];
 const MEDIUMS = ["chart", "map", "image"];
 
-const beats = readdirSync(join(ROOT, "proof"), { withFileTypes: true })
-  .filter(
-    (entry) =>
-      entry.isDirectory() &&
-      existsSync(join(ROOT, "proof", entry.name, "BRIEF.md")),
-  )
-  .map((entry) => `proof/${entry.name}`)
+const beats = beatsWith("BRIEF.md", join(ROOT, "proof"))
+  .map((beat) => `proof/${beat}`)
   .sort();
 
 describe("every catalogue beat records what it was produced from", () => {

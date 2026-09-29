@@ -62,45 +62,11 @@
  */
 
 import { describe, expect, it, setDefaultTimeout } from "bun:test";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { execFileSync } from "node:child_process";
-import { homedir } from "node:os";
 import { join } from "node:path";
 import puppeteer from "puppeteer-core";
-
-/** A DUPLICATE of `map-web/scripts/verify-interaction.mjs`'s own `resolveChrome`, for the same
- *  reason that one duplicates `bake-plate.mjs`'s: importing either runs it. This machine has no
- *  puppeteer-managed Chrome download, so the installed browser is what every driven check in this
- *  tree actually uses. */
-function resolveChrome(): string {
-  const candidates: string[] = [];
-  if (process.env.CHROME_PATH) candidates.push(process.env.CHROME_PATH);
-  const cache = join(homedir(), ".cache/puppeteer/chrome");
-  if (existsSync(cache))
-    for (const build of readdirSync(cache).sort().reverse())
-      candidates.push(
-        join(
-          cache,
-          build,
-          "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-        ),
-        join(
-          cache,
-          build,
-          "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-        ),
-        join(cache, build, "chrome-linux64/chrome"),
-      );
-  candidates.push(
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-  );
-  const found = candidates.find((path) => existsSync(path));
-  if (!found)
-    throw new Error(
-      `no Chrome to drive with. Looked in:\n  ${candidates.join("\n  ")}\nSet CHROME_PATH, or run: bunx puppeteer browsers install chrome`,
-    );
-  return found;
-}
+import { resolveChrome } from "../../../scripts/chrome-for-testing.mjs";
 
 // Launching Chrome once and walking every page x every option x every datum at two widths is
 // minutes, not seconds — the same budget `map-web/test/canon.test.ts` already spends on

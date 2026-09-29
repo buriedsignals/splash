@@ -46,7 +46,7 @@
  *      catalogue reaches them.
  */
 import { describe, expect, it } from "bun:test";
-import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join, relative, resolve } from "node:path";
 
 import {
@@ -59,6 +59,7 @@ import {
   stackOptionSlugs,
   tableCells,
 } from "../../chart-web/assets/interaction-plan.ts";
+import { filesUnder } from "../../../tests/support/tree.ts";
 
 const ROOT = resolve(import.meta.dirname, "..", "..", "..");
 
@@ -81,19 +82,12 @@ const CHANGES_NOTHING: string[] = [];
  *  so this census stays in the FAST lane (`scripts/test-lanes.mjs` reads a spawned `git` as a
  *  heavy tell) — measured the day it was written: the walk and `git ls-files` name the same 152
  *  `.html` files, byte for byte. */
-function* walk(dir: string): Generator<string> {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (
-      entry.name === "node_modules" ||
-      entry.name === ".git" ||
-      entry.name === "drive"
-    )
-      continue;
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) yield* walk(path);
-    else if (entry.isFile() && entry.name.endsWith(".html")) yield path;
-  }
-}
+const walk = (dir: string) =>
+  filesUnder(
+    dir,
+    (entry) => entry.isFile() && entry.name.endsWith(".html"),
+    (entry) => entry.name === "node_modules" || entry.name === ".git" || entry.name === "drive",
+  );
 
 type Page = { label: string; html: string };
 

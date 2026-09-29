@@ -13,8 +13,8 @@
  * `measureTextBand`. It is the delivered file that is measured, not the element that was rendered.
  */
 import { describe, it, expect } from "bun:test";
-import { readdirSync, readFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync } from "node:fs";
+import { PROOF, renderedPlates } from "../../../tests/support/proof.ts";
 import {
   inkBoxes,
   frameOf,
@@ -26,18 +26,8 @@ import {
   textRuns,
 } from "../../../scripts/design-base/text-boxes.mjs";
 
-const ROOT = join(import.meta.dirname, "..", "..", "..");
-const PROOF = join(ROOT, "proof");
-
 /** Every plate rendered through the design base: one SVG per filed direction, in `renders/`. */
-const plates = readdirSync(PROOF)
-  .map((beat) => join(PROOF, beat, "renders"))
-  .filter((dir) => existsSync(dir))
-  .flatMap((dir) =>
-    readdirSync(dir)
-      .filter((f) => f.endsWith(".svg"))
-      .map((f) => join(dir, f)),
-  );
+const plates = renderedPlates().map(({ path }) => path);
 
 /**
  * OWED — A RATCHET. Read this before touching it; you may not add to it.

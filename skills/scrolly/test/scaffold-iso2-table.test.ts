@@ -2,13 +2,12 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { spawnSync } from "node:child_process";
 import {
-  existsSync,
   mkdirSync,
   readFileSync,
-  rmSync,
   writeFileSync,
 } from "node:fs";
-import { basename, dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
+import { removeProbe } from "../../../tests/support/scaffold-probe.ts";
 
 /**
  * A WORKED EXAMPLE'S OWN LOCAL ISO A2 TABLE IS NEVER COPIED FORWARD SILENTLY.
@@ -37,18 +36,9 @@ const BEAT = join(PROOF, NAME);
 const run = (args: string[]) =>
   spawnSync("bun", [MAP_SCRIPT, ...args], { cwd: ROOT, encoding: "utf8" });
 
-function removeProbe() {
-  if (
-    dirname(BEAT) === PROOF &&
-    basename(BEAT).startsWith(".scaffold-test-") &&
-    existsSync(BEAT)
-  )
-    rmSync(BEAT, { recursive: true });
-}
-
 describe("scaffold-scrolly-map-beat — a copied ISO A2 table is replaced, not silently inherited", () => {
   beforeAll(() => {
-    removeProbe();
+    removeProbe(BEAT);
     mkdirSync(BEAT, { recursive: true });
     writeFileSync(
       join(BEAT, "PALETTE.md"),
@@ -56,7 +46,7 @@ describe("scaffold-scrolly-map-beat — a copied ISO A2 table is replaced, not s
     );
     writeFileSync(join(BEAT, "data.csv"), "entity\nFRA\n");
   });
-  afterAll(removeProbe);
+  afterAll(() => removeProbe(BEAT));
 
   it("should swap the worked example's own local ISO2 table for the shared canonical one, marked SCAFFOLD", () => {
     const result = run([

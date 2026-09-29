@@ -49,6 +49,7 @@ import { join, relative } from "node:path";
 // validator every runner will hit at run time, and check 3 is worth nothing if this file
 // reimplements it. Runtime code in this branch never crosses a skill boundary; this does, once.
 import { parsePalette } from "../../chart-beat/scripts/render-still.mjs";
+import { codeOf } from "../../../tests/support/source-text.ts";
 
 const SKILLS = join(import.meta.dirname, "..", "..");
 const TWIN = join(SKILLS, "..");
@@ -70,15 +71,8 @@ function seedRunners(): { skill: string; path: string; label: string }[] {
   return found.sort((a, b) => a.label.localeCompare(b.label));
 }
 
-/** Comments removed, so a hex quoted inside a paragraph explaining why it is no longer there does
- *  not read as a literal. Every runner edited by this chantier carries exactly such a paragraph. */
-function stripComments(src: string): string {
-  return src
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .split("\n")
-    .map((line) => line.replace(/(^|[^:])\/\/.*$/, "$1"))
-    .join("\n");
-}
+// Comments removed (`codeOf`), so a hex quoted inside a paragraph explaining why it is no longer
+// there does not read as a literal. Every runner edited by this chantier carries such a paragraph.
 
 const RUNNERS = seedRunners();
 
@@ -105,7 +99,7 @@ describe("a craft skill's seed reads a recorded palette, discovered rather than 
   for (const { skill, path, label } of RUNNERS) {
     // CHECK 1 — no hex in a palette position.
     it(`${label} should name no hex colour in a ground or accent position`, () => {
-      const src = stripComments(readFileSync(path, "utf8"));
+      const src = codeOf(readFileSync(path, "utf8"));
       const offenders = [
         ...src.matchAll(/(ground|accent)\s*[:=]\s*"(#[0-9A-Fa-f]{3,8})"/g),
       ].map((m) => `${m[1]} = ${m[2]}`);
@@ -115,7 +109,7 @@ describe("a craft skill's seed reads a recorded palette, discovered rather than 
     // CHECK 2 — no evasion. Without this, moving the literal one line up (`const G = "#FFFFFF";`
     // then `ground: G`) defeats check 1 entirely while changing nothing about the defect.
     it(`${label} should call readPalette if it names ground or accent at all`, () => {
-      const src = stripComments(readFileSync(path, "utf8"));
+      const src = codeOf(readFileSync(path, "utf8"));
       const namesAPalettePosition = /\b(ground|accent)\b/.test(src);
       const readsOne = /\breadPalette\s*\(/.test(src);
       // A runner that names neither is fine and needs nothing: map-web's own
@@ -129,7 +123,7 @@ describe("a craft skill's seed reads a recorded palette, discovered rather than 
     // CHECK 3 — the recorded answer exists in the SKILL'S OWN DIRECTORY and parses. This is what
     // makes a copied skill directory self-contained: it carries its own answer, and renders alone.
     it(`${label}'s skill should hold a PALETTE.md that parsePalette accepts`, () => {
-      const src = stripComments(readFileSync(path, "utf8"));
+      const src = codeOf(readFileSync(path, "utf8"));
       if (!/\breadPalette\s*\(/.test(src)) return; // check 2 already covered this case
       const candidates = [
         join(SKILLS, skill, "PALETTE.md"),

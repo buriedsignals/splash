@@ -14,8 +14,9 @@
  * `root-template-tells-the-truth` and `nothing-a-journalist-receives-reaches-into-skills`.
  */
 import { describe, expect, it } from "bun:test";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { filesUnder } from "../../../tests/support/tree.ts";
 
 const ROOT = join(import.meta.dirname, "..", "..", "..");
 const ROOTS = ["skills", "shared"];
@@ -37,14 +38,7 @@ const LOADER: Record<string, "tsx" | "ts" | "js"> = {
   ".jsx": "tsx",
 };
 
-function* walk(dir: string): Generator<string> {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (SKIP.has(entry.name)) continue;
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) yield* walk(path);
-    else if (entry.isFile()) yield path;
-  }
-}
+const walk = (dir: string) => filesUnder(dir, (entry) => entry.isFile(), (entry) => SKIP.has(entry.name));
 
 /** Every source file the toolchain ships, test files included — a broken test is a broken guard. */
 function shipped(): {

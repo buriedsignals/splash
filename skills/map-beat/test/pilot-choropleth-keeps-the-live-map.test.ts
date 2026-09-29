@@ -1,12 +1,12 @@
 // LANE: heavy
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-import { homedir } from "node:os";
 import { join } from "node:path";
 import puppeteer from "puppeteer-core";
 import { scrollyMapScript } from "#shared/map-beat/inline.mjs";
 import { cameraFields } from "#shared/map-beat/scrolly.mjs";
+import { resolveChrome } from "../../../scripts/chrome-for-testing.mjs";
 
 // THE CHOROPLETH PILOT'S DRIVER KEEPS THE LIVE MAP IN CHARGE ONCE IT IS ON SCREEN. It used to read "live" as
 // `ready && !failed`, and the runtime marked the map failed on any MapLibre `error` event: one refused tile
@@ -15,30 +15,6 @@ import { cameraFields } from "#shared/map-beat/scrolly.mjs";
 
 const require = createRequire(import.meta.url);
 const DRIVER = join(import.meta.dirname, "../../../proof/scrolly-choropleth-europe-lowcarbon/choropleth-drive.mjs");
-
-/** A DUPLICATE of the `resolveChrome` every capture script in this tree carries — see
- *  `skills/map-beat/test/scrolly-live.test.ts`'s own copy for why these are duplicated rather than
- *  imported (a skill's own scripts stay copy-pasteable). */
-function resolveChrome() {
-  const candidates = [];
-  if (process.env.CHROME_PATH) candidates.push(process.env.CHROME_PATH);
-  const cache = join(homedir(), ".cache/puppeteer/chrome");
-  if (existsSync(cache))
-    for (const build of readdirSync(cache).sort().reverse())
-      candidates.push(
-        join(cache, build, "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"),
-        join(cache, build, "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing"),
-        join(cache, build, "chrome-linux64/chrome"),
-      );
-  candidates.push("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome", "/usr/bin/google-chrome");
-  const found = candidates.find((c) => existsSync(c));
-  if (!found)
-    throw new Error(
-      `no Chrome to drive — looked at ${candidates.join(", ")}. This format is verified by driving a ` +
-        `real browser and by nothing else; there is no fallback that would prove anything.`,
-    );
-  return found;
-}
 
 const square = (w: number, s: number, e: number, n: number) => ({
   type: "FeatureCollection",

@@ -17,6 +17,7 @@ import {
 // The period rule itself, so this file measures the population the skill derives rather than
 // re-typing the rule and drifting from it.
 import { findYearColumn } from "../scripts/panel-shape.mjs";
+import { codeOf } from "../../../tests/support/source-text.ts";
 
 // The frozen profile shape `intake`'s `profileTable` produces, with the run's own numbers:
 // three components of a melt total, 14 + 11 + 9 = 34.
@@ -68,8 +69,7 @@ describe("the verdicts are consulted", () => {
   // because the header of `propose.mjs` QUOTES the grep that found the hole, so the literals
   // `groundTakeaway(`, `formatGap(` and `capabilityGap(` were all sitting in a comment. A guard
   // that a comment can satisfy is worse than none.
-  const code = (text: string) =>
-    text.replace(/\/\*[\s\S]*?\*\//g, " ").replace(/(^|[^:])\/\/[^\n]*/g, "$1");
+  const code = (text: string) => codeOf(text, " ");
 
   const sources = readdirSync(scriptsDir)
     .filter((f) => f.endsWith(".mjs"))

@@ -31,6 +31,9 @@ jobs:
       - name: Install dependencies from the lockfile
         run: bun install --frozen-lockfile
 
+      - name: Install the pinned Chrome for Testing the heavy guards were measured on
+        run: bun run chrome:install  # into ~/.cache/puppeteer, where every script looks first (scripts/chrome-for-testing.mjs)
+
       - name: Assert the job carries no provider credentials
         run: |
           for name in MAPTILER_KEY VITE_MAPTILER_KEY REMOTION_MAPTILER_KEY DATAWRAPPER_TOKEN CLOUDFLARE_API_TOKEN; do

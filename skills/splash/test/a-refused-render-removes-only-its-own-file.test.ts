@@ -13,27 +13,22 @@
  * renders at one size only.
  */
 import { describe, expect, it } from "bun:test";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { beatsWith } from "../../../tests/support/proof.ts";
 
 const ROOT = join(import.meta.dirname, "..", "..", "..");
 const PROOF = join(ROOT, "proof");
 
 function videoRunners(): { beat: string; source: string }[] {
-  if (!existsSync(PROOF)) return [];
-  return readdirSync(PROOF, { withFileTypes: true })
-    .filter((e) => e.isDirectory())
-    .map((e) => ({ beat: e.name, path: join(PROOF, e.name, "render-directions-video.mjs") }))
-    .filter((r) => existsSync(r.path))
+  return beatsWith("render-directions-video.mjs")
+    .map((beat) => ({ beat, path: join(PROOF, beat, "render-directions-video.mjs") }))
     .map(({ beat, path }) => ({ beat, source: readFileSync(path, "utf8") }));
 }
 
 function runners(): { beat: string; source: string }[] {
-  if (!existsSync(PROOF)) return [];
-  return readdirSync(PROOF, { withFileTypes: true })
-    .filter((e) => e.isDirectory())
-    .map((e) => ({ beat: e.name, path: join(PROOF, e.name, "render-directions.mjs") }))
-    .filter((r) => existsSync(r.path))
+  return beatsWith("render-directions.mjs")
+    .map((beat) => ({ beat, path: join(PROOF, beat, "render-directions.mjs") }))
     .map(({ beat, path }) => ({ beat, source: readFileSync(path, "utf8") }));
 }
 

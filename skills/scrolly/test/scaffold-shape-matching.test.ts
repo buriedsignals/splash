@@ -2,13 +2,13 @@
 import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { spawnSync } from "node:child_process";
 import {
-  existsSync,
   mkdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { basename, dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
+import { removeProbe } from "../../../tests/support/scaffold-probe.ts";
 import {
   inferSubjectShape,
   pickWorkedExample,
@@ -40,16 +40,6 @@ const STAMP = `${process.pid}-${Date.now().toString(36)}`;
 
 const run = (args: string[]) =>
   spawnSync("bun", [MAP_SCRIPT, ...args], { cwd: ROOT, encoding: "utf8" });
-
-function removeProbe(dir: string, name: string) {
-  if (
-    dirname(dir) === PROOF &&
-    basename(dir).startsWith(".scaffold-test-") &&
-    basename(dir) === name &&
-    existsSync(dir)
-  )
-    rmSync(dir, { recursive: true });
-}
 
 describe("every map type sheet records its worked example's own data shape", () => {
   const EXPECTED: Record<string, string> = {
@@ -133,7 +123,7 @@ describe("pickWorkedExample", () => {
 describe("inferSubjectShape", () => {
   const DIR = join(PROOF, `.scaffold-test-scrolly-infer-shape-${STAMP}`);
 
-  afterAll(() => removeProbe(DIR, basename(DIR)));
+  afterAll(() => removeProbe(DIR));
 
   it("should read points off a data.json carrying lon/lat columns", () => {
     rmSync(DIR, { recursive: true, force: true });
@@ -180,8 +170,8 @@ describe("scaffold-scrolly-map-beat — an honest shape mismatch, end to end", (
   const PALETTE_FIXTURE =
     '---\nground: "#16191B"\naccent: "#D4A853"\naccents: "#5B8A8A"\norigin: "newsroom"\n---\n';
   beforeAll(() => {
-    removeProbe(MISMATCH_BEAT, MISMATCH_NAME);
-    removeProbe(MATCH_BEAT, MATCH_NAME);
+    removeProbe(MISMATCH_BEAT);
+    removeProbe(MATCH_BEAT);
     // Both scaffolds below adapt dot-density-europe-stations, whose runner reads "stations.csv" beside the
     // beat, and both now also require a reachable PALETTE.md — see depth-independent.mjs.
     for (const dir of [MISMATCH_BEAT, MATCH_BEAT]) {
@@ -191,8 +181,8 @@ describe("scaffold-scrolly-map-beat — an honest shape mismatch, end to end", (
     }
   });
   afterAll(() => {
-    removeProbe(MISMATCH_BEAT, MISMATCH_NAME);
-    removeProbe(MATCH_BEAT, MATCH_NAME);
+    removeProbe(MISMATCH_BEAT);
+    removeProbe(MATCH_BEAT);
   });
 
   it("should still scaffold a working beat, with a loud SHAPE MISMATCH banner, when the subject's shape disagrees with the only worked example", () => {

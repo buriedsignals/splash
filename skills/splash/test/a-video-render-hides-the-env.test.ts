@@ -29,22 +29,22 @@
  * the same class of blind spot `no-cross-skill-imports.test.ts` documents for import specifiers.
  */
 import { describe, expect, it } from "bun:test";
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { filesUnder } from "../../../tests/support/tree.ts";
+import { beatsWith, PROOF } from "../../../tests/support/proof.ts";
 
 const ROOT = join(import.meta.dirname, "..", "..", "..");
 const SOURCE = /\.(mjs|mts|cjs|cts|ts|tsx|js|jsx)$/;
 
-function* walk(dir: string, { skipTest = false } = {}): Generator<string> {
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === "node_modules") continue;
-    if (skipTest && entry.name === "test") continue;
-    const path = join(dir, entry.name);
-    if (entry.isDirectory()) yield* walk(path, { skipTest });
-    else if (entry.isFile() && SOURCE.test(entry.name)) yield path;
-  }
-}
+const walk = (dir: string, { skipTest = false } = {}) =>
+  filesUnder(
+    dir,
+    (entry) => entry.isFile() && SOURCE.test(entry.name),
+    (entry) => entry.name === "node_modules" || (skipTest && entry.name === "test"),
+  );
 
+// Kept local, not tests/support/source-text.ts: blocks are stripped BEFORE whole-line `//`, the reverse of `stripWholeLineComments`.
 function stripComments(source: string): string {
   return source
     .replace(/\/\*[\s\S]*?\*\//g, "")
@@ -251,14 +251,8 @@ function watchedFiles(): string[] {
   if (existsSync(skillsDir))
     for (const path of walk(skillsDir, { skipTest: true })) out.push(path);
 
-  const proof = join(ROOT, "proof");
-  if (existsSync(proof)) {
-    for (const dir of readdirSync(proof)) {
-      const beat = join(proof, dir);
-      if (!existsSync(join(beat, "render-directions-video.mjs"))) continue;
-      for (const path of walk(beat, { skipTest: true })) out.push(path);
-    }
-  }
+  for (const dir of beatsWith("render-directions-video.mjs"))
+    for (const path of walk(join(PROOF, dir), { skipTest: true })) out.push(path);
   return out;
 }
 

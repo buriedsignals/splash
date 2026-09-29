@@ -108,13 +108,12 @@
  *   otherwise have made rules 2 and 3 pass on a script writing entirely into a scratch directory.
  */
 import { describe, it, expect } from "bun:test";
-import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { stripCommentsKeepingLines } from "../../../tests/support/source-text.ts";
+import { beatsUnder } from "../../../tests/support/proof.ts";
 
 const PROOF_ROOT = join(import.meta.dirname, "..", "..", "..", "proof");
-
-/** Directories under proof/ that hold evidence ABOUT the experiment, not a beat's own production. */
-const NOT_A_BEAT = new Set(["comparison", "seance", "trial"]);
 
 /**
  * The beat scripts — the same set `claims-grounded-in-data.test.ts` scans, so the two guards'
@@ -144,54 +143,9 @@ const WRITE_CALLS = [
   "renameSync",
 ];
 
-/**
- * Strip `//` and block comments while respecting string and template literals — vendored from
- * `claims-grounded-in-data.test.ts`, deliberately rather than shared: a naive strip cuts every
- * `source:` credit in half at the `//` of a URL, and a test that imports another test's internals
- * couples two guards that must be able to fail independently.
- */
-function stripComments(src: string): string {
-  let out = "";
-  let i = 0;
-  while (i < src.length) {
-    const c = src[i];
-    if (c === '"' || c === "'" || c === "`") {
-      const q = c;
-      out += c;
-      i++;
-      while (i < src.length) {
-        if (src[i] === "\\") {
-          out += src[i] + (src[i + 1] ?? "");
-          i += 2;
-          continue;
-        }
-        out += src[i];
-        if (src[i] === q) {
-          i++;
-          break;
-        }
-        i++;
-      }
-      continue;
-    }
-    if (c === "/" && src[i + 1] === "/") {
-      while (i < src.length && src[i] !== "\n") i++;
-      continue;
-    }
-    if (c === "/" && src[i + 1] === "*") {
-      i += 2;
-      while (i < src.length && !(src[i] === "*" && src[i + 1] === "/")) {
-        if (src[i] === "\n") out += "\n";
-        i++;
-      }
-      i += 2;
-      continue;
-    }
-    out += c;
-    i++;
-  }
-  return out;
-}
+// Comments are stripped string-aware (`stripCommentsKeepingLines`, shared with
+// `claims-grounded-in-data.test.ts` through tests/support rather than imported from that test, so the
+// two guards still fail independently): a naive strip cuts every `source:` credit at a URL's `//`.
 
 /**
  * Read one balanced expression starting at `start`, stopping at the first `stop` character that
@@ -372,12 +326,9 @@ type Finding = {
 // population does not silently shrink below its own floor.
 const ARCHIVE_ROOT = join(import.meta.dirname, "..", "..", "..", "tests", "fixtures", "beats");
 
+/** The beats under `root`, leaving out the directories that hold evidence ABOUT the experiment. */
 function beatDirsUnder(root: string): string[] {
-  if (!existsSync(root)) return [];
-  return readdirSync(root)
-    .filter((name) => !NOT_A_BEAT.has(name))
-    .filter((name) => statSync(join(root, name)).isDirectory())
-    .sort();
+  return beatsUnder(root).sort();
 }
 
 const scans = [
@@ -399,7 +350,7 @@ const scans = [
       root,
       beat,
       script,
-      text: stripComments(readFileSync(join(rootDir, beat, script), "utf8")),
+      text: stripCommentsKeepingLines(readFileSync(join(rootDir, beat, script), "utf8")),
     })),
 );
 

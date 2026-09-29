@@ -17,11 +17,13 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { mapTilerKeyIn } from "#shared/map-beat/glyphs.mjs";
 import { DEFAULT_CACHE_DIR } from "../scripts/maptiler-proxy.mjs";
+import { beatsUnder } from "../../../tests/support/proof.ts";
 
 const ROOT = join(import.meta.dirname, "..", "..", "..");
 const PROOF = join(ROOT, "proof");
 const key = mapTilerKeyIn(process.env);
 
+// Kept local, not tests/support/tree.ts: it follows symlinks (statSync) and skips nothing.
 const files = (dir: string): string[] =>
   existsSync(dir)
     ? readdirSync(dir).flatMap((f) =>
@@ -43,7 +45,7 @@ function carryingTheKey(paths: string[]): string[] {
     .map((f) => relative(ROOT, f));
 }
 
-const MAP_VIDEOS = readdirSync(PROOF)
+const MAP_VIDEOS = beatsUnder(PROOF)
   .filter((d) => d.startsWith("video-") && existsSync(join(PROOF, d, "measure.mjs")))
   .sort();
 

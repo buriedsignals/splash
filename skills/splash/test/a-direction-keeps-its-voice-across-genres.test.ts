@@ -36,6 +36,7 @@
 import { describe, it, expect } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { beatsUnder } from "../../../tests/support/proof.ts";
 import { readDirection } from "../../../shared/design-base/read-direction.mjs";
 import { resolveFamily } from "../../../shared/design-base/resolve-families.mjs";
 
@@ -87,11 +88,9 @@ function directionOf(dir: string, file: string): string {
 }
 
 function directedPagesUnder(root: string): Page[] {
-  if (!existsSync(root)) return [];
   const out: Page[] = [];
-  for (const entry of readdirSync(root, { withFileTypes: true })) {
-    if (!entry.isDirectory()) continue;
-    const dir = join(root, entry.name);
+  for (const entry of beatsUnder(root)) {
+    const dir = join(root, entry);
     /** A BEAT'S PAGE IS NOT ALWAYS AT ITS OWN ROOT. This walk read the beat directory only, and
      *  `proof/mapgen-choropleth-web` delivers into `render/` — so the second map type to be set in
      *  its direction's own face joined a population of one level and was measured by nothing. One
@@ -120,7 +119,7 @@ function directedPagesUnder(root: string): Page[] {
       const html = readFileSync(join(dir, file), "utf8");
       if (!html.includes("--title-family")) continue;
       out.push({
-        beat: entry.name,
+        beat: entry,
         file,
         html,
         direction: directionOf(dir, file),

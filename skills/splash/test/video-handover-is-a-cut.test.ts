@@ -164,6 +164,7 @@
 import { describe, it, expect, mock } from "bun:test";
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
+import { filesUnder } from "../../../tests/support/tree.ts";
 
 const TWIN_ROOT = join(import.meta.dirname, "..", "..", "..");
 const PROOF_ROOT = join(TWIN_ROOT, "proof");
@@ -1043,16 +1044,11 @@ type Beat = {
 };
 
 function findProps(dir: string): string | null {
-  const hits: string[] = [];
-  const walk = (d: string) => {
-    for (const e of readdirSync(d, { withFileTypes: true })) {
-      if (e.name === "node_modules") continue;
-      const full = join(d, e.name);
-      if (e.isDirectory()) walk(full);
-      else if (e.isFile() && /props\.json$/.test(e.name)) hits.push(full);
-    }
-  };
-  walk(dir);
+  const hits = filesUnder(
+    dir,
+    (e) => e.isFile() && /props\.json$/.test(e.name),
+    (e) => e.name === "node_modules",
+  );
   hits.sort();
   return hits[0] ?? null;
 }

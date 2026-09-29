@@ -101,13 +101,16 @@ import {
   readFileSync,
   rmSync,
 } from "node:fs";
-import { homedir, tmpdir } from "node:os";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import puppeteer, { type Browser } from "puppeteer-core";
 import { readPixelPalette } from "../../../scripts/design-base/pixel-palette.mjs";
 import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { composeDirection } from "#shared/design-base/compose.mjs";
 import { parsePalette } from "#shared/chart-beat/colour.mjs";
+import { resolveChrome } from "../../../scripts/chrome-for-testing.mjs";
+import { beatsWith, PROOF } from "../../../tests/support/proof.ts";
+import { codeOf } from "../../../tests/support/source-text.ts";
 
 // A screenshot of each committed HTML page, plus reading a handful of PNGs already on disk. No
 // re-render anywhere in this file. Roughly two minutes across 161 beats, mostly Chrome — which is
@@ -116,7 +119,6 @@ import { parsePalette } from "#shared/chart-beat/colour.mjs";
 setDefaultTimeout(60_000);
 
 const TWIN = join(import.meta.dirname, "..", "..", "..");
-const PROOF = join(TWIN, "proof");
 const DIRECTIONS_DIR = join(TWIN, "docs", "design-base", "directions");
 const DIRECTION_IDS = ["creme", "nocturne", "rapport"] as const;
 
@@ -124,19 +126,7 @@ const WORK = mkdtempSync(join(tmpdir(), "palette-reaches-pixels-"));
 
 /** Every beat that records a palette — walked, not listed. */
 function allBeats(): string[] {
-  if (!existsSync(PROOF)) return [];
-  return readdirSync(PROOF, { withFileTypes: true })
-    .filter(
-      (e) => e.isDirectory() && existsSync(join(PROOF, e.name, "PALETTE.md")),
-    )
-    .map((e) => e.name)
-    .sort();
-}
-
-function stripComments(text: string): string {
-  return text
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/(^|[^:])\/\/.*$/gm, "$1");
+  return beatsWith("PALETTE.md").sort();
 }
 
 /** Every `render-directions*.mjs` this beat has, concatenated and comment-stripped — the source a
@@ -145,7 +135,7 @@ function runnerSource(beat: string): string {
   const dir = join(PROOF, beat);
   return readdirSync(dir)
     .filter((f) => /^render-directions.*\.mjs$/.test(f))
-    .map((f) => stripComments(readFileSync(join(dir, f), "utf8")))
+    .map((f) => codeOf(readFileSync(join(dir, f), "utf8")))
     .join("\n");
 }
 
@@ -238,36 +228,6 @@ function committedArtifact(
 }
 
 // ── a delivered web page is measured through the browser a reader uses ─────────────────────────
-function resolveChrome(): string {
-  const candidates: string[] = [];
-  if (process.env.CHROME_PATH) candidates.push(process.env.CHROME_PATH);
-  const cache = join(homedir(), ".cache/puppeteer/chrome");
-  if (existsSync(cache))
-    for (const build of readdirSync(cache).sort().reverse())
-      candidates.push(
-        join(
-          cache,
-          build,
-          "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-        ),
-        join(
-          cache,
-          build,
-          "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-        ),
-        join(cache, build, "chrome-linux64/chrome"),
-      );
-  candidates.push(
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-  );
-  const found = candidates.find((path) => existsSync(path));
-  if (!found)
-    throw new Error(
-      `no Chrome to photograph a delivered page with. Looked in:\n  ${candidates.join("\n  ")}`,
-    );
-  return found;
-}
-
 let browser: Browser | null = null;
 async function screenshot(html: string, out: string): Promise<void> {
   browser ??= await puppeteer.launch({

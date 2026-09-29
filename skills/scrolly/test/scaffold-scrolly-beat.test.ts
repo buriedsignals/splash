@@ -6,10 +6,10 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
-  rmSync,
   writeFileSync,
 } from "node:fs";
-import { basename, dirname, join, resolve } from "node:path";
+import { join, resolve } from "node:path";
+import { removeProbe } from "../../../tests/support/scaffold-probe.ts";
 
 /**
  * THE SCROLLY SCAFFOLDS WRITE THE PLUMBING ONLY, REFUSE TO OVERWRITE, AND THE FILES THEY WRITE PARSE.
@@ -135,16 +135,6 @@ function seed(dir: string, files: Record<string, string>) {
     writeFileSync(join(dir, name), content);
 }
 
-function removeProbe(dir: string, name: string) {
-  if (
-    dirname(dir) === PROOF &&
-    basename(dir).startsWith(".scaffold-test-") &&
-    basename(dir) === name &&
-    existsSync(dir)
-  )
-    rmSync(dir, { recursive: true });
-}
-
 /** Every file the scaffold wrote parses as valid TS/TSX/JS — checked with Bun's own transpiler, which never
  *  resolves an import, so this is a fast syntax check independent of the repository's own path aliases. */
 function assertEveryFileParses(dir: string, files: string[]) {
@@ -161,10 +151,10 @@ let mapFirst: ReturnType<typeof run>;
 let chartFromFirst: ReturnType<typeof run>;
 let mapFromFirst: ReturnType<typeof run>;
 beforeAll(async () => {
-  removeProbe(CHART_BEAT, CHART_NAME);
-  removeProbe(MAP_BEAT, MAP_NAME);
-  removeProbe(CHART_FROM_BEAT, CHART_FROM_NAME);
-  removeProbe(MAP_FROM_BEAT, MAP_FROM_NAME);
+  removeProbe(CHART_BEAT);
+  removeProbe(MAP_BEAT);
+  removeProbe(CHART_FROM_BEAT);
+  removeProbe(MAP_FROM_BEAT);
   seed(CHART_BEAT, { "PALETTE.md": PALETTE_FIXTURE });
   seed(MAP_BEAT, { "PALETTE.md": PALETTE_FIXTURE });
   seed(CHART_FROM_BEAT, {
@@ -181,10 +171,10 @@ beforeAll(async () => {
   mapFromFirst = run(MAP_SCRIPT, MAP_FROM_ARGS);
 });
 afterAll(() => {
-  removeProbe(CHART_BEAT, CHART_NAME);
-  removeProbe(MAP_BEAT, MAP_NAME);
-  removeProbe(CHART_FROM_BEAT, CHART_FROM_NAME);
-  removeProbe(MAP_FROM_BEAT, MAP_FROM_NAME);
+  removeProbe(CHART_BEAT);
+  removeProbe(MAP_BEAT);
+  removeProbe(CHART_FROM_BEAT);
+  removeProbe(MAP_FROM_BEAT);
 });
 
 describe("scaffold-scrolly-beat (chart)", () => {
@@ -211,7 +201,7 @@ describe("scaffold-scrolly-beat (chart)", () => {
   it("should scaffold into a beat folder that already exists (as analyst's own step leaves it), refusing only on a real file collision", () => {
     const name = `.scaffold-test-scrolly-chart-existing-${STAMP}`;
     const dir = join(PROOF, name);
-    removeProbe(dir, name);
+    removeProbe(dir);
     seed(dir, {
       "data.json": "{}",
       "PALETTE.md": PALETTE_FIXTURE,
@@ -232,7 +222,7 @@ describe("scaffold-scrolly-beat (chart)", () => {
       );
       expect(readFileSync(join(dir, "data.json"), "utf8")).toBe("{}");
     } finally {
-      removeProbe(dir, name);
+      removeProbe(dir);
     }
   });
 
@@ -268,7 +258,7 @@ describe("scaffold-scrolly-beat (chart)", () => {
   it("should not double the Scrolly suffix when --component is already given one", () => {
     const name = `.scaffold-test-scrolly-chart-suffix-${STAMP}`;
     const dir = join(PROOF, name);
-    removeProbe(dir, name);
+    removeProbe(dir);
     seed(dir, { "PALETTE.md": PALETTE_FIXTURE, "data.csv": DATA_FIXTURE });
     try {
       const result = run(CHART_SCRIPT, [
@@ -287,7 +277,7 @@ describe("scaffold-scrolly-beat (chart)", () => {
         existsSync(join(dir, "DirectedScaffoldProbeScrollyScrolly.tsx")),
       ).toBe(false);
     } finally {
-      removeProbe(dir, name);
+      removeProbe(dir);
     }
   });
 
@@ -336,7 +326,7 @@ describe("scaffold-scrolly-map-beat (map)", () => {
   it("should not double the Scrolly suffix when --component is already given one", () => {
     const name = `.scaffold-test-scrolly-map-suffix-${STAMP}`;
     const dir = join(PROOF, name);
-    removeProbe(dir, name);
+    removeProbe(dir);
     seed(dir, { "PALETTE.md": PALETTE_FIXTURE, "stations.csv": DATA_FIXTURE });
     try {
       const result = run(MAP_SCRIPT, [
@@ -355,7 +345,7 @@ describe("scaffold-scrolly-map-beat (map)", () => {
         existsSync(join(dir, "DirectedScaffoldProbeScrollyScrolly.tsx")),
       ).toBe(false);
     } finally {
-      removeProbe(dir, name);
+      removeProbe(dir);
     }
   });
 
@@ -434,7 +424,7 @@ describe("scaffold-scrolly-beat (chart) — default --from", () => {
   it("should refuse at scaffold time, naming exactly the missing data.csv, when the worked example's own data is not yet beside the beat", () => {
     const name = `.scaffold-test-scrolly-chart-noassets-${STAMP}`;
     const dir = join(PROOF, name);
-    removeProbe(dir, name);
+    removeProbe(dir);
     try {
       const result = run(CHART_SCRIPT, [
         "--type",
@@ -448,14 +438,14 @@ describe("scaffold-scrolly-beat (chart) — default --from", () => {
       expect(result.stderr).toContain(`proof/${name} is missing the data`);
       expect(result.stderr).toContain("data.csv");
     } finally {
-      removeProbe(dir, name);
+      removeProbe(dir);
     }
   });
 
   it("should refuse at scaffold time, with the exact bun -e command, when no PALETTE.md is reachable", () => {
     const name = `.scaffold-test-scrolly-chart-nopalette-${STAMP}`;
     const dir = join(PROOF, name);
-    removeProbe(dir, name);
+    removeProbe(dir);
     seed(dir, { "data.csv": DATA_FIXTURE });
     try {
       const result = run(CHART_SCRIPT, [
@@ -473,7 +463,7 @@ describe("scaffold-scrolly-beat (chart) — default --from", () => {
       expect(result.stderr).toContain("has no PALETTE.md reachable");
       expect(result.stderr).toContain("bun -e");
     } finally {
-      removeProbe(dir, name);
+      removeProbe(dir);
     }
   });
 });

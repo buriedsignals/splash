@@ -28,12 +28,10 @@
  * which measures the ink inside the frame against the frame, on the delivered plate.
  */
 import { describe, it, expect } from "bun:test";
-import { readdirSync, readFileSync, existsSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { readFileSync } from "node:fs";
+import { renderedPlates } from "../../../tests/support/proof.ts";
 import { inkBoxes } from "../../../scripts/design-base/text-boxes.mjs";
 
-const ROOT = join(import.meta.dirname, "..", "..", "..");
-const PROOF = join(ROOT, "proof");
 /** A frame is a rect that draws no fill and does draw a stroke. */
 const FRAME = /<rect\b[^>]*\bfill="none"[^>]*>/g;
 const attr = (tag: string, name: string) => {
@@ -51,13 +49,7 @@ const inside = (box: any, f: any) =>
 /** Deterministic measurement on both sides, so the tolerance is a rounding allowance, not slack. */
 const TOLERANCE = 1.5;
 
-const plates = readdirSync(PROOF).flatMap((beat) => {
-  const dir = join(PROOF, beat, "renders");
-  if (!existsSync(dir) || !statSync(dir).isDirectory()) return [];
-  return readdirSync(dir)
-    .filter((f) => f.endsWith(".svg"))
-    .map((f) => ({ beat, file: f, path: join(dir, f) }));
-});
+const plates = renderedPlates();
 
 describe("a frame on a delivered plate", () => {
   it("should have plates that draw one", () => {

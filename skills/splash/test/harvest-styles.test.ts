@@ -15,19 +15,13 @@
  * newsroom's markup fails for reasons that have nothing to do with this code.
  */
 import { describe, it, expect, beforeAll, afterAll } from "bun:test";
-import { existsSync } from "node:fs";
 import puppeteer from "puppeteer-core";
 import {
   harvestStyles,
   findGraphic,
   describeGraphic,
 } from "../../../scripts/design-base/harvest-styles.mjs";
-
-const CHROMES = [
-  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-  "/Applications/Chromium.app/Contents/MacOS/Chromium",
-  "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary",
-];
+import { resolveChrome } from "../../../scripts/chrome-for-testing.mjs";
 
 const PAGE = `<!doctype html><body style="background:#FFFCEE;margin:0">
   <!-- IIB's page ROOT is div#iib-page.iib-base.has-banner--top. A class match that did not ask
@@ -59,8 +53,7 @@ let measured: Awaited<ReturnType<typeof harvestStyles>>;
 let picked: Awaited<ReturnType<typeof describeGraphic>> | null;
 
 beforeAll(async () => {
-  const chrome = CHROMES.find(existsSync);
-  if (!chrome) throw new Error(`no Chrome at any of: ${CHROMES.join(", ")}`);
+  const chrome = resolveChrome();
   browser = await puppeteer.launch({
     executablePath: chrome,
     headless: "new",
@@ -191,8 +184,7 @@ describe("a graphic served from another document", () => {
   let outside: Awaited<ReturnType<typeof harvestStyles>>;
 
   beforeAll(async () => {
-    const chrome = CHROMES.find(existsSync);
-    if (!chrome) throw new Error(`no Chrome at any of: ${CHROMES.join(", ")}`);
+    const chrome = resolveChrome();
     host = await puppeteer.launch({
       executablePath: chrome,
       headless: "new",
@@ -277,8 +269,7 @@ describe("a page carrying two pieces", () => {
   let layers: Awaited<ReturnType<typeof findGraphic>>;
 
   beforeAll(async () => {
-    const chrome = CHROMES.find(existsSync);
-    if (!chrome) throw new Error(`no Chrome at any of: ${CHROMES.join(", ")}`);
+    const chrome = resolveChrome();
     host = await puppeteer.launch({
       executablePath: chrome,
       headless: "new",
@@ -394,7 +385,7 @@ describe("a page carrying two pieces", () => {
 describe("a page wearing a guided-tour veil", () => {
   it("should photograph the diagram under the sheet, not the sheet", async () => {
     const host = await puppeteer.launch({
-      executablePath: CHROMES.find(existsSync)!,
+      executablePath: resolveChrome(),
       headless: "new",
       args: ["--no-sandbox", "--hide-scrollbars"],
     });
@@ -432,7 +423,7 @@ describe("a page carrying a scaffold", () => {
   /** One page, one real chart, and one thing pretending to be one. */
   async function pickedWidthBeside(scaffold: string): Promise<number | undefined> {
     const host = await puppeteer.launch({
-      executablePath: CHROMES.find(existsSync)!,
+      executablePath: resolveChrome(),
       headless: "new",
       args: ["--no-sandbox", "--hide-scrollbars"],
     });

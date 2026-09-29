@@ -14,30 +14,23 @@
  */
 // LANE: heavy
 import { describe, it, expect } from "bun:test";
-import { readdirSync, existsSync, statSync, writeFileSync, rmSync } from "node:fs";
+import { existsSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
+import { renderedPlates } from "../../../tests/support/proof.ts";
 import { Resvg } from "@resvg/resvg-js";
 import {
   runsUnderTheContrastFloor,
   contrastOf,
 } from "../../../scripts/design-base/text-contrast.mjs";
 
-const ROOT = join(import.meta.dirname, "..", "..", "..");
-const PROOF = join(ROOT, "proof");
-
-const plates = readdirSync(PROOF)
-  .map((beat) => ({ beat, dir: join(PROOF, beat, "renders") }))
-  .filter(({ dir }) => existsSync(dir) && statSync(dir).isDirectory())
-  .flatMap(({ beat, dir }) =>
-    readdirSync(dir)
-      .filter((f) => f.endsWith(".svg") && existsSync(join(dir, f.replace(".svg", ".png"))))
-      .map((f) => ({
-        name: `${beat}/${f}`,
-        svg: join(dir, f),
-        png: join(dir, f.replace(".svg", ".png")),
-      })),
-  );
+const plates = renderedPlates()
+  .map(({ beat, file, path }) => ({
+    name: `${beat}/${file}`,
+    svg: path,
+    png: join(dirname(path), file.replace(".svg", ".png")),
+  }))
+  .filter(({ png }) => existsSync(png));
 
 /**
  * OWED — A RATCHET. Read this before touching it; you may not add to it.

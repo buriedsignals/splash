@@ -68,13 +68,12 @@
  * position, never anywhere in the gap.
  */
 import { describe, it, expect, setDefaultTimeout } from "bun:test";
-import { existsSync, readdirSync, statSync } from "node:fs";
-import { homedir } from "node:os";
-import { join, relative, resolve } from "node:path";
+import { relative, resolve } from "node:path";
 import puppeteer from "puppeteer-core";
+import { resolveChrome } from "../../../scripts/chrome-for-testing.mjs";
+import { deliveredPages } from "../../../tests/support/proof.ts";
 
 const TWIN = resolve(import.meta.dirname, "../../..");
-const PROOF = join(TWIN, "proof");
 
 // A cold Chrome launch plus two drives of every delivered artifact is past bun:test's 5s default.
 setDefaultTimeout(600000);
@@ -91,48 +90,6 @@ const WIDTHS = [
  *  6px the bump beat's own tick plan spends, named once here so this guard and that component are
  *  not two different opinions about the same gap. */
 const LABEL_AIR_PX = 6;
-
-/** A DUPLICATE of the `resolveChrome` every browser-driving file in this tree carries — duplicated,
- *  not imported, for the reason `map-web/test/standalone.test.ts`'s own copy states. */
-function resolveChrome(): string {
-  const candidates: string[] = [];
-  if (process.env.CHROME_PATH) candidates.push(process.env.CHROME_PATH);
-  const cache = join(homedir(), ".cache/puppeteer/chrome");
-  if (existsSync(cache))
-    for (const build of readdirSync(cache).sort().reverse())
-      candidates.push(
-        join(
-          cache,
-          build,
-          "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-        ),
-        join(
-          cache,
-          build,
-          "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-        ),
-        join(cache, build, "chrome-linux64/chrome"),
-      );
-  candidates.push(
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-  );
-  const found = candidates.find((path) => existsSync(path));
-  if (!found)
-    throw new Error(
-      `no Chrome to drive with. Looked in:\n  ${candidates.join("\n  ")}`,
-    );
-  return found;
-}
-
-function deliveredHtml(dir: string, out: string[] = []): string[] {
-  for (const entry of readdirSync(dir)) {
-    if (entry === "node_modules" || entry.startsWith(".")) continue;
-    const path = join(dir, entry);
-    if (statSync(path).isDirectory()) deliveredHtml(path, out);
-    else if (entry.endsWith(".html")) out.push(path);
-  }
-  return out.sort();
-}
 
 type Tick = { value: number; left: number; right: number; text: string };
 
@@ -283,7 +240,7 @@ type AxisReading = {
 
 describe("a fluid beat retakes its de-collision decisions at the width it is drawn at", () => {
   it("leaves no member of its own axis run missing in a gap with room for it", async () => {
-    const files = deliveredHtml(PROOF);
+    const files = deliveredPages();
     expect(files.length).toBeGreaterThan(0);
 
     const browser = await puppeteer.launch({
