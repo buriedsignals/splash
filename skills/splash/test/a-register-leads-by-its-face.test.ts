@@ -159,8 +159,7 @@ describe("a register resolved in its family", () => {
  *
  * `webRegister` turned a register into a React inline style and set NO `lineHeight`, so the leading
  * a direction files reached a still and never a page: the two genres disagreed on vertical rhythm
- * with nothing going red (`docs/splash/2026-09-13-adaptive-leading-spec.md` §7, "écart connu, côté
- * web"). It goes out UNITLESS — a ratio the browser multiplies by each element's own font-size,
+ * with nothing going red. It goes out UNITLESS — a ratio the browser multiplies by each element's own font-size,
  * which is exactly `leadOf(r) = r.lineHeight * r.fontSize` — because a `px` value inherits as a
  * fixed box and would set a nested run on its parent's line.
  */

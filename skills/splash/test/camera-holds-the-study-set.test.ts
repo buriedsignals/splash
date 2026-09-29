@@ -62,8 +62,8 @@ const TWIN = join(import.meta.dirname, "..", "..", "..");
 const PROOF = join(TWIN, "proof");
 // Archived 2026-09-17: every point beat this census names used the flat, single-camera
 // `plate/geometry.json` shape the newer directed map beats replaced with one bake per direction —
-// all of them moved to `archive/`, keeping their names.
-const ARCHIVE = join(TWIN, "archive");
+// all of them moved to `tests/fixtures/beats/`, keeping their names.
+const ARCHIVE = join(TWIN, "tests", "fixtures", "beats");
 
 /**
  * How many of each beat's own catalogued rows fall outside its own committed frame, and whether

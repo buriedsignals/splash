@@ -13,8 +13,6 @@
  * measured across the 30 web beats with a findable static sibling and came back 30/30: a plate cannot
  * print 639 readings, so any beat that puts a tooltip on its marks clears the bar. The bar could not
  * discriminate, so nothing pushed the format higher.
- *
- * Spec: `docs/superpowers/specs/2026-09-23-web-free-parameter-design.md`.
  */
 import { describe, expect, it } from "bun:test";
 import { assertInteractionPlan } from "../assets/interaction-plan.ts";

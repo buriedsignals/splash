@@ -2,7 +2,7 @@
 //
 // ONE ART DIRECTION PER PRODUCTION RUN — `DIRECTION.md`, THE SIBLING OF `PALETTE.md`.
 //
-// Ruling R-A of `docs/splash/2026-09-17-editorial-chain-spec.md`: the art direction is a parameter
+// Ruling R-A of `docs/editorial-chain.md`: the art direction is a parameter
 // of the RUN, composed once from `NEWSROOM.md` plus the subject and inherited by all four exports.
 // No export redefines it and no beat carries one of its own. `proof/` is the named exception and
 // keeps rendering the three filed directions, which is exactly what PROVES the direction is a

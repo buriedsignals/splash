@@ -2,7 +2,7 @@
 //
 // WHAT THE CHAIN SUPPLIES TO A CHOREOGRAPHY, AND — READ THIS BEFORE EDITING — WHAT IT NEVER WILL.
 //
-// Ruling R-D (`docs/splash/2026-09-17-editorial-chain-spec.md`): the choreography is AUTHORED, per
+// Ruling R-D (`docs/editorial-chain.md`): the choreography is AUTHORED, per
 // subject. A `deriveChoreography(type, retained)` that computed one would manufacture clones, and
 // the 160 catalogue proofs exist precisely because each is its own piece. So this module supplies
 // four things and stops:

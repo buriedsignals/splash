@@ -43,7 +43,7 @@ export function assertEventStates(states, events) {
 
 // ── WHAT A VIDEO BEAT DECLARES, READ — AND NOTHING GENERATED ──────────────────────────────────
 //
-// Ruling R-D (`docs/splash/2026-09-17-editorial-chain-spec.md`): the choreography is AUTHORED, per
+// Ruling R-D (`docs/editorial-chain.md`): the choreography is AUTHORED, per
 // subject. Everything below reads the six-row event table the beat's own `## The choreography`
 // already carries and joins it to the beat's own timing contract. There is no seed ladder, no
 // default gesture and no `derive*`; `checkChoreography` NEVER COMPARES `declared` TO ANOTHER

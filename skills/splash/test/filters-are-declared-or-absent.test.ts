@@ -127,7 +127,7 @@ function trackedWebPages(): string[] {
       // scrolly has no controls at all) and is out of this chantier's scope by instruction.
       .filter((p) => !p.includes("scrolly") && !p.includes("/drive/"))
       // Archived 2026-09-17: superseded beats, not the maintained proof corpus this census governs.
-      .filter((p) => !p.startsWith("archive/"))
+      .filter((p) => !p.startsWith("tests/fixtures/"))
   );
 }
 

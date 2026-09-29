@@ -76,11 +76,11 @@ const TWIN = join(import.meta.dirname, "..", "..", "..");
  * that stops committing its rendered file has to redden here rather than quietly leave the list.
  */
 const MAP_SCROLLY_PAGES = [
-  // Archived 2026-09-17: these superseded beats moved to `archive/`, keeping their names — this
+  // Archived 2026-09-17: these superseded beats moved to `tests/fixtures/beats/`, keeping their names — this
   // legacy census still names them there.
-  "archive/mapmore-scrolly-danube/render/danube-scrolly.html",
-  "archive/mapscrolly-one-map-europe-carbon/render/one-map-four-readings.html",
-  "archive/mapscrolly-quakes-three-ways/render/quakes-four-maps.html",
+  "tests/fixtures/beats/mapmore-scrolly-danube/render/danube-scrolly.html",
+  "tests/fixtures/beats/mapscrolly-one-map-europe-carbon/render/one-map-four-readings.html",
+  "tests/fixtures/beats/mapscrolly-quakes-three-ways/render/quakes-four-maps.html",
 ];
 
 /**
@@ -134,7 +134,7 @@ describe("every committed map scrolly is a live MapTiler map", () => {
     const discovered = tracked()
       .filter(
         (rel) =>
-          /^archive\/map[a-z]*-?scrolly-[a-z0-9-]+\//.test(rel) &&
+          /^tests\/fixtures\/beats\/map[a-z]*-?scrolly-[a-z0-9-]+\//.test(rel) &&
           rel.endsWith(".html"),
       )
       .sort();

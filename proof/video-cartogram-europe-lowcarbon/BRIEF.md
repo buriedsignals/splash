@@ -24,7 +24,7 @@ the gap exceeds 15 points, and the country taking the most room is below the cou
 
 ## The map: the live MapTiler map while the countries are geography (2026-09-15)
 
-The owner (2026-09-15): the map videos are produced « comme dans scrolly » — `docs/splash/2026-09-15-map-videos-through-maptiler-spec.md`;
+The owner (2026-09-15): the map videos are produced « comme dans scrolly »;
 the cartogram under the scrolly addendum's §5: a live map while the form shows geography, no basemap once it leaves it.
 
 - **The plan** (`map-plan.mjs`): MapTiler dataviz style, flat Web Mercator, every country drawn by the basemap; the

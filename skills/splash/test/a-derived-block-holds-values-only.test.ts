@@ -2,7 +2,7 @@
  * A BRIEF SECTION CARRIES A BLOCK OF VALUES, AND THE GUARD READS THAT BLOCK — NEVER THE PROSE.
  *
  * The defect this exists for is a design that was written down and then refused (spec
- * `docs/splash/2026-09-17-editorial-chain-spec.md`, ruling R-C). The first draft held each BRIEF
+ * `docs/editorial-chain.md`, ruling R-C). The first draft held each BRIEF
  * section byte-identical to what a generator renders. That hands a generator authority over
  * sentences a journalist may legitimately reword, in any language; it makes rewording a beat a
  * test failure, which creates pressure to exempt beats rather than fix them; and with the 160
@@ -15,7 +15,7 @@
  * every string in a block is an identifier from a type's vocabulary (`pull back`, `ask-a-mark`,
  * `establish`) or a datum id, and a sentence is refused at the moment it would be written.
  *
- * MUTATIONS, run and verified (task 1 of `docs/superpowers/plans/2026-09-17-editorial-chain.md`):
+ * MUTATIONS, run and verified:
  *   - raise `isProse`'s word ceiling from 4 to 400 → "should refuse a sentence inside a block" red.
  *   - let `readDerivedBlock` return the first of several matches instead of throwing → "should
  *     refuse a section that carries two blocks of the same name" red.

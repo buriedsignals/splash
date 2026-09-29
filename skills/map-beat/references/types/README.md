@@ -7,8 +7,7 @@ unreadable, what the drawing actually needs (position, size, colour, class, shar
 what a join needs to succeed), and the accessibility trap specific to that type, where one
 exists.
 
-This knowledge was harvested from a sibling parameterised engine (`map-native`, 7 built types,
-`/Users/rmdms/Sites/Professional/splash/skills/map-native/`) that has been built, rendered, and
+This knowledge was harvested from a sibling parameterised engine (`map-native`, 7 built types) that has been built, rendered, and
 QA'd against real newsroom stories for months — the numeric thresholds and named defects in these
 sheets are real, not invented for this toolchain: a data join failing silently on a mismatched
 country code, a symbol label clipped at the map's own edge, a choropleth ramp that stopped being

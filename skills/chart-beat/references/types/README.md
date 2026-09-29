@@ -6,8 +6,7 @@ is for, when NOT to reach for it (and what to use instead), the one thing that m
 become unreadable, what the drawing actually needs (position, length, colour, sort order, shared
 scale), and the accessibility trap specific to that type, where one exists.
 
-This knowledge was harvested from a sibling parameterised engine (`chart-native`, 41 types,
-`/Users/rmdms/Sites/Professional/splash/skills/chart-native/`) that has been built, rendered, and
+This knowledge was harvested from a sibling parameterised engine (`chart-native`, 41 types) that has been built, rendered, and
 QA'd against real newsroom stories for months — the numeric thresholds and named defects in these
 sheets are real, not invented for this toolchain. What changed is the form: there, the knowledge
 lives in a conformance checker's source code and fires as a runtime guard; here, it is a paragraph

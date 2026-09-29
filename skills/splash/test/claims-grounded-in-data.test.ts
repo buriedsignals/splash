@@ -139,7 +139,7 @@
  *      static, web and scrolly exports, and four `pour 1 000 habitants` rate denominators across
  *      the hex-grid beat's three exports. The four the earlier count named — the Richter constant
  *      in `map-quake-symbol` and three `100`s describing a 100%-stacked chart's own normalisation
- *      — all sit under `archive/` now and are no longer scanned. Five of the seven were granted
+ *      — all sit under `tests/fixtures/beats/` now and are no longer scanned. Five of the seven were granted
  *      the day the scanned population stopped being a list of three script names: the same
  *      non-datum a static export already waived was flagged again in its web and scrolly
  *      siblings, which is what an export merging in looks like from here. This paragraph once said
@@ -263,8 +263,8 @@ import { join } from "node:path";
 
 const PROOF_ROOT = join(import.meta.dirname, "..", "..", "..", "proof");
 // Archived 2026-09-17: `map-quake-density` and `static-renewables-shift`, this guard's own
-// density/sparseness illustrations, moved to `archive/`, keeping their names.
-const ARCHIVE_ROOT = join(import.meta.dirname, "..", "..", "..", "archive");
+// density/sparseness illustrations, moved to `tests/fixtures/beats/`, keeping their names.
+const ARCHIVE_ROOT = join(import.meta.dirname, "..", "..", "..", "tests", "fixtures", "beats");
 
 /** Directories under proof/ that hold evidence ABOUT the experiment, not a beat's own production. */
 const NOT_A_BEAT = new Set(["comparison", "seance", "trial"]);

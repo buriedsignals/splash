@@ -1,7 +1,7 @@
 /**
  * L2 — THE ONE THING THE PROPOSAL DECIDED AND NEVER WROTE DOWN.
  *
- * `docs/splash/2026-09-17-editorial-exchange-audit.md` gap 2, measured: no `interaction` field
+ * Measured when the editorial chain was built: no `interaction` field
  * existed in `REQUIRED_SCALARS`, in `REQUIRED_SLOT_FIELDS` or in any `STORYBOARD.md`. The visual
  * catalogue has carried an `interaction { kind, promise }` on every medium/format pair since it was
  * written, and nothing downstream ever read it — `visualCatalogueEntries` itself had no caller
@@ -14,7 +14,7 @@
  * own interaction for the pair it would be produced as, and the slot cannot close gate 2 without
  * recording it.
  *
- * MUTATIONS, run and verified (task 4 of `docs/superpowers/plans/2026-09-17-editorial-chain.md`):
+ * MUTATIONS, run and verified:
  *   - drop `interaction` from the row `formatCandidateRows` builds → "should give every format
  *     candidate the catalogue's interaction" red.
  *   - remove `"interaction"` from `REQUIRED_SLOT_FIELDS` → "should make interaction a field gate 2

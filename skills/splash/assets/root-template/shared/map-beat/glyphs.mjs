@@ -51,9 +51,7 @@ export async function bakeGlyphs() {
       "rather than failing — and it declares no licence), and no other SDF encoder is installed. " +
       "This path is only reached by a family OUTSIDE the seventeen Google families MapTiler serves; " +
       "for those seventeen the map and the panel share the same fetched .ttf and need no baking. " +
-      "To reopen it, read ruling C12 in " +
-      ".superpowers/sdd/2026-09-12-sp1-map-plan-contract/progress.md, then choose an encoder that " +
-      "runs under Bun and carries a licence.",
+      "To reopen it, choose an SDF encoder that runs under Bun and carries a licence.",
   );
 }
 

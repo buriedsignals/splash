@@ -642,8 +642,8 @@ default and revealed by the same `:checked` that narrows the marks, so it works 
 **The unfiltered option reveals no note, because it is not a subset of anything: it IS the claim.**
 
 What this deliberately does NOT do, stated so a future reader meets a decision rather than an
-accident: it does not police the beat's own PROSE. `archive/web-income-life-expectancy`'s subtitle
-names Cuba, and under "Europe" that sentence is still printed while Cuba is off the plot. Hiding it
+accident: it does not police the beat's own PROSE. A retired income/life-expectancy beat showed it:
+its subtitle named Cuba, and under "Europe" that sentence was still printed while Cuba was off the plot. Hiding it
 with one more rule would make the page consistent and the editorial problem invisible; the honest
 answer is that a beat whose standfirst names three subjects should offer options that keep them, or
 accept that the standfirst describes the unfiltered view — which is a decision about the beat, not

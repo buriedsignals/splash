@@ -18,7 +18,7 @@ accumulates rather than hides; a key of named circles at stated megawatts, compu
 
 ## The map: the live MapTiler map of the scrolly pilot (2026-09-15)
 
-The owner (2026-09-15): the map videos are produced « comme dans scrolly » — `docs/splash/2026-09-15-map-videos-through-maptiler-spec.md`.
+The owner (2026-09-15): the map videos are produced « comme dans scrolly ».
 
 - **The plan** (`map-plan.mjs`): MapTiler dataviz style in the plate's sea and land, flat Web Mercator, every country
   drawn by the basemap; the still camera is the dot density video's (same register, same static window), never moving.

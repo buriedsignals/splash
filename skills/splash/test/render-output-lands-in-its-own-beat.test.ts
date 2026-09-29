@@ -368,9 +368,9 @@ type Finding = {
 };
 
 // Archived 2026-09-17: many of the beats this legacy render.mjs/render-web.mjs/render-map.mjs
-// census counts moved to `archive/`, keeping their names — walked alongside `proof/` so this
+// census counts moved to `tests/fixtures/beats/`, keeping their names — walked alongside `proof/` so this
 // population does not silently shrink below its own floor.
-const ARCHIVE_ROOT = join(import.meta.dirname, "..", "..", "..", "archive");
+const ARCHIVE_ROOT = join(import.meta.dirname, "..", "..", "..", "tests", "fixtures", "beats");
 
 function beatDirsUnder(root: string): string[] {
   if (!existsSync(root)) return [];
@@ -387,7 +387,7 @@ const scans = [
     beat,
   })),
   ...beatDirsUnder(ARCHIVE_ROOT).map((beat) => ({
-    root: "archive",
+    root: "tests/fixtures/beats",
     rootDir: ARCHIVE_ROOT,
     beat,
   })),
@@ -485,7 +485,9 @@ describe("a beat render script writes beside its own beat by default", () => {
 /** The measurement this guard's header quotes, asserted so it cannot rot into false prose. */
 describe("the population this guard covers", () => {
   it("should scan every beat script under proof/", () => {
-    expect(scans.length).toBeGreaterThan(60);
+    // 31 on 2026-09-29, after the archived beats no test read were deleted; the floor catches a
+    // walk that stops finding them, not a corpus that was pruned on purpose.
+    expect(scans.length).toBeGreaterThanOrEqual(31);
     // vidx-line-life-expectancy, archived 2026-09-17, was the spot check here.
     expect(scans.some((s) => s.beat === "static-bar-top-emitters-2024")).toBe(
       true,

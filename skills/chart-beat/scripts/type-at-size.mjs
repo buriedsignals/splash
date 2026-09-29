@@ -10,7 +10,7 @@
 //
 // ── THE EVIDENCE ──────────────────────────────────────────────────────────────────────────────
 //
-// `proof/portrait-aspect-probe/` drew three types at 1080x1920 and a person opened all ten arms
+// `docs/design-base/portrait-aspect-probe/` drew three types at 1080x1920 and a person opened all ten arms
 // (`PORTRAIT-VERDICT.md`). Three findings decide this file:
 //
 // 1. **A stretched plot is a defect that NO counter sees.** Every arm scored zero clipped runs and
@@ -77,7 +77,7 @@ export const BAND_SCALE_TYPES = [
  * comparisons stay honest, and it is reported.
  */
 export const MEASURED_ASPECT = {
-  histogram: { min: 1.1, max: 2.9, from: "proof/portrait-aspect-probe/PORTRAIT-MEASUREMENTS.md" },
+  histogram: { min: 1.1, max: 2.9, from: "docs/design-base/portrait-aspect-probe/PORTRAIT-MEASUREMENTS.md" },
   line: {
     min: 0.8,
     max: 1.8,
@@ -85,7 +85,7 @@ export const MEASURED_ASPECT = {
       "the floor is the SQUARE render's 0.81:1, and that render was itself already stretched — " +
       "PORTRAIT-VERDICT.md distrusts it. Derive a line's range from its landscape and base renders " +
       "only, or state it as a slope target (Cleveland's bank-to-45°, Heer & Agrawala 2006).",
-    from: "proof/portrait-aspect-probe/PORTRAIT-MEASUREMENTS.md",
+    from: "docs/design-base/portrait-aspect-probe/PORTRAIT-MEASUREMENTS.md",
   },
   // The COLUMN form of a ranking, kept because it was measured and because it is what the probe's
   // A and B arms rendered — not because it is reachable. `ranking` itself is a band-scale type, so
@@ -94,7 +94,7 @@ export const MEASURED_ASPECT = {
   "ranking-columns": {
     min: 1.3,
     max: 3.4,
-    from: "proof/portrait-aspect-probe/PORTRAIT-MEASUREMENTS.md",
+    from: "docs/design-base/portrait-aspect-probe/PORTRAIT-MEASUREMENTS.md",
   },
 };
 
@@ -406,7 +406,7 @@ export const REMOVAL_LADDER = [
  * REFUSE A PLOT STRETCHED OUT OF THE SHAPE ITS TYPE ARGUES IN.
  *
  * This is the probe's finding #1 made mechanical, and it is the single thing no counter in this
- * project could see: every arm of `proof/portrait-aspect-probe/` scored ZERO clipped runs and ZERO
+ * project could see: every arm of `docs/design-base/portrait-aspect-probe/` scored ZERO clipped runs and ZERO
  * collisions, including the three worst-reading ones, while a histogram's plot went from 2.35:1 to
  * 0.54:1 and its tallest bar from 4.2:1 to 18.4:1. A distribution's argument is a shape.
  *

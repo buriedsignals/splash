@@ -17,7 +17,7 @@ grid checked both ways and the same assertions as `proof/static-hex-grid-europe-
 
 ## The map: the live MapTiler map while the countries are geography (2026-09-15)
 
-The owner (2026-09-15): the map videos are produced « comme dans scrolly » — `docs/splash/2026-09-15-map-videos-through-maptiler-spec.md`;
+The owner (2026-09-15): the map videos are produced « comme dans scrolly »;
 the hex grid under the scrolly addendum's §5: a live map while the form shows geography, no basemap once it leaves it.
 The grid had no geography before; it now leaves it on screen, in `reference`, before the validated classing starts.
 

@@ -75,7 +75,7 @@ geography to tile. **None left.**
 
 The eight map scrolly beats were first drawn in SVG from a Natural Earth extract clipped to a fixed window, so
 countries outside it went missing as soon as the view left it. The owner ruled on 2026-09-15 that they be redone
-through MapTiler end to end (`docs/splash/2026-09-12-maps-through-maptiler-spec.md` and its 2026-09-15 addendum).
+through MapTiler end to end.
 All eight are now live MapTiler on a flat Web Mercator map, baked in the three directions, guards clean.
 
 ## What is done, beat by beat

@@ -19,7 +19,7 @@ of water — three classes of place, three treatments.
 
 ## The map: the live MapTiler map of the scrolly pilot (2026-09-15)
 
-The owner (2026-09-15): the map videos are produced « comme dans scrolly » — `docs/splash/2026-09-15-map-videos-through-maptiler-spec.md`.
+The owner (2026-09-15): the map videos are produced « comme dans scrolly ».
 
 - **The plan** (`map-plan.mjs`): MapTiler dataviz style, flat Web Mercator, every country drawn by the basemap and its own
   labels removed; the sea a tint of the water hue and the land a step off the ground (`PALETTE.md`). Read from MapTiler

@@ -36,9 +36,7 @@ Two things live here, and only the first is how a video is built today:
    shared helpers every beat calls. Start at "The directed video path" below.
 2. **The seed** (`co2-suisse`, `assets/EmissionsVideo.tsx`) — an 8 s teaching composition that predates
    the design base. It is kept because the standalone-render and parity tests exercise it; it is not
-   the model for a new beat (no title card, no argument, no direction). `life-expectancy` and
-   `migration` moved out to `archive/life-expectancy/` and `archive/migration/` (archived 2026-09-17),
-   same pre-directed shape.
+   the model for a new beat (no title card, no argument, no direction).
 
 The doctrine is `doctrine/references/motion-grammar.md`; the owner's binding rules on top of it are
 `references/directed-type-choreography.md`.
@@ -243,7 +241,7 @@ colours as props; never reimplement it in a composition.
 ## The editorial chain in a run
 
 What the journalist retained at Gate 2 is readable by code at every later step, and a step that
-stops reading it breaks a named test rather than degrading quietly. Spec: `docs/splash/2026-09-17-editorial-chain-spec.md`.
+stops reading it breaks a named test rather than degrading quietly. Spec: `docs/editorial-chain.md`.
 
 1. **One art direction per run, and this skill never composes a second.** `DIRECTION.md` sits at
    the story root beside `PALETTE.md`, composed once from `NEWSROOM.md` and the subject
@@ -280,8 +278,6 @@ stops reading it breaks a named test rather than degrading quietly. Spec: `docs/
    carrying `derived: v1`. They assert that a choreography is declared, that it is this beat's own
    and not its type's worked example, and that it violates none of its type's stated prohibitions.
    They never compare it to an expected choreography.
-
-Beats still owing an authored declaration: `docs/splash/2026-09-17-declarations-owed.md`.
 
 ## Architecture
 
@@ -436,7 +432,3 @@ The seed's `CO2_TIMING` and composition. A directed beat's knobs are its own `ti
 - `test/canon.test.ts` — asserts `assets/` no longer carries the moved stories, the seed carries the
   canon's marker wording, sample data exists, and the preview is current.
 - `doctrine/references/motion-grammar.md` — the doctrine. Read it before writing an edit.
-- `archive/life-expectancy/` — `life-expectancy`'s own pre-directed workspace (archived 2026-09-17):
-  `Root.tsx` + `index.ts`, `LifeExpectancyVideo.tsx`, `timing-contract.ts`, `render.mjs`, `timing.test.ts`.
-- `archive/migration/` — `migration`'s own pre-directed workspace (archived 2026-09-17): `Root.tsx` +
-  `index.ts`, `MigrationVideo.tsx`, `timing-contract.ts`, `render.mjs`, `timing.test.ts`.

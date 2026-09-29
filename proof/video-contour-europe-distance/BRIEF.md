@@ -18,7 +18,7 @@ Same subject, same frozen shapes and study area, same field and the same asserti
 
 ## The map: the live MapTiler map of the scrolly pilot (2026-09-15)
 
-The owner (2026-09-15): the map videos are produced « comme dans scrolly » — `docs/splash/2026-09-15-map-videos-through-maptiler-spec.md`.
+The owner (2026-09-15): the map videos are produced « comme dans scrolly ».
 
 - **The field is unchanged** (6 km grid, LAEA, computed in Bun on the frozen shapes); only its drawing moves to MapLibre
   (`map-plan.mjs`): MapTiler dataviz style, flat Web Mercator, the sea the direction's ground; the study land a

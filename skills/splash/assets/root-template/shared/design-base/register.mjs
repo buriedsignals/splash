@@ -4,8 +4,7 @@
 // THE FACE'S OWN DECLARED LINE.
 //
 // Lifted out of `proof/static-choropleth-europe-lowcarbon/DirectedChoroplethMap.tsx`, where it was
-// written first and where no other beat could inherit it. See
-// `docs/splash/2026-09-13-adaptive-leading-spec.md`.
+// written first and where no other beat could inherit it..
 //
 // NOT re-exported by `index.mjs`: it measures through resvg, and `index.mjs` is read by fast tests.
 

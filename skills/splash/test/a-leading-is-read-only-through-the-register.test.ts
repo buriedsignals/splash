@@ -94,7 +94,7 @@ describe("a register's leading", () => {
       .map((s) => s.own);
     expect(
       offenders,
-      "these sources read `.leading` directly. Route the read through `registerOf` / `leadOf` in #shared/design-base/register.mjs (it refuses a direction that files no leading), or refuse null at the point of use — see docs/splash/2026-09-13-adaptive-leading-spec.md §3.3",
+      "these sources read `.leading` directly. Route the read through `registerOf` / `leadOf` in #shared/design-base/register.mjs (it refuses a direction that files no leading), or refuse null at the point of use",
     ).toEqual([]);
   });
 });

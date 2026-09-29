@@ -2,7 +2,7 @@
  * L4 — WHAT THE CHAIN REQUIRES REACHES EVERY BEAT THAT CARRIES A BLOCK, AND NO DECLARED NUMBER HAS
  * DRIFTED FROM THE FROZEN DATA.
  *
- * Spec `docs/splash/2026-09-17-editorial-chain-spec.md` §1.4, the two halves: what MUST be asserted
+ * Spec `docs/editorial-chain.md` §1.4, the two halves: what MUST be asserted
  * is the chain's (`requiredAssertions`); which numbers assert it is the JOURNALIST'S.
  *
  * WHERE THE PLAN AND THE SPEC WERE WRONG, MEASURED — read this before "fixing" the guard.
@@ -22,7 +22,7 @@
  * from every requirement id the chain makes of this beat to the beat's OWN assert id that answers
  * it, or `null` where it is unanswered. The harvest ENUMERATES the keys and answers none of them;
  * a person answers them, beat by beat, from
- * `docs/splash/2026-09-17-declarations-owed.md`.
+ * the list `bun scripts/migrate-briefs.mjs --worklist` prints.
  *
  * SO THIS GUARD ASSERTS FOUR THINGS.
  *   1. every id `requiredAssertions` returns is a KEY of `covers` — the requirement REACHED the

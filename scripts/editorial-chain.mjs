@@ -2,7 +2,7 @@
 //
 // THE CHAIN, READ OFF ONE BEAT — retained proposal → type sheet → frame → required assertions.
 //
-// `docs/splash/2026-09-17-editorial-chain-spec.md`. `shared/editorial/` holds the three canonical
+// `docs/editorial-chain.md`. `shared/editorial/` holds the three canonical
 // pieces; each export skill holds its own `parseChoreography`/`checkChoreography` pair. Between
 // them sat four unwritten joins, and every reader of the chain needed all four:
 //

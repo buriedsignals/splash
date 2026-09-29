@@ -12,7 +12,7 @@
  * mandatory (§1.4). A default of `supported` is therefore not a safe fallback: it is a beat
  * asserting, as measured, a number the journalist recorded as unverifiable.
  *
- * MUTATIONS, run and verified (task 4 of `docs/superpowers/plans/2026-09-17-editorial-chain.md`):
+ * MUTATIONS, run and verified:
  *   - default `grounding` to `"supported"` in `retainedFromBrief` → "should refuse a beat whose
  *     front matter pins no grounding" red.
  *   - let `retainedFrom` fall back to the catalogue when a slot records no `interaction` → "should

@@ -190,7 +190,7 @@ and each worked example's own data shape. Read the type's sheet before writing i
 ## The editorial chain in a run
 
 What the journalist retained at Gate 2 is readable by code at every later step, and a step that
-stops reading it breaks a named test rather than degrading quietly. Spec: `docs/splash/2026-09-17-editorial-chain-spec.md`.
+stops reading it breaks a named test rather than degrading quietly. Spec: `docs/editorial-chain.md`.
 
 1. **One art direction per run, and this skill never composes a second.** `DIRECTION.md` sits at
    the story root beside `PALETTE.md`, composed once from `NEWSROOM.md` and the subject
@@ -227,8 +227,6 @@ stops reading it breaks a named test rather than degrading quietly. Spec: `docs/
    carrying `derived: v1`. They assert that a choreography is declared, that it is this beat's own
    and not its type's worked example, and that it violates none of its type's stated prohibitions.
    They never compare it to an expected choreography.
-
-Beats still owing an authored declaration: `docs/splash/2026-09-17-declarations-owed.md`.
 
 ## Architecture
 

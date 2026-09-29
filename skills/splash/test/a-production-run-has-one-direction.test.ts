@@ -1,7 +1,7 @@
 /**
  * L3 — ONE ART DIRECTION PER PRODUCTION RUN, COMPOSED ONCE AND INHERITED BY ALL FOUR EXPORTS.
  *
- * Ruling R-A of `docs/splash/2026-09-17-editorial-chain-spec.md`. The art direction is a parameter
+ * Ruling R-A of `docs/editorial-chain.md`. The art direction is a parameter
  * of the RUN — composed from `NEWSROOM.md` plus the subject, written once at the story root beside
  * `PALETTE.md`, and read by the static, video, web and scrolly export alike. No export redefines
  * it, and no beat carries one of its own.
@@ -19,7 +19,7 @@
  * signature — the walk up, the `stopAt`, the refusal that lists every path it looked at — so a
  * reader who knows one knows the other, and neither ever defaults.
  *
- * MUTATIONS, run and verified (task 5 of `docs/superpowers/plans/2026-09-17-editorial-chain.md`):
+ * MUTATIONS, run and verified:
  *   - add a second `DIRECTION.md` under a fixture story → "should hold exactly one direction per
  *     story that holds beats" red, naming the story.
  *   - make a fixture beat read the three filed directions → "should let no production source read

@@ -325,7 +325,7 @@ export function requireApprovedOutput({ beatDir, planVersion: version, findingId
  * The web export exists to hand back a parameter a still, a video and a scrolly are each forced to
  * settle on the reader's behalf — a threshold, a bin width, a unit, a reference year, a pivot, a
  * class rule, a denominator, a dot value. A page that has not said which one is a still with a
- * stylesheet. Spec: `docs/superpowers/specs/2026-09-23-web-free-parameter-design.md`.
+ * stylesheet.
  *
  * HERE, AND NOT EARLIER, and each alternative was considered and rejected: at scaffold time nothing
  * exists to check; at render time an author could not look at their own draft, which is how a
@@ -351,8 +351,7 @@ export function assertWebBeatDeclaresItsFreeParameter(beatDir) {
       `${where} is a web beat and declares no interaction: its render module carries no ` +
         "`const interaction = { … }`. The web export exists to hand the reader a parameter a still, " +
         "a video and a scrolly are each forced to settle on their behalf; a page that has not said " +
-        "which one is a still with a stylesheet " +
-        "(docs/superpowers/specs/2026-09-23-web-free-parameter-design.md).",
+        "which one is a still with a stylesheet.",
     );
   const owed = ["parameter", "authorPicked", "readerPicks", "heldStill"].filter(
     (field) => !new RegExp(`\\b${field}:`).test(block[0]),

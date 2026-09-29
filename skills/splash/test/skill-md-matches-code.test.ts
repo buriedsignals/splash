@@ -586,7 +586,7 @@ describe("every SKILL.md's structural claims about code hold true", () => {
 /**
  * THE EXPORT SKILLS' RUN SECTIONS NAME THE CHAIN THEY ACTUALLY CALL.
  *
- * Added with the editorial chain (`docs/splash/2026-09-17-editorial-chain-spec.md`, §3's last
+ * Added with the editorial chain (`docs/editorial-chain.md`, §3's last
  * row). The failure mode it closes is the one this whole file exists for, one layer up: a scaffold
  * now reads the retained proposal's frame and refuses on a missing `DIRECTION.md`, and a SKILL.md
  * that does not say so leaves a run improvising the step that was just wired. Renaming

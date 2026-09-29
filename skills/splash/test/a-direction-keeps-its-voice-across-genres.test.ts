@@ -42,9 +42,9 @@ import { resolveFamily } from "../../../shared/design-base/resolve-families.mjs"
 const TWIN = join(import.meta.dirname, "..", "..", "..");
 const PROOF = join(TWIN, "proof");
 // Archived 2026-09-17: the flat-root legacy web pages this guard's population is drawn from
-// (`mapgen-*-web`, `webx-*`/`weby-*`/`webz-*`) moved to `archive/`, keeping their names — walked
+// (`mapgen-*-web`, `webx-*`/`weby-*`/`webz-*`) moved to `tests/fixtures/beats/`, keeping their names — walked
 // alongside `proof/` so this guard's population does not silently empty.
-const ARCHIVE = join(TWIN, "archive");
+const ARCHIVE = join(TWIN, "tests", "fixtures", "beats");
 const DIRECTIONS = join(TWIN, "shared", "design-base", "directions");
 
 type Page = { beat: string; file: string; html: string; direction: string };

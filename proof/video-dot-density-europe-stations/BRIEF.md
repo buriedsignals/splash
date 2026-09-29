@@ -17,7 +17,7 @@ nuclear — under 1 % of the sites — carrying over 30 % of the capacity, nucle
 
 ## The map: the live MapTiler map of the scrolly pilot (2026-09-15)
 
-The owner (2026-09-15): the map videos are produced « comme dans scrolly » — `docs/splash/2026-09-15-map-videos-through-maptiler-spec.md`.
+The owner (2026-09-15): the map videos are produced « comme dans scrolly ».
 
 - **The plan** (`map-plan.mjs`): MapTiler dataviz style in the plate's sea and land, flat Web Mercator, every country
   drawn by the basemap; the 8 900 stations GeoJSON `circle` layers. The still camera fits the static window's

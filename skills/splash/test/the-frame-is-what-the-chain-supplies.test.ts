@@ -1,7 +1,7 @@
 /**
  * THE CHAIN SUPPLIES A FRAME. THE BEAT SUPPLIES THE CHOREOGRAPHY. THIS FILE HOLDS THE LINE BETWEEN.
  *
- * Ruling R-D of `docs/splash/2026-09-17-editorial-chain-spec.md`: a `deriveChoreography(type,
+ * Ruling R-D of `docs/editorial-chain.md`: a `deriveChoreography(type,
  * retained)` that computed a choreography would manufacture clones, which is the one thing this
  * effort exists to prevent — every one of the 160 proofs is its own piece, and that is the point
  * of them. So `choreographyFrame` returns the export's required SHAPE, the type's own gesture
@@ -14,7 +14,7 @@
  * the subject's own data by the journalist. That read of `grounding` is the one L1 never had — the
  * verdict was recorded at G1 and then nothing downstream ever opened it.
  *
- * MUTATIONS, run and verified (task 3 of `docs/superpowers/plans/2026-09-17-editorial-chain.md`):
+ * MUTATIONS, run and verified:
  *   - make `requiredAssertions` ignore `grounding` (always take the `supported` branch) → "should
  *     forbid asserting the claim's datum when the grounding is unverifiable" red.
  *   - make `parseGesture` split on whitespace rather than `+` → "should read a gesture cell as its

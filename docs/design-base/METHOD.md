@@ -3,8 +3,6 @@
 The runbook for the design base. It exists so a second family costs **harvesting and judgement**,
 never re-invention, and so two families can be worked in parallel without colliding.
 
-Spec: `docs/splash/2026-09-07-design-base-treatments-and-directions-spec.md`.
-
 ## Parallel safety
 
 Each family owns its own directory under `references/`, and each treatment and direction is its own

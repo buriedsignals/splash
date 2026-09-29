@@ -10,8 +10,6 @@
 // THE RULE IS THE BROWSERS'. `OS/2` typo metrics when `fsSelection` bit 7 (USE_TYPO_METRICS) is
 // set, `hhea` otherwise, never `win`. That is what CSS `line-height: normal` resolves to, so a web
 // beat that adopts this later sets on the same line without a conversion.
-//
-// See `docs/splash/2026-09-13-adaptive-leading-spec.md` §2.1.
 
 import { readFileSync } from "node:fs";
 import { typefaceFile } from "./typefaces.mjs";

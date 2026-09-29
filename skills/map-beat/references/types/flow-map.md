@@ -98,7 +98,7 @@ renders in all three filed directions.
 The two readings are different forms and neither replaces the other:
 
 - **A route** — one path, and the sequence of places crossed is part of the claim. Everything the
-  sheet says above applies, and `archive/mapmore-flow-danube` is the artifact (archived 2026-09-17,
+  sheet says above applies, and `tests/fixtures/beats/mapmore-flow-danube` is the artifact (archived 2026-09-17,
   no current beat draws this reading — the register above holds only the origin-destination fan).
 - **An origin-destination fan** — many pairs, and the claim is the DISTRIBUTION of a quantity
   between them, not the journey. Its own rules, harvested from Minard's 1862 plate: **width is the

@@ -239,8 +239,8 @@ the one you intend to spend before you declare it.**
   total so it cannot be read as the whole.
   This seed's own filter (narrow to "2015–2019" or "2020–2025") is a THRESHOLD-shaped declaration
   kept so the mechanism is runnable end to end in the skill a journalist copies — not evidence that
-  a beat should have one. Of the twenty-one committed chart × web beats, exactly one declares a
-  filter (`archive/web-income-life-expectancy`, OWID's world-region column over 164 countries).
+  a beat should have one. A filter is the exception among committed chart × web beats, not the
+  default.
 - **Not** to re-draw a chart that already exists as a still or a video build. Import its geometry —
   a story's web composition imports its own `crossing-geometry.ts`-shaped module **from its own
   workspace**, exactly as its static sibling does (`proof/co2-suisse/EmissionsWeb.tsx` and
@@ -289,7 +289,7 @@ look at them; each catches what the other is blind to.
 ## The editorial chain in a run
 
 What the journalist retained at Gate 2 is readable by code at every later step, and a step that
-stops reading it breaks a named test rather than degrading quietly. Spec: `docs/splash/2026-09-17-editorial-chain-spec.md`.
+stops reading it breaks a named test rather than degrading quietly. Spec: `docs/editorial-chain.md`.
 
 1. **One art direction per run, and this skill never composes a second.** `DIRECTION.md` sits at
    the story root beside `PALETTE.md`, composed once from `NEWSROOM.md` and the subject
@@ -326,8 +326,6 @@ stops reading it breaks a named test rather than degrading quietly. Spec: `docs/
    carrying `derived: v1`. They assert that a choreography is declared, that it is this beat's own
    and not its type's worked example, and that it violates none of its type's stated prohibitions.
    They never compare it to an expected choreography.
-
-Beats still owing an authored declaration: `docs/splash/2026-09-17-declarations-owed.md`.
 
 ## Architecture
 

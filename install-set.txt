@@ -4,7 +4,7 @@
 #
 #   git sparse-checkout set $(grep -v '^#' install-set.txt)
 #
-# Not listed (development only): proof/ stories/ landing/ docs/ test/ scratchpads/
+# Not listed (development only): proof/ stories/ landing/ docs/ tests/
 skills
 shared
 scripts

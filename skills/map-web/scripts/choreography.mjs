@@ -2,7 +2,7 @@
 //
 // WHAT A WEB BEAT DECLARES ITS READER CAN DO, READ — AND NOTHING GENERATED.
 //
-// Ruling R-D (`docs/splash/2026-09-17-editorial-chain-spec.md`): the choreography is AUTHORED, per
+// Ruling R-D (`docs/editorial-chain.md`): the choreography is AUTHORED, per
 // subject. This module reads the `const interaction = { earns, controls: [{ question, gesture,
 // changes }] }` the beat's own `render-directions-web.mjs` already declares (spec §1.3: 27 of the
 // 40 web beats write it) and checks it against the export's shape and the type's frame. It writes

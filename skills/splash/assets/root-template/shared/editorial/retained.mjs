@@ -11,7 +11,7 @@
 //
 // WHY THE PARSERS ARE INJECTED, AND WHY THE SPEC'S SIGNATURE COULD NOT STAND.
 //
-// `docs/splash/2026-09-17-editorial-chain-spec.md` §2.3 writes `readRetained(storyDir, slotId)` and
+// `docs/editorial-chain.md` §2.3 writes `readRetained(storyDir, slotId)` and
 // `retainedFromBrief(beatDir)`. Neither can be written that way HERE: `shared/` is shipped on its
 // own into a newsroom root that has no `skills/` directory beside it, so a module under `shared/`
 // may not import out of it (`skills/map-beat/test/the-trunk-stands-alone.test.ts`). `parseStoryboard`

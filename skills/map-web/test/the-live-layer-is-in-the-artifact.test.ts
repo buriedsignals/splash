@@ -265,8 +265,8 @@ function committedMapWebPages(): { rel: string; html: string }[] {
 function isMapWebPath(rel: string): boolean {
   return (
     // Archived 2026-09-17: these five superseded the mapgen-*-web beats but the retrofit-tracking
-    // audit below still names them, now under `archive/` rather than `proof/`.
-    /^archive\/mapgen-[a-z]+-web\//.test(rel) ||
+    // audit below still names them, now under `tests/fixtures/beats/` rather than `proof/`.
+    /^tests\/fixtures\/beats\/mapgen-[a-z]+-web\//.test(rel) ||
     rel.startsWith("skills/map-web/output-proof/")
   );
 }
@@ -280,16 +280,16 @@ describe("every committed map-web page is a live map", () => {
     // Every map-web beat in the tree, named, so a beat that stops committing its own rendered file
     // reddens here rather than disappearing from the check.
     expect(pages.map((page) => page.rel).sort()).toEqual([
-      "archive/mapgen-choropleth-web/render/choropleth.html",
-      "archive/mapgen-dot-web/dot-population.html",
-      "archive/mapgen-hexgrid-web/hex-grid.html",
-      "archive/mapgen-locator-web/locator.html",
-      "archive/mapgen-symbol-web/quake-symbol.html",
       // The seed at its other supported setting (#52). It is the same render with `regionTable`
       // on, so ruling R1 applies to it exactly as it applies to the default — a web map you cannot
       // move through is a picture whether or not a table hangs beneath it.
       "skills/map-web/output-proof/population-with-table.html",
       "skills/map-web/output-proof/population.html",
+      "tests/fixtures/beats/mapgen-choropleth-web/render/choropleth.html",
+      "tests/fixtures/beats/mapgen-dot-web/dot-population.html",
+      "tests/fixtures/beats/mapgen-hexgrid-web/hex-grid.html",
+      "tests/fixtures/beats/mapgen-locator-web/locator.html",
+      "tests/fixtures/beats/mapgen-symbol-web/quake-symbol.html",
     ]);
   });
 

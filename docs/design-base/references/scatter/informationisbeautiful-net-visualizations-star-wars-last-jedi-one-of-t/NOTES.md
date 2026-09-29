@@ -67,8 +67,7 @@ the plate alone (`crop 0,160,1440,740`):
 **This is the corpus's first measured dark ground.** The spec (§7) records `nocturne`
 (`#111044` / `#4FE0C0`) as *not* cleared because it has never been measured. `#333333` at 91.6 %
 with saturated yellow, green and cyan marks at very low coverage is a dark direction taken off a
-published page rather than invented, and it is offered as such in
-`docs/design-base/proposals/scatter.md`.
+published page rather than invented.
 
 ## What is transferable
 

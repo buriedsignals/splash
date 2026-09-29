@@ -39,7 +39,7 @@ import { basename, dirname, join, relative, resolve, sep } from "node:path";
 import { composedDirectionDefault, markBefore, markDividers, missingAssetsMessage, paletteReachable, paletteRefusalMessage, prependBanner, requiredLocalAssets, topBanner } from "./static-plumbing.mjs";
 import { eachThroughSkillScript } from "#shared/design-base/skill-import.mjs";
 
-// ── THE EDITORIAL CHAIN, WIRED (spec `docs/splash/2026-09-17-editorial-chain-spec.md` §4) ──────
+// ── THE EDITORIAL CHAIN, WIRED (spec `docs/editorial-chain.md` §4) ──────
 //
 // A scaffold is the ONLY place a beat's files are written, so it is where the chain has to be read
 // or the chain reaches nothing. Three reads, and one refusal:

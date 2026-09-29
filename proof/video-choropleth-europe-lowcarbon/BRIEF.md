@@ -26,7 +26,7 @@ neighbour is under 60 %.**
 
 ## The map: the live MapTiler map of the scrolly pilot (2026-09-15)
 
-The owner (2026-09-15): the map videos are produced « comme dans scrolly » — `docs/splash/2026-09-15-map-videos-through-maptiler-spec.md`.
+The owner (2026-09-15): the map videos are produced « comme dans scrolly ».
 
 - **The plan** is the validated scrolly pilot's own (`plan.mjs`, `seats.json`, copied byte-identical from
   `quality/scrolly` fdec7bbd and pinned in `shared/map-beat/COPIED-FROM.json`): MapTiler dataviz style, flat Web

@@ -1,7 +1,7 @@
 /**
  * L5 — EVERY BEAT THAT CARRIES A BLOCK DECLARES A CHOREOGRAPHY, AND IT IS ITS OWN.
  *
- * Spec `docs/splash/2026-09-17-editorial-chain-spec.md`, ruling R-D: the choreography is AUTHORED,
+ * Spec `docs/editorial-chain.md`, ruling R-D: the choreography is AUTHORED,
  * per subject. This guard asserts THREE things and no fourth:
  *
  *   1. one is DECLARED, in its export's own `kind`, structurally complete for that shape;
@@ -18,7 +18,7 @@
  * `derived: v1` — discovered, never listed (`credit-anchors-to-the-frame-bottom.test.ts`'s own
  * convention). At the migration that switched it on: 106 beats — scrolly 40, video 39, web 27.
  * 54 owe an authored declaration and carry no block, so this guard says nothing about them; they
- * are named in `docs/splash/2026-09-17-declarations-owed.md`. A drop in that 106 is visible in a
+ * are named by `bun scripts/migrate-briefs.mjs --worklist`. A drop in that 106 is visible in a
  * diff of this comment.
  *
  * CLAUSE 2 IS VACUOUS OVER THE CATALOGUE TODAY, AND THAT IS WORTH KNOWING RATHER THAN HIDING.

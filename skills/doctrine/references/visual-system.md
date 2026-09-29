@@ -26,7 +26,7 @@ Colour in this system is not "pick something that looks nice together." It is as
   is a step from the newsroom's ground toward the ink pole (`deriveFurniture`'s `muted`), so it
   comes out darker than a light page and lighter than a dark one. Calling it "a lighter tone" — or
   "a grey" — describes what happens on white and inverts silently the first time a newsroom records
-  a dark ground, which `proof/palette-proof` renders side by side from one script. Write "a step
+  a dark ground. Write "a step
   toward the ink", or "recedes toward the ground": both hold on every ground. `render-still.test.ts`
   asserts the direction on both poles, so prose and pixels cannot drift apart on this one.
 - **One semantic accent is reserved for the subject.** The single series, bar, region or point

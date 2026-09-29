@@ -34,7 +34,7 @@ height yet — it would also need the reference's own face metrics. Each value i
 directed component used to type (`display 1.22`, `body 1.45`, `annot 1.4`, and `1.2` for the
 single-line registers) divided by the natural line height of the head of the register's role
 ladder, read out of its file. On the head face the page does not move; on any other face the line
-follows the face. See `docs/splash/2026-09-13-adaptive-leading-spec.md` §4.
+follows the face.
 
 Style route on the reference: **three families** (`abcserif` for display, `abcsans` and `ABCSans`
 for furniture), **11 italic runs, 77 letter-spaced runs, 57 case-transformed runs**. The italic

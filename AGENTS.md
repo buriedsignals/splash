@@ -28,10 +28,10 @@ as Splash's runtime architecture.
 ## Canonical documentation
 
 - `README.md` — current product, installation, and repository overview.
+- `docs/editorial-chain.md` — design record of the editorial chain (rulings R-A to R-D) that code
+  comments cite; where it and the code disagree, the code and its tests are right.
 - `docs/splash/interactive-preflight-verification.md` — durable implementation evidence and the
   remaining release blockers for interactive setup and visual selection.
-- `docs/splash/2026-08-14-interactive-preflight-and-visual-selection-prd.md` — active engineering
-  plan retained only until its explicit release-closure gate permits deletion.
 - `docs/residual-review-findings/feat-data2story-human-gated-production.md` —
   landed hardening and the one remaining live verification item.
 - `skills/splash/SKILL.md` — executable orchestration contract.

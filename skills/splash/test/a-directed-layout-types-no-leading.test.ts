@@ -1,7 +1,7 @@
 /**
  * A DIRECTED LAYOUT TYPES NO LEADING AND NO BLOCK GAP AS A MULTIPLE OF A SIZE.
  *
- * The line is the face's (spec `docs/splash/2026-09-13-adaptive-leading-spec.md` §2): `leadOf(r)`
+ * The line is the face's: `leadOf(r)`
  * and `gapOf(r, n)` from `#shared/design-base/register.mjs`. A `display.fontSize * 1.22` typed into
  * a component is the same number on every face, and it was typed forty times.
  *

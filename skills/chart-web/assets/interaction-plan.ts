@@ -133,8 +133,6 @@ export type ReaderControl = {
  * `ask-a-mark` is the degenerate case and it is legitimate: its free parameter is which mark is in
  * question, and a plate settles it by printing some readings and not others. The histogram beat
  * states the test itself — « un histogramme dit combien sont tombés là et refuse de dire QUI ».
- *
- * Spec: `docs/superpowers/specs/2026-09-23-web-free-parameter-design.md`.
  */
 export type FreeParameter = {
   /** The decision a fixed frame has to make and print. A noun phrase, the beat's own. */

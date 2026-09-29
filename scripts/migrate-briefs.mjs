@@ -519,7 +519,7 @@ export async function runWorklist({ root = ROOT, out = WORKLIST } = {}) {
     `Emitted by \`bun scripts/migrate-briefs.mjs --worklist\` on ${new Date().toLocaleDateString("en-CA")}.`,
     "Regenerate it rather than editing it by hand; a beat leaves this list by declaring, not by being struck out.",
     "",
-    "Spec: `docs/splash/2026-09-17-editorial-chain-spec.md` (R-D — the choreography is authored, per",
+    "Spec: `docs/editorial-chain.md` (R-D — the choreography is authored, per",
     "subject; the chain supplies the frame and never the content). Nothing in the migration may write",
     "any line of what is owed below.",
     "",

@@ -2,7 +2,7 @@
 //
 // WHAT A SCROLLY BEAT DECLARES, READ — AND NOTHING GENERATED.
 //
-// Ruling R-D (`docs/splash/2026-09-17-editorial-chain-spec.md`): the choreography is AUTHORED, per
+// Ruling R-D (`docs/editorial-chain.md`): the choreography is AUTHORED, per
 // subject. This module has no expected choreography, no seed, no default and no `derive*`. It reads
 // the card table the beat's own `## The choreography` already carries, joins it to the per-card
 // states the beat's own drive module already declares, and hands the result to a checker that asks

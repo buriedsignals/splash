@@ -232,7 +232,7 @@ export function mapGeometryFor({
    *  its role's reference face at its filed size — so the headline form, the panel share and the
    *  cuts are properties of the direction and do not move when coverage moves a family. The layout
    *  it chose is DRAWN on the drawn rhythm, so a headline the ladder shrinks tightens its own
-   *  leading (spec `docs/splash/2026-09-13-adaptive-leading-spec.md` §2.1). */
+   *  leading. */
   const onReferenceFace = (name: RegisterName) => {
     const drawn = registerOf(direction, name);
     return registerOf(

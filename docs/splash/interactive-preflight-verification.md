@@ -2,7 +2,6 @@
 title: Splash interactive preflight and visual selection verification
 status: active
 opened: 2026-08-14
-initiative_prd: docs/splash/2026-08-14-interactive-preflight-and-visual-selection-prd.md
 ---
 
 # Splash interactive preflight and visual selection verification
@@ -16,7 +15,7 @@ below remain measured evidence for the retired MCP App host contract.
 ## Compatibility and documentation baseline
 
 Context7 CLI 0.3.5 was available at
-`/Users/tomvaillant/.nvm/versions/node/v22.22.0/bin/ctx7`. Queries run on 2026-08-14 grounded the
+`~/.nvm/versions/node/v22.22.0/bin/ctx7`. Queries run on 2026-08-14 grounded the
 fixture in these official sources:
 
 - [Goose MCP Apps tutorial](https://github.com/aaif-goose/goose/blob/main/documentation/docs/tutorials/building-mcp-apps.md): resources capability, `ui://` resource, and `text/html;profile=mcp-app`.
@@ -337,7 +336,7 @@ Verification commands and observed results:
 bun test apps/goose/test/app-client.test.ts apps/goose/test/compatibility.test.ts
 12 pass, 0 fail, 45 assertions
 
-BSIG_SPLASH_CHECKOUT=/Users/tomvaillant/buried_signals/tools/splash \
+BSIG_SPLASH_CHECKOUT="$PWD" \
   go test -tags live_splash ./internal/run -run SplashClosureSpike -count=1 -v
 PASS (TestSplashClosureSpike, 23.36s; package 23.696s)
 
@@ -971,7 +970,9 @@ U10 remains open. The retained release blockers are:
 - no preregistered representative-participant checkpoint has run. The required five non-contributor
   journalist tasks and any mandated retests therefore have no usability evidence.
 
-These blockers prevent U11. The PRD and the empty Jujutsu cleanup allowlist remain in place.
+On 2026-09-29 the owner retired the PRD with these blockers still listed: interactive preflight
+has shipped, and the PRD was the plan for it, not its record. The blockers above are kept as
+written; this record does not claim any of them closed.
 
 ## Requirements checklist
 
@@ -1073,5 +1074,5 @@ are not cleanup targets. At U1 start, the pre-existing dirty state was:
   `M internal/products/mycroft/skill_registry.go`.
 
 Those Engine paths are unrelated pre-existing changes and must not be committed, reverted, moved,
-or described as initiative-owned. U11 may delete only the exact PRD path after every row above is
-accounted for and may remove only targets in the explicit initiative-owned allowlist.
+or described as initiative-owned. The PRD was deleted on 2026-09-29 by the owner's decision, before every row above was accounted
+for. The initiative-owned allowlist stays empty.

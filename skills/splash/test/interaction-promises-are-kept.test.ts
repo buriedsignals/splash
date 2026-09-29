@@ -159,8 +159,7 @@
  *      What is fixed here is that none of this is silent any more: the vacuum is counted over the
  *      whole corpus and PINNED (`EDGE_UNMEASURABLE_ARTIFACTS`), and a beat's three directions are
  *      compared against each other, so a vacuum that grows, shrinks or moves turns red. See that
- *      constant for why the per-file table it replaced could not survive a 241-page corpus, and
- *      `docs/splash/2026-09-17-edge-measurability-owed.md` for what each format owes.
+ *      constant for why the per-file table it replaced could not survive a 241-page corpus.
  *   8. IT REPORTS, BUT DOES NOT FAIL, a broken mode that was never promised. Measured today:
  *      `co2-suisse`, `web-income-life-expectancy` and `webz-bump-emitter-rank` all lose their
  *      tooltip when a finger lifts. None of them promises tap, so none of them fails — the contract
@@ -234,7 +233,7 @@
  * ── WHAT CHANGED ON 2026-09-17, AND WHAT IT FOUND ────────────────────────────────────────────
  *
  * The roster above describes a corpus of 24 delivered pages that no longer exists: ~85 beats moved
- * to `archive/`, and `proof/` is now 160 beats — 40 types x 4 exports — delivering 241 pages. Three
+ * to `tests/fixtures/beats/`, and `proof/` is now 160 beats — 40 types x 4 exports — delivering 241 pages. Three
  * things in this file were measuring the old world, and this run is what each one cost.
  *
  *   1. THE PROMISE VOCABULARY WAS ENGLISH ONLY, and every beat in the corpus writes its prose in
@@ -1000,8 +999,7 @@ function summary(r: ArtifactReport): string {
  *      mark, as one integer over the whole corpus. It cannot be added to silently — a new
  *      unmeasurable format moves it and this line appears in the diff — and it is pinned rather
  *      than a ceiling so that an artifact BECOMING measurable is also red, which is how the two
- *      open rewrites above will announce themselves. Which formats make up the number, and what
- *      each owes, is written down in `docs/splash/2026-09-17-edge-measurability-owed.md`.
+ *      open rewrites above will announce themselves.
  */
 const EDGE_UNMEASURABLE_ARTIFACTS = 97;
 

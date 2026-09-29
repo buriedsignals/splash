@@ -152,9 +152,9 @@ describe("a render without its font files", () => {
           found.push(relative(TWIN, path));
       }
     }
-    // Archived 2026-09-17: several of the thirteen map beats above moved to `archive/`, keeping
+    // Archived 2026-09-17: several of the thirteen map beats above moved to `tests/fixtures/beats/`, keeping
     // their names — walked alongside `proof/` so this population does not silently shrink.
-    for (const root of ["proof", "archive"]) {
+    for (const root of ["proof", "tests/fixtures/beats"]) {
       const dir = join(TWIN, root);
       if (!statSync(dir, { throwIfNoEntry: false })?.isDirectory()) continue;
       for (const path of walk(dir)) {
@@ -189,10 +189,10 @@ describe("a render without its font files", () => {
       ]).toEqual([skill, true]);
     }
     // And the beats' own copies, which are outside `carried-copies`' walk entirely. Archived
-    // 2026-09-17: all ten now live under `archive/`, keeping their names — none of the kept
+    // 2026-09-17: all ten now live under `tests/fixtures/beats/`, keeping their names — none of the kept
     // beats construct their own `Resvg`.
     expect(
-      sites.filter((f) => /^(proof|archive)\/.*\/render-still\.mjs$/.test(f))
+      sites.filter((f) => /^(proof|tests\/fixtures\/beats)\/.*\/render-still\.mjs$/.test(f))
         .length,
     ).toBeGreaterThan(5);
   });

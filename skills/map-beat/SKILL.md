@@ -37,8 +37,7 @@ engines a map beat is drawn on, and the worked beats written on them.
   declares a map plan; Remotion mounts it on a real MapLibre map once and drives the camera and the
   bound paints per frame, each frame held until every tile is loaded, through a local proxy that keeps
   the key out of the page. What must be measured in pixels (key, labels, gauges, credit) stays an SVG
-  overlay, placed in Bun from a frozen measurement of the real map. Spec:
-  `docs/splash/2026-09-15-map-videos-through-maptiler-spec.md`.
+  overlay, placed in Bun from a frozen measurement of the real map..
 
 The baked-plate video seed (`assets/Co2MapVideo.tsx`, `render-map.mjs --video`) is kept for its tests
 only; it is superseded for any video beat.
@@ -341,7 +340,7 @@ composes one from the beat's own `PALETTE.md` and text (`composeDirections`,
 ## The editorial chain in a run
 
 What the journalist retained at Gate 2 is readable by code at every later step, and a step that
-stops reading it breaks a named test rather than degrading quietly. Spec: `docs/splash/2026-09-17-editorial-chain-spec.md`.
+stops reading it breaks a named test rather than degrading quietly. Spec: `docs/editorial-chain.md`.
 
 1. **One art direction per run, and this skill never composes a second.** `DIRECTION.md` sits at
    the story root beside `PALETTE.md`, composed once from `NEWSROOM.md` and the subject
@@ -378,8 +377,6 @@ stops reading it breaks a named test rather than degrading quietly. Spec: `docs/
    carrying `derived: v1`. They assert that a choreography is declared, that it is this beat's own
    and not its type's worked example, and that it violates none of its type's stated prohibitions.
    They never compare it to an expected choreography.
-
-Beats still owing an authored declaration: `docs/splash/2026-09-17-declarations-owed.md`.
 
 ## Architecture
 

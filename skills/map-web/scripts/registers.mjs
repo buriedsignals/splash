@@ -14,8 +14,7 @@
 // silently knew whether its direction shouted. Adding a seventh direction would have meant editing
 // every treatment.
 //
-// See `docs/splash/2026-09-07-design-base-treatments-and-directions-spec.md` §4, and the filed
-// directions under `docs/design-base/directions/`.
+// The filed directions are under `docs/design-base/directions/`.
 
 /**
  * THE CORE: the voices every graphic has, whatever it draws. Closed, and a sixth core voice is a

@@ -59,9 +59,9 @@ import { join } from "node:path";
 const TWIN = join(import.meta.dirname, "..", "..", "..");
 const PROOF = join(TWIN, "proof");
 // Archived 2026-09-17: the flat, single-camera `plate/geometry.json` beats this census counts
-// moved to `archive/`, keeping their names — walked alongside `proof/` so the six rungs still
+// moved to `tests/fixtures/beats/`, keeping their names — walked alongside `proof/` so the six rungs still
 // find the cameras that reach them.
-const ARCHIVE = join(TWIN, "archive");
+const ARCHIVE = join(TWIN, "tests", "fixtures", "beats");
 const RANGE = join(
   TWIN,
   "skills",

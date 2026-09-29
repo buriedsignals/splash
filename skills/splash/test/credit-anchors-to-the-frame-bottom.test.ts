@@ -133,12 +133,12 @@ function beatDirs(): string[] {
 }
 
 // Archived 2026-09-17: three of the four per-format spot checks below name components now under
-// `archive/`, keeping their names. Scoped to the component census only — `BEAT_HTML` below stays
+// `tests/fixtures/beats/`, keeping their names. Scoped to the component census only — `BEAT_HTML` below stays
 // on `proof/` alone, matching every other "current corpus" census in this tree.
 function componentBeatDirs(): string[] {
   return [
     ...dirsUnder(join(TWIN, "proof")),
-    ...dirsUnder(join(TWIN, "archive")),
+    ...dirsUnder(join(TWIN, "tests", "fixtures", "beats")),
   ];
 }
 
@@ -162,13 +162,13 @@ describe("the credit is anchored to the frame's bottom, discovered rather than l
       "skills/chart-web/assets/ChartWebSeed.tsx",
       "skills/map-beat/assets/Co2MapStill.tsx",
       "skills/map-beat/assets/Co2MapVideo.tsx",
-      // and one beat per format, so a walk that silently stopped covering `proof/`/`archive/` is
+      // and one beat per format, so a walk that silently stopped covering `proof/`/`tests/fixtures/beats/` is
       // caught. The video and legacy-map examples are archived 2026-09-17 (no kept beat uses this
       // anchor mechanism outside the static genre), kept as spot checks under their new root.
       "proof/static-wind-vs-solar/WindVsSolarBar.tsx",
-      "archive/vidz-bump-emitter-rank/BumpVideo.tsx",
-      "archive/map-quake-symbol/QuakeSymbolStill.tsx",
-      "archive/mapvid-locator-geneva/LocatorVideo.tsx",
+      "tests/fixtures/beats/vidz-bump-emitter-rank/BumpVideo.tsx",
+      "tests/fixtures/beats/map-quake-symbol/QuakeSymbolStill.tsx",
+      "tests/fixtures/beats/mapvid-locator-geneva/LocatorVideo.tsx",
     ]) {
       expect([expected, labels.includes(expected)]).toEqual([expected, true]);
     }

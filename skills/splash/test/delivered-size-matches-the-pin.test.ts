@@ -76,8 +76,7 @@ const PROOF = join(TWIN, "proof");
  *
  *   `proof/co2-suisse` — `format: static`, and its four PNGs measure 1800x1120, which is
  *   literally the defect this file's header opens with (a 900x560 element rasterised at
- *   `fitTo: width * 2`). It is the last unmigrated beat of the W4 audit. Recorded, with what it
- *   owes, in `docs/splash/2026-09-17-export-sizes-owed.md`; it leaves this count by being
+ *   `fitTo: width * 2`). It is the last unmigrated beat of the W4 audit. It leaves this count by being
  *   re-rendered at a size from the table and pinning it, never by this number moving.
  *
  * The number is still a count rather than a list, for the reason the original said: a list of
