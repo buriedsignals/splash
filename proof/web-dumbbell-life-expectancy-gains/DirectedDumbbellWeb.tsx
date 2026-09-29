@@ -39,8 +39,33 @@ export const ROW = 40;
  *  the hit area cannot answer for it and the format's own overlay probe goes silent. */
 const TOP_PAD = 14;
 /** And the band stops short of the bottom, because the yardstick writes each upright's year at the
- *  foot of the plot. Without it those two words sit on the last row's own value labels. */
-const BOTTOM_PAD = 22;
+ *  foot of the plot. Without it those two words sit on the last row's own value labels.
+ *
+ *  THE STRIP IS DERIVED, NOT TYPED — `footBandFor` below. It was a typed 22 units, which is a
+ *  distance in the drawing holding words that are a height in pixels: 30 px at 1400, 16 px at 768,
+ *  9–10 px at 375. Measured with a country chosen, the year printed over the United States' own
+ *  values (or into its heads) 18 / 18 / 16 times at 375 across the ten options (creme / nocturne /
+ *  rapport) and 4 times at 768 on creme. */
+
+/**
+ * THE FOOT STRIP, IN VIEWBOX UNITS, FROM THE SMALLEST SCALE THIS PLATE IS EVER DRAWN AT.
+ *
+ * The row floor (`rowFloorFor`, declared by the runner) holds the cell at no less than `px` per
+ * `ROW` units vertically at every width — `rowFloorCss` floors `--cell-h` and the plot's own
+ * `min-height` at exactly that — so `floorPx / ROW` is the fewest pixels a unit of height ever
+ * gets. Below the last row's centre the strip must hold, at that scale, the lowest thing on that row
+ * (half its value label's chip, or its head and casing) and then the year's own chip. Wider pages
+ * draw the same units larger, so what clears at the floor clears everywhere; nothing else moves.
+ */
+function footBandFor(
+  floorPx: number,
+  footH: number,
+  valueH: number,
+): number {
+  const perUnit = floorPx / ROW;
+  const lowest = Math.max(valueH / 2, HEAD_R * perUnit + CASING_PX);
+  return Math.ceil((lowest + footH) / perUnit - ROW / 2);
+}
 export const FRAME = { width: 860, height: 0, xAxisRowPx: 28 };
 /** The delta's own column, inside the viewBox. A label placed at `left: 100.5 %` of the plot cell
  *  hangs outside the figure and scrolls the page sideways — the defect this base's bump beat paid
@@ -175,7 +200,16 @@ export function DirectedDumbbellWeb({
   // TOP_PAD lifts the first row clear of the frame (its own value labels sit beside it, and at
   // 375 px a label centred on a row at y=0 lifts out of the svg's rectangle). BOTTOM_PAD is the
   // strip the yardstick writes its two year labels in — without it they sit on the last row's own
-  // value labels, which the United States option made visible in one look.
+  // value labels, which the United States option made visible in one look. Its depth is measured in
+  // this direction's own registers against the row floor the runner declares (`footBandFor`).
+  const floorPx = rowFloorFor(direction, measure).px;
+  const footH = Math.max(
+    ...[stateLabels.before, stateLabels.after].map((t) => labelBoxPx(t, regs.annot as WebRegisterStyle, measure, { chip: true }).h),
+  );
+  const valueH = Math.max(
+    ...rows.flatMap((r) => [r.beforeLabel, r.afterLabel].map((t) => labelBoxPx(t, endReg, measure, { chip: true }).h)),
+  );
+  const BOTTOM_PAD = footBandFor(floorPx, footH, valueH);
   const height = rows.length * ROW + TOP_PAD + BOTTOM_PAD;
 
   // ONE HUE, TWO CHROMAS: the two heads are two STATES of one measure, never two categories. The
@@ -702,7 +736,9 @@ export function DirectedDumbbellWeb({
                 style={{
                   ...annotRest,
                   fontWeight: annotWeight,
-                  bottom: "1%",
+                  // On the cell's own bottom edge: `footBandFor` counts the strip down to it, and a
+                  // percentage of the cell would be a different number of pixels at every width.
+                  bottom: 0,
                   ...(outward
                     ? { right: `${100 - at}%`, maxWidth: `${Math.max(10, at)}%` }
                     : { left: `${at}%`, maxWidth: `${Math.max(10, 100 - at)}%` }),

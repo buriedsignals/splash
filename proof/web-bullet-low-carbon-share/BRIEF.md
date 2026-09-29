@@ -175,6 +175,20 @@ mutation that passes, so it was re-run at 99,5 %, where it refuses properly.
    subject's bar and darker than every other bar on the same plate. The poles are now chosen once
    per direction, which needed 25 % of headroom on the bar fills to be possible at all.
 
+## Issue #78 polish — a verdict that left the plot
+
+At 375 Allemagne's verdicts (58,6 %) were placed past the bar's end, where the cell had 135 px for
+chips 127–132 px wide plus their 8 px of air: all four ran up to 5 px out of the plot into the
+frame's padding (creme 5, rapport 3, nocturne 0), and under « la Suède » the chip lay across the
+whole hollow it is the verdict on, its right edge 4–9 px past the tick at 98,8 %. The flip into
+the bar was a typed `after > 80`; it is now measured per row — the widest of the row's verdicts
+against the room past its bar's end in the cell the browser lays out — and it is the same under
+every target, so the anchor never moves with the control. Only Allemagne at phone width changes
+side; every other chip moves by at most 2 px. **The cost, named:** flipped, Allemagne's chip sits
+on its own bar's end, over the ticks of its own 2015 value and of « la moitié » (43,8 % and 50 %),
+which poke out 2,5 px above and below it — the `tickOutOfChip` margin the row floor guarantees, and
+the placement France, Suisse, Suède and Norvège already have at every width.
+
 ## Source
 
 Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data · 2015

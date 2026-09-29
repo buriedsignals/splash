@@ -732,27 +732,56 @@ async function checkHover(page, vp) {
   // different things and name their labels differently; what matters is that SOME HTML sits over
   // the plot and the pointer still reaches through it. The widest one is picked because it covers
   // the most pixels a reader might aim at.
+  //
+  // A LABEL THE READER CAN SEE, AND THE PAGE SCROLLED TO IT. A box is not a label: a word that
+  // belongs to an option nobody has chosen is laid out at `opacity: 0` and still has a width, and
+  // the widest `.overlay` child on `web-dumbbell-life-expectancy-gains` at 375 × 812 was exactly
+  // that — the hidden « 2000 » at the foot of a yardstick nobody had raised, centred at y 841 in an
+  // 812 px window, where `elementFromPoint` answers nothing and the probe reported a dead overlay on
+  // a page whose hover works. So the candidate must be VISIBLE (`checkVisibility` with the opacity
+  // and visibility tests on, which walk the ancestors too), and when the one chosen sits outside the
+  // window — a row-floored plot on a phone scrolls by design — the page is scrolled until its centre
+  // is on screen, because `elementFromPoint` and a real pointer both only reach the viewport. The
+  // scroll is undone before the next check.
   const label = await page.evaluate(() => {
     const els = Array.prototype.slice.call(
       document.querySelectorAll(".chart-plot .overlay *"),
     );
+    const seen = (el) =>
+      typeof el.checkVisibility !== "function" ||
+      el.checkVisibility({
+        opacityProperty: true,
+        visibilityProperty: true,
+        checkOpacity: true,
+        checkVisibilityCSS: true,
+      });
     let best = null;
     for (const el of els) {
       const r = el.getBoundingClientRect();
-      if (r.width > 0 && r.height > 0 && (!best || r.width > best.w))
-        best = {
-          x: r.left + r.width / 2,
-          y: r.top + r.height / 2,
-          w: r.width,
-          text: el.textContent,
-        };
+      if (r.width > 0 && r.height > 0 && seen(el) && (!best || r.width > best.r.width))
+        best = { el, r };
     }
-    return best;
+    if (!best) return null;
+    const centreY = best.r.top + best.r.height / 2;
+    let scrolled = 0;
+    if (centreY < 0 || centreY > window.innerHeight) {
+      const before = window.scrollY;
+      window.scrollBy(0, centreY - window.innerHeight / 2);
+      scrolled = Math.round(window.scrollY - before);
+    }
+    const r = best.el.getBoundingClientRect();
+    return {
+      x: r.left + r.width / 2,
+      y: r.top + r.height / 2,
+      w: r.width,
+      text: best.el.textContent,
+      scrolled,
+    };
   });
   if (!label)
     skip(
       `${vp.label}: pointing THROUGH the overlay`,
-      "this beat draws no HTML label over its plot",
+      "this beat draws no VISIBLE HTML label over its plot (a word laid out at opacity 0 is not one)",
     );
   if (label) {
     const at = probe(label.x, label.y);
@@ -784,12 +813,19 @@ async function checkHover(page, vp) {
     check(
       under !== null && !under.inOverlay,
       `${vp.label}: a pointer ON an overlay label is not swallowed by it`,
-      `at (${at.x}, ${at.y}) over "${label.text?.trim().slice(0, 40)}" the topmost element is ${under ? `${under.tag}.${under.cls}` : "nothing"}`,
+      `at (${at.x}, ${at.y}) over "${label.text?.trim().slice(0, 40)}"` +
+        `${label.scrolled ? ` (page scrolled ${label.scrolled}px to reach it)` : ""}` +
+        ` the topmost element is ${under ? `${under.tag}.${under.cls}` : "nothing"}`,
     );
 
     // And where the thing underneath IS a hoverable mark, the tooltip must actually answer with
     // that mark's own detail — the full round trip, still driven by a real pointer. Where the
     // label happens to sit over empty plot, there is nothing to answer and nothing to assert.
+    // The pointer leaves the plot first: the probes above leave the last reading's answer standing,
+    // and a tooltip still showing from them read as "the overlay resolved" on a page whose overlay
+    // swallowed the pointer (measured with `.overlay { pointer-events: auto }` forced on).
+    await page.mouse.move(4, 4);
+    await sleep(60);
     await page.mouse.move(at.x, at.y);
     await sleep(40);
     const shown = await page.evaluate(() => {
@@ -813,6 +849,7 @@ async function checkHover(page, vp) {
         `${vp.label}: the tooltip's answer under the overlay label`,
         "the label sits over empty plot, so there is no mark to answer",
       );
+    if (label.scrolled) await page.evaluate(() => window.scrollTo(0, 0));
   }
 
   // Leaving the plot clears it — the other half of an honest hover.

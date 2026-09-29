@@ -507,6 +507,30 @@ export function DirectedBulletWeb({
     labelBoxPx(r.name, { ...regs.axis, fontWeight: r.code === subject ? 700 : regs.axis.fontWeight }, measure, { chip: false }),
   );
   const verdictBoxes = rows.map((r) => r.verdicts.map((v) => labelBoxPx(v.text, regs.value, measure)));
+
+  /**
+   * A VERDICT FLIPS INTO ITS OWN BAR WHERE THE CELL HAS NO ROOM FOR IT PAST THE BAR'S END — measured,
+   * not at a typed share. It used to flip past a fixed 80 % of the scale. The chip is a word of fixed
+   * pixels and the room past a bar's end is a share of a cell that shrinks with the page, so at 375 px
+   * Allemagne's 58,6 % left 135 px for chips 127–132 px wide plus their 8 px of air: all four of its
+   * verdicts ran up to 5 px out of the plot into the frame's padding, and under « la Suède » the chip
+   * sat across the whole hollow it is the verdict on, its right edge 4–9 px past the target tick.
+   * Flipped, the chip sits on the bar's own end on its ground chip — where the rows past 80 % always
+   * put it — and the hollow and the tick past it are left in the clear.
+   *
+   * The flip is decided per ROW, from the widest of its verdicts under every target, and never per
+   * option: the anchor stays the bar's end whichever target is chosen, which is the reason given at
+   * `verdictSpans` below. The browser makes the one comparison — the room `(100 − end) %` of the
+   * cell it lays out against `8 px + widest chip + 2 px` — and `clamp(… × 1000 …)` makes it all or
+   * nothing, the same device as the dumbbell's end label (`web-dumbbell-life-expectancy-gains`).
+   * `thresholdClears` asks the same question of the same numbers, so the keyed note predicts the
+   * placement the page draws.
+   */
+  const VERDICT_GAP_PX = 8;
+  const VERDICT_CLEAR_PX = 2;
+  const verdictNeedPx = verdictBoxes.map((boxes) => VERDICT_GAP_PX + Math.max(...boxes.map((b) => b.w)) + VERDICT_CLEAR_PX);
+  const verdictFlips = (i: number, cellW: number) =>
+    verdictNeedPx[i] > cellW * (1 - x(rows[i].after) / FRAME.width);
   const thresholdClears = (plotWidthPx: number) => {
     // No y-gutter here. Without the floor the cell is HEIGHT-bound below some width — the box's
     // ratio counts the 28 px axis row in units, so at 375 px it was 275 px wide inside a 327 px plot;
@@ -537,7 +561,7 @@ export function DirectedBulletWeb({
       if (overlaps(note, bar)) return false;
       for (const box of verdictBoxes[i]) {
         const at = x(r.after) * s;
-        const l = r.after > 80 ? at - 8 - box.w : at + 8;
+        const l = verdictFlips(i, cellW) ? at - VERDICT_GAP_PX - box.w : at + VERDICT_GAP_PX;
         const verdict: Rect = { l, r: l + box.w, t: cyOf(i) * sy - box.h / 2, b: cyOf(i) * sy + box.h / 2 };
         if (overlaps(note, verdict)) return false;
       }
@@ -600,25 +624,29 @@ export function DirectedBulletWeb({
   const verdictSpans = (r: Row, i: number, only: "claim" | "others") =>
     r.verdicts
       .filter((v) => (only === "claim" ? v.slug === claimSlug : v.slug !== claimSlug))
-      .map((v) => (
-        <span
-          key={`${r.code}-${v.slug}`}
-          className="end-label"
-          data-benchmark-verdict={benchmarkVerdictKey(v.slug, r.code)}
-          style={{
-            ...regs.value,
-            color: r.code === subject ? accent : labelInk,
-            left: `${pct(x(r.after), FRAME.width)}%`,
-            top: `${pct(cyOf(i), FRAME.height)}%`,
-            transform:
-              r.after > 80
-                ? "translate(-100%, -50%) translateX(-8px)"
-                : "translateX(8px) translateY(-50%)",
-          }}
-        >
-          {v.text}
-        </span>
-      ));
+      .map((v) => {
+        const end = pct(x(r.after), FRAME.width);
+        const box = verdictBoxes[i][r.verdicts.indexOf(v)];
+        const left =
+          `calc(${end}% + ${VERDICT_GAP_PX}px - clamp(0px, calc((${verdictNeedPx[i].toFixed(2)}px - ` +
+          `${(100 - end).toFixed(4)}%) * 1000), ${(box.w + 2 * VERDICT_GAP_PX).toFixed(2)}px))`;
+        return (
+          <span
+            key={`${r.code}-${v.slug}`}
+            className="end-label"
+            data-benchmark-verdict={benchmarkVerdictKey(v.slug, r.code)}
+            style={{
+              ...regs.value,
+              color: r.code === subject ? accent : labelInk,
+              left,
+              top: `${pct(cyOf(i), FRAME.height)}%`,
+              transform: "translateY(-50%)",
+            }}
+          >
+            {v.text}
+          </span>
+        );
+      });
 
   return (
     <figure

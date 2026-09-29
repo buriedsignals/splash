@@ -136,6 +136,29 @@ Two decisions the render made, not the plan:
   `BOTTOM_PAD = 0` those two words sat on the last row's own value labels — visible in one look at
   the United States option.
 
+## Issue #78 polish — the foot strip, the phone page, and what each cost
+
+- **The year at each upright's foot printed over the United States' own values.** The strip under
+  the last row was a typed 22 units: 30 px at 1400, 16 px at 768, 9–10 px at 375, holding a chip
+  16–20 px tall. With a country chosen, the annotation measurement counted 18 / 18 / 16 collisions
+  at 375 (creme / nocturne / rapport, over the ten options) and 4 at 768 on creme. The strip is now
+  derived (`footBandFor`): at the row floor's scale — the fewest pixels a unit of height ever gets —
+  it holds half the last row's value chip and then the year's own chip. 42 / 37 / 35 units; zero
+  collisions in every chosen state at 375, 768, 1400 and 1600. **The cost:** the viewBox is 13–20
+  units taller (3,0–4,6 %) at every width, and the strip is empty ground until a country is chosen.
+  Reserving it only on a choice would move the plot, or the source line under it, when a pill is
+  pressed; placing the years in the x-axis row would print them on the tick labels.
+- **`nocturne` overflowed its phone window by 62 px before the row floor added anything**, so the
+  fit check could not attribute the scroll to the floor. The furniture that overflowed first is the
+  title: the direction's display register (32 px, uppercase, tracked 3,4 px) sets it in eight lines
+  and 312 px. That is not this beat's alone — measured at 375 × 812, 29 of the 40 `nocturne` web
+  pages are taller than the window (one of them, the bullet, only by its declared row floor), with
+  titles of 156–390 px — and the repair belongs to the direction,
+  not to one beat. Here it was paid in prose, as the control's cost was: the caveat keeps its
+  disclosure (the bar is the gap, so the axis does not start at zero) and loses the gloss; the
+  reading line keeps the order, the control and both inputs. 874 → 801 px with the floor removed;
+  `creme` and `rapport` already fitted.
+
 ## Verification
 
 `verify-web.mjs --file renders/{creme,nocturne,rapport}.html` — **165 / 159 / 153 passed, 0 failed,
