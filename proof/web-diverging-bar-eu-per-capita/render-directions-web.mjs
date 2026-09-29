@@ -25,8 +25,10 @@ import { readDirection } from "#shared/design-base/read-direction.mjs";
 import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
+import { webRegisters } from "#shared/design-base/web.mjs";
 import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
-import { DirectedDivergingBarWeb } from "./DirectedDivergingBarWeb.tsx";
+import { deriveFurniture, measureText } from "../../skills/chart-web/scripts/render-still.mjs";
+import { DirectedDivergingBarWeb, rowFloorFor } from "./DirectedDivergingBarWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
@@ -41,6 +43,10 @@ const TO = 2024;
 // 720-unit viewBox. That is the floor `assertDatumDeclaration` refuses an indistinguishable
 // reference with — two pills whose bars nowhere differ by a whole pixel are two pills and one
 // picture. Re-measure it if the gutter or the frame width changes.
+// RE-MEASURED UNDER THE ROW FLOOR: the cell at 375 is now 231 px in all three directions and in any
+// window height (the floor holds its height, so nothing clamps its width). Before the floor it was
+// 191 px on `rapport` and 119 px on `creme` and `nocturne`. 195 is kept: against 231 it only errs
+// toward stricter — a pill must differ by more than a pixel, a figure is judged to need more room.
 const UNITS_PER_CSS_PX = 720 / 195;
 
 const NAMES = {
@@ -256,6 +262,15 @@ const refused = [];
 for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const id = file.replace(/\.md$/, "");
   const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, file)), textPerRegister);
+  // THE ROW FLOOR, DERIVED FROM THIS DIRECTION'S OWN REGISTERS — the component re-derives it and
+  // refuses a declaration that differs. Only the registers' sizes are read, so the ink handed to
+  // `webRegisters` is the furniture `renderWeb` itself derives from the same ground.
+  const furniture = deriveFurniture(direction.ground);
+  const rowFloor = rowFloorFor(
+    webRegisters(direction, { ink: { ink: furniture.ink, muted: furniture.muted, accent: direction.accent } }),
+    measureText,
+    shaped.length,
+  );
   try {
     await renderWeb({
       // This catalogue is written in French; the renderer defaults to English and never guesses.
@@ -268,6 +283,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
         span,
         datum,
         unitsPerCssPx: UNITS_PER_CSS_PX,
+        rowFloor,
         title, eyebrow: EYEBROW, caveat, source, reading: readingLine, subjectNote,
         sideLabels: { left: "sous la référence", right: "au-dessus de la référence" },
         alt:
@@ -283,6 +299,9 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
         ground: direction.ground,
         accent: direction.accent,
       },
+      // Legibility before fitting the window: 27 rows each carrying a name and a chipped figure
+      // may make the phone page scroll, for this declared reason and no other. See `rowFloorFor`.
+      rowFloor,
       outDir: OUT,
       name: `${id}.html`,
     });

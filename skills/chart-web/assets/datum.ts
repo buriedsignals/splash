@@ -593,7 +593,15 @@ export function datumChromeCss({ scope }: { scope: string }): string {
     notes: { margin: "2px 0 0" },
     extra: `/* The value labels' own layer. It shares the plot's grid cell with the svg and with .overlay, and
    pointer-events:none is load-bearing for the same reason it is on .overlay: a plain div over the
-   whole plot intercepts every pointer event before it reaches the hit area beneath it. */
-${scope} .chart-plot .datum-values { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }`,
+   whole plot intercepts every pointer event before it reaches the hit area beneath it.
+   AND IT TAKES THE CELL'S SIZE, NOT THE TRACK'S. Its labels sit at a % of the bars' own geometry, so
+   the layer must be exactly the box the <svg> is: render-web.mjs sizes svg.chart and .overlay to
+   --cell-w x --cell-h and centres them in the track, and a layer left at the track's size put every
+   label off its bar wherever the cell leaves slack. Measured on the diverging bar before this rule:
+   at 1600 x 800 on rapport a 667 px cell in a 1456 px track, Luxembourg's "-20,5" printed 333 px from
+   its bar's tip and Czechia's "-8,9" on its own name in the gutter; up to 398 px at 1920 x 950. With
+   it, every label in all three directions sits its declared 6 px off its tip at 375 to 1920. */
+${scope} .chart-plot .datum-values { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; ` +
+      `width: var(--cell-w); height: var(--cell-h); min-width: 0; min-height: 0; margin: auto; }`,
   });
 }

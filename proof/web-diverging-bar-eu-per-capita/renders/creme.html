@@ -386,10 +386,28 @@ svg.chart { display: block; }
   z-index: 10;
 }
 #tooltip[hidden] { display: none; }
+
+/* THE ROW FLOOR — 27 rows · pitch 21 of 567 units · 21px a row · cell at least 567px
+   Each of the 27 rows carries its country's name in the gutter and its figure on a ground chip at the bar's tip; under 21px a row prints both over its neighbour's.
+   Where the viewBox ratio would give a smaller pitch, the cell grows TALLER to this floor and the
+   page may scroll for that reason only; --cell-w is untouched, so the cell leaves its ratio in one
+   direction and by exactly what the floor asks. Where the ratio already gives the pitch, nothing
+   here changes a pixel. Every rule is scoped to the figure's own data-row-floor, which is how
+   verify-web.mjs measures the page without it. */
+.chart-figure[data-row-floor] .chart-plot {
+  --row-floor-cell: 567px;
+  min-height: max(120px, calc(var(--row-floor-cell) + var(--x-axis-h)));
+  --cell-h: min(var(--track-h), max(calc(var(--track-w) * 567 / 720), var(--row-floor-cell)));
+}
+/* THE FRAME'S BOTTOM MARGIN SURVIVES THE SCROLL. Under the floor the column is taller than the
+   window-high figure and overflows it, and an overflow does not carry its parent's padding: the
+   source line would end flush with the page. The same 24px as an item of the column is kept. */
+.chart-figure[data-row-floor] { padding-bottom: 0; }
+.chart-figure[data-row-floor]::after { content: ""; flex: 0 0 24px; }
 </style>
 </head>
 <body>
-<figure class="chart-figure" style="--ground:#FFFCEE;--accent:#1757B6;--ink:#000000;--muted:#61605a;--grid:#d1cfc3;--title-size:30px;--title-weight:700;--title-family:&quot;Merriweather&quot;, Georgia, serif;--subtitle-size:13px;--subtitle-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--subtitle-style:normal;--source-size:13px;--source-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--axis-size:11px;--axis-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--label-size:15px;--label-weight:600;--label-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--note-size:13px;--note-family:&quot;Merriweather&quot;, Georgia, serif;--eyebrow-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--eyebrow-weight:600;--eyebrow-tracking:1.9px;--filter-size:13px"><style>.chart-figure .chart-plot { --y-gutter: 96px; }
+<figure class="chart-figure" data-row-floor="21" data-row-pitch="21" data-rows="27" style="--ground:#FFFCEE;--accent:#1757B6;--ink:#000000;--muted:#61605a;--grid:#d1cfc3;--title-size:30px;--title-weight:700;--title-family:&quot;Merriweather&quot;, Georgia, serif;--subtitle-size:13px;--subtitle-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--subtitle-style:normal;--source-size:13px;--source-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--axis-size:11px;--axis-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--label-size:15px;--label-weight:600;--label-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--note-size:13px;--note-family:&quot;Merriweather&quot;, Georgia, serif;--eyebrow-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--eyebrow-weight:600;--eyebrow-tracking:1.9px;--filter-size:13px"><style>.chart-figure .chart-plot { --y-gutter: 96px; }
 
 .chart-figure .chart-datum {
   flex: 0 0 auto;
@@ -445,8 +463,15 @@ svg.chart { display: block; }
 
 /* The value labels' own layer. It shares the plot's grid cell with the svg and with .overlay, and
    pointer-events:none is load-bearing for the same reason it is on .overlay: a plain div over the
-   whole plot intercepts every pointer event before it reaches the hit area beneath it. */
-.chart-figure .chart-plot .datum-values { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }
+   whole plot intercepts every pointer event before it reaches the hit area beneath it.
+   AND IT TAKES THE CELL'S SIZE, NOT THE TRACK'S. Its labels sit at a % of the bars' own geometry, so
+   the layer must be exactly the box the <svg> is: render-web.mjs sizes svg.chart and .overlay to
+   --cell-w x --cell-h and centres them in the track, and a layer left at the track's size put every
+   label off its bar wherever the cell leaves slack. Measured on the diverging bar before this rule:
+   at 1600 x 800 on rapport a 667 px cell in a 1456 px track, Luxembourg's "-20,5" printed 333 px from
+   its bar's tip and Czechia's "-8,9" on its own name in the gutter; up to 398 px at 1920 x 950. With
+   it, every label in all three directions sits its declared 6 px off its tip at 375 to 1920. */
+.chart-figure .chart-plot .datum-values { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; width: var(--cell-w); height: var(--cell-h); min-width: 0; min-height: 0; margin: auto; }
 
 @supports selector(:has(*)) {
   .chart-figure .chart-datum .options {
@@ -714,7 +739,7 @@ svg.chart { display: block; }
     top: calc(57.407% + 13.0px); transform: none;
   }
 }
-@container (max-width: 334px) or (max-height: 213px) {
+@container (max-width: 257px) or (max-height: 152px) {
   .chart-figure .chart-plot .overlay .note.subject-note {
     left: 57%; right: auto; top: 57.407%; transform: translateY(-50%);
     max-width: min(40%, 20em);
@@ -730,7 +755,7 @@ svg.chart { display: block; }
 // keeps working in a CMS iframe or a sandboxed embed that restricts module scripts).
 //
 // `nearestIndex` is exported and pure — no DOM — so it is unit-tested directly
-// (`test/interaction.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
+// (`test/render-web.test.ts`). `initChart`/`initAll` are DOM wiring and are NOT unit-tested here:
 // per `doctrine`'s own verification rule, an interactive format is verified by driving a real
 // browser, not by asserting against a DOM emulation nobody looked at
 // (`references/web-discipline.md`, "Verification").

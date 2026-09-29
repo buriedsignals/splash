@@ -85,6 +85,7 @@ import {
   datumStates,
   type DatumDeclaration,
 } from "../../skills/chart-web/assets/datum.ts";
+import { labelBoxPx, rowFloorCellPx, type Measure, type WebRegisterStyle } from "../../skills/chart-web/assets/keyed-note.ts";
 
 /** The scope every generated rule is written inside, and the prefix every radio id carries. */
 const SCOPE = ".chart-figure";
@@ -92,6 +93,58 @@ const DATUM_ID_PREFIX = "chart-datum-";
 
 const ROW = 21;
 export const FRAME = { width: 720, height: 0, xAxisRowPx: 26 };
+
+/** What `render-web.mjs`'s `rowFloor` option takes. */
+export type RowFloor = { rows: number; pitch: number; px: number; why: string };
+
+/**
+ * THE ROW FLOOR THIS BEAT DECLARES — THE PITCH UNDER WHICH ITS ROWS PRINT OVER EACH OTHER.
+ *
+ * Every one of the twenty-seven rows carries two runs of type: the country's name in the gutter
+ * (axis register, no chip) and its figure at the bar's tip (value register, on the ground chip
+ * `.end-label` ships). Neither can be moved off its row — the row IS what they label — so the only
+ * lever is the distance between rows. Measured at 375 × 812 before this floor, with the cell held to
+ * its viewBox's ratio: `creme` and `nocturne` drew their plot at `PLOT_FLOOR_PX`, a 119 × 94 px cell,
+ * rows 3,5 px apart under 12–13 px names and 19–20 px figures — 105 to 115 pairs of figures printed
+ * over each other per state and every name over its neighbour's by 8,5–9,7 px; `rapport` drew a
+ * 191 × 150 px cell and 68–72 such pairs. The note on the subject, printed over its own row's
+ * figure at 375 in all three directions, was one symptom of that cell: its free quadrant was 43–58 px
+ * tall for a 74–100 px note. Under the floor the cell at 375 is 231 px wide and 513–567 px tall, every
+ * row sits 19–21 px from the next, no figure or name touches another in any state, and the note fits
+ * UNDER its label in the quadrant `noteCss` already reserved for it — so it stays direct and is not
+ * keyed.
+ *
+ * WHAT IT COSTS, MEASURED ON THE RENDERED PAGES. The cell only ever grows taller, only where the ratio
+ * gives less than the floor, and the page scrolls by exactly that: at 375 × 812 the documents are
+ * 1202–1299 px; at 1024 × 768, 1280 × 720 and 1600 × 800 they run 14–170 px past the window, where
+ * the ratio had drawn 13,6–19,5 px rows and figures overlapping by up to 5,3 px. At 1600 × 800 the
+ * overlap was 1,4 px of chip on `creme` and `nocturne` (no glyph touched) and none on `rapport`, whose
+ * 14 px of scroll there is the cost of rounding its 19,4 px box up to 20 — the contract's `ceil`,
+ * kept rather than argued down per beat. At 1400 × 900 and 1920 × 950 the ratio already gives the
+ * pitch and nothing moves.
+ *
+ * `px` is the taller of the two label boxes in the direction's own registers, rounded up
+ * (`labelBoxPx`, chip counted for the figure because the chip is painted), so it is DERIVED per
+ * direction and never typed. Exported so the runner hands `renderWeb` the same declaration the
+ * component asserts it was drawn with.
+ */
+export function rowFloorFor(
+  regs: { axis: WebRegisterStyle; value: WebRegisterStyle },
+  measure: Measure,
+  rows: number,
+): RowFloor {
+  const name = labelBoxPx("Luxembourg", regs.axis, measure, { chip: false }).h;
+  const figure = labelBoxPx("−20,5", regs.value, measure, { chip: true }).h;
+  const px = Math.ceil(Math.max(name, figure));
+  return {
+    rows,
+    pitch: ROW,
+    px,
+    why:
+      `Each of the ${rows} rows carries its country's name in the gutter and its figure on a ground ` +
+      `chip at the bar's tip; under ${px}px a row prints both over its neighbour's.`,
+  };
+}
 
 /** The y-gutter the twenty-seven names are set in, in CSS pixels. Not a fraction: the names are type
  *  at a fixed CSS size (the fluid frame's own rule — geometry stretches, type does not), so the room
@@ -153,6 +206,7 @@ export function DirectedDivergingBarWeb({
   span,
   datum,
   unitsPerCssPx,
+  rowFloor,
   title,
   eyebrow,
   caveat,
@@ -169,12 +223,15 @@ export function DirectedDivergingBarWeb({
   grid,
 }: {
   rows: Row[];
-  measure: (text: string, options: { fontSize: number; fontWeight?: number | string; fontFamily?: string }) => number;
+  measure: Measure;
   subject: string;
   xTicks: number[];
   span: number;
   datum: DatumDeclaration;
   unitsPerCssPx: number;
+  /** The declaration the runner handed `renderWeb` — asserted below to be the one this component
+   *  derives from its own registers, so the page's floor and this file's arithmetic cannot drift. */
+  rowFloor: RowFloor;
   title: string;
   eyebrow: string;
   caveat: string;
@@ -193,6 +250,25 @@ export function DirectedDivergingBarWeb({
   const regs = webRegisters(direction, { ink: { ink, muted, accent } });
   const height = rows.length * ROW;
   const centre = FRAME.width / 2;
+
+  // THE FLOOR, RE-DERIVED AND HELD TO THE ONE THE RUNNER DECLARED. The page's `--row-floor-cell` is
+  // written by `render-web.mjs` from the declaration; every threshold below is computed from the
+  // same number, so a declaration that differed from this component's registers would place the
+  // note for a cell the page does not draw.
+  const ownFloor = rowFloorFor(regs as any, measure, rows.length);
+  if (!rowFloor || rowFloor.rows !== ownFloor.rows || rowFloor.pitch !== ownFloor.pitch || rowFloor.px !== ownFloor.px)
+    throw new Error(
+      `${direction.id ?? "this direction"}: the runner declared a row floor of ` +
+        `${JSON.stringify(rowFloor && { rows: rowFloor.rows, pitch: rowFloor.pitch, px: rowFloor.px })} and ` +
+        `this component's registers derive ${JSON.stringify({ rows: ownFloor.rows, pitch: ownFloor.pitch, px: ownFloor.px })}`,
+    );
+  /** The cell's height floor in CSS px, exactly as `render-web.mjs` writes it (`--row-floor-cell`). */
+  const floorCellPx = rowFloorCellPx(rowFloor, height);
+  /** THE CELL'S HEIGHT AT A CELL WIDTH `w`. Under the floor, `--cell-h` is
+   *  `min(track-h, max(track-w × H / W, F))` and `--cell-w` is `min(track-w, track-h × W / H)`;
+   *  with the plot's `min-height` holding `track-h ≥ F`, those two reduce to this in every window,
+   *  clamped or not — which is why a threshold on the cell's WIDTH alone is exact here. */
+  const cellHOf = (w: number) => Math.max((w * height) / FRAME.width, floorCellPx);
 
   // THE TWO SIGN HUES. The type sheet allows exactly two and forbids the red/green pairing a
   // deuteranope confuses most; these are the direction's own accent against one neutral taken to the
@@ -308,6 +384,15 @@ export function DirectedDivergingBarWeb({
    * all three states and the shipped placement is kept as a named debt (see `noteCss`). Each switch
    * is a container query on the plot CELL's width, expressed through the two things the cell is the
    * minimum of (see `render-web.mjs`'s `--cell-w`), at widths computed here from the measured words.
+   *
+   * HEIGHT, AND WHY A WIDTH THRESHOLD IS EXACT HERE. Both questions above are partly vertical — how
+   * far apart the rows are, how tall the free quadrant is — and a threshold computed from the cell's
+   * width misfires wherever the cell's height is not what its width predicts: measured before the
+   * row floor at 375 × 812, `rapport`'s window-clamped cell was 191 px wide where the width alone
+   * predicted 231. Under the floor that cannot happen: `track-h ≥ F`, so the cell's height is
+   * `max(w × H / W, F)` for ANY window (`cellHOf`), and every predicate below reads the vertical from
+   * it. The query itself asks `.chart-plot`, which is a SIZE container, through both its width and
+   * its height, so a window that does clamp the cell (a wide, short one) is still read correctly.
    */
   const subjectAt = rows.findIndex((r) => r.code === subject);
   if (subjectAt < 0) throw new Error(`the subject ${subject} is not one of the drawn rows`);
@@ -378,37 +463,38 @@ export function DirectedDivergingBarWeb({
     }
     return lines;
   };
-  // BESIDE THE LABEL: from the cell width at which the right of the rule holds label + gap + a note
-  // of at most two lines.
+  // BESIDE THE LABEL: at a cell width `w`, the right of the rule holds label + gap + a note of at
+  // most two lines, AND no label from a row above reaches the first line — a row above whose
+  // right-hand label ends past the note's left edge must sit far enough up that the two type boxes
+  // do not meet. The row pitch is read off `cellHOf`, so under the floor a narrow cell's rows are as
+  // far apart as the floor holds them, not as close as the ratio would have drawn them.
   const besideLines = 2;
-  let besideFromPx = Infinity;
-  for (let w = 120; w <= 4000; w += 1)
-    if (linesAt(w * (1 - subjectFrac) - noteLeftPx) <= besideLines) {
-      besideFromPx = w;
-      break;
-    }
-  // And no label from a row above may reach the first line: a row above whose right-hand label ends
-  // past the note's left edge must sit far enough up that the two type boxes do not meet.
-  const rowPxPerCellPx = ROW / FRAME.width; // the cell keeps the frame's ratio, so a row is this many px per px of width
-  for (const state of states)
-    rows.slice(0, subjectAt).forEach((r, i) => {
-      const reach = reachOf(valueOf(state.values, r.code));
-      if (!reach) return;
-      const clearV = (noteLinePx + valueLinePx) / 2 + 2;
-      const vFrom = clearV / ((subjectAt - i) * rowPxPerCellPx);
-      const dFrac = reach.frac - subjectFrac;
-      const dPx = noteLeftPx - reach.px;
-      const overlapsFrom = dFrac > 0 ? dPx / dFrac : dPx < 0 ? 0 : Infinity;
-      if (overlapsFrom < vFrom) besideFromPx = Math.max(besideFromPx, vFrom);
-    });
-  besideFromPx = Math.ceil(besideFromPx);
+  const clearV = (noteLinePx + valueLinePx) / 2 + 2;
+  const besideFits = (w: number) => {
+    if (linesAt(w * (1 - subjectFrac) - noteLeftPx) > besideLines) return false;
+    const pitchPx = cellHOf(w) / rows.length;
+    for (const state of states)
+      for (let i = 0; i < subjectAt; i++) {
+        const reach = reachOf(valueOf(state.values, rows[i].code));
+        if (!reach) continue;
+        const reachesNote = reach.frac * w + reach.px > subjectFrac * w + noteLeftPx;
+        if (reachesNote && (subjectAt - i) * pitchPx < clearV) return false;
+      }
+    return true;
+  };
+  // The narrowest cell width from which it holds all the way up.
+  const WIDEST_CELL_PX = 4000;
+  if (!besideFits(WIDEST_CELL_PX))
+    throw new Error("the note on the subject does not fit beside its label even in a 4000 px cell — it is misplaced, not crowded");
+  let besideFromPx = WIDEST_CELL_PX;
+  while (besideFromPx > 120 && besideFits(besideFromPx - 1)) besideFromPx -= 1;
   // UNDER THE LABEL: every line has to fit between the label's foot and the cell's own foot, or the
-  // last of them lands on the x axis's own figures. Measured per cell width, and the narrowest width
-  // from which it holds all the way up to `besideFromPx` is where this placement starts.
+  // last of them lands on the x axis's own figures. Measured per cell width, against the FLOORED
+  // cell height, and the narrowest width from which it holds all the way up to `besideFromPx` is
+  // where this placement starts.
   const underTopFrac = (ROW * subjectAt + ROW / 2) / height;
   const underFits = (w: number) => {
-    const cellH = (w * height) / FRAME.width;
-    const room = cellH * (1 - underTopFrac) - (valueLinePx / 2 + 3);
+    const room = cellHOf(w) * (1 - underTopFrac) - (valueLinePx / 2 + 3);
     return linesAt(w * (1 - subjectFrac) - LABEL_OFFSET_PX) * noteLineBoxPx + 2 <= room;
   };
   let underFromPx = besideFromPx;
@@ -432,13 +518,15 @@ export function DirectedDivergingBarWeb({
     `    top: calc(${subjectCentrePct.toFixed(3)}% + ${(valueLinePx / 2 + 3).toFixed(1)}px); transform: none;`,
     `  }`,
     `}`,
-    // AND WHERE NEITHER FITS, THE PLACEMENT THIS BEAT SHIPPED WITH, NAMED AS A DEBT. Below
-    // `underFromPx` the free quadrant is shorter than the note — 58 px for 74 on `creme` at a 375 px
-    // window, 43 for 100 on `nocturne` — and no other strip of the cell is free in all three states.
-    // Moving the note there would trade the collision the ratchet already owes for a new one on the
-    // x axis's figures, so the old place is kept and the debt stays in
-    // `web-annotation-clears-its-marks.test.ts`'s OWED until the note's copy or the plot's height
-    // changes.
+    // AND WHERE NEITHER FITS, THE PLACEMENT THIS BEAT SHIPPED WITH, NAMED AS A DEBT. Before the
+    // row floor this fired at every phone width: the free quadrant was 58 px for a 74 px note on
+    // `creme` at a 375 px window and 43 for 100 on `nocturne`, and the three collisions sat in
+    // `web-annotation-clears-its-marks.test.ts`'s OWED. Under the floor the quadrant under the
+    // subject's label measures 209–231 px at 375, and `underFromPx` falls to a cell 162–188 px wide —
+    // a window under roughly 306–332 px, narrower than any this format is verified at. What stops the
+    // note there is not height (nine words at one per line still fit the floored quadrant) but a
+    // WORD: the strip right of the label becomes narrower than one of them, which no height can cure.
+    // That range is unmeasured, and is named here rather than claimed clear.
     `${cellQuery(underFromPx)} {`,
     `  ${SCOPE} .chart-plot .overlay .note.subject-note {`,
     `    left: 57%; right: auto; top: ${subjectCentrePct.toFixed(3)}%; transform: translateY(-50%);`,
