@@ -18,7 +18,10 @@ header{position:fixed;top:0;left:0;right:0;z-index:60;display:flex;
        text-transform:uppercase;
        transition:filter .34s ease,color .34s ease}
 header a{color:inherit;text-decoration:none;transition:opacity .25s ease}
-header a:hover{opacity:.62}
+/* Only the wordmark fades. The rule used to be `header a:hover`, and it
+   reached the buttons too: the amber Install went to 62% over the dark
+   hero and turned to mud, while its own rule was lightening it. */
+header .wordmark:hover{opacity:.62}
 header.onlight,header .onlight{color:var(--ink);transition:color .34s ease}
 
 /* THE WORDMARK IS THE POINT. "Splash" is set in the display face at 22px,
@@ -40,22 +43,50 @@ header .hnav a.ghb{order:1;display:inline-flex;align-items:center;gap:8px;
     transition:background .2s ease,border-color .2s ease}
 header .hnav a.ghb:hover{border-color:currentColor;
     background:color-mix(in srgb,currentColor 12%,transparent)}
+/* THE PRESS. Both buttons give under the finger: a short dip in, a slower
+   return on the page's own curve. Nothing lifts on hover — a button that
+   rises to meet the pointer is asking to be clicked. */
+header .hnav a.ghb,header .hnav a.cta{
+    transition:background .2s ease,border-color .2s ease,
+               transform .45s cubic-bezier(.16,.84,.3,1)}
+header .hnav a.ghb:active,header .hnav a.cta:active{
+    transform:scale(.96);transition-duration:.2s,.2s,.08s}
 header .hnav a.ghb svg{width:13px;height:13px;flex:0 0 auto;fill:currentColor}
 header .hnav a.cta{order:2;margin-left:-13px;padding:8px 14px;
     border:1px solid transparent;border-radius:var(--rad-s);
-    background:var(--amber);color:var(--ink);
-    transition:background .2s ease}
+    background:var(--amber);color:var(--ink);overflow:hidden;--roll:32px}
 header .hnav a.cta:hover{background:var(--amber-hi)}
+/* THE ROLL. The word turns over like a counter: it leaves by the top and
+   its twin, drawn as a text-shadow one --roll below, takes its place. A
+   shadow and not a second word, so the name read aloud is still one word.
+   --roll only has to exceed the line plus the top padding and border. */
+header .hnav a.cta span{display:block;
+    text-shadow:0 var(--roll) currentColor;
+    transition:transform .5s cubic-bezier(.16,.84,.3,1)}
+header .hnav a.cta:focus-visible span{transform:translateY(calc(-1 * var(--roll)))}
+@media (hover:hover){
+  header .hnav a.cta:hover span{transform:translateY(calc(-1 * var(--roll)))}
+}
 /* The bare links have only the underline to say the hover, AND THE ROOM IT
    TAKES IS GIVEN BACK ON TOP: margin and rule exist only under the text, so
    the link's box grows downward, and since the bar centres boxes the word
    sat a pixel and a half above the two buttons. Three pixels above, and the
    four words share one optical line, underline included. */
-header .hnav a:not(.cta):not(.ghb){text-decoration:none;
+header .hnav a:not(.cta):not(.ghb){text-decoration:none;position:relative;
                    border-bottom:1px solid transparent;
-                   padding:3px 0 2px;
-                   transition:border-color .2s ease}
-header .hnav a:not(.cta):not(.ghb):hover{border-bottom-color:currentColor}
+                   padding:3px 0 2px}
+/* The rule is DRAWN, the way the list rows on the index draw theirs: in
+   from the left, and out through the right when the pointer leaves, so it
+   reads as one stroke passing under the word rather than a line blinking.
+   It lies over the transparent border, which keeps the box's height. */
+header .hnav a:not(.cta):not(.ghb)::after{content:'';position:absolute;
+    left:0;right:0;bottom:0;height:1px;background:currentColor;
+    transform:scaleX(0);transform-origin:100% 50%;
+    transition:transform .32s cubic-bezier(.16,.84,.3,1)}
+header .hnav a:not(.cta):not(.ghb):hover::after,
+header .hnav a:not(.cta):not(.ghb):focus-visible::after{
+    transform:scaleX(1);transform-origin:0 50%;
+    transition:transform .5s cubic-bezier(.42,0,.24,1)}
 header .hnav a:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
 
 /* ---- THE MENU ----------------------------------------------------------
@@ -105,6 +136,9 @@ header .hnav a:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
         letter-spacing:.15em;text-transform:uppercase;opacity:.6}
 .mclose:hover,.mclose:focus-visible{opacity:1}
 @media (prefers-reduced-motion:reduce){
+  header .hnav a.cta span,header .hnav a::after{transition:none}
+  header .hnav a.cta:hover span,header .hnav a.cta:focus-visible span{transform:none}
+  header .hnav a.ghb:active,header .hnav a.cta:active{transform:none}
   .menu,.menu.open,.menu nav a{transition:none}
   .menu nav a{opacity:1;transform:none}
 }

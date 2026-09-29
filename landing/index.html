@@ -358,10 +358,29 @@
   .heroacts .hinspire{background:var(--paper);color:var(--ink)}
   .heroacts .hdemo{border:1px solid rgba(237,234,227,.26);
                    background:transparent;color:var(--paper);position:relative}
+  /* Rien ne monte au survol : un bouton qui se soulève vers le pointeur
+     QUÉMANDE le clic. Il cède à l'appui — un creux bref, un retour lent sur
+     la courbe de la page — et c'est le mot qui bouge au survol, pas la
+     plaque. */
   .heroacts a,.heroacts button{
             transition:background .2s ease,border-color .2s ease,
-                       color .2s ease,transform .2s ease}
-  .heroacts a:hover,.heroacts button:hover{transform:translateY(-1px)}
+                       color .2s ease,opacity .2s ease,
+                       transform .45s cubic-bezier(.16,.84,.3,1)}
+  .heroacts a:active,.heroacts button:active{transform:scale(.965);
+            transition-duration:.2s,.2s,.2s,.2s,.08s}
+  /* LE MOT SE RETOURNE, comme un compteur : il sort par le haut et son
+     double, tracé en ombre portée une --roll plus bas, prend sa place. Une
+     ombre et pas un second mot, pour que le nom lu à voix haute reste un
+     seul mot. --roll doit dépasser la ligne plus le rembourrage du haut
+     (11 + 13 px). */
+  .heroacts .hinstall,.heroacts .hinspire{overflow:hidden;--roll:26px}
+  .heroacts .hinstall span,.heroacts .hinspire span{display:block;
+            text-shadow:0 var(--roll) currentColor;
+            transition:transform .5s cubic-bezier(.16,.84,.3,1)}
+  .heroacts a:focus-visible span{transform:translateY(calc(-1 * var(--roll)))}
+  @media (hover:hover){
+    .heroacts a:hover span{transform:translateY(calc(-1 * var(--roll)))}
+  }
   .heroacts .hinstall:hover{background:var(--amber-hi)}
   .heroacts .hinspire:hover{background:var(--table)}
   .heroacts .hdemo:hover{background:rgba(237,234,227,.12);
@@ -369,12 +388,13 @@
   /* Le dépôt n'est plus un bouton : la marque seule, sans filet, posée après
      l'appel. Elle ne demande rien — elle dit seulement où le code se trouve. */
   .heroacts .hghi{display:inline-flex;align-items:center;justify-content:center;
-                  padding:13px 8px;color:var(--paper);opacity:.62;
-                  transition:opacity .2s ease,transform .2s ease}
+                  padding:13px 8px;color:var(--paper);opacity:.62}
   .heroacts .hghi svg{width:19px;height:19px;fill:currentColor;display:block}
   .heroacts .hghi:hover{opacity:1}
   @media (prefers-reduced-motion:reduce){
-    .heroacts a:hover,.heroacts button:hover{transform:none}
+    .heroacts a:active,.heroacts button:active,
+    .heroacts a:hover span,.heroacts a:focus-visible span{transform:none}
+    .heroacts span{transition:none}
   }
 
   /* LE BAILLEUR, au pied du hero. Il était au pied de la PAGE, c'est-à-dire
@@ -770,7 +790,7 @@
         border-bottom:1px solid transparent;transition:border-color .2s ease}
   .olab:hover{border-bottom-color:var(--amber)}
   .offer ul{margin:1.2em 0 0;padding:0;list-style:none;display:flex;
-        flex-wrap:wrap;gap:7px}
+        flex-direction:column;align-items:flex-start;gap:7px}
   .offer ul li{font-family:var(--C);font-size:10px;font-weight:500;
         letter-spacing:.1em;text-transform:uppercase;padding:6px 10px;
         border:1px solid rgba(237,234,227,.18);border-radius:99px;opacity:.72}
@@ -2471,7 +2491,7 @@
   <span class="hnav">
     <a href="/docs/">Docs</a>
     <a href="/inspiration.html">Find inspiration</a>
-    <a class="cta" href="https://buriedsignals.com/join" target="_blank" rel="noopener">Install</a>
+    <a class="cta" href="https://buriedsignals.com/join" target="_blank" rel="noopener"><span>Install</span></a>
     <a class="ghb" href="https://github.com/buriedsignals/splash" target="_blank" rel="noopener noreferrer">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 .7a11.5 11.5 0 0 0-3.64 22.41c.58.1.79-.25.79-.56v-2.02c-3.22.7-3.9-1.37-3.9-1.37-.52-1.34-1.28-1.7-1.28-1.7-1.05-.72.08-.7.08-.7 1.16.08 1.77 1.19 1.77 1.19 1.03 1.77 2.7 1.26 3.36.96.1-.75.4-1.26.73-1.55-2.57-.29-5.27-1.28-5.27-5.68 0-1.26.45-2.28 1.19-3.09-.12-.29-.52-1.46.11-3.05 0 0 .97-.31 3.16 1.18a10.97 10.97 0 0 1 5.76 0c2.2-1.49 3.16-1.18 3.16-1.18.63 1.59.23 2.76.11 3.05.74.81 1.19 1.83 1.19 3.09 0 4.41-2.71 5.38-5.29 5.67.42.36.79 1.06.79 2.14v3.17c0 .31.21.67.8.56A11.5 11.5 0 0 0 12 .7Z"/></svg>GitHub</a>
     <button class="hmenu" id="hmenu" type="button"
@@ -2499,8 +2519,8 @@
     <h1><span class="rise" style="--d:.26s">Don&rsquo;t publish</span><em class="rise" style="--d:.38s">a wall of text</em></h1>
     <p class="herodek rise" style="--d:.54s">An agent system to turn your reporting material into charts, maps and video. Splash produces the graphics and deploys them for publication.</p>
     <div class="heroacts rise" style="--d:.66s">
-      <a class="hinstall" href="https://buriedsignals.com/join" target="_blank" rel="noopener">Install</a>
-      <a class="hinspire" href="inspiration.html">Find inspiration</a>
+      <a class="hinstall" href="https://buriedsignals.com/join" target="_blank" rel="noopener"><span>Install</span></a>
+      <a class="hinspire" href="inspiration.html"><span>Find inspiration</span></a>
       <!-- Demo button hidden until the demo video is ready.
       <button class="hdemo" type="button" id="demo-open">Demo</button>
       -->
@@ -2886,12 +2906,12 @@
     </article>
 
     <article class="offer">
-      <div class="okick"><span>Consulting</span></div>
+      <div class="okick"><span>Hire me</span></div>
       <h3>I train newsrooms to investigate with AI</h3>
-      <p class="olede2">Workshops, custom tooling, and investigation collaborations.</p>
+      <p class="olede2">Talks, workshops, custom tooling, and investigation collaborations.</p>
       <ul>
-        <li>Le Temps</li><li>MAZ Journalistenschule</li><li>Republik</li>
-        <li>20 Minuten</li><li>SRF</li><li>The New Humanitarian</li>
+        <li>Le Temps</li><li>Al Jazeera</li><li>MAZ Journalistenschule</li><li>Republik</li>
+        <li>20 Minuten</li><li>SRF</li><li>MediaStorm</li><li>The New Humanitarian</li>
       </ul>
       <div class="ofoot">
         <div class="oacts">
