@@ -11,7 +11,7 @@
  *
  * It parses only: resolving the imports would need a root with `node_modules` and is not this file's
  * question. A specifier that resolves nowhere is held by `nothing-a-journalist-receives-reaches-into-skills`
- * and by `every-import-is-declared`.
+ * and by `root-template-tells-the-truth`.
  */
 import { describe, expect, it } from "bun:test";
 import { readdirSync, readFileSync, existsSync } from "node:fs";

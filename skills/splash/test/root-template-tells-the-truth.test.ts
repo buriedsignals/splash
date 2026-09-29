@@ -70,7 +70,12 @@ const TEMPLATE_SHARED = join(TEMPLATE, "shared");
 // themselves modules a beat loads. Proofs and test directories are development-only.
 const WALKED = ["skills", "shared"];
 
-const SOURCE_EXT = /\.(mjs|mts|cjs|cts|ts|tsx|js|jsx)$/;
+// A scaffold template (`bake.mjs.tmpl`, `Chart.tsx.tmpl`, …) is walked too: it is the file a
+// journalist's beat is made of, so its imports are the beat's imports. That is how a
+// `import puppeteer from "puppeteer"` in two scaffold templates (plus thirty-one other files) once
+// shipped with only `puppeteer-core` declared — measured 2026-09-23 as `Cannot find package
+// 'puppeteer'` in a real installed story root (commit 8b14a452c).
+const SOURCE_EXT = /\.(mjs|mts|cjs|cts|ts|tsx|js|jsx|tmpl)$/;
 
 describe("Engine's installed dependency receipt stays update-safe", () => {
   it("keeps the generated receipt out of Git's clean-checkout update guard", async () => {
@@ -283,6 +288,9 @@ describe("the root template declares every package the tree actually imports", (
       if (spec.startsWith(".") || spec.startsWith("/")) continue; // relative — not a package
       if (spec.startsWith("node:") || spec.startsWith("bun:")) continue; // runtime builtins
       if (spec.startsWith("#")) continue; // subpath imports — asserted separately below
+      // An unfilled scaffold token: `%%UP%%/skills/…` is a relative path once the template is
+      // filled, and the fill itself is pinned by each scaffold's own "no token survives" test.
+      if (spec.startsWith("%%")) continue;
       // A template literal with an interpolation is CONSTRUCTED AT RUNTIME — the header states
       // that family as this scan's stated boundary, and it is genuinely out of reach for a text
       // scan. Skipped here rather than left to be read as a package: without this, a real

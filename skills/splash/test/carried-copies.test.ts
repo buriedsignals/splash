@@ -69,8 +69,8 @@ for (const root of ROOTS) {
 describe("carried copies — every file whose line 1 names another file as canonical", () => {
   it("should find carried copies at all (premise)", () => {
     // Six render-still copies, the size tables, the gate contract in two skills, the guard scripts
-    // in four — a roster under ten means the walker has stopped seeing the tree.
-    expect(copies.length).toBeGreaterThan(10);
+    // in four. Measured 2026-09-29: 157 — a roster well under that means the walker stopped seeing.
+    expect(copies.length).toBeGreaterThanOrEqual(150);
   });
 
   for (const { copy, canonical } of copies) {

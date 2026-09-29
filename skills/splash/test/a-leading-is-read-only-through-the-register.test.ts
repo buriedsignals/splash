@@ -58,7 +58,8 @@ const sources = [...walk(ROOT)].map((path) => {
 
 describe("a register's leading", () => {
   it("should walk the repository and find the modules that own the leading (premise)", () => {
-    expect(sources.length).toBeGreaterThan(500);
+    // Measured 2026-09-29: 1389. A walk well under that has stopped seeing part of the tree.
+    expect(sources.length).toBeGreaterThanOrEqual(1300);
     const found = [...OWNERS].map((owner) => [
       owner,
       sources.some((s) => s.own === owner && s.reads),

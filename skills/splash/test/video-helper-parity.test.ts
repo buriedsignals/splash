@@ -172,8 +172,8 @@ describe("canvas-substrate helpers — every copy in the tree, discovered rather
   it("should find far more copies than the hand-written import list names", () => {
     // Measured 2026-08-09: 27 copies in the tree, 4 named by `helper-parity.test.ts`. The exact
     // number moves with the beats; a tree where this walk found fewer than the import list names
-    // would mean the walk is broken, not that the tree got tidy.
-    expect(copies.length).toBeGreaterThanOrEqual(4);
+    // would mean the walk is broken, not that the tree got tidy. Measured 2026-09-29: 7.
+    expect(copies.length).toBeGreaterThanOrEqual(6);
   });
 
   for (const copy of copies) {

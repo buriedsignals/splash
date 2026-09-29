@@ -11,7 +11,7 @@
  * browser, no renderer, no key, and it takes about a second for the tree — so it belongs here.
  *
  * It parses only. Whether a specifier resolves is a different question, held by
- * `every-import-is-declared` and `nothing-a-journalist-receives-reaches-into-skills`.
+ * `root-template-tells-the-truth` and `nothing-a-journalist-receives-reaches-into-skills`.
  */
 import { describe, expect, it } from "bun:test";
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -71,7 +71,8 @@ function shipped(): {
 
 describe("every script this toolchain ships", () => {
   it("finds them at all, so this file cannot pass by looking at nothing", () => {
-    expect(shipped().length).toBeGreaterThanOrEqual(400);
+    // Measured 2026-09-29: 697. A walk well under that has stopped seeing part of the tree.
+    expect(shipped().length).toBeGreaterThanOrEqual(650);
   });
 
   it("parses", () => {

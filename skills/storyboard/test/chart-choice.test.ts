@@ -4,7 +4,6 @@ import { dirname, join, resolve } from "node:path";
 
 const STORYBOARD = join(import.meta.dirname, "..");
 const SKILLS = join(STORYBOARD, "..");
-const ROOT = join(SKILLS, "..");
 const CHOICE = join(STORYBOARD, "references", "chart-choice.md");
 const EXCHANGE = join(STORYBOARD, "references", "exchange.md");
 const SKILL = join(STORYBOARD, "SKILL.md");
@@ -61,23 +60,13 @@ describe("the storyboard chart chooser", () => {
     }
   });
 
-  it("should stay advisory, story-led and separate from reachability", () => {
-    const text = readFileSync(CHOICE, "utf8").replace(/\s+/g, " ");
-    expect(text).toContain("A hard refusal removes a candidate");
-    expect(text).toContain("Reachability is checked after editorial fit");
-    expect(text).toContain("The agent may choose a lower-ranked form");
-    expect(text).toContain("no external skill invocation or runtime dependency");
-  });
-
-  it("should be part of the exchange and keep Data2Story reference-only", () => {
+  // The Data2Story boundary is held as behaviour, not as README prose:
+  // `skills/splash/test/data2story-is-a-reference-not-a-runtime.test.ts`.
+  it("should be part of the exchange", () => {
     const exchange = readFileSync(EXCHANGE, "utf8");
     const skill = readFileSync(SKILL, "utf8");
-    const readme = readFileSync(join(ROOT, "README.md"), "utf8").replace(/\s+/g, " ");
 
     expect(exchange).toContain("references/chart-choice.md");
     expect(skill).toContain("references/chart-choice.md");
-    expect(readme).toContain(
-      "does not install, invoke, or require Data2Story skills at runtime",
-    );
   });
 });

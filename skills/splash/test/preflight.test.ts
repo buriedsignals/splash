@@ -529,23 +529,6 @@ describe("runPreflight — dependency-checking behaviour carried over unchanged"
     expect(report.ready).toBe(false);
   });
 
-  it("should report dependencies as fail, naming the package, when node_modules exists but a declared dependency does not resolve", async () => {
-    await writeFile(join(root, "NEWSROOM.md"), complete);
-    const declared = await declaredDependencyNames();
-    // node_modules exists — the old bug's trigger — but one declared package
-    // was never actually installed into it (the @resvg/resvg-js shape from
-    // the proof run: present directory, absent resolution).
-    const [unresolved, ...rest] = declared;
-    for (const name of rest) {
-      await installResolvableDependency(name);
-    }
-    const report = await runPreflight({ root, env: {}, fetchFn: okFetch });
-    const check = report.checks.find((c) => c.id === "dependencies");
-    expect(check?.status).toBe("fail");
-    expect(check?.detail).toContain(unresolved);
-    expect(report.ready).toBe(false);
-  });
-
   // PREFLIGHT OFFERS exact IDs and both external setup routes; it never accepts a value or restores
   // the retained legacy .env writer.
   it("should carry, on every capability row, both safe setup routes naming that row's own credential ID", async () => {
@@ -622,10 +605,12 @@ describe("runPreflight — dependency-checking behaviour carried over unchanged"
     expect(check?.profile?.credit).toBeUndefined();
   });
 
-  it("should report dependencies as fail, naming @resvg/resvg-js, when the rasteriser is not resolvable — the original incident this suite pins", async () => {
+  it("should report dependencies as fail, naming @resvg/resvg-js, when node_modules exists but the rasteriser does not resolve — the original incident this suite pins", async () => {
     await writeFile(join(root, "NEWSROOM.md"), complete);
     const declared = await declaredDependencyNames();
     expect(declared).toContain("@resvg/resvg-js");
+    // node_modules exists — the old bug's trigger — but this one declared package was never
+    // actually installed into it: the proof run's shape, present directory, absent resolution.
     for (const name of declared) {
       if (name === "@resvg/resvg-js") continue;
       await installResolvableDependency(name);

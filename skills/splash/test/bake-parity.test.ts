@@ -129,7 +129,8 @@ describe("the bakes — every camera in the tree, discovered rather than listed"
 
   it("should find more bakes than any hand-written list names", () => {
     // Measured 2026-08-10: nineteen, of which `helper-parity.test.ts` names zero.
-    expect(copies.length).toBeGreaterThanOrEqual(12);
+    // Measured 2026-09-29: 33. A walk well under that has stopped finding bakes.
+    expect(copies.length).toBeGreaterThanOrEqual(30);
   });
 
   it("should find both basenames, because keying on one would miss seven files", () => {

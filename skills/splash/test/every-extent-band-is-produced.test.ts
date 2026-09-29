@@ -114,6 +114,12 @@ function areaBias(c: Corners): number {
  * Where every committed camera sits. Ground width to the kilometre and area bias to one decimal —
  * both read off the tree on 2026-08-11, both recomputed here from `frameCorners` rather than copied
  * from anything the bake wrote.
+ *
+ * A DELIBERATE DRIFT DETECTOR, NOT AN INDEPENDENT ORACLE. The numbers were produced by this file's
+ * own `groundWidthKm`/`areaBias` over the committed cameras, so they cannot prove those functions
+ * right; what they hold is the CAMERAS, which are the thing under test. A camera that moves must
+ * move this table in the same change, with a reason — as `c2c74697` (choropleth-web) and
+ * `f346b2e4` (locator-web) did on 2026-09-13. Re-read a row only for a camera that moved on purpose.
  */
 const CAMERA_CENSUS: Record<
   string,

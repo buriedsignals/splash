@@ -42,8 +42,7 @@
  *    and passed on the three that had. The count was the measurement.
  */
 import { describe, expect, it } from "bun:test";
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { deriveFurniture } from "../scripts/render-still.mjs";
@@ -53,8 +52,8 @@ import {
   livePlan,
   renderMapWeb,
 } from "../scripts/render-web.mjs";
+import { committedMapWebPages } from "./committed-map-web-pages.ts";
 
-const TWIN = join(import.meta.dirname, "..", "..", "..");
 
 /**
  * The page's own MARKUP, with every `<style>` and `<script>` block taken out first.
@@ -95,45 +94,6 @@ function disclosuresWithoutSummary(html: string): number {
 /** Tables in the MARKUP, never a `<table` written inside the inlined library or a comment. */
 function tableCount(html: string): number {
   return (markup(html).match(/<table\b/gi) ?? []).length;
-}
-
-/**
- * A page is a map-web beat if it is the rendered HTML of the seed or of a `mapgen-*-web` beat —
- * decided by PATH, with the format's own root class kept as a widener so a beat living somewhere
- * else is still caught. Copied deliberately from `the-live-layer-is-in-the-artifact.test.ts`: the
- * two guards must sweep the same set, or one of them silently covers less than the other.
- */
-function committedMapWebPages(): { rel: string; html: string }[] {
-  const tracked = execFileSync("git", ["ls-files", "-z", "--", "."], {
-    cwd: TWIN,
-    encoding: "utf8",
-  })
-    .split("\0")
-    .filter((rel) => rel.endsWith(".html"));
-  const pages = [];
-  for (const rel of tracked) {
-    const path = join(TWIN, rel);
-    let stat;
-    try {
-      stat = statSync(path);
-    } catch {
-      continue;
-    }
-    if (!stat.isFile()) continue;
-    const html = readFileSync(path, "utf8");
-    if (isMapWebPath(rel) || html.includes('class="map-web-page"'))
-      pages.push({ rel, html });
-  }
-  return pages;
-}
-
-function isMapWebPath(rel: string): boolean {
-  return (
-    // Archived 2026-09-17: these five superseded the mapgen-*-web beats but this audit still
-    // names them, now under `tests/fixtures/beats/` rather than `proof/`.
-    /^tests\/fixtures\/beats\/mapgen-[a-z]+-web\//.test(rel) ||
-    rel.startsWith("skills/map-web/output-proof/")
-  );
 }
 
 describe("every committed map page keeps its value table collapsed", () => {

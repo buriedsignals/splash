@@ -4,8 +4,9 @@
  * `assets/filter.ts` is duplicated per skill and never imported across them — the twin's method
  * (`no-cross-skill-imports.test.ts`), which buys copy-pasteability and pays for it with the risk
  * of silent drift. `carried-copies.test.ts` holds the two copies byte for byte (line 1 of the
- * `map-web` copy names `chart-web`'s as canonical); this file exercises every rule through BOTH
- * imports, so a behavioural change reddens against the vocabulary rather than only against bytes.
+ * `map-web` copy names `chart-web`'s as canonical), so this file exercises every rule once,
+ * through the CANONICAL copy: a behavioural change reddens here against the vocabulary, and a
+ * copy that stops matching it reddens there against the bytes.
  *
  * Written the same day the vocabulary was: before it, `map-web` derived its filter from
  * whether points happened to carry more than one `group`, and `chart-web` hard-wired one
@@ -17,20 +18,13 @@ import { describe, expect, it } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
-import * as chartFilter from "../../chart-web/assets/filter.ts";
-import * as mapFilter from "../../map-web/assets/filter.ts";
+/** The canonical copy; `map-web/assets/filter.ts` is its carried twin. */
+import * as F from "../../chart-web/assets/filter.ts";
 
-const HERE = new URL(".", import.meta.url).pathname;
-const COPIES = [
-  join(HERE, "../../chart-web/assets/filter.ts"),
-  join(HERE, "../../map-web/assets/filter.ts"),
-];
-
-/** Both live modules, so every assertion below runs twice against two separate instances. */
-const IMPLEMENTATIONS: [string, typeof chartFilter][] = [
-  ["chart-web", chartFilter],
-  ["map-web", mapFilter],
-];
+const CANONICAL = join(
+  new URL(".", import.meta.url).pathname,
+  "../../chart-web/assets/filter.ts",
+);
 
 /** A study set with a subject, three regions and a value, so a category, a series and a threshold
  *  option can all be declared over the SAME data — the reduction the vocabulary claims. */
@@ -57,32 +51,30 @@ const BY_SIZE = {
   ],
 };
 
-describe("the two copies are one file", () => {
-  it("neither copy names a format's own class or id prefix — the scope is an argument", () => {
-    for (const path of COPIES) {
-      const source = readFileSync(path, "utf8");
-      // The doc-comment names both formats deliberately (it explains what it is vendored into);
-      // the CODE must not, or one copy would draw the other format's control.
-      const code = source
-        .split("\n")
-        .filter(
-          (line) =>
-            !line.trimStart().startsWith("//") &&
-            !line.trimStart().startsWith("*"),
-        )
-        .join("\n");
-      for (const forbidden of [
-        ".chart-figure",
-        ".map-web-page",
-        "chart-filter",
-        "mw-filter",
-      ])
-        expect(code).not.toContain(forbidden);
-    }
+describe("the carried file is format-neutral", () => {
+  it("names no format's own class or id prefix — the scope is an argument", () => {
+    const source = readFileSync(CANONICAL, "utf8");
+    // The doc-comment names both formats deliberately (it explains what it is vendored into);
+    // the CODE must not, or one copy would draw the other format's control.
+    const code = source
+      .split("\n")
+      .filter(
+        (line) =>
+          !line.trimStart().startsWith("//") &&
+          !line.trimStart().startsWith("*"),
+      )
+      .join("\n");
+    for (const forbidden of [
+      ".chart-figure",
+      ".map-web-page",
+      "chart-filter",
+      "mw-filter",
+    ])
+      expect(code).not.toContain(forbidden);
   });
 });
 
-describe.each(IMPLEMENTATIONS)("%s", (_name, F) => {
+describe("chart-web/assets/filter.ts, the canonical vocabulary", () => {
   describe("no declaration means nothing at all", () => {
     it("emits no CSS", () => {
       expect(F.filterCss(null, { scope: ".x", idPrefix: "f" })).toBe("");

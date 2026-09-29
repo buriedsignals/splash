@@ -1,14 +1,16 @@
 // storyboard's FORMAT_CATALOG (the table the format gate reads, in
-// storyboard/scripts/format-catalog.mjs) is generated from the canonical visual catalogue. This
-// test independently verifies the generated copy against facts that live for real elsewhere:
-// whether a producer skill exists on disk, whether it is the RIGHT producer for that medium, and
-// whether deliver's own FORMS_BY_FORMAT actually offers forms for that format.
+// storyboard/scripts/format-catalog.mjs) is generated from the canonical visual catalogue.
+// `bun run catalog:check` (scripts/visual-catalog.mjs, run in CI) already owns the structural
+// parity: every producer has a shipped SKILL.md whose front matter names it, every pair's format
+// has deliver forms, every format deliver offers is reached by a pair, and the generated copy has
+// not drifted. This file holds what that check does not: that the producer a pair names is the
+// RIGHT producer for that medium AND that format, read from the producer's own front matter; and
+// that each pair's size rule matches the storyboard gate's own `sizeGap` condition.
 // Runtime code never crosses a skill boundary in this branch (no-cross-skill-imports.test.ts) —
 // this file is the test-only exception that rule reserves for exactly this purpose (see
-// where.test.ts's own comment on the same pattern), reading deliver's real table and the
-// filesystem to prove storyboard's own copy has not drifted from either.
+// where.test.ts's own comment on the same pattern).
 //
-// THE THIRD ASSERTION IS THE ONE THAT MAKES THE PAIR FORM WORTH ANYTHING. The catalog used to be
+// THE PRODUCER ASSERTION IS THE ONE THAT MAKES THE PAIR FORM WORTH ANYTHING. The catalog used to be
 // keyed on format alone, so `map` + `web` passed by naming `chart-web`. Widening the key to a
 // medium/format pair does not by itself catch that: `chart-web` and `map-web` BOTH exist
 // on disk, so a `"map/web" -> chart-web` row still satisfies "the directory exists". What
@@ -43,10 +45,9 @@
 // to seven SKILL.md files owned by other chantiers. The pair of wrong-format rows that were actually
 // reachable, and that the journey audit demonstrated, both redden.
 import { describe, it, expect } from "bun:test";
-import { existsSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { FORMAT_CATALOG } from "../../storyboard/scripts/format-catalog.mjs";
-import { FORMS_BY_FORMAT } from "../../deliver/scripts/deliver.mjs";
 import visualCatalog from "../../storyboard/references/visual-catalog.json" with { type: "json" };
 import { EXPORT_SIZES, SIZED_FORMATS } from "../../storyboard/scripts/storyboard.mjs";
 
@@ -60,16 +61,8 @@ function frontMatter(skill: string): string {
 }
 
 describe("storyboard's format catalog agrees with what actually ships", () => {
-  it("should expose exactly the generated catalogue's medium/format pairs", () => {
-    expect(Object.keys(FORMAT_CATALOG)).toEqual(visualCatalog.formatPairs.map((row) => row.pair));
-  });
-
   for (const [pair, row] of Object.entries(FORMAT_CATALOG)) {
     const [medium, format] = pair.split("/");
-
-    it(`should find a producer skill directory on disk for ${pair} (${row.producerSkill})`, () => {
-      expect(existsSync(join(SKILLS, row.producerSkill))).toBe(true);
-    });
 
     it(`should find, in ${row.producerSkill}'s own SKILL.md, a skill that names itself, names the ${medium} medium and names the ${format} format`, () => {
       const meta = frontMatter(row.producerSkill);
@@ -85,25 +78,6 @@ describe("storyboard's format catalog agrees with what actually ships", () => {
       expect(
         `${row.producerSkill} names the ${format} format: ${formatWord.test(description)}`,
       ).toBe(`${row.producerSkill} names the ${format} format: true`);
-    });
-
-    if (row.delivered) {
-      it(`should find a matching deliver FORMS_BY_FORMAT entry for format ${format}, since the catalog claims ${pair} is delivered`, () => {
-        expect(FORMS_BY_FORMAT[format]).toBeDefined();
-      });
-    }
-  }
-
-  // The reverse direction: a format deliver can genuinely materialise must appear in at least
-  // one catalog pair marked delivered, or the format gate would refuse something this toolchain can
-  // truly ship — the exact defect this whole table exists to prevent, approached from the other
-  // side.
-  for (const format of Object.keys(FORMS_BY_FORMAT)) {
-    it(`should record at least one delivered medium/${format} pair in FORMAT_CATALOG, since deliver offers forms for it`, () => {
-      const delivered = Object.entries(FORMAT_CATALOG).filter(
-        ([pair, row]) => pair.endsWith(`/${format}`) && row.delivered,
-      );
-      expect(delivered.length).toBeGreaterThan(0);
     });
   }
 

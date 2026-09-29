@@ -55,15 +55,14 @@
  *    Each one goes green as its beat is retrofitted, and the count is the measurement.
  */
 import { describe, expect, it } from "bun:test";
-import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { deriveFurniture } from "../scripts/render-still.mjs";
 import { MapWebSeed, RegionTable } from "../assets/MapWebSeed.tsx";
 import { SEED, livePlan, renderMapWeb } from "../scripts/render-web.mjs";
+import { committedMapWebPages } from "./committed-map-web-pages.ts";
 
-const TWIN = join(import.meta.dirname, "..", "..", "..");
 
 /**
  * What a live page must contain, each string chosen so that it can only be there because the live
@@ -228,49 +227,9 @@ describe("the renderer puts the live map into the file it writes", () => {
 });
 
 /**
- * The other half, and the one the audit's count was about: what is COMMITTED.
- *
- * A page is a map-web beat if it is the rendered HTML of the seed or of a `mapgen-*-web` beat —
- * decided by its PATH, not by a class name inside it. The three older beats
- * (`mapgen-choropleth-web`, `mapgen-hexgrid-web`, `mapgen-locator-web`) do not carry the seed's
- * `map-web-page` root class at all: they were still on the two-rung `layouts` markup, so a
- * class-based sweep found 2 of 5 and reported green over the three worst pages in the format. The
- * format's own root class is kept as a WIDENER below, so a beat living somewhere else is still
- * caught, but the floor is the path list.
+ * The other half, and the one the audit's count was about: what is COMMITTED. The page set and
+ * why it is decided by path rather than class live in `committed-map-web-pages.ts`.
  */
-function committedMapWebPages(): { rel: string; html: string }[] {
-  const tracked = execFileSync("git", ["ls-files", "-z", "--", "."], {
-    cwd: TWIN,
-    encoding: "utf8",
-  })
-    .split("\0")
-    .filter((rel) => rel.endsWith(".html"));
-  const pages = [];
-  for (const rel of tracked) {
-    const path = join(TWIN, rel);
-    let stat;
-    try {
-      stat = statSync(path);
-    } catch {
-      continue;
-    }
-    if (!stat.isFile()) continue;
-    const html = readFileSync(path, "utf8");
-    if (isMapWebPath(rel) || html.includes('class="map-web-page"'))
-      pages.push({ rel, html });
-  }
-  return pages;
-}
-
-function isMapWebPath(rel: string): boolean {
-  return (
-    // Archived 2026-09-17: these five superseded the mapgen-*-web beats but the retrofit-tracking
-    // audit below still names them, now under `tests/fixtures/beats/` rather than `proof/`.
-    /^tests\/fixtures\/beats\/mapgen-[a-z]+-web\//.test(rel) ||
-    rel.startsWith("skills/map-web/output-proof/")
-  );
-}
-
 describe("every committed map-web page is a live map", () => {
   const pages = committedMapWebPages();
 

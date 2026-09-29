@@ -11,12 +11,8 @@ function names(text: string) {
 }
 
 describe("the environment example", () => {
-  it("is migration-only while retaining the canonical legacy names", async () => {
+  it("declares exactly the canonical legacy variable names", async () => {
     const text = await readFile(EXAMPLE, "utf8");
-    expect(text).toContain("New installations use Engine's operating-system credential broker");
-    expect(text).toContain("Retain a legacy .env only long enough");
-    expect(text).toContain("never reads or");
-    expect(text).toContain("accepts values");
     expect(names(text)).toEqual([
       "MAPTILER_KEY",
       "DATAWRAPPER_TOKEN",

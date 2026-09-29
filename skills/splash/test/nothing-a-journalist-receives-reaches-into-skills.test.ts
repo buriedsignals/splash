@@ -123,17 +123,18 @@ async function adapters(): Promise<Adapter[]> {
   ];
 }
 
+type Produced = { scaffold: string; beat: string; file: string; source: string };
+
 /** Every file an adapter produced, over every beat it accepts — with the ones it refuses skipped,
- *  since a scaffold's own preconditions are its own business and are held elsewhere. */
-async function produced(): Promise<
-  { scaffold: string; beat: string; file: string; source: string }[]
-> {
-  const out: {
-    scaffold: string;
-    beat: string;
-    file: string;
-    source: string;
-  }[] = [];
+ *  since a scaffold's own preconditions are its own business and are held elsewhere. Run once per
+ *  file and shared: every test below only reads it. */
+let producedOnce: Promise<readonly Produced[]> | undefined;
+function produced(): Promise<readonly Produced[]> {
+  return (producedOnce ??= adaptEverything());
+}
+
+async function adaptEverything(): Promise<Produced[]> {
+  const out: Produced[] = [];
   for (const { name, from, adapt } of await adapters()) {
     for (const beat of from) {
       let adapted: Record<string, unknown>;
