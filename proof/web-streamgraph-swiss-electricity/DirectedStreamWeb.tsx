@@ -36,13 +36,25 @@ import { adjustToContrast, contrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_M
 import { figureVars, noteAnchor, webRegisters } from "#shared/design-base/web.mjs";
 import {
   assertFloorDeclaration,
+  FLOOR_NONE_SLUG,
   floorChromeCss,
   floorCss,
   floorNotesForMarkup,
   floorOptionsForMarkup,
+  floorSlugOf,
   type FloorDeclaration,
   type FloorGeometry,
 } from "../../skills/chart-web/assets/floor.ts";
+import {
+  cellWidthPx,
+  keyedNoteCss,
+  labelBoxPx,
+  leavesBelow,
+  overlaps,
+  type KeyedNote,
+  type Measure,
+  type Rect,
+} from "../../skills/chart-web/assets/keyed-note.ts";
 
 export const FRAME = { width: 900, height: 400, xAxisRowPx: 28 };
 
@@ -51,6 +63,12 @@ const SCOPE = ".chart-figure";
 const FLOOR_ID_PREFIX = "chart-floor";
 /** How wide the gutter opens for the axis an option earns. Nothing in the default state. */
 const GUTTER_PX = 46;
+/** How far the 2016 sentence stands above the stream's own top edge, in CSS pixels. */
+const CROSSING_GAP_PX = 4;
+/** The totals are drawn at the cell's top edge, chipless — the stack's own headroom is theirs, and
+ *  with the solar band laid flat the stream rises to 15 units of the 400 at 2025, so the 1 % they
+ *  used to stand down from the edge was a quarter of the room they have in that state. */
+const TOTAL_TOP_FRACTION = 0;
 /** How long a carried name takes to reach its band. The plates themselves cut — a shear is not an
  *  interpolation — and a name that jumped while its band cut would read as a third thing happening. */
 const CARRY_MS = 260;
@@ -98,6 +116,7 @@ export function DirectedStreamWeb({
   ink,
   muted,
   grid,
+  measure,
 }: {
   plates: Plate[];
   axes: PlateAxis[];
@@ -122,6 +141,7 @@ export function DirectedStreamWeb({
   ink: string;
   muted: string;
   grid: string;
+  measure: Measure;
 }) {
   const regs = webRegisters(direction, { ink: { ink, muted, accent } });
 
@@ -183,6 +203,129 @@ export function DirectedStreamWeb({
   // Refused before anything is drawn, against what this component is actually handed.
   assertFloorDeclaration(floor, geometry, { height: FRAME.height });
 
+  /**
+   * THE 2016 SENTENCE STANDS ABOVE THE STREAM, NOT IN IT — AND WHERE IT CANNOT, IT IS KEYED.
+   *
+   * It used to hang 10 px under its own ring, which put its ground chip INSIDE the stream: on the
+   * nuclear band at 768, 1400 and 1600 (all 25 of the guard's sample points in that band's fill) and
+   * across four bands and the word "hydraulique" at 375. It was argued as deliberate. It is not a
+   * licence `types/streamgraph.md` gives: the sheet puts a band's NAME inside the band, at its own
+   * thickest point, because the form has no axis — a sentence about an EVENT is an annotation, and a
+   * chip laid across the stream is a hole cut in the evidence at the one year the claim turns on.
+   *
+   * So the sentence sits on the empty ground above the silhouette, centred on the ring's own year,
+   * its foot `CROSSING_GAP_PX` above the stream's highest point under its whole width — computed per
+   * plate, because the control shears the stream and the headroom over 2016 is 38 units on the
+   * silhouette and 24 with the nuclear band laid flat. A shear never moves x, so the ring stays
+   * directly under the sentence in every state. The sentence is fixed-size type and the headroom is
+   * geometry, so below some width no plate leaves it room: there it leaves the plot for the keyed
+   * line under it (`assets/keyed-note.ts`), keyed by the ring itself — the one ring on the plate.
+   *
+   * THE TOTALS ARE THE SAME CASE. `a-free-baseline-forbids-a-value-axis` prints the total at both
+   * ends "outside the stack"; they sit in the top corners, and the stream's own peak (2024, at the
+   * frame's top in every plate) reaches into the right-hand one below about 900 px. Keyed there by
+   * the axis label the plate already prints at that end.
+   */
+  const states = [
+    { slug: FLOOR_NONE_SLUG, shift: geometry.xs.map(() => 0), gutterPx: 0, carries: floor.carries },
+    ...floor.options.map((o) => ({ slug: floorSlugOf(o.key), shift: o.shift, gutterPx: GUTTER_PX, carries: o.carries })),
+  ].map((st) => ({
+    ...st,
+    top: geometry.xs.map((_, i) => Math.min(...geometry.bands.map((b) => b.top[i] + st.shift[i]))),
+  }));
+  /** The highest point of a piecewise-linear edge between two x's — the samples inside the span and
+   *  the edge where it crosses the span's own ends. */
+  const highestOver = (edge: number[], x0: number, x1: number) => {
+    const xs = geometry.xs;
+    let m = Infinity;
+    for (let i = 0; i < xs.length; i++) {
+      if (xs[i] >= x0 && xs[i] <= x1) m = Math.min(m, edge[i]);
+      if (i + 1 < xs.length)
+        for (const at of [x0, x1])
+          if (at > xs[i] && at < xs[i + 1])
+            m = Math.min(m, edge[i] + ((edge[i + 1] - edge[i]) * (at - xs[i])) / (xs[i + 1] - xs[i]));
+    }
+    return m;
+  };
+  const crossingX = plates[0].crossing!.x;
+  const crossingBox = labelBoxPx(crossingText, regs.annot, measure);
+  const totalBoxes = { left: labelBoxPx(totals.left, regs.annot, measure, { chip: false }), right: labelBoxPx(totals.right, regs.annot, measure, { chip: false }) };
+  const nameReg = { ...regs.value, fontSize: `${Math.max(11, Number.parseFloat(regs.value.fontSize as string) - 2)}px` };
+  const nameBoxes = bandNames.map((b) => ({ ...b, box: labelBoxPx(b.text, nameReg, measure) }));
+  /** Where each state's words land in a plot `plotWidthPx` wide, in the cell's own pixels. */
+  const layoutAt = (plotWidthPx: number, st: (typeof states)[number]) => {
+    const cellW = cellWidthPx(plotWidthPx, {
+      frame: { width: FRAME.width, height: FRAME.height },
+      box: { width: FRAME.width, height: FRAME.height + FRAME.xAxisRowPx },
+      gutterPx: st.gutterPx,
+      axisPx: FRAME.xAxisRowPx,
+    });
+    const s = cellW / FRAME.width;
+    const totalTop = TOTAL_TOP_FRACTION * FRAME.height * s;
+    const left: Rect = { l: 0, r: totalBoxes.left.w, t: totalTop, b: totalTop + totalBoxes.left.h };
+    const right: Rect = { l: cellW - totalBoxes.right.w, r: cellW, t: totalTop, b: totalTop + totalBoxes.right.h };
+    const names: Rect[] = nameBoxes.map((b) => {
+      const y = (st.carries.find((c) => c.key === b.key)?.y ?? 0) * s;
+      return { l: b.x * s - b.box.w / 2, r: b.x * s + b.box.w / 2, t: y - b.box.h / 2, b: y + b.box.h / 2 };
+    });
+    const half = crossingBox.w / 2 / s;
+    const foot = highestOver(st.top, crossingX - half, crossingX + half) * s - CROSSING_GAP_PX;
+    const crossing: Rect = { l: crossingX * s - crossingBox.w / 2, r: crossingX * s + crossingBox.w / 2, t: foot - crossingBox.h, b: foot };
+    return { cellW, s, left, right, names, crossing };
+  };
+  /** A chipless total clears the stream when its whole box sits above the edge under it, with a
+   *  pixel to spare — the guard samples the box's own bottom edge. */
+  const totalClears = (side: "left" | "right") => (plotWidthPx: number) =>
+    states.every((st) => {
+      const at = layoutAt(plotWidthPx, st);
+      if (at.cellW <= 0) return false;
+      const box = at[side];
+      if (box.l < 0 || box.r > at.cellW) return false;
+      if (box.b + 1 > highestOver(st.top, box.l / at.s, box.r / at.s) * at.s) return false;
+      return !at.names.some((n) => overlaps(box, n));
+    });
+  const crossingClears = (plotWidthPx: number) =>
+    states.every((st) => {
+      const at = layoutAt(plotWidthPx, st);
+      if (at.cellW <= 0) return false;
+      const c = at.crossing;
+      if (c.t < 0 || c.l < 0 || c.r > at.cellW) return false;
+      return ![at.left, at.right, ...at.names].some((r) => overlaps(c, r));
+    });
+  const crossingBelow = leavesBelow(crossingClears, { where: "the 2016 sentence" });
+  const keyed: KeyedNote[] = [
+    { id: "solar-third", key: "ring", printed: true, below: crossingBelow },
+    { id: "total-start", key: String(totals.left.split(" : ")[0]), printed: true, below: leavesBelow(totalClears("left"), { where: "the first total" }) },
+    { id: "total-end", key: String(totals.right.split(" : ")[0]), printed: true, below: leavesBelow(totalClears("right"), { where: "the last total" }) },
+  ];
+  // THE PLACE IT IS CARRIED TO, per plate: the stream's highest point under the sentence's widest
+  // span in the plot — at the narrowest width it is still drawn there, where one CSS pixel is the
+  // most geometry. Wider, the span only shrinks inside it, so the foot only gains room.
+  const spanAt = crossingBelow || 3440;
+  const crossingY = new Map(
+    states.map((st) => {
+      const s =
+        cellWidthPx(spanAt, {
+          frame: { width: FRAME.width, height: FRAME.height },
+          box: { width: FRAME.width, height: FRAME.height + FRAME.xAxisRowPx },
+          gutterPx: st.gutterPx,
+          axisPx: FRAME.xAxisRowPx,
+        }) / FRAME.width;
+      const half = crossingBox.w / 2 / s;
+      return [st.slug, highestOver(st.top, crossingX - half, crossingX + half)];
+    }),
+  );
+  const placedFloor: FloorDeclaration = {
+    ...floor,
+    carries: floor.carries.map((c) => (c.key === "crossing" ? { ...c, y: crossingY.get(FLOOR_NONE_SLUG)! } : c)),
+    options: floor.options.map((o) => ({
+      ...o,
+      carries: o.carries.map((c) => (c.key === "crossing" ? { ...c, y: crossingY.get(floorSlugOf(o.key))! } : c)),
+    })),
+  };
+  assertFloorDeclaration(placedFloor, geometry, { height: FRAME.height });
+  const keyOf = (id: string) => keyed.find((k) => k.id === id)!;
+
   const floorOptions = floorOptionsForMarkup(floor, FLOOR_ID_PREFIX);
   const floorNotes = floorNotesForMarkup(floor);
 
@@ -193,13 +336,14 @@ export function DirectedStreamWeb({
     // is that it has no value axis would be a promise the picture cannot keep.
     `${SCOPE} .chart-plot { --y-gutter: 0px; }`,
     floorChromeCss({ scope: SCOPE }),
-    floorCss(floor, {
+    floorCss(placedFloor, {
       scope: SCOPE,
       idPrefix: FLOOR_ID_PREFIX,
       height: FRAME.height,
       gutterPx: GUTTER_PX,
       carryMs: CARRY_MS,
     }),
+    keyedNoteCss(keyed, { scope: SCOPE }),
   ].join("\n\n");
 
   return (
@@ -353,7 +497,7 @@ export function DirectedStreamWeb({
                   down first at 5, the ink at 2 on top of it, and what the reader separates the ring
                   from is 1,5 units of ground on either side. */}
               {plate.crossing === null ? null : (
-                <g>
+                <g data-keyed-note-handle="solar-third" data-keyed-note-glyph="ring">
                   <circle cx={plate.crossing.x} cy={plate.crossing.y} r={6} fill="none" stroke={casing} strokeWidth={5} vectorEffect="non-scaling-stroke" />
                   <circle cx={plate.crossing.x} cy={plate.crossing.y} r={6} fill="none" stroke={label} strokeWidth={2} vectorEffect="non-scaling-stroke" />
                 </g>
@@ -434,19 +578,21 @@ export function DirectedStreamWeb({
           <span
             className="note"
             data-floor-carry="crossing"
+            data-keyed-note-plot="solar-third"
             style={{
               ...regs.annot,
               color: label,
               ...noteAnchor(pct(plates[0].crossing!.x, FRAME.width)),
-              // THE SENTENCE HANGS BELOW ITS OWN POINT AND IS NOT LIFTED ABOVE IT, and the reason is
-              // a measurement. A lift stated as a percentage of the note's OWN height doubles the
-              // moment the note wraps: `translateY(-160%)` is 30 px on one line at 1280 and 61 px on
-              // two at 375, which put the whole sentence 35 px ABOVE the plot — outside the hit area
-              // it annotates, where the format's own probe pointed at it and reached `.floor-notes`
-              // instead of the chart. A fixed downward offset cannot do that, because the note grows
-              // into the plot rather than out of it, and `.note` already carries a ground chip so it
-              // stays readable over whichever band it lands on.
-              transform: `${noteAnchor(pct(plates[0].crossing!.x, FRAME.width)).transform} translateY(10px)`,
+              // ONE LINE, CENTRED ON THE RING'S YEAR, ITS FOOT ON THE CARRIED EDGE. It used to hang
+              // below its own point, inside the stream (see the placement above), and before that it
+              // was lifted by a percentage of its OWN height, which doubled the moment it wrapped and
+              // put it outside the plot. Now it never wraps — the width it would have to wrap at is
+              // below the width it leaves the plot at — and the lift is its own box plus a fixed gap.
+              whiteSpace: "nowrap",
+              maxWidth: "none",
+              left: `${pct(crossingX, FRAME.width)}%`,
+              right: "auto",
+              transform: `translate(-50%, -100%) translateY(-${CROSSING_GAP_PX}px)`,
             }}
           >
             {crossingText}
@@ -454,22 +600,68 @@ export function DirectedStreamWeb({
           {/* A FREE BASELINE FORBIDS A VALUE AXIS, so the total is printed at both ends instead —
               in every state, including the ones that earn an axis, because the axis an option earns
               measures ONE band and never the stack. */}
-          <span className="note" style={{ ...regs.annot, color: label, left: "0%", top: "1%", background: "transparent", padding: 0 }}>
+          <span className="note" data-keyed-note-plot="total-start" style={{ ...regs.annot, color: label, left: "0%", top: `${TOTAL_TOP_FRACTION * 100}%`, background: "transparent", padding: 0 }}>
             {totals.left}
           </span>
-          <span className="note" style={{ ...regs.annot, color: label, right: "0%", top: "1%", background: "transparent", padding: 0 }}>
+          <span className="note" data-keyed-note-plot="total-end" style={{ ...regs.annot, color: label, right: "0%", top: `${TOTAL_TOP_FRACTION * 100}%`, background: "transparent", padding: 0 }}>
             {totals.right}
           </span>
         </div>
 
         <div className="x-axis" style={{ pointerEvents: "none" }}>
           {xTicks.map((t) => (
-            <span key={t.year} className="axis-label x" style={{ ...regs.axis, left: `${pct(t.x, FRAME.width)}%` }}>
+            <span
+              key={t.year}
+              className="axis-label x"
+              style={{ ...regs.axis, left: `${pct(t.x, FRAME.width)}%` }}
+              data-keyed-note-handle={
+                String(t.year) === keyOf("total-start").key
+                  ? "total-start"
+                  : String(t.year) === keyOf("total-end").key
+                    ? "total-end"
+                    : undefined
+              }
+            >
               {t.year}
             </span>
           ))}
         </div>
       </div>
+
+      {/* WHAT THE PLOT CANNOT HOLD AT THIS WIDTH, keyed to the mark it is about: the ring for the
+          2016 sentence, the axis's own end years for the two totals. Drawn only below the widths
+          computed above. */}
+      <ol className="chart-notes">
+        <li data-keyed-note-under="solar-third" style={{ ...regs.annot, color: label }}>
+          <span
+            data-keyed-note-lead=""
+            data-keyed-note-glyph="ring"
+            aria-hidden="true"
+            style={{
+              display: "inline-block",
+              width: 9,
+              height: 9,
+              borderRadius: "50%",
+              border: `2px solid ${label}`,
+              boxShadow: `0 0 0 1.5px ${casing}`,
+              marginRight: "0.45em",
+              verticalAlign: "-1px",
+            }}
+          />
+          {crossingText}
+        </li>
+        {(["total-start", "total-end"] as const).map((id) => {
+          const text = id === "total-start" ? totals.left : totals.right;
+          const key = keyOf(id).key;
+          return (
+            <li key={id} data-keyed-note-under={id} style={{ ...regs.annot, color: label }}>
+              {/* In the axis label's own type: it is that label the key pairs with. */}
+              <span data-keyed-note-lead="" style={regs.axis}>{key}</span>
+              {text.slice(key.length)}
+            </li>
+          );
+        })}
+      </ol>
 
       <p className="chart-reading" style={{ ...regs.body, margin: "10px 0 0" }}>{reading}</p>
       <p className="chart-source" style={{ ...regs.body, margin: "6px 0 0" }}>{source}</p>

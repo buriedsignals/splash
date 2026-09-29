@@ -299,6 +299,9 @@ const caveat =
   `s'arrête à la dernière lecture réelle située à moins de 1,5 écart interquartile de son quartile, ` +
   `jamais à l'extrême ; ${outlierClause} Axe ajusté aux lectures, pas à zéro.`;
 const peakNote = `pic : ${peak.label}, médiane ${fr(peak.median)}`;
+// The same note where the plot cannot hold it: set under the plot and led by the accented decade
+// label the axis already prints, so the decade is not said twice on one line.
+const peakNoteUnder = `pic, médiane ${fr(peak.median)}`;
 // SHORT, AND MEASURED RATHER THAN JUDGED. This beat's title takes 351 px of an 812 px window in
 // nocturne, and the yardstick's own fieldset and sentence take 94 more; every line of prose after
 // that comes straight out of the plot. What the reader needs here is the two gestures, named.
@@ -346,7 +349,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
         yTicks,
         levels,
         interaction,
-        title, eyebrow: EYEBROW, caveat, source, unit: UNIT, reading: readingLine, peakNote,
+        title, eyebrow: EYEBROW, caveat, source, unit: UNIT, reading: readingLine, peakNote, peakNoteUnder,
         alt:
           `Huit boîtes, une par décennie de ${FROM} à aujourd'hui, mesurant le CO₂ émis par ` +
           `personne en France. La médiane monte de ${fr(boxes[0].median)} tonnes dans les ` +

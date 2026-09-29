@@ -99,6 +99,15 @@ import {
   assertAlignStylesheet,
   type AlignDeclaration,
 } from "../../skills/chart-web/assets/align.ts";
+import {
+  cellWidthPx,
+  keyedNoteCss,
+  labelBoxPx,
+  leavesBelow,
+  overlaps,
+  type KeyedNote,
+  type Rect,
+} from "../../skills/chart-web/assets/keyed-note.ts";
 
 /** The scope every generated rule is written inside, and the prefix every radio id carries. */
 const SCOPE = ".chart-figure";
@@ -189,7 +198,7 @@ export function DirectedGanttWeb({
   rows: Row[];
   align: AlignDeclaration;
   unitsPerCssPx: number;
-  measure: (text: string, options: { fontSize: number; fontWeight?: number | string; fontFamily?: string }) => number;
+  measure: (text: string, options: { fontSize: number; fontWeight?: number | string; fontFamily?: string; fontStyle?: string }) => number;
   kuwaitNote: string;
   title: string;
   eyebrow: string;
@@ -330,6 +339,82 @@ export function DirectedGanttWeb({
     ),
   ) + (figureRoom.get(NOTE_ROW) ?? 0) + LABEL_OFFSET_PX * unitsPerCssPx;
 
+  /**
+   * AND WHERE IT MAY NOT STAND AT ALL. The anchor above clears Kuwait's own row in every state; what
+   * it cannot clear is a row too thin to hold its line. The note is type at a fixed size and the row
+   * is 26 units of a plot that shrinks with the width, so below some width its line box — and its
+   * ground chip — spills onto the bars and the figures of the rows either side. Measured on the
+   * committed page at 375 px: rows 7 px apart, a 20 px note printed over Italy's « 15 ans » two rows
+   * up and punched through a bar on `rapport`.
+   *
+   * So the width it can no longer stand at is COMPUTED, from the measured note and the measured
+   * figures, against every bar and every figure of every OTHER row in all three states (the note is
+   * true in all three, so it must clear in all three), and below it the note leaves the plot for the
+   * keyed line under it, led by the name the gutter already prints on Kuwait's row
+   * (`assets/keyed-note.ts`). A figure's box is placed the way `alignCss` places it: outward past
+   * its row's tip when the room it measured fits inside the frame, inward on the bar otherwise.
+   */
+  const noteBox = labelBoxPx(kuwaitNote, regs.annot, measure);
+  const figureBox = new Map(rows.map((row) => [row.code, labelBoxPx(row.tenureLabel, regs.value, measure)]));
+  const noteRowIndex = rows.findIndex((r) => r.code === NOTE_ROW);
+  const barsOf = alignStates(align).map((state) => {
+    const tips = new Map<string, number>();
+    const bars = state.places.map((p) => {
+      const row = rowOfBar.get(p.key)!;
+      const from = p.at * perUnit;
+      const to = (p.at + lengthOf.get(p.key)!) * perUnit;
+      if (!tips.has(row) || to > tips.get(row)!) tips.set(row, to);
+      return { row, from, to };
+    });
+    return { bars, tips };
+  });
+  const kuwaitClears = (plotWidthPx: number) => {
+    const cellW = cellWidthPx(plotWidthPx, {
+      frame: { width: FRAME.width, height },
+      box: { width: FRAME.width + GUTTER_PX, height: height + FRAME.xAxisRowPx },
+      gutterPx: GUTTER_PX,
+      axisPx: FRAME.xAxisRowPx,
+    });
+    if (cellW <= 0) return false;
+    const s = cellW / FRAME.width;
+    const rowMid = (i: number) => (ROW * i + ROW / 2) * s;
+    const note: Rect = {
+      l: noteClear * s,
+      r: noteClear * s + noteBox.w,
+      t: rowMid(noteRowIndex) - noteBox.h / 2,
+      b: rowMid(noteRowIndex) + noteBox.h / 2,
+    };
+    if (note.r > cellW) return false;
+    for (const { bars, tips } of barsOf) {
+      for (const bar of bars) {
+        if (bar.row === NOTE_ROW) continue;
+        const i = rows.findIndex((r) => r.code === bar.row);
+        const rect: Rect = { l: bar.from * s, r: bar.to * s, t: rowMid(i) - (barH / 2) * s, b: rowMid(i) + (barH / 2) * s };
+        if (overlaps(note, rect)) return false;
+      }
+      for (const [i, row] of rows.entries()) {
+        if (row.code === NOTE_ROW) continue;
+        const box = figureBox.get(row.code)!;
+        const tipUnits = tips.get(row.code) ?? 0;
+        const outward = tipUnits + (figureRoom.get(row.code) ?? 0) <= FRAME.width;
+        const anchor = outward
+          ? tipUnits * s + LABEL_OFFSET_PX
+          : Math.max(0, tipUnits - (row.spans.slice(-1)[0].open ? OPEN_TAPER_UNITS : 0)) * s - box.w;
+        const rect: Rect = { l: anchor, r: anchor + box.w, t: rowMid(i) - box.h / 2, b: rowMid(i) + box.h / 2 };
+        if (overlaps(note, rect)) return false;
+      }
+    }
+    return true;
+  };
+  const keyed: KeyedNote[] = [
+    {
+      id: "one-year",
+      key: rows[noteRowIndex].name,
+      printed: true,
+      below: leavesBelow(kuwaitClears, { where: "the single-year note" }),
+    },
+  ];
+
   const alignSheet = alignCss(align, {
     scope: SCOPE,
     idPrefix: ALIGN_ID_PREFIX,
@@ -351,6 +436,7 @@ export function DirectedGanttWeb({
   const css = [
     `${SCOPE} .chart-plot { --y-gutter: ${GUTTER_PX}px; }`,
     alignChromeCss({ scope: SCOPE }),
+    keyedNoteCss(keyed, { scope: SCOPE }),
     alignSheet,
     // THE POINTED-AT INTERVAL, RAISED ABOVE THE PAINT. `align.ts` writes `--bar`/`--mark-active` at
     // (0,2,0) and never writes `fill` inside an option's `:has()` scope, which weighs (1,3,0); this
@@ -458,6 +544,7 @@ export function DirectedGanttWeb({
                 fontWeight: r.whole ? 700 : regs.axis.fontWeight,
                 top: `${pct(ROW * i + ROW / 2, height)}%`,
               }}
+              data-keyed-note-handle={r.code === NOTE_ROW ? keyed[0].id : undefined}
             >
               {r.name}
             </span>
@@ -574,6 +661,7 @@ export function DirectedGanttWeb({
               excursion, in any state, is 2 years. */}
           <span
             className="note"
+            data-keyed-note-plot={keyed[0].id}
             style={{
               ...regs.annot,
               left: `${pct(noteClear, FRAME.width)}%`,
@@ -604,6 +692,21 @@ export function DirectedGanttWeb({
           )}
         </div>
       </div>
+
+      {/* THE SINGLE-YEAR NOTE, WHERE THE PLOT CANNOT HOLD IT. Drawn only below the width computed
+          above, and led by Kuwait's own name in the gutter's own ink — the key a reader matches
+          without a leader crossing fifteen rows to reach it. */}
+      <ol className="chart-notes">
+        <li data-keyed-note-under={keyed[0].id} style={regs.annot}>
+          {/* IN THE LABEL'S OWN TYPE — face, weight and ink of the gutter name it pairs with — so the
+              key matches by sight and is set in a face the page already embeds. */}
+          <span data-keyed-note-lead="" style={{ ...regs.axis, fontWeight: rows[noteRowIndex].whole ? 700 : regs.axis.fontWeight, color: rows[noteRowIndex].whole ? accent : (regs.axis.color as string) }}>
+            {keyed[0].key}
+          </span>
+          {" : "}
+          {kuwaitNote}
+        </li>
+      </ol>
 
       {/* The note that names the accented group sits UNDER the plot, not in it: every row at the top
           of this frame is a full-width bar in every state, so an overlay note there lands on one

@@ -258,34 +258,25 @@ const OWED = new Set<string>([
   "proof/web-beeswarm-co2-per-person/renders/rapport.html @ 375: \"moyenne mondiale 4,58\" is printed over \"médiane des pays 3,14\"",
   "proof/web-beeswarm-co2-per-person/renders/rapport.html @ 375: \"médiane des pays 3,14\" is printed over \"moyenne mondiale 4,58\"",
   // web-boxplot-france-co2-decades — 3
-  "proof/web-boxplot-france-co2-decades/renders/creme.html @ 375: \"pic : 1970s, médiane 9,96\" is printed over \"5,41\"",
-  "proof/web-boxplot-france-co2-decades/renders/nocturne.html @ 375: \"pic : 1970s, médiane 9,96\" is printed over \"5,41\"",
-  "proof/web-boxplot-france-co2-decades/renders/rapport.html @ 375: \"pic : 1970s, médiane 9,96\" is printed over \"7,59\"",
   // web-bullet-low-carbon-share — 18
   "proof/web-bullet-low-carbon-share/renders/creme.html @ 375: \"Allemagne\" covers a rect filled rgb(23, 87, 182) at 5/25 sample points",
   "proof/web-bullet-low-carbon-share/renders/creme.html @ 375: \"France\" covers a rect filled rgb(94, 110, 132) at 5/25 sample points",
   "proof/web-bullet-low-carbon-share/renders/creme.html @ 375: \"Norvège\" covers a rect filled rgb(94, 110, 132) at 5/25 sample points",
   "proof/web-bullet-low-carbon-share/renders/creme.html @ 375: \"Suisse\" covers a rect filled rgb(94, 110, 132) at 5/25 sample points",
   "proof/web-bullet-low-carbon-share/renders/creme.html @ 375: \"Suède\" covers a rect filled rgb(94, 110, 132) at 5/25 sample points",
-  "proof/web-bullet-low-carbon-share/renders/creme.html @ 375: \"la moitié\" is printed over \"31,1 % · +17,3 pts\"",
   "proof/web-bullet-low-carbon-share/renders/nocturne.html @ 375: \"Allemagne\" covers a rect filled rgb(79, 224, 192) at 10/25 sample points",
   "proof/web-bullet-low-carbon-share/renders/nocturne.html @ 375: \"France\" covers a rect filled rgb(91, 142, 153) at 10/25 sample points",
   "proof/web-bullet-low-carbon-share/renders/nocturne.html @ 375: \"Norvège\" covers a rect filled rgb(91, 142, 153) at 10/25 sample points",
   "proof/web-bullet-low-carbon-share/renders/nocturne.html @ 375: \"Suisse\" covers a rect filled rgb(91, 142, 153) at 10/25 sample points",
   "proof/web-bullet-low-carbon-share/renders/nocturne.html @ 375: \"Suède\" covers a rect filled rgb(91, 142, 153) at 10/25 sample points",
-  "proof/web-bullet-low-carbon-share/renders/nocturne.html @ 375: \"la moitié\" is printed over \"31,1 % · +17,3 pts\"",
   "proof/web-bullet-low-carbon-share/renders/rapport.html @ 375: \"Allemagne\" covers a rect filled rgb(31, 92, 139) at 5/25 sample points",
   "proof/web-bullet-low-carbon-share/renders/rapport.html @ 375: \"France\" covers a rect filled rgb(95, 113, 126) at 5/25 sample points",
   "proof/web-bullet-low-carbon-share/renders/rapport.html @ 375: \"Norvège\" covers a rect filled rgb(95, 113, 126) at 5/25 sample points",
   "proof/web-bullet-low-carbon-share/renders/rapport.html @ 375: \"Suisse\" covers a rect filled rgb(95, 113, 126) at 5/25 sample points",
   "proof/web-bullet-low-carbon-share/renders/rapport.html @ 375: \"Suède\" covers a rect filled rgb(95, 113, 126) at 5/25 sample points",
-  "proof/web-bullet-low-carbon-share/renders/rapport.html @ 375: \"la moitié\" is printed over \"31,1 % · +17,3 pts\"",
   // web-bump-emitter-rank — 3
   // web-calendar-heatmap-geneva — 12
   // web-connected-scatter-lowcarbon — 3
-  "proof/web-connected-scatter-lowcarbon/renders/creme.html @ 375: \"France : +4,2 chez elle, −11,8 en Europe\" is printed over \"Belgique\"",
-  "proof/web-connected-scatter-lowcarbon/renders/nocturne.html @ 375: \"France : +4,2 chez elle, −11,8 en Europe\" is printed over \"Belgique\"",
-  "proof/web-connected-scatter-lowcarbon/renders/rapport.html @ 375: \"France : +4,2 chez elle, −11,8 en Europe\" is printed over \"Allemagne\"",
   // web-diverging-bar-eu-per-capita — 10
   "proof/web-diverging-bar-eu-per-capita/renders/creme.html @ 375: \"Croatie : seule au-dessus de son niveau de 1990\" is printed over \"+0,03−3,4−0,52\"",
   "proof/web-diverging-bar-eu-per-capita/renders/nocturne.html @ 375: \"Croatie : seule au-dessus de son niveau de 1990\" is printed over \"+0,03−3,4−0,52\"",
@@ -336,41 +327,12 @@ const OWED = new Set<string>([
   "proof/web-dumbbell-life-expectancy-gains/renders/rapport.html @ 375: \"+4,3\" is printed over \"83,3\"",
   "proof/web-dumbbell-life-expectancy-gains/renders/rapport.html @ 375: \"+5,0\" is printed over \"83,3\"",
   // web-gantt-top-ten-tenure — 4
-  "proof/web-gantt-top-ten-tenure/renders/creme.html @ 375: \"une seule année, 1991\" is printed over \"15 ans\"",
-  "proof/web-gantt-top-ten-tenure/renders/nocturne.html @ 375: \"une seule année, 1991\" is printed over \"15 ans\"",
-  "proof/web-gantt-top-ten-tenure/renders/rapport.html @ 375: \"une seule année, 1991\" covers a rect filled rgb(148, 148, 148) at 4/25 sample points",
-  "proof/web-gantt-top-ten-tenure/renders/rapport.html @ 375: \"une seule année, 1991\" is printed over \"15 ans\"",
   // web-histogram-carbon-footprint — 6
   // web-line-swiss-co2 — 3
   // web-lollipop-co2-per-person — 7
   // web-population-pyramid-switzerland — 12
   // web-scatter-income-life-expectancy — 21
   // web-streamgraph-swiss-electricity — 25
-  "proof/web-streamgraph-swiss-electricity/renders/creme.html @ 1400: \"2016 : le solaire passe troisième\" covers a path filled rgb(46, 103, 188) at 25/25 sample points",
-  "proof/web-streamgraph-swiss-electricity/renders/creme.html @ 1600: \"2016 : le solaire passe troisième\" covers a path filled rgb(46, 103, 188) at 25/25 sample points",
-  "proof/web-streamgraph-swiss-electricity/renders/creme.html @ 375: \"2000 : 66,1 TWh\" covers a path filled rgb(46, 103, 188) at 2/25 sample points",
-  "proof/web-streamgraph-swiss-electricity/renders/creme.html @ 375: \"2016 : le solaire passe troisième\" covers a path filled rgb(46, 103, 188) at 15/25 sample points",
-  "proof/web-streamgraph-swiss-electricity/renders/creme.html @ 375: \"2025 : 65,0 TWh\" covers a path filled rgb(126, 145, 168) at 3/25 sample points",
-  "proof/web-streamgraph-swiss-electricity/renders/creme.html @ 375: \"2025 : 65,0 TWh\" is printed over \"solaire\"",
-  "proof/web-streamgraph-swiss-electricity/renders/creme.html @ 768: \"2016 : le solaire passe troisième\" covers a path filled rgb(46, 103, 188) at 25/25 sample points",
-  "proof/web-streamgraph-swiss-electricity/renders/creme.html @ 768: \"2025 : 65,0 TWh\" covers a path filled rgb(138, 145, 150) at 1/25 sample points",
-  "proof/web-streamgraph-swiss-electricity/renders/nocturne.html @ 1400: \"2016 : le solaire passe troisième\" covers a path filled rgb(73, 203, 180) at 25/25 sample points",
-  "proof/web-streamgraph-swiss-electricity/renders/nocturne.html @ 1600: \"2016 : le solaire passe troisième\" covers a path filled rgb(73, 203, 180) at 25/25 sample points",
-  "proof/web-streamgraph-swiss-electricity/renders/nocturne.html @ 375: \"2000 : 66,1 TWh\" covers a path filled rgb(73, 203, 180) at 3/25 sample points",
-  "proof/web-streamgraph-swiss-electricity/renders/nocturne.html @ 375: \"2000 : 66,1 TWh\" is printed over \"2025 : 65,0 TWh\"",
-  "proof/web-streamgraph-swiss-electricity/renders/nocturne.html @ 375: \"2016 : le solaire passe troisième\" covers a path filled rgb(79, 224, 192) at 13/25 sample points",
-  "proof/web-streamgraph-swiss-electricity/renders/nocturne.html @ 375: \"2016 : le solaire passe troisième\" is printed over \"hydraulique\"",
-  "proof/web-streamgraph-swiss-electricity/renders/nocturne.html @ 375: \"2025 : 65,0 TWh\" covers a path filled rgb(55, 108, 126) at 3/25 sample points",
-  "proof/web-streamgraph-swiss-electricity/renders/nocturne.html @ 375: \"2025 : 65,0 TWh\" is printed over \"solaire\"",
-  "proof/web-streamgraph-swiss-electricity/renders/nocturne.html @ 768: \"2016 : le solaire passe troisième\" covers a path filled rgb(73, 203, 180) at 25/25 sample points",
-  "proof/web-streamgraph-swiss-electricity/renders/nocturne.html @ 768: \"2025 : 65,0 TWh\" covers a path filled rgb(83, 105, 132) at 1/25 sample points",
-  "proof/web-streamgraph-swiss-electricity/renders/rapport.html @ 1400: \"2016 : le solaire passe troisième\" covers a path filled rgb(53, 108, 151) at 25/25 sample points",
-  "proof/web-streamgraph-swiss-electricity/renders/rapport.html @ 1600: \"2016 : le solaire passe troisième\" covers a path filled rgb(53, 108, 151) at 25/25 sample points",
-  "proof/web-streamgraph-swiss-electricity/renders/rapport.html @ 375: \"2000 : 66,1 TWh\" covers a path filled rgb(139, 147, 153) at 1/25 sample points",
-  "proof/web-streamgraph-swiss-electricity/renders/rapport.html @ 375: \"2016 : le solaire passe troisième\" covers a path filled rgb(53, 108, 151) at 13/25 sample points",
-  "proof/web-streamgraph-swiss-electricity/renders/rapport.html @ 375: \"2016 : le solaire passe troisième\" is printed over \"hydraulique\"",
-  "proof/web-streamgraph-swiss-electricity/renders/rapport.html @ 375: \"2025 : 65,0 TWh\" covers a path filled rgb(129, 148, 163) at 2/25 sample points",
-  "proof/web-streamgraph-swiss-electricity/renders/rapport.html @ 768: \"2016 : le solaire passe troisième\" covers a path filled rgb(53, 108, 151) at 25/25 sample points",
 ]);
 
 type Annotation = {

@@ -44,6 +44,16 @@ import {
   levelRulesForMarkup,
   type LevelDeclaration,
 } from "../../skills/chart-web/assets/level.ts";
+import {
+  keyedNoteCss,
+  cellWidthPx,
+  labelBoxPx,
+  leavesBelow,
+  overlaps,
+  type KeyedNote,
+  type Measure,
+  type Rect,
+} from "../../skills/chart-web/assets/keyed-note.ts";
 
 export const FRAME = { width: 880, height: 400, xAxisRowPx: 44 };
 
@@ -98,6 +108,8 @@ export function DirectedBoxplotWeb({
   unit,
   reading,
   peakNote,
+  peakNoteUnder,
+  measure,
   direction,
   ground,
   accent,
@@ -117,6 +129,8 @@ export function DirectedBoxplotWeb({
   unit: string;
   reading: string;
   peakNote: string;
+  peakNoteUnder: string;
+  measure: Measure;
   direction: any;
   ground: string;
   accent: string;
@@ -216,6 +230,98 @@ export function DirectedBoxplotWeb({
   const { color: axisInk, fontWeight: axisWeight, ...axisRest } = regs.axis as any;
   const { fontWeight: annotWeight, ...annotRest } = regs.annot as any;
 
+  /**
+   * WHERE THE PEAK NOTE CAN STAND, AND BELOW WHAT WIDTH IT CANNOT.
+   *
+   * It stands at the plot's top-left (`noteAnchor(0)`, `top: 1%`), wrapped inside
+   * `min(46%, 24em)`. That corner is free only while the plot is tall enough for the note to pass
+   * above every median figure printed over a whisker — the figures rise from their whisker tops by
+   * FIXED pixels while the whiskers sit at a fraction of the plot. At 375 px the note was printed
+   * over « 5,41 » and « 7,59 » in all three directions (`web-annotation-clears-its-marks`), and
+   * there is no ground in this plot free at every width: eight figures sit over eight columns.
+   *
+   * So the width it stops clearing at is computed from the measured note — wrapped the way the
+   * browser wraps it, in its own case and tracking — against every median figure, every box, dot
+   * strip and outlier ring, and every word the yardstick writes in each of its states (the note is
+   * drawn in all of them). Below it the note leaves the plot, keyed by the accented decade label
+   * under the axis (`assets/keyed-note.ts`).
+   */
+  const annotSize = Number.parseFloat(String(regs.annot.fontSize));
+  const annotLine = annotSize * Number(regs.annot.lineHeight);
+  // A line is measured WHOLE, as the browser will set it: `labelBoxPx` already allows the bearing
+  // resvg's ink box leaves out, and a sum of words would lose one per word.
+  const lineWidthPx = (line: string) => labelBoxPx(line, regs.annot, measure, { chip: false }).w;
+  const noteWords = peakNote.split(" ");
+  /** The note's box at a given maximum width (chip included), wrapped greedily on spaces the way the
+   *  browser wraps it, or null when a single word cannot fit. */
+  const noteBoxAt = (maxPx: number) => {
+    const inner = maxPx - 8;
+    const lines: string[] = [];
+    let run = "";
+    for (const word of noteWords) {
+      if (lineWidthPx(word) > inner) return null;
+      const next = run ? `${run} ${word}` : word;
+      if (!run || lineWidthPx(next) <= inner) run = next;
+      else {
+        lines.push(run);
+        run = word;
+      }
+    }
+    lines.push(run);
+    return { w: Math.max(...lines.map(lineWidthPx)) + 8, h: lines.length * annotLine + 2 };
+  };
+  const figureBoxes = boxes.map((b) => labelBoxPx(b.medianLabel, regs.value, measure));
+  const levelWordBoxes = levelRules.map((r) => ({
+    rule: r,
+    box: labelBoxPx(RULE_WORD[r.series], regs.annot, measure),
+  }));
+  const PLOT_GUTTER_PX = 34;
+  /** The cell a plot this wide draws. The box is `aspect-ratio: (880 + 34) / (400 + 44)` with both
+   *  extras in PIXELS, so below about 1 150 px it is the HEIGHT that binds — at 375 px the cell is
+   *  253 px wide in a 293 px track, and reading the track instead put this threshold 30 px too low. */
+  const cellWidthOf = (plotWidthPx: number) =>
+    cellWidthPx(plotWidthPx, {
+      frame: { width: FRAME.width, height: FRAME.height },
+      box: { width: FRAME.width + PLOT_GUTTER_PX, height: FRAME.height + FRAME.xAxisRowPx },
+      gutterPx: PLOT_GUTTER_PX,
+      axisPx: FRAME.xAxisRowPx,
+    });
+  const peakClears = (plotWidthPx: number) => {
+    const cellW = cellWidthOf(plotWidthPx);
+    if (cellW <= 0) return false;
+    const s = cellW / FRAME.width;
+    const cellH = FRAME.height * s;
+    const box = noteBoxAt(Math.min(0.46 * cellW, 24 * annotSize));
+    if (!box) return false;
+    const note: Rect = { l: 0, t: 0.01 * cellH, r: box.w, b: 0.01 * cellH + box.h };
+    if (note.b > cellH) return false;
+    for (const [i, b] of boxes.entries()) {
+      // The median figure: centred on its column, its foot 6 px above the whisker's top.
+      const f = figureBoxes[i];
+      const foot = y(b.max) * s - 6;
+      if (overlaps(note, { l: cx(i) * s - f.w / 2, r: cx(i) * s + f.w / 2, t: foot - f.h, b: foot })) return false;
+      // The column's own marks — the box, the dot strip beside it and any outlier ring — as one
+      // rectangle from its highest reading to its lowest.
+      const highest = Math.max(b.max, ...b.outliers.map((o) => o.value), ...b.readings.map((r) => r.value));
+      const lowest = Math.min(b.min, ...b.outliers.map((o) => o.value), ...b.readings.map((r) => r.value));
+      const colL = (cx(i) - boxW / 2) * s - 3;
+      const colR = (stripX(i) + 3.2 + 2.1) * s + 2.1 * s;
+      if (overlaps(note, { l: colL, r: Math.max(colR, cx(i) * s + 3), t: y(highest) * s - 3, b: y(lowest) * s + 3 })) return false;
+    }
+    // Every word the yardstick can write, in whichever state writes it.
+    for (const { rule, box: w } of levelWordBoxes) {
+      const slot = LEVEL_SERIES.indexOf(rule.series as (typeof LEVEL_SERIES)[number]);
+      const x = (cx(slot) + band / 2) * s;
+      const yy = (rule.y as number) * s;
+      if (overlaps(note, { l: x - w.w / 2, r: x + w.w / 2, t: yy - w.h / 2, b: yy + w.h / 2 })) return false;
+    }
+    return true;
+  };
+  const peakBox = boxes.find((b) => b.key === peakKey)!;
+  const keyed: KeyedNote[] = [
+    { id: "peak", key: peakBox.label, printed: true, below: leavesBelow(peakClears, { where: "the peak note" }) },
+  ];
+
   const css = [
     `${SCOPE} .x-axis [data-axis] { color: var(--axis-ink); font-weight: var(--axis-weight); }`,
     `${SCOPE} .x-axis [data-axis="${peakKey}"] { color: var(--subject-ink); font-weight: 700; }`,
@@ -229,6 +335,7 @@ export function DirectedBoxplotWeb({
     // pills; nine of them wrap on a phone and this beat's plot is what pays for the row. Emitted
     // after the vocabulary's own block at the same specificity, so source order is the whole of it.
     `${SCOPE} .chart-level { margin-top: 2px; }`,
+    keyedNoteCss(keyed, { scope: SCOPE }),
     // AND THE SENTENCE'S OWN GAP, FOR THE SAME REASON AND MEASURED THE SAME WAY. The vocabulary
     // opens its note row with 4 px above it; with the fieldset and the note both present this beat
     // stood 4 px outside an 812 px phone window in nocturne, whose display register alone takes
@@ -269,9 +376,9 @@ export function DirectedBoxplotWeb({
       <div
         className="chart-plot"
         style={{
-          ["--y-gutter" as string]: "34px",
+          ["--y-gutter" as string]: `${PLOT_GUTTER_PX}px`,
           ["--x-axis-h" as string]: `${FRAME.xAxisRowPx}px`,
-          aspectRatio: `${FRAME.width + 34} / ${FRAME.height + FRAME.xAxisRowPx}`,
+          aspectRatio: `${FRAME.width + PLOT_GUTTER_PX} / ${FRAME.height + FRAME.xAxisRowPx}`,
         }}
       >
         <div className="y-axis">
@@ -454,6 +561,7 @@ export function DirectedBoxplotWeb({
           ))}
           <span
             className="note"
+            data-keyed-note-plot={keyed[0].id}
             style={{
               ...regs.annot,
               // Anchored at the LEFT EDGE, not over the peak: the peak's own box already carries
@@ -517,13 +625,26 @@ export function DirectedBoxplotWeb({
                 textAlign: "center",
               }}
             >
-              {b.label}
+              {b.key === peakKey ? <span data-keyed-note-handle={keyed[0].id}>{b.label}</span> : b.label}
               <br />
               <span style={{ opacity: 0.75 }}>{`n=${b.n}`}</span>
             </span>
           ))}
         </div>
       </div>
+
+      {/* THE PEAK NOTE, WHERE THE PLOT CANNOT HOLD IT — drawn only below the width computed above,
+          led by the decade in its own axis label's register, accent and weight, directly under
+          the axis row that prints that label. */}
+      <ol className="chart-notes">
+        <li data-keyed-note-under={keyed[0].id} style={regs.annot}>
+          <span data-keyed-note-lead="" style={{ ...axisRest, color: subjectInk, fontWeight: 700 }}>
+            {keyed[0].key}
+          </span>
+          {" : "}
+          {peakNoteUnder}
+        </li>
+      </ol>
 
       {/* THE CONTROL. Native radios in a real `<fieldset>` with a `<legend>` — a radio group to the
           keyboard and to a screen reader before this page's stylesheet does anything to it — and

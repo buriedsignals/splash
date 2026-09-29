@@ -200,6 +200,59 @@ matches, and every width gets the base value. `web-annotation-clears-its-marks.t
 result: painted-fill sampling under the label, plus label-over-label, at four widths. It is also the
 corpus's only measurement of label collision outside video.
 
+**Where no position in the plot clears the marks, the annotation leaves the plot, keyed — it is
+never shrunk, never printed over the evidence, and never dropped.** A plot scales with its width and
+a word does not, so below some width a note has no ground left: on a phone a row chart gives each row
+7–14 px for a 13–20 px line, and the note's own chip punches through the bars either side of it. The
+rule has three clauses, each one this project's doctrine already wrote:
+
+1. *Where it fits, it stays direct.* `visual-system.md`: a direct annotation "is preferred over a
+   detached legend in every case where it is spatially possible". A note that clears its marks at
+   the width it is drawn at does not move.
+2. *Where it does not, detaching is the documented fallback, and it carries a connector.* The same
+   file allows a legend "only when direct labelling would collide … and even then, it is a last
+   resort documented as one"; `information-architecture.md` asks that elements set apart for layout
+   reasons be paired by "an explicit connector (a leader line, a matched colour)". A leader from under
+   the plot would cross every mark between the sentence and its subject, so the connector is a KEY —
+   one token printed at both ends: the words the plate already prints at the mark (a row's name, an
+   accented axis label), set in that label's own ink, or, where the plate prints nothing there, a
+   numeral drawn beside the mark.
+3. *It is moved, never removed.* Rule 3 of the width-query section below: an annotation "IS the
+   argument or its provenance, and a narrow window is not a reason to stop making it."
+
+**Where the line falls is computed, not chosen** — the same "threshold, not a live measurement" rule
+as the axis below: the beat asks, in node, whether its note at its MEASURED size clears its own marks
+and words in a plot `w` px wide, and `assets/keyed-note.ts`'s `leavesBelow` returns the width to key
+it at. `keyedNoteCss` then writes ONE `@container` block per note that hides the plot's copy and
+reveals the line under the plot in the same breath, so the two cannot both be drawn or both be
+missing; `verify-web.mjs`'s `checkKeyedNotes` reads exactly that at all seven widths it fits, plus
+that the key is drawn at the mark and says the same words there. The line under the plot is a word,
+so it keeps its height and the plot gives it up ("words are never squeezed; the chart is"). The keyed
+notes run in, like footnotes in a paragraph, because the pages they appear on are the ones with the
+least height to spend. **That is also where the rule stops**: a beat does not adopt it if any of its
+directions would gain a window overflow at 375 × 812 that it did not already have (`verify-web.mjs`,
+old against new) — the window-fit rule is not traded for a note, and the note stays owed
+(`web-diverging-bar-eu-per-capita`: its `creme` plot is already at `PLOT_FLOOR_PX`, and one keyed
+line took the page 12 px past the window). A direction whose phone page ALREADY overflows before any
+note is keyed (its title and controls alone exceed the window) is not a reason to leave the other two
+directions' collisions in place; its overflow grows by the keyed line, that growth is reported with
+the measurement, and the repair belongs to the furniture that overflowed first. The fit check reads
+the document against the window, so a keyed line can also sink into the figure's own 24 px bottom
+padding without failing it: measured on the first adoptions at 375 × 812, the source line moved
+7–18 px into that padding on four pages whose plot was at its floor (the gantt on `nocturne` ends
+flush with the window). That is the same cost in a quieter place, and it is counted as one. And two
+gaps, named:
+the query sees the plot's WIDTH, not its height, so a cell made smaller by a window that clamps the
+plot (a page taller than its window, a phone on its side) is smaller than the threshold assumed — on
+the diverging bar at 375 that is a 190 px cell where the width predicts 231; and `cellWidthPx`
+computes the cell the frame draws when nothing clamps it, which is the only one a width can name.
+
+**A label that NAMES a band is not a note parked on one.** `types/streamgraph.md` puts a band's own
+name inside the band because the form has no axis ("it's the ENTIRE mechanism by which this type
+states a value at all"). That licence is for the band's name, at its own thickest point. A sentence
+about an event — the year a band changes rank — is an annotation like any other, and its ground chip
+laid inside the stream is a hole cut in the very band it describes.
+
 **A rung IS a cap, and that is why the last two-rung beat had to be rewritten rather than adjusted.**
 `more-heatmap-co2-per-capita-decades` shipped two pre-rendered SVGs — 900px and 375px — swapped by a
 `@media` query under `.chart-figure { max-width: 900px }`. Its own runner argued at length about

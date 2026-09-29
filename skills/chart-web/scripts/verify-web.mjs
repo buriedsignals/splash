@@ -244,6 +244,75 @@ async function checkFit(page, vp) {
   return m;
 }
 
+/** ITEM: a note that leaves its plot is still MADE — in exactly one place, keyed at both ends.
+ *
+ *  `assets/keyed-note.ts` moves an annotation that cannot clear its marks out of the plot and into
+ *  `.chart-notes` under it, below a width the beat measured. The rule it enforces is
+ *  `web-discipline.md`'s "a narrow window is not a reason to stop making it", and the stylesheet
+ *  generates both halves of the move together — but a generated rule is a promise, and this is the
+ *  reading. At every width the fit is measured at, for every keyed note:
+ *    - exactly ONE copy is drawn: the plot's, or the one under it. Both is the collision the move
+ *      exists to end; neither is the annotation dropped;
+ *    - when the copy under the plot is drawn, its key is drawn at the MARK too — the numeral beside
+ *      it, or the plate's own label — and says the same words at both ends. A key that pairs with
+ *      nothing is a sentence detached from its evidence, which is the one thing a key is for.
+ *  A page with no keyed note is reported as a passing measurement, never as a skip. */
+async function checkKeyedNotes(page, vp) {
+  const notes = await page.evaluate(() => {
+    const drawn = (el) => {
+      if (!el) return false;
+      const cs = getComputedStyle(el);
+      const r = el.getBoundingClientRect();
+      return cs.display !== "none" && cs.visibility !== "hidden" && Number(cs.opacity) > 0.05 && r.width > 0 && r.height > 0;
+    };
+    const words = (el) => (el ? (el.textContent || "").replace(/\s+/g, " ").trim() : "");
+    // A key may be a SHAPE the plate draws exactly once — a ring on the year a claim turns on —
+    // rather than words; both ends then name it with the same `data-keyed-note-glyph`.
+    const glyph = (el) => (el ? el.getAttribute("data-keyed-note-glyph") || "" : "");
+    return Array.prototype.map.call(document.querySelectorAll("[data-keyed-note-under]"), (under) => {
+      const id = under.getAttribute("data-keyed-note-under");
+      const inPlot = document.querySelector(`.chart-plot .overlay [data-keyed-note-plot="${id}"]`);
+      const marker = document.querySelector(`.chart-plot .overlay [data-keyed-note-key="${id}"]`);
+      const handle = document.querySelector(`.chart-plot [data-keyed-note-handle="${id}"]`);
+      const lead = under.querySelector("[data-keyed-note-lead]");
+      return {
+        id,
+        hasPlotCopy: !!inPlot,
+        plotDrawn: drawn(inPlot),
+        underDrawn: drawn(under),
+        lead: words(lead) || glyph(lead),
+        keyAtMark: marker ? words(marker) : handle ? words(handle) || glyph(handle) : null,
+        keyAtMarkDrawn: drawn(marker || handle),
+      };
+    });
+  });
+  if (!notes.length) {
+    check(true, `${vp.label} ${vp.w}x${vp.h}: every keyed note is made exactly once`, "this beat keys no note");
+    return;
+  }
+  for (const n of notes) {
+    check(
+      n.hasPlotCopy && n.plotDrawn !== n.underDrawn,
+      `${vp.label} ${vp.w}x${vp.h}: keyed note "${n.id}" is drawn in exactly one place`,
+      !n.hasPlotCopy
+        ? "no copy in the plot carries this id"
+        : n.plotDrawn && n.underDrawn
+          ? "drawn in the plot AND under it"
+          : n.plotDrawn
+            ? "in the plot"
+            : n.underDrawn
+              ? "under the plot"
+              : "drawn NOWHERE — the annotation was dropped",
+    );
+    if (n.underDrawn)
+      check(
+        n.keyAtMarkDrawn && n.lead.length > 0 && n.lead === n.keyAtMark,
+        `${vp.label} ${vp.w}x${vp.h}: keyed note "${n.id}" is keyed at both ends`,
+        `under the plot "${n.lead}", at the mark ${n.keyAtMark === null ? "nothing" : `"${n.keyAtMark}"${n.keyAtMarkDrawn ? "" : " (not drawn)"}`}`,
+      );
+  }
+}
+
 /** ITEM: verify hovers really work — REAL pointer events at REAL coordinates.
  *  Three probes per reading, each one a `page.mouse.move` and nothing else:
  *    1. the reading's own circle,
@@ -848,8 +917,16 @@ async function checkDefaultView(page, tag) {
           // every option's answer at once, which is the picture the control exists to avoid.
           // The hole it opens is held to something below, by clicking: the words a level owns
           // must actually become drawn when their own option is chosen.
+          //
+          // `[data-keyed-note-plot]` / `[data-keyed-note-key]` is a THIRD ownership, and it is the
+          // WIDTH's rather than a control's: a note that cannot clear its marks below a measured
+          // plot width leaves the plot for the keyed list under it (`assets/keyed-note.ts`), and
+          // its numeral appears beside the mark only then. Neither copy is "the default view" on
+          // its own; the pair is. `checkKeyedNotes` holds the pair at every width the fit is
+          // measured at: exactly one copy drawn, and the key drawn at both ends.
           ".chart-title, .chart-caveat, .chart-source," +
-            " .chart-plot .overlay *:not([data-stack-total]):not([data-fits-its-mark]):not([data-level-rule])",
+            " .chart-plot .overlay *:not([data-stack-total]):not([data-fits-its-mark]):not([data-level-rule])" +
+            ":not([data-keyed-note-plot]):not([data-keyed-note-plot] *):not([data-keyed-note-key])",
         ),
         (el) => {
           const cs = getComputedStyle(el);
@@ -2165,6 +2242,7 @@ try {
     await page.goto(`file://${filePath}`, { waitUntil: "load" });
     for (const vp of VIEWPORTS) {
       await checkFit(page, vp);
+      await checkKeyedNotes(page, vp);
       if (wantShots) {
         const shot = join(outDir, `fit-${vp.w}x${vp.h}.png`);
         await page.screenshot({ path: shot });

@@ -74,6 +74,16 @@ import {
   type BenchmarkDeclaration,
   type BenchmarkPlacement,
 } from "../../skills/chart-web/assets/benchmark.ts";
+import {
+  cellWidthPx,
+  keyedNoteCss,
+  labelBoxPx,
+  leavesBelow,
+  overlaps,
+  type KeyedNote,
+  type Measure,
+  type Rect,
+} from "../../skills/chart-web/assets/keyed-note.ts";
 
 export const FRAME = { width: 880, height: 300, xAxisRowPx: 28 };
 
@@ -120,6 +130,7 @@ export function DirectedBulletWeb({
   scaleMax,
   threshold,
   thresholdNote,
+  measure,
   xTicks,
   title,
   eyebrow,
@@ -140,6 +151,7 @@ export function DirectedBulletWeb({
   scaleMax: number;
   threshold: number;
   thresholdNote: string;
+  measure: Measure;
   xTicks: number[];
   title: string;
   eyebrow: string;
@@ -357,6 +369,74 @@ export function DirectedBulletWeb({
     };
   });
 
+  /**
+   * THE THRESHOLD'S NAME, AND THE WIDTH BELOW WHICH IT HAS NO ROOM. It stands on the first row's line,
+   * centred on its rule, in the top inset the row names already use. That line is only as tall as the
+   * inset plus half a row's air, and the rows shrink with the plot while the words do not: at 375 px
+   * (six rows in 94 px, 15,6 px apart) « la moitié » was printed over Pologne's own verdict, which
+   * runs from Pologne's bar end straight across the 50 % rule. There is no ground left in the plot at
+   * that size: every row's verdict or bar crosses the rule, and the gaps between rows are 7 px.
+   *
+   * So the width it can no longer stand at is COMPUTED, from the measured name, the measured row
+   * names and the measured verdicts of EVERY target (they share one anchor per row, and the note has
+   * to be true under all of them), against every row's bar and gap band — and it must also stay
+   * inside the cell, since above the cell is the control's own sentence row. Below that width it
+   * leaves for the keyed line under the plot, led by the « 50 % » the axis already prints at the
+   * rule's foot (`assets/keyed-note.ts`). The track and the band behind the bars are 1,12:1 and
+   * ~1,25:1 against the ground — washes, not marks — and are not counted, as the guard does not.
+   */
+  const thresholdBox = labelBoxPx(thresholdNote, regs.annot, measure);
+  const nameBoxes = rows.map((r) =>
+    labelBoxPx(r.name, { ...regs.axis, fontWeight: r.code === subject ? 700 : regs.axis.fontWeight }, measure, { chip: false }),
+  );
+  const verdictBoxes = rows.map((r) => r.verdicts.map((v) => labelBoxPx(v.text, regs.value, measure)));
+  const thresholdClears = (plotWidthPx: number) => {
+    // No y-gutter here, but the cell is still HEIGHT-bound below some width: the box's ratio counts
+    // the 28 px axis row in units, so at 375 px the cell is 275 px wide inside a 327 px plot.
+    const cellW = cellWidthPx(plotWidthPx, {
+      frame: { width: FRAME.width, height: FRAME.height },
+      box: { width: FRAME.width, height: FRAME.height + FRAME.xAxisRowPx },
+      axisPx: FRAME.xAxisRowPx,
+    });
+    const s = cellW / FRAME.width;
+    const lineBottom = (cyOf(0) - trackH / 2) * s;
+    const note: Rect = {
+      l: x(threshold) * s - thresholdBox.w / 2,
+      r: x(threshold) * s + thresholdBox.w / 2,
+      t: lineBottom - thresholdBox.h,
+      b: lineBottom,
+    };
+    if (note.t < 0 || note.l < 0 || note.r > cellW) return false;
+    for (const [i, r] of rows.entries()) {
+      const top = (cyOf(i) - trackH / 2) * s;
+      const name = nameBoxes[i];
+      if (overlaps(note, { l: 0, r: name.w, t: top - name.h, b: top })) return false;
+      const bar: Rect = { l: 0, r: cellW, t: (cyOf(i) - barH / 2) * s, b: (cyOf(i) + barH / 2) * s };
+      if (overlaps(note, bar)) return false;
+      for (const box of verdictBoxes[i]) {
+        const at = x(r.after) * s;
+        const l = r.after > 80 ? at - 8 - box.w : at + 8;
+        const verdict: Rect = { l, r: l + box.w, t: cyOf(i) * s - box.h / 2, b: cyOf(i) * s + box.h / 2 };
+        if (overlaps(note, verdict)) return false;
+      }
+    }
+    return true;
+  };
+  const halfTick = xTicks.find((t) => t === threshold);
+  if (halfTick === undefined)
+    throw new Error(
+      `the threshold ${threshold} % has no tick of its own on the axis, so nothing the plate already ` +
+        `prints can key its name when the name leaves the plot`,
+    );
+  const keyed: KeyedNote[] = [
+    {
+      id: "threshold",
+      key: `${halfTick} %`,
+      printed: true,
+      below: leavesBelow(thresholdClears, { where: "the threshold's name" }),
+    },
+  ];
+
   const options = benchmarkOptionsForMarkup(benchmark, BENCHMARK_ID_PREFIX);
   const notes = benchmarkNotesForMarkup(benchmark);
   const claimSlug = options[0].slug;
@@ -382,6 +462,7 @@ export function DirectedBulletWeb({
     // options' worth of verdicts belong to targets nobody has chosen yet.
     `${SCOPE} .chart-plot .verdict-layer { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }`,
     benchmarkChromeCss({ scope: SCOPE }),
+    keyedNoteCss(keyed, { scope: SCOPE }),
     benchmarkCss(benchmark, {
       scope: SCOPE,
       idPrefix: BENCHMARK_ID_PREFIX,
@@ -664,6 +745,7 @@ export function DirectedBulletWeb({
               already reserved for them. */}
           <span
             className="note"
+            data-keyed-note-plot={keyed[0].id}
             style={{
               ...regs.annot,
               left: `${pct(x(threshold), FRAME.width)}%`,
@@ -686,12 +768,30 @@ export function DirectedBulletWeb({
 
         <div className="x-axis">
           {xTicks.map((t) => (
-            <span key={t} className="axis-label x" style={{ ...regs.axis, left: `${pct(x(t), FRAME.width)}%` }}>
+            <span
+              key={t}
+              className="axis-label x"
+              style={{ ...regs.axis, left: `${pct(x(t), FRAME.width)}%` }}
+              data-keyed-note-handle={t === threshold ? keyed[0].id : undefined}
+            >
               {`${t} %`}
             </span>
           ))}
         </div>
       </div>
+
+      {/* THE THRESHOLD'S NAME, WHERE THE PLOT CANNOT HOLD IT — drawn only below the width computed
+          above, led by the axis's own « 50 % » in the axis's own register: the key a reader matches
+          without a leader crossing six rows to reach the rule. */}
+      <ol className="chart-notes">
+        <li data-keyed-note-under={keyed[0].id} style={regs.annot}>
+          <span data-keyed-note-lead="" style={regs.axis}>
+            {keyed[0].key}
+          </span>
+          {" : "}
+          {thresholdNote}
+        </li>
+      </ol>
 
       <p className="chart-reading" style={{ ...regs.body, margin: "10px 0 0" }}>{reading}</p>
       <p className="chart-source" style={{ ...regs.body, margin: "6px 0 0" }}>{source}</p>

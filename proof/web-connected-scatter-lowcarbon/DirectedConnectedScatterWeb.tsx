@@ -56,6 +56,16 @@ import {
   assertAimDeclaration,
   type AimDeclaration,
 } from "../../skills/chart-web/assets/aim.ts";
+import {
+  cellWidthPx,
+  keyedNoteCss,
+  labelBoxPx,
+  leavesBelow,
+  overlaps,
+  type KeyedNote,
+  type Measure,
+  type Rect,
+} from "../../skills/chart-web/assets/keyed-note.ts";
 
 // The x-axis row carries BOTH the graduations and the horizontal axis title, which is why it is
 // taller than this format's usual: the title used to hang in the plot's bottom-right corner, and the
@@ -65,6 +75,8 @@ export const FRAME = { width: 820, height: 460, xAxisRowPx: 48 };
 
 /** The scope every generated rule is written inside. */
 const SCOPE = ".chart-figure";
+/** The y-gutter the graduations are set in, in CSS pixels — the plot's width minus this is the cell's. */
+const GUTTER_PX = 44;
 /**
  * THE RADIO ID PREFIX, AND IT IS `chart-stack-` ON PURPOSE. `interaction-plan.ts` discovers the
  * controls a page ships by READING THE MARKUP, and its "moving or measuring control" branch looks
@@ -129,6 +141,7 @@ export function DirectedConnectedScatterWeb({
   ink,
   muted,
   grid,
+  measure,
 }: {
   arrows: Arrow[];
   anchors: Anchor[];
@@ -150,6 +163,7 @@ export function DirectedConnectedScatterWeb({
   ink: string;
   muted: string;
   grid: string;
+  measure: Measure;
 }) {
   const regs = webRegisters(direction, { ink: { ink, muted, accent } });
 
@@ -197,6 +211,106 @@ export function DirectedConnectedScatterWeb({
   const subjectKey = arrows.find((a) => a.subject)!.key;
   const inkOf = (key: string) => (key === subjectKey ? subjectInk : contextInk);
 
+  /**
+   * THE FIGURE ON THE SUBJECT'S HEAD, AND THE WIDTH BELOW WHICH IT CANNOT STAND THERE.
+   *
+   * Each state prints one sentence about France where its head lands — above a head that rose, below
+   * one that did not — and at 375 px the landing one wrapped to three lines inside a 46 % measure
+   * and was printed over « Belgique » in creme and nocturne and over « Allemagne » in rapport
+   * (`web-annotation-clears-its-marks.test.ts`). Every position on this plate is a fraction of a
+   * cell that narrows with the window, and the words and the heads it must clear do not narrow with
+   * it, so the question is asked the way the format asks it (`assets/keyed-note.ts`): at a plot `w`
+   * px wide, does each state's figure — measured, wrapped the way the browser wraps it, placed the
+   * way `noteAnchor` places it — clear the sixteen names, the vertical axis title, every arrowhead
+   * of that state, the x-axis row under the cell, and the cell's own edges? The figure is ONE note
+   * whose wording changes with the state, so it leaves at the widest width at which ANY state's
+   * version fails, and all four leave together. Under the plot it is led by the name the plate
+   * already prints at France's ring, in that name's own ink.
+   */
+  const annotPx = Number.parseFloat(String(regs.annot.fontSize));
+  const annotLine = annotPx * Number(regs.annot.lineHeight);
+  /** One LINE of the annot register, measured whole (case, tracking and bearing included), chipless. */
+  const annotWidth = (t: string) => labelBoxPx(t, regs.annot, measure, { chip: false }).w;
+  /** Greedy word wrap at `maxContent` px — how a browser breaks a `white-space: normal` run. */
+  const wrap = (text: string, maxContent: number) => {
+    const lines: string[] = [];
+    for (const word of text.split(" ")) {
+      const last = lines[lines.length - 1];
+      if (last !== undefined && annotWidth(`${last} ${word}`) <= maxContent) lines[lines.length - 1] = `${last} ${word}`;
+      else lines.push(word);
+    }
+    return { lines: lines.length, widest: Math.max(...lines.map(annotWidth)) };
+  };
+  /** A box placed by `noteAnchor(xPct)` at `top`, shifted by `shift` of its own height. */
+  const anchored = (xPct: number, w: number, top: number, h: number, shift: number, cellW: number): Rect => {
+    const x = (xPct / 100) * cellW;
+    const t = top + shift * h;
+    if (xPct > 75) return { l: x - w, r: x, t, b: t + h };
+    if (xPct < 25) return { l: x, r: x + w, t, b: t + h };
+    return { l: x - w / 2, r: x + w / 2, t, b: t + h };
+  };
+  const nameBoxes = names.map((n) => ({ n, box: labelBoxPx(n.text, regs.value, measure) }));
+  const yTitleText = annotWidth(yTitle);
+  const xTitleBox = labelBoxPx(xTitle, regs.axis, measure, { chip: false });
+  const tickBoxes = xTicks.map((t) => ({ t, box: labelBoxPx(t.text, regs.axis, measure, { chip: false }) }));
+  const headsOf = new Map<string, { x: number; y: number }[]>([
+    ["none", arrows.map((a) => a.head)],
+    // `aimOptionsForMarkup` lists the untouched state first, then the options in declared order.
+    ...aim.options.map((o, i) => [aimOptions[i + 1].slug, o.heads] as [string, { x: number; y: number }[]]),
+  ]);
+  const figureClears = (plotWidthPx: number) => {
+    // The cell, not the track: this plot is height-bound below some width even in a window that
+    // clamps nothing (257 px of cell in a 283 px track at 375).
+    const cellW = cellWidthPx(plotWidthPx, {
+      frame: FRAME,
+      box: { width: FRAME.width + GUTTER_PX, height: FRAME.height + FRAME.xAxisRowPx },
+      gutterPx: GUTTER_PX,
+      axisPx: FRAME.xAxisRowPx,
+    });
+    if (cellW <= 0) return false;
+    const s = cellW / FRAME.width;
+    const cellH = FRAME.height * s;
+    const maxW = Math.min(0.46 * cellW, 24 * annotPx);
+    const words: Rect[] = nameBoxes.map(({ n, box }) =>
+      anchored(pct(n.x, FRAME.width), Math.min(box.w, maxW), n.y * s, box.h, n.below ? 0.35 : -1.35, cellW),
+    );
+    {
+      const w = wrap(yTitle, Math.min(0.44 * cellW, 22 * annotPx));
+      words.push({ l: 0, t: 0, r: Math.min(yTitleText, w.widest), b: w.lines * annotLine });
+    }
+    // The x-axis row sits under the cell: its graduations at `top: 6px`, its title at `top: 24px`.
+    for (const { t, box } of tickBoxes)
+      words.push({ l: t.at * s - box.w / 2, r: t.at * s + box.w / 2, t: cellH + 6, b: cellH + 6 + box.h });
+    words.push({ l: cellW - xTitleBox.w, r: cellW, t: cellH + 24, b: cellH + 24 + xTitleBox.h });
+    for (const f of aimFigures) {
+      const xPct = pct(f.x, FRAME.width);
+      const avail = xPct > 75 ? (xPct / 100) * cellW : (1 - xPct / 100) * cellW;
+      const outer = Math.min(annotWidth(f.text) + 8, avail, maxW);
+      const w = wrap(f.text, outer - 8);
+      const box = anchored(xPct, Math.min(outer, w.widest + 8), f.y * s, w.lines * annotLine + 2, f.above ? -1.35 : 0.45, cellW);
+      if (box.l < 0 || box.r > cellW || box.t < 0 || box.b > cellH) return false;
+      if (words.some((r) => overlaps(box, r))) return false;
+      const reach = Math.max(HEAD_UNITS * s, 3);
+      for (const h of headsOf.get(f.slug) ?? [])
+        if (overlaps(box, { l: h.x * s - reach, r: h.x * s + reach, t: h.y * s - reach, b: h.y * s + reach })) {
+          // Its OWN head is the point it hangs from: the figure is offset away from it by design.
+          if (h.x === f.x && h.y === f.y) continue;
+          return false;
+        }
+    }
+    return true;
+  };
+  const keyed: KeyedNote[] = [
+    {
+      id: "subject-figure",
+      key: names.find((n) => n.key === subjectKey)!.text,
+      printed: true,
+      below: leavesBelow(figureClears, { where: "the subject's figure" }),
+    },
+  ];
+  /** What each state says under the plot, after the key: its own figure, without the name it leads with. */
+  const underOf = (text: string) => text.replace(new RegExp(`^${keyed[0].key}\\s*:\\s*`), "");
+
   const css = [
     aimChromeCss({ scope: SCOPE }),
     aimCss(aim, arrows, {
@@ -215,6 +329,24 @@ export function DirectedConnectedScatterWeb({
     `${SCOPE} [data-aim-shaft].mark-active { stroke: var(--mark-active); }`,
     `${SCOPE} [data-aim-ring] { fill: var(--ground); }`,
     `${SCOPE} [data-aim-ring].mark-active { stroke: var(--mark-active); }`,
+    keyedNoteCss(keyed, { scope: SCOPE }),
+    // THE FIGURE LEAVES IN EVERY STATE AT ONCE. `aim.ts` reveals the chosen state's figure at
+    // (1,3,0) — `:has(#…:checked)` — which a keyed rule at (0,4,0) cannot hide, so the move is
+    // written here at (1,5,0), once per option; and under the plot the chosen state's own words are
+    // revealed by the same `:checked`, so the line always says what the plate would have said.
+    `${SCOPE} .chart-notes [data-aim-state] { display: none; }`,
+    ...aimOptions.map(
+      (o) => `${SCOPE}:has(#${o.id}:checked) .chart-notes [data-aim-state="${o.slug}"] { display: inline; }`,
+    ),
+    ...(keyed[0].below
+      ? [
+          `@container (width < ${keyed[0].below}px) {`,
+          ...aimOptions.map(
+            (o) => `  ${SCOPE}:has(#${o.id}:checked) .chart-plot .overlay [data-stack-total] { display: none; }`,
+          ),
+          `}`,
+        ]
+      : []),
     // THE TOOLTIP IS WIDENED FROM THE FORMAT'S OWN 220 px. This page's answer carries two dates on
     // two axes, two absolute quantities, a growth rate and a counterfactual; at 220 px it set to
     // seven lines and rose clean over the pills the reader had just used. The treemap beat widened
@@ -283,9 +415,9 @@ export function DirectedConnectedScatterWeb({
       <div
         className="chart-plot"
         style={{
-          ["--y-gutter" as string]: "44px",
+          ["--y-gutter" as string]: `${GUTTER_PX}px`,
           ["--x-axis-h" as string]: `${FRAME.xAxisRowPx}px`,
-          aspectRatio: `${FRAME.width + 44} / ${FRAME.height + FRAME.xAxisRowPx}`,
+          aspectRatio: `${FRAME.width + GUTTER_PX} / ${FRAME.height + FRAME.xAxisRowPx}`,
         }}
       >
         <div className="y-axis" style={{ pointerEvents: "none" }}>
@@ -420,6 +552,7 @@ export function DirectedConnectedScatterWeb({
             <span
               key={`n-${n.key}`}
               className="end-label"
+              data-keyed-note-handle={n.key === subjectKey ? keyed[0].id : undefined}
               style={{
                 ...regs.value,
                 color: n.key === subjectKey ? subjectInk : labelInk,
@@ -442,6 +575,7 @@ export function DirectedConnectedScatterWeb({
               key={`f-${f.slug}`}
               className="note"
               data-stack-total={f.slug}
+              data-keyed-note-plot={f.slug === "none" ? keyed[0].id : undefined}
               style={{
                 ...regs.annot,
                 color: subjectInk,
@@ -474,6 +608,37 @@ export function DirectedConnectedScatterWeb({
           </span>
         </div>
       </div>
+
+      {/* THE SUBJECT'S FIGURE, WHERE THE PLOT CANNOT HOLD IT — below the width computed above, led by
+          the name the plate prints at France's ring, in that name's own ink. One line per page; the
+          words inside it are the chosen state's. */}
+      <ol className="chart-notes">
+        <li data-keyed-note-under={keyed[0].id} style={regs.annot}>
+          {/* THE KEY IS SET IN THE NAME'S OWN REGISTER — face, weight, case and ink — and not in a
+              bold of the note's. Measured: a bold of the annot face on `nocturne` (uppercase) asked the
+              700 subset for capitals it does not carry, and `verify-web` caught the fallback. The name
+              at the ring is set in the value register, so its glyphs are on the page by construction. */}
+          <span
+            data-keyed-note-lead=""
+            style={{
+              fontFamily: regs.value.fontFamily as string,
+              fontWeight: regs.value.fontWeight as number,
+              fontStyle: regs.value.fontStyle as string,
+              letterSpacing: regs.value.letterSpacing as string,
+              textTransform: regs.value.textTransform as any,
+              color: subjectInk,
+            }}
+          >
+            {keyed[0].key}
+          </span>
+          {" : "}
+          {aimFigures.map((f) => (
+            <span key={f.slug} data-aim-state={f.slug}>
+              {underOf(f.text)}
+            </span>
+          ))}
+        </li>
+      </ol>
 
       <p className="chart-reading" style={{ ...regs.body, margin: "10px 0 0" }}>{reading}</p>
       <p className="chart-source" style={{ ...regs.body, margin: "6px 0 0" }}>{source}</p>
