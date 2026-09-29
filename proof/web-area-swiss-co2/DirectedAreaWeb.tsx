@@ -86,6 +86,8 @@ export type Reading = {
 export type Split = { slug: string; year: number; x: number; label: string };
 
 const pct = (value: number, extent: number) => (value / extent) * 100;
+/** A fraction of a box as a CSS percentage, fixed so the stylesheet is byte-stable across renders. */
+const pctOf = (fraction: number) => (fraction * 100).toFixed(3);
 
 /** THE BEAT'S ONE HORIZONTAL SCALE, exported because the runner has to place every option's
  *  reference in the geometry's own units before the component is called. Two callers, one
@@ -310,6 +312,66 @@ export function DirectedAreaWeb({
   const last = points[points.length - 1];
   const midPoint = points.find((p) => p.year === midYear)!;
 
+  /**
+   * WHERE THE MIDPOINT NOTE STANDS, MEASURED OFF THE SURFACE IT NAMES — at every width, not one.
+   *
+   * The note says "1986: half the total is behind" and it hangs from the 1986 rule, reading LEFT
+   * of it, over the earlier half it describes. That is right exactly while the empty band ABOVE
+   * the earlier half is tall enough for one line of it. The band's height is a fraction of the plot
+   * (the surface peaks at 46 Mt in 1973, a few percent under the top), and the note's line is fixed
+   * CSS pixels — so the band that held it with 5px to spare at 768 was 125px of plot at 375, the
+   * note wrapped to two lines under its own `max-width: 46%`, and it punched its ground chip into
+   * the 1960s surface and landed on the `2024 · 32,1` end label. Measured 2026-09-29 at all three
+   * directions (issue #78).
+   *
+   * So the band is a real box — every year left of the rule, from the plot's top down to the
+   * highest reading among them — and a SIZE container, and the note asks it whether one line fits:
+   * the note's own measured width against the box's width, its line box plus the air it keeps
+   * against the box's height below the note's own top. Where either fails the note does not
+   * shrink or vanish (`verify-web.mjs` requires every overlay word drawn): it moves to the
+   * upper-left, over the flat nineteenth-century surface that stays under a quarter of the scale
+   * until the 1950s, and wraps there within that low stretch's own width — and never past the
+   * `2024 · …` end label's own measured left edge, which on a phone plot (204 px wide at 375x812)
+   * reaches back over half of it. It drops to the band's top there too: the frame's headroom above
+   * the top gridline is the one row the surface never enters.
+   */
+  const earlierPeak = Math.max(...points.filter((p) => p.year <= midYear).map((p) => p.mt));
+  const bandW = midPoint.cx / FRAME.width;
+  const bandH = y(earlierPeak) / FRAME.height;
+  const NOTE_TOP = 0.06;
+  const NOTE_AIR_PX = 4;
+  const annotSizePx = Number.parseFloat(regs.annot.fontSize as string);
+  const noteLinePx = Math.ceil(annotSizePx * Number(regs.annot.lineHeight)) + 2; // + the chip's 1px pad, twice
+  const noteWidthPx =
+    Math.ceil(
+      measure(midNote, {
+        fontSize: annotSizePx,
+        fontWeight: regs.annot.fontWeight,
+        fontStyle: regs.annot.fontStyle,
+        fontFamily: String(regs.annot.fontFamily).split(",")[0].replace(/"/g, ""),
+      }),
+    ) + 8 + 2; // + the chip's 4px pad, twice, and a pixel each side for the rasteriser's rounding
+  const topInBand = NOTE_TOP / bandH;
+  const bandFitsPx = (noteLinePx + NOTE_AIR_PX) / (1 - topInBand);
+  // The fallback stretch: every year before the surface first rises past a quarter of its scale.
+  const lowEnd = points.find((p) => p.mt > top * 0.25)!;
+  const lowStretch = lowEnd.cx / FRAME.width;
+  const FALLBACK_LEFT = 0.01;
+  const FALLBACK_AIR_PX = 6;
+  // The end label's own box, measured the way the y gutter is: its text in the value register, the
+  // chip's 4px pad twice, and the 10px the shared stylesheet translates it off its point.
+  const endLabelReachPx =
+    Math.ceil(
+      measure(`${last.year} · ${last.label}`, {
+        fontSize: Number.parseFloat(regs.value.fontSize as string),
+        fontWeight: regs.value.fontWeight,
+        fontStyle: regs.value.fontStyle,
+        fontFamily: String(regs.value.fontFamily).split(",")[0].replace(/"/g, ""),
+      }),
+    ) +
+    8 +
+    10;
+
   // THE ANNOTATION REGISTER'S INK AND WEIGHT LEAVE THE INLINE STYLE for the year a chosen option
   // writes at the foot of its own rule: an inline `color` beats every generated selector, so with
   // `regs.annot` spread whole the option rules could not light it. Same correction the grouped bar
@@ -322,6 +384,13 @@ export function DirectedAreaWeb({
     // A reading takes no stroke until a reader asks for one. Declared here rather than inline so
     // the generated ring can win: an inline `stroke` beats every selector there is.
     `${SCOPE} [data-col] { stroke: none; }`,
+    // THE MIDPOINT NOTE'S BAND AND ITS TWO PLACES — see `bandFitsPx` above. Positions are rules
+    // here and never inline styles, so the container query can move the note without `!important`.
+    `${SCOPE} .overlay .note-band { position: absolute; left: 0; top: 0; width: ${pctOf(bandW)}%; height: ${pctOf(bandH)}%; container-type: size; }`,
+    `${SCOPE} .overlay .note-band > .mid-note { right: 0; left: auto; top: ${pctOf(topInBand)}%; white-space: nowrap; max-width: none; }`,
+    `@container (max-width: ${(noteWidthPx - 0.01).toFixed(2)}px) or (max-height: ${(bandFitsPx - 0.01).toFixed(2)}px) {`,
+    `  ${SCOPE} .overlay .note-band > .mid-note { right: auto; left: ${pctOf(FALLBACK_LEFT / bandW)}%; top: 0; white-space: normal; max-width: min(${pctOf((lowStretch - FALLBACK_LEFT) / bandW)}%, calc(${pctOf((1 - FALLBACK_LEFT) / bandW)}% - ${endLabelReachPx + FALLBACK_AIR_PX}px)); }`,
+    `}`,
     levelChromeCss({ scope: SCOPE }),
     levelCss(levels, {
       scope: SCOPE,
@@ -558,17 +627,11 @@ export function DirectedAreaWeb({
         </svg>
 
         <div className="overlay" aria-hidden="true">
-          <span
-            className="note"
-            style={{
-              ...regs.annot,
-              color: noteInk,
-              ...noteAnchor(pct(midPoint.cx, FRAME.width)),
-              top: "6%",
-            }}
-          >
-            {midNote}
-          </span>
+          <div className="note-band">
+            <span className="note mid-note" style={{ ...regs.annot, color: noteInk }}>
+              {midNote}
+            </span>
+          </div>
           <span
             className="end-label"
             style={{

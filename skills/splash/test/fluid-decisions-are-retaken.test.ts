@@ -270,9 +270,6 @@ function holesIn(ticks: Tick[], step: number): Hole[] {
  *   - Never add a line for a new hole. Fix the page instead.
  */
 const OWED = new Set<string>([
-  "proof/web-calendar-heatmap-geneva/renders/creme.html @ 1600: 30 missing between 25 and 31",
-  "proof/web-calendar-heatmap-geneva/renders/nocturne.html @ 1600: 30 missing between 25 and 31",
-  "proof/web-calendar-heatmap-geneva/renders/rapport.html @ 1600: 30 missing between 25 and 31",
 ]);
 
 type AxisReading = {

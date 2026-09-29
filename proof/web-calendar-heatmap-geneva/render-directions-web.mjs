@@ -42,6 +42,14 @@ const THRESHOLDS = [16, 18, 20, 22, 24];
 // a block before any control is touched.
 const BREAKS = [5, 10, 15, 20];
 const MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+/**
+ * THE DAY AXIS IS ONE ARITHMETIC RUN, 1 THEN EVERY FIFTH DAY TO 30. It used to end on 31, which
+ * made 30 a member of its own run that the page never drew: at 1600 the 25→31 gap held it with
+ * 39–41px to spare (`fluid-decisions-are-retaken.test.ts`). 31 is the column seven months do not
+ * have — five of its cells are the dashed impossible ones — so it is the column that does not need
+ * a number, and the one after 30 is found without one.
+ */
+const DAY_TICKS = [1, 5, 10, 15, 20, 25, 30];
 const MONTHS_LONG = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
 
 const plain = (s) => plainSpaces(s);
@@ -324,7 +332,7 @@ const textPerRegister = {
   display: title,
   eyebrow: EYEBROW,
   body: `${caveat} ${readingLine} ${source} ${bins.map((b) => b.label).join(" ")} ${controlWords}`,
-  axis: `${MONTHS.join(" ")} 1 5 10 15 20 25 31 ${bins.map((b) => b.label).join(" ")}`,
+  axis: `${MONTHS.join(" ")} ${DAY_TICKS.join(" ")} ${bins.map((b) => b.label).join(" ")}`,
   annot: streakNote,
   value: days.map((d) => d.detail).join(" "),
 };
@@ -355,7 +363,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
         days,
         bins,
         monthLabels: MONTHS,
-        dayTicks: [1, 5, 10, 15, 20, 25, 31],
+        dayTicks: DAY_TICKS,
         claimRuns,
         streakNote,
         cutoff,

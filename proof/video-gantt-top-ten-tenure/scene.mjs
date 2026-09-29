@@ -51,8 +51,10 @@ export function sceneAt(props, frame) {
     out: props.rows.map((row) => (!row.member ? 1 : row.leftAt === null ? 0 : clamp01(reach - row.leftAt))),
     neverLeft: props.neverLeft[Math.max(0, Math.min(props.neverLeft.length - 1, crossed - 1))],
     counting: clock > 0 ? 1 : 0,
-    /** THE YEAR CURSOR sweeps with the clock; on it, the ten seats of the year it stands at. It goes once the clock ends. */
-    cursor: { x: reach, shown: clock > 0 ? 1 - clamp01((clock - 0.98) / 0.02) : 0, year: Math.min(props.last, Math.floor(reach + 1e-9)) },
+    /** THE YEAR CURSOR sweeps with the clock; on it, the ten seats of the year it stands at. It goes once the clock ends —
+     *  by a CUT, in the frame the axis's years come back: its « 2024 » and the axis's are one label drawn twice, and faded
+     *  across each other they printed the year twice over. */
+    cursor: { x: reach, shown: clock > 0 && clock < 1 ? 1 : 0, year: Math.min(props.last, Math.floor(reach + 1e-9)) },
     seated: props.rows.map((row) => row.runs.some((run) => Math.min(props.last, Math.floor(reach + 1e-9)) >= run.from && Math.min(props.last, Math.floor(reach + 1e-9)) <= run.to)),
     focus: clamp01(at("focus") - at("release")),
     kept: at("focus"),

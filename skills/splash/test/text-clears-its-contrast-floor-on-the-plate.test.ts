@@ -54,11 +54,7 @@ const plates = readdirSync(PROOF)
  * Keyed by render, run text and ink — not by the measured ground or ratio, which move with any
  * re-render: the same run in the same ink still under its floor is the same defect.
  */
-const OWED: Readonly<Record<string, readonly string[]>> = {
-  // 4.31:1 against rgb(85, 128, 144) on 2026-09-29, floor 4.5.
-  "static-marimekko-electricity-mix/nocturne-square.svg": [`"15 %" in #FFFFFF`],
-  // 4.38:1 against rgb(197, 215, 222) on 2026-09-29, floor 4.5.
-  "static-locator-zaporizhzhia/creme-square.svg": [`"ROUMANIE" in #5f5e58`],};
+const OWED: Readonly<Record<string, readonly string[]>> = {};
 
 /** The ratchet, as a list of messages that must be empty: every finding that is not owed, and every
  *  owed entry that no longer occurs. Counted, so one owed run cannot cover a second. */

@@ -79,6 +79,12 @@ export function HexFrame(props: HexFrameProps & { at: number; liveMap: (frame: n
   const ringOf = (code: string) => props.cells.find((c) => c.code === code)!.ring;
   const dash = strokes.originDash.join(" ");
   const keyHalo = (under: string) => ({ colour: blend(under, colours.ground, scene.basemapOut), width: key.halo });
+  /** THE KEY'S WORDS CHANGE FROM COUNT TO RATE BY A CUT, never a cross-fade: one drawing of each word is on the frame at
+   *  any moment, and the switch lands where the codes' inks switch (`inkStage`, rate >= 0.5) — the middle of the cells'
+   *  own change of colour. Faded against each other over the whole of `rate` they sat superimposed for three seconds
+   *  (`video-handover-is-a-cut.test.ts`). */
+  const byRate = scene.rate >= 0.5 ? 1 : 0;
+  const byCount = 1 - byRate;
 
   return (
     <div style={{ position: "absolute", left: 0, top: 0, width: frame.width, height: frame.height, background: colours.ground }}>
@@ -110,19 +116,19 @@ export function HexFrame(props: HexFrameProps & { at: number; liveMap: (frame: n
 
       {/* ── THE KEY COLUMN ── */}
       <g transform={`translate(${key.at.x} ${key.at.y})`} opacity={scene.furniture}>
-        <Word line={{ ...key.largestRow.count, x: key.largestRow.x, y: key.largestRow.y }} register={r.value} fill={colours.text.figure} opacity={scene.largest * (1 - scene.rate)} />
-        <Word line={{ ...key.largestRow.rate, x: key.largestRow.x, y: key.largestRow.y }} register={r.value} fill={colours.text.figure} opacity={scene.largest * scene.rate} />
+        <Word line={{ ...key.largestRow.count, x: key.largestRow.x, y: key.largestRow.y }} register={r.value} fill={colours.text.figure} opacity={scene.largest * byCount} />
+        <Word line={{ ...key.largestRow.rate, x: key.largestRow.x, y: key.largestRow.y }} register={r.value} fill={colours.text.figure} opacity={scene.largest * byRate} />
         <Word line={key.leaderRow} register={r.value} fill={colours.text.figure} opacity={scene.leader} />
-        <Word line={{ ...key.unitRow.count, x: key.unitRow.x, y: key.unitRow.y }} register={r.axis} fill={colours.text.key} opacity={1 - scene.rate} halo={keyHalo(key.halos.unit)} />
-        <Word line={{ ...key.unitRow.rate, x: key.unitRow.x, y: key.unitRow.y }} register={r.axis} fill={colours.text.key} opacity={scene.rate} halo={keyHalo(key.halos.unit)} />
+        <Word line={{ ...key.unitRow.count, x: key.unitRow.x, y: key.unitRow.y }} register={r.axis} fill={colours.text.key} opacity={byCount} halo={keyHalo(key.halos.unit)} />
+        <Word line={{ ...key.unitRow.rate, x: key.unitRow.x, y: key.unitRow.y }} register={r.axis} fill={colours.text.key} opacity={byRate} halo={keyHalo(key.halos.unit)} />
         {key.swatches.map((s, i) => (
           <rect key={`swatch${i}`} x={s.x} y={s.y} width={s.width} height={s.height} fill={colours.classFills[i]} opacity={scene.swatches[i]} />
         ))}
         {key.bornes.count.map((b, i) => (
-          <Word key={`count${i}`} line={b} register={r.axis} fill={colours.text.key} opacity={scene.swatches[i + 1] * (1 - scene.rate)} />
+          <Word key={`count${i}`} line={b} register={r.axis} fill={colours.text.key} opacity={scene.swatches[i + 1] * byCount} />
         ))}
         {key.bornes.rate.map((b, i) => (
-          <Word key={`rate${i}`} line={b} register={r.axis} fill={colours.text.key} opacity={scene.rate} />
+          <Word key={`rate${i}`} line={b} register={r.axis} fill={colours.text.key} opacity={byRate} />
         ))}
         <rect x={key.originSwatch.x} y={key.originSwatch.y} width={key.originSwatch.width} height={key.originSwatch.height} fill={colours.origin} stroke={colours.originEdge} strokeWidth={strokes.hairline} strokeDasharray={dash} />
         <Word line={key.originLabel} register={r.axis} fill={colours.text.key} halo={keyHalo(key.halos.origin)} />

@@ -131,7 +131,8 @@
       "eyebrow": "#53e1c1",
       "title": "#ffffff",
       "axis": "#a7a6b9",
-      "count": "#ffffff"
+      "count": "#ffffff",
+      "warm": "#53e1c1"
     }
   },
   "days": [

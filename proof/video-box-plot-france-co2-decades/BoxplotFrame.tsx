@@ -201,30 +201,22 @@ export function BoxplotFrame(
 
       {scene.boxes.map((b: any, i: number) => {
         const w = props.decades[i].boxWidth;
+        // One box, drawn once: its ink switches to the accent on the frame the walker lands on the peak — a cut.
+        const lit = b.accent === 1;
         return b.opacity > 0 ? (
           <g key={`box${i}`}>
             <Box
               b={b}
               width={w}
-              stroke={colours.neutral}
-              fill={colours.neutral}
-              fillOpacity={props.fillOpacity.neutral}
-              median={colours.median}
+              stroke={lit ? colours.accent : colours.neutral}
+              fill={lit ? colours.accent : colours.neutral}
+              fillOpacity={
+                lit ? props.fillOpacity.accent : props.fillOpacity.neutral
+              }
+              median={lit ? colours.text.peak : colours.median}
               strokes={props.strokes}
-              opacity={b.opacity * (1 - b.accent)}
+              opacity={b.opacity}
             />
-            {b.accent > 0 ? (
-              <Box
-                b={b}
-                width={w}
-                stroke={colours.accent}
-                fill={colours.accent}
-                fillOpacity={props.fillOpacity.accent}
-                median={colours.text.peak}
-                strokes={props.strokes}
-                opacity={b.opacity * b.accent}
-              />
-            ) : null}
           </g>
         ) : null;
       })}
@@ -232,7 +224,7 @@ export function BoxplotFrame(
       {scene.dots.map((d: any, i: number) => {
         if (!(d.opacity > 0)) return null;
         const decade = props.readings[i].decade;
-        const lit = decade === props.peak ? scene.boxes[decade].accent : 0;
+        const lit = decade === props.peak && scene.boxes[decade].accent === 1;
         return (
           <g key={`dot${i}`} opacity={d.opacity}>
             <circle
@@ -240,21 +232,9 @@ export function BoxplotFrame(
               cy={d.y}
               r={props.dotR}
               fill="none"
-              stroke={colours.neutral}
+              stroke={lit ? colours.accent : colours.neutral}
               strokeWidth={props.strokes.rule}
-              opacity={1 - lit}
             />
-            {lit > 0 ? (
-              <circle
-                cx={d.x}
-                cy={d.y}
-                r={props.dotR}
-                fill="none"
-                stroke={colours.accent}
-                strokeWidth={props.strokes.rule}
-                opacity={lit}
-              />
-            ) : null}
           </g>
         );
       })}

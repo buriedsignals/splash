@@ -312,6 +312,28 @@ export function DirectedHexGrid({
   const widestBreak = Math.max(...breaks.map((b) => widthOf(set(b, axis), axis)));
   const swatch = Math.max(w * 0.42, widestBreak + 10);
 
+  /** THE UNIT WRAPS INTO THE COLUMN BESIDE THE SWATCHES, ACROSS THE KEY'S TWO ROWS. Set as one run,
+   *  it was a 1920px frame's line: measured at 1080x1080 and 1080x1920 in all three directions,
+   *  « Ukrainiens sous protection temporaire pour 1 000 habitants » ran 50 to 110px off the right
+   *  edge. The key already owns two rows — swatches, then breaks — and the breaks stop at the last
+   *  swatch, so the column to their right has room for a second line of unit and nothing else.
+   *  A number and its thousands never part across the break. Three lines would reach the note under
+   *  the key, so that is a refusal, not a layout. */
+  const unitX = PAD + classCount * swatch + 10;
+  const unitWords = set(unit, axis).split(/(?<!\d) | (?!\d)/);
+  const unitLines: string[] = [];
+  for (const word of unitWords) {
+    const last = unitLines.length - 1;
+    const trial = last >= 0 ? `${unitLines[last]} ${word}` : word;
+    if (last >= 0 && widthOf(trial, axis) <= width - PAD - unitX) unitLines[last] = trial;
+    else unitLines.push(word);
+  }
+  if (unitLines.length > 2 || unitLines.some((l) => widthOf(l, axis) > width - PAD - unitX))
+    throw new Error(
+      `the key's unit needs ${unitLines.length} lines of ${(width - PAD - unitX).toFixed(0)}px ` +
+        `beside the swatches, and the key has two rows.`,
+    );
+
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -396,14 +418,17 @@ export function DirectedHexGrid({
             )}
           </g>
         ))}
-        <text
-          x={PAD + classCount * swatch + 10}
-          y={layout.keyTop}
-          {...line(axis)}
-          fill={mutedInk}
-        >
-          {set(unit, axis)}
-        </text>
+        {unitLines.map((l, i) => (
+          <text
+            key={`u${i}`}
+            x={unitX}
+            y={layout.keyTop + i * layout.originLead}
+            {...line(axis)}
+            fill={mutedInk}
+          >
+            {l}
+          </text>
+        ))}
       </g>
       {layout.originLines.map((l, i) => (
         <text

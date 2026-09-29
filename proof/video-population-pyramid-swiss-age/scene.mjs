@@ -65,6 +65,9 @@ export function sceneAt(props, frame) {
   const zoom = props.zoomBy ** camera;
   const leave = clamp01(detach / LEAVE);
   const slide = ease(clamp01((detach - SLIDE_FROM) / (1 - SLIDE_FROM)));
+  // THE SHARED PART TURNS NEUTRAL BY A CUT, at the middle of its window. Its neutral drawing sits on the exact geometry of
+  // the shorter bar; faded in over it, the two fills composited into a third colour for the whole window.
+  const neutral = common >= 0.5 ? 1 : 0;
   const n = props.rows.length;
 
   const rows = props.rows.map((r, i) => {
@@ -81,10 +84,13 @@ export function sceneAt(props, frame) {
     const g = ease(moveOf(grow, i, n));
     const f = ease(moveOf(fold, i, n));
     const men = r.male * u * g;
+    // Once the detach starts, the two coloured bars are wholly covered — the shared part by its neutral drawing, the rest
+    // by the difference — so they are cut, not faded: faded, they bled through the neutral as it left.
+    const coloured = detach > 0 ? 0 : 1;
     const bars = [
-      { fill: "women", x: sR, w: r.female * u * g, opacity: 1 - leave },
-      { fill: "men", x: lerp(sL - men, sR, f), w: men, opacity: 1 - leave },
-      { fill: "common", x: sR, w: shared, opacity: common * (1 - leave) },
+      { fill: "women", x: sR, w: r.female * u * g, opacity: coloured },
+      { fill: "men", x: lerp(sL - men, sR, f), w: men, opacity: coloured },
+      { fill: "common", x: sR, w: shared, opacity: neutral * (1 - leave) },
     ];
     if (detach > 0) {
       const target = womenLead ? sR : sL - w;

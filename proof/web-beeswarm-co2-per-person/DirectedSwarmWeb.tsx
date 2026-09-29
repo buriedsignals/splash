@@ -60,6 +60,8 @@ import {
   NON_TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/colour.mjs";
 import { webRegisters, figureVars, noteAnchor } from "#shared/design-base/web.mjs";
+import { measureText } from "#shared/chart-beat/render-still.mjs";
+import { registerOf, leadOf } from "#shared/design-base/register.mjs";
 import {
   assertWeighDeclaration,
   weighChromeCss,
@@ -207,8 +209,166 @@ export function DirectedSwarmWeb({
   const weighNotes = weighNotesForMarkup(weigh);
   const byKey = new Map(plates[0].marks.map((m) => [m.key, m]));
 
+  /**
+   * THE ANNOTATION ROWS ARE COUNTED IN THE TYPE'S OWN PIXELS, AND THE ROOM FOR THEM IS TOO.
+   *
+   * The rows were typed as percentages of the plot's height — 1 %, 6 % and 11,5 % — while the type
+   * in them is a fixed CSS pixel size. At 1400 px that is 25 px between rows for an 18 px line and
+   * it read; at 768 it is 15 px and every row printed through the next ("moyenne mondiale 4,58" over
+   * "médiane des pays 3,14", "l'Inde…" over both — `web-annotation-clears-its-marks.test.ts`).
+   *
+   * So a row is one line of the annot register, plus the `.note` chip's 1 px of padding top and
+   * bottom (`render-web.mjs`), plus a quarter-lead of air, and the rows stack UPWARD from the bottom
+   * of the reserved band (`FRAME.topBand`): the edge the swarm is packed against and the edge every
+   * leader starts from, so the lowest row sits on its own leader. Where the band is taller than the
+   * rows the rows keep inside it; where it is shorter, the plot is given the difference as a top
+   * margin — and, if the window then clamps the plot's height, as room inside the plot above the
+   * cell — rather than the rows being printed into the swarm or into each other. Each callout is ONE
+   * line, measured, so its row is exactly one line tall.
+   *
+   * WHERE IT DOES NOT APPLY: a phone. At 375 px the plot is already held at the format's height
+   * clamp (146 px of an 812 px window, 19 px over it on `nocturne`), and the four callouts need
+   * 4 × 20–26 px of rows against a 20–25 px band. There is no room to give them that the window-fit
+   * rule would allow, so below the plot solved here (`rowsApply`) the page keeps the placement it
+   * has always had — owed, and named, in `web-annotation-clears-its-marks.test.ts`.
+   */
+  const annotReg = registerOf(direction, "annot", { family: "chart" });
+  const annotStyle = regs.annot as Record<string, unknown>;
+  const widthOf = (text: string) => {
+    const shown = annotStyle.textTransform === "uppercase" ? text.toLocaleUpperCase("fr-FR") : text;
+    return (
+      measureText(shown, {
+        fontSize: annotReg.fontSize,
+        fontWeight: annotReg.fontWeight as number,
+        fontFamily: annotReg.fontFamily,
+        fontStyle: annotReg.fontStyle,
+      }) +
+      Number(annotReg.letterSpacing ?? 0) * shown.length +
+      8
+    );
+  };
+  const rowAir = Math.max(2, Math.round(leadOf(annotReg) / 4));
+  const rowPx = Math.ceil(leadOf(annotReg) + 2 + rowAir);
+  /** The band as a fraction of the cell's height, and the cell's height as a fraction of its width. */
+  const bandFrac = FRAME.topBand / FRAME.height;
+  const cellRatio = FRAME.height / FRAME.width;
+  /** The plot box's own height as a fraction of its width, from the aspect-ratio it is drawn with. */
+  const plotRatio = (FRAME.height + FRAME.xAxisRowPx) / FRAME.width;
+
+  type Callout = { key: string; text: string; xPct: number; width: number; oldTop: string };
+  const levelCallouts: Callout[] = [median, average].map((level, i) => ({
+    key: level.label,
+    text: level.label,
+    xPct: pct(x(level.value), FRAME.width),
+    width: widthOf(level.label),
+    oldTop: i === 0 ? "1%" : "6%",
+  }));
+  const caseCallouts: Callout[] = notes.map((n) => {
+    const m = byKey.get(n.key);
+    if (!m) throw new Error(`${n.key} is called out and never drawn`);
+    const at = pct(m.cx, FRAME.width);
+    return { key: n.key, text: n.text, xPct: at, width: widthOf(n.text), oldTop: at > 75 ? "1%" : "11.5%" };
+  });
+  const rightCases = caseCallouts.filter((c) => c.xPct > 50);
+  const leftCases = caseCallouts.filter((c) => c.xPct <= 50);
+  if (rightCases.length !== 1 || leftCases.length !== 1)
+    throw new Error(
+      `the band is laid out for one callout on each side of the plot, and this page calls out ` +
+        `${leftCases.length} on the left and ${rightCases.length} on the right`,
+    );
+  /**
+   * THE ROWS, TOP TO BOTTOM, in the order the page always drew them: the median's label (sharing
+   * its row with the right-hand case, which ends at its own x), the average's, the left-hand case.
+   * A left-hand callout runs rightward from its own x and a right-hand one ends at its own x.
+   */
+  const rows: Callout[][] = [[levelCallouts[0], rightCases[0]], [levelCallouts[1]], leftCases];
+  const rowsPx = rows.length * rowPx;
+  // The narrowest CELL that holds every callout on one line, inside the plot, with the shared top
+  // row clear by a row's own air.
+  const cellFrom = Math.ceil(
+    Math.max(
+      ...[...levelCallouts, ...leftCases].map((c) => c.width / (1 - c.xPct / 100)),
+      rightCases[0].width / (rightCases[0].xPct / 100),
+      (levelCallouts[0].width + rightCases[0].width + rowAir) /
+        ((rightCases[0].xPct - levelCallouts[0].xPct) / 100),
+    ),
+  );
+  /**
+   * WHEN THE ROWS APPLY, asked of the plot's own box (it is a size container) rather than the window.
+   * The cell must stay at least `cellFrom` wide after whatever room is taken inside it. With a top
+   * margin `m` already given, the room inside is `r = (rowsPx − m − b·(H − axis)) / (1 − b)` (see
+   * `geometry` below), and the cell's height `H − axis − r` clears `cellFrom × cellRatio` exactly
+   * when `H ≥ axis + rowsPx − m + (1 − b) × cellRatio × cellFrom`. `m` grows as the plot narrows
+   * (`rowsPx − b × cellRatio × W`), so the condition is written as a staircase over width, each step
+   * taking the margin at its own narrow end — never more room than the plot is actually given. The
+   * plot has no gutter, so its width is the figure's and the cell's: one number for both queries.
+   */
+  const b = bandFrac;
+  const marginAt = (w: number) => Math.max(0, rowsPx - b * cellRatio * w);
+  const heightAt = (w: number) =>
+    Math.ceil(FRAME.xAxisRowPx + rowsPx - marginAt(w) + (1 - b) * cellRatio * cellFrom);
+  // The narrowest plot whose OWN unclamped height already meets that condition. Below it the rows
+  // are not given a margin at all: a plot that narrow is one the window clamps (a phone), and a
+  // margin there is only height taken from a plot that has none to give.
+  let calloutsFrom = cellFrom;
+  while (plotRatio * calloutsFrom < heightAt(calloutsFrom)) calloutsFrom += 1;
+  const steps: { from: number; height: number }[] = [];
+  for (let w = calloutsFrom; ; w += 20) {
+    const height = heightAt(w);
+    if (!steps.length || steps[steps.length - 1].height !== height) steps.push({ from: w, height });
+    if (marginAt(w) === 0) break;
+  }
+  const rowsApply = steps.map((st) => `((min-width: ${st.from}px) and (min-height: ${st.height}px))`).join(" or ");
+
+  const oldAnchor = (c: Callout) => {
+    const a = noteAnchor(c.xPct) as Record<string, string>;
+    return [
+      a.left ? `left: ${a.left}; right: auto` : `left: auto; right: ${a.right}`,
+      `transform: ${a.transform}`,
+      `white-space: ${a.whiteSpace}`,
+      `max-width: ${a.maxWidth}`,
+      `top: ${c.oldTop}`,
+    ].join("; ");
+  };
+  const rowTop = (r: number) => `calc(${bandFrac * 100}% - ${(rows.length - r) * rowPx}px)`;
+  /** The room the plot is given above itself (margin), and the room taken inside it when the window
+   *  clamps its height (`--callout-r`). `b` is the band's share of the cell; the cell is
+   *  `min(track-h, cellRatio × width)` (`render-web.mjs`'s `--cell-h`). */
+  const marginExpr = (w: string) => `max(0px, calc(${rowsPx}px - ${b * cellRatio} * ${w}))`;
+  const geometry = [
+    `--callout-m: ${marginExpr("100cqw")};`,
+    `--callout-r: max(0px, calc((${rowsPx}px - var(--callout-m) - ${b} * (100cqh - var(--x-axis-h))) / ${1 - b}));`,
+    `--track-h: calc(100cqh - var(--x-axis-h) - var(--callout-r));`,
+    `--cell-w: min(var(--track-w), calc(var(--track-h) * ${FRAME.width} / ${FRAME.height}));`,
+    `--cell-h: min(var(--track-h), calc(var(--track-w) * ${FRAME.height} / ${FRAME.width}));`,
+    `--cell-slack-x: calc((var(--track-w) - var(--cell-w)) / 2);`,
+    `--cell-slack-y: calc((var(--track-h) - var(--cell-h)) / 2);`,
+  ].join(" ");
+  const calloutCss = [
+    `${SCOPE} { container-type: inline-size; }`,
+    ...[...levelCallouts, ...caseCallouts].map(
+      (c) => `${SCOPE} .chart-plot .overlay .note[data-callout="${c.key}"] { ${oldAnchor(c)}; }`,
+    ),
+    `@container (min-width: ${calloutsFrom}px) {`,
+    `  ${SCOPE} .chart-plot { margin-top: ${marginExpr("100cqw")}; }`,
+    `}`,
+    `@container ${rowsApply} {`,
+    `  ${SCOPE} .chart-plot > svg.chart, ${SCOPE} .chart-plot > .overlay, ${SCOPE} .chart-plot > .y-axis, ${SCOPE} .chart-plot > .x-axis { ${geometry} }`,
+    `  ${SCOPE} .chart-plot > svg.chart, ${SCOPE} .chart-plot > .overlay, ${SCOPE} .chart-plot > .y-axis { position: relative; top: calc(var(--callout-r) / 2); }`,
+    ...rows.flatMap((row, r) =>
+      row.map(
+        (c) =>
+          `  ${SCOPE} .chart-plot .overlay .note[data-callout="${c.key}"] { top: ${rowTop(r)}; ` +
+          (c.xPct > 50 ? `left: auto; right: ${100 - c.xPct}%;` : `left: ${c.xPct}%; right: auto;`) +
+          ` transform: none; white-space: nowrap; max-width: none; }`,
+      ),
+    ),
+    `}`,
+  ];
+
   const css = [
     `${SCOPE} .chart-plot { --y-gutter: 0px; }`,
+    ...calloutCss,
     weighChromeCss({ scope: SCOPE }),
     weighCss(weigh, {
       scope: SCOPE,
@@ -440,39 +600,19 @@ export function DirectedSwarmWeb({
             render — 3,14 and 4,58 are 1,44 t apart on a 45 t axis, 29 px, and the first label read
             "médi" — so a level's label belongs to its own row and the rules stay where they are. */}
         <div className="overlay" aria-hidden="true">
-          {[median, average].map((level, i) => (
+          {[...levelCallouts, ...caseCallouts].map((c) => (
             <span
-              key={level.label}
+              key={c.key}
               className="note"
+              data-callout={c.key}
               style={{
                 ...regs.annot,
                 color: labelInk,
-                ...noteAnchor(pct(x(level.value), FRAME.width)),
-                top: i === 0 ? "1%" : "6%",
               }}
             >
-              {level.label}
+              {c.text}
             </span>
           ))}
-          {notes.map((n, i) => {
-            const m = byKey.get(n.key);
-            if (!m) throw new Error(`${n.key} is called out and never drawn`);
-            const at = pct(m.cx, FRAME.width);
-            return (
-              <span
-                key={n.key}
-                className="note"
-                style={{
-                  ...regs.annot,
-                  color: labelInk,
-                  ...noteAnchor(at),
-                  top: at > 75 ? "1%" : "11.5%",
-                }}
-              >
-                {n.text}
-              </span>
-            );
-          })}
         </div>
 
         <div className="x-axis">

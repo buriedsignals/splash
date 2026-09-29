@@ -38,7 +38,7 @@
  */
 
 import { mix, adjustToContrast, contrast, TEXT_CONTRAST_MIN, NON_TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
-import { webRegisters, figureVars, noteAnchor } from "#shared/design-base/web.mjs";
+import { webRegisters, figureVars } from "#shared/design-base/web.mjs";
 import {
   assertCutoffDeclaration,
   cutoffCss,
@@ -105,6 +105,7 @@ export function DirectedCalendarWeb({
   ink,
   muted,
   grid,
+  measure,
 }: {
   days: Day[];
   bins: Bin[];
@@ -125,6 +126,7 @@ export function DirectedCalendarWeb({
   ink: string;
   muted: string;
   grid: string;
+  measure: (text: string, style: Record<string, unknown>) => number;
 }) {
   const regs = webRegisters(direction, { ink: { ink, muted, accent } });
 
@@ -206,7 +208,37 @@ export function DirectedCalendarWeb({
   const cutoffNotes = cutoffNotesForMarkup(cutoff);
   const cutoffRegions = cutoffRegionsForMarkup(cutoff);
 
+  /**
+   * THE TAKEAWAY'S OWN ROW, BELOW THE DAY AXIS — because a calendar has no empty ground to print on.
+   *
+   * Every one of the 366 cells is a filled mark at or above the non-text floor (checked above), so a
+   * note set anywhere over the grid punches its opaque chip through days it does not name. It used
+   * to hang above the run's first day, which put it over five June cells at 768, 1400 and 1600 and
+   * over their neighbours at 375 in all three directions (issue #78). The five impossible cells are
+   * the grid's only unpainted ground and each is one cell wide.
+   *
+   * So the note gets a row of its own under the day ticks, reserved in the x-axis band: its height is
+   * the annotation register's own line box, so the plot is proportioned for it at every width rather
+   * than squeezed by it at one. Horizontally it stays where it always stood — centred on the run's
+   * first day — and is clamped by its own measured width to the grid's edges, so at 375 it slides
+   * inward instead of leaving the page.
+   */
+  const annotSizePx = Number.parseFloat(regs.annot.fontSize as string);
+  const noteRowPx = Math.ceil(annotSizePx * Number(regs.annot.lineHeight)) + 2 + 4; // chip pad twice, then air
+  const noteWidthPx =
+    Math.ceil(
+      measure(streakNote, {
+        fontSize: annotSizePx,
+        fontWeight: regs.annot.fontWeight,
+        fontStyle: regs.annot.fontStyle,
+        fontFamily: String(regs.annot.fontFamily).split(",")[0].replace(/"/g, ""),
+      }),
+    ) + 8 + 2; // the chip's 4px pad twice, and a pixel each side for the rasteriser's rounding
+  const axisBandPx = FRAME.xAxisRowPx + noteRowPx;
+  const runStartPct = pct(x(claimRuns[0].from) + CELL / 2, FRAME.width);
+
   const css = [
+    `${SCOPE} .x-axis .streak-note { top: ${FRAME.xAxisRowPx}px; left: clamp(0px, calc(${runStartPct.toFixed(3)}% - ${(noteWidthPx / 2).toFixed(1)}px), calc(100% - ${noteWidthPx}px)); white-space: nowrap; }`,
     cutoffChromeCss({ scope: SCOPE }),
     cutoffCss(cutoff, { scope: SCOPE, idPrefix: CUTOFF_ID_PREFIX, revealMs: REVEAL_MS }),
   ].join("\n\n");
@@ -294,8 +326,8 @@ export function DirectedCalendarWeb({
         className="chart-plot"
         style={{
           ["--y-gutter" as string]: "40px",
-          ["--x-axis-h" as string]: `${FRAME.xAxisRowPx}px`,
-          aspectRatio: `${FRAME.width + 40} / ${FRAME.height + FRAME.xAxisRowPx}`,
+          ["--x-axis-h" as string]: `${axisBandPx}px`,
+          aspectRatio: `${FRAME.width + 40} / ${FRAME.height + axisBandPx}`,
         }}
       >
         <div className="y-axis">
@@ -405,29 +437,21 @@ export function DirectedCalendarWeb({
           <rect className="hit-area" x={0} y={0} width={FRAME.width} height={FRAME.height} fill="transparent" pointerEvents="all" />
         </svg>
 
-        {/* THE TAKEAWAY, DRAWN UNCONDITIONALLY. No control on this page can take it off: the claim
-            is the 20 °C run, and the outline the reader moves is a test OF that claim, never a
-            replacement for it (`directed-interaction.md`, rule 5). */}
-        <div className="overlay" aria-hidden="true">
-          <span
-            className="note"
-            style={{
-              ...regs.annot,
-              ...noteAnchor(pct(x(claimRuns[0].from) + CELL / 2, FRAME.width)),
-              top: `${pct(y(claimRuns[0].month) - 2, FRAME.height)}%`,
-              transform: `${noteAnchor(pct(x(claimRuns[0].from) + CELL / 2, FRAME.width)).transform} translateY(-100%)`,
-            }}
-          >
-            {streakNote}
-          </span>
-        </div>
-
         <div className="x-axis">
           {dayTicks.map((d) => (
             <span key={d} className="axis-label x" style={{ ...regs.axis, left: `${pct(x(d) + CELL / 2, FRAME.width)}%` }}>
               {d}
             </span>
           ))}
+          {/* THE TAKEAWAY, DRAWN UNCONDITIONALLY. No control on this page can take it off: the claim
+              is the 20 °C run, and the outline the reader moves is a test OF that claim, never a
+              replacement for it (`directed-interaction.md`, rule 5). It lives in the day axis's
+              band, in its own reserved row under the ticks (`noteRowPx`), and not in `.overlay`:
+              `.overlay` is the layer that sits OVER the cells, and this note no longer does.
+              `aria-hidden` as it was there — the title and the description carry the claim. */}
+          <span className="note streak-note" aria-hidden="true" style={{ ...regs.annot }}>
+            {streakNote}
+          </span>
         </div>
       </div>
 

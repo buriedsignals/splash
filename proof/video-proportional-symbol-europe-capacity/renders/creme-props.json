@@ -3,6 +3,7 @@
     "width": 1920,
     "height": 1080
   },
+  "band": null,
   "registers": {
     "display": {
       "fontFamily": "Merriweather",
@@ -568,12 +569,13 @@
     "ground": "#FFFCEE",
     "sea": "#cedde1",
     "land": "#f4f1e3",
-    "circle": "#12458f",
+    "circle": "#1755b2",
     "point": "#a3a198",
+    "band": null,
     "text": {
       "eyebrow": "#1755b2",
       "title": "#000000",
-      "top": "#12448c",
+      "top": "#1753ae",
       "rest": "#5f5e58",
       "key": "#5f5e58"
     }
@@ -97449,10 +97451,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 20.700000000000003,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -97506,10 +97508,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 19.620000000000005,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -97563,10 +97565,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 19.379999999999995,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -97620,10 +97622,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 19.14,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -97677,10 +97679,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 16.5,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -97734,10 +97736,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 16.5,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -97791,10 +97793,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 16.5,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -97848,10 +97850,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 16.5,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -97905,10 +97907,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 16.380000000000003,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -97962,10 +97964,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 15.72,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -98019,10 +98021,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 15.72,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -98076,10 +98078,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 15.660000000000002,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -98133,10 +98135,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 15.6,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -98190,10 +98192,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 15.539999999999997,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -98247,10 +98249,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 15.479999999999999,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -98304,10 +98306,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 14.639999999999999,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -98361,10 +98363,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 14.039999999999997,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -98418,10 +98420,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 14.039999999999997,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -98475,10 +98477,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 14.039999999999997,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -98532,10 +98534,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 13.979999999999999,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -98589,10 +98591,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 13.799999999999999,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -98646,10 +98648,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 13.56,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -98703,10 +98705,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 13.139999999999999,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -98760,10 +98762,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 13.08,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -98817,10 +98819,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 13.08,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -98874,10 +98876,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 13.08,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -98931,10 +98933,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 12.96,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -98988,10 +98990,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 12.96,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -99045,10 +99047,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 12.96,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -99102,10 +99104,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 12.9,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -99159,10 +99161,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 12.839999999999998,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -99216,10 +99218,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 12.299999999999999,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -99273,10 +99275,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 11.52,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -99330,10 +99332,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 11.219999999999999,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -99387,10 +99389,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 11.219999999999999,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -99444,10 +99446,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 11.1,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -99501,10 +99503,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 11.04,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -99558,10 +99560,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 11.04,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -99615,10 +99617,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 11.04,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -99672,10 +99674,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 10.68,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -99729,10 +99731,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 10.68,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -99786,10 +99788,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 10.5,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -99843,10 +99845,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 10.38,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -99900,10 +99902,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 10.38,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -99957,10 +99959,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 10.260000000000002,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -100014,10 +100016,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 10.260000000000002,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -100071,10 +100073,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 10.260000000000002,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -100128,10 +100130,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 10.139999999999999,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -100185,10 +100187,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 10.02,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -100242,10 +100244,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 9.42,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -100299,10 +100301,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 9.239999999999998,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -100356,10 +100358,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 9.239999999999998,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -100413,10 +100415,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 9.18,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -100470,10 +100472,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 9.06,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -100527,10 +100529,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 8.94,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -100584,10 +100586,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 8.94,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -100641,10 +100643,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 8.88,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -100698,10 +100700,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 8.760000000000002,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -100755,10 +100757,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 8.639999999999999,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -100812,10 +100814,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 8.52,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -100869,10 +100871,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 8.52,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -100926,10 +100928,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 8.52,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -100983,10 +100985,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 8.46,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -101040,10 +101042,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 8.280000000000001,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -101097,10 +101099,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 8.219999999999999,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -101154,10 +101156,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 8.219999999999999,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -101211,10 +101213,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 8.1,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -101268,10 +101270,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 8.1,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -101325,10 +101327,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 8.1,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -101382,10 +101384,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 8.1,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -101439,10 +101441,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 8.04,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -101496,10 +101498,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 8.04,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -101553,10 +101555,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 7.92,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -101610,10 +101612,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 7.92,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -101667,10 +101669,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 7.92,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -101724,10 +101726,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 7.800000000000001,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -101781,10 +101783,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 7.619999999999999,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -101838,10 +101840,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 7.619999999999999,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -101895,10 +101897,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 7.5,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -101952,10 +101954,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 7.5,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -102009,10 +102011,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 7.4399999999999995,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -102066,10 +102068,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 7.4399999999999995,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -102123,10 +102125,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 7.4399999999999995,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -102180,10 +102182,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 7.4399999999999995,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -102237,10 +102239,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 7.4399999999999995,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -102294,10 +102296,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 7.380000000000001,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -102351,10 +102353,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 7.32,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -102408,10 +102410,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 7.26,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -102465,10 +102467,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 7.199999999999999,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -102522,10 +102524,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 7.199999999999999,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -102579,10 +102581,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 7.199999999999999,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -102636,10 +102638,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 7.199999999999999,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -102693,10 +102695,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 7.02,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -102750,10 +102752,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 7.02,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -102807,10 +102809,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 7.02,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -102864,10 +102866,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 6.959999999999999,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -102921,10 +102923,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 6.959999999999999,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -102978,10 +102980,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 6.780000000000001,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -103035,10 +103037,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 6.780000000000001,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },
@@ -103092,10 +103094,10 @@
           ]
         },
         "paint": {
-          "circle-color": "#12458f",
+          "circle-color": "#1755b2",
           "circle-opacity": 0,
           "circle-radius": 6.719999999999999,
-          "circle-stroke-color": "#12458f",
+          "circle-stroke-color": "#1755b2",
           "circle-stroke-width": 4.199999999999999,
           "circle-stroke-opacity": 0
         },

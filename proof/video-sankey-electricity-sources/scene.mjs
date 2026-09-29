@@ -7,7 +7,8 @@
 //   - POUR: source after source, the ribbons run to the right along their own curve; a country's node fills by the
 //     ribbons landed in it, its words arriving when it is full.
 //   - FILTER: every ribbon but the subject source's steps back, and every node but the two the claim names.
-//   - TRACE: the tracked ribbon fills with the accent, left to right, along the same curve.
+//   - TRACE: the tracked ribbon fills with the accent, left to right, along the same curve; its source takes the accent
+//     as the fill leaves it, its country as the fill arrives.
 //   - SLIDE: a copy of the subject source's bar travels to the tracked country's node, widening, its height kept; the
 //     share arrives inside the ribbon beside it when it lands.
 //   - BACK: the same move reversed, the others returning; the share travels inside the ribbon, along its middle, to the
@@ -120,6 +121,12 @@ export function sceneAt(props, frame) {
   const slide = slideIn - back;
   const n = props.sources.length;
   const mark = at("mark");
+  // THE TWO NODES AND THEIR WORDS TAKE THE ACCENT BY A CUT, in step with the ribbon's fill: the source's the frame the
+  // fill leaves it, the country's the frame the fill reaches it. A node's accent drawing sits on its neutral one, and
+  // faded across each other they composited to a third colour and printed « Nucléaire », « France » and their values
+  // twice over.
+  const sourceLit = trace > 0 ? 1 : 0;
+  const countryLit = trace >= 1 ? 1 : 0;
 
   const sources = props.sources.map((s, k) => ({
     key: s.key,
@@ -127,7 +134,7 @@ export function sceneAt(props, frame) {
     w: lerp(props.rail.wide, props.rail.w, split),
     words: ease(moveOf(split, k, n, MOVE.split)),
     dim: s.key === props.subjectKey ? 0 : filter,
-    accent: s.key === props.subjectKey ? trace : 0,
+    accent: s.key === props.subjectKey ? sourceLit : 0,
   }));
   const pours = sources.map((_, k) => ease(moveOf(pour, k, n, MOVE.pour)));
   const flows = props.flows.map((f) => ({
@@ -143,7 +150,7 @@ export function sceneAt(props, frame) {
       fill,
       words: fill >= c.h - 1e-6 ? 1 : clamp01((fill / c.h - 0.9) / 0.1),
       dim: c.key === props.trackedTo ? 0 : filter,
-      accent: c.key === props.trackedTo ? trace : 0,
+      accent: c.key === props.trackedTo ? countryLit : 0,
     };
   });
   const { from, to } = props.copy;

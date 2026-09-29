@@ -21,7 +21,7 @@ export type CalendarFrameProps = {
   registers: Record<Slot, Register>;
   titleCard: { register: Register; eyebrow: Line; title: Line[] };
   credit: { at: { x: number; y: number }; halo: number; lines: Line[] };
-  colours: { ground: string; ramp: string[]; empty: string; hot: string; cool: string; stepped: string; outline: string; text: Record<"eyebrow" | "title" | "axis" | "count", string> };
+  colours: { ground: string; ramp: string[]; empty: string; hot: string; cool: string; stepped: string; outline: string; text: Record<"eyebrow" | "title" | "axis" | "count" | "warm", string> };
   days: Array<Cell & { value: number; bin: number; cx: number; cy: number }>;
   dot: number;
   thresholdLine: { y: number; left: number; right: number; label: Line };
@@ -105,7 +105,7 @@ export function CalendarFrame(props: CalendarFrameProps & { at: number; svgRef?:
         }),
       )}
 
-      <Text line={{ ...warm, x: counters.x, y: counters.warm }} register={r.value} fill={colours.text.count} opacity={scene.counting} halo={valueHalo} />
+      <Text line={{ ...warm, x: counters.x, y: counters.warm }} register={r.value} fill={colours.text.warm} opacity={scene.counting} halo={valueHalo} />
       <Text line={{ ...run, x: counters.x, y: counters.run }} register={r.value} fill={colours.text.count} opacity={scene.running} halo={valueHalo} />
 
       <g transform={`translate(${credit.at.x} ${credit.at.y})`} opacity={scene.source}>

@@ -35,7 +35,7 @@
 
 import { mix, adjustToContrast, contrast, TEXT_CONTRAST_MIN, NON_TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { measureText } from "#shared/chart-beat/render-still.mjs";
-import { webRegisters, figureVars, noteAnchor } from "#shared/design-base/web.mjs";
+import { webRegisters, figureVars } from "#shared/design-base/web.mjs";
 import { registerOf, leadOf } from "#shared/design-base/register.mjs";
 import {
   assertFollowDeclaration,
@@ -221,6 +221,144 @@ export function DirectedBumpWeb({
    *  own line, never a typed number: nocturne's annot leads at 14,0 and creme's at 18,2. */
   const captionGap = Math.max(2, Math.round(leadOf(annotReg) / 4));
 
+  /**
+   * WHERE EACH CAPTION STANDS BESIDE ITS RING, SOLVED FOR RATHER THAN ASSUMED.
+   *
+   * `anchoredFrom` only asks whether the three captions fit END TO END. They are not laid end to
+   * end: each is centred over its own ring, and 2006 and 2009 are three years apart. At 768 px creme's
+   * three captions (157, 131 and 134 px) overlapped each other horizontally and sat one rank pitch
+   * apart vertically — 16,4 px of pitch against an 18,2 px annot lead — so "dépasse Japon · 2006"
+   * printed through both its neighbours (measured by `web-annotation-clears-its-marks.test.ts`).
+   *
+   * So each caption's box is written as a function of the chart's own width W — the x of its ring is
+   * a fraction of W, the rank pitch is `FRAME.height / maxRank / FRAME.width` of W, and the type is a
+   * fixed CSS pixel size — and the placements are solved for. A caption may stand ABOVE its ring (on
+   * the band between it and the rank over it) or BELOW it, centred on the ring's x or extending to
+   * one side of it. Every horizontal and vertical gap between two such boxes grows with W, so a
+   * choice that clears at a width clears at every width past it: the solver finds the narrowest
+   * container width where SOME choice clears every pair by `captionGap` and stays inside the chart,
+   * and takes the least-moved choice there. Past the width where every caption can stand centred
+   * above its ring, they do — the picture the page drew before at wide widths is unchanged.
+   *
+   * Widths are measured the way the page draws them: the register's own case and tracking, plus the
+   * `.note` chip's 4 px of padding each side (`render-web.mjs`).
+   */
+  const annotStyle = regs.annot as Record<string, unknown>;
+  const annotUpper = annotStyle.textTransform === "uppercase";
+  const annotTrack = Number(annotReg.letterSpacing ?? 0);
+  const captionW = (text: string) => {
+    const shown = annotUpper ? text.toLocaleUpperCase("fr-FR") : text;
+    return (
+      measureText(shown, {
+        fontSize: annotReg.fontSize,
+        fontWeight: annotReg.fontWeight as number,
+        fontFamily: annotReg.fontFamily,
+        fontStyle: annotReg.fontStyle,
+      }) +
+      annotTrack * shown.length +
+      8
+    );
+  };
+  const captionH = leadOf(annotReg) + 2;
+  const captionBoxes = crossings.map((c) => ({
+    f: years.indexOf(c.year) / (years.length - 1),
+    rank: c.rank,
+    w: captionW(c.text),
+  }));
+  type Side = "above" | "below";
+  type Along = "centre" | "left" | "right";
+  type Placement = { side: Side; along: Along };
+  const PLACEMENTS: Placement[] = (["above", "below"] as Side[]).flatMap((side) =>
+    (["centre", "left", "right"] as Along[]).map((along) => ({ side, along })),
+  );
+  /** The chart's drawn width inside a container `wc` px wide. The svg keeps its own aspect, so it
+   *  is the smaller of its grid column and the width the plot's aspect-ratio height allows. */
+  const chartWidthIn = (wc: number) =>
+    Math.min(
+      wc - startGutter - endGutter,
+      ((wc * (FRAME.height + xAxisRowPx)) / (FRAME.width + startGutter + endGutter) - xAxisRowPx) *
+        (FRAME.width / FRAME.height),
+    );
+  const boxOf = (b: (typeof captionBoxes)[number], p: Placement, W: number) => {
+    const cx = b.f * W;
+    const pitch = (FRAME.height / FRAME.width / maxRank) * W;
+    const left = p.along === "centre" ? cx - b.w / 2 : p.along === "left" ? cx - b.w : cx;
+    const top = p.side === "above" ? (b.rank - 1) * pitch - captionH : b.rank * pitch;
+    return { left, right: left + b.w, top, bottom: top + captionH, W, H: (FRAME.height / FRAME.width) * W };
+  };
+  const fits = (choice: Placement[], W: number) => {
+    const boxes = choice.map((p, i) => boxOf(captionBoxes[i], p, W));
+    for (const b of boxes)
+      if (b.left < 0 || b.right > b.W || b.top < 0 || b.bottom > b.H || b.right - b.left > 0.46 * b.W)
+        return false;
+    for (let i = 0; i < boxes.length; i++)
+      for (let j = i + 1; j < boxes.length; j++) {
+        const [a, b] = [boxes[i], boxes[j]];
+        const apartX = a.right + captionGap <= b.left || b.right + captionGap <= a.left;
+        const apartY = a.bottom + captionGap <= b.top || b.bottom + captionGap <= a.top;
+        if (!apartX && !apartY) return false;
+      }
+    return true;
+  };
+  const moved = (p: Placement) => (p.side === "below" ? 2 : 0) + (p.along === "centre" ? 0 : 1);
+  const choices: Placement[][] = captionBoxes.reduce<Placement[][]>(
+    (acc) => acc.flatMap((prefix) => PLACEMENTS.map((p) => [...prefix, p])),
+    [[]],
+  );
+  choices.sort((a, b) => a.reduce((s, p) => s + moved(p), 0) - b.reduce((s, p) => s + moved(p), 0));
+  const firstWidth = (from: number, accept: (W: number) => boolean) => {
+    for (let wc = Math.ceil(from); wc <= 6000; wc += 1) if (accept(chartWidthIn(wc))) return wc;
+    return null;
+  };
+  // The search starts where the chart has any width at all, not at `anchoredFrom`: that sum is a
+  // proxy for "fits", and the solver asks the real question, so it may anchor narrower than it.
+  let solvedFrom: number | null = null;
+  let placed: Placement[] = [];
+  for (let wc = startGutter + endGutter + 1; wc <= 6000 && solvedFrom === null; wc += 1) {
+    const W = chartWidthIn(wc);
+    const hit = choices.find((c) => fits(c, W));
+    if (hit) {
+      solvedFrom = wc;
+      placed = hit;
+    }
+  }
+  if (solvedFrom === null)
+    throw new Error(
+      `no placement of the ${crossings.length} crossing captions clears its neighbours at any ` +
+        `container width up to 6000 px — the captions cannot stand beside their rings`,
+    );
+  const centredAbove = captionBoxes.map(() => ({ side: "above", along: "centre" }) as Placement);
+  const centredFrom = firstWidth(solvedFrom, (W) => fits(centredAbove, W));
+  const placeCss = (p: Placement, b: (typeof captionBoxes)[number]) => {
+    const xPct = b.f * 100;
+    const horizontal =
+      p.along === "centre"
+        ? `left: ${xPct}%; right: auto; transform: translateX(-50%)`
+        : p.along === "left"
+          ? `left: auto; right: ${100 - xPct}%; transform: none`
+          : `left: ${xPct}%; right: auto; transform: none`;
+    const vertical =
+      p.side === "above"
+        ? `top: ${pct(b.rank - 1, maxRank)}%; margin-top: -${captionH}px`
+        : `top: ${pct(b.rank, maxRank)}%; margin-top: 0`;
+    return `${horizontal}; ${vertical};`;
+  };
+  const captionCss = [
+    ...captionBoxes.map(
+      (b, i) => `${SCOPE} .chart-plot .overlay .note[data-caption="${i}"] { ${placeCss(placed[i], b)} }`,
+    ),
+    ...(centredFrom !== null && centredFrom > solvedFrom
+      ? [
+          `@container (min-width: ${centredFrom}px) {`,
+          ...captionBoxes.map(
+            (b, i) =>
+              `  ${SCOPE} .chart-plot .overlay .note[data-caption="${i}"] { ${placeCss(centredAbove[i], b)} }`,
+          ),
+          `}`,
+        ]
+      : []),
+  ];
+
   const x = (i: number) => (i / (years.length - 1)) * FRAME.width;
   const y = (rank: number) => ((rank - 0.5) / maxRank) * FRAME.height;
   /** `null` is a rank the country did not hold that year, and it BREAKS the path rather than being
@@ -304,11 +442,13 @@ export function DirectedBumpWeb({
     // style computed from the mark's own x, which beats any generated rule (the defect this format
     // records as "a `regs.*` spread inline beats every generated rule"). The font, the colour and
     // the chip stay the register's.
-    `@container (max-width: ${anchoredFrom - 1}px) {`,
+    ...captionCss,
+    `@container (max-width: ${solvedFrom - 1}px) {`,
     `  ${SCOPE} .chart-plot .overlay { display: flex; flex-direction: column; justify-content: flex-end; align-items: flex-start; }`,
     `  ${SCOPE} .chart-plot .overlay .note {`,
     `    position: static !important; left: auto !important; right: auto !important; top: auto !important;`,
-    `    transform: none !important; max-width: 100% !important; margin-bottom: ${captionGap}px;`,
+    `    transform: none !important; max-width: 100% !important; margin: 0 0 ${captionGap}px !important;`,
+    `    white-space: normal !important;`,
     `  }`,
     `}`,
     followChromeCss({ scope: SCOPE }),
@@ -536,16 +676,15 @@ export function DirectedBumpWeb({
         {/* The crossing captions sit OVER the plot, where the crossings are. The finishing labels do
             not: they have a column of their own, below. */}
         <div className="overlay" aria-hidden="true">
-          {crossings.map((c) => (
+          {/* Positioned by the solved rules in this beat's stylesheet (`captionCss`), not inline: an
+              inline position beats every `@container` rule, and the place a caption stands is a
+              decision retaken at each width. */}
+          {crossings.map((c, i) => (
             <span
               key={c.year}
               className="note"
-              style={{
-                ...regs.annot,
-                ...noteAnchor(pct(x(years.indexOf(c.year)), FRAME.width)),
-                top: `${pct(y(c.rank) - FRAME.height / (maxRank * 2), FRAME.height)}%`,
-                transform: `${noteAnchor(pct(x(years.indexOf(c.year)), FRAME.width)).transform} translateY(-100%)`,
-              }}
+              data-caption={String(i)}
+              style={{ ...regs.annot }}
             >
               {c.text}
             </span>

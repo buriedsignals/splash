@@ -69,10 +69,16 @@ export function sceneAt(props, frame) {
       travelled: raw > 0 ? 1 : 0,
       arrived: clamp01((raw - 0.85) / 0.15),
       copy: { x0: r.a.x + shift, x1: r.b.x + shift, on: out > 0 && back < 1 ? 1 : 0 },
+      // Poland's gain already starts on the start line, so its copy never leaves: it lies on the connector it copies, the
+      // same line in two inks. While it lies there the connector is not drawn — the accent replaces the connector by a cut,
+      // and the connector replaces it by a cut when it settles (skills/splash/test/video-handover-is-a-cut.test.ts).
+      connector: raw > 0 && !(out > 0 && back < 1 && r.a.x === props.start) ? 1 : 0,
       stepBack: ease(clamp01(out / 0.3)) * (1 - ease(back)),
       gainShown: out === 1 ? 1 : clamp01((out - 0.8) / 0.2),
-      // While the rows cross, the other names dim so Poland's, climbing through them, is the one read.
-      nameDim: !r.subject && reorder < 1 ? 0.8 * Math.sin(Math.PI * reorder) : 0,
+      // While the rows cross, the other names dim so Poland's, climbing through them, is the one read. The dim is a step
+      // for the whole of the reorder, not a swell: names pass through each other here, and one brightening while it is
+      // crossed by another is a superimposition that reads as a dissolve (skills/splash/test/video-handover-is-a-cut.test.ts).
+      nameDim: !r.subject && reorder > 0 && reorder < 1 ? 0.8 : 0,
     };
   });
   return {

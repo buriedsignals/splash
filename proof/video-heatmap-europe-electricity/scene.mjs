@@ -23,6 +23,8 @@ export const WINDOWS = Object.freeze({
 const LINEAR = new Set(["grow", "split"]);
 /** Of a staggered move, the share one row's own move takes. */
 export const ROW_MOVE = 0.3;
+/** Of the matrix's arrival, the share the count takes to move out of the share column's place. */
+export const COUNTER_OUT = 0.5;
 /** How far a stepped-back row's words fade. */
 export const STEPPED_WORDS = 0.65;
 
@@ -90,17 +92,25 @@ export function sceneAt(props, frame) {
   };
   const seven = span((row) => row.route !== null);
   const drawn = grow > 0 ? 1 : 0;
+  // THE COUNT LEAVES THE SHARE COLUMN'S PLACE BEFORE THE COLUMN ARRIVES. It stands where the column will print, so it
+  // moves out over the first half of the matrix's arrival and the column's values come in over the second: sliding out
+  // while they faded in, « 7 pays » sat over « 98,6 % » for 43 frames.
+  const gridIn = at("grid");
+  const moveOut = ease(clamp01(gridIn / COUNTER_OUT));
+  const column = clamp01((gridIn - COUNTER_OUT) / (1 - COUNTER_OUT));
   return {
     title: at("title"),
     floor: at("floor"),
-    grid: at("grid"),
+    grid: gridIn,
     source: at("source"),
     routes,
     rows,
     count,
     counting: drawn * (1 - routes),
-    /** The count stands by the bars' end, and moves out to its bracket as the share column comes in. */
-    counterX: lerp(props.counter.near, props.bracket.labelX, at("grid")),
+    /** The count stands by the bars' end, and moves out to its bracket before the share column comes in. */
+    counterX: lerp(props.counter.near, props.bracket.labelX, moveOut),
+    /** The share column's values, once the count has cleared their place. */
+    column,
     whole: { ...seven, opacity: at("grid") * (1 - routes) },
     brackets: Array.from({ length: lastRoute + 1 }, (_, g) => ({ ...span((row) => row.route === g), opacity: routes })),
     ring: { ...seven, opacity: routes },

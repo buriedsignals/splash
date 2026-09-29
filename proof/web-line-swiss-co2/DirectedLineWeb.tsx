@@ -196,6 +196,10 @@ export function DirectedLineWeb({
         </svg>
 
         <div className="overlay" aria-hidden="true">
+          {/* THE RULE'S NAME SITS UNDER ITS OWN RULE, on the left, where the series is still under
+              10 Mt and the band between the rule and the line is empty at every width. It used to
+              sit ABOVE the rule, which is the same band the peak's name needs on a phone: two runs
+              of type competing for one strip. */}
           <span
             className="note"
             style={{
@@ -203,19 +207,27 @@ export function DirectedLineWeb({
               color: label,
               ...noteAnchor(1),
               top: `${pct(y(referenceValue), FRAME.height)}%`,
-              transform: "translateX(0) translateY(-115%)",
+              transform: "translateX(0) translateY(15%)",
             }}
           >
             {referenceNote}
           </span>
+          {/* THE PEAK IS NAMED BESIDE ITSELF, TO ITS LEFT, on one line, centred on its own ring. It
+              used to be lifted ABOVE the ring (`translateY(-130%)`), and the ring sits 13 % from the
+              plot's top: at 375 px that lifted the note — wrapped to two lines by the 46 % cap —
+              clean out of the plot and onto the caveat's last line, in all three directions. To the
+              left of the ring, above the steep climb of the 1960s, the frame is empty at every
+              width, and the note is anchored by its RIGHT edge to the ring's own x, so it can only
+              grow away from the mark it names. */}
           <span
             className="note"
             style={{
               ...regs.annot,
               color: label,
-              ...noteAnchor(pct(peak.cx, FRAME.width)),
+              right: `calc(${100 - pct(peak.cx, FRAME.width)}% + 10px)`,
               top: `${pct(peak.cy, FRAME.height)}%`,
-              transform: `${noteAnchor(pct(peak.cx, FRAME.width)).transform} translateY(-130%)`,
+              transform: "translateY(-50%)",
+              whiteSpace: "nowrap",
             }}
           >
             {peakNote}

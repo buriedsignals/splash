@@ -66,8 +66,11 @@ export function BarFrame(props: BarFrameProps & { at: number; svgRef?: Ref<SVGSV
   const firstEnd = props.left + props.bars[0].value * scene.unit;
   const sumText = withUnit(valueText(scene.sum));
   const pileFront = Math.max(props.left + scene.sum * scene.unit, ...props.bars.map((b, i) => (b.stacked !== null && scene.bars[i].move > 0.5 ? scene.bars[i].x + scene.bars[i].w : 0)));
-  // « Monde » gives way to the first's name on the same row as the others start to fall.
+  // « Monde » gives way to the first's name on the same row as the others start to fall. The world's value fades with the
+  // bar it measures; the NAME is one label at one anchor, so it hands over by a CUT at the midpoint of that fade — never
+  // « Chine » dissolving in over « Monde » (motion-grammar.md; skills/splash/test/video-handover-is-a-cut.test.ts).
   const worldGoing = 1 - Math.min(1, scene.bars[1].fall * 3);
+  const worldNamed = worldGoing > 0.5 ? 1 : 0;
 
   return (
     <svg ref={props.svgRef} xmlns="http://www.w3.org/2000/svg" width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
@@ -79,12 +82,12 @@ export function BarFrame(props: BarFrameProps & { at: number; svgRef?: Ref<SVGSV
       <rect width={frame.width} height={frame.height} fill={colours.ground} />
       <g opacity={scene.furniture}>
         <line x1={props.left} x2={props.left} y1={props.worldY - props.barH * 0.3} y2={props.bars[props.bars.length - 1].y + props.barH * 1.3} stroke={colours.grid} strokeWidth={props.strokes.grid} />
-        <Text line={props.worldName} register={r.axis} fill={colours.text.name} opacity={worldGoing} />
+        {worldNamed ? <Text line={props.worldName} register={r.axis} fill={colours.text.name} /> : null}
         {props.bars.map((b, i) => {
           const s = scene.bars[i];
           const out = b.tenth ? 0 : s.move;
           const faded = (after(i) && !b.tenth) || (b.tenth && scene.back > 0) ? scene.stepBack : 0;
-          const arrived = i === 0 ? 1 - worldGoing : s.landed;
+          const arrived = i === 0 ? 1 - worldNamed : s.landed;
           return <Text key={`name${i}`} line={b.name} register={r.axis} fill={blend(colours.text.name, colours.text.axis, faded)} opacity={arrived * (1 - out) * (b.tenth ? 1 - s.slide : 1)} />;
         })}
       </g>

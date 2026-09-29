@@ -216,7 +216,7 @@ export function DumbbellFrame(
         return (
           <g key={d.key}>
             <g opacity={scene.furniture * (1 - 0.7 * s.stepBack)}>
-              {s.travelled ? (
+              {s.connector ? (
                 <line
                   x1={d.a.x}
                   x2={s.dotX}

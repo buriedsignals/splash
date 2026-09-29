@@ -9,6 +9,7 @@
     "width": 1920,
     "height": 1080
   },
+  "band": null,
   "layoutInset": {
     "x": 85,
     "y": 60
@@ -295,6 +296,7 @@
     ],
     "missingFill": "#dedbcf",
     "ring": "#1755b2",
+    "band": null,
     "text": {
       "eyebrow": "#1755b2",
       "title": "#000000",
@@ -324,6 +326,14 @@
       "height": 49.232841796875,
       "textX": 5.2402001953125,
       "baseline": 36.0649072265625,
+      "lines": [
+        {
+          "text": "ALBANIE",
+          "width": 155.03671875,
+          "x": 5.2402001953125,
+          "y": 36.0649072265625
+        }
+      ],
       "gauge": null,
       "inked": [
         {
@@ -358,6 +368,14 @@
       },
       "role": "odd",
       "camera": "closeUp",
+      "lines": [
+        {
+          "text": "ALBANIE · 100 %",
+          "width": 404.4998224431818,
+          "x": 7.1457275390625,
+          "y": 49.1794189453125
+        }
+      ],
       "text": "ALBANIE · 100 %",
       "register": "closeFeature",
       "halo": 14.291455078125,
@@ -403,6 +421,14 @@
       },
       "role": "neighbour",
       "camera": "closeUp",
+      "lines": [
+        {
+          "text": "MONTÉNÉGRO · 59 %",
+          "width": 369.3345703125,
+          "x": 5.2867675781250005,
+          "y": 36.385400390625
+        }
+      ],
       "text": "MONTÉNÉGRO · 59 %",
       "register": "area",
       "halo": 10.573535156250001,
@@ -448,6 +474,14 @@
       },
       "role": "neighbour",
       "camera": "closeUp",
+      "lines": [
+        {
+          "text": "MACÉDOINE DU NORD · 39 %",
+          "width": 509.2400390625,
+          "x": 5.2867675781250005,
+          "y": 36.385400390625
+        }
+      ],
       "text": "MACÉDOINE DU NORD · 39 %",
       "register": "area",
       "halo": 10.573535156250001,
@@ -493,6 +527,14 @@
       },
       "role": "neighbour",
       "camera": "closeUp",
+      "lines": [
+        {
+          "text": "GRÈCE · 49 %",
+          "width": 227.41318359375,
+          "x": 5.2867675781250005,
+          "y": 36.385400390625
+        }
+      ],
       "text": "GRÈCE · 49 %",
       "register": "area",
       "halo": 10.573535156250001,
@@ -538,6 +580,14 @@
       },
       "role": "neighbour",
       "camera": "closeUp",
+      "lines": [
+        {
+          "text": "KOSOVO, HORS DONNÉES",
+          "width": 450.96181640625,
+          "x": 5.2867675781250005,
+          "y": 36.385400390625
+        }
+      ],
       "text": "KOSOVO, HORS DONNÉES",
       "register": "area",
       "halo": 10.573535156250001,

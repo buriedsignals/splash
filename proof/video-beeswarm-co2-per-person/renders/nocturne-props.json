@@ -44,6 +44,16 @@
       "lead": 53.05127495600001,
       "fill": "#4FE0C0"
     },
+    "name": {
+      "fontFamily": "Montserrat",
+      "fontSize": 44.21,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 53.05127495600001,
+      "fill": "#4FE0C0"
+    },
     "source": {
       "fontFamily": "Montserrat",
       "fontSize": 30,
@@ -4078,6 +4088,7 @@
     }
   },
   "halo": 13.438072509765625,
+  "nameHalo": 13.438072509765625,
   "states": [
     {
       "title": 1,

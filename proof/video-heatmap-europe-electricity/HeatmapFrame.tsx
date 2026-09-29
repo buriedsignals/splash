@@ -265,7 +265,7 @@ export function HeatmapFrame(
               fill={
                 row.route === null ? colours.text.axis : colours.text.accent
               }
-              opacity={scene.grid * words}
+              opacity={scene.column * words}
             />
           </g>
         );

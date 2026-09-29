@@ -63,6 +63,11 @@ export function BumpFrame(props: BumpFrameProps & { at: number; svgRef?: Ref<SVG
   const shown = (role: Role): Role => (role === "passed" && scene.focus < 0.5 ? "other" : role);
   const order: Role[] = ["other", "passed", "subject"];
   const tipRank = props.tipRanks[scene.tipIndex];
+  // THE 2024 NAMES HAND OVER BY A CUT. A line's name at its tip (« Japon ») and its ranked name in the 2024 column
+  // (« 5 Japon ») are one label at one anchor: the tip names hold at full ink while the camera pulls back, and at the
+  // midpoint of the pull-back they are unmounted on the same frame the ranked names are mounted — never the ranked
+  // names dissolving in over the tip names (motion-grammar.md; skills/splash/test/video-handover-is-a-cut.test.ts).
+  const ranked = scene.arrived > 0 && scene.camera < 0.5;
 
   return (
     <svg ref={props.svgRef} xmlns="http://www.w3.org/2000/svg" width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
@@ -88,20 +93,23 @@ export function BumpFrame(props: BumpFrameProps & { at: number; svgRef?: Ref<SVG
       {props.passes.map((p, i) => (
         <circle key={`pass${i}`} cx={p.x} cy={p.y} r={props.dotR * 3.5} fill="none" stroke={colours.subject} strokeWidth={strokes.grid * 2} opacity={scene.passes[i]} />
       ))}
-      {scene.tip && tipRank !== null ? (
-        <Word line={{ ...props.tipTexts[String(tipRank)], x: scene.tip.x + props.tipOffset, y: scene.tip.y - props.tipRise }} register={r.value} fill={colours.text.subject} opacity={scene.tipShown} halo={halo} />
-      ) : null}
       {props.tracks.map((t) => {
         const at = scene.tips[t.key];
         const name = props.tipNames[t.key];
-        if (!at || !name || !(scene.camera > 0)) return null;
-        return <Word key={`tip-${t.key}`} line={{ ...name, x: at.x + props.gap, y: at.y + props.nameShift }} register={r.axis} fill={colours.text[shown(t.role)]} opacity={scene.camera * stepped(t.role)} halo={halo} />;
+        if (!at || !name || !(scene.camera > 0) || ranked) return null;
+        return <Word key={`tip-${t.key}`} line={{ ...name, x: at.x + props.gap, y: at.y + props.nameShift }} register={r.axis} fill={colours.text[shown(t.role)]} opacity={(scene.arrived > 0 ? 1 : scene.camera) * stepped(t.role)} halo={halo} />;
       })}
-      <g opacity={scene.arrived * (1 - scene.camera)}>
-        {props.rightNames.map((n) => (
-          <Word key={`r-${n.entity}`} line={n} register={r.axis} fill={colours.text[shown(n.role)]} opacity={stepped(n.role)} />
-        ))}
-      </g>
+      {/* India's rank rides ABOVE the other lines' names: where it crosses one, the subject's label is the one read. */}
+      {scene.tip && tipRank !== null ? (
+        <Word line={{ ...props.tipTexts[String(tipRank)], x: scene.tip.x + props.tipOffset, y: scene.tip.y - props.tipRise }} register={r.value} fill={colours.text.subject} opacity={scene.tipShown} halo={halo} />
+      ) : null}
+      {ranked ? (
+        <g>
+          {props.rightNames.map((n) => (
+            <Word key={`r-${n.entity}`} line={n} register={r.axis} fill={colours.text[shown(n.role)]} opacity={stepped(n.role)} />
+          ))}
+        </g>
+      ) : null}
       </g>
 
       {scene.camera > 0 ? (() => {

@@ -249,7 +249,9 @@ export function copyOf(subject) {
         const lines = closeLines(upper(french(iso)), pct(value.get(iso).lowCarbon));
         return { key: `neighbour:${iso}`, seat: iso, role: "neighbour", camera: "closeUp", lines, text: lines.join(" "), slot: "name", klass: "area" };
       }),
-      { key: `neighbour:${kosovo[0].key}`, seat: kosovo[0].key, role: "neighbour", camera: "closeUp", lines: closeLines(upper("Kosovo,"), upper("hors données")), text: upper("Kosovo, hors données"), slot: "name", klass: "area" },
+      /** Kosovo has no share, so it is not a `closeLines` pair: joined by that separator it read « KOSOVO, · HORS
+       *  DONNÉES ». Its one line is the sentence itself. */
+      { key: `neighbour:${kosovo[0].key}`, seat: kosovo[0].key, role: "neighbour", camera: "closeUp", lines: [upper("Kosovo, hors données")], text: upper("Kosovo, hors données"), slot: "name", klass: "area" },
     ],
     /** The six the map names once the floor has landed, in capitals as every name of this video. */
     top: topSix.map((iso) => ({ iso, text: upper(french(iso)) })),

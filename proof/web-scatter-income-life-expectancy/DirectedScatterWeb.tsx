@@ -31,6 +31,8 @@
 
 import { mix, adjustToContrast, contrast, channels, TEXT_CONTRAST_MIN, NON_TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { webRegisters, figureVars, noteAnchor, fitY } from "#shared/design-base/web.mjs";
+import { measureText } from "#shared/chart-beat/render-still.mjs";
+import { registerOf, leadOf } from "#shared/design-base/register.mjs";
 import {
   assertLevelDeclaration,
   levelCss,
@@ -270,6 +272,100 @@ export function DirectedScatterWeb({
   // axis names, and the trap is documented there.
   const { color: annotInk, fontWeight: annotWeight, ...annotRest } = regs.annot as any;
 
+  /**
+   * WHERE THE BAND'S SENTENCE GOES, AND THE WIDTH BELOW WHICH IT CANNOT GO THERE.
+   *
+   * It used to be written INSIDE the band it describes, right-aligned at the band's vertical centre.
+   * `.note` carries an opaque ground chip, so that chip painted over the band and over the rich
+   * countries' own marks in it: at 1400 the sentence blotted out a strip of the very 41 points it
+   * counts, and at 375 it wrapped to five lines, climbed out of the plot and was printed through
+   * the threshold's own name. The band is the claim; the note may not cover it.
+   *
+   * THE EMPTY QUADRANT IS EMPTY BY CONSTRUCTION, not by luck. Every country right of the threshold
+   * is in the band, and the band's floor IS the lowest of them, so the rectangle right of the rule
+   * and under the band holds no mark at all. The sentence sits there, anchored under the band's
+   * floor and just right of the rule.
+   *
+   * Until the plot is too narrow for that rectangle to hold it — measured here, in the direction's
+   * own annot register, on the real string: the smallest drawing whose quadrant holds the sentence's
+   * wrapped lines, wrapped at its own words. Below it the sentence moves to
+   * the reserved row above the plot, the row this page keeps for the sentence the control owes.
+   * The untouched option reveals no sentence there, because the band's claim IS its sentence; a
+   * chosen country's sentence replaces it in that row, and the band itself stays drawn.
+   */
+  const annotReg = registerOf(direction, "annot", { family: "chart" });
+  const measureAnnot = (t: string) => {
+    const cased = annotReg.transform === "uppercase" ? t.toUpperCase() : t;
+    return (
+      measureText(cased, {
+        fontSize: annotReg.fontSize,
+        fontWeight: annotReg.fontWeight as number,
+        fontFamily: annotReg.fontFamily,
+        fontStyle: annotReg.fontStyle,
+      }) +
+      annotReg.letterSpacing * cased.length
+    );
+  };
+  /** `.note`'s own chip padding in the shared stylesheet: 4 px a side, 1 px above and below. */
+  const CHIP_X = 8;
+  const CHIP_Y = 2;
+  /** The lines the sentence takes in a column `room` px wide, wrapped the way a browser wraps it —
+   *  greedily, at spaces, on the measured words — or `Infinity` when one word is wider than the room. */
+  const words = bandNote.split(" ");
+  const linesIn = (room: number) => {
+    const inner = room - CHIP_X;
+    let lines = 1;
+    let line = "";
+    for (const word of words) {
+      const next = line ? `${line} ${word}` : word;
+      if (measureAnnot(next) <= inner) line = next;
+      else if (!line || measureAnnot(word) > inner) return Infinity;
+      else {
+        lines += 1;
+        line = word;
+      }
+    }
+    return lines;
+  };
+  const thresholdNoteWidth = measureAnnot(thresholdNote) + CHIP_X;
+  const thresholdFrac = x(threshold) / FRAME.width;
+  const floorFrac = y(band.low) / FRAME.height;
+  const NOTE_GAP_PX = 6;
+  /** A country's mark is drawn in the geometry's own units, so at a large drawing its radius is many
+   *  reader pixels; the note clears it by that radius plus its own gap, never by a typed distance. */
+  const radiusXPct = pct(MARK_RADIUS, FRAME.width);
+  const radiusYPct = pct(MARK_RADIUS, FRAME.height);
+  // A 5 % safety on every measured width: the page's own face is rasterised by the browser and the
+  // measurement by resvg, and a sentence one pixel wider than its column wraps a line lower.
+  const SAFETY = 1.05;
+  let quadrantFromCellPx = 0;
+  for (let cell = 120; cell <= 4000; cell += 2) {
+    const radius = (MARK_RADIUS / FRAME.width) * cell;
+    const room = ((1 - thresholdFrac) * cell - radius - NOTE_GAP_PX) / SAFETY;
+    const depth = (1 - floorFrac) * cell * (FRAME.height / FRAME.width) - radius - NOTE_GAP_PX;
+    const lines = linesIn(room);
+    const thresholdFits = thresholdFrac * cell - 4 >= thresholdNoteWidth * SAFETY;
+    if (thresholdFits && lines * leadOf(annotReg) + CHIP_Y <= depth) {
+      quadrantFromCellPx = cell;
+      break;
+    }
+  }
+  if (!quadrantFromCellPx) throw new Error("the band's sentence fits the empty quadrant at no width");
+  /** THE PLOT'S OWN SIZE at that drawing, asked of the plot and not the figure: the plot is a size
+   *  container, and its drawing is the smaller of its width and its height's worth of width — so a
+   *  wide, short window (640 x 480) draws a small cell in a wide figure, which a width query alone
+   *  would have called roomy. The drawing plus the 40 px y gutter; its height plus the x-axis row. */
+  const quadrantQuery =
+    `(min-width: ${Math.ceil(quadrantFromCellPx + 40)}px) and ` +
+    `(min-height: ${Math.ceil((quadrantFromCellPx * FRAME.height) / FRAME.width + FRAME.xAxisRowPx)}px)`;
+  const noneSlug = levelOptions.find((o) => o.isNone)!.slug;
+  /** The y axis's top label is centred on the plot's top edge, so half of its line stands ABOVE the
+   *  plot — in the row the sentence moves to. The sentence clears that half-line, measured in the
+   *  direction's own axis register. */
+  /** One line of the threshold's name on its chip (1 px of padding above and below). */
+  const thresholdLinePx = Math.ceil(leadOf(annotReg)) + 2;
+  const axisOverhangPx = Math.ceil(leadOf(registerOf(direction, "axis", { family: "chart" })) / 2) + 2;
+
   const css = [
     // The default state as a rule and never as an inline style — see above.
     `${SCOPE} .overlay [data-axis] { color: var(--annot-ink); font-weight: var(--annot-weight); }`,
@@ -290,6 +386,38 @@ export function DirectedScatterWeb({
       dim: { ink: "var(--muted)", weight: "var(--annot-weight)" },
       revealMs: REVEAL_MS,
     }),
+    // THE PLOT IS ASKED, NOT THE WINDOW: this page is embedded as often as it is opened alone, and
+    // the plot is already a size container (the shared stylesheet makes it one to fit its cell).
+    // BELOW THE MEASURED WIDTH, the band's sentence leaves the plot for the reserved row directly
+    // above it — spanning the plot's full width, bottom-aligned on the plot's own top edge. The
+    // offsets are the frame's own custom properties (the gutter, and the slack the cell leaves when
+    // it is centred), never a typed number. `!important` on the positional properties only: the
+    // anchored position is an inline style, which beats any generated rule.
+    // THE TWO STANDING NOTES HAVE A LAYER OF THEIR OWN, over the same grid cell as `.overlay`.
+    // `.overlay` is the PLATE's layer and `verify-web.mjs` holds every child of it to two things: it
+    // is drawn unconditionally, and a pointer aimed at its centre reaches a reading through the hit
+    // area beneath. On a phone these two leave the plot for the row above it and give that row to a
+    // chosen country's sentence — neither holds there, and both are true of the layer's own contract.
+    `${SCOPE} .chart-plot .note-layer { position: relative; pointer-events: none; }`,
+    `@container not (${quadrantQuery}) {`,
+    // The threshold's name comes too: at this width the plot's top is the band's top, so the only
+    // air left of the rule is the poorer half's own top, which the name is wider than. It sits
+    // directly above its rule, right edge on the rule's x, and the band's sentence stacks above it.
+    `  ${SCOPE} .chart-plot .note-layer .note.threshold-note {`,
+    `    top: auto !important;`,
+    `    bottom: calc(100% + var(--cell-slack-y, 0px) + ${axisOverhangPx}px) !important;`,
+    `  }`,
+    `  ${SCOPE} .chart-plot .note-layer .note.band-note {`,
+    `    top: auto !important; right: auto !important;`,
+    `    bottom: calc(100% + var(--cell-slack-y, 0px) + ${axisOverhangPx + thresholdLinePx}px) !important;`,
+    `    left: calc(0px - var(--y-gutter) - var(--cell-slack-x, 0px)) !important;`,
+    `    width: 100cqw !important; max-width: 100cqw !important; box-sizing: border-box;`,
+    `    padding-left: 0; padding-right: 0; background: none;`,
+    `  }`,
+    `  ${SCOPE}:has(.chart-level input:checked:not([value="${noneSlug}"])) .chart-plot .note-layer .note:is(.band-note, .threshold-note) {`,
+    `    visibility: hidden;`,
+    `  }`,
+    `}`,
   ].join("\n\n");
 
   return (
@@ -376,6 +504,18 @@ export function DirectedScatterWeb({
           <desc>{alt}</desc>
           <rect x={0} y={0} width={FRAME.width} height={FRAME.height} fill={ground} />
 
+          {/* The band the headline measures, drawn as a band rather than described — and painted
+              as the WASH it is. It used to be the accent at `fillOpacity 0,08`, which a reader
+              receives as exactly this composite; drawing the composite itself, under the grid,
+              is the same picture, and it is the colour `crossed` above already measures the
+              yardstick against. */}
+          <rect
+            x={x(threshold)}
+            y={y(band.high)}
+            width={FRAME.width - x(threshold)}
+            height={y(band.low) - y(band.high)}
+            fill={bandFill}
+          />
           {yTicks.map((t) => (
             <line key={`h${t}`} x1={0} x2={FRAME.width} y1={y(t)} y2={y(t)} stroke={grid} strokeWidth={1} vectorEffect="non-scaling-stroke" />
           ))}
@@ -383,15 +523,6 @@ export function DirectedScatterWeb({
             <line key={`v${t.value}`} x1={x(t.value)} x2={x(t.value)} y1={0} y2={FRAME.height} stroke={grid} strokeWidth={1} vectorEffect="non-scaling-stroke" />
           ))}
 
-          {/* The band the headline measures, drawn as a band rather than described. */}
-          <rect
-            x={x(threshold)}
-            y={y(band.high)}
-            width={FRAME.width - x(threshold)}
-            height={y(band.low) - y(band.high)}
-            fill={rule}
-            fillOpacity={0.08}
-          />
           <line x1={x(threshold)} x2={x(threshold)} y1={0} y2={FRAME.height} stroke={rule} strokeWidth={direction.stroke?.rule ? direction.stroke.rule * 1.6 : 1.4} strokeDasharray="5 4" vectorEffect="non-scaling-stroke" />
 
           {points.map((p) => (
@@ -455,27 +586,46 @@ export function DirectedScatterWeb({
           <rect className="hit-area" x={0} y={0} width={FRAME.width} height={FRAME.height} fill="transparent" pointerEvents="all" />
         </svg>
 
-        <div className="overlay" aria-hidden="true">
+        <div className="note-layer" aria-hidden="true">
+          {/* THE THRESHOLD'S NAME, ON ONE LINE, LEFT OF ITS OWN RULE AND AT ITS TOP. It used to be
+              centred ON the rule, capped at 46 % of the plot: at 375 that cap wrapped it to three
+              lines, its chip hid the dashed rule it names, and its right half landed on the rich
+              countries at the band's top. Anchored by its right edge a few pixels short of the
+              rule, it only grows away from the band — over the top of the poorer countries' half,
+              where no country reaches the band's own height. */}
           <span
-            className="note"
-            style={{ ...regs.annot, color: label, ...noteAnchor(pct(x(threshold), FRAME.width)), top: "2%" }}
-          >
-            {thresholdNote}
-          </span>
-          <span
-            className="note"
+            className="note threshold-note"
             style={{
               ...regs.annot,
               color: label,
+              right: `calc(${100 - pct(x(threshold), FRAME.width)}% + 4px)`,
+              top: "2%",
+              transform: "none",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {thresholdNote}
+          </span>
+          {/* UNDER THE BAND'S FLOOR, RIGHT OF THE RULE — the rectangle that holds no mark by
+              construction. See `quadrantQuery` for where it goes when that is too small. */}
+          <span
+            className="note band-note"
+            style={{
+              ...regs.annot,
+              color: label,
+              left: `calc(${pct(x(threshold), FRAME.width) + radiusXPct}% + ${NOTE_GAP_PX}px)`,
               right: "0%",
-              top: `${pct((y(band.low) + y(band.high)) / 2, FRAME.height)}%`,
-              transform: "translateY(-50%)",
-              maxWidth: "34%",
+              top: `calc(${pct(y(band.low), FRAME.height) + radiusYPct}% + ${NOTE_GAP_PX}px)`,
+              transform: "none",
+              maxWidth: "none",
               whiteSpace: "normal",
             }}
           >
             {bandNote}
           </span>
+        </div>
+
+        <div className="overlay" aria-hidden="true">
 
           {/* THE CHOSEN CASE'S NAME, AT THE FOOT OF ITS OWN INCOME RULE — the other half of "the
               reader's own row is named and ringed among marks that are otherwise anonymous". Hidden

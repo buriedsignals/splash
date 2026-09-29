@@ -151,13 +151,16 @@ export function MarimekkoFrame(
         const s = scene.columns[i];
         return (
           <g key={c.key}>
-            {s.base.h > 0 ? (
+            {/* The whole block arrives as the title card leaves, with its own label — never under the card at
+                frame 0, where the field must be empty (`video-handover-is-a-cut.test.ts`, assertion 3). */}
+            {s.base.h > 0 && scene.title < 1 ? (
               <rect
                 x={s.x}
                 y={s.base.y}
                 width={s.w}
                 height={s.base.h}
                 fill={colours.whole}
+                opacity={1 - scene.title}
               />
             ) : null}
             {s.cells.map((cell, j) =>

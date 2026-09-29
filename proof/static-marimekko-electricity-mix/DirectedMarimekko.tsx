@@ -359,8 +359,26 @@ export function DirectedMarimekko({
   /** A cell's number is set in whichever of the two page inks actually clears the floor against
    *  that cell's own fill — measured, not guessed by index. White on a mid-toned fill is this
    *  family's named accessibility failure and the type page has shipped it once already. */
-  const legibleOn = (fill: string) =>
-    contrast(ink, fill) >= contrast(direction.ground, fill) ? ink : direction.ground;
+  /** AND WHERE NEITHER PAGE INK CLEARS IT, the one nearer the far pole is walked further from
+   *  the fill until it does. A ramp's middle step can sit where both fail: measured at 1080x1080 in
+   *  `nocturne`, whose ramp has one step fewer there than at landscape, « 15 % » was set in white on
+   *  #558090 at 4.31:1 and the ground ink measured 4.1:1 on the same cell. The ink that already
+   *  clears is never touched, so every other cell on every plate keeps the ink it had. */
+  const legibleOn = (fill: string) => {
+    const better =
+      contrast(ink, fill) >= contrast(direction.ground, fill) ? ink : direction.ground;
+    if (contrast(better, fill) >= TEXT_CONTRAST_MIN) return better;
+    // `adjustToContrast` walks toward the pole the fill is not, so each page ink is walked and the
+    // one that had to move least is kept: the ink already on that side of the fill, deepened,
+    // rather than the other one dragged through the fill's own tone to the far side.
+    const walked = [ink, direction.ground]
+      .map((from) => ({ from, to: adjustToContrast(from, fill, TEXT_CONTRAST_MIN) }))
+      .filter((w): w is { from: string; to: string } => w.to !== null)
+      .sort((a, b) => contrast(a.from, a.to) - contrast(b.from, b.to));
+    if (!walked.length)
+      throw new Error(`no ink clears ${TEXT_CONTRAST_MIN}:1 on the cell fill ${fill}.`);
+    return walked[0].to;
+  };
   const accentInk = adjustToContrast(direction.accent, direction.ground, TEXT_CONTRAST_MIN);
   const mutedInk = adjustToContrast(muted, direction.ground, TEXT_CONTRAST_MIN);
 

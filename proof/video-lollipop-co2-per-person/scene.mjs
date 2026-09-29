@@ -93,9 +93,11 @@ export function sceneAt(props, frame) {
     pairs,
     copies,
     stackX,
-    /** The ratio shows once every copy has landed: before that it would count flights, not the heads. */
+    /** The ratio shows once every copy has landed: before that it would count flights, not the heads. It stands where
+     *  the American value stands, so the two hand over by a CUT, never a crossfade (motion-grammar): the ratio goes on
+     *  the release's first frame and the value comes back whole on that same frame. */
     ratio: H / Math.max(h, 1e-9),
-    ratioShown: full ? 1 - gone : 0,
+    ratioShown: full && !(gone > 0) ? 1 : 0,
     landed,
     ratioY: props.baseline - Math.min(H, props.copies * h),
     ring: release,

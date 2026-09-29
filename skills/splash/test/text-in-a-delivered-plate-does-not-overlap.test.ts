@@ -56,40 +56,7 @@ const plates = readdirSync(PROOF)
  * still-defective run by a pixel is the same defect, and a run that stops colliding is a fix. A key
  * holds the run's exact characters — ` ` is the no-break space the plate really prints.
  */
-const OWED: Readonly<Record<string, readonly string[]>> = {
-  "static-income-life-expectancy/renders/nocturne-portrait.svg": [
-    `crossed by a line: "124 PAYS SOUS 30 000 $ · 41 ANS D’ÉCART"`,
-  ],
-  "static-income-life-expectancy/renders/nocturne-square.svg": [
-    `crossed by a line: "124 PAYS SOUS 30 000 $ · 41 ANS D’ÉCART"`,
-  ],
-  "static-parallel-coordinates-electricity-mix/renders/creme-portrait.svg": [
-    `overlap: "Finlande" / "Belgique"`,
-  ],
-  "co2-suisse/renders/creme.svg": [`crossed by a line: "pic de 1973"`],
-  "co2-suisse/renders/creme-square.svg": [`crossed by a line: "pic de 1973"`],
-  "static-hex-grid-europe-protection/renders/nocturne-portrait.svg": [
-    `outside the frame: "Ukrainiens sous protection temporaire pour 1 000 habitants"`,
-  ],
-  "static-hex-grid-europe-protection/renders/nocturne-square.svg": [
-    `outside the frame: "Ukrainiens sous protection temporaire pour 1 000 habitants"`,
-  ],
-  "static-hex-grid-europe-protection/renders/creme-portrait.svg": [
-    `outside the frame: "Ukrainiens sous protection temporaire pour 1 000 habitants"`,
-  ],
-  "static-hex-grid-europe-protection/renders/creme-square.svg": [
-    `outside the frame: "Ukrainiens sous protection temporaire pour 1 000 habitants"`,
-  ],
-  "static-hex-grid-europe-protection/renders/rapport-portrait.svg": [
-    `outside the frame: "Ukrainiens sous protection temporaire pour 1 000 habitants"`,
-  ],
-  "static-hex-grid-europe-protection/renders/rapport-square.svg": [
-    `outside the frame: "Ukrainiens sous protection temporaire pour 1 000 habitants"`,
-  ],
-  "static-histogram-europe-solar-spread/renders/creme-square.svg": [
-    `crossed by a line: "solar generation, 2024"`,
-  ],
-};
+const OWED: Readonly<Record<string, readonly string[]>> = {};
 
 type Finding = { key: string; detail: string };
 

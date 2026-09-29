@@ -216,7 +216,10 @@ export function buildDirection(id, { subject, states, copy, cameras }, { measure
     if (!w) throw new Error(`${what} has no variant that reads at ${floor}:1 on ${on}`);
     return w;
   };
-  const circle = walked(mix(accent, ink, 0.2), land, NON_TEXT_CONTRAST_MIN, "a circle");
+  /** A CIRCLE IS DRAWN IN THE ACCENT, as the static sibling draws it (`static-proportional-symbol-europe-capacity`,
+   *  `dotInk = direction.accent`). It was `mix(accent, ink, 0.2)`, and the frame the video ends on then carried no pixel
+   *  of its direction's own accent — the hundred circles are the subject, and the subject is what the accent is for. */
+  const circle = walked(accent, land, NON_TEXT_CONTRAST_MIN, "a circle");
   const colours = {
     ground,
     sea,

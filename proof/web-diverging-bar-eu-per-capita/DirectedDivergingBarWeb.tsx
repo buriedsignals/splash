@@ -288,6 +288,165 @@ export function DirectedDivergingBarWeb({
 
   // The readings, all on the zero rule. `assertDatumRest` is what makes that a promise rather than
   // an intention — see its own comment for the hole it closes.
+  /**
+   * WHERE THE NOTE ON THE SUBJECT STANDS, DERIVED FROM WHAT SHARES ITS ROW — NOT A TYPED `left: 57%`.
+   *
+   * The note was typed at 57 % of the frame, on the subject's own row, right of the rule. The value
+   * label that row carries is a FIXED 52 CSS pixels (offset + chip) riding a tip at 50,07 %, so 7 %
+   * of a plot had to be wider than that label for the two to clear: they touched at 1400 (1 px) and
+   * overlapped at 1600, and at 375 the note was five lines tall, sat ON the label and reached up into
+   * the rows whose labels cross to the right under today's median — measured in all three
+   * directions by `web-annotation-clears-its-marks.test.ts`.
+   *
+   * So the note starts where the subject's own label ENDS, in its widest right-hand state, plus a
+   * gap, and its first line is centred on the subject's row. Its further lines hang DOWNWARD, into
+   * rows that are asserted below to be negative in every state — the one quadrant of this frame no
+   * option ever draws into. Where the plot is too narrow for that (the note would need more than
+   * two lines beside the label, or a label from a row above would reach it), the note moves UNDER
+   * the subject's label instead, still right of the rule and still in that free quadrant — for as
+   * long as its wrapped lines fit above the cell's foot. Below that, nothing in the cell is free in
+   * all three states and the shipped placement is kept as a named debt (see `noteCss`). Each switch
+   * is a container query on the plot CELL's width, expressed through the two things the cell is the
+   * minimum of (see `render-web.mjs`'s `--cell-w`), at widths computed here from the measured words.
+   */
+  const subjectAt = rows.findIndex((r) => r.code === subject);
+  if (subjectAt < 0) throw new Error(`the subject ${subject} is not one of the drawn rows`);
+  const valueOf = (values: { key: string; value: number; label: string }[], code: string) =>
+    values.find((v) => v.key === code)!;
+  for (const state of states)
+    for (const r of rows.slice(subjectAt + 1)) {
+      const v = valueOf(state.values, r.code);
+      if (!(v.value < 0))
+        throw new Error(
+          `${r.name} (below ${subject}) is ${v.label} in the "${state.slug}" state — the note on the ` +
+            "subject hangs into the rows below it on the promise that every one of them is drawn left " +
+            "of the rule in every state, and this one is not",
+        );
+    }
+  const valueFont = {
+    fontSize: valueSize,
+    fontWeight: regs.value.fontWeight as number,
+    fontFamily: String(regs.value.fontFamily).split(",")[0].replace(/"/g, ""),
+  };
+  const annotFont = {
+    fontSize: Number.parseFloat(regs.annot.fontSize as string),
+    fontWeight: regs.annot.fontWeight as number,
+    fontFamily: String(regs.annot.fontFamily).split(",")[0].replace(/"/g, ""),
+  };
+  const NOTE_GAP_PX = 8;
+  /** How far right a row's label reaches in one state, as a fraction of the frame plus CSS px — or
+   *  null when that state draws it left of the rule. */
+  const reachOf = (v: { value: number; label: string }) =>
+    v.value < 0
+      ? null
+      : {
+          frac: (centre + (v.value / span) * centre) / FRAME.width,
+          px: LABEL_OFFSET_PX + measure(v.label, valueFont) + CHIP_PAD_PX,
+        };
+  let subjectFrac = 0.5;
+  let subjectPx = 0;
+  for (const state of states) {
+    const reach = reachOf(valueOf(state.values, subject));
+    if (!reach) continue;
+    subjectFrac = Math.max(subjectFrac, reach.frac);
+    subjectPx = Math.max(subjectPx, reach.px);
+  }
+  const noteLeftPx = subjectPx + NOTE_GAP_PX;
+  const valueLinePx = valueSize * Number(regs.value.lineHeight) + 2;
+  const noteLineBoxPx = annotFont.fontSize * Number(regs.annot.lineHeight);
+  const noteLinePx = noteLineBoxPx + 2;
+  // THE NOTE'S OWN LINES, wrapped the way the browser will wrap them: greedily, on spaces, in the
+  // register's own case and tracking. `measure` models neither, so both are applied here, and the
+  // italic's overhang, which it does not model either, is a 6 % margin on every word.
+  const tracking = Number.parseFloat(String(regs.annot.letterSpacing)) || 0;
+  const cased = regs.annot.textTransform === "uppercase" ? subjectNote.toUpperCase() : subjectNote;
+  const widthOf = (text: string) => measure(text, annotFont) * 1.06 + tracking * text.length;
+  const words = cased.split(" ").map(widthOf);
+  const spacePx = widthOf(" ");
+  const linesAt = (boxPx: number) => {
+    const inner = boxPx - CHIP_PAD_PX;
+    let lines = 1;
+    let run = 0;
+    for (const w of words) {
+      if (w > inner) return Infinity;
+      if (run === 0) run = w;
+      else if (run + spacePx + w <= inner) run += spacePx + w;
+      else {
+        lines += 1;
+        run = w;
+      }
+    }
+    return lines;
+  };
+  // BESIDE THE LABEL: from the cell width at which the right of the rule holds label + gap + a note
+  // of at most two lines.
+  const besideLines = 2;
+  let besideFromPx = Infinity;
+  for (let w = 120; w <= 4000; w += 1)
+    if (linesAt(w * (1 - subjectFrac) - noteLeftPx) <= besideLines) {
+      besideFromPx = w;
+      break;
+    }
+  // And no label from a row above may reach the first line: a row above whose right-hand label ends
+  // past the note's left edge must sit far enough up that the two type boxes do not meet.
+  const rowPxPerCellPx = ROW / FRAME.width; // the cell keeps the frame's ratio, so a row is this many px per px of width
+  for (const state of states)
+    rows.slice(0, subjectAt).forEach((r, i) => {
+      const reach = reachOf(valueOf(state.values, r.code));
+      if (!reach) return;
+      const clearV = (noteLinePx + valueLinePx) / 2 + 2;
+      const vFrom = clearV / ((subjectAt - i) * rowPxPerCellPx);
+      const dFrac = reach.frac - subjectFrac;
+      const dPx = noteLeftPx - reach.px;
+      const overlapsFrom = dFrac > 0 ? dPx / dFrac : dPx < 0 ? 0 : Infinity;
+      if (overlapsFrom < vFrom) besideFromPx = Math.max(besideFromPx, vFrom);
+    });
+  besideFromPx = Math.ceil(besideFromPx);
+  // UNDER THE LABEL: every line has to fit between the label's foot and the cell's own foot, or the
+  // last of them lands on the x axis's own figures. Measured per cell width, and the narrowest width
+  // from which it holds all the way up to `besideFromPx` is where this placement starts.
+  const underTopFrac = (ROW * subjectAt + ROW / 2) / height;
+  const underFits = (w: number) => {
+    const cellH = (w * height) / FRAME.width;
+    const room = cellH * (1 - underTopFrac) - (valueLinePx / 2 + 3);
+    return linesAt(w * (1 - subjectFrac) - LABEL_OFFSET_PX) * noteLineBoxPx + 2 <= room;
+  };
+  let underFromPx = besideFromPx;
+  while (underFromPx > 120 && underFits(underFromPx - 1)) underFromPx -= 1;
+  const subjectCentrePct = pct(ROW * subjectAt + ROW / 2, height);
+  const cellQuery = (below: number) =>
+    `@container (max-width: ${below - 1 + GUTTER_PX}px) or (max-height: ${Math.floor(
+      ((below - 1) * height) / FRAME.width + FRAME.xAxisRowPx,
+    )}px)`;
+  const noteCss = [
+    `${SCOPE} .chart-plot .overlay .note.subject-note {`,
+    `  left: calc(${(subjectFrac * 100).toFixed(3)}% + ${noteLeftPx.toFixed(1)}px); right: 0;`,
+    `  top: ${subjectCentrePct.toFixed(3)}%; transform: translateY(-${(noteLinePx / 2).toFixed(1)}px);`,
+    `  white-space: normal; max-width: none;`,
+    `}`,
+    // Too narrow to stand beside: UNDER the subject's own label, from the label's left edge to the
+    // plot's right edge — every row it crosses there is drawn left of the rule (asserted above).
+    `${cellQuery(besideFromPx)} {`,
+    `  ${SCOPE} .chart-plot .overlay .note.subject-note {`,
+    `    left: calc(${(subjectFrac * 100).toFixed(3)}% + ${LABEL_OFFSET_PX}px);`,
+    `    top: calc(${subjectCentrePct.toFixed(3)}% + ${(valueLinePx / 2 + 3).toFixed(1)}px); transform: none;`,
+    `  }`,
+    `}`,
+    // AND WHERE NEITHER FITS, THE PLACEMENT THIS BEAT SHIPPED WITH, NAMED AS A DEBT. Below
+    // `underFromPx` the free quadrant is shorter than the note — 58 px for 74 on `creme` at a 375 px
+    // window, 43 for 100 on `nocturne` — and no other strip of the cell is free in all three states.
+    // Moving the note there would trade the collision the ratchet already owes for a new one on the
+    // x axis's figures, so the old place is kept and the debt stays in
+    // `web-annotation-clears-its-marks.test.ts`'s OWED until the note's copy or the plot's height
+    // changes.
+    `${cellQuery(underFromPx)} {`,
+    `  ${SCOPE} .chart-plot .overlay .note.subject-note {`,
+    `    left: 57%; right: auto; top: ${subjectCentrePct.toFixed(3)}%; transform: translateY(-50%);`,
+    `    max-width: min(40%, 20em);`,
+    `  }`,
+    `}`,
+  ].join("\n");
+
   const readings = rows.map((row, i) => ({
     code: row.code,
     detail: row.detail,
@@ -330,6 +489,7 @@ export function DirectedDivergingBarWeb({
     // costs nothing else. Bare `#tooltip`, because the element is the page's and not this figure's:
     // same specificity as the format's own rule, and this sheet is emitted after it.
     `#tooltip { max-width: 360px; }`,
+    noteCss,
   ].join("\n\n");
 
   return (
@@ -531,20 +691,12 @@ export function DirectedDivergingBarWeb({
         <div className="overlay" aria-hidden="true">
           {/* THE NOTE ON THE SUBJECT, DRAWN UNCONDITIONALLY AND WORDED SO THAT IT CAN BE. It carries
               no number, because a number here would belong to one reference and this note has to be
-              true in all three. It sits on the subject's OWN row, on the right of the rule, which is
-              the one strip of this frame no state of the page ever draws into: Croatia's neighbours
-              at rows 15 and 17 are at −0,19 and −0,54 under the widest-right option, and Croatia's
-              own largest right-hand excursion is +0,03 t. */}
+              true in all three. It starts where the subject's own value label ends and hangs into the
+              rows below it, the one quadrant of this frame no state of the page ever draws into —
+              placed by `noteCss` above, from the label's measured width, never by a typed offset. */}
           <span
-            className="note"
-            style={{
-              ...regs.annot,
-              left: "57%",
-              top: `${pct(ROW * rows.findIndex((r) => r.code === subject) + ROW / 2, height)}%`,
-              transform: "translateY(-50%)",
-              whiteSpace: "normal",
-              maxWidth: "min(40%, 20em)",
-            }}
+            className="note subject-note"
+            style={regs.annot}
           >
             {subjectNote}
           </span>

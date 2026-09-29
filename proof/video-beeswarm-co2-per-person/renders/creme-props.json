@@ -44,6 +44,16 @@
       "lead": 54.0014677734375,
       "fill": "#1757B6"
     },
+    "name": {
+      "fontFamily": "Open Sans",
+      "fontSize": 45,
+      "fontWeight": 600,
+      "fontStyle": "normal",
+      "letterSpacing": 0,
+      "transform": "none",
+      "lead": 54.0014677734375,
+      "fill": "#1757B6"
+    },
     "source": {
       "fontFamily": "Open Sans",
       "fontSize": 30,
@@ -4078,6 +4088,7 @@
     }
   },
   "halo": 14.381103515625002,
+  "nameHalo": 14.381103515625002,
   "states": [
     {
       "title": 1,

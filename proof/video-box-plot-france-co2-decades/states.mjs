@@ -7,7 +7,7 @@
 //   box        the median drawn through the column, the box opening to Q1 and Q3, the whiskers, the ring 0..1
 //   lift       the box, its whiskers and its ring lifting out beside the readings                       0..1
 //   walk       one median walking the decades, sliding to each next box and landing on its median      0..1
-//   release    the walking median dissolving into the last decade's own                                0..1
+//   release    the walking median lifted off the last decade's own (a cut)                                0..1
 //   source     the credit                                                                              0..1
 
 import { EVENT_ORDER } from "#shared/chart-video/timing.ts";

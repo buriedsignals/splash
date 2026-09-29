@@ -6,7 +6,7 @@
  * - `reference`: 75 frames. The ticks and decade names; the 75 annual readings in chronological order.
  * - `reveal`: 165 frames. Decade after decade the readings gather into a column, the box is drawn out of them and lifts out.
  * - `subject`: 165 frames. One median walks the decades: up to the 1970s, down at every step after.
- * - `conclusion`: 60 frames. The walking median dissolves; the credit.
+ * - `conclusion`: 60 frames. The walking median is lifted off, a cut; the credit.
  * - `hold`: 60 frames.
  *
  * Total: 576 frames, 19.2 seconds at 30 fps.

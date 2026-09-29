@@ -84,6 +84,8 @@ export function sceneAt(props, frame) {
     year: pts[whole].year,
     stockShown: fill > 0 ? 1 : 0,
     gauge: at("gauge"),
+    // The surface's step back to its tint is a cut on the first frame the gauge starts, not a dissolve along it.
+    tinted: at("gauge") > 0,
     ruleX: Math.min(xOf(pos), props.plot.right),
     ruleYear: Math.floor(pos),
     share: passed / props.total,

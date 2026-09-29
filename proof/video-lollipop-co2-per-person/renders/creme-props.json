@@ -139,6 +139,7 @@
       "after": 8.556261,
       "pastX": 177.7,
       "presentX": 284,
+      "baseline": 866.3,
       "name": {
         "text": "Chine",
         "width": 92.76240234375,
@@ -167,6 +168,7 @@
       "after": 14.31945,
       "pastX": 469.4,
       "presentX": 575.6,
+      "baseline": 866.3,
       "name": {
         "text": "États-Unis",
         "width": 167.37275390625,
@@ -182,6 +184,7 @@
       "after": 2.129769,
       "pastX": 761,
       "presentX": 867.3,
+      "baseline": 866.3,
       "name": {
         "text": "Inde",
         "width": 71.35634765625,
@@ -197,6 +200,7 @@
       "after": 11.91645,
       "pastX": 1052.7,
       "presentX": 1159,
+      "baseline": 866.3,
       "name": {
         "text": "Russie",
         "width": 105.0322265625,
@@ -212,6 +216,7 @@
       "after": 7.935214,
       "pastX": 1344.4,
       "presentX": 1450.6,
+      "baseline": 866.3,
       "name": {
         "text": "Japon",
         "width": 91.24775390625,
@@ -227,6 +232,7 @@
       "after": 8.715231,
       "pastX": 1636,
       "presentX": 1742.3,
+      "baseline": 866.3,
       "name": {
         "text": "Iran",
         "width": 63.81533203125,
@@ -243,6 +249,9 @@
     "left": 85,
     "right": 1835
   },
+  "zeroLines": [
+    866.3
+  ],
   "ratioWidths": {
     "1,0": 87.47314453125,
     "1,1": 80.9033203125,

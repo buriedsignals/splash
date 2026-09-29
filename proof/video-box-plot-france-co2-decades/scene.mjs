@@ -8,7 +8,13 @@
 //   - LIFT: the box, its whiskers and its ring slide out to the right, the readings left beside them.
 //   - WALK: a copy of the first median slides to each next box at its own height, then climbs or drops onto that box's
 //     median. Landing on the peak lights it; its value arrives once the walker has slid past the place it prints.
-//   - RELEASE: the walker dissolves into the last median.
+//   - RELEASE: the walker is lifted off the last median.
+//
+// EVERY HANDOVER HERE IS A CUT (motion-grammar.md; skills/splash/test/video-handover-is-a-cut.test.ts). The walker lies on
+// a median at its first and its last box — the same line in two inks — so it is mounted whole on the first frame of the
+// walk and unmounted whole on the first frame of the release, never dissolved over the median it covers. The peak's box,
+// median and readings are drawn once, in the neutral ink until the walker lands on the peak and in the accent from that
+// frame on — never the accent dissolving over the neutral.
 
 import { EVENT_ORDER, progressOf } from "#shared/chart-video/timing.ts";
 import { clamp01, ease } from "../../skills/scrolly/assets/reveal.mjs";
@@ -92,7 +98,7 @@ export function sceneAt(props, frame) {
       yLo: lerp(yQ1, d.yLo, reach),
       whiskers: reach,
       rings: d.outliers.map((o) => ({ x, y: o.y, opacity: phase(b, 0.8, 1) })),
-      accent: k === props.peak ? phase(s, props.peak, props.peak + 0.3) : 0,
+      accent: k === props.peak && s > props.peak ? 1 : 0,
     };
   });
 
@@ -108,7 +114,7 @@ export function sceneAt(props, frame) {
     x: lerp(left(from), left(to), ease(clamp01(u / SLIDE))),
     y: lerp(from.yMedian, to.yMedian, ease(clamp01((u - SLIDE) / (1 - SLIDE)))),
     w: from.boxWidth,
-    opacity: s > -0.5 ? ease(clamp01((s + 0.5) / 0.4)) * (1 - release) : 0,
+    opacity: s > -0.5 && release === 0 ? 1 : 0,
   };
 
   const values = props.values.map((v) => ({

@@ -307,6 +307,17 @@ export function DirectedScatter({
    * Stacking them as TWO requests would let the arbiter place one and drop the other, which is the
    * defect again. One request carrying both lines cannot come apart.
    */
+  /** AND IT STAYS ON ITS OWN SIDE OF THE BREAK. The block starts 8px inside the plot where it fits
+   *  there; where it does not, it starts at the column's edge, under the y axis name it hangs
+   *  beneath. Measured at 1080x1920 and 1080x1080 in `nocturne`, whose tracked capitals are the
+   *  widest of the three, « 124 PAYS SOUS 30 000 $ · 41 ANS D’ÉCART » ran 7px past the break and
+   *  the break's own rule printed through « ÉCART ». The rule is handed to the arbiter below, so a
+   *  block that still reaches it is refused rather than struck through. */
+  const stackWidth = stackedPair
+    ? Math.max(widthOf(belowText, annot), widthOf(aboveText, annot))
+    : 0;
+  const stackLeft =
+    stackedPair && plot.left + 8 + stackWidth > breakX! - 8 ? PAD : plot.left + 8;
   const requests = stackedPair
     ? [
         {
@@ -319,13 +330,7 @@ export function DirectedScatter({
            *  again. The plate's top-left corner is where a life-expectancy-against-income cloud has
            *  no points — low income with high life expectancy — and the arbiter checks that rather
            *  than trusting it. */
-          at: {
-            x:
-              plot.left +
-              8 +
-              Math.max(widthOf(belowText, annot), widthOf(aboveText, annot)) / 2,
-            y: plot.top,
-          },
+          at: { x: stackLeft + stackWidth / 2, y: plot.top },
           anchors: ["below"],
           priority: 8,
           register: annot,
@@ -438,7 +443,19 @@ export function DirectedScatter({
       height: axisBand.ascent + axisBand.descent,
     },
   ];
+  /** The break's rule is ink the block must not cross; it is a line, so its box is its stroke. */
+  const breakRule = stackedPair
+    ? [
+        {
+          x: breakX! - direction.stroke.series / 2,
+          y: plot.top,
+          width: direction.stroke.series,
+          height: plot.bottom - plot.top,
+        },
+      ]
+    : [];
   const marks = [
+    ...breakRule,
     ...pairs.map((p) => ({
       x: x(p.x) - MARK_RADIUS,
       y: y(p.y) - MARK_RADIUS,
@@ -459,7 +476,7 @@ export function DirectedScatter({
     })),
     {
       frame: {
-        left: plot.left,
+        left: stackedPair ? PAD : plot.left,
         top: plot.top - annot.fontSize * 1.6,
         right: width - PAD,
         bottom: plot.bottom,

@@ -521,6 +521,31 @@ export function DirectedSolarSpreadHistogram({
             )}
             strokeWidth={direction.stroke.series}
           />
+          {/* A WRAPPED BLOCK STANDS ON A HALO OF THE GROUND. One line sits in the band above the
+              top gridline; two lines are taller than the gridlines' pitch and one of them lands on
+              a gridline wherever the arbiter puts the block — measured at 1080x1080 in `creme`,
+              the 30 gridline ran through « solar generation, 2024 ». Handing the gridlines to the
+              arbiter cannot help: there is no gap between them a two-line block fits in. The halo
+              is this tree's answer wherever a label must cross furniture, and it moves nothing. */}
+          {shareLines.length > 1 &&
+            shareLines.map((l, i) => (
+              <text
+                key={`share-halo-${i}`}
+                x={byId.get("share")!.box.x}
+                y={byId.get("share")!.box.y + bandOf(annot).ascent + i * annotLead}
+                fill="none"
+                stroke={direction.ground}
+                strokeWidth={3.4}
+                strokeLinejoin="round"
+                fontFamily={annot.fontFamily}
+                fontSize={annot.fontSize}
+                fontWeight={annot.fontWeight}
+                fontStyle={annot.fontStyle}
+                letterSpacing={annot.letterSpacing}
+              >
+                {l}
+              </text>
+            ))}
           {shareLines.map((l, i) => (
             <text
               key={`share-${i}`}

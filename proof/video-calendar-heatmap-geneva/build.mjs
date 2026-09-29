@@ -209,6 +209,12 @@ export function buildDirection(id, { subject, states, copy }) {
       title: walked(registers.display.fill ?? ink, TEXT_CONTRAST_MIN, "the title"),
       axis: walked(muted, TEXT_CONTRAST_MIN, "the months and days"),
       count: walked(ink, TEXT_CONTRAST_MIN, "the counts"),
+      /** THE WARM COUNT IS SET IN THE ACCENT: it counts the days the curve draws in the accent (`hot`), so it takes
+       *  their colour, as the genre's other counters do (the choropleth's, the cartogram's). In the ink, the frame the
+       *  video ends on carried no pixel of its direction's accent — the curve has fallen into the grid by then, and the
+       *  eyebrow that carries it on the static plate leaves with the title card. The run's count stays in the ink, the
+       *  colour of the outline it counts. */
+      warm: walked(accent, TEXT_CONTRAST_MIN, "the warm count"),
     },
   };
 

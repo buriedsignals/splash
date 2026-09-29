@@ -185,6 +185,8 @@ export function DirectedHistogramWeb({
   const lastEdge = bars[bars.length - 1].from + binWidth;
   const x = (v: number) => (v / lastEdge) * FRAME.width;
   const y = fitY(0, yTicks[yTicks.length - 1], FRAME.height);
+  /** The upper edge of the last bin the headline counts — where the claim's own name begins. */
+  const claimEdge = Math.max(...bars.filter((b) => b.inClaim).map((b) => b.from + binWidth));
 
   /**
    * THE YARDSTICK, REFUSED BEFORE IT IS DRAWN. Handed the twenty-one bars the beat actually draws
@@ -409,15 +411,31 @@ export function DirectedHistogramWeb({
         </svg>
 
         <div className="overlay" aria-hidden="true">
+          {/* THE CLAIM'S NAME STARTS AT THE CLAIM'S OWN EDGE, on one line. It used to be typed at
+              `left: 28%` and capped at 46 % of the plot, which at 375 px wrapped it to two lines
+              whose second ran under the median's name at `top: 22%` — in all three directions. It
+              now begins where the last bin the headline counts ends, at the plot's top edge, above the
+              short bars to its right, and does not wrap. */}
           <span
             className="note"
-            style={{ ...regs.annot, color: accent, ...noteAnchor(28), top: "3%" }}
+            style={{ ...regs.annot, color: accent, left: `calc(${pct(x(claimEdge), FRAME.width)}% + 4px)`, top: 0, whiteSpace: "nowrap" }}
           >
             {claimNote}
           </span>
+          {/* THE MEDIAN'S NAME, ONE LINE UNDER THE CLAIM'S AT THE LEAST. `22%` is where it reads on a
+              wide plot; on a phone 22 % of the plot is less than the claim note's own line, so its
+              top is never less than that line (`1lh` — both notes are the annot register) plus 3 px. The
+              plot there is 96 px tall and the 2–4 t bar tops out at 44 % of it, so the line budget is
+              measured, not generous: 3 px clear in creme, the tallest-leaded direction. */}
           <span
             className="note"
-            style={{ ...regs.annot, color: label, ...noteAnchor(pct(x(median), FRAME.width)), top: "22%" }}
+            style={{
+              ...regs.annot,
+              color: label,
+              ...noteAnchor(pct(x(median), FRAME.width)),
+              top: "max(22%, calc(1lh + 3px))",
+              whiteSpace: "nowrap",
+            }}
           >
             {medianNote}
           </span>

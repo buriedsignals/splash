@@ -173,15 +173,18 @@ export function AreaFrame(
         ))}
       </g>
 
-      {/* ── THE SURFACE: filled in the accent, stepped back to its tint, then repainted from the right as the rule passes. ── */}
-      <path d={scene.surface} fill={colours.later} />
-      <path d={scene.surface} fill={colours.earlier} opacity={scene.gauge} />
-      <path
-        d={scene.surface}
-        fill={colours.later}
-        clipPath="url(#area-recent)"
-        opacity={scene.gauge}
-      />
+      {/* ── THE SURFACE: filled in the accent, stepped back to its tint, then repainted from the right as the rule passes.
+           The step back is a CUT: one surface node whose fill switches on the frame the subject opens, never a tint
+           dissolving over the accent (motion-grammar.md; skills/splash/test/video-handover-is-a-cut.test.ts). The recent
+           repaint mounts on that same frame, at full ink, clipped to nothing until the rule starts to travel. ── */}
+      <path d={scene.surface} fill={scene.tinted ? colours.earlier : colours.later} />
+      {scene.tinted ? (
+        <path
+          d={scene.surface}
+          fill={colours.later}
+          clipPath="url(#area-recent)"
+        />
+      ) : null}
 
       <g opacity={scene.gauge}>
         <line

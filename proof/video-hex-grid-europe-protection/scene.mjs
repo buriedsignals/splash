@@ -7,7 +7,8 @@
 //     hexagon drawn in that same box over the last third, and a ground rect rises over the basemap with it, so the
 //     cells end on no map at all.
 //   - COUNT: a cell takes its count class when the class reveal reaches it, lowest first.
-//   - RATE: every cell's fill travels from its count class's colour to its rate class's; the key's bornes cross-fade.
+//   - RATE: every cell's fill travels from its count class's colour to its rate class's; the key's words change by a cut
+//     at the middle of that travel, where the codes' inks change (`HexFrame.tsx`, `byRate`).
 
 import { EVENT_ORDER, progressOf } from "#shared/chart-video/timing.ts";
 import { clamp01, ease } from "../../skills/scrolly/assets/reveal.mjs";

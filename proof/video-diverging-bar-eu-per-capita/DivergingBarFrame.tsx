@@ -57,8 +57,15 @@ export function DivergingBarFrame(props: DivergingBarFrameProps & { at: number; 
   const scene = sceneAt(props as never, props.at);
   const axisHalo = { colour: colours.ground, width: props.halo.axis };
   const count = props.counts[String(scene.landed)];
-  // A fall's change is read only on the whole scale: the camera sends its tip out of the frame.
-  const fallsReadable = scene.flip >= 1 ? Math.max(0, 1 - scene.camera * 8) : 0;
+  // A fall's change is read only on the whole scale: the camera sends its tip out of the frame. The falls' values and
+  // « ×200 » share a row, so neither dissolves over the other (motion-grammar.md;
+  // skills/splash/test/video-handover-is-a-cut.test.ts): the values are printed only while the scale is whole and leave by
+  // a cut on the camera's first frame out; « ×200 » is printed only while the camera is all the way in — the one scale it
+  // names, and the only one at which the zero line has reached the middle and the falls have left the place it prints
+  // (measured: at half the zoom it still sits on Italy's and Poland's bars) — and leaves by a cut on the first frame of
+  // the pull-back. Between the two, neither is on screen.
+  const zoomed = scene.camera >= 1;
+  const fallsReadable = scene.flip >= 1 && scene.camera === 0 ? 1 : 0;
 
   return (
     <svg ref={props.svgRef} xmlns="http://www.w3.org/2000/svg" width={frame.width} height={frame.height} viewBox={`0 0 ${frame.width} ${frame.height}`}>
@@ -111,7 +118,7 @@ export function DivergingBarFrame(props: DivergingBarFrameProps & { at: number; 
         if (row.key !== props.subject) return null;
         const c = props.columns[row.column];
         const x = c.middle + props.gap;
-        return <Text key="zoom" line={{ ...props.zoomWord, x, y: props.zoomWord.y }} register={r.value} fill={colours.text.count} opacity={scene.camera} halo={{ colour: colours.ground, width: props.halo.value }} />;
+        return zoomed ? <Text key="zoom" line={{ ...props.zoomWord, x, y: props.zoomWord.y }} register={r.value} fill={colours.text.count} halo={{ colour: colours.ground, width: props.halo.value }} /> : null;
       })}
       {props.rows.map((row) =>
         row.key === props.subject ? <rect key="ring" x={row.box.x} y={row.box.y} width={row.box.w} height={row.box.h} rx={row.box.h / 2} fill="none" stroke={colours.ring} strokeWidth={props.strokes.ring} opacity={scene.ring} /> : null,

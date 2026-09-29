@@ -75,7 +75,9 @@ export function sceneAt(props, frame) {
     paths,
     tip,
     tipIndex: whole,
-    tipShown: clamp01(Math.min(clock * 20, (1 - clock) * 20)),
+    // India's rank arrives WITH its tip, on the clock's first frame, rather than dissolving in over the names it is
+    // already crossing (the 1991 pass runs through the first frames of the clock); it leaves as the clock ends.
+    tipShown: clock > 0 ? clamp01((1 - clock) * 20) : 0,
     passes: props.passes.map((p) => clamp01((reach - p.index + 0.2) * 3)),
     arrived: clamp01((clock - 0.97) / 0.03),
     focus: clamp01(at("focus") - at("release")),

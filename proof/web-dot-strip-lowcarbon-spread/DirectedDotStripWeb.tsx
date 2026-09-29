@@ -202,7 +202,7 @@ export function DirectedDotStripWeb({
   ink: string;
   muted: string;
   grid: string;
-  measure: (text: string, options: { fontSize: number; fontWeight?: number; fontFamily?: string }) => number;
+  measure: (text: string, options: { fontSize: number; fontWeight?: number; fontFamily?: string; fontStyle?: string }) => number;
 }) {
   const regs = webRegisters(direction, { ink: { ink, muted, accent } });
 
@@ -299,6 +299,49 @@ export function DirectedDotStripWeb({
     lineHeightPx: Math.round(statStyle.fontSize * 1.5),
   });
 
+  /**
+   * THE STATISTICS ROW SITS ONE LINE UNDER ITS HEADING IN READER PIXELS, NOT IN GEOMETRY UNITS.
+   *
+   * `row.reserve` is a line height in CSS pixels, and it was added to the heading's top as if it
+   * were geometry units — so the gap between "2000" and its own row was a function of the plot's
+   * width: 16 px of a 18 px line at 768 (the two runs printed over each other, in all three
+   * directions) and 37 px of air at 1600. Pinned in pixels, the row lands exactly one line under
+   * its heading at every width where the band above the dots can hold both lines.
+   *
+   * WHERE IT CANNOT, IT IS NOT PRETENDED. That band is `railDy - jitter - 8 - statTop` = 52
+   * geometry units above the highest dot and tick, and it holds heading + row + air only once the
+   * CELL (the viewBox scaled uniformly, `render-web.mjs`'s `--cell-w`) is at least `widePx` wide —
+   * and only while the row is still one line. Both numbers are measured here from the direction's
+   * own annot register and the real strings; the query asks the plot, which is a size container, for
+   * both of its dimensions, because the cell is the smaller of the width it is given and the width
+   * its height allows. Below that the page keeps its previous placement — the 375 px state, where
+   * the cell is 264 px wide and a 52-unit band is 16 px for 38 px of type, is a frame-level
+   * limitation this row cannot solve by moving, and it stays on the guard's OWED list.
+   */
+  const annotFamily = String(regs.annot.fontFamily).split(",")[0].replace(/"/g, "").trim();
+  const annotLead = statStyle.fontSize * Number(regs.annot.lineHeight ?? 1.5);
+  const annotTracking = Number.parseFloat(String(regs.annot.letterSpacing ?? "0")) || 0;
+  const upper = String(regs.annot.textTransform ?? "none") === "uppercase";
+  const statPx = Math.ceil(
+    Math.max(
+      ...stats.map(
+        (s) =>
+          measure(upper ? s.text.toUpperCase() : s.text, {
+            fontSize: statStyle.fontSize,
+            fontWeight: statStyle.fontWeight,
+            fontFamily: annotFamily,
+            fontStyle: regs.annot.fontStyle,
+          } as any) +
+          annotTracking * s.text.length,
+      ),
+    ),
+  );
+  const headGapPx = 2;
+  const bandUnits = FRAME.railDy - FRAME.jitter - 8 - FRAME.statTop;
+  const widePx = Math.ceil(
+    Math.max(statPx + 8, (FRAME.width * (2 * annotLead + headGapPx)) / bandUnits),
+  );
+  const wideHeightPx = Math.ceil((widePx * FRAME.height) / FRAME.width) + FRAME.xAxisRowPx;
   const qualifyOptions = qualifyOptionsForMarkup(qualify, QUALIFY_ID_PREFIX);
   const qualifyNotes = qualifyNotesForMarkup(qualify);
   const defaultSlug = qualifySlugOf(qualify.options[0].key);
@@ -327,6 +370,11 @@ export function DirectedDotStripWeb({
     // and wrong for a row that spans the plot: unwrapped, this row measured 634 px of document in a
     // 375 px window, which the format's own fit check reports as exactly that.
     `${SCOPE} [data-stack-total] { position: absolute; left: 0; max-width: 100%; white-space: normal; }`,
+    // One line under its heading, in pixels — see `widePx` above. `!important` because the narrow
+    // placement is the inline `top`, which beats any generated rule; the plot is the size container.
+    `@container (min-width: ${widePx}px) and (min-height: ${wideHeightPx}px) {`,
+    `  ${SCOPE} .chart-plot .overlay [data-stack-total] { top: calc(var(--head-top) + ${Number((annotLead + headGapPx).toFixed(2))}px) !important; }`,
+    `}`,
     // The answer is four readings long and the format's box is 220px wide, which put a five-line box
     // over the control the reader had just used on a sibling beat. Bare `#tooltip`: the element is
     // the page's, not this figure's.
@@ -537,6 +585,7 @@ export function DirectedDotStripWeb({
                     style={{
                       ...regs.annot,
                       color: labelInk,
+                      ["--head-top" as string]: `${pct(laneTop(i) + FRAME.statTop, FRAME.height)}%`,
                       top: `${pct(laneTop(i) + FRAME.statTop + row.reserve, FRAME.height)}%`,
                       background: "transparent",
                       padding: 0,

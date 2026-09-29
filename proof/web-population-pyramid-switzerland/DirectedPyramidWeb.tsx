@@ -44,7 +44,9 @@
  */
 
 import { mix, adjustToContrast, contrast, TEXT_CONTRAST_MIN, NON_TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
-import { webRegisters, figureVars, noteAnchor } from "#shared/design-base/web.mjs";
+import { webRegisters, figureVars } from "#shared/design-base/web.mjs";
+import { measureText } from "#shared/chart-beat/render-still.mjs";
+import { registerOf, leadOf } from "#shared/design-base/register.mjs";
 import {
   assertFoldDeclaration,
   foldChromeCss,
@@ -237,11 +239,83 @@ export function DirectedPyramidWeb({
   }));
   const hostOf = new Map(declaration.options.map((o) => [foldSlugOf(o.key), o.host]));
 
+  /**
+   * WHERE THE PEAK'S NAME GOES: LEVEL WITH ITS OWN BAND, IN A GUTTER OF ITS OWN.
+   *
+   * It used to be anchored at the widest bar's own end, and `noteAnchor` hands anything past 75 % of
+   * the plot its RIGHT edge: so the note grew leftward, back over the bar it names. `.note` carries
+   * an opaque ground chip, and it punched that chip into the 55-59 women's bar at every width, in all
+   * three directions — 4 to 20 of 25 sample points of its own box inside the bar's fill.
+   *
+   * The widest band has no room beside itself INSIDE the plot; that is what makes it the widest. A
+   * first repair seated the note on the nearest row whose bars cleared it, which cleared the mark
+   * and lost the band: at 1400 px it sat beside 70-74, at 768 beside 85-89, naming a band three to
+   * six rows away with nothing joining them. So the room is made OUTSIDE the drawing instead — the
+   * format's own third grid column (`--end-gutter`, the bump's final ranks use it), as wide as the
+   * note measured in the direction's own annot register, broken after its colon — and the note
+   * sits in it at the 55-59 row's own height, a few pixels past the 350k edge its bar nearly reaches.
+   *
+   * THE GUTTER IS PAID FOR BY THE DRAWING, SO IT IS TAKEN ONLY WHILE THE DRAWING CAN AFFORD IT: while
+   * a row stays at least one line of the axis register tall, so the band names on the y axis are
+   * never squeezed into each other to make room for the note. Measured, not typed — the axis lead
+   * over the row's share of the frame. Below that the gutter closes and the note moves to the
+   * reserved row directly above the plot, the row the fold keeps for its sentence (which the
+   * untouched option leaves empty); a chosen fold's own sentence replaces it there, and the band
+   * stays named on its axis in the accent.
+   */
+  const annotReg = registerOf(direction, "annot", { family: "chart" });
+  const cased = (t: string) => (annotReg.transform === "uppercase" ? t.toUpperCase() : t);
+  const measure = (t: string) =>
+    measureText(cased(t), {
+      fontSize: annotReg.fontSize,
+      fontWeight: annotReg.fontWeight as number,
+      fontFamily: annotReg.fontFamily,
+      fontStyle: annotReg.fontStyle,
+    }) + annotReg.letterSpacing * t.length;
+  const CHIP_X = 8; // `.note`'s own padding, 4 px a side, in the shared stylesheet
+  const NOTE_GAP = 6;
+  const Y_GUTTER = 56;
+  const breakAt = peakNote.indexOf(" : ");
+  const peakParts = breakAt > 0 ? [peakNote.slice(0, breakAt + 2), peakNote.slice(breakAt + 3)] : [peakNote];
+  /** The note's widest line, on its chip — a 5 % margin because the page's face is rasterised by the
+   *  browser and this measurement by resvg, and a line one pixel wider than its box wraps. */
+  const noteWidth = Math.ceil((Math.max(...peakParts.map(measure)) + CHIP_X) * 1.05);
+  const endGutter = noteWidth + NOTE_GAP;
+  const peakIndex = bands.findIndex((b) => b.peak);
+  const axisLead = leadOf(registerOf(direction, "axis", { family: "chart" }));
+  /** The narrowest drawing whose rows are each one axis line tall, and the figure that holds it with
+   *  both gutters. */
+  const drawingFloor = Math.ceil((axisLead * FRAME.width) / ROW);
+  const gutterFrom = drawingFloor + Y_GUTTER + endGutter;
+  const axisOverhang = Math.ceil(axisLead / 2) + 2;
+  const noneFold = foldOptions.find((o) => o.isNone)!.slug;
+  const PEAK = `${SCOPE} .chart-plot .end-axis .note.peak-note`;
+  const peakCss = [
+    `${SCOPE} { container-type: inline-size; }`,
+    `${SCOPE} .chart-plot .end-axis { pointer-events: none; }`,
+    `${PEAK} { left: ${NOTE_GAP}px; top: ${pct(cy(peakIndex), height)}%; transform: translateY(-50%); width: ${noteWidth}px; white-space: normal; }`,
+    // `!important` on the plot's two frame properties only: they are inline styles, which beat any
+    // generated rule, and they are the ones this state has to take back.
+    `@container not (min-width: ${gutterFrom}px) {`,
+    `  ${SCOPE} .chart-plot { --end-gutter: 0px !important; aspect-ratio: ${FRAME.width + Y_GUTTER} / ${height + FRAME.xAxisRowPx} !important; }`,
+    `  ${PEAK} {`,
+    `    left: calc(var(--cell-slack-x, 0px) - 100cqw); width: 100cqw; box-sizing: border-box;`,
+    `    top: auto; transform: none;`,
+    `    bottom: calc(100% + var(--cell-slack-y, 0px) + ${axisOverhang}px);`,
+    `    padding-left: 0; padding-right: 0; background: none;`,
+    `  }`,
+    `  ${SCOPE}:has(.chart-fold input:checked:not([value="${noneFold}"])) ${PEAK.slice(SCOPE.length + 1)} { visibility: hidden; }`,
+    `}`,
+  ].join("\n");
+
   const css = [
+    peakCss,
     // A SECOND LAYER OVER THE SAME GRID CELL, and the split is the point rather than a workaround.
     // `.overlay` is the PLATE's layer: `verify-web.mjs` reads every word in it and requires all of
-    // them to be drawn unconditionally, which is exactly right for this page's peak note and exactly
-    // wrong for a crossing that belongs to an option nobody has chosen yet.
+    // them to be drawn unconditionally, which is exactly wrong for a crossing that belongs to an
+    // option nobody has chosen yet. (The peak's name left `.overlay` for the plot's third column,
+    // `.end-axis` — see `peakCss`: it sits outside the drawing, and on a phone it gives its row to
+    // a chosen fold's sentence.)
     `${SCOPE} .chart-plot .option-layer { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }`,
     // What each half takes under the reader's pointer. One rule per half, off the mark's own fill —
     // the format lifts `--mark-active` from the mark and never from the text ink.
@@ -318,9 +392,10 @@ export function DirectedPyramidWeb({
       <div
         className="chart-plot"
         style={{
-          ["--y-gutter" as string]: "56px",
+          ["--y-gutter" as string]: `${Y_GUTTER}px`,
+          ["--end-gutter" as string]: `${endGutter}px`,
           ["--x-axis-h" as string]: `${FRAME.xAxisRowPx}px`,
-          aspectRatio: `${FRAME.width + 56} / ${height + FRAME.xAxisRowPx}`,
+          aspectRatio: `${FRAME.width + Y_GUTTER + endGutter} / ${height + FRAME.xAxisRowPx}`,
         }}
       >
         <div className="y-axis" style={{ pointerEvents: "none" }}>
@@ -405,22 +480,27 @@ export function DirectedPyramidWeb({
           <rect className="hit-area" x={0} y={0} width={FRAME.width} height={height} fill="transparent" pointerEvents="all" />
         </svg>
 
-        <div className="overlay" aria-hidden="true">
+        {/* THE PEAK'S NAME, IN THE PLOT'S THIRD COLUMN — see `peakCss` for why it is not on the plate. */}
+        <div className="end-axis" aria-hidden="true">
           {bands.filter((b) => b.peak).map((b) => {
             const i = bands.indexOf(b);
             return (
               <span
                 key={b.key}
-                className="note"
-                style={{
-                  ...regs.annot,
-                  color: accent,
-                  ...noteAnchor(pct(x(b.right) + 12, FRAME.width)),
-                  top: `${pct(cy(i), height)}%`,
-                  transform: `${noteAnchor(pct(x(b.right) + 12, FRAME.width)).transform} translateY(-50%)`,
-                }}
+                className="note peak-note"
+                data-band={bands[i].key}
+                style={{ ...regs.annot, color: accent }}
               >
-                {peakNote}
+                {/* Two unbreakable runs, so the only place the note can wrap is the one the
+                    placement above measured: after its colon. */}
+                {peakParts.length === 2 ? (
+                  <>
+                    <span style={{ whiteSpace: "nowrap" }}>{peakParts[0]}</span>{" "}
+                    <span style={{ whiteSpace: "nowrap" }}>{peakParts[1]}</span>
+                  </>
+                ) : (
+                  <span style={{ whiteSpace: "nowrap" }}>{peakNote}</span>
+                )}
               </span>
             );
           })}

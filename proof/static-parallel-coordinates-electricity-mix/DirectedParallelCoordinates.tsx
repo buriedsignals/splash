@@ -299,16 +299,22 @@ export function DirectedParallelCoordinates({
       .map((v, i) => ({ i, share: v / axes[i].ceiling }))
       .sort((a, b) => b.share - a.share);
     let seat: (typeof labels)[number] | null = null;
+    /** THE SEAT IS THE BAND AROUND THE BASELINE THE NAME IS SET ON. Measured on `creme` at
+     *  540 x 960, the box ran from half an ascent above the line's value to one descent below it —
+     *  2px shorter than the ink, and not where the ink is, which sits half an ascent LOWER, on the
+     *  baseline — so « Finlande » was seated 8.6px under « Belgique » and the two shared
+     *  47.5 x 2.4px of ink. */
     for (const { i } of order) {
       const w = widthOf(set(l.name, axisReg), axisReg);
       const y = scales[i](l.values[i]);
+      const baseline = y + axisBand.ascent / 2 - 1;
       for (const anchor of ["start", "end"] as const) {
         const x = anchor === "start" ? railX(i) + 6 : railX(i) - 6;
         const box = {
           x0: anchor === "start" ? x - 2 : x - w - 2,
-          y0: y - axisBand.ascent / 2 - 1,
+          y0: baseline - axisBand.ascent - 1,
           x1: anchor === "start" ? x + w + 2 : x + 2,
-          y1: y + axisBand.descent + 1,
+          y1: baseline + axisBand.descent + 1,
         };
         if (box.x0 < PAD || box.x1 > width - PAD) continue;
         if (placed.some((p) => overlaps(p, box))) continue;
@@ -317,7 +323,7 @@ export function DirectedParallelCoordinates({
          *  sat on the coal rail — a label lying over an axis reads as belonging to that axis. */
         if (axes.some((_, j) => j !== i && railX(j) > box.x0 - 3 && railX(j) < box.x1 + 3)) continue;
         placed.push(box);
-        seat = { l, x, y: y + axisBand.ascent / 2 - 1, anchor, text: l.name };
+        seat = { l, x, y: baseline, anchor, text: l.name };
         break;
       }
       if (seat) break;

@@ -25,7 +25,7 @@
  */
 
 import { mix, adjustToContrast, contrast, TEXT_CONTRAST_MIN, NON_TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
-import { webRegisters, figureVars, noteAnchor, fitY } from "#shared/design-base/web.mjs";
+import { webRegisters, figureVars, fitY } from "#shared/design-base/web.mjs";
 import {
   assertLevelDeclaration,
   levelCss,
@@ -462,6 +462,20 @@ export function DirectedLollipopWeb({
         ))}
       </div>
 
+      {/* THE SELECTION RULE, UNDER THE KEY AND OFF THE PLOT. It is a sentence about WHICH six are
+          drawn, not a label on any one of them, and it used to be parked in the plot's top-left
+          corner as a `.note` capped at 46 % of the plot's width. That corner is not empty: it is
+          the band the tallest pairs print their values in. Measured by
+          `web-annotation-clears-its-marks`: at 768 px the three-line note sat on the United
+          States' « 21,4 », and at 375 px — where the plot is pinned near its 120 px floor and
+          170 px wide — it wrapped to eight lines and ran over China's « 2,9 », and on rapport
+          through one of its heads. No corner of a plot that size holds a 90-character sentence,
+          so it takes the voice it already had (the annotation voice, the key's own) in the column
+          above the plot, where it is drawn in every state and crosses nothing. */}
+      <p className="chart-selection" style={{ ...regs.annot, color: label, margin: "0 0 4px", flex: "0 0 auto" }}>
+        {rule}
+      </p>
+
       {/* THE CONTROL. Native radios in a real `<fieldset>` with a `<legend>` — a radio group to the
           keyboard and to a screen reader before this page's stylesheet does anything to it — and
           `aria-label` carries the reading a reader who is not looking at the picture would otherwise
@@ -682,9 +696,6 @@ export function DirectedLollipopWeb({
               </span>
             </span>
           ))}
-          <span className="note" style={{ ...regs.annot, color: label, ...noteAnchor(1), top: "1%" }}>
-            {rule}
-          </span>
 
           {/* WHICH REFERENCE IS WHICH YEAR, WRITTEN ON THE PLOT. Two flat rules at one country's two
               levels are not self-describing: China's lower rule is its 2000 level and Japan's lower

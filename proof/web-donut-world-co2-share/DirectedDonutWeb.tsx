@@ -189,6 +189,7 @@ export function DirectedDonutWeb({
   ink,
   muted,
   grid,
+  measure,
 }: {
   wedges: Wedge[];
   rings: Ring[];
@@ -207,6 +208,7 @@ export function DirectedDonutWeb({
   ink: string;
   muted: string;
   grid: string;
+  measure: (text: string, options: { fontSize: number; fontWeight?: number | string; fontFamily?: string }) => number;
 }) {
   const regs = webRegisters(direction, { ink: { ink, muted, accent } });
 
@@ -325,6 +327,54 @@ export function DirectedDonutWeb({
   // its own family, because the build's face scan reads family and weight off the same declaration:
   // a weight routed through a custom property on the figure made it embed Open Sans at 400 only and
   // carry a Merriweather 500 nobody sets. The yardstick lights and dims by ink alone here anyway.
+  /**
+   * THE TWO TOTALS GO IN THE HOLE ONLY WHILE THE HOLE CAN HOLD THEM.
+   *
+   * They were typed into it at a pitch of 6 % of the plot's height, and the hole is 62 of the
+   * frame's 760 units wide on each side of the centre. Type is a fixed CSS size and the frame is
+   * not: at a 375 px window the hole measures 44 px across and the three lines 80–95 px, so they
+   * were printed over each other and over both rings, in all three directions — measured by
+   * `web-annotation-clears-its-marks.test.ts`.
+   *
+   * So the block's own measured box is compared with the hole's radius, and where the cell is too
+   * narrow for its corners to clear, the block leaves the donut altogether and stands on the ground
+   * to its LEFT, right-aligned against the outermost thing drawn (the 2023 ring's reference band) —
+   * the one strip of this frame no option ever draws into. The lines now flow at their own leading
+   * inside one box instead of being seated at percentages that close up as the plot shrinks.
+   */
+  const annotFont = {
+    fontSize: Number.parseFloat(regs.annot.fontSize as string),
+    fontWeight: regs.annot.fontWeight as number,
+    fontFamily: String(regs.annot.fontFamily).split(",")[0].replace(/"/g, ""),
+  };
+  const tracking = Number.parseFloat(String(regs.annot.letterSpacing)) || 0;
+  const cased = (text: string) => (regs.annot.textTransform === "uppercase" ? text.toUpperCase() : text);
+  // `measure` models neither case, tracking nor an italic's overhang; the first two are applied and
+  // the third is a 6 % margin.
+  const widthOf = (text: string) => measure(cased(text), annotFont) * 1.06 + tracking * text.length;
+  const blockW = Math.max(...centreNote.map(widthOf));
+  const blockH = centreNote.length * annotFont.fontSize * Number(regs.annot.lineHeight);
+  const HOLE_AIR_PX = 4;
+  const holeR = Math.min(...rings.map((r) => r.inner));
+  const holdsFromPx = Math.ceil(((Math.hypot(blockW / 2, blockH / 2) + HOLE_AIR_PX) * FRAME.width) / holeR);
+  const outerR = Math.max(...rings.map((r) => r.outer), ...GHOST.map((g) => g.to));
+  const BESIDE_GAP_PX = 8;
+  const centreCss = [
+    `${SCOPE} .chart-plot .overlay .centre-note { position: absolute; left: 50%; top: 50%; ` +
+      `transform: translate(-50%, -50%); text-align: center; }`,
+    `${SCOPE} .chart-plot .overlay .centre-note .note { position: static; display: block; ` +
+      `transform: none; background: transparent; padding: 0; white-space: nowrap; }`,
+    // The cell is the minimum of the track's width and twice its height (this frame is 2:1), so a
+    // cell narrower than the threshold is either of those — see `render-web.mjs`'s `--cell-w`.
+    `@container (max-width: ${holdsFromPx - 1}px) or (max-height: ${Math.floor(
+      ((holdsFromPx - 1) * FRAME.height) / FRAME.width,
+    )}px) {`,
+    `  ${SCOPE} .chart-plot .overlay .centre-note { left: auto; ` +
+      `right: calc(${(50 + (outerR / FRAME.width) * 100).toFixed(3)}% + ${BESIDE_GAP_PX}px); ` +
+      `transform: translateY(-50%); text-align: right; }`,
+    `}`,
+  ].join("\n");
+
   const { color: axisInk, fontWeight: axisWeight, ...axisRest } = regs.axis as any;
   const axisWeightCss = String(axisWeight ?? 400);
   const css = [
@@ -346,6 +396,7 @@ export function DirectedDonutWeb({
       dim: { ink: "var(--muted)", weight: axisWeightCss },
       revealMs: REVEAL_MS,
     }),
+    centreCss,
   ].join("\n\n");
 
   return (
@@ -507,25 +558,13 @@ export function DirectedDonutWeb({
         <div className="overlay" aria-hidden="true">
           {/* THE HOLE IS NOT DECORATION: it is where the two totals are stated, because the rings
               carry shares and a share says nothing about the whole it is a share of. */}
-          {centreNote.map((line, i) => (
-            <span
-              key={line}
-              className="note"
-              style={{
-                ...regs.annot,
-                color: label,
-                left: "50%",
-                top: `${50 + (i - (centreNote.length - 1) / 2) * 6}%`,
-                transform: "translate(-50%, -50%)",
-                background: "transparent",
-                padding: 0,
-                textAlign: "center",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {line}
-            </span>
-          ))}
+          <div className="centre-note">
+            {centreNote.map((line) => (
+              <span key={line} className="note" style={{ ...regs.annot, color: label }}>
+                {line}
+              </span>
+            ))}
+          </div>
           {/* EVERY OPTION'S OWN CHIP, drawn once and hidden — the stylesheet reveals the chosen
               one. An opaque plate on the ground's own colour, so the words are read at text
               contrast rather than against whichever of the four tones the wedge underneath

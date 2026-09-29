@@ -266,7 +266,11 @@ export function buildDirection(id, { subject, states, copy }, { measured = undef
     if (!w) throw new Error(`${what} has no ink that reads on ${ground}`);
     return w;
   };
-  const ringInk = floored(mix(accent, ink, 0.45), "a ring");
+  /** THE RING IS THE ACCENT ITSELF — the one colour on the frame that no class takes. It was `mix(accent, ink, 0.45)`,
+   *  a darker step of the ramp's own hue, so the frame the video ends on carried no pixel of its direction's accent
+   *  while the static sibling rings its subject in the accent (`static-hex-grid-europe-protection`, `accentInk`), as
+   *  `geo-discipline.md` §8 asks: the ramp is the quantity, the accent is spent on the subject's outline. */
+  const ringInk = floored(accent, "a ring");
   /** A word read on every ground the key column stands on — the sea and the land on the map, the ground under the cells. */
   const readsOnAll = (c, what) => {
     const on = [sea, land, ground];

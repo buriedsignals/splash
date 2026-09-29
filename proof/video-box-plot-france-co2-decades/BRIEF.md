@@ -43,7 +43,7 @@ then **compares** the summaries with one mark sliding from median to median.
 | `reference` | France, year by year | **reveal in order** | the ticks and the decade names; the 75 annual readings appear in chronological order, each at its year inside its decade's slot, at its value | every reading at `y(value)`; 2020–24 fills half its slot |
 | `reveal` | a box is its decade's years | **gather + split** | decade after decade, the readings slide sideways into one column, keeping their heights; the median draws through them, the box opens from it to Q1 and Q3, the whiskers run to the furthest years inside the fence and the one year beyond them is ringed; the box, whiskers and ring lift out to the right, leaving the readings beside them | quartiles and whiskers from `summarizeDecade`; the ring on 1980's 9.54 t, the only reading past a whisker |
 | `subject` | the peak, and every decade lower after it | **compare (slide onto)** | a copy of the 1950s median, in the accent, slides to each next box at its own height and then climbs or drops onto that box's median: up, up to the 1970s — which takes the accent, « 10,0 » — then down at each of the five steps after; « 4,3 » as it lands on the 2020s | two climbs then five drops, each landing on the next median |
-| `conclusion` | the whole box plot | **pull back** | the walking median dissolves into the 2020s' own; the credit | every box at its place, the readings beside it |
+| `conclusion` | the whole box plot | **pull back** | the walking median is lifted off the 2020s' own, a cut; the credit | every box at its place, the readings beside it |
 | `hold` | the box plot | — | nothing | hold = conclusion |
 
 ```json splash:choreography

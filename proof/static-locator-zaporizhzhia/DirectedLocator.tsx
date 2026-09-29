@@ -178,6 +178,18 @@ export function DirectedLocator({
   const waterHue = matchConvention("water")!.accent;
   const water = tints.water;
   const waterInk = adjustToContrast(waterHue, water, TEXT_CONTRAST_MIN);
+  /** A COUNTRY'S NAME IS SEATED ON ITS LAND AND MAY RUN ONTO ITS COAST, so its ink clears the floor
+   *  against the water as well as the land, not against the page it is never drawn on. Measured at
+   *  1080x1080 in `creme`: « ROUMANIE » ran from Romania onto the Black Sea's north-west corner,
+   *  most of its ink box was water, and #5f5e58 there is 4.38:1. The ink is walked only as far as
+   *  the floor asks, so a direction whose muted ink already clears both keeps it. */
+  const areaInk = [land, water].reduce(
+    (c, under) =>
+      contrast(c, under) >= TEXT_CONTRAST_MIN
+        ? c
+        : (adjustToContrast(c, under, TEXT_CONTRAST_MIN) ?? c),
+    mutedInk,
+  );
   /** THE SUBJECT'S OWN SENTENCE IS TEXT, AND IT SITS ON THE LAND. `accentInk` is the accent lifted
    *  against the PAGE, and `composeDirection` measures the accent against the basemap's grounds at
    *  the non-text floor, because the accent is carried by a dot and a ring. The two lines beside
@@ -618,7 +630,7 @@ export function DirectedLocator({
 
   const inkFor = (kind: string) =>
     kind === "area"
-      ? mutedInk
+      ? areaInk
       : kind === "water"
         ? waterInk
         : adjustToContrast(ink, land, TEXT_CONTRAST_MIN);

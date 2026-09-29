@@ -363,7 +363,12 @@ export function buildDirection(id, { subject, states, copy }) {
     fill,
     whole: walked(mix(darkPole, lightPole, 0.5), ground, NON_TEXT_CONTRAST_MIN, "the whole block"),
     rule: walked(muted, ground, NON_TEXT_CONTRAST_MIN, "a brace"),
-    ring: walked(ink, ground, NON_TEXT_CONTRAST_MIN, "the ring"),
+    /** THE RING IS THE ACCENT. Every band is a step of the accent's own hue toward the ink or the ground, so no band is
+     *  the accent itself — and the frame the video ends on, the title card gone, carried no pixel of its direction's
+     *  accent while the ring that names the subject was drawn in the ink. The subject takes the one saturated colour on
+     *  the frame (`visual-system.md`, "one semantic accent is reserved for the subject"); the ground halo under it parts
+     *  it from the dark coal step it runs along. */
+    ring: walked(accent, ground, NON_TEXT_CONTRAST_MIN, "the ring"),
     text: {
       eyebrow: walked(registers.eyebrow.fill ?? accent, ground, TEXT_CONTRAST_MIN, "the eyebrow"),
       title: walked(registers.display.fill ?? ink, ground, TEXT_CONTRAST_MIN, "the title"),

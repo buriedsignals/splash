@@ -425,6 +425,29 @@ export function DirectedLine({
         dropped.map((d) => `${d.id} (${d.why})`).join("; "),
     );
   const byId = new Map(placed.map((p) => [p.id, p]));
+
+  /** A GRIDLINE STOPS SHORT OF A LABEL IT WOULD RUN THROUGH. The arbiter clears the marks and the
+   *  tick labels it is handed; the gridlines are not among them, and handing them over is worse —
+   *  measured at all nine sizes and directions, it then dropped the crossing and both era labels,
+   *  because a plot with five gridlines has almost no two-line-high band a gridline is not in.
+   *  Measured on `creme` at 1920x1080 and 1080x1080, the 50 Mt gridline ran through the ascenders of
+   *  « pic de 1973 ». So the rule is broken around the label's box instead — the cartographer's
+   *  knock-out — which moves no label and leaves every gridline that crosses nothing untouched. */
+  const KNOCKOUT = 4;
+  const gridSegments = (gy: number) => {
+    const gaps = placed
+      .filter((p) => gy >= p.box.y - 1 && gy <= p.box.y + p.box.height + 1)
+      .map((p) => [p.box.x - KNOCKOUT, p.box.x + p.box.width + KNOCKOUT] as const)
+      .sort((a, b) => a[0] - b[0]);
+    const segments: Array<[number, number]> = [];
+    let from = g.plot.left;
+    for (const [a, b] of gaps) {
+      if (a > from) segments.push([from, Math.min(a, g.plot.right)]);
+      from = Math.max(from, b);
+    }
+    if (from < g.plot.right) segments.push([from, g.plot.right]);
+    return segments.filter(([a, b]) => b > a);
+  };
   const registerById = new Map(requests.map((r) => [r.id, r.register]));
 
   const textAt = (id: string) => {
@@ -596,16 +619,19 @@ export function DirectedLine({
 
       {yTicks.map((v, i) => (
         <g key={v}>
-          {v === reference ? null : (
-            <line
-              x1={g.plot.left}
-              x2={g.plot.right}
-              y1={gridScale(v)}
-              y2={gridScale(v)}
-              stroke={grid}
-              strokeWidth={direction.stroke.rule}
-            />
-          )}
+          {v === reference
+            ? null
+            : gridSegments(gridScale(v)).map(([x1, x2]) => (
+                <line
+                  key={x1}
+                  x1={x1}
+                  x2={x2}
+                  y1={gridScale(v)}
+                  y2={gridScale(v)}
+                  stroke={grid}
+                  strokeWidth={direction.stroke.rule}
+                />
+              ))}
           <text
             x={g.plot.left - 12}
             y={gridScale(v) + 4}

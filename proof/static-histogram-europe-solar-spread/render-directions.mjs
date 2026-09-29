@@ -107,9 +107,10 @@ const textPerRegister = {
 // ── ONE ART DIRECTION BY DEFAULT ─────────────────────────────────────────────
 //
 // The composer's best candidate for this beat's own PALETTE.md and this beat's own text — a
-// production render draws ONE direction, not three. `--filed` renders every filed demo direction
-// instead (a catalogue or demo proof, never a production render); `--only <label>` narrows to one
-// of the directions that would otherwise render.
+// production render draws ONE direction, not three. `--filed` renders the filed demo directions
+// instead (a catalogue or demo proof, never a production render) — every one except the label the
+// composed default writes, see below; `--only <label>` narrows to one of the directions that would
+// otherwise render.
 //
 // Usage:  bun render-directions.mjs [--filed] [--only <label>]
 const RUN_ARGS = process.argv.slice(2);
@@ -127,15 +128,25 @@ const newsroom = readPalette(HERE);
 // Three distinguishable voices: the distribution's bars, the threshold reference line, and the
 // accented count/share it names.
 const BEAT_FACTS = { evidenceLevels: 3 };
+const composition = composeDirections({ newsroom, filed: all, beat: BEAT_FACTS, textPerRegister });
+if (!composition.offered.length) throw new Error(`no composed direction holds up for this beat:\n${composeReport(composition, { beat: BEAT_FACTS })}`);
+const composed = composition.offered.slice(0, 1).map((d) => ({ label: labelOf(d.id), direction: d }));
+// THE TWO BRANCHES MUST NOT SHARE A FILE NAME. The composed default's label is a filed direction's
+// own label (`creme` today), so a `--filed` sweep wrote creme's FILED render over this beat's
+// production one under the same `renders/creme.*` — measured 2026-09-29: commit `cfd9ae652` did
+// exactly that, and the file could not say which branch had made it. That label belongs to the
+// composed render; `--filed` renders every OTHER filed direction beside it and never that one.
 let chosen;
 if (FILED) {
-  chosen = all.map((d) => ({ label: labelOf(d.id), direction: d }));
-  console.log("every filed demo direction (--filed): a catalogue proof, not a production render");
+  const owned = new Set(composed.map((d) => d.label));
+  chosen = all.map((d) => ({ label: labelOf(d.id), direction: d })).filter((d) => !owned.has(d.label));
+  console.log(
+    `every filed demo direction but ${[...owned].join(", ")} (--filed): a catalogue proof, not a production render — ` +
+      `renders/${[...owned].join(", ")}.* is the composed production render and --filed does not write it`,
+  );
 } else {
-  const composition = composeDirections({ newsroom, filed: all, beat: BEAT_FACTS, textPerRegister });
-  if (!composition.offered.length) throw new Error(`no composed direction holds up for this beat:\n${composeReport(composition, { beat: BEAT_FACTS })}`);
   console.log(composeReport(composition, { beat: BEAT_FACTS }));
-  chosen = composition.offered.slice(0, 1).map((d) => ({ label: labelOf(d.id), direction: d }));
+  chosen = composed;
 }
 if (ONLY !== null && !chosen.some((d) => d.label === ONLY)) throw new Error(`--only takes one of ${chosen.map((d) => d.label).join(", ")}`);
 chosen = chosen.filter((d) => ONLY === null || d.label === ONLY);

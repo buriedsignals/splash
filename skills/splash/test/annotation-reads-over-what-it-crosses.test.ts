@@ -410,10 +410,7 @@ for (const file of everySvg) {
  * Keyed by file, text, ink and the mark's fill — not by the ratio or coverage, which are
  * measurements: the same label in the same ink on the same mark is the same defect.
  */
-const OWED_TEXT_ON_A_MARK: readonly string[] = [
-  // 4.31:1 on 2026-09-29, 100% of the ink box on the mark, floor 4.5 at 10px/500.
-  `proof/static-marimekko-electricity-mix/renders/nocturne-square.svg: "15 %" in #FFFFFF against #558090`,
-];
+const OWED_TEXT_ON_A_MARK: readonly string[] = [];
 
 const ruleFindings: string[] = [];
 const textFindings: { key: string; detail: string }[] = [];

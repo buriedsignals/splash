@@ -179,35 +179,7 @@ type Owed = {
   direction: (typeof DIRECTION_IDS)[number];
   expected: string;
 };
-const OWED: Record<string, Owed> = {
-  // Its committed `creme.png` is the `--filed` render (creme's own `#1757B6`), not the composed one.
-  "static-histogram-europe-solar-spread": {
-    population: "composed",
-    direction: "creme",
-    expected: "#118448",
-  },
-  // The four video final frames that carry creme's accent only as a darker, mixed ramp.
-  "video-calendar-heatmap-geneva": {
-    population: "filed",
-    direction: "creme",
-    expected: "#1757B6",
-  },
-  "video-hex-grid-europe-protection": {
-    population: "filed",
-    direction: "creme",
-    expected: "#1757B6",
-  },
-  "video-marimekko-electricity-mix": {
-    population: "filed",
-    direction: "creme",
-    expected: "#1757B6",
-  },
-  "video-proportional-symbol-europe-capacity": {
-    population: "filed",
-    direction: "creme",
-    expected: "#1757B6",
-  },
-};
+const OWED: Record<string, Owed> = {};
 
 /** Holds one measured beat to the rule — or, if it is owed, to exactly the defect it was owed for. */
 function holdToLedger(
