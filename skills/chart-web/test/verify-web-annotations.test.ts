@@ -10,14 +10,14 @@
  * So `scripts/verify-web.mjs` now runs `checkAnnotationsClear`, which imports the guard's own
  * measurement (`scripts/annotation-clearance.mjs`). Proven here by DRIVING the verifier, twice:
  *
- *   - on the committed page the guard owes the most findings for, it must exit non-zero and its
- *     ANNOTATIONS section must FAIL on exactly the lines the guard's `OWED` list pins for that page,
- *     word for word — one definition of "collides", one wording;
+ *   - on a FROZEN colliding page (tests/fixtures/web-colliding/: the dumbbell as committed before
+ *     #78 fixed it), it must exit non-zero and its ANNOTATIONS section must FAIL on exactly the lines
+ *     the guard reported for that page, word for word — one definition of "collides", one wording.
+ *     Frozen because the corpus no longer holds a colliding page: the guard's OWED list is empty;
  *   - on a committed page the guard owes nothing for, and which draws notes (so the pass is not a
  *     page with nothing to measure), that section must be all `ok`, at all four widths.
  *
- * The expected lines are READ from the guard's source rather than copied here, so a page that is
- * fixed strikes its pin in one place and this file follows it.
+ * The clean page is checked against the guard's OWED list, which must not pin it.
  */
 import { describe, it, expect, setDefaultTimeout } from "bun:test";
 import { spawnSync } from "node:child_process";
@@ -37,12 +37,20 @@ const GUARD = join(ROOT, "skills", "splash", "test", "web-annotation-clears-its-
 /** A committed page the guard owes nothing for, and that draws `.note`s for the check to measure. */
 const CLEAN = "proof/web-population-pyramid-switzerland/renders/creme.html";
 
+/** A page frozen from before #78, and what the guard reported for it then (paths rewritten). */
+const COLLIDING = "tests/fixtures/web-colliding/dumbbell-creme.html";
+const COLLIDING_EXPECTED = join(ROOT, "tests", "fixtures", "web-colliding", "dumbbell-creme.expected.txt");
+
 /** Every line of the guard's `OWED` set, parsed out of its source as the string literals they are. */
 function owedLines(): string[] {
   const source = readFileSync(GUARD, "utf8");
   const body = source.slice(source.indexOf("const OWED = new Set<string>(["));
   const block = body.slice(0, body.indexOf("]);"));
   return [...block.matchAll(/^\s*("proof\/.*"),\s*$/gm)].map((m) => JSON.parse(m[1]) as string);
+}
+
+function expectedFindings(): string[] {
+  return readFileSync(COLLIDING_EXPECTED, "utf8").split("\n").filter(Boolean).sort();
 }
 
 function pageOf(line: string): string {
@@ -72,19 +80,15 @@ function verify(file: string) {
 describe("verify-web measures annotation clearance on the page it is given", () => {
   const owed = owedLines();
 
-  it("should read the guard's OWED set (premise)", () => {
-    // 74 lines on 2026-09-29. A parse that finds none would make both tests below vacuous.
-    expect(owed.length).toBeGreaterThan(0);
+  it("should not owe anything for the clean page, and should have findings to expect (premise)", () => {
     expect(owed.filter((l) => pageOf(l) === CLEAN)).toEqual([]);
+    // Ten on the frozen page. None would make the colliding test below vacuous.
+    expect(expectedFindings().length).toBeGreaterThan(0);
   });
 
-  it("should FAIL a colliding page on exactly the findings the guard owes for it, in its wording", () => {
-    const counts = new Map<string, number>();
-    for (const line of owed) counts.set(pageOf(line), (counts.get(pageOf(line)) ?? 0) + 1);
-    const [page] = [...counts].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0];
-    const expected = owed.filter((l) => pageOf(l) === page).sort();
-
-    const run = verify(page);
+  it("should FAIL a colliding page on exactly the findings the guard reported for it, in its wording", () => {
+    const expected = expectedFindings();
+    const run = verify(COLLIDING);
     expect(run.ran).toBe(true);
     expect([...run.fail].sort()).toEqual(expected);
     expect(run.status).toBe(1);
