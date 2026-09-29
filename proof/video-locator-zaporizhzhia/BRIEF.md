@@ -39,7 +39,7 @@ The owner (2026-09-15): the map videos are produced « comme dans scrolly ».
 - **The credit** is one line over open sea with « © MapTiler © OpenStreetMap »: creme and rapport set « WRI · Natural
   Earth · © MapTiler © OpenStreetMap », nocturne « WRI · © MapTiler © OpenStreetMap » — provisional, the owner to rule.
 - « Dniepr » is set at 33.1° E, 46.8° N (the still's 33.4° E, 47.0° N stands against the ring on the Mercator close-up).
-- The key reaches MapTiler only through the local proxy; `no-key.live.test.ts` holds every output to it.
+- The key reaches MapTiler only through the local proxy; `every-map-video-keeps-the-key-out.live.test.ts` holds every output to it.
 
 ## The picture — shots, not a page
 

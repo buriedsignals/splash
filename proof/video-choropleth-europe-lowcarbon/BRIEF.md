@@ -43,7 +43,7 @@ The owner (2026-09-15): the map videos are produced « comme dans scrolly ».
   `measured.json`: the real map measured once per fixed camera (`measure.mjs` → `measureLiveMap`), projected seats and
   a grid of cell colours; a plan changed since the measurement is refused.
 - **The key** reaches the map only through the local proxy (`skills/map-beat/scripts/maptiler-proxy.mjs`), which keeps
-  a keyless tile cache outside the repository; `no-key.live.test.ts` holds every output to it. Renders use
+  a keyless tile cache outside the repository; `every-map-video-keeps-the-key-out.live.test.ts` holds every output to it. Renders use
   `--gl=swangle --concurrency=1` and an empty `--env-file` (`renderVideoMap`).
 - **The credit** carries MapTiler's attribution on one line. The spec's form (« Source : Ember, via Our World in Data ·
   © MapTiler © OpenStreetMap ») is wider than the open sea the whole map leaves: creme and rapport set « Ember, via

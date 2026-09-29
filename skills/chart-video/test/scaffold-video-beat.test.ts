@@ -3,10 +3,13 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { spawnSync } from "node:child_process";
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
   rmSync,
+  symlinkSync,
+  writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
@@ -120,6 +123,36 @@ describe("scaffold-video-beat", () => {
     expect(first.status).toBe(0);
     expect(readdirSync(BEAT).sort()).toEqual(EXPECTED);
     for (const file of EXPECTED) expect(first.stdout).toContain(file);
+  });
+
+  it("should write the shared timing rules into a story beat's timing test, never a proof/ beat's", () => {
+    // A proof/ beat is held to them by `every-video-beat-keeps-the-timing-contract.test.ts`; a story
+    // beat may sit in an installed root that test never reaches: `shared/`, stories, nothing else.
+    expect(readFileSync(join(BEAT, "timing.test.ts"), "utf8")).not.toContain("checkTiming(T)");
+    const home = mkdtempSync(join(tmpdir(), "scaffold-story-root-"));
+    try {
+      writeFileSync(
+        join(home, "package.json"),
+        JSON.stringify({ type: "module", imports: { "#shared/*": "./shared/*" } }),
+      );
+      symlinkSync(join(ROOT, "shared"), join(home, "shared"));
+      const still = join(home, "stories", "a-story", "beats", "a-still");
+      mkdirSync(still, { recursive: true });
+      writeFileSync(join(still, "data.csv"), "year,value\n2000,1\n2001,2\n");
+      writeFileSync(
+        join(home, "stories", "a-story", "PALETTE.md"),
+        `---\nground: "#16191B"\naccent: "#D4A853"\naccents: #5B8A8A\norigin: newsroom\n---\n`,
+      );
+      const run = spawnSync(
+        "bun",
+        [SCRIPT, "--type", "area", "--beat", "stories/a-story/beats/a-beat", "--static", "stories/a-story/beats/a-still", "--filed"],
+        { cwd: home, encoding: "utf8" },
+      );
+      const timing = join(home, "stories", "a-story", "beats", "a-beat", "timing.test.ts");
+      expect([run.status, existsSync(timing) && readFileSync(timing, "utf8").includes("checkTiming(T)")]).toEqual([0, true]);
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
   });
 
   it("should refuse to scaffold over an existing beat, and change no file in it", () => {

@@ -33,8 +33,11 @@
 //                                                      measured open sea (`seatOnSea`), `measure`, colour floors
 //   <Name>Frame.tsx                                    the map under the SVG overlay, `Word`, the title card, the credit
 //   subject.mjs                                        the static beat's frozen data read, its path wired
-//   timing.test.ts, states.test.ts, frame.test.ts      the plumbing's guards (as the chart scaffold's, on the measured map)
-//   no-key.live.test.ts                                the key in no render, props file, measurement or cached tile
+//   timing.test.ts, states.test.ts, frame.test.ts      the plumbing's guards (as the chart scaffold's, on the measured map;
+//                                                      the shared timing rules only in a story beat's timing.test.ts)
+//   no-key.live.test.ts                                the key in no render, props file, measurement or cached tile — for
+//                                                      a story beat only; a proof/ beat is scanned by
+//                                                      test/every-map-video-keeps-the-key-out.live.test.ts
 //   BRIEF.md                                           the choreography table's header and the owner's rules checklist
 //   PALETTE.md                                         copied from the static beat
 //
@@ -193,6 +196,9 @@ const FILES = Object.freeze({
   "BRIEF.md.tmpl": "BRIEF.md",
 });
 
+/** The template a STORY beat gets in place of the catalogue's: its own copy of the rules `proof/` holds once. */
+const STORY_TEMPLATES = Object.freeze({ "timing.test.ts.tmpl": "timing.story.test.ts.tmpl" });
+
 const KEBAB = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const BEAT_NAME = /^\.?[a-z0-9][a-z0-9-]*$/;
 const PASCAL = /^[A-Z][A-Za-z0-9]*$/;
@@ -285,7 +291,14 @@ export function scaffoldBeat({ root = DEFAULT_ROOT, templates, files, skill, med
   const scaffoldedFrom = "";
   assertSize(size);
   const { beatDir, staticDir, values } = tokensFor({ root, skill, medium, type, beat, staticBeat, component, size });
-  const planned = Object.entries(files).map(([template, target]) => [fill(target, values), fill(readFileSync(join(templates, template), "utf8"), values)]);
+  // THE CATALOGUE'S KEY SCAN IS ONE TEST. Every map video under `proof/` is scanned by
+  // `test/every-map-video-keeps-the-key-out.live.test.ts`; a story beat may sit in an installed root
+  // that test never reaches, so only a story beat is written its own `no-key.live.test.ts`.
+  const inCatalogue = basename(dirname(beatDir)) === "proof";
+  // The same holds for the timing rules (`chart-video/test/every-video-beat-keeps-the-timing-contract.test.ts`):
+  // only a story beat's `timing.test.ts` carries them (STORY_TEMPLATES).
+  const sourceOf = (template) => (inCatalogue ? template : (STORY_TEMPLATES[template] ?? template));
+  const planned = Object.entries(files).filter(([template]) => !(inCatalogue && template === "no-key.live.test.ts.tmpl")).map(([template, target]) => [fill(target, values), fill(readFileSync(join(templates, sourceOf(template)), "utf8"), values)]);
   // The chain, read before a single file exists on disk (see "THE EDITORIAL CHAIN, WIRED" above).
   const briefAt = planned.findIndex(([target]) => target === "BRIEF.md");
   if (briefAt >= 0)

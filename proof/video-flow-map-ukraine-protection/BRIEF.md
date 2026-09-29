@@ -36,7 +36,7 @@ The owner (2026-09-15): the map videos are produced « comme dans scrolly ».
   pixel; the key over measured open sea clear of every band; the names placed on it, their halos the measured colour.
 - **The credit** is one line over open sea with « © MapTiler © OpenStreetMap ». The bottom-left sea holds only
   « Eurostat, 2026-06 · © MapTiler © OpenStreetMap » — provisional, the owner to rule.
-- The key reaches MapTiler only through the local proxy; `no-key.live.test.ts` holds every output to it.
+- The key reaches MapTiler only through the local proxy; `every-map-video-keeps-the-key-out.live.test.ts` holds every output to it.
 
 ## The picture — shots, not a page
 

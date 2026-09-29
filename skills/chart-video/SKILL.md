@@ -110,7 +110,8 @@ Every chart example has the same split (`proof/video-area-swiss-co2`):
 | `scene.mjs` | `WINDOWS` (share of each event a field moves over), `fieldAt` (windowed, eased unless linear), `sceneAt(props, frame)` | mechanics plumbing, windows and geometry beat |
 | `build.mjs` | direction → `resolveDirectionFamilies` → `registerOf` → `videoRegistersOf` → `k`, stage and insets, `titleCardFor`, `sourceCreditFor`, then the beat's own layout; returns `{ props, report, direction }` | ~⅓ plumbing |
 | `<Type>Frame.tsx` | the SVG drawn from `sceneAt`; ground, title-card and credit groups | ground/card/credit plumbing |
-| `timing.test.ts`, `states.test.ts`, `frame.test.ts` | `checkTiming`, title ≤ 1.5 s, hold ≥ 60, total ≤ 22 s; the states; floor + measured widths at every event end | per-direction loops plumbing |
+| `timing.test.ts` | the seconds each of this beat's gestures needs (only when it claims any). `checkTiming`, title from frame 0 and ≤ 1.5 s, hold ≥ 60, total ≤ 22 s are held once for every beat by `test/every-video-beat-keeps-the-timing-contract.test.ts`, which discovers each `proof/` and checkout story `timing-contract.ts`; a beat validated longer than 22 s is named in its `RUNS_LONGER`. A story beat may sit in an installed root that test never reaches, so the scaffold writes a story beat's `timing.test.ts` with the four rules in it (`timing.story.test.ts.tmpl`) | beat |
+| `states.test.ts`, `frame.test.ts` | the states; floor + measured widths at every event end | per-direction loops plumbing |
 | `BRIEF.md`, `PALETTE.md`, `renders/` | the choreography; the newsroom answer; `<id>.mp4`, `<id>-final-frame.png`, `<id>-props.json` | beat |
 
 `--look <dir>` renders the last frame of every event, frame 0, and the middle of each gesture's
@@ -296,7 +297,7 @@ stops reading it breaks a named test rather than degrading quietly. Spec: `docs/
 | Seed composition | `assets/EmissionsVideo.tsx` | The seed beat's drawing with its own pure geometry; exports `drawnSoFar` |
 | Seed registration | `assets/Root.tsx`, `assets/index.ts` | The seed composition (`co2-suisse`) and entry point |
 | Seed render | `scripts/render-video.mjs` | The seed's ladder: frozen CSV, furniture in node, final-frame still, then mp4 |
-| Test | `test/timing.test.ts`, `test/choreography.test.ts`, `test/shots.test.ts`, `test/video-registers.test.ts` | The contract rules, the event-state rule, the shot helpers, the register scaling |
+| Test | `test/timing.test.ts`, `test/every-video-beat-keeps-the-timing-contract.test.ts`, `test/choreography.test.ts`, `test/shots.test.ts`, `test/video-registers.test.ts` | The contract rules, every beat held to them, the event-state rule, the shot helpers, the register scaling |
 
 **Where Remotion lives.** `remotion` and `@remotion/cli` (4.0.507, pinned) are in this repository's
 `package.json` and in `splash/assets/root-template/package.json`, so an installed Splash root can
@@ -305,7 +306,9 @@ render a video beat (`splash/test/root-template-tells-the-truth.test.ts` guards 
 ## How it works (the shape)
 
 1. **Write the choreography, then the timing contract, before the drawing.** The edit is the design.
-2. **`checkTiming` the contract** in a test: events in order, `hold` ending on the last frame.
+2. **`checkTiming` the contract**: events in order, `hold` ending on the last frame. No test to write:
+   `test/every-video-beat-keeps-the-timing-contract.test.ts` finds every `proof/` beat's `timing-contract.ts` and holds it
+   (a story beat's scaffolded `timing.test.ts` carries the same rules itself).
 3. **Compute states per event and assert them** (`assertEventStates`); derive every window from the
    contract with `progressOf`, clamped. Linear on a measured axis; eased for arrivals; a spring only
    critically damped.

@@ -33,7 +33,7 @@ The grid had no geography before; it now leaves it on screen, in `reference`, be
 - **Placed from `measured.json`** (`measure.mjs`, the frame the shapes start rising; stale plan refused): the key column,
   at the left margin over no host, as near the middle as that allows — on the Atlantic, Greenland's tip and Labrador,
   its words haloed in what lies under them. Credit on one line « Eurostat, 2026-06 · population via OWID · © MapTiler
-  © OpenStreetMap », on the ground at the end. The key reaches MapTiler only through the proxy; `no-key.live.test.ts`.
+  © OpenStreetMap », on the ground at the end. The key reaches MapTiler only through the proxy; `every-map-video-keeps-the-key-out.live.test.ts`.
 
 ## The picture — shots, not a page
 

@@ -3,10 +3,12 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { spawnSync } from "node:child_process";
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readdirSync,
   readFileSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -54,7 +56,6 @@ const EXPECTED = [
   "index.ts",
   "map-plan.mjs",
   "measure.mjs",
-  "no-key.live.test.ts",
   "render-directions-video.mjs",
   "scene.mjs",
   "states.mjs",
@@ -68,6 +69,7 @@ const SHARED_TEMPLATES = [
   "index.ts",
   "timing-contract.ts",
   "timing.test.ts",
+  "timing.story.test.ts",
   "states.mjs",
   "states.test.ts",
   "subject.mjs",
@@ -142,6 +144,41 @@ describe("scaffold-map-video-beat", () => {
     expect(first.status).toBe(0);
     expect(readdirSync(BEAT).sort()).toEqual(EXPECTED);
     for (const file of EXPECTED) expect(first.stdout).toContain(file);
+  });
+
+  it("should write a story beat its own key scan and timing rules, which the catalogue's tests never reach", () => {
+    // A proof/ beat is scanned by `every-map-video-keeps-the-key-out.live.test.ts` and timed by
+    // `chart-video/test/every-video-beat-keeps-the-timing-contract.test.ts`, so it carries neither;
+    // a story beat may sit in an installed root: `shared/`, stories, nothing else.
+    expect(readFileSync(join(BEAT, "timing.test.ts"), "utf8")).not.toContain("checkTiming(T)");
+    const home = mkdtempSync(join(tmpdir(), "scaffold-story-root-"));
+    try {
+      writeFileSync(
+        join(home, "package.json"),
+        JSON.stringify({ type: "module", imports: { "#shared/*": "./shared/*" } }),
+      );
+      symlinkSync(join(ROOT, "shared"), join(home, "shared"));
+      const still = join(home, "stories", "a-story", "beats", "a-still");
+      mkdirSync(still, { recursive: true });
+      writeFileSync(join(still, "data.csv"), "iso3,value\nBGR,38.4\n");
+      writeFileSync(
+        join(home, "stories", "a-story", "PALETTE.md"),
+        `---\nground: "#16191B"\naccent: "#D4A853"\naccents: #5B8A8A\norigin: newsroom\n---\n`,
+      );
+      const run = spawnSync(
+        "bun",
+        [SCRIPT, "--type", "choropleth", "--beat", "stories/a-story/beats/a-beat", "--static", "stories/a-story/beats/a-still", "--filed"],
+        { cwd: home, encoding: "utf8" },
+      );
+      const story = join(home, "stories", "a-story", "beats", "a-beat");
+      expect([
+        run.status,
+        existsSync(join(story, "no-key.live.test.ts")),
+        readFileSync(join(story, "timing.test.ts"), "utf8").includes("checkTiming(T)"),
+      ]).toEqual([0, true, true]);
+    } finally {
+      rmSync(home, { recursive: true, force: true });
+    }
   });
 
   it("should refuse to scaffold over an existing beat, and change no file in it", () => {

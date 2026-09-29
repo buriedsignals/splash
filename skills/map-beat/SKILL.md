@@ -215,7 +215,7 @@ All built on the live map 2026-09-15/16 and awaiting the owner (`docs/design-bas
 | `Directed<Type>Video.tsx` | `useLiveMap` with `mountPlan` / `transformStyle` injected; `paint`: `map.jumpTo(viewOf(state))` then `setPaintProperty(id, prop, bindState(binding, state), { validate: false })` per binding; `useEmbeddedFaces`; the overlay frame over it | plumbing bar the frame |
 | `render-directions-video.mjs` | key check, composer report, type floor at every event end, audit props, `buildProps(origin)`, `renderVideoMap` for `--look` / `--still` / mp4, ffprobe size, refusal cleanup | plumbing bar the look frames |
 | `measure.mjs` | `planDigestOf`, `MEASURED_FRAMES` (one frame per fixed camera), `measureLiveMap` per direction → `measured.json` | plumbing bar the frames |
-| `no-key.live.test.ts` | the key is in no render, props file, measurement or cached tile | plumbing, verbatim |
+| (none: `test/every-map-video-keeps-the-key-out.live.test.ts`) | the key is in no render, props file, measurement or cached tile, for every `proof/video-*` beat with a `measure.mjs` | plumbing, shared |
 | `plan.mjs`, `seats.json` | layers (copied from the scrolly pilot); lon/lat seats for names | beat |
 | `map-plan.mjs` | `camerasOf` (whole + close-up `cameraFields`), `mapPlanFor` (tints, class fills, fonts, region borders, `camera.view`) | beat; the mercator fit is plumbing |
 | `scene.mjs` | `WINDOWS`, `fieldAt`, `gatesAt`, `cameraAt`, `mapStateAt`, `sceneAt` (overlay) | mechanics plumbing, windows beat |
@@ -279,8 +279,11 @@ path), then spawns `remotion` with `--gl=swangle --concurrency=1 --timeout=18000
 `--env-file`** (`Bun.spawn`, so the in-process proxy keeps answering). `mode`: `"still"` (`frame`,
 default `-1`) → `<name>-final-frame.png`; `"mp4"` → `<name>.mp4`. Returns `{ path, seconds, proxyCounts }`.
 
-**`no-key.live.test.ts`** — after measuring and rendering, with the `.env` loaded: no file under
-`renders/`, `DEFAULT_CACHE_DIR` or `measured.json` contains the key.
+**`test/every-map-video-keeps-the-key-out.live.test.ts`** — after measuring and rendering, with the
+`.env` loaded: no file under `DEFAULT_CACHE_DIR`, nor under any map video beat's `renders/` or its
+`measured.json`, contains the key. It discovers every `proof/video-*` beat carrying `measure.mjs`.
+A story beat may live in an installed root that test never reaches, so the scaffold writes a story
+beat (never a `proof/` one) its own `no-key.live.test.ts`, the same scan for that beat.
 
 ### Colour, countries and placement on a live map
 
@@ -437,7 +440,7 @@ bun proof/video-<type>-<slug>/measure.mjs                      # the real map at
 bun proof/video-<type>-<slug>/render-directions-video.mjs --look "$SCRATCH/look-<slug>"   # open them
 bun proof/video-<type>-<slug>/render-directions-video.mjs --still
 bun proof/video-<type>-<slug>/render-directions-video.mjs      # the mp4s
-bun test proof/video-<type>-<slug>/no-key.live.test.ts
+bun test skills/map-beat/test/every-map-video-keeps-the-key-out.live.test.ts   # a story beat: its own no-key.live.test.ts
 ```
 
 Use a `--look` directory unique to the beat: a shared scratchpad `look/` already holds other beats' frames.

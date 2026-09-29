@@ -44,7 +44,7 @@ the cartogram under the scrolly addendum's §5: a live map while the form shows 
   quarter over no studied country (Iceland stands in its column, so it keeps to Greenland and the sea, each word
   haloed in what lies under it); the balance's halos; Russia's name on its own fill. Credit « Ember, via OWID ·
   © MapTiler © OpenStreetMap », on the ground at the end. The key reaches MapTiler only through the proxy;
-  `no-key.live.test.ts`.
+  `every-map-video-keeps-the-key-out.live.test.ts`.
 
 ## The picture — shots, not a page (1920 × 1080)
 

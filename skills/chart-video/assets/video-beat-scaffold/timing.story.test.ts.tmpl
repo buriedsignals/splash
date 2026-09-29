@@ -1,0 +1,25 @@
+import { describe, expect, it } from "bun:test";
+import { checkTiming } from "#shared/chart-video/timing.ts";
+import { %%CONST%%_VIDEO_TIMING as T } from "./timing-contract";
+
+// A STORY BEAT CARRIES THE SHARED RULES ITSELF. A `proof/` beat is held to them by
+// `skills/chart-video/test/every-video-beat-keeps-the-timing-contract.test.ts`, which never reaches a story kept in an
+// installed root; these are the same four rules, for this beat alone.
+describe("the timing of %%BEAT%%", () => {
+  it("should pass every structural rule of the motion grammar", () => {
+    expect(checkTiming(T)).toEqual([]);
+  });
+
+  it("should open on the title card at frame 0, for no longer than 1.5 s", () => {
+    expect([T.establish.start, T.establish.duration <= T.fps * 1.5]).toEqual([0, true]);
+  });
+
+  it("should hold the final frame at least 60 frames, and run no longer than twenty-two seconds", () => {
+    expect([T.hold.duration >= 60, T.total <= T.fps * 22]).toEqual([true, true]);
+  });
+
+  it("should give every gesture the screen time BRIEF.md asks of it — SCAFFOLD PLACEHOLDER", () => {
+    // SCAFFOLD: each gesture's window (`scene.mjs`, WINDOWS) × its event's duration, against the seconds it needs.
+    throw new Error("write the gesture-duration test (timing.test.ts)");
+  });
+});

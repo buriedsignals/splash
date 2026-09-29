@@ -24,9 +24,12 @@
 //                                                      `sourceCreditFor(...CREDIT_ONE_LINE)`, `measure`, colour floors
 //   <Name>Frame.tsx                                    `Word`, the title card, the credit
 //   subject.mjs                                        the static beat's frozen data read, its path wired
-//   timing.test.ts, states.test.ts, frame.test.ts      the plumbing's guards (checkTiming, ≤ 22 s, hold ≥ 60; type floor
-//                                                      and data-width at every event's end; title at frame 0; credit on
-//                                                      one line; one direction by default)
+//   timing.test.ts                                     the gesture-duration placeholder; for a proof/ beat only that, since
+//                                                      checkTiming, ≤ 22 s, title ≤ 1.5 s and hold ≥ 60 are held for it by
+//                                                      test/every-video-beat-keeps-the-timing-contract.test.ts; a story
+//                                                      beat's carries those four as well (timing.story.test.ts.tmpl)
+//   states.test.ts, frame.test.ts                      the plumbing's guards (type floor and data-width at every event's
+//                                                      end; title at frame 0; credit on one line; one direction by default)
 //   BRIEF.md                                           the choreography table's header and the owner's rules checklist
 //   PALETTE.md                                         copied from the static beat
 //
@@ -181,6 +184,9 @@ const FILES = Object.freeze({
   "BRIEF.md.tmpl": "BRIEF.md",
 });
 
+/** The template a STORY beat gets in place of the catalogue's: its own copy of the rules `proof/` holds once. */
+const STORY_TEMPLATES = Object.freeze({ "timing.test.ts.tmpl": "timing.story.test.ts.tmpl" });
+
 const KEBAB = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const BEAT_NAME = /^\.?[a-z0-9][a-z0-9-]*$/;
 const PASCAL = /^[A-Z][A-Za-z0-9]*$/;
@@ -273,7 +279,12 @@ export function scaffoldBeat({ root = DEFAULT_ROOT, templates, files, skill, med
   const scaffoldedFrom = "";
   assertSize(size);
   const { beatDir, staticDir, values } = tokensFor({ root, skill, medium, type, beat, staticBeat, component, size });
-  const planned = Object.entries(files).map(([template, target]) => [fill(target, values), fill(readFileSync(join(templates, template), "utf8"), values)]);
+  // THE CATALOGUE'S TIMING RULES ARE ONE TEST. Every `proof/` beat is held to them by
+  // `test/every-video-beat-keeps-the-timing-contract.test.ts`; a story beat may sit in an installed root
+  // that test never reaches, so only a story beat's `timing.test.ts` carries them (STORY_TEMPLATES).
+  const inCatalogue = basename(dirname(beatDir)) === "proof";
+  const sourceOf = (template) => (inCatalogue ? template : (STORY_TEMPLATES[template] ?? template));
+  const planned = Object.entries(files).map(([template, target]) => [fill(target, values), fill(readFileSync(join(templates, sourceOf(template)), "utf8"), values)]);
   // The chain, read before a single file exists on disk (see "THE EDITORIAL CHAIN, WIRED" above).
   const briefAt = planned.findIndex(([target]) => target === "BRIEF.md");
   if (briefAt >= 0)

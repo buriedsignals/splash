@@ -283,7 +283,7 @@ let measuredCache = null;
  * KEYED BY SIZE, because the measurement is of a PICTURE and the picture changes with the frame. The file held one
  * 1920 × 1080 measurement, and every seat, every grid cell and every camera in it is a pixel of that frame; read on
  * a 1080 × 1920 one it puts the credit in the Alps. One file rather than three, so a beat still carries its
- * measurement beside itself and `no-key.live.test.ts` still has one path to check.
+ * measurement beside itself and `every-map-video-keeps-the-key-out.live.test.ts` still has one path to check.
  */
 export function readMeasured() {
   if (measuredCache) return measuredCache;
