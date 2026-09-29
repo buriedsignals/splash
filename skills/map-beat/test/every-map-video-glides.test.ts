@@ -1,3 +1,5 @@
+// LANE: heavy — it builds every proof beat on its measured map, whose plan digest holds only where the beat was
+// measured (the beats' own map-plan and frame tests are heavy for the same reason); ~17 s besides.
 /**
  * EVERY MAP VIDEO GLIDES — NO BOUND PAINT CUTS, DISCOVERED, NOT LISTED.
  *
