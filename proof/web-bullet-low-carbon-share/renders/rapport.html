@@ -323,10 +323,28 @@ svg.chart { display: block; }
   z-index: 10;
 }
 #tooltip[hidden] { display: none; }
+
+/* THE ROW FLOOR — 6 rows · pitch 46 of 300 units · 36px a row · cell at least 234.79px
+   Each row stands its name on its own track under the bar of the row above, and carries a verdict on a ground chip that its target tick must poke out of; under this pitch the name is printed over the neighbour's bar and tick, the chips overlap, and the tick disappears.
+   Where the viewBox ratio would give a smaller pitch, the cell grows TALLER to this floor and the
+   page may scroll for that reason only; --cell-w is untouched, so the cell leaves its ratio in one
+   direction and by exactly what the floor asks. Where the ratio already gives the pitch, nothing
+   here changes a pixel. Every rule is scoped to the figure's own data-row-floor, which is how
+   verify-web.mjs measures the page without it. */
+.chart-figure[data-row-floor] .chart-plot {
+  --row-floor-cell: 234.79px;
+  min-height: max(120px, calc(var(--row-floor-cell) + var(--x-axis-h)));
+  --cell-h: min(var(--track-h), max(calc(var(--track-w) * 300 / 880), var(--row-floor-cell)));
+}
+/* THE FRAME'S BOTTOM MARGIN SURVIVES THE SCROLL. Under the floor the column is taller than the
+   window-high figure and overflows it, and an overflow does not carry its parent's padding: the
+   source line would end flush with the page. The same 24px as an item of the column is kept. */
+.chart-figure[data-row-floor] { padding-bottom: 0; }
+.chart-figure[data-row-floor]::after { content: ""; flex: 0 0 24px; }
 </style>
 </head>
 <body>
-<figure class="chart-figure" style="--ground:#FFFFFF;--accent:#1F5C8B;--ink:#000000;--muted:#616161;--title-size:27px;--title-weight:700;--title-family:&quot;Merriweather&quot;, Georgia, serif;--subtitle-size:13px;--subtitle-family:&quot;Merriweather&quot;, Georgia, serif;--subtitle-style:italic;--source-size:13px;--source-family:&quot;Merriweather&quot;, Georgia, serif;--axis-size:11px;--axis-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--label-size:14.5px;--label-weight:700;--label-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--note-size:10px;--note-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--eyebrow-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--eyebrow-weight:700;--eyebrow-tracking:1.6px;--filter-size:13px"><style>.chart-figure rect.mark-active[data-fill="thread"] { fill: #18486c; }
+<figure class="chart-figure" data-row-floor="36" data-row-pitch="46" data-rows="6" style="--ground:#FFFFFF;--accent:#1F5C8B;--ink:#000000;--muted:#616161;--title-size:27px;--title-weight:700;--title-family:&quot;Merriweather&quot;, Georgia, serif;--subtitle-size:13px;--subtitle-family:&quot;Merriweather&quot;, Georgia, serif;--subtitle-style:italic;--source-size:13px;--source-family:&quot;Merriweather&quot;, Georgia, serif;--axis-size:11px;--axis-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--label-size:14.5px;--label-weight:700;--label-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--note-size:10px;--note-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--eyebrow-family:&quot;Open Sans&quot;, Helvetica, Arial, sans-serif;--eyebrow-weight:700;--eyebrow-tracking:1.6px;--filter-size:13px"><style>.chart-figure rect.mark-active[data-fill="thread"] { fill: #18486c; }
 
 .chart-figure rect.mark-active[data-fill="field"] { fill: #4c5a65; }
 
@@ -458,12 +476,6 @@ svg.chart { display: block; }
 .chart-figure .note-key { display: inline-block; min-width: 1.45em; padding: 0 0.3em; border: 1px solid currentColor; border-radius: 999px; text-align: center; font-weight: 700; font-style: normal; line-height: 1.3; }
 .chart-figure .chart-notes .note-key { margin-right: 0.45em; }
 .chart-figure .chart-plot .overlay [data-keyed-note-key] { display: none; }
-@container (width < 682px) {
-  .chart-figure .chart-plot .overlay [data-keyed-note-plot="threshold"] { display: none; }
-  .chart-figure .chart-plot .overlay [data-keyed-note-key="threshold"] { display: inline-block; }
-  .chart-figure .chart-notes { margin-top: 4px; }
-  .chart-figure .chart-notes > [data-keyed-note-under="threshold"] { display: inline; }
-}
 
 /* The benchmark this beat declared: the plate's own target plus 3 others,
    over "Mesurer chaque pays contre". Radios plus :checked/:has(), generated once at

@@ -24,13 +24,14 @@ import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
 import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
+import { deriveFurniture, measureText } from "../../skills/chart-web/scripts/render-still.mjs";
 import {
   assertOneBenchmark,
   benchmarkGapOf,
   benchmarkSlugOf,
   BENCHMARK_CLAIM_SLUG,
 } from "../../skills/chart-web/assets/benchmark.ts";
-import { DirectedBulletWeb } from "./DirectedBulletWeb.tsx";
+import { DirectedBulletWeb, rowFloorFor } from "./DirectedBulletWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
@@ -327,6 +328,22 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const id = file.replace(/\.md$/, "");
   const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, file)), textPerRegister);
   const outPath = join(OUT, `${id}.html`);
+  // THE ROW FLOOR, computed from this direction's own registers by the component's own arithmetic
+  // (`rowFloorFor`, which says what each of the four numbers protects) — never typed. Handed to the
+  // trunk, which grows the cell to it where the ratio falls short, and to the component, which
+  // refuses a floor that is not its own and places the keyed note on the floored cell.
+  const furniture = deriveFurniture(direction.ground);
+  const { floor: rowFloor, nameH, chipH, needs } = rowFloorFor({
+    rows,
+    subject: mover.code,
+    direction,
+    ink: { ink: furniture.ink, muted: furniture.muted, accent: direction.accent },
+    measure: measureText,
+  });
+  console.log(
+    `${id}: row floor ${rowFloor.px}px a row (name ${nameH.toFixed(1)}px, chip ${chipH.toFixed(1)}px · ` +
+      Object.entries(needs).map(([k, v]) => `${k} ${v.toFixed(1)}`).join(", ") + ")",
+  );
   try {
     await renderWeb({
       // This catalogue is written in French; the renderer defaults to English and never guesses.
@@ -350,11 +367,13 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
           `au-delà, creux en deçà. Un contrôle au-dessus change la cible des six lignes à la fois — ` +
           `leur propre ${BEFORE}, la moitié, la médiane des six, ou la ${leader.name}.`,
         direction,
+        rowFloor,
         ground: direction.ground,
         accent: direction.accent,
       },
       outDir: OUT,
       name: `${id}.html`,
+      rowFloor,
     });
     // THE MARKUP, READ BACK. `renderWeb` holds the format's own guards; a vocabulary this beat
     // brought with it holds its own, on the page that was actually written — a half-tagged row here

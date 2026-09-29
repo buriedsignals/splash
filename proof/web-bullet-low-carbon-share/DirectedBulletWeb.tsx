@@ -75,11 +75,13 @@ import {
   type BenchmarkPlacement,
 } from "../../skills/chart-web/assets/benchmark.ts";
 import {
+  cellHeightPx,
   cellWidthPx,
   keyedNoteCss,
   labelBoxPx,
   leavesBelow,
   overlaps,
+  rowFloorCellPx,
   type KeyedNote,
   type Measure,
   type Rect,
@@ -99,6 +101,103 @@ const PLACE_MS = 320;
 /** The first row's own NAME sits above its track, so the band of rows starts below the top of the
  *  frame — measured on the first render, where "Pologne" landed on the caveat line above the plot. */
 const TOP_PAD = 24;
+
+/** A ROW'S OWN GEOMETRY, as fractions of the row pitch, named once because the row floor below is
+ *  computed from them and must not drift from what is drawn. The track is the full-scale bed, the
+ *  bar sits centred on it, and the target tick runs past the track at both ends. */
+const TRACK_OF_ROW = 0.56;
+const BAR_OF_ROW = 0.3;
+const TICK_OF_TRACK = 0.62;
+/** The tick's own width, in CSS px (`non-scaling-stroke`). */
+const TICK_STROKE_PX = 2.2;
+
+/** The distance between two row centres, in viewBox units. */
+const rowPitchOf = (rows: number) => (FRAME.height - TOP_PAD) / rows;
+
+/**
+ * THE ROW FLOOR — THE PITCH, IN CSS PIXELS, UNDER WHICH A ROW PRINTS OVER ITS NEIGHBOUR.
+ *
+ * Measured at 375 × 812 before this existed: the six rows were 14,4 px apart (14,1 on `nocturne`),
+ * and every row name from Allemagne down was printed over the bar of the row above — 8,2 px of free
+ * ground between that bar and the name's own track, under a 12–13,2 px name. The verdict chips
+ * (18,8–20 px) overlapped each other by 5 px, the target tick (10 px tall) disappeared inside the chip
+ * it lands under, and Pologne's own-2015 tick ran through « Allemagne ». No placement inside a row
+ * that thin clears any of it, and the owner's ruling is that legibility beats fitting the window
+ * (`render-web.mjs`, `rowFloorCss`): so the plate declares the pitch its row needs, and on a phone
+ * the plot grows taller and the page scrolls for that reason only.
+ *
+ * WHY THE NAME STAYS ABOVE ITS OWN TRACK rather than moving into a y-gutter at phone width. It
+ * already sits above its bar, which is the placement `visual-system.md` asks for — "Labels are
+ * direct; legends are a fallback" — and at 768 px and wider it clears everything with room to
+ * spare; what failed at 375 was the PITCH, not the placement. A gutter column would cost the 70 px
+ * of the widest name out of a 327 px track and — computed from the same cell arithmetic — leave a
+ * 13,3 px pitch under 18,8–20 px verdict chips: the chips would still collide, and a second layout
+ * would exist for one width.
+ * And `information-architecture.md` gives the plot "the largest share of the frame, because it is
+ * the only zone doing job (1)"; at 375 × 812 it had 122 px of 812.
+ *
+ * FOUR THINGS SIT ON A ROW, and the floor is the largest of what each needs, every one measured in
+ * the direction's own register (`labelBoxPx`), never typed:
+ *   - `chips`         two verdict chips, one per row, must not overlap: pitch ≥ the chip's height;
+ *   - `nameOverBar`   a name stands on its own track and must clear the bar of the row above:
+ *                     pitch × (1 − track/2 − bar/2) ≥ the name's height;
+ *   - `nameUnderTick` it must clear that row's target tick too, which runs further down than the
+ *                     bar — Pologne's own 2015, at 13,8 %, lands inside « Allemagne » at any phone
+ *                     width, in the landing state: pitch × (1 − track/2 − tick) ≥ the name's height;
+ *   - `tickOutOfChip` the tick must poke out above and below the verdict chip it can land under
+ *                     (France's 92,2 % sits inside its own « 94,9 % » chip), by at least its own
+ *                     width at each end, or it is not there: pitch × 2 × tick ≥ chip + 2 × stroke.
+ * At 768 px, where the ratio alone gives a 36,9 px pitch, all four already hold — the floor only
+ * redraws, on a phone, the plate the tablet was already drawing.
+ */
+export function rowFloorFor({
+  rows,
+  subject,
+  direction,
+  ink,
+  measure,
+}: {
+  rows: Row[];
+  subject: string;
+  direction: any;
+  ink: { ink: string; muted: string; accent: string };
+  measure: Measure;
+}) {
+  const regs = webRegisters(direction, { ink });
+  const nameH = Math.max(
+    ...rows.map(
+      (r) =>
+        labelBoxPx(r.name, { ...regs.axis, fontWeight: r.code === subject ? 700 : regs.axis.fontWeight }, measure, {
+          chip: false,
+        }).h,
+    ),
+  );
+  const chipH = Math.max(...rows.flatMap((r) => r.verdicts.map((v) => labelBoxPx(v.text, regs.value, measure).h)));
+  const tickReach = TICK_OF_TRACK * TRACK_OF_ROW;
+  const needs = {
+    chips: chipH,
+    nameOverBar: nameH / (1 - TRACK_OF_ROW / 2 - BAR_OF_ROW / 2),
+    nameUnderTick: nameH / (1 - TRACK_OF_ROW / 2 - tickReach),
+    tickOutOfChip: (chipH + 2 * TICK_STROKE_PX) / (2 * tickReach),
+  };
+  const px = Math.ceil(Math.max(...Object.values(needs)));
+  return {
+    floor: {
+      rows: rows.length,
+      pitch: rowPitchOf(rows.length),
+      px,
+      why:
+        "Each row stands its name on its own track under the bar of the row above, and carries a " +
+        "verdict on a ground chip that its target tick must poke out of; under this pitch the name " +
+        "is printed over the neighbour's bar and tick, the chips overlap, and the tick disappears.",
+    },
+    nameH,
+    chipH,
+    needs,
+  };
+}
+
+export type RowFloor = ReturnType<typeof rowFloorFor>["floor"];
 
 /** How many hit points a row is sampled at. `interaction.mjs` resolves a pointer to the nearest mark
  *  CENTRE, which over six horizontal strips is a Voronoi: with one point per row a pointer near the
@@ -131,6 +230,7 @@ export function DirectedBulletWeb({
   threshold,
   thresholdNote,
   measure,
+  rowFloor,
   xTicks,
   title,
   eyebrow,
@@ -152,6 +252,7 @@ export function DirectedBulletWeb({
   threshold: number;
   thresholdNote: string;
   measure: Measure;
+  rowFloor: RowFloor;
   xTicks: number[];
   title: string;
   eyebrow: string;
@@ -333,9 +434,18 @@ export function DirectedBulletWeb({
   const rule = mix(ground, ink, 0.6);
   const labelInk = adjustToContrast(ink, ground, TEXT_CONTRAST_MIN) ?? ink;
 
-  const rowH = (FRAME.height - TOP_PAD) / rows.length;
-  const trackH = rowH * 0.56;
-  const barH = rowH * 0.3;
+  const rowH = rowPitchOf(rows.length);
+  const trackH = rowH * TRACK_OF_ROW;
+  const barH = rowH * BAR_OF_ROW;
+  // THE FLOOR THE RUNNER DECLARED IS THE ONE THIS PLATE NEEDS. It is computed from the same
+  // registers and the same fractions, by the same function, so a disagreement is a runner that
+  // handed the trunk someone else's floor.
+  const own = rowFloorFor({ rows, subject, direction, ink: { ink, muted, accent }, measure }).floor;
+  if (!rowFloor || rowFloor.px !== own.px || rowFloor.pitch !== own.pitch || rowFloor.rows !== own.rows)
+    throw new Error(
+      `the row floor handed in (${JSON.stringify(rowFloor ?? null)}) is not this plate's own ` +
+        `(${own.rows} rows, pitch ${own.pitch}, ${own.px}px)`,
+    );
   const cyOf = (i: number) => TOP_PAD + rowH * i + rowH / 2;
   const x = (share: number) => (share / scaleMax) * FRAME.width;
 
@@ -384,6 +494,13 @@ export function DirectedBulletWeb({
    * leaves for the keyed line under the plot, led by the « 50 % » the axis already prints at the
    * rule's foot (`assets/keyed-note.ts`). The track and the band behind the bars are 1,12:1 and
    * ~1,25:1 against the ground — washes, not marks — and are not counted, as the guard does not.
+   *
+   * UNDER THE ROW FLOOR THAT WIDTH IS NOW NONE. The prediction is made on the floored cell (taller
+   * than its ratio on a phone, so each distance converts through its own axis), and there the first
+   * row keeps enough inset for the name at every plot width `leavesBelow` scans: no `@container`
+   * rule is emitted and the note stays direct. Before the floor it left below 663–701 px. The keyed
+   * line stays in the markup, and the guard below still decides; if the floor or the words change,
+   * the note leaves again on its own.
    */
   const thresholdBox = labelBoxPx(thresholdNote, regs.annot, measure);
   const nameBoxes = rows.map((r) =>
@@ -391,15 +508,20 @@ export function DirectedBulletWeb({
   );
   const verdictBoxes = rows.map((r) => r.verdicts.map((v) => labelBoxPx(v.text, regs.value, measure)));
   const thresholdClears = (plotWidthPx: number) => {
-    // No y-gutter here, but the cell is still HEIGHT-bound below some width: the box's ratio counts
-    // the 28 px axis row in units, so at 375 px the cell is 275 px wide inside a 327 px plot.
-    const cellW = cellWidthPx(plotWidthPx, {
+    // No y-gutter here. Without the floor the cell is HEIGHT-bound below some width — the box's
+    // ratio counts the 28 px axis row in units, so at 375 px it was 275 px wide inside a 327 px plot;
+    // under the floor it takes the whole track and is TALLER than its ratio, so the two scales
+    // differ and each distance converts through its own.
+    const cellGeometry = {
       frame: { width: FRAME.width, height: FRAME.height },
       box: { width: FRAME.width, height: FRAME.height + FRAME.xAxisRowPx },
       axisPx: FRAME.xAxisRowPx,
-    });
+      floorCellPx: rowFloorCellPx(rowFloor, FRAME.height),
+    };
+    const cellW = cellWidthPx(plotWidthPx, cellGeometry);
     const s = cellW / FRAME.width;
-    const lineBottom = (cyOf(0) - trackH / 2) * s;
+    const sy = cellHeightPx(plotWidthPx, cellGeometry) / FRAME.height;
+    const lineBottom = (cyOf(0) - trackH / 2) * sy;
     const note: Rect = {
       l: x(threshold) * s - thresholdBox.w / 2,
       r: x(threshold) * s + thresholdBox.w / 2,
@@ -408,15 +530,15 @@ export function DirectedBulletWeb({
     };
     if (note.t < 0 || note.l < 0 || note.r > cellW) return false;
     for (const [i, r] of rows.entries()) {
-      const top = (cyOf(i) - trackH / 2) * s;
+      const top = (cyOf(i) - trackH / 2) * sy;
       const name = nameBoxes[i];
       if (overlaps(note, { l: 0, r: name.w, t: top - name.h, b: top })) return false;
-      const bar: Rect = { l: 0, r: cellW, t: (cyOf(i) - barH / 2) * s, b: (cyOf(i) + barH / 2) * s };
+      const bar: Rect = { l: 0, r: cellW, t: (cyOf(i) - barH / 2) * sy, b: (cyOf(i) + barH / 2) * sy };
       if (overlaps(note, bar)) return false;
       for (const box of verdictBoxes[i]) {
         const at = x(r.after) * s;
         const l = r.after > 80 ? at - 8 - box.w : at + 8;
-        const verdict: Rect = { l, r: l + box.w, t: cyOf(i) * s - box.h / 2, b: cyOf(i) * s + box.h / 2 };
+        const verdict: Rect = { l, r: l + box.w, t: cyOf(i) * sy - box.h / 2, b: cyOf(i) * sy + box.h / 2 };
         if (overlaps(note, verdict)) return false;
       }
     }
@@ -669,8 +791,8 @@ export function DirectedBulletWeb({
               <line
                 x1={0}
                 x2={0}
-                y1={cyOf(i) - trackH * 0.62}
-                y2={cyOf(i) + trackH * 0.62}
+                y1={cyOf(i) - trackH * TICK_OF_TRACK}
+                y2={cyOf(i) + trackH * TICK_OF_TRACK}
                 stroke={ground}
                 strokeWidth={5}
                 vectorEffect="non-scaling-stroke"
@@ -678,10 +800,10 @@ export function DirectedBulletWeb({
               <line
                 x1={0}
                 x2={0}
-                y1={cyOf(i) - trackH * 0.62}
-                y2={cyOf(i) + trackH * 0.62}
+                y1={cyOf(i) - trackH * TICK_OF_TRACK}
+                y2={cyOf(i) + trackH * TICK_OF_TRACK}
                 stroke={tickInk}
-                strokeWidth={2.2}
+                strokeWidth={TICK_STROKE_PX}
                 vectorEffect="non-scaling-stroke"
               />
             </g>
