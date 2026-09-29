@@ -7,7 +7,7 @@
   },
   "scripts": {
     "test": "bun test $(bun scripts/test-lanes.mjs --fast)",
-    "test:heavy": "bun test $(bun scripts/test-lanes.mjs --heavy)",
+    "test:heavy": "bun test --parallel $(bun scripts/test-lanes.mjs --heavy-parallel) && bun test $(bun scripts/test-lanes.mjs --heavy-serial)",
     "test:live": "bun test $(bun scripts/test-lanes.mjs --live)",
     "test:all": "bun test",
     "test:lanes": "bun scripts/test-lanes.mjs --check",

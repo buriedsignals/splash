@@ -1,3 +1,4 @@
+// LANE: serial — writes a probe beat into proof/ while it runs (scripts/test-lanes.mjs).
 // THE MAP × WEB SCAFFOLD HAD NO GUARD AT ALL, and it writes the first 50% of every live-map beat.
 //
 // Two things are held here, and they are the two the scaffold can break silently.

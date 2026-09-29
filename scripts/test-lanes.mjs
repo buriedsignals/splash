@@ -14,8 +14,16 @@
 //   bun scripts/test-lanes.mjs --check   every test file is in exactly one lane, or exit 1
 //
 // A file that is slow without any static tell (a seed that renders in-process, say) opts in with
-// `// LANE: heavy` within its first five lines. That is the only marker, and it only ever moves a
-// file OUT of the fast lane.
+// `// LANE: heavy` within its first five lines. That marker only ever moves a file OUT of the fast lane.
+//
+// THE HEAVY LANE RUNS IN TWO PHASES. Most heavy files are independent and run across every core
+// (`bun test --parallel`). A file that WRITES into the shared tree while it runs — a scaffold test
+// that drops a probe beat into proof/ — would be seen half-written by the thirty-odd heavy files that
+// walk proof/, so it declares `// LANE: serial` in its first five lines and runs afterwards, alone,
+// exactly as the whole lane used to. The marker implies heavy.
+//
+//   bun scripts/test-lanes.mjs --heavy-parallel   the heavy files safe to run side by side
+//   bun scripts/test-lanes.mjs --heavy-serial     the heavy files that must run alone
 
 import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
@@ -40,7 +48,8 @@ const HEAVY_PACKAGES = [
 // reaches the network — `curl` is how `typefaces.mjs` fetches a face on a cold cache, and a test
 // that can make a network round trip is not a fast one.
 const SPAWN = /\b(spawn|spawnSync|execFile|execFileSync|exec|execSync)\s*\(\s*(["'`])(bun|node|ffmpeg|git|curl)\2|Bun\.spawn(Sync)?\s*\(/;
-const LANE_MARKER = /^\/\/\s*LANE:\s*heavy\b/m;
+const LANE_MARKER = /^\/\/\s*LANE:\s*(heavy|serial)\b/m;
+const SERIAL_MARKER = /^\/\/\s*LANE:\s*serial\b/m;
 
 function* walk(dir) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -88,7 +97,7 @@ function heavyReason(path, seen = new Set()) {
   seen.add(path);
   const text = readFileSync(path, "utf8");
   let reason = null;
-  if (LANE_MARKER.test(text.split("\n").slice(0, 5).join("\n"))) reason = "LANE: heavy marker";
+  if (LANE_MARKER.test(text.split("\n").slice(0, 5).join("\n"))) reason = "LANE marker";
   const code = stripComments(text);
   if (!reason && SPAWN.test(code)) reason = "spawns a process";
   if (!reason) {
@@ -130,7 +139,8 @@ export function lanes() {
         continue;
       }
       const reason = heavyReason(path);
-      (reason ? heavy : fast).push({ file: rel, reason });
+      const serial = SERIAL_MARKER.test(readFileSync(path, "utf8").split("\n").slice(0, 5).join("\n"));
+      (reason ? heavy : fast).push({ file: rel, reason, serial });
     }
   }
   const byFile = (a, b) => a.file.localeCompare(b.file);
@@ -143,6 +153,10 @@ if (import.meta.main) {
   if (arg === "--fast") console.log(fast.map((t) => t.file).join("\n"));
   else if (arg === "--heavy") console.log(heavy.map((t) => t.file).join("\n"));
   else if (arg === "--live") console.log(live.map((t) => t.file).join("\n"));
+  else if (arg === "--heavy-parallel")
+    console.log(heavy.filter((t) => !t.serial).map((t) => t.file).join("\n"));
+  else if (arg === "--heavy-serial")
+    console.log(heavy.filter((t) => t.serial).map((t) => t.file).join("\n"));
   else if (arg === "--why") {
     for (const t of heavy) console.log(`${t.file}\t${t.reason}`);
   } else if (arg === "--check") {
@@ -152,9 +166,14 @@ if (import.meta.main) {
       console.error(`test lanes: ${dupes.length} files in two lanes, ${all.length} total`);
       process.exit(1);
     }
-    console.log(`test lanes: fast ${fast.length}, heavy ${heavy.length}, live ${live.length}`);
+    const serial = heavy.filter((t) => t.serial).length;
+    console.log(
+      `test lanes: fast ${fast.length}, heavy ${heavy.length} (${heavy.length - serial} parallel, ${serial} serial), live ${live.length}`,
+    );
   } else {
-    console.error("usage: bun scripts/test-lanes.mjs --fast | --heavy | --live | --why | --check");
+    console.error(
+      "usage: bun scripts/test-lanes.mjs --fast | --heavy | --heavy-parallel | --heavy-serial | --live | --why | --check",
+    );
     process.exit(2);
   }
 }

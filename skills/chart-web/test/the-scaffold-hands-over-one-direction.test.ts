@@ -1,3 +1,4 @@
+// LANE: serial — writes a probe beat into proof/ while it runs (scripts/test-lanes.mjs).
 /**
  * THE SCAFFOLD ENFORCED THE FILE'S EXISTENCE AND IGNORED ITS CONTENTS.
  *

@@ -90,8 +90,9 @@ immediately, by name, when it is missing.
    `scripts/verify-live-map-scrolly.mjs` for a map beat) — see "The one gotcha" above.
 6. **Final pass**: bake (drop `--no-bake` for a map beat) and run the guards
    (`test/scroll-integrity.test.ts`, `test/render-scrolly.test.ts`) before delivery.
-   `test/scroll-integrity.test.ts` sweeps every `proof/scrolly-*` beat's own renders by default (CI's own
-   contract), and that sweep grows past its own 600s ceiling as the catalogue grows. A run checks only ITS
+   The unscoped sweep drives every `proof/scrolly-*` beat's own renders, split across eight shard files
+   (`test/scroll-integrity.test.ts` is shard 1, `test/scroll-integrity-<n>.test.ts` the rest) so the heavy
+   lane can run them side by side. A run checks only ITS
    OWN beat with `SCROLL_INTEGRITY_BEAT=<beat-folder-name> bun test skills/scrolly/test/scroll-integrity.test.ts`
    (a bare name resolves under `proof/`; a path — a story's own `beats/<id>` — resolves as given). Never pass
    `SCROLL_INTEGRITY_BEAT` to the unscoped suite; run it as its own named invocation.
@@ -262,6 +263,6 @@ Scripts: `render-scrolly.mjs` (`renderScrolly` media-agnostic machinery above th
 `data-progress` reaches that step.
 
 Tests: `test/render-scrolly.test.ts` (generic scaffold, card-over-visual, two widths),
-`test/scroll-integrity.test.ts` (walks `verify-scrolly.mjs` over every scrolly on disk),
+`test/scroll-integrity*.test.ts` (eight shards; walk `verify-scrolly.mjs` over every scrolly on disk),
 `test/seed-tracks.test.ts` (four tracks, data layer, claims recomputed from the frozen file),
 `test/canon.test.ts` (canon shape, no registry/dispatcher).

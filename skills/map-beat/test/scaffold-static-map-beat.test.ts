@@ -1,3 +1,4 @@
+// LANE: serial — writes a probe beat into proof/ while it runs (scripts/test-lanes.mjs).
 import { describe, expect, it } from "bun:test";
 import { spawnSync } from "node:child_process";
 import {
