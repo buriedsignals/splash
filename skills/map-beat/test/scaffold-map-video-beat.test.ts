@@ -146,9 +146,10 @@ describe("scaffold-map-video-beat", () => {
     for (const file of EXPECTED) expect(first.stdout).toContain(file);
   });
 
-  it("should write a story beat its own key scan and timing rules, which the catalogue's tests never reach", () => {
-    // A proof/ beat is scanned by `every-map-video-keeps-the-key-out.live.test.ts` and timed by
-    // `chart-video/test/every-video-beat-keeps-the-timing-contract.test.ts`, so it carries neither;
+  it("should write a story beat its own key scan, timing rules and paint guard, which the catalogue's tests never reach", () => {
+    // A proof/ beat is scanned by `every-map-video-keeps-the-key-out.live.test.ts`, timed by
+    // `chart-video/test/every-video-beat-keeps-the-timing-contract.test.ts` and walked by
+    // `every-map-video-glides.test.ts`, so it carries none of the three;
     // a story beat may sit in an installed root: `shared/`, stories, nothing else.
     expect(readFileSync(join(BEAT, "timing.test.ts"), "utf8")).not.toContain("checkTiming(T)");
     const home = mkdtempSync(join(tmpdir(), "scaffold-story-root-"));
@@ -175,7 +176,8 @@ describe("scaffold-map-video-beat", () => {
         run.status,
         existsSync(join(story, "no-key.live.test.ts")),
         readFileSync(join(story, "timing.test.ts"), "utf8").includes("checkTiming(T)"),
-      ]).toEqual([0, true, true]);
+        existsSync(join(story, "smooth.test.ts")),
+      ]).toEqual([0, true, true, true]);
     } finally {
       rmSync(home, { recursive: true, force: true });
     }

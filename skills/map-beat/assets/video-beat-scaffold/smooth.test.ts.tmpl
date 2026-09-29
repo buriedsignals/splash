@@ -1,0 +1,29 @@
+import { describe, expect, it } from "bun:test";
+import { existsSync } from "node:fs";
+import { paintJumps } from "#shared/map-beat/smoothness.mjs";
+import { buildDirection, directionsFor, loadBeat, MEASURED } from "./build.mjs";
+import { HIDDEN_CUTS, mapStateAt } from "./scene.mjs";
+
+/**
+ * NOTHING ON THIS MAP CHANGES IN ONE FRAME. MapLibre softens nothing between two frames of a directed video, so a bound
+ * paint that moves a whole step at once — a `step` over a class number, a field floored to a year, an opacity switched
+ * on — is a cut on screen, and no still shows it: a cut lives between two frames. Every frame's state is walked here
+ * and held to `paintJumps` (`shared/map-beat/smoothness.mjs`). A jump no reader sees is declared in `scene.mjs`'s
+ * `HIDDEN_CUTS`, with why.
+ */
+
+const beat = loadBeat();
+const { directions } = directionsFor(beat);
+const measured = existsSync(MEASURED);
+
+for (const entry of measured ? directions : []) {
+  const { props } = buildDirection(entry, beat);
+  const T = props.timing as any;
+
+  describe(`%%BEAT%% in ${entry.label}`, () => {
+    it("should move every bound paint with a ramp — nothing cuts in one frame", () => {
+      const states = Array.from({ length: T.total }, (_, f) => mapStateAt(props, f));
+      expect(paintJumps((props as any).mapPlan, states, { hidden: HIDDEN_CUTS })).toEqual([]);
+    });
+  });
+}
