@@ -29,8 +29,11 @@ import {
   levelRulesForMarkup,
   type LevelDeclaration,
 } from "../../skills/chart-web/assets/level.ts";
+import { labelBoxPx, type Measure, type WebRegisterStyle } from "../../skills/chart-web/assets/keyed-note.ts";
 
-const ROW = 40;
+/** The distance between two row centres, in the viewBox's own units — what the runner declares as
+ *  the row floor's `pitch`. */
+export const ROW = 40;
 /** The first row's own value labels sit beside its bar, so the band of rows starts below the top of
  *  the frame — without this a label centred on a row at y=0 lifts out of the svg's rectangle, where
  *  the hit area cannot answer for it and the format's own overlay probe goes silent. */
@@ -90,6 +93,42 @@ export const scaleFor = (xTicks: number[]) => {
   return (value: number) => ((value - floor) / (top - floor)) * PLOT_RIGHT;
 };
 
+/** The value labels beside the heads are the value register two pixels down, never under 11. ONE
+ *  definition, because the row floor below is derived from the size the page actually sets. */
+const endLabelRegister = (value: WebRegisterStyle): WebRegisterStyle => ({
+  ...value,
+  fontSize: `${Math.max(11, Number.parseFloat(value.fontSize as string) - 2)}px`,
+});
+
+/** The delta column's left edge, as a share of the frame — where the gain is printed on every row. */
+const DELTA_LEFT_PCT = pct(PLOT_RIGHT + 10, FRAME.width);
+/** The daylight a value label keeps from the delta column, on top of its own chip padding and the
+ *  bearing `labelBoxPx` already adds: the two are different registers and must not read as one run. */
+const DELTA_CLEARANCE_PX = 2;
+
+/**
+ * THE ROW FLOOR, DERIVED FROM THE DIRECTION — never typed. Every row carries three stacked kinds of
+ * word: the country's name in the gutter (axis register), its two values beside their heads (value
+ * register two px down, on the ground chip) and its gain in the delta column (annotation register,
+ * no chip). Under the tallest of those boxes the rows print their words over their neighbours' —
+ * measured at 375 px before this existed: a pitch of 11.2 px on `creme` and `rapport` and 8.4 on
+ * `nocturne`, against boxes of 13.2–18.2 px, and thirty findings in the annotation guard.
+ *
+ * Only the HEIGHT of each box is read, and it does not depend on ink, so the registers are resolved
+ * with a stand-in ink map: `webRegisters` refuses a register with no ink role to resolve, and
+ * nothing here paints.
+ */
+export function rowFloorFor(direction: any, measure: Measure) {
+  const stand = "currentColor";
+  const regs = webRegisters(direction, { ink: { ink: stand, muted: stand, accent: stand } }) as Record<string, WebRegisterStyle>;
+  const boxes = {
+    name: labelBoxPx("Royaume-Uni", regs.axis, measure, { chip: false }).h,
+    value: labelBoxPx("84,7", endLabelRegister(regs.value), measure, { chip: true }).h,
+    gain: labelBoxPx("+5,0", regs.annot, measure, { chip: false }).h,
+  };
+  return { px: Math.ceil(Math.max(boxes.name, boxes.value, boxes.gain)), boxes };
+}
+
 export function DirectedDumbbellWeb({
   rows,
   subject,
@@ -129,9 +168,10 @@ export function DirectedDumbbellWeb({
   ink: string;
   muted: string;
   grid: string;
-  measure: (text: string, options: { fontSize: number; fontWeight?: unknown; fontFamily?: string }) => number;
+  measure: Measure;
 }) {
   const regs = webRegisters(direction, { ink: { ink, muted, accent } });
+  const endReg = endLabelRegister(regs.value as WebRegisterStyle);
   // TOP_PAD lifts the first row clear of the frame (its own value labels sit beside it, and at
   // 375 px a label centred on a row at y=0 lifts out of the svg's rectangle). BOTTOM_PAD is the
   // strip the yardstick writes its two year labels in — without it they sit on the last row's own
@@ -256,7 +296,7 @@ export function DirectedDumbbellWeb({
         ...rows.map((r) =>
           measure(r.name, {
             fontSize: axisSize,
-            fontWeight: r.code === subject ? 700 : regs.axis.fontWeight,
+            fontWeight: r.code === subject ? 700 : (regs.axis.fontWeight as number | string),
             fontFamily: axisFamily,
           }),
         ),
@@ -562,14 +602,30 @@ export function DirectedDumbbellWeb({
             const beforePct = pct(x(r.before), FRAME.width);
             const afterPct = pct(x(r.after), FRAME.width);
             const flipBefore = beforePct < 14;
-            const flipAfter = afterPct > 86;
+            // THE LATER VALUE FLIPS WHERE IT WOULD RUN INTO ITS OWN ROW'S GAIN — AT THE WIDTH THE
+            // CELL IS ACTUALLY DRAWN AT, NOT AT A TYPED SHARE OF IT. It used to flip past a fixed
+            // 86 % of the frame. The label is a word of fixed pixels and the delta column starts at a
+            // fixed share, so the room between a head and that column shrinks with the cell while
+            // the label does not: at 375 px the 2023 value of four rows (five on `nocturne`) was
+            // printed across its own gain, which no row pitch can separate. The label's box is
+            // MEASURED here, in node, once; the browser then does one comparison against the width
+            // of the cell it lays out — the room `(DELTA_LEFT − head) %` against the label's
+            // `9 px + box + clearance` — and the `clamp(… × 1000 …)` turns that into all or nothing:
+            // nothing moves while the label fits, and the whole flip (box + 2 × 9 px) the moment it
+            // does not. It reads the cell's own width, not the window's, so a cell made narrower by
+            // a height clamp flips at the width it really is — which a `@container` threshold on
+            // the plot's width could not see.
+            const afterBox = labelBoxPx(r.afterLabel, endReg, measure, { chip: true }).w;
+            const afterNeed = 9 + afterBox + DELTA_CLEARANCE_PX;
+            const afterLeft =
+              `calc(${afterPct}% + 9px - clamp(0px, calc((${afterNeed}px - ${DELTA_LEFT_PCT - afterPct}%) * 1000), ` +
+              `${afterBox + 18}px))`;
             return (
             <span key={r.code}>
               <span
                 className="end-label"
                 style={{
-                  ...regs.value,
-                  fontSize: `${Math.max(11, Number.parseFloat(regs.value.fontSize as string) - 2)}px`,
+                  ...endReg,
                   color: label,
                   // BESIDE the head, never above it. A label lifted by a percentage of its own
                   // (fixed-pixel) height clears the row at desktop scale and lifts clean out of the
@@ -587,14 +643,11 @@ export function DirectedDumbbellWeb({
               <span
                 className="end-label"
                 style={{
-                  ...regs.value,
-                  fontSize: `${Math.max(11, Number.parseFloat(regs.value.fontSize as string) - 2)}px`,
+                  ...endReg,
                   color: label,
-                  left: `${pct(x(r.after), FRAME.width)}%`,
+                  left: afterLeft,
                   top: `${pct(cy(i), height)}%`,
-                  transform: flipAfter
-                    ? "translate(-100%, -50%) translateX(-9px)"
-                    : "translateY(-50%) translateX(9px)",
+                  transform: "translateY(-50%)",
                 }}
               >
                 {r.afterLabel}
@@ -606,7 +659,7 @@ export function DirectedDumbbellWeb({
                 style={{
                   ...annotRest,
                   fontWeight: annotWeight,
-                  left: `${pct(PLOT_RIGHT + 10, FRAME.width)}%`,
+                  left: `${DELTA_LEFT_PCT}%`,
                   top: `${pct(cy(i), height)}%`,
                   transform: "translateY(-50%)",
                   background: "transparent",

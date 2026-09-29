@@ -16,8 +16,9 @@ import { composeDirections, report } from "#shared/design-base/compose.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
 import { renderWeb } from "../../skills/chart-web/scripts/render-web.mjs";
+import { measureText } from "../../skills/chart-web/scripts/render-still.mjs";
 import { levelSlugOf } from "../../skills/chart-web/assets/level.ts";
-import { DirectedDumbbellWeb, SERIES, scaleFor } from "./DirectedDumbbellWeb.tsx";
+import { DirectedDumbbellWeb, ROW, SERIES, rowFloorFor, scaleFor } from "./DirectedDumbbellWeb.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const DIRECTIONS = join(HERE, "..", "..", "docs", "design-base", "directions");
@@ -285,6 +286,23 @@ const refused = [];
 for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
   const id = file.replace(/\.md$/, "");
   const direction = resolveDirectionFamilies(readDirection(join(DIRECTIONS, file)), textPerRegister);
+  // THE ROW FLOOR — LEGIBILITY OVER FITTING THE WINDOW, FOR ONE DECLARED REASON. Every row prints a
+  // name, two values and a gain; at 375 px the frame's ratio gave a row 8.4–11.3 px against label
+  // boxes of 13.2–18.2 px, and thirty runs of type were printed on their neighbours'. The floor is
+  // the tallest of this direction's own row boxes (`rowFloorFor`), so the phone cell grows taller
+  // and the page scrolls by that much and for that reason only; at every width where the ratio
+  // already gives the pitch, not a pixel moves.
+  const floor = rowFloorFor(direction, measureText);
+  const rowFloor = {
+    rows: shaped.length,
+    pitch: ROW,
+    px: floor.px,
+    why:
+      `Every row prints its country's name (${floor.boxes.name.toFixed(1)}px), its two values on ` +
+      `their chips (${floor.boxes.value.toFixed(1)}px) and its gain (${floor.boxes.gain.toFixed(1)}px); ` +
+      `under ${floor.px}px a row prints them over its neighbour's.`,
+  };
+  console.log(`${id}: row floor ${floor.px}px — ${rowFloor.why}`);
   try {
     await renderWeb({
       // This catalogue is written in French; the renderer defaults to English and never guesses.
@@ -312,6 +330,7 @@ for (const file of readdirSync(DIRECTIONS).filter((f) => f.endsWith(".md"))) {
       },
       outDir: OUT,
       name: `${id}.html`,
+      rowFloor,
     });
     console.log(`${id} -> renders/${id}.html`);
   } catch (error) {
