@@ -19,6 +19,14 @@
 // how fast its own gestures are meant to run — they come from its timing contract (a window's length in frames) and
 // from its scale (how far apart two class colours are). Either may be a number, or a function of the later frame's
 // index when a beat's pace changes through the video.
+//
+// `paintJumps` is the guard every map video runs without declaring anything: a cut is a change with NO RAMP — a frame
+// that moves a bound paint much further than the frames either side of it. A speed ceiling cannot say this on its own:
+// measured on the eight bound proof beats (2026-09-29), their scenes split a window into faster sub-gestures (the
+// cartogram's five classes inside one `classes` window) and a ceiling read off the shortest window flagged 500-odd
+// frames of honest motion, while the no-ramp rule flagged none of them. What it cannot know is a jump no reader sees —
+// a layer leaving from under an opaque one, an opacity switched on while its line is still zero long — so a beat names
+// those in `hidden`, each with why, and a declaration that hides nothing is refused.
 
 import { bindState } from "./scrolly.mjs";
 
@@ -65,6 +73,23 @@ export function evaluatePaint(value, { colour = false } = {}) {
       return Math.min(...rest.map(read));
     case "max":
       return Math.max(...rest.map(read));
+    case "sqrt":
+      return Math.sqrt(read(rest[0]));
+    case "^":
+      return read(rest[0]) ** read(rest[1]);
+    case "<":
+    case "<=":
+    case ">":
+    case ">=":
+    case "==":
+    case "!=": {
+      const [a, b] = rest.map((v) => evaluatePaint(v, { colour: false }));
+      return { "<": a < b, "<=": a <= b, ">": a > b, ">=": a >= b, "==": a === b, "!=": a !== b }[op];
+    }
+    case "case": {
+      for (let i = 0; i < rest.length - 1; i += 2) if (evaluatePaint(rest[i], { colour: false })) return read(rest[i + 1]);
+      return read(rest[rest.length - 1]);
+    }
     case "step": {
       const [input, first, ...stops] = rest;
       const x = evaluatePaint(input, { colour: false });
@@ -133,5 +158,73 @@ export function paintCuts(plan, states, ceilings = {}) {
       });
     previous = now;
   });
+  return found.sort((a, b) => b.moved - a.moved).map((f) => f.line);
+}
+
+/** A move smaller than this share of a paint's whole travel is below anything a reader could call a cut. */
+const JUMP_FLOOR = 0.05;
+/** A move this many times larger than what surrounds it has no ramp: it arrived at once. */
+const JUMP_RATIO = 4;
+/** The smallest move anyone could see, in the paint's own units — a colour channel, an opacity, a pixel. */
+const visibleOf = (property, colour) => (colour ? 1 : property.endsWith("-opacity") ? 0.01 : 0.1);
+
+/**
+ * THE JUMPS A PLAN'S BOUND PAINTS MAKE across a run of consecutive frames' states — the moves with no ramp either side.
+ *
+ * Each paint's moves are read as a share of its own travel over the run (its widest channel, for a colour), so one
+ * rule holds an opacity, a radius and a colour ramp alike; a move too small to see in the paint's own units is none.
+ * A jump is one frame moving over four times the larger of its neighbours, or a snap: two moving frames with the paint
+ * still on either side of them, moving together over four times what those sides do. An arrival eased over three frames
+ * or more is a movement, however quick.
+ *
+ * @param {object} plan
+ * @param {Array<Record<string, number>>} states one per frame, in order
+ * @param {{ hidden?: Array<{ layers: RegExp, property: string, when: (state: Record<string, number>, layer: string) => boolean, why: string }> }} [options]
+ *   the jumps no reader sees: a jump on a matching layer's property is passed only where `when` holds at its last frame
+ * @returns {string[]} one line per jump, the largest first. Empty means every change is a movement.
+ */
+export function paintJumps(plan, states, { hidden = [] } = {}) {
+  for (const h of hidden)
+    if (typeof h.when !== "function") throw new Error(`hidden ${h.layers} "${h.property}" has no \`when\` — say where the jump is hidden, not only why`);
+  const frames = states.map((state) => paintAt(plan, state));
+  if (frames.length < 2) return [];
+  const used = new Set();
+  const found = [];
+  frames[0].forEach((first, k) => {
+    const colour = first.colour !== undefined;
+    const channels = (f) => (colour ? f[k].colour : [f[k].number]);
+    const lo = channels(frames[0]).map(() => Infinity);
+    const hi = channels(frames[0]).map(() => -Infinity);
+    for (const f of frames) channels(f).forEach((c, ch) => ((lo[ch] = Math.min(lo[ch], c)), (hi[ch] = Math.max(hi[ch], c))));
+    const travel = Math.max(...hi.map((h, ch) => h - lo[ch]));
+    const visible = visibleOf(first.property, colour);
+    if (!(travel >= visible)) return;
+    const moves = frames.map((f, i) => {
+      if (i === 0) return 0;
+      const moved = Math.max(...channels(f).map((c, ch) => Math.abs(c - channels(frames[i - 1])[ch])));
+      return moved < visible ? 0 : moved / travel;
+    });
+    const at = (i) => moves[i] ?? 0;
+    const report = (from, to, moved) => {
+      const exemption = hidden.find((h) => h.property === first.property && h.layers.test(first.layer) && h.when(states[to], first.layer));
+      if (exemption) return void used.add(exemption);
+      found.push({
+        moved,
+        line: `layer "${first.layer}": "${first.property}" jumps ${Math.round(moved * 100)}% of its travel between frames ${from} and ${to}, with no ramp either side — it cuts`,
+      });
+    };
+    for (let i = 1; i < moves.length; i += 1) {
+      if (!(at(i) > JUMP_FLOOR)) continue;
+      if (at(i) > JUMP_RATIO * Math.max(at(i - 1), at(i + 1))) report(i - 1, i, at(i));
+      // A snap: the whole arrival in two frames, a fifteenth of a second, still on either side of them.
+      else {
+        const [before, after] = [at(i - 1), at(i + 2)];
+        const pair = at(i) + at(i + 1);
+        if (at(i + 1) > JUMP_FLOOR && !(before > JUMP_FLOOR) && !(after > JUMP_FLOOR) && pair > JUMP_RATIO * Math.max(before, after)) report(i - 1, i + 1, pair);
+      }
+    }
+  });
+  for (const h of hidden)
+    if (!used.has(h)) found.push({ moved: Infinity, line: `hidden ${h.layers} "${h.property}" hides no jump — delete it (${h.why})` });
   return found.sort((a, b) => b.moved - a.moved).map((f) => f.line);
 }

@@ -21,6 +21,18 @@ export const OVERLAP = 0.6;
 /** A stepped-back band keeps this much of its ink. */
 export const STEPPED_BACK = 0.22;
 
+/** The jumps no reader sees as a cut (`every-map-video-glides.test.ts`): a band's opacity switches on in one frame, but
+ *  on the frame its trace starts, when `arcAt` has drawn at most 0.7% of its arc (measured 2026-09-29) — the tip of
+ *  the line beginning its trace, not a band appearing (`mapStateAt`). */
+export const HIDDEN_CUTS = Object.freeze([
+  {
+    layers: /^band-/,
+    property: "line-opacity",
+    when: (state, layer) => state[`drawn${layer.slice("band-".length)}`] < 0.01,
+    why: "switches on as its trace starts, under 1% of the arc drawn",
+  },
+]);
+
 const windowed = (frame, timing, event, [a, b]) => clamp01((progressOf(frame, timing[event]) - a) / (b - a));
 export function fieldAt(field, frame, states, timing) {
   let value = 0;

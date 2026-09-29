@@ -25,6 +25,11 @@ export const WINDOWS = Object.freeze({
 /** The fields that move at constant speed — the years a map runs through, a count. Every other field is eased. */
 export const LINEAR = new Set([]); // SCAFFOLD
 
+/** The jumps no reader sees (`smooth.test.ts`), each with where it is hidden and why: `{ layers: /^neutral-/, property:
+ *  "fill-opacity", when: (state, layer) => state.covered === 1, why: "leaves from under an opaque fill" }` — a jump is
+ *  passed only on the frames `when` holds. Empty until a jump is proved hidden — never to quiet one. */
+export const HIDDEN_CUTS = Object.freeze([]);
+
 const windowed = (frame, timing, event, [a, b]) => clamp01((progressOf(frame, timing[event]) - a) / (b - a));
 
 /** A field's value at `frame`: every event's change to it, run through its window. */

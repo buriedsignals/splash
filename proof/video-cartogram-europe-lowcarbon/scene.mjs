@@ -44,6 +44,17 @@ export const SHAPE_TO_TILE = Object.freeze([0.62, 0.92]);
 /** A country the focus steps back keeps this much of its ink. */
 export const STEPPED_BACK = 0.3;
 
+/** The jumps no reader sees (`every-map-video-glides.test.ts`): a class's neutral leaves in one frame, but only once
+ *  that class has wholly arrived over it at full opacity, so it leaves from under an opaque fill (`mapStateAt`). */
+export const HIDDEN_CUTS = Object.freeze([
+  {
+    layers: /^neutral-\d/,
+    property: "fill-opacity",
+    when: (state, layer) => state[`reached${layer.split("-")[1]}`] === 1,
+    why: "leaves from under its class, arrived at full opacity",
+  },
+]);
+
 const windowed = (frame, timing, event, [a, b]) => clamp01((progressOf(frame, timing[event]) - a) / (b - a));
 
 /** A field's value at `frame`: every event's change run through its window. */

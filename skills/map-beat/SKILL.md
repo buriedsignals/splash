@@ -216,6 +216,7 @@ All built on the live map 2026-09-15/16 and awaiting the owner (`docs/design-bas
 | `render-directions-video.mjs` | key check, composer report, type floor at every event end, audit props, `buildProps(origin)`, `renderVideoMap` for `--look` / `--still` / mp4, ffprobe size, refusal cleanup | plumbing bar the look frames |
 | `measure.mjs` | `planDigestOf`, `MEASURED_FRAMES` (one frame per fixed camera), `measureLiveMap` per direction → `measured.json` | plumbing bar the frames |
 | (none: `test/every-map-video-keeps-the-key-out.live.test.ts`) | the key is in no render, props file, measurement or cached tile, for every `proof/video-*` beat with a `measure.mjs` | plumbing, shared |
+| (none: `test/every-map-video-glides.test.ts`) | no bound paint jumps in one frame (`paintJumps`), every frame, every direction, for every `proof/video-*` beat with a `map-plan.mjs`; a jump no reader sees declared, with the condition that hides it, in `scene.mjs`'s `HIDDEN_CUTS` | plumbing, shared |
 | `plan.mjs`, `seats.json` | layers (copied from the scrolly pilot); lon/lat seats for names | beat |
 | `map-plan.mjs` | `camerasOf` (whole + close-up `cameraFields`), `mapPlanFor` (tints, class fills, fonts, region borders, `camera.view`) | beat; the mercator fit is plumbing |
 | `scene.mjs` | `WINDOWS`, `fieldAt`, `gatesAt`, `cameraAt`, `mapStateAt`, `sceneAt` (overlay) | mechanics plumbing, windows beat |
@@ -284,6 +285,24 @@ default `-1`) → `<name>-final-frame.png`; `"mp4"` → `<name>.mp4`. Returns `{
 `measured.json`, contains the key. It discovers every `proof/video-*` beat carrying `measure.mjs`.
 A story beat may live in an installed root that test never reaches, so the scaffold writes a story
 beat (never a `proof/` one) its own `no-key.live.test.ts`, the same scan for that beat.
+
+**`test/every-map-video-glides.test.ts`** — a bound paint must not cut. MapLibre softens nothing
+between two frames of a directed video, so a `step` over a class number, a field floored to a year
+or an opacity switched on is a cut on screen, and no still shows it: the render ladder looks at frames
+one at a time. It walks every frame's `mapStateAt` of every `proof/video-*` map beat, in every
+direction, through `paintJumps` (`shared/map-beat/smoothness.mjs`): a move with **no ramp** fails —
+one frame moving over 5% of the paint's travel and over four times the larger of its two neighbours,
+or a **snap**, the whole arrival in two frames with the paint still either side. An arrival eased over
+three frames or more is a movement; a move too small to see (a colour channel, 0.01 of opacity, 0.1 px)
+is none. Not a speed ceiling: scenes split a window into faster sub-gestures, and a ceiling read off
+the shortest window flagged 500-odd frames of honest motion on the proofs (2026-09-29). A fade set in
+km rather than frames snaps where the front runs fastest — the contour's numbers needed their own
+`LABEL_FADE_KM`. A jump no reader sees — a layer leaving from under an opaque one, a line's opacity
+switched on as its trace starts — is declared in the beat's `scene.mjs` as `HIDDEN_CUTS`
+(`{ layers, property, when, why }`): `when(state, layer)` is the condition that proves it hidden, and a
+jump is passed only on the frames it holds. One without `when` is refused; one that hides nothing fails. The scaffold writes a story beat its own `smooth.test.ts`. A beat that
+needs a stricter bound than "no ramp" — its own pace, as the archived cold2 read its years — calls
+`paintCuts` with ceilings from its timing contract.
 
 ### Colour, countries and placement on a live map
 
@@ -441,6 +460,7 @@ bun proof/video-<type>-<slug>/render-directions-video.mjs --look "$SCRATCH/look-
 bun proof/video-<type>-<slug>/render-directions-video.mjs --still
 bun proof/video-<type>-<slug>/render-directions-video.mjs      # the mp4s
 bun test skills/map-beat/test/every-map-video-keeps-the-key-out.live.test.ts   # a story beat: its own no-key.live.test.ts
+bun test skills/map-beat/test/every-map-video-glides.test.ts                   # a story beat: its own smooth.test.ts
 ```
 
 Use a `--look` directory unique to the beat: a shared scratchpad `look/` already holds other beats' frames.

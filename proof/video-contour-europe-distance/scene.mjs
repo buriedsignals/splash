@@ -17,9 +17,12 @@ export const WINDOWS = Object.freeze({
 });
 /** A measured axis is traversed linearly; everything that arrives eases. */
 const LINEAR = new Set(["level"]);
-/** A line fades in over this many km past the front, its number over the next. */
+/** A line fades in over this many km past the front; its number starts LABEL_DELAY_KM past it. */
 export const LINE_FADE_KM = 10;
 export const LABEL_DELAY_KM = 14;
+/** A number fades in over twice its line's km: the front runs ~4 km a frame at its fastest, and over the line's 10 km
+ *  « 200 » arrived in two frames — a snap, not a fade (`every-map-video-glides.test.ts`). */
+export const LABEL_FADE_KM = 20;
 
 const windowed = (frame, timing, event, [a, b]) => clamp01((progressOf(frame, timing[event]) - a) / (b - a));
 
@@ -64,7 +67,7 @@ export function sceneAt(props, frame) {
     // A line within 50 km of the median gives way to it as the median lands.
     const yielded = props.yielding?.includes(L) ? 1 - median : 1;
     lines[L] = clamp01((level - L + LINE_FADE_KM) / LINE_FADE_KM) * yielded;
-    labels[L] = L === props.medianLevel ? median : ease(clamp01((level - L - LABEL_DELAY_KM) / LINE_FADE_KM)) * yielded;
+    labels[L] = L === props.medianLevel ? median : ease(clamp01((level - L - LABEL_DELAY_KM) / LABEL_FADE_KM)) * yielded;
   }
   return {
     title: at("title"),
