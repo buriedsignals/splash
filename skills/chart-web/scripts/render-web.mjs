@@ -144,7 +144,7 @@ const OUTPUT_NAME = "rainfall.html";
  * composition — so every web beat shares one implementation of the colour rule and the
  * text-measurement rule, never a copy per story.
  */
-async function renderWeb({ component, props, outDir, name, frame = null, drawing = null, lang = "en" }) {
+async function renderWeb({ component, props, outDir, name, frame = null, drawing = null, rowFloor = null, lang = "en" }) {
   assertLanguageTag(lang);
   const furniture = deriveFurniture(props.ground);
 
@@ -183,6 +183,9 @@ async function renderWeb({ component, props, outDir, name, frame = null, drawing
   // The free-parameter declaration is stamped onto the figure before the document is assembled, so
   // both assembly passes and the delivered file all carry it.
   markup = stampFreeParameters(markup, props.interaction ?? null);
+  // THE ROW FLOOR TRAVELS WITH THE PAGE, as attributes on the figure — the stylesheet's floor rules
+  // are scoped to them and `verify-web.mjs` reads them back. See `rowFloorCss`.
+  markup = stampRowFloor(markup, rowFloor, name ?? "this beat");
 
   const declaresEntrance = /\sdata-entrance-motion="/.test(markup);
 
@@ -226,6 +229,9 @@ async function renderWeb({ component, props, outDir, name, frame = null, drawing
     // that declares nothing emits nothing and is guarded on nothing: the thirty-odd beats that have
     // never been asked the question keep exactly the page they had. See `frameNoteCss`.
     frame,
+    // WHAT THE BEAT'S ROWS NEED — the pitch its labels cannot be drawn under. A beat that declares
+    // nothing emits nothing: the page is byte for byte the page it was. See `rowFloorCss`.
+    rowFloor,
     filter: props.filter ?? null,
     entrance: declaresEntrance,
     fontStack: stack,
@@ -250,6 +256,7 @@ async function renderWeb({ component, props, outDir, name, frame = null, drawing
   assertFontsEmbedded(html);
   assertPlotCellIsItsViewBox(html, name ?? "this beat");
   assertFrameExtension(html, frame, name ?? "this beat");
+  assertRowFloor(html, rowFloor, name ?? "this beat");
 
   await mkdir(outDir, { recursive: true });
   const outPath = join(outDir, name);
@@ -552,6 +559,238 @@ function assertFrameExtension(html, frame, name = "this beat") {
         `beat declared for its own type. Past the bound the drawing stops being a chart and becomes ` +
         `a frieze, and the width belongs back in the margin.`,
     );
+}
+
+/**
+ * THE ROW FLOOR — LEGIBILITY BEATS FITTING THE WINDOW, FOR A BEAT WHOSE MARKS SIT IN ROWS.
+ *
+ * The cell carries its viewBox's ratio and the words carry fixed pixel sizes, so on a narrow page a
+ * row chart's rows close up while its labels do not: measured at 375 × 812 on the committed row
+ * beats, a 10-row dumbbell drew rows 11.2 px apart under 17.6–18.2 px value labels, and a bullet
+ * drew 14.4 px rows under 12–13 px names with 8.2 px of free ground between bars. Every one of
+ * those labels is printed over its neighbour's, and no placement inside a row that thin can clear
+ * it. The owner's ruling: legibility beats fitting the window. So a beat whose marks sit in ROWS —
+ * one row per category, or per statistic — may DECLARE the pitch its labels need:
+ *
+ *   rowFloor: { rows: 10, pitch: 40, px: 19, why: "…" }
+ *
+ *   rows   how many rows the plate draws;
+ *   pitch  the distance between two adjacent row centres, in the viewBox's own units;
+ *   px     the smallest row pitch, in CSS pixels, the row labels can be drawn at without touching —
+ *          the TALLEST label box that sits on a row, measured in the direction's own register
+ *          (`assets/keyed-note.ts`'s `labelBoxPx(…).h`, rounded up), never typed;
+ *   why    one sentence: what sits on every row, and why a pitch under `px` prints it over its
+ *          neighbour.
+ *
+ * WHAT IT DOES. Wherever the ratio-derived cell would give a smaller pitch, the plot cell grows
+ * TALLER — `px × viewBoxHeight / pitch` is its floor — and the page may scroll for that reason and
+ * for no other. Written as CSS scoped to the figure's own `data-row-floor`, so it holds at every
+ * width and in every window without a threshold anybody typed: the floor is a `min-height` on the
+ * plot and a `max()` on `--cell-h`. `--cell-w` is untouched, so the cell leaves its ratio in ONE
+ * direction only — taller — and only by what the floor asks for. Where the ratio already gives the
+ * pitch (a wide page) nothing moves, to the pixel.
+ *
+ * WHAT IT COSTS, named. Under the floor the drawing is stretched vertically. Row positions, bar
+ * thicknesses and rules are LENGTHS and follow the stretch honestly; a SHAPE never may
+ * (`web-discipline.md`, "A LENGTH follows the stretch; a SHAPE never does"). So a floored page is
+ * refused when its plot draws a polygon, an ellipse, an image or a `<use>`, or a visible circle
+ * wider than half a row: a marker confined to its own row is a position, while a symbol spanning
+ * rows is a shape whose size or outline says something. That is a proxy, stated as one — an
+ * arrowhead drawn as a `<path>` is not caught, and the beat's own sentence must say its marks
+ * survive the stretch.
+ *
+ * AND WHAT IT DOES NOT BUY. The floor is vertical. A label that collides with its own row's other
+ * label side by side is not moved by a taller row; that is placement (`@container` steps, or
+ * `assets/keyed-note.ts`), not pitch.
+ */
+function normaliseRowFloor(rowFloor, name = "this beat") {
+  if (!rowFloor) return null;
+  const rows = Number(rowFloor.rows);
+  const pitch = Number(rowFloor.pitch);
+  const px = Number(rowFloor.px);
+  const why = typeof rowFloor.why === "string" ? rowFloor.why.trim() : "";
+  if (!Number.isInteger(rows) || rows < 2)
+    throw new Error(
+      `${name}: a row floor needs the number of rows the plate draws, at least two (a pitch is the ` +
+        `distance BETWEEN rows); given ${JSON.stringify(rowFloor.rows ?? null)}.`,
+    );
+  if (!Number.isFinite(pitch) || pitch <= 0)
+    throw new Error(
+      `${name}: a row floor needs the distance between two adjacent row centres in the viewBox's own ` +
+        `units; given ${JSON.stringify(rowFloor.pitch ?? null)}.`,
+    );
+  // A label box is a line of type plus its chip. Under 6 px there is no register this format sets;
+  // over 120 px it is a paragraph, and a row that needs a paragraph is not a row.
+  if (!Number.isFinite(px) || px < 6 || px > 120)
+    throw new Error(
+      `${name}: a row floor's px is the tallest row label's MEASURED box height in CSS pixels ` +
+        `(labelBoxPx(…).h, rounded up) — between 6 and 120; given ${JSON.stringify(rowFloor.px ?? null)}.`,
+    );
+  if (why.length < 40)
+    throw new Error(
+      `${name}: a row floor must ARGUE itself in a sentence — what sits on every row, and why a pitch ` +
+        `under ${px}px prints it over its neighbour. Given ${JSON.stringify(rowFloor.why ?? null)}.`,
+    );
+  return { rows, pitch, px, why };
+}
+
+/** The floor's cell height, in CSS pixels, for a viewBox `plotHeight` units tall. Rounded UP to the
+ *  hundredth so the pitch the page draws is never a rounding error short of the one declared. */
+function rowFloorCellPx({ px, pitch }, plotHeight) {
+  return Math.ceil(((px * plotHeight) / pitch) * 100) / 100;
+}
+
+/** Writes the declaration onto the figure, where the floor's own rules find it and where
+ *  `verify-web.mjs` reads it back (and takes it away, to measure what the page would be without). */
+function stampRowFloor(markup, rowFloor, name = "this beat") {
+  const floor = normaliseRowFloor(rowFloor, name);
+  if (!floor) return markup;
+  const tag = /<figure class="chart-figure"/;
+  if (!tag.test(markup))
+    throw new Error(
+      `${name}: a row floor is carried on <figure class="chart-figure">, and the markup draws none.`,
+    );
+  return markup.replace(
+    tag,
+    `<figure class="chart-figure" data-row-floor="${floor.px}" data-row-pitch="${floor.pitch}" data-rows="${floor.rows}"`,
+  );
+}
+
+/** The floor's stylesheet — the empty string for a beat that declares none. */
+function rowFloorCss(rowFloor, plot, name = "this beat") {
+  const floor = normaliseRowFloor(rowFloor, name);
+  if (!floor) return "";
+  const { width, height } = assertPlotGeometry(plot);
+  if (floor.rows * floor.pitch > height + 1e-6)
+    throw new Error(
+      `${name}: ${floor.rows} rows at a pitch of ${floor.pitch} units need ${floor.rows * floor.pitch} ` +
+        `units, and the plot's viewBox is ${height} tall. The declaration describes a different plate.`,
+    );
+  const cellPx = rowFloorCellPx(floor, height);
+  return `/* THE ROW FLOOR — ${floor.rows} rows · pitch ${floor.pitch} of ${height} units · ${floor.px}px a row · cell at least ${cellPx}px
+   ${floor.why}
+   Where the viewBox ratio would give a smaller pitch, the cell grows TALLER to this floor and the
+   page may scroll for that reason only; --cell-w is untouched, so the cell leaves its ratio in one
+   direction and by exactly what the floor asks. Where the ratio already gives the pitch, nothing
+   here changes a pixel. Every rule is scoped to the figure's own data-row-floor, which is how
+   verify-web.mjs measures the page without it. */
+.chart-figure[data-row-floor] .chart-plot {
+  --row-floor-cell: ${cellPx}px;
+  min-height: max(${PLOT_FLOOR_PX}px, calc(var(--row-floor-cell) + var(--x-axis-h)));
+  --cell-h: min(var(--track-h), max(calc(var(--track-w) * ${height} / ${width}), var(--row-floor-cell)));
+}
+/* THE FRAME'S BOTTOM MARGIN SURVIVES THE SCROLL. Under the floor the column is taller than the
+   window-high figure and overflows it, and an overflow does not carry its parent's padding: the
+   source line would end flush with the page. The same 24px as an item of the column is kept. */
+.chart-figure[data-row-floor] { padding-bottom: 0; }
+.chart-figure[data-row-floor]::after { content: ""; flex: 0 0 ${FRAME_PAD_PX}px; }`;
+}
+
+/**
+ * THE GUARD, ON THE WRITTEN PAGE — the row floor's half of the fluid-frame assertions.
+ *
+ * A page that declares a floor must carry it three times and consistently: the attributes on the
+ * figure, the note and rules in the stylesheet, and a `--cell-h` override at the ratio of the
+ * `<svg class="chart">` the same page draws, floored at exactly `px × height / pitch`. A page that
+ * declares none must carry none of it. And a floored plot must not draw a shape the vertical
+ * stretch would distort (see `normaliseRowFloor`'s header).
+ */
+function assertRowFloor(html, rowFloor, name = "this beat") {
+  const figure = /<figure class="chart-figure"[^>]*>/.exec(html)?.[0] ?? "";
+  const attr = (a) => new RegExp(`\\s${a}="([^"]*)"`).exec(figure)?.[1];
+  const note = /\/\* THE ROW FLOOR — (\d+) rows · pitch ([\d.]+) of ([\d.]+) units · ([\d.]+)px a row · cell at least ([\d.]+)px/.exec(html);
+  const floor = normaliseRowFloor(rowFloor, name);
+  if (!floor) {
+    if (note || attr("data-row-floor") !== undefined || /--row-floor-cell:/.test(html))
+      throw new Error(
+        `${name}: the page carries a row floor but the render was handed no row-floor declaration. ` +
+          `A floor nothing declared is a scroll nothing can account for.`,
+      );
+    return;
+  }
+  const { width, height } = plotViewBoxOf(html, name);
+  if (!note)
+    throw new Error(`${name}: the beat declares a row floor and the written page's stylesheet says nothing about it.`);
+  if (Number(attr("data-row-floor")) !== floor.px || Number(attr("data-row-pitch")) !== floor.pitch || Number(attr("data-rows")) !== floor.rows)
+    throw new Error(
+      `${name}: the figure carries data-row-floor="${attr("data-row-floor")}" data-row-pitch="${attr("data-row-pitch")}" ` +
+        `data-rows="${attr("data-rows")}" against a declaration of ${floor.px}px, pitch ${floor.pitch}, ${floor.rows} rows.`,
+    );
+  if (Number(note[3]) !== height)
+    throw new Error(
+      `${name}: the row floor was written for a ${note[3]}-unit plot and the <svg class="chart"> is ${height} tall.`,
+    );
+  const cellPx = rowFloorCellPx(floor, height);
+  const cell = /--row-floor-cell:\s*([\d.]+)px/.exec(html);
+  if (!cell || Math.abs(Number(cell[1]) - cellPx) > 1e-6)
+    throw new Error(
+      `${name}: the row floor's cell is ${cell ? `${cell[1]}px` : "missing"}; ${floor.rows} rows at ` +
+        `${floor.px}px a pitch of ${floor.pitch} of ${height} units need exactly ${cellPx}px.`,
+    );
+  const override = /--cell-h:\s*min\(var\(--track-h\),\s*max\(calc\(var\(--track-w\)\s*\*\s*([\d.]+)\s*\/\s*([\d.]+)\),\s*var\(--row-floor-cell\)\)\)/.exec(html);
+  if (!override || Math.abs(Number(override[1]) / Number(override[2]) - height / width) > 1e-6)
+    throw new Error(
+      `${name}: the row floor's --cell-h must keep the viewBox's own ratio (${height}/${width}) above ` +
+        `its floor; the page carries ${override ? `${override[1]}/${override[2]}` : "no such rule"}.`,
+    );
+  // THE SHAPES THE STRETCH WOULD DISTORT — read off the plot the page draws.
+  const svg = /<svg\b[^>]*\bclass="(?:[^"]*\s)?chart(?:\s[^"]*)?"[^>]*>([^]*?)<\/svg>/.exec(html)?.[1] ?? "";
+  const shape = /<(polygon|ellipse|image|use)\b/.exec(svg);
+  if (shape)
+    throw new Error(
+      `${name}: a row floor stretches the plot vertically, and this plot draws a <${shape[1]}> — a ` +
+        `SHAPE, which never follows the stretch. Draw it in the HTML layer, or do not declare a floor.`,
+    );
+  for (const circle of svg.matchAll(/<circle\b[^>]*>/g)) {
+    const fill = /\sfill="([^"]*)"/.exec(circle[0])?.[1];
+    if (fill === "transparent" || fill === "none") continue;
+    const r = Number(/\sr="([\d.]+)"/.exec(circle[0])?.[1] ?? 0);
+    if (r > floor.pitch / 2 + 1e-6)
+      throw new Error(
+        `${name}: a row floor stretches the plot vertically, and this plot draws a visible circle of ` +
+          `r=${r} across rows ${floor.pitch} units apart — a symbol wider than its row is a shape, not a ` +
+          `position, and the stretch would make it an ellipse.`,
+      );
+  }
+}
+
+/**
+ * THE VERDICT `verify-web.mjs` GIVES A PAGE THAT IS TALLER THAN ITS WINDOW. Pure, so the rule is
+ * tested without a browser; the browser supplies the three measurements.
+ *
+ *   overflowPx               the document's height past the window's, with the page as delivered;
+ *   overflowWithoutFloorPx   the same, with the figure's data-row-floor taken away;
+ *   floorGrowthPx            how much taller the plot is with the floor than without it;
+ *   keptMarginPx             the frame's bottom margin the floor keeps in the scroll (its
+ *                            `::after`), which a page overflowing WITHOUT the floor loses — measured
+ *                            on the first fixture at 1280 × 720: 112 px of overflow for 88 px of
+ *                            plot, the other 24 px being exactly that margin.
+ *
+ * Overflow is accepted ONLY when the page declares a floor, the page fits without it, and the
+ * overflow is no more than the floor added. Any other overflow fails exactly as it always did.
+ */
+function rowFloorVerdict({ declared, overflowPx, overflowWithoutFloorPx = null, floorGrowthPx = 0, keptMarginPx = FRAME_PAD_PX }) {
+  if (overflowPx <= 1) return { ok: true, attributablePx: 0, why: "fits" };
+  if (!declared) return { ok: false, attributablePx: 0, why: "the page declares no row floor" };
+  if (!(overflowWithoutFloorPx <= 1))
+    return {
+      ok: false,
+      attributablePx: 0,
+      why: `without its row floor the page still overflows by ${overflowWithoutFloorPx}px — that overflow is not the floor's`,
+    };
+  if (overflowPx > floorGrowthPx + keptMarginPx + 1)
+    return {
+      ok: false,
+      attributablePx: 0,
+      why:
+        `the overflow (${overflowPx}px) is more than the floor explains: ${floorGrowthPx}px added to the ` +
+        `plot and the ${keptMarginPx}px bottom margin it keeps`,
+    };
+  return {
+    ok: true,
+    attributablePx: overflowPx,
+    why: `all of it the declared row floor's: the floor adds ${floorGrowthPx}px to the plot, and without it the page fits`,
+  };
 }
 
 /**
@@ -933,11 +1172,14 @@ function entranceCss() {
 `.trim();
 }
 
-function buildCss({ ground, accent, ink, muted, grid, plot, frame = null, filter = null, entrance = false, fontStack = "sans-serif", drawing = null }) {
+function buildCss({ ground, accent, ink, muted, grid, plot, frame = null, rowFloor = null, filter = null, entrance = false, fontStack = "sans-serif", drawing = null }) {
   const { width: plotWidth, height: plotHeight } = assertPlotGeometry(plot);
   // The beat's own answer to "may this frame open?", written into the page above the rule the
   // answer is about. Empty for a beat that has not been asked. See `frameNoteCss`.
   const frameNote = frameNoteCss(frame, plot, "this beat");
+  // The pitch a row beat's labels need, and the only reason a page may scroll. Empty for a beat
+  // that declared none, so its stylesheet is byte for byte what it was. See `rowFloorCss`.
+  const rowFloorRules = rowFloorCss(rowFloor, plot, "this beat");
   // EVERY LINE THE FILTER COSTS IS PAID ONLY BY A BEAT THAT DECLARED ONE. Measured on the committed
   // pages the day this gate was added: **21 of 21 chart x web pages carried 12 lines of
   // `.chart-filter` styling and 3 `#period-early`/`#period-late` dimming rules, and not one of them
@@ -1226,7 +1468,7 @@ svg.chart { display: block; }
   z-index: 10;
 }
 #tooltip[hidden] { display: none; }
-
+${rowFloorRules ? `\n${rowFloorRules}\n` : ""}
 ${
   drawing
     ? `
@@ -1360,4 +1602,9 @@ export {
   assertPlotCellIsItsViewBox,
   frameNoteCss,
   assertFrameExtension,
+  rowFloorCss,
+  rowFloorCellPx,
+  stampRowFloor,
+  assertRowFloor,
+  rowFloorVerdict,
 };

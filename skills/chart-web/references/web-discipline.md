@@ -247,6 +247,62 @@ plot (a page taller than its window, a phone on its side) is smaller than the th
 the diverging bar at 375 that is a 190 px cell where the width predicts 231; and `cellWidthPx`
 computes the cell the frame draws when nothing clamps it, which is the only one a width can name.
 
+**Where the ROWS themselves are too close, the plot grows taller — and that is the one reason a
+page may scroll.** A keyed note answers one sentence that has no ground left. It cannot answer a
+plate where EVERY row's labels collide with the next row's, because the pitch itself is the defect:
+measured at 375 × 812 on the committed row beats, the dumbbell drew its ten rows 11.2 px apart under
+value labels 17.6 px and gains 18.2 px tall, and the bullet drew 14.4 px rows under 12–13 px names
+with 8.2 px of free ground between bars. The cell keeps its `viewBox` ratio and the words keep their
+pixel size, so on a narrow page nothing inside a row that thin can clear it. The owner's ruling
+(issue #78): **legibility beats fitting the window.**
+
+So a beat whose marks sit in ROWS — one row per category, or per statistic — may declare the pitch
+its labels need, as a top-level `renderWeb` option beside `frame`:
+
+```js
+rowFloor: { rows: 10, pitch: 40, px: 19, why: "…" }
+```
+
+`pitch` is the distance between two row centres in the `viewBox`'s own units; `px` is the tallest
+label box that sits on a row, MEASURED in the direction's own register with `keyed-note.ts`'s
+`labelBoxPx(…).h` and rounded up — never a typed guess, the fixed-gutter anti-pattern again;
+`why` says, in a sentence, what sits on every row. `render-web.mjs`'s `rowFloorCss` then floors the
+cell at `px × viewBoxHeight / pitch` with CSS scoped to the figure's own `data-row-floor`: a
+`min-height` on the plot and a `max()` on `--cell-h`, `--cell-w` untouched. It holds at every width
+without a threshold anybody chose: where the ratio already gives the pitch — measured on a 10-row
+fixture, 1290 × 645 at 1400 px either way — nothing moves; where it does not, the cell grows TALLER
+and only taller (267 × 133.5 → 267 × 180 at 375 px), and the page scrolls by what that costs.
+The figure's 24 px bottom margin becomes an item of its column so it survives the scroll; an overflow
+does not carry its parent's padding, and without it the source line ended flush with the page.
+
+Four things it is not, each measured or named:
+
+1. **It is not a licence to scroll.** `verify-web.mjs`'s fit check takes the figure's
+   `data-row-floor` away, measures the page again, and puts it back. It accepts the overflow only when
+   the page fits WITHOUT the floor and the overflow is no more than the floor added to the plot plus
+   the 24 px margin it keeps (`rowFloorVerdict`) — measured on the first fixture at 1280 × 720, 112 px
+   of overflow for 88 px of plot, the other 24 being exactly that margin. An undeclared page that
+   overflows fails exactly as before; a declared page whose furniture overflows the window anyway
+   fails and is told the overflow is not the floor's. A keyed line under the plot is furniture here:
+   it is not the floor's either.
+2. **It is not a stretch of shapes.** Under the floor the drawing is stretched vertically. Row
+   positions, bar thicknesses and rules are LENGTHS and follow it (see "A LENGTH follows the stretch;
+   a SHAPE never does" below); a small marker confined to its own row is the old section's "5 px dot
+   reading as a 5×7 dot", a position that says nothing false. So `assertRowFloor` refuses a floored
+   plot that draws a polygon, an ellipse, an image or a `<use>`, or a visible circle wider than half a
+   row — a proxy, stated as one: an arrowhead drawn as a `<path>` is not caught.
+3. **It is not a fix for a collision side by side.** It is vertical. Two labels on the SAME row that
+   run into each other at a narrow width (a value label reaching the next column) are a placement
+   question — a `@container` step, or a keyed note — whatever the pitch.
+4. **It is not for a plate that is not rows.** A beeswarm's callouts or a strip's per-year summary
+   are sentences with no ground, not rows too close together: the keyed note above is their tool.
+
+Everything the page claims is carried three times and held together: the attributes on the figure,
+the note and rules in the stylesheet, and a `--cell-h` override at the `<svg>`'s own ratio, floored at
+exactly `px × height / pitch` — `assertRowFloor`, run by `renderWeb` beside `assertPlotCellIsItsViewBox`,
+refuses a page where any of the three disagrees, or a floor nothing declared. For a keyed note's
+threshold on a floored beat, `cellWidthPx` and `cellHeightPx` take the floor's cell as `floorCellPx`.
+
 **A label that NAMES a band is not a note parked on one.** `types/streamgraph.md` puts a band's own
 name inside the band because the form has no axis ("it's the ENTIRE mechanism by which this type
 states a value at all"). That licence is for the band's name, at its own thickest point. A sentence
@@ -333,7 +389,9 @@ never needed its own padding rule, only the frame's.
 ## The beat fits the visible window
 
 **A beat is one thing a reader looks at, not a document they scroll through. No web beat may be
-taller than the window it opens in.** This is the rule the fluid redesign above was missing, and it
+taller than the window it opens in** — with one exception, measured rather than declared away: a
+row beat's declared row-pitch floor ("Where the ROWS themselves are too close", above), whose
+scroll `verify-web.mjs` accepts only when the page would fit without it. This is the rule the fluid redesign above was missing, and it
 was missing precisely BECAUSE that redesign succeeded: once width filled its container and height
 followed from `aspect-ratio`, a wider viewport bought a taller chart, and past a certain width the
 chart grew off the bottom of the screen. Measured on the seed, before the fix:

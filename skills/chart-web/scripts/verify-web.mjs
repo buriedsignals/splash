@@ -50,7 +50,7 @@ import { homedir } from "node:os";
 import { basename, dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
-import { render } from "./render-web.mjs";
+import { render, rowFloorVerdict } from "./render-web.mjs";
 import { probeRevealedText, probeTypefaces } from "./typefaces.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -186,35 +186,73 @@ function contrastRatio(a, b) {
 /** ITEM: a web beat must fit the visible window. Measured as the document's own scroll height
  *  against the window's inner height — the one number a reader experiences as "is there a
  *  scrollbar" — plus the source line's own bottom edge, because a figure can technically fit while
- *  its last line sits under the fold of a clipped ancestor. */
+ *  its last line sits under the fold of a clipped ancestor.
+ *
+ *  ONE EXCEPTION, AND IT IS MEASURED, NOT DECLARED AWAY. A beat whose marks sit in rows may declare
+ *  a row-pitch floor (`render-web.mjs`, `rowFloorCss`), and its page may then scroll — for that
+ *  reason only. So when a page that carries `data-row-floor` is taller than its window, the figure's
+ *  attribute is taken away (every floor rule is scoped to it), the page is measured again, and the
+ *  attribute is put back. The overflow is accepted only when the page fits without the floor AND the
+ *  overflow is no more than the floor added to the plot (`rowFloorVerdict`). A page that declares no
+ *  floor, or that overflows for any other reason as well, fails exactly as it always did. */
 async function checkFit(page, vp) {
   await page.setViewport({ width: vp.w, height: vp.h, deviceScaleFactor: 1 });
   await sleep(60);
-  const m = await page.evaluate(() => {
-    const box = (sel) => {
-      const el = document.querySelector(sel);
-      if (!el) return null;
-      const r = el.getBoundingClientRect();
-      return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, w: r.width, h: r.height };
-    };
-    return {
-      docH: document.documentElement.scrollHeight,
-      docW: document.documentElement.scrollWidth,
-      innerH: window.innerHeight,
-      innerW: window.innerWidth,
-      figure: box(".chart-figure"),
-      plot: box(".chart-plot"),
-      source: box(".chart-source"),
-      xAxis: box(".chart-plot .x-axis"),
-      filter: box(".chart-filter"),
-    };
-  });
+  const measure = () =>
+    page.evaluate(() => {
+      const box = (sel) => {
+        const el = document.querySelector(sel);
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, w: r.width, h: r.height };
+      };
+      return {
+        docH: document.documentElement.scrollHeight,
+        docW: document.documentElement.scrollWidth,
+        innerH: window.innerHeight,
+        innerW: window.innerWidth,
+        figure: box(".chart-figure"),
+        plot: box(".chart-plot"),
+        source: box(".chart-source"),
+        xAxis: box(".chart-plot .x-axis"),
+        filter: box(".chart-filter"),
+        rowFloor: document.querySelector(".chart-figure")?.getAttribute("data-row-floor") ?? null,
+      };
+    });
+  const m = await measure();
   const vOverflow = m.docH - m.innerH;
   const hOverflow = m.docW - m.innerW;
+  // THE PAGE WITHOUT ITS FLOOR — measured only when there is an overflow to account for and a
+  // floor declared to account for it; restored before anything else reads the page.
+  let without = null;
+  if (vOverflow > 1 && m.rowFloor !== null) {
+    await page.evaluate(() => {
+      const figure = document.querySelector(".chart-figure");
+      figure.dataset.rowFloorHeld = figure.getAttribute("data-row-floor");
+      figure.removeAttribute("data-row-floor");
+    });
+    await sleep(60);
+    without = await measure();
+    await page.evaluate(() => {
+      const figure = document.querySelector(".chart-figure");
+      figure.setAttribute("data-row-floor", figure.dataset.rowFloorHeld);
+      delete figure.dataset.rowFloorHeld;
+    });
+    await sleep(60);
+  }
+  const verdict = rowFloorVerdict({
+    declared: m.rowFloor !== null,
+    overflowPx: vOverflow,
+    overflowWithoutFloorPx: without ? without.docH - without.innerH : null,
+    floorGrowthPx: without ? Math.round(m.plot.h - without.plot.h) : 0,
+  });
+  // What the floor is allowed to push below the fold, and nothing more.
+  const allowed = verdict.ok ? verdict.attributablePx : 0;
   check(
-    vOverflow <= 1,
+    verdict.ok,
     `${vp.label} ${vp.w}x${vp.h}: no vertical scroll inside the visual`,
-    `document ${m.docH}px in a ${m.innerH}px window (overflow ${vOverflow}px)`,
+    `document ${m.docH}px in a ${m.innerH}px window (overflow ${vOverflow}px)` +
+      (vOverflow > 1 ? ` — ${verdict.why}` : ""),
   );
   check(
     hOverflow <= 1,
@@ -222,9 +260,10 @@ async function checkFit(page, vp) {
     `document ${m.docW}px in a ${m.innerW}px window`,
   );
   check(
-    m.source.bottom <= m.innerH + 1,
+    m.source.bottom <= m.innerH + allowed + 1,
     `${vp.label} ${vp.w}x${vp.h}: the source line is on screen`,
-    `bottom at ${Math.round(m.source.bottom)}px of ${m.innerH}px`,
+    `bottom at ${Math.round(m.source.bottom)}px of ${m.innerH}px` +
+      (allowed ? ` (+${allowed}px the declared row floor scrolls)` : ""),
   );
   // Not every beat draws an x-axis row: a slope chart labels its own two ends, a ranking labels
   // its rows, a small-multiples grid labels each panel. Asserting the row exists crashed this
@@ -232,9 +271,10 @@ async function checkFit(page, vp) {
   // that says nothing about it.
   if (m.xAxis)
     check(
-      m.xAxis.bottom <= m.innerH + 1,
+      m.xAxis.bottom <= m.innerH + allowed + 1,
       `${vp.label} ${vp.w}x${vp.h}: the x-axis is on screen`,
-      `bottom at ${Math.round(m.xAxis.bottom)}px of ${m.innerH}px`,
+      `bottom at ${Math.round(m.xAxis.bottom)}px of ${m.innerH}px` +
+        (allowed ? ` (+${allowed}px the declared row floor scrolls)` : ""),
     );
   check(
     m.plot.h >= 100,

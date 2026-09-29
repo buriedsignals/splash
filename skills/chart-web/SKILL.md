@@ -276,7 +276,11 @@ ground below reads as unfinished the first time you see it. Three separate agent
 independently as a defect, which is the signal that saying it once in a doctrine file is not enough:
 **it is expected, it is not a bug, and filling the window is an open question nobody has decided.**
 If you want the chart to use that room, that is a change to the frame's own proportions and it needs
-the owner, not a patch at the CSS.
+the owner, not a patch at the CSS. **The one exception is a row beat whose rows are too close for
+their labels**: it may declare `rowFloor` to `renderWeb`, its cell then grows taller on a narrow page
+and the page may scroll for that reason only — `verify-web.mjs` measures the page without the floor
+and fails any overflow the floor does not explain (`web-discipline.md`, "Where the ROWS themselves
+are too close").
 
 **So run `scripts/verify-web.mjs`, and know exactly what it can and cannot tell you.** It dispatches
 real pointer events at real coordinates and real clicks, which is the only way to catch the class of
@@ -515,6 +519,7 @@ skill into a journalist's root — the whole premise — did not build.
 | The frame's own fixed inner margin — content never touches the frame's edge, at any width | `24` | `FRAME_PAD_PX`, `render-web.mjs` |
 | How much of the window a beat may fill before the plot starts giving height back | `100dvh` (with a `100vh` fallback first) | `.chart-figure`'s `max-height`, `render-web.mjs` |
 | Where the plot stops shrinking — below it, a short window gets a scrollbar rather than a strip | `120` | `PLOT_FLOOR_PX`, `render-web.mjs` |
+| A row beat's minimum row pitch — the tallest row label's measured box, declared per beat, never a shared constant | `rowFloor: { rows, pitch, px, why }` | `rowFloorCss`, `render-web.mjs` |
 | The segmented filter pill's own padding and corner (the whole treatment sits behind `@supports selector(:has(*))`) | `5px 12px` / `999px` | `.chart-filter label`, `render-web.mjs` |
 | The viewport sizes the verification drives, and the two it dispatches pointers at | 7 sizes / 2 sizes | `VIEWPORTS`, `POINTER_VIEWPORTS`, `verify-web.mjs` |
 | How many marks a hover sweep probes before it starts sampling an even spread | `40` | `MAX_PROBES`, `verify-web.mjs` |

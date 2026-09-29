@@ -176,10 +176,52 @@ export function cellWidthPx(
     box,
     gutterPx = 0,
     axisPx = 0,
-  }: { frame: { width: number; height: number }; box: { width: number; height: number }; gutterPx?: number; axisPx?: number },
+    floorCellPx = 0,
+  }: {
+    frame: { width: number; height: number };
+    box: { width: number; height: number };
+    gutterPx?: number;
+    axisPx?: number;
+    /** A declared row floor's cell height (`rowFloorCellPx`), or 0 for a beat that declares none. */
+    floorCellPx?: number;
+  },
 ): number {
-  const plotHeightPx = Math.max(PLOT_FLOOR_PX, (plotWidthPx * box.height) / box.width);
+  const plotHeightPx = Math.max(PLOT_FLOOR_PX, (plotWidthPx * box.height) / box.width, floorCellPx + axisPx);
   return Math.min(plotWidthPx - gutterPx, ((plotHeightPx - axisPx) * frame.width) / frame.height);
+}
+
+/**
+ * THE CELL'S HEIGHT A PLOT THIS WIDE DRAWS, as `render-web.mjs`'s `--cell-h` computes it — the
+ * vertical twin of `cellWidthPx`, and the one a row beat needs: its question is how far apart its
+ * rows are, and under a declared row floor (`render-web.mjs`, `rowFloorCss`) the cell is TALLER
+ * than its width predicts. Same arguments, same limit: no window clamp.
+ */
+export function cellHeightPx(
+  plotWidthPx: number,
+  {
+    frame,
+    box,
+    gutterPx = 0,
+    axisPx = 0,
+    floorCellPx = 0,
+  }: {
+    frame: { width: number; height: number };
+    box: { width: number; height: number };
+    gutterPx?: number;
+    axisPx?: number;
+    floorCellPx?: number;
+  },
+): number {
+  const plotHeightPx = Math.max(PLOT_FLOOR_PX, (plotWidthPx * box.height) / box.width, floorCellPx + axisPx);
+  const trackH = plotHeightPx - axisPx;
+  return Math.min(trackH, Math.max(((plotWidthPx - gutterPx) * frame.height) / frame.width, floorCellPx));
+}
+
+/** A declared row floor's cell height in CSS pixels — `px × viewBoxHeight / pitch`, rounded UP to
+ *  the hundredth, exactly as `render-web.mjs`'s `rowFloorCellPx` writes it into the page.
+ *  `keyed-note.test.ts` holds the two equal. */
+export function rowFloorCellPx({ px, pitch }: { px: number; pitch: number }, viewBoxHeight: number): number {
+  return Math.ceil(((px * viewBoxHeight) / pitch) * 100) / 100;
 }
 
 /** A rectangle in CSS pixels, in the cell's own coordinates. */
