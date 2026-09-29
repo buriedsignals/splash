@@ -397,7 +397,7 @@ stops reading it breaks a named test rather than degrading quietly. Spec: `docs/
 | Pure core | `assets/geo.ts` | The study set, the alias table, the join, the classes, the seed's ramp, `scalePosition`, ring arithmetic, the claim check |
 | Static seed | `assets/Co2MapStill.tsx` | One beat, 900 × 560, text column beside a square plate |
 | Baked video seed | `assets/Co2MapVideo.tsx` | Superseded for video beats; kept for its tests. Exports `arrivalProgress` |
-| Contract | `assets/timing.ts` | `MAP_TIMING`. The vocabulary (`BeatTiming`, `checkTiming`, `progressOf`) is **imported** from `chart-video`, never re-implemented |
+| Contract | `assets/timing.ts`, `assets/timing-contract.ts` | `MAP_TIMING`. The vocabulary (`BeatTiming`, `checkTiming`, `progressOf`) is `timing-contract.ts`, **carried** byte for byte from `chart-video/assets/timing.ts`, never re-implemented |
 | Registration | `assets/Root.tsx`, `assets/index.ts` | The seed composition; `durationInFrames` IS `MAP_TIMING.total` |
 | Seed render | `scripts/render-map.mjs` | The seed's ladder: still → final frame → mp4 on the baked plate |
 | Preview | `scripts/render-preview.mjs` | The seed rendered from sample data. Generates `assets/preview.png` and validates it with `--check` |
@@ -504,10 +504,11 @@ The seed's (`Co2MapStill.tsx`, baked `Co2MapVideo.tsx`). A live video's knobs ar
   The refusal names what to do, but it arrives phases after the point where a journalist should
   have been asked, and after the expensive work.
 
-  **Which formats require it:** the four that rasterise type themselves — `chart-beat`,
-  `chart-video`, `chart-web`, `map-beat`, `map-web`, `scrolly`, `image-beat` — every skill that
-  rasterises a still. `dw-beat` lays out type server-side. The roster is
-  the set of skills whose render path calls `useTypeface`.
+  **Which formats require it:** every skill whose render path calls `useTypeface` — `chart-beat`,
+  `chart-web` and `image-beat` (`scripts/render-preview.mjs`), `scrolly` (`render-preview.mjs`, whose
+  drawn frame is rasterised), `chart-video` (`render-preview.mjs`, `render-video.mjs`) and `map-beat`
+  (`render-preview.mjs`, `render-map.mjs`). `map-web` carries a `TYPEFACE.md` but none of its scripts
+  calls `useTypeface`; `dw-beat` lays out type server-side.
 
   **Still open, and deliberately not fixed here:** the typeface has no gate POSITION the way the
   palette does. Movement (9) of `references/exchange.md` is titled "The palette and the typeface"

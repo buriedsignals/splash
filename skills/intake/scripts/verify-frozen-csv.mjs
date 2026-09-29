@@ -1,22 +1,26 @@
-// THE CSV GUARD, IN THE SKILL THAT FREEZES THE TABLE.
+// THE CSV GUARD, IN THE TWO SKILLS THAT READ A JOURNALIST'S FROZEN TABLE OUTSIDE A RENDER.
 //
 // `csv-split-by-hand` was earned by `proof/more-line-swiss-life-expectancy/render.mjs` — the worked
 // example every craft skill points authors at — cutting its rows on a bare `row.split(",")`, and
-// its own `earnedBy` names this skill in the same sentence: "skills/intake/scripts/csv.mjs already
+// its own `earnedBy` names `intake` in the same sentence: "skills/intake/scripts/csv.mjs already
 // shipped a real RFC 4180 reader that none of them used". The rule reached the five skills that
-// DRAW and read a table. It could not reach the skill that WRITES the table they read, because
-// `reachable()` iterated the eight skills that draw, and this one freezes.
+// DRAW and read a table, and neither of the two that read `source/data.csv` outside a render:
+// `intake`, which freezes it, and `storyboard`, whose `ground-claim.mjs` reads values back out of it
+// to decide whether the article's own superlative is grounded. `reachable()` iterated the eight
+// skills that draw until 2026-08-23.
 //
-// It reaches here now. `csvSplitByHand` below is the catalogue's own decision, copied
-// byte-identically from `map-web/scripts/verify-guards.mjs` (no cross-skill runtime import;
-// no test compares the copies), and
-// `check-frozen-csv.mjs` beside this file is the command that runs it over this skill's own source.
+// It reaches both now, from here: `check-frozen-csv.mjs` beside this file is the command that runs
+// it, over `intake` by default or over any skill directory it is given (`skills/storyboard` among
+// them). `storyboard` carried a copy of this file until 2026-09-29 that nothing ran; it was deleted.
 //
-// WHAT IT FINDS TODAY: nothing, and that is the honest state of this cell — `scripts/csv.mjs` is
-// the RFC 4180 reader, and it always was. The debt this closes is the missing SWEEP, not a live
-// defect: nothing kept this skill's readers clean, and the same round found a real defect in the
-// OTHER skill that reads a frozen table which this decision structurally cannot see (a quoted field
-// carrying its own newline, torn by a line-oriented reader with no `.split(",")` in it at all).
+// WHAT IT FINDS TODAY: nothing — `intake/scripts/csv.mjs` is the RFC 4180 reader, and it always
+// was. AND WHAT IT CANNOT SEE, named here rather than left to be discovered. `storyboard`'s own
+// `readFrozenRows` was defective on the day the rule arrived — it split the table into LINES and
+// parsed quotes inside each one, so a quoted field carrying its own newline became a whole extra
+// row — and this decision was green on it throughout, because there is no `.split(",")` in a
+// per-character splitter. The fix was not a better guard: it was reading the frozen table with
+// `intake`'s own parser, one reader instead of two. A guard is what keeps the easy defect from
+// coming back; it is not a substitute for the two skills agreeing.
 
 /** Local CSV-split check. Not registered in the trait-derived guard catalogue (#26). */
 

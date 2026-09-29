@@ -16,7 +16,7 @@ import {
 } from "../scripts/propose.mjs";
 // The period rule itself, so this file measures the population the skill derives rather than
 // re-typing the rule and drifting from it.
-import { findYearColumn } from "../scripts/ground-claim.mjs";
+import { findYearColumn } from "../scripts/panel-shape.mjs";
 
 // The frozen profile shape `intake`'s `profileTable` produces, with the run's own numbers:
 // three components of a melt total, 14 + 11 + 9 = 34.

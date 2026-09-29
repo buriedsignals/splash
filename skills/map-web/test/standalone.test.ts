@@ -39,9 +39,8 @@ import {
   statSync,
   symlinkSync,
 } from "node:fs";
-import { homedir, tmpdir } from "node:os";
+import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import puppeteer from "puppeteer-core";
 import { comparePngBuffers } from "../scripts/compare-png.mjs";
 
 const SKILL_DIR = resolve(import.meta.dirname, "..");
@@ -51,38 +50,6 @@ const TWIN = resolve(SKILLS, "..");
 // A cold-cache plate bake (headless Chrome + a real MapTiler capture) can take well over the
 // default 5s budget the first time this runs on a machine.
 setDefaultTimeout(300000);
-
-/** A DUPLICATE of `bake-plate.mjs`'s own `resolveChrome` — see `render-preview.mjs`'s own copy for
- *  why this is duplicated rather than imported (a skill's own scripts stay copy-pasteable). */
-function resolveChrome() {
-  const candidates = [];
-  if (process.env.CHROME_PATH) candidates.push(process.env.CHROME_PATH);
-  const cache = join(homedir(), ".cache/puppeteer/chrome");
-  if (existsSync(cache))
-    for (const build of readdirSync(cache).sort().reverse())
-      candidates.push(
-        join(
-          cache,
-          build,
-          "chrome-mac-arm64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-        ),
-        join(
-          cache,
-          build,
-          "chrome-mac-x64/Google Chrome for Testing.app/Contents/MacOS/Google Chrome for Testing",
-        ),
-        join(cache, build, "chrome-linux64/chrome"),
-      );
-  candidates.push(
-    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
-  );
-  const found = candidates.find((path) => existsSync(path));
-  if (!found)
-    throw new Error(
-      `no Chrome to capture with. Looked in:\n  ${candidates.join("\n  ")}`,
-    );
-  return found;
-}
 
 describe("map-web's seed renders from its own sample-data, alone", () => {
   it("should render the same preview with nothing but itself on disk", async () => {
@@ -118,24 +85,13 @@ describe("map-web's seed renders from its own sample-data, alone", () => {
 
       // Tolerant pixel comparison, not `.equals()` — see compare-png.mjs's own header note: two
       // Chrome launches of the identical HTML are not always byte-identical.
-      const browser = await puppeteer.launch({
-        headless: true,
-        executablePath: resolveChrome(),
-        args: ["--no-sandbox", "--hide-scrollbars"],
-      });
-      try {
-        const page = await browser.newPage();
-        const diff = await comparePngBuffers(
-          page,
-          rendered,
-          readFileSync(join(SKILL_DIR, "assets", "preview.png")),
-        );
-        expect(`same: ${diff.same} (${diff.reason ?? "no diff"})`).toBe(
-          `same: true (no diff)`,
-        );
-      } finally {
-        await browser.close();
-      }
+      const diff = comparePngBuffers(
+        rendered,
+        readFileSync(join(SKILL_DIR, "assets", "preview.png")),
+      );
+      expect(`same: ${diff.same} (${diff.reason ?? "no diff"})`).toBe(
+        `same: true (no diff)`,
+      );
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

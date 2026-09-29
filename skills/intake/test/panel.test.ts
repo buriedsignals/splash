@@ -19,7 +19,8 @@
  */
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
-import { findYearColumn, profileTable } from "../scripts/profile.mjs";
+import { profileTable } from "../scripts/profile.mjs";
+import { findYearColumn } from "../scripts/panel-shape.mjs";
 import { parseCsv } from "../scripts/csv.mjs";
 
 const STORIES = `${import.meta.dir}/../../../stories`;

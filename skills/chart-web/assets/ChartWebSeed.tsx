@@ -313,7 +313,8 @@ export function segments(
 /**
  * A WORD WIDER THAN ITS OWN MEASURE — hyphen-broken, never broken mid-syllable.
  *
- * Carried verbatim across the wrap family. `wrap` breaks between words, so a token wider than the
+ * NOT carried: `chart-beat/assets/wrap.ts` is the same rule, but this copy takes `measure` as a
+ * parameter because this component never imports the rasteriser. `wrap` breaks between words, so a token wider than the
  * measure was emitted whole and ran off the frame — invisible at 900x560 and a 219px overflow the
  * moment a phone frame put 78px type on a 1080px canvas. A hyphen is already a break and already
  * reads as one, so a hyphenated token is split at its own hyphens and `wrap` re-joins without a

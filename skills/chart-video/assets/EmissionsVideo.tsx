@@ -39,7 +39,8 @@ import {
 } from "remotion";
 import { useEmbeddedFaces } from "./embedded-faces";
 import type { EmbeddedFace } from "./face-coverage";
-import { CO2_TIMING, progressOf, type BeatTiming } from "./timing";
+import { CO2_TIMING } from "./co2-timing";
+import { progressOf, type BeatTiming } from "./timing";
 
 const FRAME = { width: 1080, height: 1080 };
 const PAD = 72;

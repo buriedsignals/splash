@@ -1,4 +1,4 @@
-// shared/map-beat/scrolly.mjs
+// twin/shared/map-beat/scrolly.mjs
 //
 // A SCROLLY MAP IS DRIVEN BY NUMBERS. `renderScrolly` interpolates every numeric field of a state
 // linearly between two cards, and that is exactly right for a camera stored in Web Mercator units —

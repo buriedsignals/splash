@@ -154,15 +154,24 @@ describe("nothing caps the chart frame's own width", () => {
     // them may declare a width cap. Written as a scan rather than a string match so that moving
     // the declaration into another rule (`.chart-header { … }`, `.chart-title { … }` inside a
     // grouped selector) does not slip past it.
-    const capped = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    const rules = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)];
+    const capped = rules
       .filter(([, selector]) =>
         /\.chart-(header|source|title|caveat)\b/.test(selector),
       )
       .filter(([, , body]) => /\bmax-width\b/.test(body))
       .map(([, selector]) => selector.trim().split("\n").pop());
     expect(capped).toEqual([]);
-    // What did NOT change: words are still never squeezed to make the chart fit.
-    expect(css).toContain(".chart-header, .chart-source { flex: 0 0 auto; }");
+    // What did NOT change: words are still never squeezed to make the chart fit. Read off the same
+    // rule scan, so regrouping or reformatting the rule does not matter — only that each of the two
+    // is declared neither to grow nor to shrink.
+    const unsqueezed = (name: string) =>
+      rules.some(
+        ([, selector, body]) =>
+          selector.split(",").some((one) => one.trim().split("\n").pop()?.trim() === name) &&
+          /(^|;)\s*flex\s*:\s*0\s+0\s+auto\s*(;|$)/.test(body.trim()),
+      );
+    expect([".chart-header", ".chart-source"].filter((name) => !unsqueezed(name))).toEqual([]);
   });
 
   // NARROWED 2026-08-10, W4 Task 5. This assertion used to read `expect(css).not.toContain("@media")`

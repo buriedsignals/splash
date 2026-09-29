@@ -3,8 +3,8 @@ import {
   groundTakeaway,
   readFrozenRows,
   measureColumns,
-  findYearColumn,
 } from "../scripts/ground-claim.mjs";
+import { findYearColumn } from "../scripts/panel-shape.mjs";
 import { readFileSync } from "node:fs";
 // The one cross-skill import a `test/` directory is allowed: the other half of the seam A13 lived
 // in. See the block at the bottom of this file for why it is here and what stayed green without it.
@@ -1011,7 +1011,8 @@ describe("readFrozenRows — where rows come from now (finding 2)", () => {
   // entity name and whose every other column was empty. Everything downstream (the superlative
   // check, `panelShapeOf`, every value lookup) then answered over a row that does not exist.
   //
-  // `csvSplitByHand` — the guard this skill carries for exactly this file — cannot see it: there is
+  // `csvSplitByHand` — `intake`'s guard, which `intake/scripts/check-frozen-csv.mjs skills/storyboard`
+  // runs over this skill — cannot see it: there is
   // no `.split(",")` anywhere in the reader. That is the measurement that says a guard is not a
   // substitute for one reader: `intake` froze this table with a real RFC 4180 parser and this skill
   // read it back with a second, line-oriented one, and the two disagreed about how many rows the

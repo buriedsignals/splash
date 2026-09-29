@@ -15,7 +15,8 @@
 import { describe, it, expect } from "bun:test";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { groundTakeaway, panelShapeOf, readFrozenRows } from "../scripts/ground-claim.mjs";
+import { groundTakeaway, readFrozenRows } from "../scripts/ground-claim.mjs";
+import { panelShapeOf } from "../scripts/panel-shape.mjs";
 import { resolveGrounding } from "../scripts/propose.mjs";
 
 const ROOT = join(import.meta.dir, "../../..");

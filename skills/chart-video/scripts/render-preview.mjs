@@ -18,7 +18,8 @@ import {
   useTypeface,
 } from "./render-still.mjs";
 import { videoFaces } from "./video-faces.mjs";
-import { CO2_TIMING } from "../assets/timing.ts";
+import { comparePngBuffers } from "./compare-png.mjs";
+import { CO2_TIMING } from "../assets/co2-timing.ts";
 import { FONT_WEIGHTS } from "../assets/EmissionsVideo.tsx";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -34,9 +35,8 @@ if (!outDir.startsWith("/")) {
   outDir = resolve(process.cwd(), outDir);
 }
 const TARGET = join(outDir, "preview.png");
-const TEMP_PNG = join(dirname(TARGET), ".preview-temp.png");
 
-// Derived, never typed: a journalist who lengthens a hold in `assets/timing.ts` gets a preview of
+// Derived, never typed: a journalist who lengthens a hold in `assets/co2-timing.ts` gets a preview of
 // the new last frame, not a preview of frame 239 of a longer video.
 const LAST_FRAME = CO2_TIMING.total - 1;
 
@@ -87,18 +87,21 @@ Object.assign(
   await videoFaces({ stack: activeTypeface().family, weights: FONT_WEIGHTS, props }),
 );
 
-await mkdir(dirname(TARGET), { recursive: true });
-const propsPath = join(dirname(TARGET), "preview-props.json");
+// Everything this render needs besides the target — the props, the empty env file and, under
+// `--check`, the fresh frame — lives in one temp directory, never beside `assets/preview.png`: a
+// check that wrote into the skill's own tree dirtied it on every run and on every failure.
+const workDir = await mkdtemp(join(tmpdir(), "video-preview-"));
+const propsPath = join(workDir, "preview-props.json");
 await writeFile(propsPath, JSON.stringify(props, null, 2));
 
-// Determine output path based on whether we're checking
-const outputPath = process.argv.includes("--check") ? TEMP_PNG : TARGET;
+const checking = process.argv.includes("--check");
+const outputPath = checking ? join(workDir, "preview.png") : TARGET;
+if (!checking) await mkdir(dirname(TARGET), { recursive: true });
 
 // An EMPTY `--env-file` — Remotion otherwise injects the whole repository `.env` (this repo's
 // MapTiler, Datawrapper, Gemini and Cloudflare keys among them) into the page's `process.env` for
 // every render, seed preview included.
-const envFileDir = await mkdtemp(join(tmpdir(), "video-env-"));
-const envFile = join(envFileDir, "empty.env");
+const envFile = join(workDir, "empty.env");
 await writeFile(envFile, "");
 
 // Render at the last frame
@@ -116,31 +119,31 @@ const result = spawnSync(binary, [
 ], { cwd: PACKAGE_ROOT, stdio: "inherit" });
 
 if (result.status !== 0) {
-  // Clean up before leaving, on this path too: a failed render used to leave preview-props.json
-  // behind, so a plain `bun test` (whose canon check spawns this script) dirtied the tree exactly
-  // when something had gone wrong and the tree most needed to be readable.
-  await rm(propsPath, { force: true });
-  if (outputPath === TEMP_PNG) await rm(TEMP_PNG, { force: true });
-  await rm(envFileDir, { recursive: true, force: true });
+  await rm(workDir, { recursive: true, force: true });
   console.error(`remotion still exited with ${result.status}`);
   process.exit(1);
 }
 
 const elapsed = Math.round((Date.now() - startTime) / 1000);
 
-if (process.argv.includes("--check")) {
-  const committed = await readFile(TARGET);
-  const freshlyRendered = await readFile(TEMP_PNG);
-  await rm(TEMP_PNG);
-  await rm(propsPath);
-  await rm(envFileDir, { recursive: true, force: true });
-  if (!committed.equals(freshlyRendered)) {
-    console.error("preview.png is stale — the seed changed and the preview did not. Re-run without --check.");
+if (checking) {
+  const freshlyRendered = await readFile(outputPath);
+  await rm(workDir, { recursive: true, force: true });
+  // By decoded pixel, not byte-exact — see `compare-png.mjs`'s own header note: the frame is a
+  // headless-Chrome screenshot, so small per-channel jitter is forgiven, but STRICTLY: no pixel may
+  // move by more than 6 per channel (map-web's 0.2% allowance would pass a changed word).
+  const diff = comparePngBuffers(await readFile(TARGET), freshlyRendered, {
+    tolerance: 6,
+    maxDiffFraction: 0,
+  });
+  if (!diff.same) {
+    console.error(
+      `preview.png is stale — the seed changed and the preview did not (${diff.reason}). Re-run without --check.`,
+    );
     process.exit(1);
   }
   console.log("preview.png matches a fresh render of the seed.");
 } else {
   console.log(`wrote ${TARGET} at frame ${LAST_FRAME} (${elapsed}s) — now open it and look at it.`);
-  await rm(propsPath);
-  await rm(envFileDir, { recursive: true, force: true });
+  await rm(workDir, { recursive: true, force: true });
 }

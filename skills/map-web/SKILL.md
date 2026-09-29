@@ -355,7 +355,7 @@ stops reading it breaks a named test rather than degrading quietly. Spec: `docs/
 | Render | `scripts/render-web.mjs` | `renderMapWeb({ component, table, props, outDir, name, regionTable })` — SSRs the one fluid map render, plus the table only when the beat opted in, inlines the interaction script, writes one self-contained HTML file. `assertDistinctSlugs` refuses a filter vocabulary that cannot work. Also this skill's own seed runner (`ensurePlate`, `render`) behind a labelled CONFIG seam |
 | Scaffold | `scripts/scaffold-web-map-beat.mjs`, `assets/web-map-beat-scaffold/` | The plumbing of a directed web map beat, written once — and nothing else. Generates ~1 390 of a beat's 2 200–2 650 lines: the bake, the plate cache, the camera agreement, the MapLibre inlining, the fallback bake, the keyed copy, the direction loop, the refusal cleanup, and the component's whole skeleton — figure, header, the `.chart-plot` box with its fallback `<svg data-plate>` and `.map-layer`, the claim/hint/reading stack, the `<details>` table shell on `data-mark`/`data-detail`, the three script tags. Generates NO camera, NO gesture CONTENT, NO key or legend, NO words, NO palette reasoning, NO table cells, NO refusals — each is a named `SCAFFOLD` hole that throws |
 | Preview | `scripts/render-preview.mjs` | The seed rendered from sample data, screenshotted through headless Chrome at one fixed viewport width — no longer a pure-SVG Resvg rasterise, since the furniture is now HTML |
-| Compare | `scripts/compare-png.mjs` | `comparePngBuffers` — tolerant, decoded-pixel PNG comparison through a real `<canvas>`; two Chrome launches of identical HTML are not always byte-identical (anti-aliasing jitter), so `--check`/the standalone test compare pictures, not bytes |
+| Compare | `scripts/compare-png.mjs` | `comparePngBuffers` — tolerant, decoded-pixel PNG comparison (decoded in-process with `node:zlib`, no browser; carried into every skill whose preview `--check` uses it); two Chrome launches of identical HTML are not always byte-identical (anti-aliasing jitter), so `--check`/the standalone test compare pictures, not bytes |
 | Rasteriser | `scripts/render-still.mjs` | `deriveFurniture`/`measureText` — a byte-identical copy of `chart-beat`'s, kept in step by hand (a skill never imports another skill); only `deriveFurniture` (the colour maths) is used by this format now |
 | Sample | `assets/sample-data/regions.json` | Thirteen European metro areas, sample population figures, each tagged with a `group` (the filter's own dimension), the seed's own data |
 
@@ -505,9 +505,10 @@ for its own generic function.
 | The PNG comparison's own tolerance (per-channel diff, and the allowed fraction of differing pixels) | tolerance `6`, max fraction `0.002` | `comparePngBuffers`'s options, `compare-png.mjs` |
 
 ## Files
-- `TYPEFACE.md` — the recorded typeface this skill's still renders in (`origin: default`: nobody chose
-  it). `render-preview.mjs` puts it in force with `useTypeface` and refuses a face this machine
-  cannot resolve rather than substituting for it; a story root overrides it with its own file.
+- `TYPEFACE.md` — the recorded typeface (`origin: default`: nobody chose it). NOTHING IN THIS SKILL
+  READS IT today: no script calls `readTypeface` or `useTypeface`, so a story root's own file is not
+  applied either. The page's family is whatever its markup writes, else `HOUSE_SANS_STACK`
+  (`dominantFontStack` in `typefaces.mjs`, called by `render-web.mjs`), embedded as bytes.
 
 - `references/types/` — eight sheets, one per map type, each naming its gesture, its `radius`
   behaviour, its JOIN trap and its worked example under `proof/web-<type>-…`.

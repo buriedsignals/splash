@@ -291,7 +291,8 @@ stops reading it breaks a named test rather than degrading quietly. Spec: `docs/
 | Registers | `scripts/video-registers.mjs`, `scripts/registers.mjs` | A direction's registers scaled to the video size and floor |
 | Choreography | `scripts/choreography.mjs` | `assertEventStates`: every event changes the picture |
 | Sizes | `scripts/sizes.mjs`, `shared/chart-video/sizes.mjs` | The three export sizes, floors, delivered-size checks |
-| Contract | `assets/timing.ts`, `shared/chart-video/timing.ts` | `BeatTiming`, `progressOf`, `checkTiming`; the skill copy also holds the seed's `CO2_TIMING` |
+| Contract | `assets/timing.ts`, `shared/chart-video/timing.ts` | `BeatTiming`, `progressOf`, `checkTiming`; carried byte for byte into `shared/` and `map-beat/assets/timing-contract.ts` |
+| Seed timing | `assets/co2-timing.ts` | The seed's `CO2_TIMING` |
 | Faces | `scripts/video-faces.mjs`, `assets/embedded-faces.ts` | Faces resolved in Bun, shipped as woff2 props, checked on every frame in Chrome |
 | Directions | `shared/design-base/directions/` | The three filed demo directions |
 | Seed composition | `assets/EmissionsVideo.tsx` | The seed beat's drawing with its own pure geometry; exports `drawnSoFar` |
@@ -343,7 +344,7 @@ The seed's `CO2_TIMING` and composition. A directed beat's knobs are its own `ti
 
 | Want | Knob | Where |
 | --- | --- | --- |
-| How long the whole beat runs | `total` `240` (8 s × `fps` `30`) | `CO2_TIMING`, `timing.ts` |
+| How long the whole beat runs | `total` `240` (8 s × `fps` `30`) | `CO2_TIMING`, `co2-timing.ts` |
 | How long the frame settles before anything arrives | `establish.duration` `26` | `CO2_TIMING` |
 | How long the baseline takes to draw | `reference.duration` `22` | `CO2_TIMING` |
 | **How long the reader gets to read the baseline** — the pause, which is the gap, not an event | `reveal.start` `72` minus `reference` end `54` = `18` | `CO2_TIMING` |
@@ -382,9 +383,11 @@ The seed's `CO2_TIMING` and composition. A directed beat's knobs are its own `ti
   The refusal names what to do, but it arrives phases after the point where a journalist should
   have been asked, and after the expensive work.
 
-  **Which formats require it:** the four that rasterise type themselves — `chart-beat`,
-  `chart-video`, `chart-web`, `map-beat`. `dw-beat` lays out type server-side, and `map-web`,
-  `scrolly` and `image-beat` draw theirs as HTML in a stylesheet.
+  **Which formats require it:** every skill whose render path calls `useTypeface` — `chart-beat`,
+  `chart-web` and `image-beat` (`scripts/render-preview.mjs`), `scrolly` (`render-preview.mjs`, whose
+  drawn frame is rasterised), `chart-video` (`render-preview.mjs`, `render-video.mjs`) and `map-beat`
+  (`render-preview.mjs`, `render-map.mjs`). `map-web` carries a `TYPEFACE.md` but none of its scripts
+  calls `useTypeface`; `dw-beat` lays out type server-side.
 
   **Still open, and deliberately not fixed here:** the typeface has no gate POSITION the way the
   palette does. Movement (9) of `references/exchange.md` is titled "The palette and the typeface"
@@ -408,8 +411,9 @@ The seed's `CO2_TIMING` and composition. A directed beat's knobs are its own `ti
   `delayRender`, draws nothing until they are in, then reads back every text run the frame drew and
   cancels the render if a character, a weight or a family is not covered. `assets/face-coverage.ts`
   is its pure comparison.
-- `assets/timing.ts` — the shared timing contract type, `progressOf`, `checkTiming`, and `CO2_TIMING`
-  (the seed beat's instance). Beats import the carried copy `shared/chart-video/timing.ts`.
+- `assets/timing.ts` — the shared timing contract type, `progressOf`, `checkTiming`. Beats import the
+  carried copy `shared/chart-video/timing.ts`.
+- `assets/co2-timing.ts` — `CO2_TIMING`, the seed beat's instance.
 - `assets/EmissionsVideo.tsx` — the seed beat's composition. **Replace per story**; do not
   parameterise it into a general video chart. Carries its own copy of the pure core it draws (`fr`,
   `yTickValues`, `crossingGeometry`). Exports `FONT_FAMILY`, `measureText`, `wrap` and

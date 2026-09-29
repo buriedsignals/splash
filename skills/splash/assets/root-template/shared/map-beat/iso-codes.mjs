@@ -1,4 +1,4 @@
-// shared/map-beat/iso-codes.mjs
+// twin/shared/map-beat/iso-codes.mjs
 //
 // THE CANONICAL ISO 3166-1 ALPHA-3 → ALPHA-2 TABLE. A live map beat joins MapTiler Countries on its
 // `iso_a2` property (`references/types/hex-grid.md` and its siblings), and every worked example that

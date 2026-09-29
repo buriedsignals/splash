@@ -369,9 +369,11 @@ by an ordinary relative path — that import is for this skill's own tests
   The refusal names what to do, but it arrives phases after the point where a journalist should
   have been asked, and after the expensive work.
 
-  **Which formats require it:** the four that rasterise type themselves — `chart-beat`,
-  `chart-video`, `chart-web`, `map-beat`. `dw-beat` lays out type server-side, and `map-web`,
-  `scrolly` and `image-beat` draw theirs as HTML in a stylesheet.
+  **Which formats require it:** every skill whose render path calls `useTypeface` — `chart-beat`,
+  `chart-web` and `image-beat` (`scripts/render-preview.mjs`), `scrolly` (`render-preview.mjs`, whose
+  drawn frame is rasterised), `chart-video` (`render-preview.mjs`, `render-video.mjs`) and `map-beat`
+  (`render-preview.mjs`, `render-map.mjs`). `map-web` carries a `TYPEFACE.md` but none of its scripts
+  calls `useTypeface`; `dw-beat` lays out type server-side.
 
   **Still open, and deliberately not fixed here:** the typeface has no gate POSITION the way the
   palette does. Movement (9) of `references/exchange.md` is titled "The palette and the typeface"

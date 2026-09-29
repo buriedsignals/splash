@@ -15,6 +15,7 @@ import { join, resolve } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { Resvg } from "@resvg/resvg-js";
+import { comparePngBuffers } from "./compare-png.mjs";
 import { fontFilesForSvg } from "./typefaces.mjs";
 import { readPalette, readTypeface, useTypeface, assertDrawnInActiveTypeface } from "./render-still.mjs";
 import { readImageMeta, checkOrientation, checkWeight, toDataUri } from "./image-raster.mjs";
@@ -83,9 +84,14 @@ const png = new Resvg(svg, {
   .asPng();
 
 if (process.argv.includes("--check")) {
-  const committed = await readFile(TARGET);
-  if (!committed.equals(png)) {
-    console.error("preview.png is stale — the seed changed and the preview did not. Re-run without --check.");
+  // By decoded pixel, not byte-exact — see `compare-png.mjs`'s own header note. STRICT: no pixel
+  // may move by more than 6 per channel. A resvg render has no launch-to-launch jitter to forgive,
+  // and map-web's 0.2% allowance would pass a changed word.
+  const diff = comparePngBuffers(await readFile(TARGET), png, { tolerance: 6, maxDiffFraction: 0 });
+  if (!diff.same) {
+    console.error(
+      `preview.png is stale — the seed changed and the preview did not (${diff.reason}). Re-run without --check.`,
+    );
     process.exit(1);
   }
   console.log("preview.png matches a fresh render of the seed.");

@@ -1,5 +1,5 @@
 import { describe, it, expect } from "bun:test";
-import { readFileSync, realpathSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const SKILL_DIR = join(import.meta.dir, "..");
@@ -22,17 +22,6 @@ describe("inspiration is reachable", () => {
     expect(section(orchestrator, "When to use")).toContain("`inspiration`");
   });
 
-  it("should be linked into the agents store like every other skill", () => {
-    expect(realpathSync(join(REPO, ".agents", "skills", "inspiration"))).toBe(
-      realpathSync(SKILL_DIR),
-    );
-  });
-
-  it("should be counted in the full LLM reference", () => {
-    const full = readFileSync(join(REPO, "llms_full.txt"), "utf8");
-    expect(full).toContain(
-      "currently ships 17 directories containing executable `SKILL.md` contracts",
-    );
-    expect(full).toContain("- `inspiration`:");
-  });
+  // Counted in llms_full.txt and linked under .agents/skills like every other skill:
+  // skills/splash/test/every-skill-is-listed-and-linked.test.ts derives that from skills/*/SKILL.md.
 });

@@ -26,7 +26,8 @@
 // order already-reachable rows as revision-bound advice, but it remains read-only and discloses
 // unresolved requirements and ties.
 
-import { groundTakeaway, findYearColumn, measureColumns, LEXICON_LANGUAGES_SAID } from "./ground-claim.mjs";
+import { groundTakeaway, measureColumns, LEXICON_LANGUAGES_SAID } from "./ground-claim.mjs";
+import { findYearColumn } from "./panel-shape.mjs";
 import { formatGap, formatsFor, FORMAT_CATALOG } from "./format-catalog.mjs";
 import { capabilityGap } from "./capability-gap.mjs";
 import { treatmentFormatGap } from "./format-gate.mjs";
@@ -444,7 +445,8 @@ function profileFacts(profile) {
       })
     : [];
   // THE SKILL'S ONE ANSWER TO "is `year` a measure?", read from where it lives rather than
-  // decided again here — `ground-claim.mjs`'s `findYearColumn`/`measureColumns` (finding 23).
+  // decided again here — `panel-shape.mjs`'s `findYearColumn`, `ground-claim.mjs`'s
+  // `measureColumns` (finding 23).
   // `numeric` is still every number column, because "this table carries numbers" is a real fact;
   // what a treatment's requirements are scored against is `measures`, which is `numeric` minus the
   // table's own x axis.

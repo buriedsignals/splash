@@ -1,10 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import {
-  EVENT_ORDER,
-  checkTiming,
-  endOf,
-  type BeatTiming,
-} from "../../chart-video/assets/timing";
+import { EVENT_ORDER, checkTiming, endOf } from "../assets/timing-contract";
 import { MAP_TIMING } from "../assets/timing";
 import { arrivalProgress } from "../assets/Co2MapVideo";
 
@@ -14,14 +9,10 @@ import { arrivalProgress } from "../assets/Co2MapVideo";
  * can carry is the arithmetic: the conclusion cannot precede its evidence, the subject is not the
  * tail of the reveal, and the video does not end on a transition.
  *
- * Every rule is asserted twice: green on the shipped timing, RED on a timing mutated to break
- * exactly that rule. A check that never fails is not a check.
+ * The rules themselves (`checkTiming` red on a timing mutated to break each one) are proven once,
+ * by their owner `chart-video/test/timing.test.ts`; `../assets/timing-contract.ts` is carried from
+ * that file byte for byte, so this asserts only that THIS beat's edit passes them.
  */
-
-const broken = (patch: Partial<BeatTiming>): BeatTiming => ({
-  ...MAP_TIMING,
-  ...patch,
-});
 
 describe("the shipped timing", () => {
   it("should pass every structural rule of the motion grammar", () => {
@@ -43,34 +34,6 @@ describe("the shipped timing", () => {
     // argument is measured against when the field starts filling in behind it.
     const pause = MAP_TIMING.reveal.start - endOf(MAP_TIMING.reference);
     expect(pause).toBeGreaterThanOrEqual(MAP_TIMING.fps / 2);
-  });
-});
-
-describe("checkTiming, on a timing mutated to break one rule", () => {
-  it("should reject a conclusion that lands before its subject has finished", () => {
-    const errors = checkTiming(
-      broken({ conclusion: { start: MAP_TIMING.subject.start, duration: 22 } }),
-    );
-    expect(errors.join(" ")).toContain("conclusion");
-  });
-
-  it("should reject a subject that is only the tail of the reveal", () => {
-    const errors = checkTiming(
-      broken({ subject: { start: MAP_TIMING.reveal.start + 4, duration: 20 } }),
-    );
-    expect(errors.join(" ")).toContain("subject");
-  });
-
-  it("should reject a video that ends on a transition instead of a hold", () => {
-    const errors = checkTiming(broken({ hold: { start: 202, duration: 10 } }));
-    expect(errors.join(" ")).toContain("hold");
-  });
-
-  it("should reject a hold under the half-second floor", () => {
-    const errors = checkTiming(
-      broken({ total: 216, hold: { start: 202, duration: 14 } }),
-    );
-    expect(errors.join(" ")).toContain("half-second");
   });
 });
 

@@ -1,4 +1,7 @@
 import { describe, expect, it } from "bun:test";
+import { mkdtempSync, readdirSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { deriveCharter } from "../scripts/derive-charter.mjs";
 
 function fakeFetch(pages: Record<string, { status?: number; text: string }>) {
@@ -182,22 +185,48 @@ describe("deriveCharter — fields resolve with their evidence attached", () => 
 });
 
 describe("deriveCharter — never writes anything", () => {
-  it("should export no function whose name suggests a write path", async () => {
-    const module = await import("../scripts/derive-charter.mjs");
-    const names = Object.keys(module);
-    // Pinned, so a new export is a decision somebody made in a diff rather than something that
-    // arrived. The measuring exports joined on 2026-08-10, when this skill gained the contrast
-    // arithmetic it had none of; every one of them MEASURES and none of them applies anything.
-    expect(names.sort()).toEqual([
-      "NON_TEXT_CONTRAST_MIN",
-      "adjustToContrast",
-      "contrast",
-      "deriveCharter",
-      "measureLegibility",
-    ]);
-    for (const name of names) {
-      expect(name.toLowerCase()).not.toContain("write");
-      expect(name.toLowerCase()).not.toContain("save");
+  it("should leave an empty cwd, HOME and TMPDIR empty after deriving a full proposal", async () => {
+    // A proposal is shown to the journalist, never applied: NEWSROOM.md is written by the skill's
+    // confirmation step, not here. Every place a relative or home- or temp-rooted write could land is
+    // pointed at one empty directory for the duration of a complete derivation.
+    const empty = mkdtempSync(join(tmpdir(), "charter-never-writes-"));
+    const saved = {
+      cwd: process.cwd(),
+      HOME: process.env.HOME,
+      TMPDIR: process.env.TMPDIR,
+      TMP: process.env.TMP,
+      TEMP: process.env.TEMP,
+    };
+    const fetchFn = fakeFetch({
+      "https://www.theguardian.com/": {
+        text: `<html lang="en"><head><title>The Guardian</title>
+          <meta name="theme-color" content="#052962" />
+          <link rel="stylesheet" href="/style.css"></head></html>`,
+      },
+      "https://www.theguardian.com/style.css": {
+        text: `body { background: #FFFFFF } .byline{font-family:'GH Guardian Headline',Georgia,serif}`,
+      },
+    });
+    let proposal;
+    try {
+      process.chdir(empty);
+      process.env.HOME = empty;
+      process.env.TMPDIR = empty;
+      process.env.TMP = empty;
+      process.env.TEMP = empty;
+      proposal = await deriveCharter({ url: "https://www.theguardian.com/", fetchFn });
+    } finally {
+      process.chdir(saved.cwd);
+      for (const key of ["HOME", "TMPDIR", "TMP", "TEMP"] as const) {
+        if (saved[key] === undefined) delete process.env[key];
+        else process.env[key] = saved[key];
+      }
+    }
+    try {
+      expect(proposal.ok).toBe(true); // premise: the whole derivation ran, not an early refusal
+      expect(readdirSync(empty)).toEqual([]);
+    } finally {
+      rmSync(empty, { recursive: true, force: true });
     }
   });
 });

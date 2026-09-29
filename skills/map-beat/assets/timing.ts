@@ -2,12 +2,13 @@
  * This map beat's timing contract — the one object a journalist edits to retime it.
  *
  * The vocabulary is not redefined here either: `BeatTiming`, `progressOf` and `checkTiming` are
- * `./timing-contract.ts`, a physical copy of the motion grammar's vocabulary from
- * `chart-video/assets/timing.ts`. A copy, not an import, because a skill never reaches across
- * another skill's boundary at runtime. No test holds the copy to its source, so a change to either
- * is owed to the other by hand. The six editorial events and the structural rules are the motion
- * grammar's, not the chart format's, and a second copy of `checkTiming` would be two engines
- * quietly disagreeing about what "the conclusion cannot precede its evidence" means.
+ * `./timing-contract.ts`, the motion grammar's vocabulary CARRIED from
+ * `chart-video/assets/timing.ts` (its line 1 names that canonical, and
+ * `splash/test/carried-copies.test.ts` holds it byte for byte). A copy, not an import, because a
+ * skill never reaches across another skill's boundary at runtime. The six editorial events and the
+ * structural rules are the motion grammar's, not the chart format's, and a re-implemented
+ * `checkTiming` would be two engines quietly disagreeing about what "the conclusion cannot precede
+ * its evidence" means.
  * What is local to a beat is its EDIT, which is the object below.
  */
 

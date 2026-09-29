@@ -62,8 +62,8 @@
  *   4. **A ceiling exists, and it is stated rather than measured.** `ENTRANCE_CEILING_MS` is the
  *      number this format is held to, not a number read off an experiment: an entrance nobody watched
  *      to the end is a worse artifact than a static chart, so the whole build has to fit inside the
- *      time a reader spends arriving at a graphic. 2400ms is a judgement. `checkEntrance` checks
- *      it, and it is a knob.
+ *      time a reader spends arriving at a graphic. 2400ms is a judgement. `checkEntrance` states
+ *      the check, and it is a knob.
  *
  * ── WHAT THIS FILE DOES NOT DECIDE ───────────────────────────────────────────────────────────
  *
@@ -155,9 +155,10 @@ export function atProgress(event: EntranceEvent, fraction: number): number {
 /**
  * The whole entrance is over by this many milliseconds after the graphic enters view.
  *
- * See change 4. Enforced by `checkEntrance` on the contract, and again on the rendered page — a
- * layer whose own delay plus duration overruns it is caught even if the contract does not, because
- * a beat derives some of its delays from its own geometry.
+ * See change 4. STATED, NOT ENFORCED: `checkEntrance` below tests a contract against it, but no
+ * build, verifier or test calls `checkEntrance` today, and nothing measures the rendered page
+ * against this ceiling — where a beat derives delays from its own geometry, a layer can overrun it
+ * unnoticed.
  */
 export const ENTRANCE_CEILING_MS = 2400;
 
@@ -165,8 +166,9 @@ export const ENTRANCE_CEILING_MS = 2400;
  * The reasons an entrance object is not a legal one. Empty means it is one.
  *
  * The video's `checkTiming`, minus the two rules that were about `hold` and about a composition's
- * last frame, plus the ceiling. The ORDERING rule — the middle block — is the video's own, and the
- * parity test runs the same fixtures through both to prove it has not drifted.
+ * last frame, plus the ceiling. The ORDERING rule — the middle block — is the video's own. No test
+ * or build calls this function today (see `ENTRANCE_CEILING_MS`), so nothing proves it has not
+ * drifted from `checkTiming`.
  */
 export function checkEntrance(entrance: BeatEntrance): string[] {
   const errors: string[] = [];

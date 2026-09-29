@@ -1,12 +1,12 @@
 import { describe, expect, it } from "bun:test";
 import {
-  CO2_TIMING,
   EVENT_ORDER,
   checkTiming,
   endOf,
   progressOf,
   type BeatTiming,
 } from "../assets/timing";
+import { CO2_TIMING } from "../assets/co2-timing";
 import { drawnSoFar } from "../assets/EmissionsVideo";
 
 /**

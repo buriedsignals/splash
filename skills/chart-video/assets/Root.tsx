@@ -12,7 +12,7 @@
 
 import { Composition } from "remotion";
 import { EmissionsVideo, type EmissionsVideoProps } from "./EmissionsVideo";
-import { CO2_TIMING } from "./timing";
+import { CO2_TIMING } from "./co2-timing";
 
 const CO2_PLACEHOLDER: EmissionsVideoProps = {
   data: [

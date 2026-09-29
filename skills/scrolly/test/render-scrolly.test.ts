@@ -30,8 +30,6 @@ import {
 // own test file carries for the first file bun:test happens to load.
 setDefaultTimeout(20000);
 
-const SCRIPTS_DIR = join(import.meta.dirname, "..", "scripts");
-
 // ---------------------------------------------------------------------------
 // STEPS_META — the seed's own narrative arc, and the structural proof this format earns its
 // existence by assembling DIFFERENT media, not by stepping four states of one chart.
@@ -600,19 +598,16 @@ describe("renderScrolly — the full self-contained page", () => {
   });
 
   it("should never reference a frame's own kind — the generic scaffold stays media-agnostic", async () => {
-    // Structural proof, not a convention taken on faith: read this skill's own `renderScrolly`
-    // FUNCTION BODY (not the file's own module-level doc-comment, which is allowed to explain in
-    // prose what the CONFIG seam further down is for) and assert the code itself never mentions
-    // `frameKind`, `ImageFrame` or `DrawnGraphicFrame` by name.
-    const source = await readFile(
-      join(SCRIPTS_DIR, "render-scrolly.mjs"),
-      "utf8",
-    );
-    const start = source.indexOf("async function renderScrolly");
-    const end = source.indexOf("\nfunction inlineable");
-    expect(start).toBeGreaterThan(-1);
-    expect(end).toBeGreaterThan(start);
-    const mechanics = source.slice(start, end);
+    // Structural proof, not a convention taken on faith: read the source of the `renderScrolly`
+    // function itself — the engine's own text, so neither its neighbours nor their order matter —
+    // with comments stripped (prose may explain what the CONFIG seam, `buildFrame`, in the same file
+    // is for) and assert the code never mentions `frameKind` or a frame component by name. The
+    // whole file cannot be scanned: that seam lives in it and is the one place allowed to.
+    const mechanics = renderScrolly
+      .toString()
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/(^|[^:])\/\/.*$/gm, "$1");
+    expect(mechanics).toContain("steps"); // premise: this is the engine's body, not a stub
     expect(mechanics).not.toContain("frameKind");
     for (const component of [
       "ImageFrame",

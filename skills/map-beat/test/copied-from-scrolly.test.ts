@@ -35,16 +35,6 @@ describe("the map engine copied from quality/scrolly", () => {
           .digest("hex"),
       ).toBe(sha256);
     });
-
-  it("should keep the root template's scrolly module identical to the trunk's", () => {
-    expect(
-      readFileSync(
-        join(
-          ROOT,
-          "skills/splash/assets/root-template/shared/map-beat/scrolly.mjs",
-        ),
-        "utf8",
-      ),
-    ).toBe(readFileSync(join(ROOT, "shared/map-beat/scrolly.mjs"), "utf8"));
-  });
+  // The root template's copy of scrolly.mjs is held to this one by its `// twin/` line 1
+  // (skills/splash/test/carried-copies.test.ts), not here.
 });

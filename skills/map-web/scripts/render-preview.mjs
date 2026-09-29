@@ -94,7 +94,7 @@ try {
     // Tolerant, not byte-exact — see compare-png.mjs's own header note: two Chrome launches of the
     // identical HTML are not always byte-identical (anti-aliasing jitter on the text-heavy
     // furniture), so a strict `.equals()` here would fail on the SAME seed, not a changed one.
-    const diff = await comparePngBuffers(page, committed, png);
+    const diff = comparePngBuffers(committed, png);
     await browser.close();
     if (!diff.same) {
       console.error(
