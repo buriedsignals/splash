@@ -6,7 +6,7 @@
    The bar has no ground of its own. It sits on whatever section passes
    under it and reads that section's `data-ground` to pick its ink: paper
    on dark grounds, ink on light ones. Each of its two groups — the wordmark
-   on the left, the nav on the right — reads the ground under ITSELF, so a
+   and its credit on the left, the nav on the right — reads the ground under ITSELF, so a
    first screen split ink | paper, as on the inspiration page, gets a paper
    wordmark and an ink nav at once. (`mix-blend-mode:difference` used to do
    this and could not: it applies to the group, and a solid amber button
@@ -31,6 +31,14 @@ header.onlight,header .onlight{color:var(--ink);transition:color .34s ease}
           font-family:var(--D);font-weight:800;font-size:22px;
           letter-spacing:-.035em;text-transform:none;line-height:1}
 .wordmark .rosette{width:.92em;height:.92em;flex:0 0 auto;display:block}
+
+/* THE CREDIT. Who makes this, said once and quietly, in the bar's own label
+   face beside the name. It leaves the site, so it is a second link and
+   cannot live inside the wordmark; the two share one group, .hbrand, and
+   that group is what reads the ground, so they change ink together. */
+.hbrand{display:inline-flex;align-items:center;gap:14px}
+header .hby{white-space:nowrap;opacity:.6}
+header .hby:hover,header .hby:focus-visible{opacity:1}
 
 header .hnav{display:flex;gap:26px;align-items:center}
 header .hnav a{white-space:nowrap}
@@ -87,7 +95,7 @@ header .hnav a:not(.cta):not(.ghb):hover::after,
 header .hnav a:not(.cta):not(.ghb):focus-visible::after{
     transform:scaleX(1);transform-origin:0 50%;
     transition:transform .5s cubic-bezier(.42,0,.24,1)}
-header .hnav a:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
+header .hnav a:focus-visible,header .hby:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
 
 /* ---- THE MENU ----------------------------------------------------------
    The bar cannot hold four mentions and a 22px wordmark on a 390px frame.
@@ -156,4 +164,5 @@ header .hnav a:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
   header .hnav a,header .hnav a.ghb{display:none}
   .hmenu{display:block}
   .wordmark{font-size:19px}
+  .hbrand{gap:10px}
 }

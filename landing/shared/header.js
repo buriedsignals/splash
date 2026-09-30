@@ -72,7 +72,7 @@
   /* ---- the ground ---- */
   const grounds = [...document.querySelectorAll('[data-ground]')];
   if (!grounds.length) return;
-  const groups = [bar.querySelector('.wordmark'), bar.querySelector('.hnav')].filter(Boolean);
+  const groups = [bar.querySelector('.hbrand'), bar.querySelector('.hnav')].filter(Boolean);
 
   const light = new Map();
   const isLight = (hex) => {
