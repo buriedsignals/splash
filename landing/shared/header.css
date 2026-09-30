@@ -164,5 +164,8 @@ header .hnav a:focus-visible,header .hby:focus-visible{outline:2px solid var(--a
   header .hnav a,header .hnav a.ghb{display:none}
   .hmenu{display:block}
   .wordmark{font-size:19px}
-  .hbrand{gap:10px}
+  /* The credit goes UNDER the name on a narrow frame, not beside it: a name
+     and its maker read as one mark, and the bar keeps its width for Menu. */
+  .hbrand{flex-direction:column;align-items:flex-start;gap:4px}
+  header .hby{font-size:8px;letter-spacing:.12em;line-height:1}
 }
