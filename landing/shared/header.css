@@ -150,7 +150,10 @@ header .hnav a:focus-visible{outline:2px solid var(--amber);outline-offset:3px}
    thing twice, two taps apart. The bar is a wordmark and a way in. */
 @media (max-width:860px){
   header{font-size:10px;letter-spacing:.12em}
-  header .hnav a{display:none}
+  /* The repository is named as well as the bare `a`: its own rule above sets
+     a display with a class, which out-ranks `a` alone, and it stayed in the
+     phone bar beside Menu. */
+  header .hnav a,header .hnav a.ghb{display:none}
   .hmenu{display:block}
   .wordmark{font-size:19px}
 }
