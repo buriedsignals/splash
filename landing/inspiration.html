@@ -52,7 +52,7 @@
    * is a tool, and a shader behind a search field steals the click. The
    * coherence is carried by type, colour and gesture.
    * ===================================================================== */
-  :root { --ink:#14141c; --paper:#edeae3; --table:#e6e2d9; --blue:#1a2ffb; --amber:#f2b13c;
+  :root { --ink:#14141c; --paper:#edeae3; --table:#e6e2d9; --blue:#1a2ffb; --amber:#f2b13c; --amber-hi:#f7c260;
           --D:'Bricolage Grotesque',Helvetica,sans-serif;
           --C:'Space Grotesk',Helvetica,sans-serif;
           --gut: clamp(22px, 2.4vw, 40px);      /* side margin, everywhere */
@@ -780,11 +780,12 @@
          letter-spacing:-.03em;line-height:1.04;
          font-size:clamp(21px,2.1vw,30px)}
   .offer .olede2{margin:.75em 0 0;font-size:13px;line-height:1.55;opacity:.66}
-  .olab{display:inline-block;margin-top:1.1em;color:var(--amber);
+  .olab{align-self:flex-start;margin-top:1.3em;padding:13px 20px;
+        border-radius:var(--rad-s);background:var(--amber);color:var(--ink);
         text-decoration:none;font-family:var(--C);font-size:11px;
         font-weight:500;letter-spacing:.14em;text-transform:uppercase;
-        border-bottom:1px solid transparent;transition:border-color .2s ease}
-  .olab:hover{border-bottom-color:var(--amber)}
+        transition:background .2s ease}
+  .olab:hover{background:var(--amber-hi)}
   .offer ul{margin:1.2em 0 0;padding:0;list-style:none;display:flex;
         flex-direction:column;align-items:flex-start;gap:7px}
   .offer ul li{font-family:var(--C);font-size:10px;font-weight:500;
@@ -998,12 +999,10 @@
 
   <div class="ogrid">
     <article class="offer">
-      <div class="okick"><span>Indicator Lab</span></div>
+      <div class="okick"><span>Indicator Lab</span><span class="olaunch">Now open</span></div>
       <h3>Investigations with AI. The tools to run your own</h3>
-      <p class="olede2">Indicator Lab combines the Buried Signals tool suite with
-      a monthly live Lab Session, a Lab Notes edition after each one, and office
-      hours every two weeks.</p>
-      <a class="olab" href="https://buriedsignals.com/join" target="_blank" rel="noopener">Explore Indicator Lab &rarr;</a>
+      <p class="olede2">The Buried Signals tool suite, a monthly live workshop and Lab Newsletter, office hours every two weeks, and the training course. $10/month add-on to Indicator membership.</p>
+      <a class="olab" href="https://buriedsignals.com/join" target="_blank" rel="noopener">Join Indicator Lab &rarr;</a>
       <div class="ofoot">
         <p class="oerr ohide" id="nl-error"></p>
         <p class="ook ohide" id="nl-success" role="status">
