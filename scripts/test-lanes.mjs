@@ -29,7 +29,7 @@ import { readdirSync, readFileSync, statSync, existsSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 
 const ROOT = resolve(import.meta.dirname, "..");
-const ROOTS = ["skills", "apps", "installer", "proof", "shared", "scripts"];
+const ROOTS = ["skills", "apps", "installer", "proof", "shared", "scripts", "harness-pi"];
 const SKIP = new Set(["node_modules", ".git", "output-proof", "landing"]);
 const TEST = /\.test\.(ts|tsx|mjs|js)$/;
 const LIVE = /\.live\.test\.(ts|tsx|mjs|js)$/;

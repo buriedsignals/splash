@@ -54,3 +54,8 @@ brand.json
 # design-base harvest: the full-page screenshot of a third-party page stays on the harvesting
 # machine. A record keeps only the image its pixels were measured from (usually graphic.png).
 docs/design-base/references/*/*/screenshot.png
+
+# Local harness (harness-pi/): model weights, Pi session logs and staged run roots never ship.
+*.gguf
+.splash-harness/
+training/data/

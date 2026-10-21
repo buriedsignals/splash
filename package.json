@@ -2,6 +2,9 @@
   "name": "splash",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "harness-pi"
+  ],
   "imports": {
     "#shared/*": "./shared/*"
   },
