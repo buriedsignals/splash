@@ -12,8 +12,8 @@ execution: code
 
 ## Goal Capsule
 
-- **Objective:** A journalist with a Mac (32 GB measured target, 48 GB comfortable) can take a real story from intake to a delivered static chart (PNG) and web chart (HTML) with Splash running entirely on local open models, with no paid API on the run path. It is packaged so Buried Signals' Investigator Harness can route a visual-production request to it.
-- **Means:** A deterministic phase driver on the bare Pi SDK, with one Pi session per pipeline owner (KTD1, KTD2). The model is a stock Gemma 4 26B-A4B served by llama.cpp, plus a LoRA tuned with the Spotlight procedure and published on Hugging Face (KTD7–KTD10).
+- **Objective:** A journalist with a 24 GB Mac (the Mycroft catalog floor; measured on a 32 GB M2 Max) can take a real story from intake to a delivered static chart (PNG) and web chart (HTML) with Splash running entirely on local open models, with no paid API on the run path. It is packaged so Buried Signals' Investigator Harness can route a visual-production request to it.
+- **Means:** A deterministic phase driver on the bare Pi SDK, with one Pi session per pipeline owner (KTD1, KTD2). The model is a stock Gemma 4 12B served by llama.cpp, plus a LoRA tuned with the Spotlight procedure and published on Hugging Face (KTD7–KTD10).
 - **Product authority:** Rémy (Splash owner) decides product scope. Tom Vaillant (Buried Signals) owns the router, Engine and the Mycroft catalog, so anything touching those is a proposal to Tom, never a change we make.
 - **Target date:** around 2026-10-30, Tom's Investigator Harness release (date unconfirmed).
 - **Stop conditions:** stop and ask Rémy before any paid launch. That covers every OpenRouter batch, every RunPod pod and every public Hugging Face upload (R23). Stop and report if U1 shows the image path or memory fit fails, because KTD3 and the model choice rest on both.
@@ -28,7 +28,7 @@ Product Contract preservation: changed. R6 and F1 now name the real pipeline (fr
 
 ### Summary
 
-A Splash harness on the bare Pi SDK drives one story through the full Splash pipeline and ends with a delivered static chart and web chart, running Gemma 4 26B-A4B locally: intake, framing, storyboard with palette, analysis, static craft, web craft, designer review, journalist approval, delivery. A Splash LoRA trained on teacher-generated gold trajectories ships on Hugging Face as GGUF plus mmproj. It replaces the stock model only when it beats it on held-out stories.
+A Splash harness on the bare Pi SDK drives one story through the full Splash pipeline and ends with a delivered static chart and web chart, running a Gemma 4 12B locally: intake, framing, storyboard with palette, analysis, static craft, web craft, designer review, journalist approval, delivery. A Splash LoRA trained on teacher-generated gold trajectories ships on Hugging Face as GGUF plus mmproj. It replaces the stock model only when it beats it on held-out stories.
 
 ### Problem Frame
 
@@ -39,22 +39,23 @@ Splash is harder to localise than Spotlight. Its craft step writes a bespoke Rea
 ### Key Decisions
 
 - **Bare Pi SDK, not Flue on Pi.** Sub-agents and durable sessions are ours to build. Governs R1, R3, R4. (session-settled: user-directed — chosen over Flue on Pi as Spotlight uses it: Tom's stated direction is Pi itself.)
-- **The model keeps writing the bespoke component; base is Gemma 4 26B-A4B.** This preserves the doctrine (compose, don't select). The larger MoE buys code margin (LiveCodeBench v6 77.1 vs 72.0 for the 12B) at 3.8B active parameters. Governs R8, R12, R14. (session-settled: user-directed — chosen over the 12B with a component, and over a JSON spec rendered by code: keep the doctrine and take the code margin.)
+- **Base model is a 12B (Gemma 4 12B unless measurement favours another 12B).** Governs R12, R13, R20. (session-settled: user-directed — chosen over Gemma 4 26B-A4B: Tom requires a 12B for the Investigator Harness; his Spotlight 12B v5 may be reused as a starting point.)
+- **What the model writes at the craft step is decided by measurement in U1.** The 12B writes a bespoke component on real proof beats, and the rendered result is judged. If it holds, the doctrine stands (compose, don't select). If not, the craft step switches to a compact spec rendered by code, as Tom did for Spotlight's report. Governs R8. (session-settled: user-directed — chosen over keeping the component unconditionally and over switching to a spec now: decide on evidence before U6.)
 - **v1 covers static and web chart formats.** Governs R6, R7. (session-settled: user-directed — chosen over static only and over stopping at storyboard.)
 - **The harness traverses the real Splash pipeline, personas included.** The editor, analyst and designer each run as their own sub-agent. Governs R2, R6. (session-settled: user-directed — chosen over a short path where code writes framing, analysis and review: evaluation must be on the production pipeline.)
 - **Gold trajectories come from a Gemma 4 31B teacher driving the real harness, with a scripted journalist at every gate.** This is Spotlight's method. Governs R15, R16. (session-settled: user-approved — chosen over Rémy answering gates by hand and over a mixed approach.)
 - **The teacher runs through OpenRouter.** Governs R15. (session-settled: user-directed — chosen over a RunPod pod and over Rémy's Mac: that is what Tom's 31B teacher actually used, and it sits off the run path.)
-- **Fallback: the harness ships with stock 26B-A4B if the tune is not proven in time.** Governs R20. (session-settled: user-approved — chosen over shipping only harness and tuned model together.)
+- **Fallback: the harness ships with the stock 12B if the tune is not proven in time.** Governs R20. (session-settled: user-approved — chosen over shipping only harness and tuned model together.)
 - **Code holds the pipeline, the model holds the craft.** A deterministic driver decides the phase from the story directory and opens one fresh Pi session per owner. The session is loaded with that owner's skill only. This applies Spotlight's lessons: never put the discipline in the prompt, use real sub-agents, and evaluate on the real pipeline. Governs R1–R5.
 - **No RLM sidecar in v1.** Intake profiling is already deterministic (`skills/intake/scripts/profile.mjs`), so CSVs never enter the context raw. Long articles and conversation compaction are handled by the main model. Governs R9.
 - **Canonical skills are loaded as they are; a condensed local-tier variant is a measured last resort.** A second copy of a skill would break the repository's CARRIED rule. Governs R10, R11.
-- **The hardware floor is the 32 GB Mac measured in U1.** The 48 GB target is the comfortable tier. Either way it sits above the Mycroft catalog's 24 GB floor, so 24 GB journalists cannot run Splash locally in v1. Governs R13.
+- **The hardware floor is the catalog's 24 GB.** A 12B in Q4_K_M (7.12 GB) plus its mmproj (0.18 GB) leaves room for the KV cache, Chrome and the render toolchain. Governs R13.
 
 ### Actors
 
 - A1. Journalist: brings an article and data, and answers the gates: takeaway, hand, format, palette when asked, candidates, approval, delivery form.
 - A2. Splash harness: deterministic phase driver plus per-owner Pi sessions (editor, storyboard, analyst, craft, designer, deliver).
-- A3. Local model: Gemma 4 26B-A4B (stock or tuned) on llama.cpp, with vision.
+- A3. Local model: Gemma 4 12B (stock or tuned) on llama.cpp, with vision.
 - A4. Scripted journalist: a persona that answers gates from a per-story answer sheet during data generation and evaluation.
 - A5. Teacher model: Gemma 4 31B via OpenRouter, used only to produce training trajectories.
 - A6. Router / Investigator Harness (Tom): hands a visual-production request to Splash. Its contract is not defined yet.
@@ -89,8 +90,8 @@ Splash is harder to localise than Spotlight. Its craft step writes a bespoke Rea
 
 **Model and serving**
 
-- R12. The local model is Gemma 4 26B-A4B in GGUF with its mmproj, served by llama.cpp with image input enabled.
-- R13. Serving fits a 32 GB Mac alongside the rendering toolchain and Chrome. It follows Spotlight's serving profile (q8_0 KV cache, bounded reasoning budget), adapted to this model; one resident slot, because the driver issues one request at a time.
+- R12. The local model is a 12B (Gemma 4 12B by default) in GGUF with its mmproj, served by llama.cpp with image input enabled.
+- R13. Serving fits a 24 GB Mac alongside the rendering toolchain and Chrome. It follows Spotlight's serving profile (q8_0 KV cache, bounded reasoning budget), adapted to this model; one resident slot, because the driver issues one request at a time.
 - R14. Nothing on the run path calls a paid API or needs an API key.
 
 **Training data and tuning**
@@ -103,7 +104,7 @@ Splash is harder to localise than Spotlight. Its craft step writes a bespoke Rea
 
 **Release**
 
-- R20. The tuned model ships only if it beats stock 26B-A4B on the held-out stories. Otherwise the harness ships with the stock model and the tune follows.
+- R20. The tuned model ships only if it beats the stock 12B on the held-out stories. Otherwise the harness ships with the stock model and the tune follows.
 - R21. The GGUF, mmproj, LoRA adapter and a model card are published on Rémy's Hugging Face account, pinned by commit with checksums.
 - R22. A Mycroft catalog entry for the Splash harness and its model is drafted in the same shape as Spotlight's, as a proposal to Tom.
 - R23. GPU and API spend stays within 50 EUR and is tracked per run. Every paid launch and every public upload is confirmed by Rémy first.
@@ -183,9 +184,9 @@ Splash is harder to localise than Spotlight. Its craft step writes a bespoke Rea
 ### Dependencies / Assumptions
 
 - Pi `@earendil-works/pi-coding-agent` 1.3.0 (published 2026-10-15) supports a custom OpenAI-compatible provider with `input: ["text","image"]`. In that mode it moves tool-result images into a follow-up user message. Verified in source; end to end against llama-server is U1.
-- The 26B-A4B in Q4_K_M (16.95 GB) plus the BF16 mmproj (1.19 GB) plus a q8_0 KV cache fits the 25,559 MiB Metal working set measured on Rémy's M2 Max 32 GB. The estimate is 19–20 GiB; it is measured in U1.
-- The upstream `unsloth/gemma-4-26B-A4B-it-GGUF` mmproj works with a LoRA-merged GGUF, as Spotlight reused upstream projector files.
-- Unsloth supports LoRA on Gemma 4 26B-A4B with frozen vision and image-bearing data (`FastVisionModel`, `UnslothVisionDataCollator`). Expert weights are not 4-bit quantized, and the official notebook uses about 47 GB at 2k context; whether 30–40k-token trajectories fit on an A100 80 GB is decided by a two-step test.
+- Gemma 4 12B in Q4_K_M (`unsloth/gemma-4-12b-it-GGUF`, 7.12 GB, commit `fc034cff`) plus `mmproj-BF16.gguf` (0.18 GB) and a q8_0 KV cache for a 96k slot fit a 24 GB machine's Metal working set. Measured in U1 on the 32 GB M2 Max.
+- The upstream 12B mmproj works with a LoRA-merged GGUF, and with Tom's text-only v5 GGUF (`tomvaillant/gemma4-12b-spotlight-orchestrator-v5-GGUF`, commit `e7cd5ba3`), because both kept the vision layers frozen. Tested in U1.
+- Unsloth supports LoRA on Gemma 4 12B with frozen vision and image-bearing data (`FastVisionModel`, `UnslothVisionDataCollator`). Tom trained the 12B on an A100 80 GB with a forced `transformers==5.13.0`; Unsloth 2026.10.7 accepts transformers up to 5.17. Whether long trajectories fit is decided by a two-step test.
 - OpenRouter serves Gemma 4 31B with image input and tool calls. Unverified; checked first in U10.
 - `stories/` measured 2026-10-21: 30 stories (1 production, 16 storyboard, 12 framing, 1 intake). Articles run 221–4,365 bytes. No story has `PALETTE.md`. Runs start from each story's `source/` only. About 24 are chart-eligible once map, scrolly and photo stories are excluded. That leaves about 22 training candidates for about 14 kept gold runs, so the teacher's completion rate must be at least about 65% (measured in the U10 pilot).
 - Only `r8-chart-static-german-road-deaths-by-mode` is named nowhere in `skills/`, `shared/` or `agents/` (grep, 2026-10-21). Every other chart story appears in skill text, `real-gwis-wildfire-counts` in four files.
@@ -203,7 +204,7 @@ Splash is harder to localise than Spotlight. Its craft step writes a bespoke Rea
 - Pi versus Flue: Spotlight is still Flue on Pi (`@flue/runtime` 1.0.0-beta.9). Proposal: Splash uses bare Pi; confirm Spotlight is moving the same way.
 - mmproj in the catalog: `models[]` has no field for a vision projector. Proposal: a second artifact on the Splash model entry.
 - Hugging Face namespace: Spotlight's models live under `tomvaillant/`. Proposal: publish under Rémy's account, transferable later.
-- Hardware floor: Splash needs 32 GB where the catalog says 24 GB. Proposal: a per-product `min_memory` on the model entry.
+- Shared 12B base: Spotlight and Splash both run a Gemma 4 12B. Proposal: one base GGUF in memory, with each product's LoRA selected per request by llama-server (`lora` field), instead of two merged 12B models.
 - Engine code and catalog signing: proposal that Tom writes the Engine launcher from our CLI entry point and signs the release.
 - Masking: on Gemma 4 the chat template places tool results inside the model turn, so `train_on_responses_only` supervises them. Spotlight's v5 likely trained on tool outputs; our trainer masks them (KTD9).
 
@@ -242,19 +243,19 @@ Splash is harder to localise than Spotlight. Its craft step writes a bespoke Rea
   A persona's `allowed_verbs` (`agents/editor.md`, `agents/designer.md`) narrow its tool list. The boundary covers tools only. `run render` executes component files the model wrote, and that code is unconfined (a residual risk under Risks). Governs R2, R5, R9.
 - KTD5. **The skill body goes into the system prompt, and references are read through the read tool.** Pi's own skill listing needs the model to `read` the body. That is unreliable for a small model and costs a turn, so each profile injects its owner's SKILL.md body directly. A budget test measures every profile's floor against the slot context. Condensation is allowed only for a profile that fails the test, and only as a harness-side derived view checked against its canonical source. Governs R10, R11.
 - KTD6. **Runs happen in a run root outside the repository.** The run root is created from `skills/splash/assets/root-template/` with the story's `source/` inputs copied in. Two repo tests pin the contents of `stories/`, scaffolds resolve `#shared/` from cwd, and session files must never reach the byte-scanning `no-key-in-the-repository` test. Governs R5, R6.
-- KTD7. **Serving profile for 26B-A4B is one slot of 65,536 tokens:**
+- KTD7. **Serving profile for the 12B is one slot of 98,304 tokens:**
   - `--parallel 1`, KV cache `-ctk/-ctv q8_0`, flash attention on, `--reasoning-budget 400`, `--mmproj` with the upstream BF16 file;
   - one Pi provider in `models.json`, with the compat block copied from Pi's llama.cpp provider;
   - `contextWindow` set exactly to the slot size, to dodge Pi #10885;
   - compaction `reserveTokens` 8192, with `keepRecentTokens` set per profile in `profiles.ts`.
 
-  The driver sends one request at a time and the scripted journalist runs elsewhere (KTD8), so a second slot would only cost KV memory. The framework-docs dossier puts 64k under the 25,559 MiB working set with about 5 GiB of headroom. U1 measures this and may lower the slot. Governs R12, R13.
+  The driver sends one request at a time and the scripted journalist runs elsewhere (KTD8), so a second slot would only cost KV memory. U2 measured `chart-web`'s floor at about 50k tokens (body plus its required `web-discipline.md`), which a 64k slot cannot hold with a working margin. U1 measures the 96k slot's memory and speed and may lower it. (session-settled: user-approved — chosen over a condensed local view of `web-discipline.md` and over reading it on demand: no second text to maintain.) Governs R12, R13.
 - KTD13. **Gate 3 is written by the harness and Gate 4 by the deliver session.**
   - **Gate 3.** On the journalist's approval, the harness calls `writeOutputReview` with three things it did not invent: the journalist's decision verbatim, the QA receipt from its own check run, and the designer session's `return_contract` text as `angleEvidenceBrief`.
   - **Gate 4.** The deliver session calls `materialise` through the `run` allowlist with the form the journalist named, as `skills/deliver/SKILL.md` instructs.
 
   Governs R4, R6.
-- KTD14. **`harness/pi` is a Bun workspace of the root package.** The root `bun install --frozen-lockfile` (CI and the release baseline) then installs Pi and typebox, and fast-lane harness tests resolve them. Governs R11.
+- KTD14. **`harness-pi` is a Bun workspace of the root package.** The root `bun install --frozen-lockfile` (CI and the release baseline) then installs Pi and typebox, and fast-lane harness tests resolve them. Governs R11.
 - KTD8. **The scripted journalist answers from a per-story answer sheet, through one pinned model call constrained to that sheet.** The sheet covers takeaway, hand, medium and format per slot, palette, candidates, approval and delivery form. The persona receives the model's last turn plus the sheet. It must answer only from the sheet, or with "I don't know", which the exchange accepts. Every answer is logged.
   - **Pinned model.** It always runs on the same pinned model: OpenRouter Gemma 4 31B at temperature 0 with a fixed seed. That holds for data generation and for every evaluation arm, so stock and tuned face the same interlocutor.
   - **Refusal.** `run-eval.ts` refuses a matrix whose arms differ in journalist model or decoding.
@@ -262,11 +263,11 @@ Splash is harder to localise than Spotlight. Its craft step writes a bespoke Rea
   This is evaluation tooling, not the shipped run path, where the journalist is human (R14). Governs R15, R19, R20.
 - KTD9. **Our own label mask.** It supervises only the model's generated text and tool-call tokens, and masks tool results and image tokens. A test decodes the supervised spans of a fixture conversation and asserts that no tool-result text appears. This replaces `train_on_responses_only`, which supervises tool results on Gemma 4 because the template places them inside the model turn. Governs R18.
 - KTD10. **Training reuses Tom's scripts, adapted rather than rewritten.**
-  - Pod launch starts from `scripts/gemma4-26b/pod.py`, with the 27B launcher's safeguards: balance check, secure cloud, auto-terminate only on success.
+  - Pod launch starts from the 12B launcher, with the 27B launcher's safeguards: balance check, secure cloud, auto-terminate only on success.
   - Train, merge, coherence check and GGUF export follow the 12B scripts.
   - The dataset loader is rewritten to read Pi JSONL sessions, keeping images as content parts.
 
-  Unsloth `FastVisionModel` with frozen vision layers, QLoRA r16, alpha 16, 3 epochs, LR 2e-4, on an A100 80 GB. A two-step smoke run on the longest row plus one image decides the sequence cap. Rows are compaction segments (U11), so each already fits the 64k slot. If the A100 cannot train at that length with gradient checkpointing, rows over the cap are dropped and counted, never truncated, because a truncated row would lose the skill body it runs under. Governs R17, R18, R21.
+  Unsloth `FastVisionModel` with frozen vision layers, QLoRA r16, alpha 16, 3 epochs, LR 2e-4, on an A100 80 GB. A two-step smoke run on the longest row plus one image decides the sequence cap. Rows are compaction segments (U11), so each already fits the slot. If the A100 cannot train at that length with gradient checkpointing, rows over the cap are dropped and counted, never truncated, because a truncated row would lose the skill body it runs under. Governs R17, R18, R21.
 - KTD11. **Evaluation is the production run, scored from the story directory.** For each held-out story and model, the evaluator runs F1 with the scripted journalist and records:
   - the final `whereIs` phase reached;
   - gate refusals;
@@ -291,7 +292,7 @@ flowchart TB
   PS -->|tools| T[read skill/shared, rw story, run allowlist, look]
   T --> S
   T --> R[Splash scripts: scaffolds, render, build-data, verify-web]
-  PS <-->|OpenAI-compatible + images| L[llama-server: 26B-A4B + mmproj]
+  PS <-->|OpenAI-compatible + images| L[llama-server: 12B + mmproj]
   D -->|gate pause| J{Journalist}
   J -->|human| H[terminal]
   J -->|scripted| SJ[answer sheet persona]
@@ -322,7 +323,7 @@ Data pipeline from runs to release.
 
 ```mermaid
 flowchart TB
-  A[Stock 26B baseline: held-out + 4 training stories] --> B[Failure points, training stories only]
+  A[Stock 12B baseline: held-out + 4 training stories] --> B[Failure points, training stories only]
   A --> RS[Held-out stock results -> RESULTS.md only]
   C[Teacher 31B runs via OpenRouter, training stories] --> D[Validated gold sessions]
   B --> E[Hand-written corrections]
@@ -339,7 +340,7 @@ flowchart TB
 ### Output Structure
 
 ```text
-harness/pi/
+harness-pi/
   README.md                      run, serve, evaluate
   src/cli.ts                     entry point (router-callable)
   src/driver.ts
@@ -401,25 +402,26 @@ U1 is the go/no-go spike. U2 and U3 run alongside it. U4 and every later harness
 
 | U-ID | Title | Key files | Depends on |
 |---|---|---|---|
-| U1 | Serving and image-path spike | `harness/pi/serve/*`, `harness/pi/test/serve.live.test.ts` | none |
-| U2 | Context budget per profile | `harness/pi/src/budget.ts`, `harness/pi/test/budget.test.ts` | none |
-| U3 | Run root and story staging | `harness/pi/src/run-root.ts`, `scripts/test-lanes.mjs`, `.gitignore` | none |
-| U4 | Pi session layer | `harness/pi/src/sessions.ts` | U1, U3 |
-| U5 | Tools: fs, run, look | `harness/pi/src/tools/*` | U3 |
-| U6 | Profiles and driver loop | `harness/pi/src/profiles.ts`, `driver.ts`, `cli.ts` | U2, U4, U5 |
-| U7 | Harness-owned gate closures | `harness/pi/src/gates.ts` | U6 |
-| U8 | Journalist: human and scripted | `harness/pi/src/journalist/*`, `eval/sheets/*` | U6 |
-| U9 | Evaluator and stock baseline | `harness/pi/eval/*` | U7, U8 |
-| U10 | Gold generation and corrections | `harness/pi/eval/teacher.ts`, `training/data/` (gitignored) | U9 |
+| U1 | Serving and image-path spike | `harness-pi/serve/*`, `harness-pi/test/serve.live.test.ts` | none |
+| U2 | Context budget per profile | `harness-pi/src/budget.ts`, `harness-pi/test/budget.test.ts` | none |
+| U3 | Run root and story staging | `harness-pi/src/run-root.ts`, `scripts/test-lanes.mjs`, `.gitignore` | none |
+| U4 | Pi session layer | `harness-pi/src/sessions.ts` | U1, U3 |
+| U5 | Tools: fs, run, look | `harness-pi/src/tools/*` | U3 |
+| U6 | Profiles and driver loop | `harness-pi/src/profiles.ts`, `driver.ts`, `cli.ts` | U2, U4, U5 |
+| U7 | Harness-owned gate closures | `harness-pi/src/gates.ts` | U6 |
+| U8 | Journalist: human and scripted | `harness-pi/src/journalist/*`, `eval/sheets/*` | U6 |
+| U9 | Evaluator and stock baseline | `harness-pi/eval/*` | U7, U8 |
+| U10 | Gold generation and corrections | `harness-pi/eval/teacher.ts`, `training/data/` (gitignored) | U9 |
 | U11 | Dataset builder and label mask | `training/dataset/*` | U10 |
 | U12 | Pod, train, merge, export | `training/pod/*`, `training/train/*` | U11 |
-| U13 | Tuned evaluation, release and publish | `training/publish/*`, `harness/pi/eval/*` | U9 (U12 if it produced artifacts) |
-| U14 | Catalog draft, README, message to Tom | `catalog/drafts/splash-local.json`, `harness/pi/README.md` | U9 (updated after U13) |
+| U13 | Tuned evaluation, release and publish | `training/publish/*`, `harness-pi/eval/*` | U9 (U12 if it produced artifacts) |
+| U14 | Catalog draft, README, message to Tom | `catalog/drafts/splash-local.json`, `harness-pi/README.md` | U9 (updated after U13) |
 
 ### U1. Serving and image-path spike
 
 **Goal:** Prove three things before any harness work depends on them:
-- 26B-A4B plus mmproj runs on the 32 GB Mac in one 64k slot;
+- the 12B plus mmproj runs in one 96k slot within a 24 GB budget;
+- the stock 12B and Tom's v5 can each write a bespoke component on 2–3 real proof beats that renders and reads correctly (the craft decision);
 - a PNG returned by a Pi tool reaches the model and is described correctly;
 - the OpenRouter Gemma 4 31B teacher accepts an image and a tool call.
 
@@ -428,15 +430,15 @@ U1 is the go/no-go spike. U2 and U3 run alongside it. U4 and every later harness
 **Dependencies:** None.
 
 **Files:**
-- Create `harness/pi/serve/llama-server.sh` (pinned llama.cpp build, flags per KTD7, model and mmproj paths from env).
-- Create `harness/pi/serve/models.json`.
-- Create `harness/pi/serve/fetch-model.ts` (downloads the GGUF and mmproj from `unsloth/gemma-4-26B-A4B-it-GGUF` at a pinned commit, verifies sha256).
-- Create `harness/pi/test/serve.live.test.ts`.
-- Create `harness/pi/test/teacher-probe.live.test.ts`.
-- Create `harness/pi/serve/models.teacher.json` (OpenRouter provider; `contextWindow` and compaction identical to the local entry).
-- Create `harness/pi/package.json` (pins `@earendil-works/pi-coding-agent` 1.3.0 and `typebox`).
-- Modify `package.json` (root: add `harness/pi` to `workspaces`, KTD14) and `bun.lock`.
-- Create `harness/pi/README.md` (measurements section).
+- Create `harness-pi/serve/llama-server.sh` (pinned llama.cpp build, flags per KTD7, model and mmproj paths from env).
+- Create `harness-pi/serve/models.json`.
+- Create `harness-pi/serve/fetch-model.ts` (downloads the GGUF and mmproj from `unsloth/gemma-4-12b-it-GGUF` at commit `fc034cff`, verifies sha256).
+- Create `harness-pi/test/serve.live.test.ts`.
+- Create `harness-pi/test/teacher-probe.live.test.ts`.
+- Create `harness-pi/serve/models.teacher.json` (OpenRouter provider; `contextWindow` and compaction identical to the local entry).
+- Create `harness-pi/package.json` (pins `@earendil-works/pi-coding-agent` 1.3.0 and `typebox`).
+- Modify `package.json` (root: add `harness-pi` to `workspaces`, KTD14) and `bun.lock`.
+- Create `harness-pi/README.md` (measurements section).
 
 **Approach:**
 1. Install llama.cpp via Homebrew or a pinned release build.
@@ -478,9 +480,9 @@ The live tests pass.
 **Dependencies:** None (reads skills only). U6 later registers profiles here.
 
 **Files:**
-- Create `harness/pi/src/budget.ts`.
-- Create `harness/pi/test/budget.test.ts` (fast lane: a conservative bytes-per-token estimate).
-- Create `harness/pi/test/budget.live.test.ts` (exact counts through llama-server's `/tokenize`).
+- Create `harness-pi/src/budget.ts`.
+- Create `harness-pi/test/budget.test.ts` (fast lane: a conservative bytes-per-token estimate).
+- Create `harness-pi/test/budget.live.test.ts` (exact counts through llama-server's `/tokenize`).
 
 **Approach:** The floor has four parts:
 - the injected SKILL.md body;
@@ -513,8 +515,8 @@ A failing profile is named with its count. Condensing it then follows KTD5 in th
 **Dependencies:** None.
 
 **Files:**
-- Create `harness/pi/src/run-root.ts`.
-- Create `harness/pi/test/run-root.test.ts`.
+- Create `harness-pi/src/run-root.ts`.
+- Create `harness-pi/test/run-root.test.ts`.
 - Modify `scripts/test-lanes.mjs` (add `harness` to the walked roots).
 - Modify `.gitignore` (`training/data/`, `*.gguf`, `.splash-harness/`).
 
@@ -549,9 +551,9 @@ A failing profile is named with its count. Condensing it then follows KTD5 in th
 **Dependencies:** U1, U3.
 
 **Files:**
-- Create `harness/pi/src/sessions.ts`.
-- Create `harness/pi/test/sessions.test.ts`.
-- Create `harness/pi/test/sessions.live.test.ts`.
+- Create `harness-pi/src/sessions.ts`.
+- Create `harness-pi/test/sessions.test.ts`.
+- Create `harness-pi/test/sessions.live.test.ts`.
 
 **Approach:** Use `createAgentSession` with an injected `ModelRuntime` (models.json from U1), a file `SessionManager` at the KTD2 path, in-memory settings (compaction per KTD7, no extensions, no Pi skill discovery), and a profile's system prompt and tools. A turn is done at `agent_settled`. The outcome returned is last assistant text, tool errors, token usage and an overflow flag. Session resolution follows KTD2 (newest file in the key's directory), with no separate index.
 
@@ -575,11 +577,11 @@ A failing profile is named with its count. Condensing it then follows KTD5 in th
 **Dependencies:** U3.
 
 **Files:**
-- Create `harness/pi/src/tools/fs.ts`.
-- Create `harness/pi/src/tools/run.ts`.
-- Create `harness/pi/src/tools/look.ts`.
-- Create `harness/pi/test/tools.test.ts`.
-- Create `harness/pi/test/run-tool.test.ts` (heavy: spawns bun).
+- Create `harness-pi/src/tools/fs.ts`.
+- Create `harness-pi/src/tools/run.ts`.
+- Create `harness-pi/src/tools/look.ts`.
+- Create `harness-pi/test/tools.test.ts`.
+- Create `harness-pi/test/run-tool.test.ts` (heavy: spawns bun).
 
 **Approach:**
 - `fs` reads anywhere under the run root's `skills/`, `shared/` and `proof/`, and reads and writes under the story directory.
@@ -619,11 +621,11 @@ A failing profile is named with its count. Condensing it then follows KTD5 in th
 **Dependencies:** U2, U4, U5.
 
 **Files:**
-- Create `harness/pi/src/profiles.ts`.
-- Create `harness/pi/src/driver.ts`.
-- Create `harness/pi/src/cli.ts`.
-- Create `harness/pi/test/driver.test.ts` (scripted fake model).
-- Create `harness/pi/test/profiles.test.ts`.
+- Create `harness-pi/src/profiles.ts`.
+- Create `harness-pi/src/driver.ts`.
+- Create `harness-pi/src/cli.ts`.
+- Create `harness-pi/test/driver.test.ts` (scripted fake model).
+- Create `harness-pi/test/profiles.test.ts`.
 
 **Approach:**
 - Profiles: `persona:editor`, `skill:storyboard` (includes palette per `skills/storyboard/references/exchange.md`), `skill:analyst`, `skill:chart-beat`, `skill:chart-web`, `persona:designer`, `skill:deliver`.
@@ -658,8 +660,8 @@ A failing profile is named with its count. Condensing it then follows KTD5 in th
 **Dependencies:** U6.
 
 **Files:**
-- Create `harness/pi/src/gates.ts`.
-- Create `harness/pi/test/gates.test.ts`.
+- Create `harness-pi/src/gates.ts`.
+- Create `harness-pi/test/gates.test.ts`.
 
 **Approach:**
 1. After Gate 2: verify `PALETTE.md` with `readPalette` and `parsePalette` and `TYPEFACE.md`, then write `DIRECTION.md` via `composeRunDirection` and `writeRunDirection` if missing.
@@ -691,10 +693,10 @@ None of these closures invents a pass. A failed check leaves the gate open.
 **Dependencies:** U6.
 
 **Files:**
-- Create `harness/pi/src/journalist/human.ts`.
-- Create `harness/pi/src/journalist/scripted.ts`.
-- Create `harness/pi/eval/sheets/<story>.json` for every chart story used.
-- Create `harness/pi/test/journalist.test.ts`.
+- Create `harness-pi/src/journalist/human.ts`.
+- Create `harness-pi/src/journalist/scripted.ts`.
+- Create `harness-pi/eval/sheets/<story>.json` for every chart story used.
+- Create `harness-pi/test/journalist.test.ts`.
 
 **Approach:** Sheet fields mirror the questions in `skills/storyboard/references/exchange.md` (restitution correction, takeaway, the hand, slots with medium, format and size, palette choice, candidates) and in deliver (form, handover fields). Every chart story's sheet records a static slot then a web slot. The scripted persona sends the model's last turn and the sheet to its configured model, with a system prompt that allows only sheet facts or "I don't know". Answers and the gate id are logged next to the session.
 
@@ -712,17 +714,17 @@ None of these closures invents a pass. A failed check leaves the gate open.
 
 ### U9. Evaluator and stock baseline
 
-**Goal:** Run F1 end to end with the scripted journalist and score each run. Then record the stock 26B-A4B baseline on the two held-out stories plus 4 training stories. Add more training stories only if fewer than about 12 distinct failure points result.
+**Goal:** Run F1 end to end with the scripted journalist and score each run. Then record the stock 12B baseline on the two held-out stories plus 4 training stories. Add more training stories only if fewer than about 12 distinct failure points result.
 
 **Requirements:** R19, R20; KTD11; AE4, AE5.
 
 **Dependencies:** U7, U8.
 
 **Files:**
-- Create `harness/pi/eval/run-eval.ts`.
-- Create `harness/pi/eval/score.ts`.
-- Create `harness/pi/test/score.test.ts`.
-- Create `harness/pi/eval/results/` (gitignored raw output; a committed summary table).
+- Create `harness-pi/eval/run-eval.ts`.
+- Create `harness-pi/eval/score.ts`.
+- Create `harness-pi/test/score.test.ts`.
+- Create `harness-pi/eval/results/` (gitignored raw output; a committed summary table).
 
 **Approach:** The scorer reads the story directory and session files only. Metrics are per KTD11. Failure points (owner, turn, error) from training stories become the correction targets for U10. Held-out stock results go to `RESULTS.md` only, and never become corrections (R19). Journalist and sampling pins are per KTD8 and KTD11.
 
@@ -746,8 +748,8 @@ None of these closures invents a pass. A failed check leaves the gate open.
 **Dependencies:** U9.
 
 **Files:**
-- Create `harness/pi/eval/teacher.ts` (selects `serve/models.teacher.json` from U1, key from the environment; per-run and per-batch cost ceilings).
-- Create `harness/pi/test/teacher.test.ts`.
+- Create `harness-pi/eval/teacher.ts` (selects `serve/models.teacher.json` from U1, key from the environment; per-run and per-batch cost ceilings).
+- Create `harness-pi/test/teacher.test.ts`.
 - Create `training/data/` (gitignored: sessions, manifests).
 - Create `training/data/manifest.schema.json` (committed).
 
@@ -835,7 +837,7 @@ None of these closures invents a pass. A failed check leaves the gate open.
 
 **Execution note:** Spend-gated. Show Rémy the price and expected duration before `pod.py` launches.
 
-**Patterns to follow:** `buriedsignals/fine-tuning` `scripts/gemma4-26b/pod.py`, the 27B launcher's guards, `scripts/gemma4-12b/{train,merge}.py`, `gguf.py` (upstream mmproj reuse).
+**Patterns to follow:** `buriedsignals/fine-tuning` `scripts/gemma4-12b/` launcher, the 27B launcher's guards, `scripts/gemma4-12b/{train,merge}.py`, `gguf.py` (upstream mmproj reuse).
 
 **Test scenarios:**
 - Error path: `pod.py` without a budget argument exits before calling the RunPod API.
@@ -856,8 +858,8 @@ None of these closures invents a pass. A failed check leaves the gate open.
 **Files:**
 - Create `training/publish/model_card.md.tmpl`.
 - Create `training/publish/publish.py`.
-- Modify `harness/pi/eval/run-eval.ts` (model matrix).
-- Create `harness/pi/eval/RESULTS.md` (committed summary).
+- Modify `harness-pi/eval/run-eval.ts` (model matrix).
+- Create `harness-pi/eval/RESULTS.md` (committed summary).
 
 **Approach:** Run each held-out story with both models at least twice. The model card follows the kit checklist headings, states Apache 2.0, the base model, data provenance (teacher, scripted journalist, story list), the masking rule and the evaluation table. `publish.py` uploads to Rémy's account only after confirmation, then records the HF commit and sha256 for U14.
 
@@ -881,7 +883,7 @@ None of these closures invents a pass. A failed check leaves the gate open.
 
 **Files:**
 - Create `catalog/drafts/splash-local.json` (product entry plus a `models[]` entry shaped like Spotlight's, pointing at the stock upstream GGUF and mmproj, the mmproj as a second artifact).
-- Modify `harness/pi/README.md` (serve, run, evaluate, measured hardware numbers).
+- Modify `harness-pi/README.md` (serve, run, evaluate, measured hardware numbers).
 - Create the message to Tom in the vault, outside the repository.
 
 **Approach:** Mirror the Spotlight entry in `buriedsignals/mycroft` `catalog/catalog.json` field by field. Leave signing and digests of the install contract to Tom. Draft for the stock model first. If U13 ships a tune, swap in the tuned repo, commit and sha256. The message is short: status, choices made, and only the proposals listed under Outstanding Questions, each as "found A, propose B, confirm?". It states the unconfined-code risk.
@@ -900,10 +902,10 @@ None of these closures invents a pass. A failed check leaves the gate open.
 | Fast lane incl. harness unit tests | `bun --no-env-file run test` | every unit |
 | Heavy lane (render, spawn, Chrome) | `bun --no-env-file run test:heavy` | before each commit touching U3, U5, U7 |
 | Lane derivation | `bun run test:lanes` | U3 and whenever a harness test is added |
-| Live harness tests (llama-server, OpenRouter) | `bun test harness/pi --test-name-pattern live` via the `*.live.test.ts` convention (`bun run test:live`) | U1, U2, U4, U9 |
+| Live harness tests (llama-server, OpenRouter) | `bun test harness-pi --test-name-pattern live` via the `*.live.test.ts` convention (`bun run test:live`) | U1, U2, U4, U9 |
 | Training unit tests | `uv run pytest training/tests` | U11, U12 |
 | Release baseline | `bun install --frozen-lockfile`, `bun --no-env-file run test:all`, `matrix:check`, `survey:check`, `catalog:check` | before merge |
-| End-to-end | `bun harness/pi/src/cli.ts run --story <staged held-out> --journalist scripted:<sheet>` reaches `done` | U9, U13 |
+| End-to-end | `bun harness-pi/src/cli.ts run --story <staged held-out> --journalist scripted:<sheet>` reaches `done` | U9, U13 |
 
 Live tests are skipped only when llama-server or the OpenRouter key is absent, and the skip is reported, never counted as a pass.
 
