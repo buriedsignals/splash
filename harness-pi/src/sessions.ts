@@ -103,5 +103,10 @@ export async function runTurn(
   } finally {
     off();
   }
+  // A provider failure (server down, context overflow) still resolves prompt(); surface it.
+  const last = [...session.messages].reverse().find((m) => m.role === "assistant");
+  if (last && "stopReason" in last && last.stopReason === "error") {
+    throw new Error(`model turn failed: ${last.errorMessage ?? "unknown provider error"}`);
+  }
   return { text: session.getLastAssistantText() ?? "", toolErrors, looked };
 }
