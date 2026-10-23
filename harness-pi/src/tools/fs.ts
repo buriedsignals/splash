@@ -22,6 +22,13 @@ export interface Bases {
 const READ_BASES = ["skills", "shared", "proof"];
 const CSV_EXCERPT_LINES = 40;
 const MAX_READ_BYTES = 60_000;
+// A small model that re-emits a whole file in one tool call spends minutes generating it and then
+// hits the output limit (measured on the 12B: 16k tokens, about 20 minutes, truncated). The limits
+// make the cheap behaviour the only one available: small edits, and whole-file writes only for new
+// short files.
+export const MAX_EDIT_OLD = 1_500;
+export const MAX_EDIT_NEW = 3_000;
+export const MAX_WRITE = 6_000;
 
 function realOrParent(path: string): string {
   // A file about to be written does not exist yet; its nearest existing ancestor decides.
@@ -118,6 +125,11 @@ export function fsTools(bases: Bases) {
     parameters: Type.Object({ path: Type.String(), content: Type.String() }),
     async execute(_id, { path, content }) {
       const abs = resolveInStory(bases, path);
+      if (content.length > MAX_WRITE && existsSync(abs)) {
+        throw new Error(
+          `${path} exists and the new content is ${content.length} characters; rewrite it with several edit_file calls (old_text up to ${MAX_EDIT_OLD}, new_text up to ${MAX_EDIT_NEW} characters)`,
+        );
+      }
       await mkdir(dirname(abs), { recursive: true });
       await writeFile(abs, content);
       return text(
@@ -137,6 +149,11 @@ export function fsTools(bases: Bases) {
       new_text: Type.String(),
     }),
     async execute(_id, { path, old_text, new_text }) {
+      if (old_text.length > MAX_EDIT_OLD || new_text.length > MAX_EDIT_NEW) {
+        throw new Error(
+          `edit too large (old_text ${old_text.length}/${MAX_EDIT_OLD}, new_text ${new_text.length}/${MAX_EDIT_NEW} characters); split it into smaller edits`,
+        );
+      }
       const abs = resolveInStory(bases, path);
       const body = readFileSync(abs, "utf8");
       const count = body.split(old_text).length - 1;

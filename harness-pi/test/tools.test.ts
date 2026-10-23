@@ -123,3 +123,27 @@ describe("look tool", () => {
     ).rejects.toThrow(/is not a PNG/);
   });
 });
+
+describe("edit size limits", () => {
+  it("should refuse an edit whose old text exceeds the limit, asking for smaller edits", async () => {
+    const { writeFile: write, editFile } = fsTools(bases);
+    await call(write, { path: "big.md", content: "x".repeat(2_000) });
+    await expect(
+      call(editFile, { path: "big.md", old_text: "x".repeat(1_600), new_text: "y" }),
+    ).rejects.toThrow(/edit too large .*split it into smaller edits/);
+  });
+
+  it("should refuse to rewrite an existing file with long content, pointing to edit_file", async () => {
+    const { writeFile: write } = fsTools(bases);
+    await call(write, { path: "component.tsx", content: "short" });
+    await expect(call(write, { path: "component.tsx", content: "z".repeat(7_000) })).rejects.toThrow(
+      /rewrite it with several edit_file calls/,
+    );
+  });
+
+  it("should still create a new file with long content", async () => {
+    const { writeFile: write } = fsTools(bases);
+    await call(write, { path: "fresh.tsx", content: "z".repeat(7_000) });
+    expect(readFileSync(join(bases.storyDir, "fresh.tsx"), "utf8")).toHaveLength(7_000);
+  });
+});
