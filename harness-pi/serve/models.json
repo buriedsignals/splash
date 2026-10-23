@@ -22,7 +22,7 @@
           "input": ["text", "image"],
           "reasoning": true,
           "contextWindow": 98304,
-          "maxTokens": 8192,
+          "maxTokens": 16384,
           "inputLimits": { "images": { "resize": { "maxWidth": 1280, "maxHeight": 1280, "maxBytes": 1048576 } } },
           "samplingParams": { "temperature": 1.0, "top_p": 0.95, "top_k": 64 },
           "cost": { "input": 0, "output": 0, "cacheRead": 0, "cacheWrite": 0 }
