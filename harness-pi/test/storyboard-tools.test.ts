@@ -67,6 +67,15 @@ describe("journalist ownership", () => {
     ).toThrow(/answered another question.*Shall I record medium: chart/);
   });
 
+  it("should ask for the journalist's exact words when the value wraps them in additions", () => {
+    expect(() =>
+      assertJournalistOwns("intent", "change over time of pedelec deaths in Germany from 2014 to 2025", {
+        lastJournalist: "Change over time.",
+        lastProposal: "Is the intent a change over time of pedelec deaths in Germany from 2014 to 2025?",
+      }),
+    ).toThrow(/in the journalist's words exactly.*Change over time/);
+  });
+
   it("should accept an answer written in Arabic script", () => {
     expect(() =>
       assertJournalistOwns("subject", "محافظة تونس", { lastJournalist: "محافظة تونس", lastProposal: "" }),

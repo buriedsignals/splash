@@ -82,6 +82,12 @@ export function assertJournalistOwns(field: string, value: string, d: Dialogue, 
     if (overlap(value, answer) >= 0.6) return;
     if (acceptProposal && AFFIRMATIVE.test(answer.trim()) && overlap(value, proposal) >= 0.6) return;
   }
+  // The journalist's answer is inside the value, with the model's own additions around it.
+  const contained = exchanges.find(({ answer }) => answer.trim() && overlap(answer, value) >= 0.8);
+  if (contained)
+    throw new Error(
+      `record ${field} in the journalist's words exactly, without additions: ${JSON.stringify(contained.answer.trim())}`,
+    );
   if (acceptProposal && overlap(value, d.lastProposal) >= 0.6)
     throw new Error(
       `you proposed this ${field}, but the journalist answered another question (${JSON.stringify(d.lastJournalist.slice(0, 120))}), so they have not accepted it. Ask them only this, in one short sentence (e.g. "Shall I record ${field}: ${value}?"), and end your turn.`,
