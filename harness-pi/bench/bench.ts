@@ -6,6 +6,7 @@ import {
   cpSync,
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -309,6 +310,32 @@ const CASES: Record<string, Case> = {
       };
     },
   },
+  "craft-zones": {
+    owner: "skill:chart-beat",
+    conversational: false,
+    async prepare() {
+      const d = await freshStory();
+      writeReferenceStoryboard(d);
+      await writeSubjects(d);
+      writePalette(d);
+      await writeDirection(d);
+      await buildData(d);
+      const beat = join(d, "beats", "1-lisboa-share");
+      cpSync(join(d, "beats", "1"), beat, { recursive: true });
+      rmSync(join(d, "beats", "1"), { recursive: true });
+      const adapter = join(CHECKOUT, "harness-pi", "craft", "bar-and-column");
+      for (const f of ["render-beat.mjs", "beat.example.mjs", "CONTRACT.md"]) cpSync(join(adapter, f), join(beat, f));
+      cpSync(join(CHECKOUT, "proof/static-bar-top-emitters-2024/DirectedColumns.tsx"), join(beat, "DirectedColumns.tsx"));
+      return d;
+    },
+    task: (d) =>
+      `Slot 1 of ${d} is a static "Bar and column" beat, prepared at beats/1-lisboa-share/. The confirmed takeaway is in STORYBOARD.md. Write beats/1-lisboa-share/beat.mjs as CONTRACT.md says, render it with render_beat (beat "1-lisboa-share", format "static"), look at the PNG, fix what is wrong, and reply DONE when the render is right.`,
+    async verdict(d) {
+      const renders = join(d, "beats", "1-lisboa-share", "renders");
+      const pngs = existsSync(renders) ? readdirSync(renders).filter((f) => f.endsWith(".png")) : [];
+      return { pass: pngs.length > 0, detail: `${pngs.length} PNG — ${await stateOf(d)}` };
+    },
+  },
   designer: {
     owner: "persona:designer",
     conversational: false,
@@ -346,6 +373,12 @@ await approveCurrentOutput(${JSON.stringify(join("BEAT_DIR"))});`.replace("\"BEA
 // ---------------------------------------------------------------------------------------------
 
 function systemPromptFor(owner: OwnerId, storyDir: string): string {
+  if (phase === "craft-zones") {
+    return (
+      `You are the chart-beat craft step of Splash, running locally. The Splash root is ${root}. The story is ${storyDir}. You act only through your tools.\n\n` +
+      readFileSync(join(CHECKOUT, "harness-pi/craft/bar-and-column/CONTRACT.md"), "utf8")
+    );
+  }
   const p = PROFILES[owner];
   const preamble = `You are one step of Splash, running locally. The Splash root is ${root}. The story is ${storyDir}. You act only through your tools; there is no shell. Command lines in the skill map to tools: scaffolding is scaffold_static_beat, "bun <beat>/render-directions.mjs" is render_beat with format "static", the analyst command is build_data, looking at a PNG is look, and any JavaScript the skill shows you is run with run_script (import modules by absolute path under ${root}/skills or ${root}/shared). To change a file, use edit_file with old_text copied exactly from read_file output, one small region at a time.\n\n`;
   return (
@@ -429,7 +462,9 @@ const f = fsTools(bases);
 const r = runTools(bases);
 const profile = PROFILES[c.owner];
 const writeless = c.owner.startsWith("persona:");
-const tools = writeless
+const tools = phase === "craft-zones"
+  ? [f.readFile, f.listDir, f.writeFile, f.editFile, lookTool(bases), r.render]
+  : writeless
   ? [f.readFile, f.listDir, lookTool(bases)]
   : [
       f.readFile,

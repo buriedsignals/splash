@@ -4,7 +4,7 @@
 // run_script stays the one open door: the skills' JS helpers (resolveGrounding, writeStoryboardAtomic,
 // formatPalette, ...) have no CLI. Its code, like every component a render executes, is model-authored
 // and runs unconfined: the tool layer bounds where files are written, not what that code does.
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { defineTool } from "@earendil-works/pi-coding-agent";
@@ -141,16 +141,28 @@ export function runTools(bases: Bases) {
       "Render a beat: format 'static' runs render-directions.mjs (PNG+SVG into renders/), 'web' runs render-directions-web.mjs (HTML into renders/). Then look at the result.",
     parameters: Type.Object({ beat: Type.String(), format: Type.String() }),
     async execute(_id, { beat, format }) {
-      const runner = {
-        static: "render-directions.mjs",
-        web: "render-directions-web.mjs",
-      }[format];
+      // A beat the harness prepared for zone writing renders through its generic runner.
+      const zoned =
+        format === "static" &&
+        existsSync(join(beatDir(bases, beat), "render-beat.mjs"));
+      const runner = zoned
+        ? "render-beat.mjs"
+        : { static: "render-directions.mjs", web: "render-directions-web.mjs" }[
+            format
+          ];
       if (!runner)
         throw new Error(`format must be "static" or "web", not "${format}"`);
       const path = join(beatDir(bases, beat), runner);
       if (!existsSync(path))
         throw new Error(`${beat} has no ${runner}; scaffold the beat first`);
-      return exec(["bun", path]);
+      const result = await exec(["bun", path]);
+      // Name every PNG the render wrote by its full path, so the next call can look at it.
+      const renders = join(beatDir(bases, beat), "renders");
+      if (existsSync(renders)) {
+        const pngs = readdirSync(renders).filter((f) => f.endsWith(".png")).map((f) => join(renders, f));
+        if (pngs.length) result.content[0].text += `\nlook at: ${pngs.join(", ")}`;
+      }
+      return result;
     },
   });
 
