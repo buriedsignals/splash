@@ -30,7 +30,15 @@ const NEGATIVE =
   /\b(no|non|nein|not now|no thanks?|pas maintenant|nothing else|that's all|none)\b/i;
 
 function identity(bases: Bases, beat: string) {
-  const dir = beatDir(bases, beat);
+  // The 12B names the beat loosely ("beat-1", the story slug); a story with one beat has one answer.
+  let dir = beatDir(bases, beat);
+  if (!existsSync(join(dir, "BRIEF.md"))) {
+    const beats = existsSync(join(bases.storyDir, "beats"))
+      ? readdirSync(join(bases.storyDir, "beats")).filter((d) => existsSync(join(bases.storyDir, "beats", d, "BRIEF.md")))
+      : [];
+    if (beats.length !== 1) throw new Error(`no beat ${JSON.stringify(beat)}; the story's beats are: ${beats.join(", ") || "none"}`);
+    dir = join(bases.storyDir, "beats", beats[0]);
+  }
   const brief = readFileSync(join(dir, "BRIEF.md"), "utf8");
   const planVersion = Number(/^planVersion:\s*(\d+)/m.exec(brief)?.[1]);
   const findingIds = (/^findingIds:\s*\[(.*)\]/m.exec(brief)?.[1] ?? "")

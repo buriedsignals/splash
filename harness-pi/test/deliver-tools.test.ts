@@ -50,6 +50,11 @@ describe("delivery tools", () => {
     expect(r.content[0].text).toMatch(/^- owned-file — /m);
   });
 
+  it("should find the story's only beat when the model names it loosely", async () => {
+    const r = await call(deliverTools(bases, dialogue).offer, { beat: "beat-1" });
+    expect(r.content[0].text).toMatch(/^- owned-file — /m);
+  });
+
   it("should refuse to materialise a form the journalist did not name", async () => {
     dialogue.lastJournalist = "Let me think about it.";
     await expect(
