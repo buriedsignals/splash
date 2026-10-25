@@ -17,6 +17,19 @@ import { directionReachable, readRunDirection } from "#shared/design-base/run-di
 import { assertBeatMayEnter, directedFrame, exportSizeFromArgv, nameAtSize } from "#shared/chart-beat/directed-size.mjs";
 import { DirectedSlope } from "./DirectedSlope.tsx";
 import beat from "./beat.mjs";
+import { existsSync as storyboardExists, readFileSync as readStoryboard } from "node:fs";
+// The credit line is the journalist's own, as the storyboard recorded it, with its as-of date; a 12B
+// beat once printed "unattributed" with no date. The beat's own `source` is used only without one.
+{
+  const storyboard = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "STORYBOARD.md");
+  if (storyboardExists(storyboard)) {
+    const front = readStoryboard(storyboard, "utf8").split("---")[1] ?? "";
+    const field = (key) => front.match(new RegExp(`^${key}:\\s*"?(.*?)"?\\s*$`, "m"))?.[1];
+    const credit = field("credit");
+    const asOf = field("effectiveDate");
+    if (credit) beat.source = asOf && !/\bas of\b/i.test(credit) ? `${credit} · as of ${asOf}` : credit;
+  }
+}
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = join(HERE, "renders");
