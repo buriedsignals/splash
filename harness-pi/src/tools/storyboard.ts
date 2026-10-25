@@ -392,7 +392,7 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       const csv = readFileSync(join(bases.storyDir, "source", "data.csv"), "utf8");
       const header = csv.split(/\r?\n/)[0].split(",").map((c) => c.trim());
       if (column && !header.includes(column))
-        throw new Error(`${JSON.stringify(column)} is not a column of source/data.csv; its columns are ${header.join(", ")}`);
+        throw new Error(`${JSON.stringify(column)} is not a column of source/data.csv; its columns are ${header.join(", ")}. If the claim is about a measure computed from them (a rate, a share, a per-resident figure), record shape "none" with no column.`);
       for (const name of [entity, versus].filter(Boolean) as string[]) {
         if (!csv.includes(name)) throw new Error(`${JSON.stringify(name)} is not a row in source/data.csv`);
       }
