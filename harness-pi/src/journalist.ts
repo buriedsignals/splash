@@ -26,7 +26,8 @@ export const humanJournalist = (): Journalist => ({
 /** The keys a sheet may answer, and what each means to the classifier. */
 export const SHEET_KEYS: Record<string, string> = {
   restitution: "whether the desk read the article correctly",
-  takeaway: "the one sentence the reader should keep",
+  takeaway:
+    "the one sentence the reader should keep — also when the desk asks which framing or claim should guide the story, or asks to confirm a takeaway sentence it proposed",
   claim:
     "maximum/minimum/comparison/total shape of the claim, and which column",
   subject: "who or what the piece is about",
@@ -50,7 +51,7 @@ export const SHEET_KEYS: Record<string, string> = {
     "which delivery form of an approved file (owned-file, source bundle, embed, CMS)",
   closing: "another format or another subject at the end",
   confirm:
-    "a yes/no confirmation of a summary or proposal the desk already made",
+    "a yes/no confirmation of a summary or proposal the desk already made, other than a takeaway sentence",
   other: "anything else",
 };
 
@@ -93,8 +94,16 @@ export function scriptedJournalist(
         .trim()
         .toLowerCase()
         .replace(/[^a-z]/g, "");
-      const answer =
-        sheet[key as keyof Sheet] ?? sheet.other ?? "I don't know.";
+      // A journalist never agrees to a takeaway that is not theirs: asked to confirm one the desk
+      // wrote, the sheet's journalist answers with their own sentence.
+      const proposesTakeaway =
+        key === "confirm" &&
+        /\btakeaway\b|\bsentence\b|\bframing\b/i.test(said) &&
+        sheet.takeaway &&
+        !said.includes(sheet.takeaway);
+      const answer = proposesTakeaway
+        ? `No. My takeaway is: ${sheet.takeaway}`
+        : (sheet[key as keyof Sheet] ?? sheet.other ?? "I don't know.");
       log.push({ said: said.slice(-300), key, answer });
       return answer;
     },

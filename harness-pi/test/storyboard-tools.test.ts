@@ -147,6 +147,13 @@ describe("claim shape", () => {
     ).rejects.toThrow(/without claimVersus/);
   });
 
+  it("should refuse a column that is not in the data", async () => {
+    dialogue.lastJournalist = "A comparison about trips: Lisboa against Porto.";
+    await expect(
+      call(storyboardTools(bases, dialogue).recordClaim, { shape: "comparison", column: "trips", entity: "Lisboa", versus: "Porto", direction: "greater" }),
+    ).rejects.toThrow(/"trips" is not a column.*trips_millions/);
+  });
+
   it("should refuse an entity that is not a row of the data", async () => {
     dialogue.lastJournalist = "A maximum, Lisbon, trips_millions.";
     await expect(
@@ -235,3 +242,10 @@ async function withFormat(tools = storyboardTools(bases, dialogue)) {
   await call(tools.recordSlot, { slot: "1", field: "format", value: "static" });
   return tools;
 }
+
+describe("gaps the harness fills", () => {
+  it("should point a missing grounding at record_takeaway rather than ask the model for it", async () => {
+    const { gapsForModel } = await import("../src/tools/storyboard.ts");
+    expect(gapsForModel(["grounding is missing — the takeaway was never grounded at G1"])[0]).toMatch(/record_takeaway computes it/);
+  });
+});

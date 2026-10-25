@@ -37,7 +37,7 @@ import {
 } from "./tools/palette.ts";
 import { reviewTools } from "./tools/review.ts";
 import { runCommand, runTools } from "./tools/run.ts";
-import { type Dialogue, storyboardTools } from "./tools/storyboard.ts";
+import { type Dialogue, gapsForModel, storyboardTools } from "./tools/storyboard.ts";
 import { deliverTools } from "./tools/deliver.ts";
 
 const CHECKOUT = join(import.meta.dirname, "..", "..");
@@ -120,7 +120,7 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
   const storyboardGaps = async () => {
     if (!existsSync(join(o.storyDir, "STORYBOARD.md")))
       return "STORYBOARD.md does not exist yet.";
-    const gaps = checkStoryboard(storyboardMeta(o.storyDir));
+    const gaps = gapsForModel(checkStoryboard(storyboardMeta(o.storyDir)));
     const subjects = existsSync(join(o.storyDir, "SUBJECTS.md"))
       ? []
       : ["the survey of other subjects (record_subject) is not recorded"];

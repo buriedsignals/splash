@@ -116,6 +116,19 @@ function sameTreatment(a: string, b: string, medium: string): boolean {
   }
 }
 
+/** Splash's gap messages, with the ones the harness computes pointed at the tool that fills them. */
+export function gapsForModel(gaps: string[]): string[] {
+  return gaps.map((g) =>
+    /^grounding is missing/.test(g)
+      ? "grounding is missing — record_takeaway computes it when you record the journalist's takeaway"
+      : /interaction is missing/.test(g)
+        ? `${g.split(":")[0]}: interaction is missing — record_slot chosen records it from the journalist's choice`
+        : /proves is missing/.test(g)
+          ? `${g.split(":")[0]}: proves is missing — it is filled from the takeaway once that is recorded`
+          : g,
+  );
+}
+
 const text = (t: string) => ({
   content: [{ type: "text" as const, text: t }],
   details: {},
@@ -151,7 +164,7 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
 
   const status = async () => {
     const { meta } = parseStoryboard(readFileSync(path, "utf8"));
-    const gaps = checkStoryboard(meta);
+    const gaps = gapsForModel(checkStoryboard(meta));
     return gaps.length
       ? `Still open (${gaps.length}): ${gaps.slice(0, 4).join(" | ")}`
       : "Gate 2 can close: every field is recorded.";
@@ -331,6 +344,9 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       const gaps = recordedClaimGaps(fields);
       if (gaps.length) throw new Error(gaps.join("; "));
       const csv = readFileSync(join(bases.storyDir, "source", "data.csv"), "utf8");
+      const header = csv.split(/\r?\n/)[0].split(",").map((c) => c.trim());
+      if (column && !header.includes(column))
+        throw new Error(`${JSON.stringify(column)} is not a column of source/data.csv; its columns are ${header.join(", ")}`);
       for (const name of [entity, versus].filter(Boolean) as string[]) {
         if (!csv.includes(name)) throw new Error(`${JSON.stringify(name)} is not a row in source/data.csv`);
       }
