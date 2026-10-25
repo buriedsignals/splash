@@ -171,6 +171,15 @@ describe("answers recorded a turn late", () => {
   });
 });
 
+describe("takeaway is a reader's sentence", () => {
+  it("should refuse the journalist's claim-shape answer recorded as the takeaway", async () => {
+    dialogue.lastJournalist = "It is a comparison, about the column trips_millions: Lisboa against Porto, Lisboa greater.";
+    await expect(
+      call(storyboardTools(bases, dialogue).recordTakeaway, { sentence: dialogue.lastJournalist }),
+    ).rejects.toThrow(/names the data column trips_millions/);
+  });
+});
+
 describe("takeaway is verbatim", () => {
   it("should refuse a paraphrase of the takeaway even when the journalist said yes to it", async () => {
     dialogue.lastProposal = "Shall I record: Lisboa's ridership is greater than Porto's?";

@@ -196,6 +196,11 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
         join(bases.storyDir, "source", "data.csv"),
         "utf8",
       );
+      // The sentence a reader keeps never names a data column; one that does is an answer to
+      // another question (in a run the 12B recorded the claim-shape answer as the takeaway).
+      const named = csv.split(/\r?\n/)[0].split(",").map((c) => c.trim()).filter((c) => /[_]/.test(c) && sentence.includes(c));
+      if (named.length)
+        throw new Error(`that is not a takeaway: it names the data column ${named.join(", ")}. The takeaway is the one sentence the journalist wants the reader to keep; ask them for it.`);
       const resolved = resolveGrounding(sentence, profile, { csv });
       const grounding = groundingScalar(resolved, { override });
       await ensureFile();
