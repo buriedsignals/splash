@@ -524,7 +524,7 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
     name: "record_subject",
     label: "Record a surveyed subject",
     description:
-      "Record one OTHER subject the data could support (movement 4, the survey): id (lowercase words joined by hyphens), learns (what the reader would learn, one sentence), medium, format. Call once per subject; at least one is needed to close the survey.",
+      "Record one OTHER subject the data could support (movement 4, the survey): id names the angle in lowercase words joined by hyphens (e.g. network-length-per-city — never 'none'), learns is the sentence a reader would learn from it (not a chart type), then medium and format. Call once per subject; at least one is needed to close the survey, so find a real second angle in the data.",
     parameters: Type.Object({ id: Type.String(), learns: Type.String(), medium: Type.String(), format: Type.String() }),
     async execute(_id, subject) {
       const next = [...surveyed.filter((s) => s.id !== subject.id), subject];
