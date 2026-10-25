@@ -6,6 +6,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { parseStoryboard } from "../../skills/splash/scripts/gate-contract.mjs";
 import { whereIs } from "../../skills/splash/scripts/where.mjs";
+import { deliveryClosed } from "../../skills/deliver/scripts/another-format.mjs";
 import { svgFacts } from "../src/tools/review.ts";
 
 /** Tools whose refusal is a gate holding: the journalist-owned records and the delivery steps. */
@@ -98,6 +99,25 @@ const toolCallsOf = (content: unknown): string[] =>
         .map((c: { name?: string }) => String(c.name))
     : [];
 
+/**
+ * Splash's G4 check reopens delivery once the closing answers are recorded (their receipts are
+ * digested as "pending" at materialise time), so a delivered story can read "delivery" forever; it
+ * is complete when every export has its hand-over and both closing offers are answered.
+ */
+async function deliveredAndClosed(storyDir: string): Promise<boolean> {
+  const exportRoot = join(storyDir, "export");
+  if (!existsSync(exportRoot)) return false;
+  const exports = readdirSync(exportRoot).filter((d) => !d.startsWith("."));
+  if (!exports.length) return false;
+  for (const name of exports) {
+    const dir = join(exportRoot, name);
+    if (!existsSync(join(dir, "HANDOVER.md"))) return false;
+    const d = await deliveryClosed(dir);
+    if (!d.closed || d.answer === "pending" || d.subjects === "pending") return false;
+  }
+  return true;
+}
+
 export async function scoreRun(root: string, story: string): Promise<RunScore> {
   const storyDir = join(root, "stories", story);
   const state = await whereIs(storyDir);
@@ -159,7 +179,7 @@ export async function scoreRun(root: string, story: string): Promise<RunScore> {
   return {
     story,
     phase: state.phase,
-    completed: state.phase === "done",
+    completed: state.phase === "done" || (state.phase === "delivery" && (await deliveredAndClosed(storyDir))),
     gateRefusals,
     toolErrors,
     turns,
