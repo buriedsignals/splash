@@ -402,6 +402,45 @@ function systemPromptFor(owner: OwnerId, storyDir: string): string {
   );
 }
 
+
+// The scripted journalist, played by a model constrained to the story's sheet (KTD8). Keyword
+// matching could not follow the dozens of ways a question gets asked.
+const SHEET_FACTS = `Takeaway (exact words): "Lisboa alone carries 214 of the 394 million trips these six Portuguese city networks recorded in 2025 — more than twice Porto's 96 million."
+Claim shape: a comparison about the column trips_millions — Lisboa against Porto (Lisboa greater), and against the six together.
+Subject: Lisboa, the network the article opens on.
+Comparison: Porto's 96 million, and the 394 million all six networks carry between them.
+Limits: one year only (2025), so no trend; six city networks, not all Portuguese public transport; trips count trips, not people.
+Placement: after the opening paragraph.
+Credit: unattributed, as of 2026-08-21.
+Language: English.
+Medium: a chart. Format: static. Size: landscape. Intent: comparison between categories.
+Reference: none wanted.
+Palette: the newsroom's house colours.
+Treatment: Bar and column (accept the desk's candidate list if it contains it). Producer: custom.
+Delivery form: owned-file. Another format or another subject at the end: no, thank you.`;
+
+async function journalistAnswer(said: string): Promise<string> {
+  const res = await fetch("http://127.0.0.1:8090/v1/chat/completions", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({
+      temperature: 0,
+      seed: 7,
+      max_tokens: 120,
+      chat_template_kwargs: { enable_thinking: false },
+      messages: [
+        {
+          role: "system",
+          content: `You are a journalist answering a visual-desk tool about your story. Answer ONLY the last question in the desk's message, in one short sentence, using ONLY these facts:\n${SHEET_FACTS}\nIf the desk proposes something consistent with the facts, say "Yes." If the facts do not cover the question, say "I don't know." Never invent anything.`,
+        },
+        { role: "user", content: said.slice(-2500) },
+      ],
+    }),
+  });
+  const body = (await res.json()) as { choices?: { message?: { content?: string } }[] };
+  return body.choices?.[0]?.message?.content?.trim() || "I don't know.";
+}
+
 async function openGaps(): Promise<string> {
   const path = join(currentStory, "STORYBOARD.md");
   if (!existsSync(path)) return "STORYBOARD.md does not exist yet.";
@@ -452,7 +491,7 @@ async function drive(
       if (!conversational) break;
       // A claim of a record with no successful record_ call behind it is answered by the harness,
       // not passed on: the journalist never sees this message.
-      if (/\b(I have|I've) recorded\b/i.test(said) && recordedThisTurn === 0) {
+      if (/\b(I have|I've)( now| also| successfully| just)? (recorded|noted|saved)\b/i.test(said) && recordedThisTurn === 0) {
         prompt = `[harness] Nothing was recorded in your last turn: no record_ tool succeeded. ${await openGaps()} Record the journalist's last answer with the right tool now (their last message was: ${JSON.stringify(dialogue.lastJournalist)}), then continue.`;
         transcript.push(`HARNESS: ${prompt}`);
         recordedThisTurn = 0;
@@ -460,7 +499,7 @@ async function drive(
       }
       recordedThisTurn = 0;
       // Only the question at the end of the turn is the one being asked.
-      prompt = answerFor(said);
+      prompt = await journalistAnswer(said);
       dialogue.lastProposal = said;
       dialogue.lastJournalist = prompt;
       if (gate.asked) gate.answered = true;
