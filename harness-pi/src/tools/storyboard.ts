@@ -77,6 +77,7 @@ function overlap(value: string, source: string): number {
 
 /** The exchange's own question for each field of the journalist's hand (references/exchange.md). */
 const FIELD_QUESTIONS: Record<string, string> = {
+  takeaway: "In one sentence, in your own words, what should the reader keep from this graphic?",
   subject: "In this data, who is the subject of your piece?",
   comparison: "What does the reader compare it to — last year, the average, the announced target, the next town?",
   limits: "What does this data NOT let you conclude?",

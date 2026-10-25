@@ -108,7 +108,7 @@ describe("storyboard tools", () => {
       call(storyboardTools(bases, dialogue).recordTakeaway, {
         sentence: TAKEAWAY,
       }),
-    ).rejects.toThrow(/journalist's own answer/);
+    ).rejects.toThrow(/has not given the takeaway yet/);
     expect(existsSync(join(bases.storyDir, "STORYBOARD.md"))).toBe(false);
   });
 
@@ -255,7 +255,7 @@ describe("takeaway is verbatim", () => {
     dialogue.lastJournalist = "Yes.";
     await expect(
       call(storyboardTools(bases, dialogue).recordTakeaway, { sentence: "Lisboa's ridership is greater than Porto's" }),
-    ).rejects.toThrow(/journalist's own answer/);
+    ).rejects.toThrow(/has not given the takeaway yet/);
   });
 });
 
