@@ -498,6 +498,8 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
     async execute(_id, { shape, column, entity, versus, direction }) {
       assertJournalistOwns("claim shape", shape, dialogue);
       const fields: Record<string, string> = { claimShape: shape };
+      // "none" records no claim: a column or rows the model added would only be refused.
+      if (shape === "none") column = entity = versus = direction = undefined;
       if (column) fields.claimColumn = column;
       if (entity) fields.claimEntity = entity;
       if (versus) fields.claimVersus = versus;
