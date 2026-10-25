@@ -100,7 +100,7 @@ if (import.meta.main) {
     for (const story of stories) {
       const r = await evaluate(story, arm, out);
       console.log(
-        `${story} ${arm}: ${r.phase} completed=${r.completed} headline=${r.faithful.headline} refusals=${r.gateRefusals} turns=${r.turns} ${r.wallSeconds}s`,
+        `${story} ${arm}: ${r.phase} completed=${r.completed} headline=${r.faithful.headline} refusals=${r.gateRefusals} turns=${r.turns} ${r.wallSeconds}s ${JSON.stringify(r.phaseSeconds)}`,
       );
     }
 }

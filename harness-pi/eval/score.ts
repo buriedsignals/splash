@@ -31,6 +31,8 @@ export interface RunScore {
   /** Craft sessions whose last write is not followed by a look (AE5). */
   craftWithoutLook: string[];
   failures: FailurePoint[];
+  /** Wall-clock seconds per owner session, to see where a run's time goes. */
+  phaseSeconds: Record<string, number>;
   /** What the delivered render draws, against what the journalist recorded: done is not enough. */
   faithful: { headline: boolean; credit: boolean };
 }
@@ -107,6 +109,7 @@ export async function scoreRun(root: string, story: string): Promise<RunScore> {
   let last = -Infinity;
   const craftWithoutLook: string[] = [];
   const failures: FailurePoint[] = [];
+  const phaseSeconds: Record<string, number> = {};
 
   for (const { owner, path } of files) {
     const entries: Entry[] = readFileSync(path, "utf8")
@@ -148,6 +151,9 @@ export async function scoreRun(root: string, story: string): Promise<RunScore> {
     });
     if (owner === "skill-chart-beat" && lastWrite > lastLook)
       craftWithoutLook.push(path);
+    const stamps = entries.map((e) => Date.parse(e.timestamp ?? "")).filter(Number.isFinite);
+    if (stamps.length)
+      phaseSeconds[owner] = (phaseSeconds[owner] ?? 0) + Math.round((Math.max(...stamps) - Math.min(...stamps)) / 1000);
   }
 
   return {
@@ -160,6 +166,7 @@ export async function scoreRun(root: string, story: string): Promise<RunScore> {
     seconds: Number.isFinite(first) ? Math.round((last - first) / 1000) : 0,
     craftWithoutLook,
     failures,
+    phaseSeconds,
     faithful: fidelity(storyDir),
   };
 }

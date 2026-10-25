@@ -24,7 +24,7 @@ async function runRoot(sessions: Record<string, object[]>) {
 }
 
 const score = (completed: boolean, gateRefusals: number, headline = true): RunScore => ({
-  story: "x", phase: completed ? "done" : "storyboard", completed, gateRefusals, toolErrors: 0, turns: 0, seconds: 0, craftWithoutLook: [], failures: [], faithful: { headline, credit: true },
+  story: "x", phase: completed ? "done" : "storyboard", completed, gateRefusals, toolErrors: 0, turns: 0, seconds: 0, craftWithoutLook: [], failures: [], phaseSeconds: {}, faithful: { headline, credit: true },
 });
 
 describe("run score", () => {
