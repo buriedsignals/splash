@@ -21,6 +21,8 @@ import {
 import {
   checkStoryboard,
   parseStoryboard,
+  RECORDED_CLAIM_SHAPES,
+  recordedClaimGaps,
 } from "../../../skills/splash/scripts/gate-contract.mjs";
 import type { Bases } from "./fs.ts";
 
@@ -224,5 +226,35 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue) {
     },
   });
 
-  return { recordTakeaway, recordHand, recordLanguage, recordSlot };
+  const recordClaim = defineTool({
+    name: "record_claim",
+    label: "Record the claim's shape",
+    description: `Record the shape of the takeaway's claim, as the journalist answered (the optional G1 question). shape is one of ${RECORDED_CLAIM_SHAPES.join(", ")}; column is the data column; entity the row the claim is about; for a comparison, versus is the other row and direction "greater" or "less".`,
+    parameters: Type.Object({
+      shape: Type.String(),
+      column: Type.Optional(Type.String()),
+      entity: Type.Optional(Type.String()),
+      versus: Type.Optional(Type.String()),
+      direction: Type.Optional(Type.String()),
+    }),
+    async execute(_id, { shape, column, entity, versus, direction }) {
+      assertJournalistOwns("claim shape", shape, dialogue);
+      const fields: Record<string, string> = { claimShape: shape };
+      if (column) fields.claimColumn = column;
+      if (entity) fields.claimEntity = entity;
+      if (versus) fields.claimVersus = versus;
+      if (direction) fields.claimDirection = direction;
+      const gaps = recordedClaimGaps(fields);
+      if (gaps.length) throw new Error(gaps.join("; "));
+      const csv = readFileSync(join(bases.storyDir, "source", "data.csv"), "utf8");
+      for (const name of [entity, versus].filter(Boolean) as string[]) {
+        if (!csv.includes(name)) throw new Error(`${JSON.stringify(name)} is not a row in source/data.csv`);
+      }
+      await ensureFile();
+      await mutateStoryboard(path, { topLevel: fields });
+      return text(`recorded the claim shape (${shape}). ${await status()}`);
+    },
+  });
+
+  return { recordTakeaway, recordClaim, recordHand, recordLanguage, recordSlot };
 }

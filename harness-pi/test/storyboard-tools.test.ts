@@ -126,3 +126,31 @@ describe("storyboard tools", () => {
     ).rejects.toThrow(/field must be one of/);
   });
 });
+
+describe("claim shape", () => {
+  it("should record a comparison the journalist described", async () => {
+    dialogue.lastJournalist = "It is a comparison, about the column trips_millions: Lisboa against Porto.";
+    await call(storyboardTools(bases, dialogue).recordClaim, {
+      shape: "comparison",
+      column: "trips_millions",
+      entity: "Lisboa",
+      versus: "Porto",
+      direction: "greater",
+    });
+    expect(meta().claimShape).toBe("comparison");
+  });
+
+  it("should refuse a comparison with no second row, with Splash's own reason", async () => {
+    dialogue.lastJournalist = "A comparison about trips_millions.";
+    await expect(
+      call(storyboardTools(bases, dialogue).recordClaim, { shape: "comparison", column: "trips_millions", entity: "Lisboa" }),
+    ).rejects.toThrow(/without claimVersus/);
+  });
+
+  it("should refuse an entity that is not a row of the data", async () => {
+    dialogue.lastJournalist = "A maximum, Lisbon, trips_millions.";
+    await expect(
+      call(storyboardTools(bases, dialogue).recordClaim, { shape: "maximum", column: "trips_millions", entity: "Lisbon" }),
+    ).rejects.toThrow(/"Lisbon" is not a row/);
+  });
+});

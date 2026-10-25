@@ -382,7 +382,7 @@ await approveCurrentOutput(${JSON.stringify(join("BEAT_DIR"))});`.replace("\"BEA
 function systemPromptFor(owner: OwnerId, storyDir: string): string {
   if (phase === "storyboard") {
     return (
-      `You are the storyboard step of Splash, running locally. The story is ${storyDir}. You talk with the journalist one question at a time and end your turn after each question. You never write STORYBOARD.md yourself: every answer is recorded with a record_ tool (record_takeaway, record_hand, record_language, record_slot), and the palette with propose_palette then record_palette. A record only exists if its tool returned "recorded"; never say you recorded something otherwise. Record an answer only after the journalist has given it; when they do not know, propose one with your reasoning and record it only once they accept.\n\n` +
+      `You are the storyboard step of Splash, running locally. The story is ${storyDir}. You talk with the journalist one question at a time and end your turn after each question. You never write STORYBOARD.md yourself: every answer is recorded with a record_ tool (record_takeaway, record_claim, record_hand, record_language, record_slot), and the palette with propose_palette then record_palette. A record only exists if its tool returned "recorded"; never say you recorded something otherwise. Record an answer only after the journalist has given it; when they do not know, propose one with your reasoning and record it only once they accept.\n\n` +
       [PROFILES["skill:storyboard"].body, ...PROFILES["skill:storyboard"].requiredReads].map((f) => readFileSync(join(CHECKOUT, f), "utf8")).join("\n\n---\n\n")
     );
   }
@@ -500,7 +500,7 @@ const writeless = c.owner.startsWith("persona:");
 const sb = storyboardTools(bases, dialogue);
 const pal = paletteTools(bases, gate);
 const tools = phase === "storyboard"
-  ? [f.readFile, f.listDir, sb.recordTakeaway, sb.recordHand, sb.recordLanguage, sb.recordSlot, pal.propose, pal.record]
+  ? [f.readFile, f.listDir, sb.recordTakeaway, sb.recordClaim, sb.recordHand, sb.recordLanguage, sb.recordSlot, pal.propose, pal.record]
   : phase === "craft-zones"
   ? [f.readFile, f.listDir, f.writeFile, f.editFile, lookTool(bases), r.render]
   : writeless
