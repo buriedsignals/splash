@@ -11,5 +11,5 @@
     "skipLibCheck": true,
     "types": ["bun"]
   },
-  "include": ["src", "test", "serve", "bench"]
+  "include": ["src", "test", "serve", "bench", "eval"]
 }
