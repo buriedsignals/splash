@@ -1,7 +1,7 @@
 {
   "restitution": "Yes, that is the piece: the headline names Centro, but per resident Sul is worse.",
   "takeaway": "Sul has the worst safety record per resident, not Centro: 233 incidents per 100,000 residents against Centro's 205, even though Centro's raw count of 412 is the highest in the city.",
-  "claim": "It is a comparison, about the incidents per resident: Sul against Centro, Sul greater.",
+  "claim": "None of those: it is a comparison of incidents per 100,000 residents, which the data gives as incidents divided by residents. Sul is higher than Centro.",
   "subject": "the incident rate per resident, not the raw count",
   "comparison": "Sul's 233 incidents per 100,000 residents against Centro's 205 per 100,000 -- despite Centro's higher raw count (412 against Sul's 205)",
   "limits": "residents is a single population figure per district, not adjusted to the same year the incidents were logged",

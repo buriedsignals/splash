@@ -1,7 +1,7 @@
 {
   "restitution": "Yes, that is the piece: Mazowieckie has the most hospital beds, but not per resident.",
   "takeaway": "Mazowieckie ma najwięcej łóżek szpitalnych w kraju, ale w przeliczeniu na mieszkańca jest dopiero trzecie — wyprzedzają je Śląskie i Łódzkie.",
-  "claim": "It is a maximum, about the column łóżka_szpitalne: Mazowieckie.",
+  "claim": "None of those: it is a ranking by beds per resident, which the data gives as łóżka_szpitalne divided by ludność. Mazowieckie is third, behind Śląskie and Łódzkie.",
   "subject": "Mazowieckie",
   "comparison": "pozostałe siedem województw w zamrożonej tabeli, a przede wszystkim Śląskie i Łódzkie, które wyprzedzają Mazowieckie na mieszkańca",
   "limits": "Tabela obejmuje 8 z 16 województw, więc nie da się z niej odczytać pełnego rankingu krajowego. Łóżko szpitalne nie jest miarą jakości opieki ani jej dostępności — nie mówi nic o obłożeniu, o kadrze ani o tym, gdzie te łóżka stoją wewnątrz województwa. Kolumna lekarze_na_10tys nie została w tym wykresie użyta.",
