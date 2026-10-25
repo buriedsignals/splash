@@ -105,7 +105,9 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
         recorded = 0;
         continue;
       }
-      if (CLAIMED_DONE.test(said)) {
+      // A turn that asks the journalist something goes to the journalist, whatever words it uses: "To
+      // complete the slot, which ...?" was intercepted as a false "complete" until the round cap.
+      if (CLAIMED_DONE.test(said) && !said.includes("?")) {
         prompt = `[harness] This step is not finished. ${await o.gaps()} Ask the journalist for what is missing, or record what they already said.`;
         o.log.push(`HARNESS: ${prompt}`);
         recorded = 0;
