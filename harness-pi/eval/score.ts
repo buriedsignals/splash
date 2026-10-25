@@ -4,7 +4,9 @@
 // tie ships the stock model.
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { parseStoryboard } from "../../skills/splash/scripts/gate-contract.mjs";
 import { whereIs } from "../../skills/splash/scripts/where.mjs";
+import { svgFacts } from "../src/tools/review.ts";
 
 /** Tools whose refusal is a gate holding: the journalist-owned records and the delivery steps. */
 const GATE_TOOLS =
@@ -29,6 +31,30 @@ export interface RunScore {
   /** Craft sessions whose last write is not followed by a look (AE5). */
   craftWithoutLook: string[];
   failures: FailurePoint[];
+  /** What the delivered render draws, against what the journalist recorded: done is not enough. */
+  faithful: { headline: boolean; credit: boolean };
+}
+
+/** Whether the newest render of the first beat draws the takeaway as its headline and the credit. */
+export function fidelity(storyDir: string): { headline: boolean; credit: boolean } {
+  const none = { headline: false, credit: false };
+  const sb = join(storyDir, "STORYBOARD.md");
+  const beats = join(storyDir, "beats");
+  if (!existsSync(sb) || !existsSync(beats)) return none;
+  const meta = parseStoryboard(readFileSync(sb, "utf8")).meta as unknown as Record<string, string>;
+  const beat = readdirSync(beats).filter((d) => !d.startsWith(".")).sort()[0];
+  const renders = beat ? join(beats, beat, "renders") : "";
+  if (!renders || !existsSync(renders)) return none;
+  const svg = readdirSync(renders)
+    .filter((f) => f.endsWith(".svg"))
+    .sort((a, b) => statSync(join(renders, b)).mtimeMs - statSync(join(renders, a)).mtimeMs)[0];
+  if (!svg) return none;
+  const drawn = svgFacts(readFileSync(join(renders, svg), "utf8")).texts.join(" ").replace(/\s+/g, " ");
+  const norm = (t: string) => String(t ?? "").replace(/\s+/g, " ").trim().replace(/[.。]$/, "");
+  return {
+    headline: Boolean(meta.takeaway) && drawn.includes(norm(meta.takeaway)),
+    credit: Boolean(meta.credit) && drawn.includes(norm(meta.credit)),
+  };
 }
 
 interface Entry {
@@ -134,6 +160,7 @@ export async function scoreRun(root: string, story: string): Promise<RunScore> {
     seconds: Number.isFinite(first) ? Math.round((last - first) / 1000) : 0,
     craftWithoutLook,
     failures,
+    faithful: fidelity(storyDir),
   };
 }
 
@@ -142,7 +169,8 @@ export function releaseDecision(
   stock: RunScore[],
   tuned: RunScore[],
 ): "ship tuned" | "ship stock" {
-  const done = (rs: RunScore[]) => rs.filter((r) => r.completed).length;
+  // A run that reached done with a headline other than the journalist's takeaway did not complete.
+  const done = (rs: RunScore[]) => rs.filter((r) => r.completed && r.faithful.headline).length;
   const refusals = (rs: RunScore[]) =>
     rs.reduce((n, r) => n + r.gateRefusals, 0);
   if (done(tuned) !== done(stock))

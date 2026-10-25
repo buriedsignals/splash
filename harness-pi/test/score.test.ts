@@ -23,8 +23,8 @@ async function runRoot(sessions: Record<string, object[]>) {
   return root;
 }
 
-const score = (completed: boolean, gateRefusals: number): RunScore => ({
-  story: "x", phase: completed ? "done" : "storyboard", completed, gateRefusals, toolErrors: 0, turns: 0, seconds: 0, craftWithoutLook: [], failures: [],
+const score = (completed: boolean, gateRefusals: number, headline = true): RunScore => ({
+  story: "x", phase: completed ? "done" : "storyboard", completed, gateRefusals, toolErrors: 0, turns: 0, seconds: 0, craftWithoutLook: [], failures: [], faithful: { headline, credit: true },
 });
 
 describe("run score", () => {
@@ -62,4 +62,21 @@ describe("release rule", () => {
   it("should ship stock on a tie", () => {
     expect(releaseDecision([score(true, 2)], [score(true, 2)])).toBe("ship stock");
   });
+
+  it("should not count a done run whose headline is not the takeaway", () => {
+    expect(releaseDecision([score(true, 3)], [score(true, 0, false)])).toBe("ship stock");
+  });
 });
+
+describe("fidelity", () => {
+  it("should find the takeaway drawn across the headline's lines, and the credit", async () => {
+    const { fidelity } = await import("../eval/score.ts");
+    const root = await mkdtemp(join(tmpdir(), "splash-fidelity-"));
+    const story = join(root, "s");
+    mkdirSync(join(story, "beats", "1", "renders"), { recursive: true });
+    writeFileSync(join(story, "STORYBOARD.md"), '---\ntakeaway: "Lisboa carries 214 of the 394 million trips."\ncredit: unattributed\n---\n');
+    writeFileSync(join(story, "beats/1/renders/a.svg"), '<svg><text x="1">Lisboa carries 214 of the</text><text x="1">394 million trips.</text><text>unattributed · as of 2026</text></svg>');
+    expect(fidelity(story)).toEqual({ headline: true, credit: true });
+  });
+});
+
