@@ -1,0 +1,12 @@
+<|turn>system
+<|think|>
+SYS<|tool>declaration:look{description:<|"|>d<|"|>,parameters:{properties:{path:{type:<|"|>STRING<|"|>}},type:<|"|>OBJECT<|"|>}}<tool|><turn|>
+<|turn>user
+Render it.<turn|>
+<|turn>model
+<|tool_call>call:look{path:<|"|>a.png<|"|>}<tool_call|><|tool_response>response:look{value:<|"|>TOOL OUTPUT<|"|>}<tool_response|>It is right. DONE<turn|>
+<|turn>user
+Again.<turn|>
+<|turn>model
+<|channel>thought
+<channel|>DONE again
