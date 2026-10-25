@@ -51,6 +51,7 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
   let lastFailure = "";
   let sameFailure = 0;
   let stop = "";
+  let menu = "";
   const off = o.session.subscribe((e) => {
     if (e.type !== "tool_execution_end") return;
     toolCalls++;
@@ -59,8 +60,11 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
       300,
     );
     o.log.push(`TOOL ${e.toolName}${e.isError ? " ERROR" : ""}: ${out}`);
-    if (!e.isError && /^(record_|materialise|propose_palette)/.test(e.toolName))
+    if (!e.isError && /^(record_|materialise|propose_palette|show_candidates)/.test(e.toolName))
       recorded++;
+    // The menu the code recorded is the one the journalist sees, whatever the model's prose says.
+    if (!e.isError && e.toolName === "show_candidates")
+      menu = String(e.result?.content?.[0]?.text ?? "").split("ask which one:\n")[1] ?? "";
     const sig = e.isError ? `${e.toolName}:${out.slice(0, 120)}` : "";
     sameFailure = sig && sig === lastFailure ? sameFailure + 1 : 0;
     lastFailure = sig;
@@ -102,7 +106,9 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
         continue;
       }
       recorded = 0;
-      const answer = await o.journalist.answer(said);
+      const shown = menu ? `The candidates, as recorded:\n${menu}\n\n${said}` : said;
+      menu = "";
+      const answer = await o.journalist.answer(shown);
       o.log.push(`JOURNALIST: ${answer}`);
       if (o.dialogue.lastJournalist)
         (o.dialogue.history ??= []).unshift({ proposal: o.dialogue.lastProposal, answer: o.dialogue.lastJournalist });

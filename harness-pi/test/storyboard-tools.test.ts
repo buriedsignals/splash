@@ -192,7 +192,8 @@ describe("slot discipline", () => {
   it("should refuse a chosen treatment that was never among the candidates", async () => {
     const tools = await withFormat();
     await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Bar and column", why: "ranks six" }, { type: "Treemap", why: "part of a whole" }] });
-    dialogue.lastJournalist = "Scatter plot.";
+    dialogue.lastProposal = "Shall I go with a scatter plot?";
+    dialogue.lastJournalist = "Yes.";
     await expect(call(tools.recordSlot, { slot: "1", field: "chosen", value: "Scatter plot" })).rejects.toThrow(
       /must be one of the candidates you showed: Bar and column, Treemap/,
     );
@@ -237,6 +238,31 @@ describe("slot discipline", () => {
     await call(tools.recordTakeaway, { sentence: TAKEAWAY });
     await withFormat(tools);
     expect(meta().slots[0].proves).toBe(TAKEAWAY);
+  });
+});
+
+describe("what the local harness can draw", () => {
+  it("should tell the model to re-offer a type the journalist asked for that the menu lacked", async () => {
+    const tools = await withFormat();
+    await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Line", why: "a" }, { type: "Treemap", why: "b" }] });
+    dialogue.lastJournalist = "Bar and column.";
+    await expect(call(tools.recordSlot, { slot: "1", field: "chosen", value: "Bar and column" })).rejects.toThrow(
+      /asked for Bar and column, which your menu did not offer.*show_candidates again/,
+    );
+  });
+
+  it("should refuse a chosen type with no zone adapter", async () => {
+    const tools = await withFormat();
+    await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Bar and column", why: "a" }, { type: "Treemap", why: "b" }] });
+    dialogue.lastJournalist = "Treemap.";
+    await expect(call(tools.recordSlot, { slot: "1", field: "chosen", value: "Treemap" })).rejects.toThrow(/cannot draw Treemap yet/);
+  });
+
+  it("should refuse a menu with nothing the local harness can draw", async () => {
+    const tools = await withFormat();
+    await expect(
+      call(tools.showCandidates, { slot: "1", candidates: [{ type: "Treemap", why: "a" }, { type: "Beeswarm", why: "b" }] }),
+    ).rejects.toThrow(/can draw none of these yet.*Bar and column/);
   });
 });
 

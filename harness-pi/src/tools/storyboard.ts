@@ -28,6 +28,7 @@ import {
   RECORDED_CLAIM_SHAPES,
   recordedClaimGaps,
 } from "../../../skills/splash/scripts/gate-contract.mjs";
+import { adapterFor } from "../adapters.ts";
 import type { Bases } from "./fs.ts";
 
 /** What the journalist and the model last said, kept by the driver. */
@@ -128,6 +129,12 @@ export function gapsForModel(gaps: string[]): string[] {
           : g,
   );
 }
+
+/** The chart types this local harness has a zone adapter for. */
+const LOCAL_TYPES = () =>
+  typeSurvey()
+    .filter((r: { medium: string; type: string }) => r.medium === "chart" && adapterFor(r.type))
+    .map((r: { type: string }) => r.type);
 
 const text = (t: string) => ({
   content: [{ type: "text" as const, text: t }],
@@ -269,8 +276,14 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
         const candidates: string[] = Array.isArray(current?.candidates) ? current.candidates : [];
         if (!candidates.length) throw new Error("record the candidates you showed the journalist first (record_slot field candidates)");
         if (!candidates.some((c) => c.toLowerCase() === value.toLowerCase())) {
-          throw new Error(`chosen must be one of the candidates you showed: ${candidates.join(", ")}`);
+          throw new Error(
+            sameTreatment(value, dialogue.lastJournalist, medium)
+              ? `the journalist asked for ${value}, which your menu did not offer (it offered ${candidates.join(", ")}). Call show_candidates again with ${value} among the candidates, show the menu, and ask them to confirm.`
+              : `chosen must be one of the candidates you showed: ${candidates.join(", ")}`,
+          );
         }
+        if (!adapterFor(value))
+          throw new Error(`this local harness cannot draw ${value} yet (no zone adapter). Tell the journalist, and offer the candidates it can draw.`);
       }
       await ensureSlot(slot);
       const fields: Record<string, unknown> = {
@@ -320,8 +333,10 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       const named = candidates.map((c) => ({ type: canonicalTreatment(c.type, medium), why: c.why, format: String(current.format) }));
       const profile = JSON.parse(readFileSync(join(bases.storyDir, "source", "profile.json"), "utf8"));
       const rows = formatCandidateRows({ medium, candidates: named, profile });
+      if (!named.some((c) => adapterFor(c.type)))
+        throw new Error(`this local harness can draw none of these yet; include at least one of the types it has a kit for: ${LOCAL_TYPES().join(", ")}`);
       await mutateStoryboard(path, { slot: { id: slot, fields: { candidates: named.map((c) => c.type) } } });
-      return text(`recorded ${named.length} candidates for slot ${slot}. Show the journalist this menu, then ask which one:\n${rows.map((r: { line: string }) => r.line).join("\n")}`);
+      return text(`recorded ${named.length} candidates for slot ${slot}. Show the journalist this menu, then ask which one:\n${rows.map((r: { line: string; type: string }) => (adapterFor(r.type) ? r.line : `${r.line}\n  (this local harness cannot draw it yet)`)).join("\n")}`);
     },
   });
 

@@ -23,6 +23,7 @@ import {
   renderDigest,
   writeOutputReview,
 } from "../../skills/deliver/scripts/output-review.mjs";
+import { adapterFor } from "./adapters.ts";
 import { converse } from "./conversation.ts";
 import { checkEditorProposals, describeProposals } from "./editor-check.ts";
 import type { Journalist } from "./journalist.ts";
@@ -38,10 +39,10 @@ import {
 import { reviewTools } from "./tools/review.ts";
 import { runCommand, runTools } from "./tools/run.ts";
 import { type Dialogue, gapsForModel, storyboardTools } from "./tools/storyboard.ts";
+export { adapterFor };
 import { deliverTools } from "./tools/deliver.ts";
 
 const CHECKOUT = join(import.meta.dirname, "..", "..");
-const ADAPTERS = join(CHECKOUT, "harness-pi", "craft");
 const read = (rel: string) => readFileSync(join(CHECKOUT, rel), "utf8");
 
 export interface RunOptions {
@@ -58,18 +59,6 @@ export interface RunReport {
   reason: string;
   steps: { owner: string; stop: string; seconds: number }[];
   transcript: string[];
-}
-
-/** "Bar and column" → the zone adapter directory for that chart type, if one exists. */
-export function adapterFor(chosen: string): string | null {
-  const dir = join(
-    ADAPTERS,
-    chosen
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-|-$/g, ""),
-  );
-  return existsSync(join(dir, "render-beat.mjs")) ? dir : null;
 }
 
 function storyboardMeta(storyDir: string): Record<string, any> {
