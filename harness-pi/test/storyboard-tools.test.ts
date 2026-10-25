@@ -88,7 +88,7 @@ describe("journalist ownership", () => {
         lastJournalist: "Unattributed, as of 2026-08-21.",
         lastProposal: "",
       }),
-    ).toThrow(/must be the journalist's own answer.*Unattributed/);
+    ).toThrow(/has not given the subject yet.*Unattributed.*who is the subject/);
   });
 });
 

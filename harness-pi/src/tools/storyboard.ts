@@ -75,6 +75,15 @@ function overlap(value: string, source: string): number {
   return v.filter((w) => s.has(w)).length / v.length;
 }
 
+/** The exchange's own question for each field of the journalist's hand (references/exchange.md). */
+const FIELD_QUESTIONS: Record<string, string> = {
+  subject: "In this data, who is the subject of your piece?",
+  comparison: "What does the reader compare it to — last year, the average, the announced target, the next town?",
+  limits: "What does this data NOT let you conclude?",
+  placement: "Where should we position this graphic?",
+  credit: "Who does this data come from, how do you credit them, and as of what date?",
+};
+
 /** Throws unless the journalist said it, or said yes to the model having proposed it. */
 export function assertJournalistOwns(field: string, value: string, d: Dialogue, { acceptProposal = true } = {}) {
   const exchanges = [{ proposal: d.lastProposal, answer: d.lastJournalist }, ...(d.history ?? [])];
@@ -91,6 +100,11 @@ export function assertJournalistOwns(field: string, value: string, d: Dialogue, 
   if (acceptProposal && overlap(value, d.lastProposal) >= 0.6)
     throw new Error(
       `you proposed this ${field}, but the journalist answered another question (${JSON.stringify(d.lastJournalist.slice(0, 120))}), so they have not accepted it. Ask them only this, in one short sentence (e.g. "Shall I record ${field}: ${value}?"), and end your turn.`,
+    );
+  const question = FIELD_QUESTIONS[field];
+  if (question)
+    throw new Error(
+      `the journalist has not given the ${field} yet (their last message was ${JSON.stringify(d.lastJournalist.slice(0, 120))}). Ask them exactly this and end your turn: "${question}"`,
     );
   throw new Error(
     `${field} must be the journalist's own answer, or a proposal you made that they accepted. Their last message was: ${JSON.stringify(d.lastJournalist.slice(0, 200))}. If that message answers this field, record it in their own words, not a rewording; otherwise ask them, end your turn, and record what they say.`,
