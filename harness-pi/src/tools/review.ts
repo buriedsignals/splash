@@ -3,7 +3,7 @@
 // review_facts hands it the drawn text, the colours actually painted and their contrast against the
 // ground, beside the slot's own claim, so every verdict can cite an observation.
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import { defineTool } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { contrast } from "../../../skills/palette/scripts/colour.mjs";
@@ -69,7 +69,7 @@ export function reviewTools(bases: Bases) {
       const { meta } = parseStoryboard(
         readFileSync(join(bases.storyDir, "STORYBOARD.md"), "utf8"),
       );
-      const slotId = beat.split("-")[0];
+      const slotId = basename(beatDir(bases, beat)).split("-")[0];
       const slot =
         (meta.slots ?? []).find(
           (s: { id: unknown }) => String(s.id) === slotId,

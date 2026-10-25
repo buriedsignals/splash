@@ -20,3 +20,20 @@ describe("render facts", () => {
     expect(accent?.contrastToGround).toBeGreaterThan(3);
   });
 });
+
+describe("review_facts tool", () => {
+  it("should find the slot's claim when the beat is given as an absolute path", async () => {
+    const { mkdtemp } = await import("node:fs/promises");
+    const { cpSync, mkdirSync, writeFileSync } = await import("node:fs");
+    const { tmpdir } = await import("node:os");
+    const { reviewTools } = await import("../src/tools/review.ts");
+    const root = await mkdtemp(join(tmpdir(), "splash-review-"));
+    const storyDir = join(root, "stories", "demo");
+    mkdirSync(join(storyDir, "beats", "1", "renders"), { recursive: true });
+    cpSync(join(CHECKOUT, "proof/static-bar-top-emitters-2024/renders/creme.svg"), join(storyDir, "beats/1/renders/creme.svg"));
+    writeFileSync(join(storyDir, "STORYBOARD.md"), "---\ntakeaway: T\nslots:\n  - id: 1\n    proves: \"China leads\"\n---\n");
+    const tool = reviewTools({ root, storyDir });
+    const out = await (tool.execute as Function)("t", { beat: join(storyDir, "beats", "1") }, undefined, undefined, undefined);
+    expect((out.content[0] as { text: string }).text).toContain("slot 1 proves: China leads");
+  });
+});
