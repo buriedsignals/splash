@@ -340,8 +340,13 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       if (field === "chosen") {
         // The journalist named a different catalogue type than the one the model is recording.
         const medium0 = String(currentSlot(slot)?.medium ?? "chart");
+        // The most recent answer in which the journalist named a type is their choice: a later "Yes."
+        // to the model's substitute does not override it (the 12B once told the journalist Line was
+        // not in the catalogue, which is false, and recorded Area on the "Yes.").
         let named = "";
-        try { named = canonicalTreatment(dialogue.lastJournalist, medium0); } catch {}
+        for (const a of answers) {
+          try { named = canonicalTreatment(a, medium0); break; } catch {}
+        }
         if (named && !sameTreatment(value, named, medium0)) {
           const shown: string[] = Array.isArray(currentSlot(slot)?.candidates) ? currentSlot(slot)!.candidates : [];
           throw new Error(
@@ -429,7 +434,7 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
     name: "show_candidates",
     label: "Build the candidates menu",
     description:
-      "Build the menu of candidate treatments for a slot, after its medium and format are recorded: give at least two genuinely different chart types, each with why it fits THIS story. The code checks each against the catalogue, refuses two that are the same idea, records them, and returns the menu lines (purpose, what it is not for, the interaction it promises). Show those lines to the journalist and ask which one.",
+      `Build the menu of candidate treatments for a slot, after its medium and format are recorded: give at least two genuinely different chart types, each with why it fits THIS story. The code checks each against the catalogue, refuses two that are the same idea, records them, and returns the menu lines (purpose, what it is not for, the interaction it promises). Show those lines to the journalist and ask which one. Types this local harness draws: ${LOCAL_MENU()}.`,
     parameters: Type.Object({
       slot: Type.String(),
       candidates: Type.Array(Type.Object({ type: Type.String(), why: Type.String() })),

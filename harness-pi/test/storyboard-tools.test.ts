@@ -229,6 +229,17 @@ describe("the journalist chose another type", () => {
   });
 });
 
+describe("the journalist's named type outlasts a later yes", () => {
+  it("should refuse the model's substitute when the journalist named another type before saying yes", async () => {
+    const tools = await withFormat();
+    await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Area (and stacked area)", why: "a" }, { type: "Bar and column", why: "b" }] });
+    dialogue.history = [{ proposal: "Which treatment?", answer: "Line." }];
+    dialogue.lastProposal = "Line is not in the menu; shall we use Area instead?";
+    dialogue.lastJournalist = "Yes.";
+    await expect(call(tools.recordSlot, { slot: "1", field: "chosen", value: "Area (and stacked area)" })).rejects.toThrow(/journalist chose Line/);
+  });
+});
+
 describe("dates", () => {
   it("should refuse an as-of date the journalist never wrote", async () => {
     dialogue.lastJournalist = "Narodowy Fundusz Zdrowia, dane za 2025 r., as of 2026-08-21.";
