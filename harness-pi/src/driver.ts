@@ -8,6 +8,7 @@ import {
   mkdirSync,
   readdirSync,
   readFileSync,
+  rmSync,
   writeFileSync,
 } from "node:fs";
 import { basename, join } from "node:path";
@@ -371,6 +372,14 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
     });
     sess.dispose();
     say(`CRAFT stop: ${res.stop}`);
+    // The delivered render is the render of the beat.mjs on disk: the 12B once fixed beat.mjs after its
+    // last render and shipped the stale, wrong picture. The harness renders once more itself; a
+    // refusal leaves the beat unrendered, so whereIs sends it back to craft.
+    if (existsSync(join(beatDir, "beat.mjs"))) {
+      const final = await runCommand(["bun", join(beatDir, "render-beat.mjs")], bases);
+      say(`CRAFT final render: exit ${final.exitCode}${final.exitCode ? ` ${final.stderr.slice(-300)}` : ""}`);
+      if (final.exitCode !== 0) rmSync(join(beatDir, "renders"), { recursive: true, force: true });
+    }
     return null;
   }
 

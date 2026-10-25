@@ -49,6 +49,7 @@ if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")} (
 // The beat's own claim, checked against its own data BEFORE anything is drawn: a number that
 // drifted from the data refuses the render rather than shipping a stale headline.
 beat.check();
+assertHeadlineNumbersDrawn([beat.title].flat()[0], beat.rows.map((r) => r.value), "bars");
 // The note is drawn as a bracket over the comparison bars, so the number it states must be theirs:
 // a 12B beat once bracketed the five smaller networks (180) with the six-network total (394).
 const sum = beat.rows.filter((r) => beat.comparison.includes(r.name)).reduce((s, r) => s + r.value, 0);
@@ -128,3 +129,21 @@ for (const { label: id, direction: chosenDirection } of chosen) {
   }
 }
 if (refused.length) process.exit(1);
+
+// Every number the headline states at the scale of the drawn values must be one of them (or their
+// total): a 12B beat once drew deaths inside built-up areas only (17 to 119) under a takeaway that
+// says 36 to 214, the all-areas series.
+function assertHeadlineNumbersDrawn(headline, drawn, label) {
+  const values = drawn.filter((v) => Number.isFinite(v));
+  if (!values.length) return;
+  const allowed = [...values, values.reduce((a, b) => a + b, 0)];
+  const lo = Math.min(...values) / 2;
+  const hi = Math.max(...values) * 2;
+  const stated = [...String(headline).matchAll(/(\d{1,3}(?:[ ,\u00a0\u202f]\d{3})+|\d+(?:[.,]\d+)?)(\s*%)?/g)]
+    .filter((m) => !m[2])
+    .map((m) => Number(m[1].replace(/[ ,\u00a0\u202f](?=\d{3}\b)/g, "").replace(",", ".")))
+    .filter((n) => !(Number.isInteger(n) && n >= 1900 && n <= 2100) && n >= lo && n <= hi);
+  const missing = stated.filter((n) => !allowed.some((v) => Math.abs(v - n) <= Math.max(0.5, Math.abs(n) * 0.005)));
+  if (missing.length)
+    throw new Error(`the title states ${missing.join(", ")}, which the drawn ${label} does not contain: the rows selected from data.json are probably not the takeaway's series — read its other columns and filter to the one the takeaway is about`);
+}
