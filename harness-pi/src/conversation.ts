@@ -34,7 +34,7 @@ export interface ConverseResult {
 }
 
 const CLAIMED_RECORD =
-  /\b(I have|I've|I)( now| also| successfully| just)? (recorded|noted|saved|materiali[sz]ed|updated|refined|registered)\b/i;
+  /\b(I have|I've|I)( now| also| successfully| just)? (recorded|saved|materiali[sz]ed|updated|refined|registered)\b/i;
 const CLAIMED_DONE =
   /\b(complete|completed|finali[sz]ed|closed|ready to move|we are ready|all set)\b/i;
 
