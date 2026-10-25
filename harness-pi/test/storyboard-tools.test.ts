@@ -181,4 +181,12 @@ describe("slot discipline", () => {
       /must be one of the candidates you showed: Bar and column, Lollipop/,
     );
   });
+
+  it("should accept candidates the model wrote as a JSON array, so chosen can match them", async () => {
+    const tools = storyboardTools(bases, dialogue);
+    await call(tools.recordSlot, { slot: "1", field: "candidates", value: '["Bar Chart", "Dumbbell Chart"]' });
+    dialogue.lastJournalist = "Bar Chart.";
+    await call(tools.recordSlot, { slot: "1", field: "chosen", value: "Bar Chart" });
+    expect(meta().slots[0].chosen).toBe("Bar Chart");
+  });
 });

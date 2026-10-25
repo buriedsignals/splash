@@ -79,8 +79,20 @@ export function assertJournalistOwns(field: string, value: string, d: Dialogue, 
   )
     return;
   throw new Error(
-    `${field} must be the journalist's own answer, or a proposal you made that they accepted. Their last message was: ${JSON.stringify(d.lastJournalist.slice(0, 200))}. Ask them, end your turn, and record what they say.`,
+    `${field} must be the journalist's own answer, or a proposal you made that they accepted. Their last message was: ${JSON.stringify(d.lastJournalist.slice(0, 200))}. If that message answers this field, record it in their own words, not a rewording; otherwise ask them, end your turn, and record what they say.`,
   );
+}
+
+/** "A, B" or a JSON array the model wrote as a string → the candidate names. */
+export function candidateList(value: string): string[] {
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) return parsed.map((c) => String(c).trim()).filter(Boolean);
+  } catch {}
+  return value
+    .split(",")
+    .map((c) => c.trim().replace(/^[\["']+|[\]"']+$/g, "").trim())
+    .filter(Boolean);
 }
 
 const text = (t: string) => ({
@@ -214,10 +226,7 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       const fields: Record<string, unknown> = {
         [field]:
           field === "candidates"
-            ? value
-                .split(",")
-                .map((s) => s.trim())
-                .filter(Boolean)
+            ? candidateList(value)
             : value,
       };
       if (field === "format") {
