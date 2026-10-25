@@ -58,7 +58,6 @@ export async function evaluate(story: string, arm: string, out: string) {
       cpSync(join(root, "stories", story, f), join(keep, f));
   rmSync(root, { recursive: true, force: true });
   const line = {
-    story,
     arm,
     tag,
     wallSeconds: Math.round((Date.now() - t0) / 1000),
