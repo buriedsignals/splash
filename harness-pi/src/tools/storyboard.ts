@@ -421,6 +421,13 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       const current = currentSlot(slot);
       if (!current?.medium || !current?.format) throw new Error("record the slot's medium and format with the journalist first");
       const medium = String(current.medium);
+      if (candidates.length === 1) {
+        // One candidate the harness can draw: add the smallest honest alternative, a distinct idea.
+        let only = "";
+        try { only = canonicalTreatment(candidates[0].type, medium); } catch {}
+        if (adapterFor(only) && DISTINCT_FROM[only]?.length)
+          candidates = [...candidates, { type: DISTINCT_FROM[only][0], why: "a different way of seeing the same values" }];
+      }
       if (candidates.length < 2) {
         const given = candidates.flatMap((c) => { try { return [canonicalTreatment(c.type, medium)]; } catch { return []; } });
         throw new Error(`show at least two genuinely different chart types, each with why it fits this story, so the journalist has a real choice.${distinctHint(given)}`);

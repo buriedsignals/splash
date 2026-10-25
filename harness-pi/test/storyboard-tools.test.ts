@@ -290,9 +290,15 @@ describe("slot discipline", () => {
     ).rejects.toThrow(/"Galaxy plot" is not a chart type/);
   });
 
-  it("should refuse a menu of one candidate", async () => {
+  it("should complete a menu of one drawable candidate with a distinct idea", async () => {
     const tools = await withFormat();
-    await expect(call(tools.showCandidates, { slot: "1", candidates: [{ type: "Bar Chart", why: "a" }] })).rejects.toThrow(/at least two/);
+    await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Bar Chart", why: "a" }] });
+    expect(meta().slots[0].candidates).toEqual(["Bar and column", "Dot strip"]);
+  });
+
+  it("should refuse a menu of one candidate it cannot complete", async () => {
+    const tools = await withFormat();
+    await expect(call(tools.showCandidates, { slot: "1", candidates: [{ type: "Treemap", why: "a" }] })).rejects.toThrow(/at least two/);
   });
 
   it("should refuse two candidates that are the same idea, as Splash's menu does", async () => {
