@@ -70,6 +70,8 @@ export async function openSession(opts: OpenOptions): Promise<AgentSession> {
         reserveTokens: SLOT.reserveTokens,
         keepRecentTokens: opts.keepRecentTokens,
       },
+      // A long prompt on a laptop can take many minutes before the first byte comes back.
+      httpIdleTimeoutMs: 30 * 60_000,
       retry: { enabled: true, maxRetries: 2 },
     }),
     noTools: "builtin",

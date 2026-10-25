@@ -19,6 +19,7 @@ exec llama-server \
   -c "$CTX" \
   --parallel 1 \
   -ngl 999 \
+  --load-mode mmap+mlock \
   -fa on \
   -ctk q8_0 -ctv q8_0 \
   --reasoning-budget "${SPLASH_REASONING_BUDGET:-400}" \

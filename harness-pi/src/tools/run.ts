@@ -62,8 +62,15 @@ function report(argv: string[], r: RunResult) {
   };
 }
 
+/** A beat is named by its folder under the story's beats/; a path ending in that folder is accepted. */
 export function beatDir(bases: Bases, beat: string): string {
-  return join(bases.storyDir, "beats", checked(beat, SLUG, "beat"));
+  const name = beat.replace(/\/+$/, "").split("/").pop() ?? "";
+  if (beat.includes("/") && !/(^|\/)beats\/[^/]+\/?$/.test(beat)) {
+    throw new Error(
+      `beat "${beat}" is not under this story's beats/: in a story, a beat is a folder name such as "1-lisboa-share" (it lives at beats/1-lisboa-share)`,
+    );
+  }
+  return join(bases.storyDir, "beats", checked(name, SLUG, "beat"));
 }
 
 export function shotsDir(bases: Bases, beat: string): string {

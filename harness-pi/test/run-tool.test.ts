@@ -56,7 +56,7 @@ describe("run tools", () => {
         beat: "../../escape",
         component: "X",
       }),
-    ).rejects.toThrow(/beat "\.\.\/\.\.\/escape" must match/);
+    ).rejects.toThrow(/beat "\.\.\/\.\.\/escape" is not under this story's beats/);
   });
 
   it("should refuse to verify a page that was never rendered, so it cannot pass on the seed", async () => {

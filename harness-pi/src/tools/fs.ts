@@ -41,13 +41,19 @@ function realOrParent(path: string): string {
   return join(realpathSync(probe), relative(probe, path));
 }
 
+// The skills write paths from the Splash root ("stories/<slug>/STORYBOARD.md"), so a relative
+// path is read from the root; a path already inside the story is accepted as-is.
+function resolveFromRoot(bases: Bases, path: string): string {
+  return resolve(bases.root, path);
+}
+
 function within(path: string, base: string): boolean {
   const rel = relative(base, path);
   return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
 }
 
 export function resolveInStory(bases: Bases, path: string): string {
-  const abs = realOrParent(resolve(bases.storyDir, path));
+  const abs = realOrParent(resolveFromRoot(bases, path));
   if (!within(abs, realpathSync(bases.storyDir))) {
     throw new Error(
       `${path} is outside the story directory ${bases.storyDir}; writes stay inside it`,
@@ -57,7 +63,9 @@ export function resolveInStory(bases: Bases, path: string): string {
 }
 
 export function resolveReadable(bases: Bases, path: string): string {
-  const abs = realOrParent(resolve(bases.storyDir, path));
+  const abs = realOrParent(resolveFromRoot(bases, path));
+  // The newsroom profile at the root is what palette and preflight read the house colours from.
+  if (abs === join(realpathSync(bases.root), "NEWSROOM.md")) return abs;
   const allowed = [
     bases.storyDir,
     ...READ_BASES.map((b) => join(bases.root, b)),
@@ -82,7 +90,7 @@ export function fsTools(bases: Bases) {
     name: "read_file",
     label: "Read file",
     description:
-      "Read a text file from the story, skills/, shared/ or proof/. Paths are absolute or relative to the story directory. A CSV returns an excerpt; read source/profile.json for its full profile.",
+      "Read a text file from the story, skills/, shared/ or proof/. Paths are absolute or relative to the Splash root. A CSV returns an excerpt; read source/profile.json for its full profile.",
     parameters: Type.Object({ path: Type.String() }),
     async execute(_id, { path }) {
       const abs = resolveReadable(bases, path);
