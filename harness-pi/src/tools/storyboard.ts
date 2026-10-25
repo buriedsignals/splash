@@ -130,11 +130,12 @@ export function gapsForModel(gaps: string[]): string[] {
   );
 }
 
-/** The chart types this local harness has a zone adapter for. */
-const LOCAL_TYPES = () =>
+/** The drawable types with what each is for, in the catalogue's words: what the model can offer. */
+const LOCAL_MENU = () =>
   typeSurvey()
     .filter((r: { medium: string; type: string }) => r.medium === "chart" && adapterFor(r.type))
-    .map((r: { type: string }) => r.type);
+    .map((r: { type: string; purpose: string }) => `${r.type} (${r.purpose})`)
+    .join("; ");
 
 const text = (t: string) => ({
   content: [{ type: "text" as const, text: t }],
@@ -342,9 +343,14 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
         throw new Error("show at least two genuinely different chart types, each with why it fits this story, so the journalist has a real choice");
       const named = candidates.map((c) => ({ type: canonicalTreatment(c.type, medium), why: c.why, format: String(current.format) }));
       const profile = JSON.parse(readFileSync(join(bases.storyDir, "source", "profile.json"), "utf8"));
-      const rows = formatCandidateRows({ medium, candidates: named, profile });
+      let rows;
+      try {
+        rows = formatCandidateRows({ medium, candidates: named, profile });
+      } catch (e) {
+        throw new Error(`${(e as Error).message} Types this local harness can draw: ${LOCAL_MENU()}.`);
+      }
       if (!named.some((c) => adapterFor(c.type)))
-        throw new Error(`this local harness can draw none of these yet; include at least one of the types it has a kit for: ${LOCAL_TYPES().join(", ")}`);
+        throw new Error(`this local harness can draw none of these yet; include at least one of the types it has a kit for: ${LOCAL_MENU()}`);
       await mutateStoryboard(path, { slot: { id: slot, fields: { candidates: named.map((c) => c.type) } } });
       return text(`recorded ${named.length} candidates for slot ${slot}. Show the journalist this menu, then ask which one:\n${rows.map((r: { line: string; type: string }) => (adapterFor(r.type) ? r.line : `${r.line}\n  (this local harness cannot draw it yet)`)).join("\n")}`);
     },
