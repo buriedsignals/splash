@@ -226,7 +226,13 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
     async execute(_id, { field, value }) {
       if (!(HAND as readonly string[]).includes(field))
         throw new Error(`field must be one of ${HAND.join(", ")}`);
-      if (!(field === "limits" && /^none$/i.test(value.trim())))
+      if (field === "effectiveDate") {
+        // A date is owned only if the journalist wrote that date: word overlap let "2025-01-01" through
+        // on an answer that said "dane za 2025 r., as of 2026-08-21".
+        const said = [dialogue.lastJournalist, ...(dialogue.history ?? []).map((h) => h.answer)];
+        if (!said.some((a) => a.includes(value.trim())))
+          throw new Error(`effectiveDate must be a date the journalist wrote, exactly as written (e.g. 2026-08-21); ${JSON.stringify(value)} is not in their answers`);
+      } else if (!(field === "limits" && /^none$/i.test(value.trim())))
         assertJournalistOwns(field, value, dialogue);
       await ensureFile();
       await mutateStoryboard(path, { topLevel: { [field]: value } });

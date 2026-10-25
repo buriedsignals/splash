@@ -162,6 +162,21 @@ describe("claim shape", () => {
   });
 });
 
+describe("dates", () => {
+  it("should refuse an as-of date the journalist never wrote", async () => {
+    dialogue.lastJournalist = "Narodowy Fundusz Zdrowia, dane za 2025 r., as of 2026-08-21.";
+    await expect(
+      call(storyboardTools(bases, dialogue).recordHand, { field: "effectiveDate", value: "2025-01-01" }),
+    ).rejects.toThrow(/date the journalist wrote/);
+  });
+
+  it("should record the as-of date the journalist wrote", async () => {
+    dialogue.lastJournalist = "Narodowy Fundusz Zdrowia, dane za 2025 r., as of 2026-08-21.";
+    await call(storyboardTools(bases, dialogue).recordHand, { field: "effectiveDate", value: "2026-08-21" });
+    expect(String(meta().effectiveDate)).toBe("2026-08-21");
+  });
+});
+
 describe("answers recorded a turn late", () => {
   it("should accept the takeaway the journalist gave one exchange earlier", async () => {
     dialogue.history = [{ proposal: "What should the reader keep?", answer: TAKEAWAY }];
