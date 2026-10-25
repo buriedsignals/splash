@@ -137,6 +137,14 @@ describe("file tools", () => {
     );
   });
 
+  it("should quote the closest line when old text is not found", async () => {
+    const { writeFile: write, editFile } = fsTools(bases);
+    await call(write, { path: "stories/demo/near.mjs", content: "const title = `Lisboa leads`;\nconst x = 1;" });
+    await expect(
+      call(editFile, { path: "stories/demo/near.mjs", old_text: "const title = 'Lisboa leads';", new_text: "y" }),
+    ).rejects.toThrow(/closest line in the file is: "const title = `Lisboa leads`;"/);
+  });
+
   it("should refuse an edit whose old text is not unique", async () => {
     const { writeFile: write, editFile } = fsTools(bases);
     await call(write, { path: "stories/demo/twice.md", content: "a a" });

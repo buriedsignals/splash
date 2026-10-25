@@ -124,6 +124,19 @@ const text = (t: string) => ({
   details: {},
 });
 
+/** The file's line closest to old_text's first line, quoted, so a near-miss edit can be retried exactly. */
+function nearestLine(body: string, oldText: string): string {
+  const first = oldText.split("\n").find((l) => l.trim()) ?? "";
+  const tokens = new Set(first.split(/\W+/).filter((t) => t.length > 2));
+  let best = "";
+  let score = 0;
+  for (const line of body.split("\n")) {
+    const hits = line.split(/\W+/).filter((t) => tokens.has(t)).length;
+    if (hits > score) [best, score] = [line, hits];
+  }
+  return best ? ` The closest line in the file is: ${JSON.stringify(best.slice(0, 200))} — copy old_text from the file exactly.` : "";
+}
+
 export function fsTools(bases: Bases) {
   const readFileTool = defineTool({
     name: "read_file",
@@ -208,7 +221,7 @@ export function fsTools(bases: Bases) {
       const count = body.split(old_text).length - 1;
       if (count !== 1)
         throw new Error(
-          `old_text occurs ${count} times in ${path}; it must occur exactly once`,
+          `old_text occurs ${count} times in ${path}; it must occur exactly once.${count === 0 ? nearestLine(body, old_text) : " Include more surrounding text."}`,
         );
       await writeFile(
         abs,
