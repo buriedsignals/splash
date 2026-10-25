@@ -264,6 +264,10 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
         ...JOURNALIST_SLOT_FIELDS,
         ...MODEL_SLOT_FIELDS,
       ] as readonly string[];
+      if (field === "candidates")
+        throw new Error("candidates are recorded with show_candidates, not record_slot");
+      if (field === "interaction")
+        throw new Error("interaction is recorded automatically when you record the journalist's chosen treatment; record chosen");
       if (!all.includes(field))
         throw new Error(`field must be one of ${all.join(", ")}`);
       if (field === "chosen" && sameTreatment(value, dialogue.lastJournalist, String(currentSlot(slot)?.medium ?? "chart"))) {
@@ -279,7 +283,8 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
         const { meta } = existsSync(path) ? parseStoryboard(readFileSync(path, "utf8")) : { meta: { slots: [] as any[] } };
         const current = (meta.slots ?? []).find((s: { id: unknown }) => String(s.id) === slot);
         const candidates: string[] = Array.isArray(current?.candidates) ? current.candidates : [];
-        if (!candidates.length) throw new Error("record the candidates you showed the journalist first (record_slot field candidates)");
+        if (!candidates.length)
+          throw new Error("no candidates are recorded yet: call show_candidates with at least two chart types and why each fits, show the journalist the menu it returns, then record their choice");
         if (!candidates.some((c) => c.toLowerCase() === value.toLowerCase())) {
           throw new Error(
             sameTreatment(value, dialogue.lastJournalist, medium)
