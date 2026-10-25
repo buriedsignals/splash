@@ -58,6 +58,12 @@ describe("journalist ownership", () => {
     ).not.toThrow();
   });
 
+  it("should accept an answer written in Arabic script", () => {
+    expect(() =>
+      assertJournalistOwns("subject", "محافظة تونس", { lastJournalist: "محافظة تونس", lastProposal: "" }),
+    ).not.toThrow();
+  });
+
   it("should refuse a value the journalist never gave, naming what they actually said", () => {
     expect(() =>
       assertJournalistOwns("subject", "The transport networks of six cities", {

@@ -65,7 +65,7 @@ const words = (s: string) =>
     .toLowerCase()
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
-    .split(/[^a-z0-9]+/)
+    .split(/[^\p{L}\p{N}]+/u)
     .filter((w) => w.length > 2);
 
 function overlap(value: string, source: string): number {
