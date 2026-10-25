@@ -34,7 +34,7 @@ import { existsSync as storyboardExists, readFileSync as readStoryboard } from "
     const norm = (t) => String(t).replace(/\s+/g, " ").trim().replace(/[.。]$/, "");
     const headline = [beat.title].flat()[0];
     if (takeaway && headline !== undefined && norm(headline) !== norm(takeaway))
-      throw new Error(`title must open with the journalist's takeaway word for word (shorter forms may follow): ${takeaway}`);
+      throw new Error(`title's first form must be the journalist's takeaway copied as a literal string, not computed. It renders as: "${norm(headline)}" — it must be: "${takeaway}"`);
   }
 }
 

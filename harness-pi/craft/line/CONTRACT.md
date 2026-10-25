@@ -21,7 +21,7 @@ this story's from scratch with `write_file`.
 | `referenceLabel` | What that level is ("2015 level"). |
 | `peakLabel` | The label on the series' highest point. |
 | `eras` | Optional dated periods: `[{ from, to, label }]`; leave `[]` if none. |
-| `title` | The headline. It says the journalist's takeaway. |
+| `title` | The headline: the FIRST form is the journalist's takeaway from STORYBOARD.md, copied word for word as a literal string (the render checks it); shorter forms may follow. |
 | `limits` | The standfirst: unit, scope, the limits the journalist named. |
 | `source` | The credit line, exactly as the storyboard records it. |
 | `alt` | The alt text describing the curve. |
@@ -30,7 +30,7 @@ this story's from scratch with `write_file`.
 
 ## Rules
 
-- Every number in a sentence is computed from `data.json`, never typed.
+- Every number in a sentence is computed from `data.json`, never typed — except the title's first form, which is the journalist's own sentence, copied as written.
 - The title says the confirmed takeaway; do not invent a different claim.
 - Write in the storyboard's `language`. Never put a data column's name in a sentence.
 - After `write_file`, call `render_beat` with format `static`, then `look` at the PNG. If the render

@@ -24,7 +24,7 @@ part is labelled with its share of the total — the renderer computes those sha
 | `unit` | The axis noun written once above the plot ("millions de tonnes de CO₂ par an"). |
 | `valueUnit` | The short unit after the last reading ("Mt", "GWh", "%"). |
 | `format(v, decimals)` | How a value is printed, in the story's language. |
-| `title` | The headline, in two or three forms, longest first. It says the journalist's takeaway. |
+| `title` | The headline in two or three forms, longest first: the FIRST form is the journalist's takeaway from STORYBOARD.md, copied word for word as a literal string (the render checks it); shorter forms may follow. |
 | `limits` | The standfirst, in forms, longest first: what the area measures, the unit, the scope, the limits. |
 | `reading` | One or two short "how to read" sentences, longest first (height = one year, area = the total). |
 | `source` | The credit line, exactly as the storyboard records it. |
@@ -35,7 +35,7 @@ part is labelled with its share of the total — the renderer computes those sha
 
 ## Rules
 
-- Every number in a sentence is computed from `data.json`, never typed.
+- Every number in a sentence is computed from `data.json`, never typed — except the title's first form, which is the journalist's own sentence, copied as written.
 - The title says the confirmed takeaway; do not invent a different claim.
 - A series with a missing year, or a value below zero, is refused: an area cannot be drawn over it.
 - Write in the storyboard's `language`. Never put a data column's name in a sentence.

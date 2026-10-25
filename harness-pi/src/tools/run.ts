@@ -54,6 +54,9 @@ function report(argv: string[], r: RunResult) {
     s.length > OUTPUT_TAIL ? `…${s.slice(-OUTPUT_TAIL)}` : s;
   const body = [`$ ${argv.slice(1).join(" ")}`, `exit ${r.exitCode}`];
   if (r.stdout.trim()) body.push(`stdout:\n${tail(r.stdout.trim())}`);
+  // Bun prints the source excerpt before the error line; the reason goes first so a tail never hides it.
+  const reason = r.stderr.split("\n").find((l) => /^\s*(error|Error|TypeError|ReferenceError|SyntaxError)\b/.test(l));
+  if (reason) body.push(`error: ${reason.replace(/^\s*error:\s*/, "").trim()}`);
   if (r.stderr.trim()) body.push(`stderr:\n${tail(r.stderr.trim())}`);
   return {
     content: [{ type: "text" as const, text: body.join("\n") }],

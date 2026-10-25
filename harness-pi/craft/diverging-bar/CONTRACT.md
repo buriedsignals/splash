@@ -23,7 +23,7 @@ and some below. One row — the subject — is drawn in the accent; every other 
 | `note` | The counter line over the plot, with a computed number ("Average of the 26 falls: −4.93"). |
 | `format(v)` | How a change is printed, WITH its sign ("+0,03", "−20,48"), in the story's language. |
 | `unitMark` | The unit's short mark ("t", "%", "pts"). |
-| `title` | The headline, in two or three forms, longest first. It says the journalist's takeaway. |
+| `title` | The headline in two or three forms, longest first: the FIRST form is the journalist's takeaway from STORYBOARD.md, copied word for word as a literal string (the render checks it); shorter forms may follow. |
 | `limits` | The standfirst: ONE string of sentences separated by ". ", the most important first (a tight frame keeps only the first). |
 | `source` | The credit line, exactly as the storyboard records it. |
 | `alt(drawn)` | A function returning the alt text for the rows actually drawn. |
@@ -33,7 +33,7 @@ and some below. One row — the subject — is drawn in the accent; every other 
 
 ## Rules
 
-- Every number in a sentence is computed from `data.json`, never typed.
+- Every number in a sentence is computed from `data.json`, never typed — except the title's first form, which is the journalist's own sentence, copied as written.
 - The title says the confirmed takeaway; do not invent a different claim. A claim like "the only"
   is checked over ALL the rows in `check()`.
 - Write in the storyboard's `language`. Never put a data column's name in a sentence.

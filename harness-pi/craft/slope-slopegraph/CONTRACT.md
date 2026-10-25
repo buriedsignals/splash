@@ -20,7 +20,7 @@ write this story's from scratch with `write_file`.
 | `subject` | The `key` of the line the takeaway is about (one of the thread lines). |
 | `format(v)` | How a value is printed, in the story's language. Enough decimals that the thread's values differ. |
 | `formatDelta(v)` | How a change is printed, with its sign ("+3,2", "−1,0"). |
-| `title` | The headline, in two or three forms, longest first. It says the journalist's takeaway. |
+| `title` | The headline in two or three forms, longest first: the FIRST form is the journalist's takeaway from STORYBOARD.md, copied word for word as a literal string (the render checks it); shorter forms may follow. |
 | `limits` | The standfirst, in forms, longest first: what is measured, the unit, the scope, the limits. |
 | `reading` | One or two short "how to read" sentences, longest first (no axis: slope = direction, numbers = level). |
 | `source` | The credit line, exactly as the storyboard records it. |
@@ -30,7 +30,7 @@ write this story's from scratch with `write_file`.
 
 ## Rules
 
-- Every number in a sentence is computed from `data.json`, never typed.
+- Every number in a sentence is computed from `data.json`, never typed — except the title's first form, which is the journalist's own sentence, copied as written.
 - The title says the confirmed takeaway; do not invent a different claim. `check()` tests that
   claim against ALL the data, not only the lines drawn.
 - If the data has more than six entities, draw the thread plus the largest others, and say in
