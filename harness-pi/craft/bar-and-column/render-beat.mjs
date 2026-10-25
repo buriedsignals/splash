@@ -145,7 +145,9 @@ function assertHeadlineNumbersDrawn(headline, drawn, label) {
     .map((m) => Number(m[1].replace(/[ ,\u00a0\u202f](?=\d{3}\b)/g, "").replace(",", ".")))
     .filter((n) => !(Number.isInteger(n) && n >= 1900 && n <= 2100) && n >= lo && n <= hi);
   const missing = stated.filter((n) => !allowed.some((v) => Math.abs(v - n) <= Math.max(0.5, Math.abs(n) * 0.005)));
-  if (missing.length)
+  // A takeaway may state a figure the plate does not draw (a raw count beside drawn rates); the
+  // wrong series shows as MOST of its figures missing.
+  if (missing.length && missing.length * 2 > stated.length)
     throw new Error(`the title states ${missing.join(", ")}, which the drawn ${label} does not contain: the rows selected from data.json are probably not the takeaway's series — read its other columns and filter to the one the takeaway is about`);
 }
 
