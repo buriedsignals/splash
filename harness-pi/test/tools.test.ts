@@ -94,6 +94,13 @@ describe("file tools", () => {
     await expect(call(write, { path: "stories/demo/source/data.csv", content: "x" })).rejects.toThrow(/not yours to write/);
   });
 
+  it("should find a beat file asked for at the story root in the story's only beat", async () => {
+    const { writeFile: write, readFile: read } = fsTools(bases);
+    await call(write, { path: "stories/demo/beats/1-top/notes.txt", content: "beat note" });
+    const r = await call(read, { path: join(bases.storyDir, "notes.txt") });
+    expect(textOf(r)).toContain("beat note");
+  });
+
   it("should read a skill file by absolute path", async () => {
     const { readFile: read } = fsTools(bases);
     const r = await call(read, {

@@ -95,7 +95,14 @@ export function resolveInStory(bases: Bases, raw: string): string {
 }
 
 export function resolveReadable(bases: Bases, path: string): string {
-  const abs = realOrParent(resolveFromRoot(bases, path));
+  let abs = realOrParent(resolveFromRoot(bases, path));
+  // A beat file asked for at the story root ("data.json") is the story's only beat's.
+  if (!existsSync(abs) && dirname(abs) === realpathSync(bases.storyDir)) {
+    const beats = join(bases.storyDir, "beats");
+    const only = existsSync(beats) ? readdirSync(beats).filter((d) => !d.startsWith(".")) : [];
+    const candidate = only.length === 1 ? join(beats, only[0], relative(realpathSync(bases.storyDir), abs)) : "";
+    if (candidate && existsSync(candidate)) abs = realpathSync(candidate);
+  }
   // The newsroom profile at the root is what palette and preflight read the house colours from.
   if (abs === join(realpathSync(bases.root), "NEWSROOM.md")) return abs;
   const allowed = [
