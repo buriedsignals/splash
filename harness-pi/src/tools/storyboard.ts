@@ -17,6 +17,7 @@ import { recordSurveyedSubjects } from "../../../skills/deliver/scripts/other-su
 import {
   confirmFormatReachable,
   groundingScalar,
+  formatCandidateRows,
   resolveGrounding,
   typeSurvey,
 } from "../../../skills/storyboard/scripts/propose.mjs";
@@ -52,7 +53,7 @@ const JOURNALIST_SLOT_FIELDS = [
   "chosen",
   "producer",
 ] as const;
-const MODEL_SLOT_FIELDS = ["proves", "candidates", "interaction"] as const;
+const MODEL_SLOT_FIELDS = ["proves"] as const;
 const AFFIRMATIVE =
   /^(yes|yep|ok|okay|sure|fine|agreed|that works|go with (that|it)|oui|d'accord|ça marche|parfait|ja|sì|sim)\b/i;
 
@@ -107,6 +108,14 @@ export function canonicalTreatment(spelling: string, medium = "chart"): string {
   return hits[0].type;
 }
 
+function sameTreatment(a: string, b: string, medium: string): boolean {
+  try {
+    return canonicalTreatment(a, medium) === canonicalTreatment(b, medium);
+  } catch {
+    return false;
+  }
+}
+
 const text = (t: string) => ({
   content: [{ type: "text" as const, text: t }],
   details: {},
@@ -130,6 +139,9 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       ? body.replace("slots: []", `slots:\n  - id: ${id}`)
       : body.replace(/\n---\n/, `\n  - id: ${id}\n---\n`);
     await writeStoryboardAtomic(path, withSlot);
+    // A single-slot run's slot proves the confirmed takeaway (SKILL.md: "the confirmed claim in proves").
+    const takeaway = (meta as unknown as Record<string, unknown>).takeaway;
+    if (takeaway && allowedSlots.length === 1) await mutateStoryboard(path, { slot: { id, fields: { proves: String(takeaway) } } });
   }
 
   const currentSlot = (id: string): Record<string, any> | undefined =>
@@ -170,6 +182,10 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       await mutateStoryboard(path, {
         topLevel: { takeaway: sentence, grounding },
       });
+      if (allowedSlots.length === 1) {
+        const slot = currentSlot(allowedSlots[0]);
+        if (slot && !slot.proves) await mutateStoryboard(path, { slot: { id: allowedSlots[0], fields: { proves: sentence } } });
+      }
       return text(
         `recorded takeaway; grounding: ${grounding} (${resolved.detail ?? ""}). ${await status()}`,
       );
@@ -212,7 +228,7 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
   const recordSlot = defineTool({
     name: "record_slot",
     label: "Record a slot field",
-    description: `Record one field of a storyboard slot (slot is its id, e.g. "1"). The journalist chooses: ${JOURNALIST_SLOT_FIELDS.join(", ")}. You write: ${MODEL_SLOT_FIELDS.join(", ")} (candidates as a comma-separated list of at least two genuinely different chart types). Recording format also records whether it is reachable.`,
+    description: `Record one field of a storyboard slot (slot is its id, e.g. "1"). The journalist chooses: ${JOURNALIST_SLOT_FIELDS.join(", ")}. You may refine: ${MODEL_SLOT_FIELDS.join(", ")} (the takeaway fills it). Candidates go through show_candidates. Recording format also records whether it is reachable; recording chosen also records the interaction its format promises.`,
     parameters: Type.Object({
       slot: Type.String(),
       field: Type.String(),
@@ -225,7 +241,9 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       ] as readonly string[];
       if (!all.includes(field))
         throw new Error(`field must be one of ${all.join(", ")}`);
-      if ((JOURNALIST_SLOT_FIELDS as readonly string[]).includes(field))
+      if (field === "chosen" && sameTreatment(value, dialogue.lastJournalist, String(currentSlot(slot)?.medium ?? "chart"))) {
+        // The journalist named this treatment, in whatever spelling.
+      } else if ((JOURNALIST_SLOT_FIELDS as readonly string[]).includes(field))
         assertJournalistOwns(field, value, dialogue);
       if (!allowedSlots.includes(slot)) {
         throw new Error(`this run produces slot(s) ${allowedSlots.join(", ")} only; record the journalist's answers on those`);
@@ -248,6 +266,11 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
             ? candidateList(value).map((c) => canonicalTreatment(c, medium))
             : value,
       };
+      if (field === "chosen") {
+        const format = currentSlot(slot)?.format;
+        const [row] = format ? formatCandidateRows({ medium, candidates: [{ type: value, why: "chosen", format }] }) : [];
+        if (row?.interaction?.kind) fields.interaction = row.interaction.kind;
+      }
       if (field === "format") {
         const { meta } = parseStoryboard(readFileSync(path, "utf8"));
         const current =
@@ -262,6 +285,28 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       }
       await mutateStoryboard(path, { slot: { id: slot, fields } });
       return text(`recorded slot ${slot} ${field}. ${await status()}`);
+    },
+  });
+
+  const showCandidates = defineTool({
+    name: "show_candidates",
+    label: "Build the candidates menu",
+    description:
+      "Build the menu of candidate treatments for a slot, after its medium and format are recorded: give at least two genuinely different chart types, each with why it fits THIS story. The code checks each against the catalogue, refuses two that are the same idea, records them, and returns the menu lines (purpose, what it is not for, the interaction it promises). Show those lines to the journalist and ask which one.",
+    parameters: Type.Object({
+      slot: Type.String(),
+      candidates: Type.Array(Type.Object({ type: Type.String(), why: Type.String() })),
+    }),
+    async execute(_id, { slot, candidates }) {
+      if (!allowedSlots.includes(slot)) throw new Error(`this run produces slot(s) ${allowedSlots.join(", ")} only`);
+      const current = currentSlot(slot);
+      if (!current?.medium || !current?.format) throw new Error("record the slot's medium and format with the journalist first");
+      const medium = String(current.medium);
+      const named = candidates.map((c) => ({ type: canonicalTreatment(c.type, medium), why: c.why, format: String(current.format) }));
+      const profile = JSON.parse(readFileSync(join(bases.storyDir, "source", "profile.json"), "utf8"));
+      const rows = formatCandidateRows({ medium, candidates: named, profile });
+      await mutateStoryboard(path, { slot: { id: slot, fields: { candidates: named.map((c) => c.type) } } });
+      return text(`recorded ${named.length} candidates for slot ${slot}. Show the journalist this menu, then ask which one:\n${rows.map((r: { line: string }) => r.line).join("\n")}`);
     },
   });
 
@@ -310,5 +355,5 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
     },
   });
 
-  return { recordTakeaway, recordClaim, recordHand, recordLanguage, recordSlot, recordSubject };
+  return { recordTakeaway, recordClaim, recordHand, recordLanguage, recordSlot, showCandidates, recordSubject };
 }

@@ -174,31 +174,55 @@ describe("slot discipline", () => {
   });
 
   it("should refuse a chosen treatment that was never among the candidates", async () => {
-    const tools = storyboardTools(bases, dialogue);
-    await call(tools.recordSlot, { slot: "1", field: "candidates", value: "Bar and column, Lollipop" });
+    const tools = await withFormat();
+    await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Bar and column", why: "ranks six" }, { type: "Treemap", why: "part of a whole" }] });
     dialogue.lastJournalist = "Scatter plot.";
     await expect(call(tools.recordSlot, { slot: "1", field: "chosen", value: "Scatter plot" })).rejects.toThrow(
-      /must be one of the candidates you showed: Bar and column, Lollipop/,
+      /must be one of the candidates you showed: Bar and column, Treemap/,
     );
   });
 
-  it("should accept candidates the model wrote as a JSON array, so chosen can match them", async () => {
-    const tools = storyboardTools(bases, dialogue);
-    await call(tools.recordSlot, { slot: "1", field: "candidates", value: '["Bar Chart", "Dumbbell Chart"]' });
-    dialogue.lastJournalist = "Bar Chart.";
-    await call(tools.recordSlot, { slot: "1", field: "chosen", value: "Bar Chart" });
-    expect(meta().slots[0].chosen).toBe("Bar and column");
-  });
-
   it("should record the catalogue's name for a treatment the model spelled its own way", async () => {
-    const tools = storyboardTools(bases, dialogue);
-    await call(tools.recordSlot, { slot: "1", field: "candidates", value: "Bar Chart, Lollipop Chart" });
-    expect(meta().slots[0].candidates).toEqual(["Bar and column", "Lollipop"]);
+    const tools = await withFormat();
+    await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Bar Chart", why: "ranks six" }, { type: "Treemap chart", why: "part of a whole" }] });
+    expect(meta().slots[0].candidates).toEqual(["Bar and column", "Treemap"]);
   });
 
   it("should refuse a candidate that is not a type of the catalogue", async () => {
+    const tools = await withFormat();
     await expect(
-      call(storyboardTools(bases, dialogue).recordSlot, { slot: "1", field: "candidates", value: "Bar Chart, Galaxy plot" }),
+      call(tools.showCandidates, { slot: "1", candidates: [{ type: "Bar Chart", why: "a" }, { type: "Galaxy plot", why: "b" }] }),
     ).rejects.toThrow(/"Galaxy plot" is not a chart type/);
   });
+
+  it("should refuse two candidates that are the same idea, as Splash's menu does", async () => {
+    const tools = await withFormat();
+    await expect(
+      call(tools.showCandidates, { slot: "1", candidates: [{ type: "Bar Chart", why: "a" }, { type: "Lollipop", why: "b" }] }),
+    ).rejects.toThrow(/way\(s\) of seeing this data/);
+  });
+
+  it("should accept the journalist's spelling of a candidate and record its format's interaction", async () => {
+    const tools = await withFormat();
+    await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Bar Chart", why: "a" }, { type: "Treemap", why: "b" }] });
+    dialogue.lastJournalist = "Bar and column.";
+    await call(tools.recordSlot, { slot: "1", field: "chosen", value: "Comparison (Bar Chart)" });
+    expect([meta().slots[0].chosen, meta().slots[0].interaction]).toEqual(["Bar and column", "none"]);
+  });
+
+  it("should fill the slot's proves with the confirmed takeaway", async () => {
+    dialogue.lastJournalist = TAKEAWAY;
+    const tools = storyboardTools(bases, dialogue);
+    await call(tools.recordTakeaway, { sentence: TAKEAWAY });
+    await withFormat(tools);
+    expect(meta().slots[0].proves).toBe(TAKEAWAY);
+  });
 });
+
+async function withFormat(tools = storyboardTools(bases, dialogue)) {
+  dialogue.lastJournalist = "A chart.";
+  await call(tools.recordSlot, { slot: "1", field: "medium", value: "chart" });
+  dialogue.lastJournalist = "Static.";
+  await call(tools.recordSlot, { slot: "1", field: "format", value: "static" });
+  return tools;
+}

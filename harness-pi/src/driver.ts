@@ -275,7 +275,7 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
     const sess = await session(
       "skill:storyboard",
       "story",
-      `You are the storyboard step of Splash, running locally. The story is ${o.storyDir}. You talk with the journalist one question at a time and end your turn after each question. You never write STORYBOARD.md yourself: every answer is recorded with a record_ tool (record_takeaway, record_claim, record_hand, record_language, record_slot, record_subject), and the palette with propose_palette then record_palette. A record only exists if its tool returned "recorded"; never say you recorded something otherwise. Record an answer only after the journalist has given it; when they do not know, propose one with your reasoning and record it only once they accept. This run produces slot 1 only.\n\n` +
+      `You are the storyboard step of Splash, running locally. The story is ${o.storyDir}. You talk with the journalist one question at a time and end your turn after each question. You never write STORYBOARD.md yourself: every answer is recorded with a record_ tool (record_takeaway, record_claim, record_hand, record_language, record_slot, record_subject), the candidates menu is built with show_candidates and shown as it returns, and the palette with propose_palette then record_palette. A record only exists if its tool returned "recorded"; never say you recorded something otherwise. Record an answer only after the journalist has given it; when they do not know, propose one with your reasoning and record it only once they accept. This run produces slot 1 only.\n\n` +
         [p.body, ...p.requiredReads].map(read).join("\n\n---\n\n"),
       [
         f.readFile,
@@ -285,6 +285,7 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
         sb.recordHand,
         sb.recordLanguage,
         sb.recordSlot,
+        sb.showCandidates,
         sb.recordSubject,
         pal.propose,
         pal.record,

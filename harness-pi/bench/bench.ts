@@ -538,7 +538,7 @@ const tools = phase === "designer"
   : phase === "deliver"
   ? [f.readFile, f.listDir, dl.offer, dl.make, dl.closing, dl.recordClosing]
   : phase === "storyboard"
-  ? [f.readFile, f.listDir, sb.recordTakeaway, sb.recordClaim, sb.recordHand, sb.recordLanguage, sb.recordSlot, pal.propose, pal.record]
+  ? [f.readFile, f.listDir, sb.recordTakeaway, sb.recordClaim, sb.recordHand, sb.recordLanguage, sb.recordSlot, sb.showCandidates, sb.recordSubject, pal.propose, pal.record]
   : phase === "craft-zones"
   ? [f.readFile, f.listDir, f.writeFile, f.editFile, lookTool(bases), r.render]
   : writeless
