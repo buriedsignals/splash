@@ -315,6 +315,24 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
     say(`STORYBOARD stop: ${res.stop}`);
   }
 
+  /**
+   * The few-valued text columns of data.json and their values, put in front of the craft prompt: a
+   * table with several rows per year (by location, by sex) must be filtered to one series, and the
+   * 12B twice drew all of them as one line before it read the columns.
+   */
+  function dataSummary(path: string): string {
+    if (!existsSync(path)) return "";
+    const table = JSON.parse(readFileSync(path, "utf8")) as { columns: { name: string; type: string }[]; rows: unknown[][] };
+    const lines = table.columns.flatMap((c, i) => {
+      if (c.type === "number") return [];
+      const values = [...new Set(table.rows.map((r) => r[i]).filter((v) => v !== null && v !== "").map(String))];
+      return values.length > 1 && values.length <= 6 ? [`- ${c.name}: ${values.map((v) => JSON.stringify(v)).join(", ")}`] : [];
+    });
+    return lines.length
+      ? `data.json has ${table.rows.length} rows, and these text columns split them into groups — keep only the rows the takeaway is about:\n${lines.join("\n")}\n\n`
+      : "";
+  }
+
   async function craftPhase(): Promise<string | null> {
     const meta = storyboardMeta(o.storyDir);
     const slot = (meta.slots ?? [])[0];
@@ -365,7 +383,7 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
     // The 12B often says DONE, or stops, while its beat still refuses to render. The harness renders
     // the beat itself and hands the exact refusal back in the SAME session (its context intact), up to
     // three times, instead of opening a new session that starts from nothing.
-    let prompt = `Slot ${beat} of ${o.storyDir} is a static "${slot.chosen}" beat, prepared at beats/${beat}/. The confirmed takeaway is in STORYBOARD.md and is the title, word for word. Write every word on the plate (eyebrow, labels, unit, standfirst, alt) in the story's language, "${meta.language ?? "en"}", whatever language the data's column names are in. Write beats/${beat}/beat.mjs as CONTRACT.md says, render it with render_beat (beat "${beat}", format "static"), look at the PNG, fix what is wrong, and reply DONE when the render is right.`;
+    let prompt = `${dataSummary(join(beatDir, "data.json"))}Slot ${beat} of ${o.storyDir} is a static "${slot.chosen}" beat, prepared at beats/${beat}/. The confirmed takeaway is in STORYBOARD.md and is the title, word for word. Write every word on the plate (eyebrow, labels, unit, standfirst, alt) in the story's language, "${meta.language ?? "en"}", whatever language the data's column names are in. Write beats/${beat}/beat.mjs as CONTRACT.md says, render it with render_beat (beat "${beat}", format "static"), look at the PNG, fix what is wrong, and reply DONE when the render is right.`;
     let final: { exitCode: number; stderr: string } = { exitCode: 1, stderr: "beat.mjs was never written" };
     const craftStart = Date.now();
     for (let attempt = 0; attempt < 3 && Date.now() - craftStart < 20 * 60_000; attempt++) {
