@@ -123,6 +123,7 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
     const s = await whereIs(o.storyDir);
     const state = `${s.phase}/${s.status}/${s.resume}`;
     say(`STATE ${state}`);
+    o.journalist.phase = s.phase;
     if (s.phase === "done")
       return {
         outcome: "done",

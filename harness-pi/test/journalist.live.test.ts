@@ -22,4 +22,12 @@ describe.skipIf(!up)("scripted journalist on the local server", () => {
     );
     expect(answer).toBe(sheet.closing);
   }, 60_000);
+
+  it("should never answer a delivery question during the storyboard", async () => {
+    const sheet = await Bun.file(SHEET).json();
+    const j = scriptedJournalist(sheet);
+    j.phase = "storyboard";
+    const answer = await j.answer("How would you like the final file delivered to you: as an owned file or an embed?");
+    expect(answer).not.toBe(sheet.delivery);
+  }, 60_000);
 });

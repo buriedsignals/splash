@@ -6,7 +6,15 @@ import { createInterface } from "node:readline/promises";
 
 export interface Journalist {
   answer(said: string): Promise<string>;
+  /** The phase the driver is in, so a scripted journalist never answers a later gate early. */
+  phase?: string;
 }
+
+/** Sheet keys that only make sense after the storyboard: a question in an earlier phase is never one of them. */
+const LATER_KEYS: Record<string, string[]> = {
+  storyboard: ["approval", "delivery", "closing"],
+  framing: ["approval", "delivery", "closing"],
+};
 
 export const humanJournalist = (): Journalist => ({
   async answer(said) {
@@ -66,8 +74,10 @@ export function scriptedJournalist(
   const log: { said: string; key: string; answer: string }[] = [];
   return {
     log,
+    phase: undefined as string | undefined,
     async answer(said) {
-      const keys = Object.keys(SHEET_KEYS);
+      const excluded = LATER_KEYS[this.phase ?? ""] ?? [];
+      const keys = Object.keys(SHEET_KEYS).filter((k) => !excluded.includes(k));
       const res = await fetch(`${server}/v1/chat/completions`, {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -97,7 +107,7 @@ export function scriptedJournalist(
         .trim()
         .toLowerCase()
         .replace(/[^a-z]/g, "");
-      const key = closing ? "closing" : classified;
+      const key = closing && !excluded.includes("closing") ? "closing" : keys.includes(classified) ? classified : "other";
       // A journalist never agrees to a takeaway that is not theirs: asked to confirm one the desk
       // wrote, the sheet's journalist answers with their own sentence.
       const proposesTakeaway =
