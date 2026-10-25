@@ -17,7 +17,7 @@ write this story's from scratch with `write_file`.
 | `subject` | The `name` of the bar the takeaway is about. It is drawn in the accent. |
 | `comparison` | The `name`s of the bars the subject is compared to. |
 | `comparisonSum` | Their values added up, COMPUTED. |
-| `comparisonNote` | The annotation drawn beside them, with the computed number. |
+| `comparisonNote` | The annotation drawn as a bracket over the comparison bars: it states THEIR sum (`comparisonSum`), computed, never a total that includes the subject. |
 | `format(v)` | How a value is printed (decimals, decimal comma or point for the language). |
 | `title` | The headline, in two or three forms, longest first. It says the journalist's takeaway. |
 | `limits` | The standfirst, in forms, longest first: unit, scope, the limits the journalist named. |

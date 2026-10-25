@@ -29,6 +29,13 @@ if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")} (
 // The beat's own claim, checked against its own data BEFORE anything is drawn: a number that
 // drifted from the data refuses the render rather than shipping a stale headline.
 beat.check();
+// The note is drawn as a bracket over the comparison bars, so the number it states must be theirs:
+// a 12B beat once bracketed the five smaller networks (180) with the six-network total (394).
+const sum = beat.rows.filter((r) => beat.comparison.includes(r.name)).reduce((s, r) => s + r.value, 0);
+if (Math.abs(sum - beat.comparisonSum) > 1e-9) throw new Error(`comparisonSum is ${beat.comparisonSum}, but the comparison bars add up to ${sum}`);
+const stated = (beat.comparisonNote.match(/\d+(?:[.,\s]\d+)*/g) ?? []).map((n) => Number(n.replace(/\s/g, "").replace(",", ".")));
+if (!stated.some((n) => Math.abs(n - sum) < 0.05 * Math.max(1, sum)) && !beat.comparisonNote.includes(beat.format(sum)))
+  throw new Error(`comparisonNote is drawn over the comparison bars, so it must state their sum (${beat.format(sum)}); it says: ${beat.comparisonNote}`);
 
 const facts = beatFacts(
   beat.rows.map((r) => ({ key: r.name, label: r.name, value: r.value })),
