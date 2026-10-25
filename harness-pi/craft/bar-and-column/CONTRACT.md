@@ -15,7 +15,7 @@ write this story's from scratch with `write_file`.
 | `eyebrow` | The rubric above the title, two to four words, in the story's language. |
 | `rows` | One `{ name, value }` per bar, from `data.json`, sorted from the largest. |
 | `subject` | The `name` of the bar the takeaway is about. It is drawn in the accent. |
-| `comparison` | The `name`s of the bars the subject is compared to. |
+| `comparison` | The `name`s of the bars the subject is compared to AS A SET ("more than the next five together"). When the takeaway is not about such a set — a ranking, a leader, a reversal — leave it `[]`, with `comparisonSum: 0` and `comparisonNote: ""`: no bracket is drawn. |
 | `comparisonSum` | Their values added up, COMPUTED. |
 | `comparisonNote` | The annotation drawn as a bracket over the comparison bars: it states THEIR sum (`comparisonSum`), computed, never a total that includes the subject. |
 | `format(v)` | How a value is printed (decimals, decimal comma or point for the language). |

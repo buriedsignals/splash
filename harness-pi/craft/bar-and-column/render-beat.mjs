@@ -55,7 +55,7 @@ assertHeadlineNumbersDrawn([beat.title].flat()[0], beat.rows.map((r) => r.value)
 const sum = beat.rows.filter((r) => beat.comparison.includes(r.name)).reduce((s, r) => s + r.value, 0);
 if (Math.abs(sum - beat.comparisonSum) > 1e-9) throw new Error(`comparisonSum is ${beat.comparisonSum}, but the comparison bars add up to ${sum}`);
 const stated = (beat.comparisonNote.match(/\d+(?:[.,\s]\d+)*/g) ?? []).map((n) => Number(n.replace(/\s/g, "").replace(",", ".")));
-if (!stated.some((n) => Math.abs(n - sum) < 0.05 * Math.max(1, sum)) && !beat.comparisonNote.includes(beat.format(sum)))
+if (beat.comparison.length && !stated.some((n) => Math.abs(n - sum) < 0.05 * Math.max(1, sum)) && !beat.comparisonNote.includes(beat.format(sum)))
   throw new Error(`comparisonNote is drawn over the comparison bars, so it must state their sum (${beat.format(sum)}); it says: ${beat.comparisonNote}`);
 
 const facts = beatFacts(
