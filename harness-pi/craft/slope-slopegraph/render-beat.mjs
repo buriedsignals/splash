@@ -33,6 +33,17 @@ import { existsSync as storyboardExists, readFileSync as readStoryboard } from "
     const takeaway = field("takeaway")?.replace(/\\"/g, '"');
     const norm = (t) => String(t).replace(/\s+/g, " ").trim().replace(/[.。]$/, "");
     const headline = [beat.title].flat()[0];
+    // The standfirst carries the limits the journalist named (doctrine: unit, scope, limits); a 12B
+    // beat replaced them with its own sentences ("Lisboa recorded 214 million trips...").
+    const named = field("limits")?.replace(/\\"/g, '"');
+    const standfirst = [beat.limits].flat()[0];
+    if (named && !/^none$/i.test(named) && standfirst !== undefined) {
+      const words = (t) => String(t).toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((w) => w.length > 3);
+      const said = new Set(words(standfirst));
+      const theirs = words(named);
+      if (theirs.length && theirs.filter((w) => said.has(w)).length / theirs.length < 0.4)
+        throw new Error(`the standfirst's first form must carry the limits the journalist named, in their words (shorter forms may follow): ${named}`);
+    }
     if (takeaway && headline !== undefined && norm(headline) !== norm(takeaway))
       throw new Error(`title's first form must be the journalist's takeaway copied as a literal string, not computed. It renders as: "${norm(headline)}" — it must be: "${takeaway}"`);
   }
