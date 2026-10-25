@@ -1,0 +1,32 @@
+[project]
+name = "splash-training"
+version = "0.1.0"
+description = "Dataset, LoRA training and GGUF export for the Splash local harness (Gemma 4 12B)."
+requires-python = ">=3.11"
+# The dataset tools, the launcher's guards and the tests are stdlib only.
+dependencies = []
+
+[project.optional-dependencies]
+# Local launcher (training/pod/pod.py), which drives RunPod over its SDK and SSH.
+launcher = ["runpod>=1.7.0"]
+# Installed on the pod by training/pod/setup.sh. ALL TO BE PINNED from the run that succeeds:
+# copy the exact versions from that run's /root/out/versions.txt (plan U12 step 5).
+# Candidates from the plan: unsloth 2026.10.7, transformers 5.13.0 (forced over Unsloth's pin).
+pod = [
+  "torch",          # TO BE PINNED
+  "unsloth",        # TO BE PINNED (candidate 2026.10.7)
+  "unsloth_zoo",    # TO BE PINNED
+  "transformers",   # TO BE PINNED (candidate 5.13.0, an override over unsloth's pin)
+  "trl",            # TO BE PINNED
+  "datasets",
+  "safetensors",
+  "huggingface_hub[cli]",
+  "pillow",
+]
+
+[tool.uv]
+# Mirrors Tom's override in buriedsignals/fine-tuning scripts/gemma4-12b/train.py; TO BE PINNED.
+override-dependencies = ["transformers==5.13.0"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

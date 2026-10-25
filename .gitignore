@@ -59,3 +59,7 @@ docs/design-base/references/*/*/screenshot.png
 *.gguf
 .splash-harness/
 training/data/
+
+# Training outputs and caches
+training/runs/
+__pycache__/
