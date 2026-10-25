@@ -19,7 +19,22 @@ delivered render opens with the journalist's takeaway word for word (read from t
 
 4/4 completed, 62 minutes for the batch (15.5 min per story on average).
 
-## What the renders show (looked at, not inferred)
+## Second pass — 2026-10-25 21:29–22:29, harness up to `c31672262`
+
+| Story | Completed | Headline | Gate refusals | Wall clock | Storyboard | Craft |
+|---|---|---|---|---|---|---|
+| r8-chart-static-german-road-deaths-by-mode (held out) | ✅ | ✅ | 2 | 17.1 min | 8.0 min | 4.9 min |
+| stress-q-safety-incidents | ✅ | ✅ | 8 | 12.4 min | 7.7 min | 1.9 min |
+| stress-ad-polish-hospital-beds | ✅ | ✅ | 3 | 14.7 min | 5.7 min | 5.8 min |
+| stress-p-transport-ridership | ✅ | ✅ | 6 | 15.5 min | 10.1 min | 1.8 min |
+
+4/4 again, 60 minutes. **Across both passes: 8/8 completed with the takeaway as headline.**
+
+Renders looked at: r8 drew a true line (the journalist asked for Line; the earlier substitution is fixed),
+36 → 214 with the 2015 level marked. The Polish ranking was right but every bar read "0,004"; the bar kit now
+refuses sub-0.1 values and labels that collapse distinct values (`cc624c98d`), not yet re-measured.
+
+## What the renders show (first pass) (looked at, not inferred)
 
 - **r8 (held out):** the all-areas pedelec series from the table, 36 (2015) → 214 (2025), takeaway as title,
   the journalist's limits as standfirst, dated Destatis credit. The 12B chose an area treatment after telling
