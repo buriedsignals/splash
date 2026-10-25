@@ -333,11 +333,17 @@ describe("slot discipline", () => {
     await expect(call(tools.showCandidates, { slot: "1", candidates: [{ type: "Treemap", why: "a" }] })).rejects.toThrow(/at least two/);
   });
 
-  it("should refuse two candidates that are the same idea, as Splash's menu does", async () => {
+  it("should replace a same-idea candidate by a distinct idea and say so", async () => {
+    const tools = await withFormat();
+    const r = await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Bar Chart", why: "a" }, { type: "Lollipop", why: "b" }] });
+    expect([meta().slots[0].candidates, /Lollipop is the same idea/.test(r.content[0].text)]).toEqual([["Bar and column", "Dot strip"], true]);
+  });
+
+  it("should still refuse two same-idea candidates it cannot draw", async () => {
     const tools = await withFormat();
     await expect(
-      call(tools.showCandidates, { slot: "1", candidates: [{ type: "Bar Chart", why: "a" }, { type: "Lollipop", why: "b" }] }),
-    ).rejects.toThrow(/way\(s\) of seeing this data/);
+      call(tools.showCandidates, { slot: "1", candidates: [{ type: "Treemap", why: "a" }, { type: "Treemap", why: "b" }] }),
+    ).rejects.toThrow();
   });
 
   it("should accept the journalist's spelling of a candidate and record its format's interaction", async () => {

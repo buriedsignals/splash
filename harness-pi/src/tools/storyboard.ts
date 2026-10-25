@@ -458,15 +458,24 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       const named = candidates.map((c) => ({ type: canonicalTreatment(c.type, medium), why: c.why, format: String(current.format) }));
       const profile = JSON.parse(readFileSync(join(bases.storyDir, "source", "profile.json"), "utf8"));
       let rows;
+      let swapped = "";
       try {
         rows = formatCandidateRows({ medium, candidates: named, profile });
       } catch (e) {
-        throw new Error(`${(e as Error).message}${distinctHint(named.map((c) => c.type))} Types this local harness can draw: ${LOCAL_MENU()}.`);
+        // Two candidates of one idea (the 12B's habit: Bar and column with Lollipop). Keep the first
+        // drawable one and replace the others by distinct ideas, saying so in the menu.
+        const lead = named.find((c) => adapterFor(c.type) && DISTINCT_FROM[c.type]?.length);
+        const sameIdea = /way\(s\) of seeing this data/.test((e as Error).message);
+        if (!sameIdea || !lead) throw new Error(`${(e as Error).message}${distinctHint(named.map((c) => c.type))} Types this local harness can draw: ${LOCAL_MENU()}.`);
+        const dropped = named.filter((c) => c !== lead).map((c) => c.type);
+        named.splice(0, named.length, lead, { type: DISTINCT_FROM[lead.type][0], why: "a different way of seeing the same values", format: lead.format });
+        rows = formatCandidateRows({ medium, candidates: named, profile });
+        swapped = ` (${dropped.join(", ")} ${dropped.length > 1 ? "are" : "is"} the same idea as ${lead.type}; replaced by ${named[1].type})`;
       }
       if (!named.some((c) => adapterFor(c.type)))
         throw new Error(`this local harness can draw none of these yet; include at least one of the types it has a kit for: ${LOCAL_MENU()}`);
       await mutateStoryboard(path, { slot: { id: slot, fields: { candidates: named.map((c) => c.type) } } });
-      return text(`recorded ${named.length} candidates for slot ${slot}. Show the journalist this menu, then ask which one:\n${rows.map((r: { line: string; type: string }) => (adapterFor(r.type) ? r.line : `${r.line}\n  (this local harness cannot draw it yet)`)).join("\n")}`);
+      return text(`recorded ${named.length} candidates for slot ${slot}${swapped}. Show the journalist this menu, then ask which one:\n${rows.map((r: { line: string; type: string }) => (adapterFor(r.type) ? r.line : `${r.line}\n  (this local harness cannot draw it yet)`)).join("\n")}`);
     },
   });
 
