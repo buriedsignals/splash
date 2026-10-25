@@ -18,7 +18,9 @@ import {
   confirmFormatReachable,
   groundingScalar,
   resolveGrounding,
+  typeSurvey,
 } from "../../../skills/storyboard/scripts/propose.mjs";
+import { treatmentNames } from "../../../skills/storyboard/scripts/producer-gate.mjs";
 import {
   checkStoryboard,
   parseStoryboard,
@@ -95,6 +97,16 @@ export function candidateList(value: string): string[] {
     .filter(Boolean);
 }
 
+/** "Bar Chart" → "Bar and column": the type-survey row a spelling names, for the slot's medium. */
+export function canonicalTreatment(spelling: string, medium = "chart"): string {
+  const rows = typeSurvey().filter((r: { medium: string }) => r.medium === medium);
+  const asked = new Set(treatmentNames(spelling));
+  const hits = rows.filter((r: { type: string }) => treatmentNames(r.type).some((n: string) => asked.has(n)));
+  if (!hits.length)
+    throw new Error(`${JSON.stringify(spelling)} is not a ${medium} type of the catalogue. Use one of: ${rows.map((r: { type: string }) => r.type).join(", ")}`);
+  return hits[0].type;
+}
+
 const text = (t: string) => ({
   content: [{ type: "text" as const, text: t }],
   details: {},
@@ -119,6 +131,11 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       : body.replace(/\n---\n/, `\n  - id: ${id}\n---\n`);
     await writeStoryboardAtomic(path, withSlot);
   }
+
+  const currentSlot = (id: string): Record<string, any> | undefined =>
+    existsSync(path)
+      ? (parseStoryboard(readFileSync(path, "utf8")).meta.slots ?? []).find((s: { id: unknown }) => String(s.id) === id)
+      : undefined;
 
   const status = async () => {
     const { meta } = parseStoryboard(readFileSync(path, "utf8"));
@@ -213,6 +230,8 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       if (!allowedSlots.includes(slot)) {
         throw new Error(`this run produces slot(s) ${allowedSlots.join(", ")} only; record the journalist's answers on those`);
       }
+      const medium = String(currentSlot(slot)?.medium ?? "chart");
+      if (field === "chosen") value = canonicalTreatment(value, medium);
       if (field === "chosen") {
         const { meta } = existsSync(path) ? parseStoryboard(readFileSync(path, "utf8")) : { meta: { slots: [] as any[] } };
         const current = (meta.slots ?? []).find((s: { id: unknown }) => String(s.id) === slot);
@@ -226,7 +245,7 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       const fields: Record<string, unknown> = {
         [field]:
           field === "candidates"
-            ? candidateList(value)
+            ? candidateList(value).map((c) => canonicalTreatment(c, medium))
             : value,
       };
       if (field === "format") {

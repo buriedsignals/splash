@@ -187,6 +187,18 @@ describe("slot discipline", () => {
     await call(tools.recordSlot, { slot: "1", field: "candidates", value: '["Bar Chart", "Dumbbell Chart"]' });
     dialogue.lastJournalist = "Bar Chart.";
     await call(tools.recordSlot, { slot: "1", field: "chosen", value: "Bar Chart" });
-    expect(meta().slots[0].chosen).toBe("Bar Chart");
+    expect(meta().slots[0].chosen).toBe("Bar and column");
+  });
+
+  it("should record the catalogue's name for a treatment the model spelled its own way", async () => {
+    const tools = storyboardTools(bases, dialogue);
+    await call(tools.recordSlot, { slot: "1", field: "candidates", value: "Bar Chart, Lollipop Chart" });
+    expect(meta().slots[0].candidates).toEqual(["Bar and column", "Lollipop"]);
+  });
+
+  it("should refuse a candidate that is not a type of the catalogue", async () => {
+    await expect(
+      call(storyboardTools(bases, dialogue).recordSlot, { slot: "1", field: "candidates", value: "Bar Chart, Galaxy plot" }),
+    ).rejects.toThrow(/"Galaxy plot" is not a chart type/);
   });
 });
