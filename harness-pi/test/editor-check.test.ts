@@ -17,6 +17,11 @@ describe("editor proposals checked by code", () => {
     expect(p.unsourcedNumbers).toEqual([]);
   });
 
+  it("should read each CSV cell as its own number", () => {
+    const [p] = checkEditorProposals(reply("Faro has a 9 km network.", ["data.csv: Faro 11 million trips, 9 km, 2025"]), STORY)!;
+    expect(p.unsourcedNumbers).toEqual([]);
+  });
+
   it("should carry Splash's grounding verdict for the takeaway", () => {
     const [p] = checkEditorProposals(reply("Lisboa carries 214 of the 394 million trips.", []), STORY)!;
     expect(p.grounding).toBe("supported");

@@ -24,6 +24,15 @@ function numbersIn(text: string): string[] {
   return [...new Set(text.match(NUMBER) ?? [])];
 }
 
+/** Every numeric cell of the CSV: its commas separate cells, so they are never decimal marks. */
+function csvCells(csv: string): string[] {
+  return csv
+    .split(/[\r\n,]+/)
+    .map((c) => c.trim())
+    .filter((c) => /^-?\d+(\.\d+)?$/.test(c))
+    .map((c) => c.replace(/^-/, ""));
+}
+
 /** Each numeric column's total, the one derived figure a framing routinely states ("394 million"). */
 function columnTotals(csv: string): string[] {
   const [head, ...rows] = csv.trim().split(/\r?\n/).map((l) => l.split(","));
@@ -58,7 +67,7 @@ export function checkEditorProposals(
     readFileSync(join(source, "profile.json"), "utf8"),
   );
   const known = new Set(
-    [...numbersIn(csv), ...numbersIn(article), ...columnTotals(csv)].map((n) =>
+    [...csvCells(csv), ...numbersIn(article), ...columnTotals(csv)].map((n) =>
       n.replace(",", "."),
     ),
   );
