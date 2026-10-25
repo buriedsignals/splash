@@ -162,6 +162,19 @@ export function isoDates(text: string): string[] {
   return out;
 }
 
+/** For a type the 12B reached for, catalogue types that see the same data as a DIFFERENT idea. */
+const DISTINCT_FROM: Record<string, string[]> = {
+  "Bar and column": ["Dot strip", "Treemap", "Pie and donut"],
+  Line: ["Slope (slopegraph)", "Small multiples", "Bump (ranking-over-time)"],
+  "Slope (slopegraph)": ["Line", "Dumbbell (range plot)", "Bar and column"],
+  "Area (and stacked area)": ["Bar and column", "Small multiples", "Slope (slopegraph)"],
+  "Diverging bar": ["Dot strip", "Bar and column", "Slope (slopegraph)"],
+};
+const distinctHint = (types: string[]) => {
+  const alt = [...new Set(types.flatMap((t) => DISTINCT_FROM[t] ?? []))].filter((t) => !types.includes(t));
+  return alt.length ? ` Different ideas to pair with ${types.join(" / ")}: ${alt.join(", ")}.` : "";
+};
+
 const text = (t: string) => ({
   content: [{ type: "text" as const, text: t }],
   details: {},
@@ -379,15 +392,17 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       const current = currentSlot(slot);
       if (!current?.medium || !current?.format) throw new Error("record the slot's medium and format with the journalist first");
       const medium = String(current.medium);
-      if (candidates.length < 2)
-        throw new Error("show at least two genuinely different chart types, each with why it fits this story, so the journalist has a real choice");
+      if (candidates.length < 2) {
+        const given = candidates.flatMap((c) => { try { return [canonicalTreatment(c.type, medium)]; } catch { return []; } });
+        throw new Error(`show at least two genuinely different chart types, each with why it fits this story, so the journalist has a real choice.${distinctHint(given)}`);
+      }
       const named = candidates.map((c) => ({ type: canonicalTreatment(c.type, medium), why: c.why, format: String(current.format) }));
       const profile = JSON.parse(readFileSync(join(bases.storyDir, "source", "profile.json"), "utf8"));
       let rows;
       try {
         rows = formatCandidateRows({ medium, candidates: named, profile });
       } catch (e) {
-        throw new Error(`${(e as Error).message} Types this local harness can draw: ${LOCAL_MENU()}.`);
+        throw new Error(`${(e as Error).message}${distinctHint(named.map((c) => c.type))} Types this local harness can draw: ${LOCAL_MENU()}.`);
       }
       if (!named.some((c) => adapterFor(c.type)))
         throw new Error(`this local harness can draw none of these yet; include at least one of the types it has a kit for: ${LOCAL_MENU()}`);
