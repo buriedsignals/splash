@@ -173,6 +173,16 @@ describe("treatment chosen a turn late", () => {
   });
 });
 
+describe("no menu yet", () => {
+  it("should hand the model a ready show_candidates call when the journalist named a drawable type", async () => {
+    const tools = await withFormat();
+    dialogue.lastJournalist = "Bar and column.";
+    await expect(call(tools.recordSlot, { slot: "1", field: "chosen", value: "Bar and column" })).rejects.toThrow(
+      /Call show_candidates now with Bar and column and one other type.*Line/,
+    );
+  });
+});
+
 describe("dates", () => {
   it("should refuse an as-of date the journalist never wrote", async () => {
     dialogue.lastJournalist = "Narodowy Fundusz Zdrowia, dane za 2025 r., as of 2026-08-21.";

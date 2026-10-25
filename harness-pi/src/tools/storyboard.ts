@@ -291,8 +291,14 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
         const { meta } = existsSync(path) ? parseStoryboard(readFileSync(path, "utf8")) : { meta: { slots: [] as any[] } };
         const current = (meta.slots ?? []).find((s: { id: unknown }) => String(s.id) === slot);
         const candidates: string[] = Array.isArray(current?.candidates) ? current.candidates : [];
-        if (!candidates.length)
-          throw new Error("no candidates are recorded yet: call show_candidates with at least two chart types and why each fits, show the journalist the menu it returns, then record their choice");
+        if (!candidates.length) {
+          const others = LOCAL_MENU().split("; ").filter((t) => !t.startsWith(value)).slice(0, 4).join("; ");
+          throw new Error(
+            adapterFor(value)
+              ? `no candidates are recorded yet. Call show_candidates now with ${value} and one other type that sees the data differently, each with why it fits — e.g. one of: ${others}. Show the journalist the menu it returns, then record their choice.`
+              : "no candidates are recorded yet: call show_candidates with at least two chart types and why each fits, show the journalist the menu it returns, then record their choice",
+          );
+        }
         if (!candidates.some((c) => c.toLowerCase() === value.toLowerCase())) {
           throw new Error(
             sameTreatment(value, dialogue.lastJournalist, medium)
