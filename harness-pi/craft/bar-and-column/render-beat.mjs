@@ -48,6 +48,13 @@ const missing = REQUIRED.filter((key) => beat[key] === undefined);
 if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")} (see CONTRACT.md)`);
 // The beat's own claim, checked against its own data BEFORE anything is drawn: a number that
 // drifted from the data refuses the render rather than shipping a stale headline.
+// Every drawn value is a number: a value left as text (a cell in another digit system, a "-")
+// concatenates instead of adding, and breaks every check after it.
+{
+  const notNumbers = beat.rows.map((r) => [r.name, r.value]).filter(([, v]) => typeof v !== "number" || !Number.isFinite(v));
+  if (notNumbers.length)
+    throw new Error(`rows hold values that are not numbers: ${notNumbers.slice(0, 3).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(", ")}. Convert them with Number(), or leave out the rows the data cannot give (say so in the standfirst)`);
+}
 beat.check();
 assertDrawsClaimColumn(beat.rows.map((r) => r.value), dirname(fileURLToPath(import.meta.url)));
 assertHeadlineNumbersDrawn([beat.title].flat()[0], beat.rows.map((r) => r.value), "bars");

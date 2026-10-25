@@ -48,6 +48,13 @@ const REQUIRED = ["eyebrow", "data", "cut", "unit", "valueUnit", "format", "titl
 const missing = REQUIRED.filter((key) => beat[key] === undefined);
 if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")} (see CONTRACT.md)`);
 // The beat's own claim, checked against its own data BEFORE anything is drawn.
+// Every drawn value is a number: a value left as text (a cell in another digit system, a "-")
+// concatenates instead of adding, and breaks every check after it.
+{
+  const notNumbers = beat.data.map((d) => [d.year, d.value]).filter(([, v]) => typeof v !== "number" || !Number.isFinite(v));
+  if (notNumbers.length)
+    throw new Error(`data hold values that are not numbers: ${notNumbers.slice(0, 3).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(", ")}. Convert them with Number(), or leave out the rows the data cannot give (say so in the standfirst)`);
+}
 beat.check();
 assertHeadlineNumbersDrawn([beat.title].flat()[0], beat.data.map((d) => d.value), "series");
 // One point per year (see the line adapter): several rows per year drawn as one series is wrong.

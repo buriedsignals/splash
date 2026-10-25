@@ -46,6 +46,13 @@ assertBeatMayEnter(HERE, SIZE, { what: basename(HERE) });
 const REQUIRED = ["eyebrow", "entity", "data", "unit", "format", "reference", "referenceLabel", "peakLabel", "title", "limits", "source", "alt", "check"];
 const missing = REQUIRED.filter((key) => beat[key] === undefined);
 if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")} (see CONTRACT.md)`);
+// Every drawn value is a number: a value left as text (a cell in another digit system, a "-")
+// concatenates instead of adding, and breaks every check after it.
+{
+  const notNumbers = beat.data.map((d) => [d.year, d.value]).filter(([, v]) => typeof v !== "number" || !Number.isFinite(v));
+  if (notNumbers.length)
+    throw new Error(`data hold values that are not numbers: ${notNumbers.slice(0, 3).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(", ")}. Convert them with Number(), or leave out the rows the data cannot give (say so in the standfirst)`);
+}
 beat.check();
 assertDrawsClaimColumn(beat.data.map((d) => d.value), dirname(fileURLToPath(import.meta.url)));
 assertHeadlineNumbersDrawn([beat.title].flat()[0], beat.data.map((d) => d.value), "series");
