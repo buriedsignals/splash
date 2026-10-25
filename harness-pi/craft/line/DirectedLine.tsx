@@ -1,0 +1,710 @@
+/**
+ * Beat 1 of "CO₂ suisse, retour au niveau de 1967", drawn through the design base.
+ *
+ * This supersedes the beat's former `EmissionsLine.tsx`, which it replaced entirely and which is
+ * gone: same geometry, typography taken out. Where that file declared
+ * `TITLE = { fontSize: 26, fontWeight: 700 }` and five siblings — constants copied from beat to
+ * beat until the whole tree used one family, four weights, and zero italic, tracking or case across
+ * 122 components — this one asks a DIRECTION what each register looks like, and never learns the
+ * answer. `registerOf` returns the attributes; `applyCase` decides whether the direction
+ * shouts; `deriveFurniture` turns an ink ROLE into a colour against the real ground.
+ *
+ * Its treatment labels go through the ARBITER rather than being placed one by one. That is the
+ * whole reason the arbiter exists: five treatments once put three labels in the same corner of this
+ * exact beat, each correctly placed by a treatment that could not see the others.
+ *
+ * The frame, the scales, the crossing and the peak all come from `crossing-geometry.ts`, unchanged
+ * and shared with the video beat.
+ */
+
+import { scaleLinear } from "d3-scale";
+import { tickStep } from "d3-array";
+import { area, line } from "d3-shape";
+import {
+  crossingGeometry,
+  fr,
+  yTickValues,
+  type Reading,
+} from "./crossing-geometry";
+import {
+  deriveFurniture,
+  measureText,
+  measureTextBand,
+} from "#shared/chart-beat/render-still.mjs";
+import { applyCase } from "#shared/chart-beat/registers.mjs";
+import { placeLabels } from "#shared/chart-beat/arbiter.mjs";
+import { inkThatReadsOver } from "#shared/chart-beat/annotation-ink.mjs";
+import { NON_TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
+import { leadOf, registerOf } from "#shared/design-base/register.mjs";
+import { MEASURED_ASPECT } from "#shared/chart-beat/type-at-size.mjs";
+
+const FRAME = { width: 900, height: 560 };
+/** The type this beat draws, so the measured aspect range can be looked up rather than guessed. */
+const TYPE = "line";
+// The worked example fixed "Mt" and French numbers; the harness copy takes them as props.
+const DEFAULT_UNIT = "Mt";
+const Y_TICK_HINT = 5;
+const X_TICK_HINT = 6;
+const MIN_GRIDLINE_GAP_PX = 20;
+
+type RegisterName = "display" | "eyebrow" | "body" | "axis" | "annot" | "value";
+
+export function DirectedLine({
+  data,
+  title,
+  source,
+  alt,
+  limits,
+  eyebrow,
+  reference,
+  referenceLabel,
+  peakLabel,
+  direction,
+  treatments,
+  unit = DEFAULT_UNIT,
+  format = fr,
+  eras = [],
+  frame,
+}: {
+  data: Reading[];
+  title: string;
+  source: string;
+  alt: string;
+  limits: string;
+  eyebrow: string;
+  reference: number;
+  referenceLabel: string;
+  peakLabel: string;
+  direction: any;
+  /** The ids `applicableTreatments` returned for this beat. A treatment absent from this list is
+   *  not drawn — the data shape decides, never the component. */
+  treatments: string[];
+  eras?: Array<{ from: number; to: number; label: string }>;
+  unit?: string;
+  format?: (v: number, decimals?: number) => string;
+  /** The frame this render draws at — one component serves landscape, portrait and square. */
+  frame?: { width: number; height: number };
+}) {
+  if (data.length < 2)
+    throw new Error(
+      "a crossing beat needs at least two readings, got " + data.length,
+    );
+
+  const { width, height } = frame ?? FRAME;
+  const { ink, muted, grid } = deriveFurniture(direction.ground);
+  const PAD = direction.pad;
+
+  /** A register, resolved once, with its ink already turned from a role into a colour. */
+  const reg = (name: RegisterName) => registerOf(direction, name);
+  const display = reg("display");
+  const eyebrowReg = reg("eyebrow");
+  const body = reg("body");
+  const axis = reg("axis");
+  const annot = reg("annot");
+  const value = reg("value");
+
+  /** Every text this component draws goes through here, so no call site decides case for itself. */
+  const set = (text: string, r: { transform: string }) =>
+    applyCase(text, r.transform);
+  const sizeOf = (r: {
+    fontSize: number;
+    fontWeight: number;
+    fontFamily: string;
+  }) => ({
+    fontSize: r.fontSize,
+    fontWeight: r.fontWeight,
+    fontFamily: r.fontFamily,
+  });
+
+  /**
+   * TRACKING IS WIDTH, AND `measureText` HAS NOWHERE TO PUT IT.
+   *
+   * Every other directed component in this tree carries this helper; this one measured with
+   * `measureText` alone and wrapped its display line against a width that ignored the register's
+   * own letter-spacing. Measured on the committed landscape render (1800x1120) and again on the new
+   * one (1920x1080): « EN 2024, LA SUISSE A ÉMIS MOINS DE CO2 SUR SON » ran off BOTH edges of the
+   * frame, in all three directions, because forty-six characters of tracking are about a hundred
+   * points of width that nothing counted.
+   */
+  const widthOf = (text: string, r: any) =>
+    measureText(text, sizeOf(r)) + Number(r.letterSpacing ?? 0) * Math.max(0, text.length - 1);
+
+  function wrap(text: string, maxWidth: number, r: any): string[] {
+    const lines: string[] = [];
+    let current = "";
+    for (const word of text.split(/\s+/)) {
+      const trial = current ? `${current} ${word}` : word;
+      if (current && widthOf(trial, r) > maxWidth) {
+        lines.push(current);
+        current = word;
+      } else current = trial;
+    }
+    return current ? [...lines, current] : lines;
+  }
+
+  // ── the header, composed as the direction says ────────────────────────────
+  const split = direction.header === "split";
+  const centred = direction.header === "centre";
+  const titleWidth = split ? (width - PAD * 2) * 0.62 : width - PAD * 2;
+  const titleLines = wrap(set(title, display), titleWidth, display);
+  const lead = leadOf(display);
+
+  const eyebrowBaseline = PAD + eyebrowReg.fontSize;
+  const titleBaseline = eyebrowBaseline + 20 + display.fontSize;
+  const titleBottom = titleBaseline + (titleLines.length - 1) * lead;
+
+  const limitsWidth = split ? (width - PAD * 2) * 0.33 : width - PAD * 2;
+  const limitsLines = wrap(limits, limitsWidth, body);
+  const bodyLead = leadOf(body);
+  const limitsBaseline = split ? titleBaseline : titleBottom + 26;
+  const limitsBottom = limitsBaseline + (limitsLines.length - 1) * bodyLead;
+
+  const ruleY = Math.max(titleBottom, limitsBottom) + 20;
+  const sourceBaseline = height - PAD;
+
+  // ── the plot ──────────────────────────────────────────────────────────────
+  const last = data[data.length - 1];
+  const endLabel = `${last.year} · ${format(last.mt)} ${unit}`;
+  const [floor, , ceiling] = yTickValues(data, reference);
+  const plotTop = ruleY + (direction.headRule ? 34 : 26);
+  const naturalBottom = height - (PAD + 26 + body.fontSize + 10);
+  /** Which ticks to draw is settled on the band the page offers, because the gutter they measure is
+   *  an input to the clamp below and the clamp is an input to the band they are finally drawn on. */
+  const offeredScale = scaleLinear()
+    .domain([floor, ceiling])
+    .range([naturalBottom, plotTop]);
+  const referenceYProvisional = offeredScale(reference);
+  const regularTicks = offeredScale
+    .ticks(Y_TICK_HINT)
+    .filter(
+      (v) =>
+        Math.abs(offeredScale(v) - referenceYProvisional) >= MIN_GRIDLINE_GAP_PX,
+    );
+  const yTicks = [...regularTicks, reference].sort((a, b) => a - b);
+  const topValue = Math.max(...yTicks);
+  const tickLabels = yTicks.map((v) =>
+    v === topValue ? `${format(v, 0)} ${unit}` : format(v, v === reference ? 1 : 0),
+  );
+  const gutterRight = PAD + 12 + widthOf(endLabel, value);
+  const gutterLeft = PAD + 12 + Math.max(...tickLabels.map((l) => widthOf(l, axis)));
+
+  /**
+   * THE MEASURED CLAMP, CARRIED OUT.
+   *
+   * `type-at-size.mjs` gives `line` an aspect range of 0.8 to 1.8 — plot width over plot height —
+   * and answers `clamp` at portrait and square. That verdict is an INSTRUCTION, and nothing was
+   * executing it: measured at 1080x1920, this plot came out 380 x 600 in component units, an aspect
+   * of 0.63, and fifty years of Swiss emissions read as a cliff rather than as a rise and a fall.
+   * Cleveland's banking is the reason the range exists; a slope is the whole argument of a line.
+   *
+   * So the plot keeps its width and REFUSES the extra height, and the slack is split above and
+   * below so the drawing sits where a reader expects it rather than hanging from the standfirst.
+   */
+  const plotWidthAt = width - gutterLeft - gutterRight;
+  const naturalHeight = naturalBottom - plotTop;
+  const floorAspect = MEASURED_ASPECT[TYPE]?.min;
+  const heldHeight = floorAspect
+    ? Math.min(naturalHeight, plotWidthAt / floorAspect)
+    : naturalHeight;
+  const slack = Math.max(0, naturalHeight - heldHeight);
+
+  const plotBottom = naturalBottom - slack / 2;
+  const padding = {
+    top: plotTop + slack / 2,
+    right: gutterRight,
+    bottom: PAD + 26 + body.fontSize + 10 + slack / 2,
+    left: gutterLeft,
+  };
+  /** The band everything is finally measured against. */
+  const gridScale = scaleLinear()
+    .domain([floor, ceiling])
+    .range([plotBottom, padding.top]);
+
+  /** RUNS ON ONE LINE SHARE A BASELINE, NOT AN INK-BOX EDGE — and the difference is visible.
+   *
+   *  MEASURED on this tree's own delivered SVGs: six country names under six groups came out on six
+   *  different baselines, 1.5px apart at 960px, 3px in the delivered file. The cause is that
+   *  `measureTextBand` answers per STRING — "Suède" carries an accent, "France" does not — so each
+   *  label got a box of its own height, the arbiter aligned the boxes, and the baselines fell where
+   *  they fell.
+   *
+   *  The COLLISION box stays the string's own ink, because inflating it to a common band costs real
+   *  labels: doing that dropped this corpus's end-value label in all three directions. What changes
+   *  is where the run is DRAWN inside the box the arbiter granted it — against the band of its
+   *  REGISTER, measured once on a probe carrying an ascender, a descender and a comma, from
+   *  whichever edge the chosen anchor holds fixed. Runs sharing an anchor and a y then share a
+   *  baseline, whatever glyphs they happen to carry. */
+  const BAND_PROBE = "Hxpg1,";
+  const bandOf = (r: any) => measureTextBand(BAND_PROBE, sizeOf(r));
+  const baselineOf = (p: any, r: any) => {
+    const band = bandOf(r);
+    // `above` holds the box's bottom edge, `below` its top, and the side anchors centre it.
+    if (p.anchor === "above") return p.box.y + p.box.height - band.descent;
+    if (p.anchor === "below") return p.box.y + band.ascent;
+    return p.box.y + p.box.height / 2 + (band.ascent - band.descent) / 2;
+  };
+
+  const g = crossingGeometry(data, { width, height, padding, reference });
+  const path = line<(typeof g.points)[number]>()
+    .x((p) => p.x)
+    .y((p) => p.y)
+    .digits(1)(g.points)!;
+
+  const on = (id: string) => treatments.includes(id);
+  const xOfYear = (year: number) => g.points.find((p) => p.year === year)?.x ?? null;
+
+  /** A centred mean, defined only where the whole window exists: a smoothed path must never be
+   *  drawn past the readings that support it. */
+  const SMOOTH_WINDOW = 5;
+  const half = Math.floor(SMOOTH_WINDOW / 2);
+  const smoothed = on("raw-under-smoothed")
+    ? g.points.slice(half, g.points.length - half).map((_, i) => {
+        const at = i + half;
+        let sum = 0;
+        for (let k = at - half; k <= at + half; k += 1) sum += data[k].mt;
+        return { x: g.points[at].x, y: gridScale(sum / SMOOTH_WINDOW) };
+      })
+    : [];
+  const smoothPath = smoothed.length
+    ? line<{ x: number; y: number }>().x((p) => p.x).y((p) => p.y).digits(1)(smoothed)!
+    : null;
+
+  const bandPath = on("area-to-reference")
+    ? area<(typeof g.points)[number]>()
+        .x((p) => p.x)
+        .y0(g.referenceY)
+        .y1((p) => p.y)
+        .digits(1)(g.points)!
+    : null;
+
+  const drawnEras = on("era-bands")
+    ? eras
+        .map((e) => ({ ...e, x1: xOfYear(e.from), x2: xOfYear(e.to) }))
+        .filter((e): e is typeof e & { x1: number; x2: number } => e.x1 !== null && e.x2 !== null)
+    : [];
+
+  const years = data.map((d) => d.year);
+  const xStep = tickStep(Math.min(...years), Math.max(...years), X_TICK_HINT);
+  const xTicks: number[] = [];
+  for (
+    let y = Math.ceil(Math.min(...years) / xStep) * xStep;
+    y <= Math.max(...years);
+    y += xStep
+  )
+    xTicks.push(y);
+  const ticksX = xTicks
+    .map((year) => ({ year, point: g.points.find((p) => p.year === year) }))
+    .filter(
+      (t): t is { year: number; point: (typeof g.points)[number] } =>
+        t.point !== undefined,
+    )
+    .map(({ year, point }) => ({ year, x: point.x }));
+
+  // ── the treatment layer, arbitrated ───────────────────────────────────────
+  // Each request names its register; the arbiter decides where — and whether — it lands. Nothing
+  // here places its own label, which is exactly the coupling the three-stacked-labels defect came
+  // from.
+  const requests = [
+    {
+      id: "end-value",
+      treatment: "direct-end-label-in-the-series-colour",
+      text: set(endLabel, value),
+      at: { x: g.end.x, y: g.end.y },
+      priority: 7,
+      register: value,
+      anchorPreference: "right",
+    },
+    {
+      id: "reference",
+      treatment: "accent-marks-the-thread",
+      text: set(referenceLabel, annot),
+      // 60pt in from the left edge of the plot, or 8% of it when the plot is narrower than the
+      // frame that number was tuned on — at 1080x1920 a fixed 60 lands 16% in, which is where the
+      // curve crosses the reference, and the label was drawn over the rise.
+      at: { x: g.plot.left + Math.min(60, (g.plot.right - g.plot.left) * 0.08), y: g.referenceY },
+      priority: 5,
+      register: annot,
+    },
+    ...(on("crossing-marked") && g.crossing
+      ? [
+          {
+            id: "crossing",
+            treatment: "crossing-marked",
+            text: set(`sous le niveau dès ${g.crossing.year}`, annot),
+            at: { x: g.crossing.x, y: g.crossing.y },
+            priority: 8,
+            register: annot,
+          },
+        ]
+      : []),
+    ...drawnEras.map((e, i) => ({
+      id: `era-${i}`,
+      treatment: "era-bands",
+      text: set(e.label, eyebrowReg),
+      at: { x: (e.x1 + e.x2) / 2, y: g.plot.top + 6 },
+      priority: 1,
+      register: eyebrowReg,
+    })),
+    {
+      id: "peak",
+      treatment: "accent-marks-the-thread",
+      text: set(peakLabel, annot),
+      at: { x: g.peak.x, y: g.peak.y },
+      priority: 4,
+      register: annot,
+    },
+  ];
+
+  // THE MARKS THE ARBITER MUST NOT SIT ON. The series is a path; what a label has to clear is the
+  // band of pixels it occupies, so each reading contributes a small box around its own point and
+  // the two marked points contribute their discs. Without this the end value lands on its own
+  // line — measured on the first render of this beat, in all three directions at once.
+  const HALF = Math.max(3, direction.stroke.series);
+  const marks = [
+    ...g.points.map((p) => ({
+      x: p.x - HALF,
+      y: p.y - HALF,
+      width: HALF * 2,
+      height: HALF * 2,
+    })),
+    { x: g.peak.x - 4, y: g.peak.y - 4, width: 8, height: 8 },
+    { x: g.end.x - 5, y: g.end.y - 5, width: 10, height: 10 },
+    // THE AXIS IS INK TOO, and the arbiter could not see it. Measured at 1080x1080: « Niveau de
+    // 1967 » took the `left` anchor, ran out of the plot and landed on the y tick « 32,5 » — 97% of
+    // the smaller run shared. A tick label sits at a box this component already knows, so it
+    // belongs in `avoid` exactly like a mark; nothing else was needed to clear it.
+    ...yTicks.map((v, i) => {
+      const text = set(tickLabels[i], axis);
+      const b = measureTextBand(text, sizeOf(axis));
+      const w = widthOf(text, axis);
+      return {
+        x: g.plot.left - 12 - w,
+        y: gridScale(v) + 4 - b.ascent,
+        width: w,
+        height: b.ascent + b.descent,
+      };
+    }),
+    ...ticksX.map((t) => {
+      const text = String(t.year);
+      const b = measureTextBand(text, sizeOf(axis));
+      const w = widthOf(text, axis);
+      return {
+        x: t.x - w / 2,
+        y: g.plot.bottom + 24 - b.ascent,
+        width: w,
+        height: b.ascent + b.descent,
+      };
+    }),
+  ];
+
+  const { placed, dropped } = placeLabels(
+    requests.map(({ id, treatment, text, at, anchors, priority }) => ({
+      id,
+      treatment,
+      text,
+      at,
+      anchors,
+      priority,
+    })),
+    {
+      frame: {
+        left: PAD,
+        top: plotTop - 24,
+        right: width - PAD,
+        bottom: plotBottom + 30,
+      },
+      measure: (text: string) => {
+        const request = requests.find((r) => r.text === text)!;
+        const band = measureTextBand(text, sizeOf(request.register));
+        return {
+          width: widthOf(text, request.register),
+          height: band.ascent + band.descent,
+        };
+      },
+      avoid: marks,
+    },
+  );
+  if (dropped.length)
+    console.log(
+      `  arbiter dropped ${dropped.length}: ` +
+        dropped.map((d) => `${d.id} (${d.why})`).join("; "),
+    );
+  const byId = new Map(placed.map((p) => [p.id, p]));
+
+  /** A GRIDLINE STOPS SHORT OF A LABEL IT WOULD RUN THROUGH. The arbiter clears the marks and the
+   *  tick labels it is handed; the gridlines are not among them, and handing them over is worse —
+   *  measured at all nine sizes and directions, it then dropped the crossing and both era labels,
+   *  because a plot with five gridlines has almost no two-line-high band a gridline is not in.
+   *  Measured on `creme` at 1920x1080 and 1080x1080, the 50 Mt gridline ran through the ascenders of
+   *  « pic de 1973 ». So the rule is broken around the label's box instead — the cartographer's
+   *  knock-out — which moves no label and leaves every gridline that crosses nothing untouched. */
+  const KNOCKOUT = 4;
+  const gridSegments = (gy: number) => {
+    const gaps = placed
+      .filter((p) => gy >= p.box.y - 1 && gy <= p.box.y + p.box.height + 1)
+      .map((p) => [p.box.x - KNOCKOUT, p.box.x + p.box.width + KNOCKOUT] as const)
+      .sort((a, b) => a[0] - b[0]);
+    const segments: Array<[number, number]> = [];
+    let from = g.plot.left;
+    for (const [a, b] of gaps) {
+      if (a > from) segments.push([from, Math.min(a, g.plot.right)]);
+      from = Math.max(from, b);
+    }
+    if (from < g.plot.right) segments.push([from, g.plot.right]);
+    return segments.filter(([a, b]) => b > a);
+  };
+  const registerById = new Map(requests.map((r) => [r.id, r.register]));
+
+  const textAt = (id: string) => {
+    const p = byId.get(id);
+    if (!p) return null;
+    const r = registerById.get(id)!;
+    return (
+      <text
+        x={p.box.x}
+        y={baselineOf(p, r)}
+        fill={r.fill}
+        fontFamily={r.fontFamily}
+        fontSize={r.fontSize}
+        fontWeight={r.fontWeight}
+        fontStyle={r.fontStyle}
+        letterSpacing={r.letterSpacing}
+      >
+        {p.text}
+      </text>
+    );
+  };
+
+  const headerAnchor = centred ? "middle" : "start";
+  const headerX = centred ? width / 2 : PAD;
+
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      role="img"
+    >
+      <desc>{alt}</desc>
+      <defs>
+        <clipPath id="above-ref">
+          <rect
+            x={g.plot.left}
+            y={g.plot.top}
+            width={g.plot.right - g.plot.left}
+            height={Math.max(0, g.referenceY - g.plot.top)}
+          />
+        </clipPath>
+        <clipPath id="below-ref">
+          <rect
+            x={g.plot.left}
+            y={g.referenceY}
+            width={g.plot.right - g.plot.left}
+            height={Math.max(0, g.plot.bottom - g.referenceY)}
+          />
+        </clipPath>
+      </defs>
+      <rect x={0} y={0} width={width} height={height} fill={direction.ground} />
+
+      {/* THE REFERENCE LEVEL IS DRAWN BEHIND THE DATA, and that is a decision about PLACE.
+          Drawn over the marks it read 1.08:1 against the accent it crossed on `creme`, 1.14:1 on
+          `rapport`, 1.48:1 on `nocturne` — every one under the 3:1 a non-text mark owes (SC
+          1.4.11). Recolouring could not save it: on `rapport` black reached only 2.96:1 against the
+          accent and white 1.00:1 against the ground, so `inkThatReadsOver` threw, which is
+          `visual-system.md`'s third outcome — "when NEITHER pole clears, the annotation is in the
+          wrong PLACE, not the wrong colour." A level is what the data is measured against; it
+          belongs under it.
+
+          AND IT STOPS AT THE CROSSING. Run to the plot's right edge it passed straight through the
+          two accented discs sitting on the level — the crossing's own mark and 2024's — and
+          `backgroundAt` reports the topmost shape under each sample, so those two discs were what
+          it crossed. Stopping the rule where the series meets it removes the overlap and states the
+          finding at the same time: the level holds until 2023, and the rule ends where that stops
+          being true. */}
+      <line
+        x1={g.plot.left}
+        x2={g.crossing ? g.crossing.x - 10 : g.plot.right}
+        y1={g.referenceY}
+        y2={g.referenceY}
+        stroke={inkThatReadsOver([direction.ground], NON_TEXT_CONTRAST_MIN)}
+        strokeWidth={direction.stroke.rule}
+        strokeDasharray="5 4"
+        opacity={0.55}
+      />
+
+      <text
+        x={headerX}
+        y={eyebrowBaseline}
+        fill={eyebrowReg.fill}
+        fontFamily={eyebrowReg.fontFamily}
+        fontSize={eyebrowReg.fontSize}
+        fontWeight={eyebrowReg.fontWeight}
+        letterSpacing={eyebrowReg.letterSpacing}
+        textAnchor={headerAnchor}
+      >
+        {set(eyebrow, eyebrowReg)}
+      </text>
+
+      {titleLines.map((l, i) => (
+        <text
+          key={l}
+          x={headerX}
+          y={titleBaseline + i * lead}
+          fill={display.fill}
+          fontFamily={display.fontFamily}
+          fontSize={display.fontSize}
+          fontWeight={display.fontWeight}
+          fontStyle={display.fontStyle}
+          letterSpacing={display.letterSpacing}
+          textAnchor={headerAnchor}
+        >
+          {l}
+        </text>
+      ))}
+
+      {limitsLines.map((l, i) => (
+        <text
+          key={l}
+          x={split ? PAD + (width - PAD * 2) * 0.67 : headerX}
+          y={limitsBaseline + i * bodyLead}
+          fill={body.fill}
+          fontFamily={body.fontFamily}
+          fontSize={body.fontSize}
+          fontWeight={body.fontWeight}
+          fontStyle={body.fontStyle}
+          textAnchor={centred ? "middle" : "start"}
+        >
+          {l}
+        </text>
+      ))}
+
+      {direction.headRule ? (
+        <line
+          x1={PAD}
+          x2={width - PAD}
+          y1={ruleY}
+          y2={ruleY}
+          stroke={grid}
+          strokeWidth={direction.stroke.rule}
+        />
+      ) : null}
+
+      <text
+        x={centred ? width / 2 : PAD}
+        y={sourceBaseline}
+        fill={body.fill}
+        fontFamily={body.fontFamily}
+        fontSize={body.fontSize - 1}
+        fontWeight={body.fontWeight}
+        fontStyle={body.fontStyle}
+        textAnchor={centred ? "middle" : "start"}
+      >
+        {source}
+      </text>
+
+      {drawnEras.map((e) => (
+        <rect
+          key={e.label}
+          x={e.x1}
+          y={g.plot.top}
+          width={e.x2 - e.x1}
+          height={g.plot.bottom - g.plot.top}
+          fill={muted}
+          opacity={0.09}
+        />
+      ))}
+
+      {bandPath ? (
+        <g>
+          <path d={bandPath} fill={direction.accent} opacity={0.15} clipPath="url(#above-ref)" />
+          <path d={bandPath} fill={muted} opacity={0.1} clipPath="url(#below-ref)" />
+        </g>
+      ) : null}
+
+      {yTicks.map((v, i) => (
+        <g key={v}>
+          {v === reference
+            ? null
+            : gridSegments(gridScale(v)).map(([x1, x2]) => (
+                <line
+                  key={x1}
+                  x1={x1}
+                  x2={x2}
+                  y1={gridScale(v)}
+                  y2={gridScale(v)}
+                  stroke={grid}
+                  strokeWidth={direction.stroke.rule}
+                />
+              ))}
+          <text
+            x={g.plot.left - 12}
+            y={gridScale(v) + 4}
+            fill={axis.fill}
+            fontFamily={axis.fontFamily}
+            fontSize={axis.fontSize}
+            fontWeight={axis.fontWeight}
+            letterSpacing={axis.letterSpacing}
+            textAnchor="end"
+          >
+            {set(tickLabels[i], axis)}
+          </text>
+        </g>
+      ))}
+      {ticksX.map((t) => (
+        <text
+          key={t.year}
+          x={t.x}
+          y={g.plot.bottom + 24}
+          fill={axis.fill}
+          fontFamily={axis.fontFamily}
+          fontSize={axis.fontSize}
+          fontWeight={axis.fontWeight}
+          letterSpacing={axis.letterSpacing}
+          textAnchor="middle"
+        >
+          {t.year}
+        </text>
+      ))}
+
+
+      {smoothPath ? (
+        <g>
+          {g.points.map((p) => (
+            <circle key={p.year} cx={p.x} cy={p.y} r={1.7} fill={direction.accent} opacity={0.3} />
+          ))}
+          <path
+            d={smoothPath}
+            fill="none"
+            stroke={direction.accent}
+            strokeWidth={direction.stroke.series * 1.25}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+          />
+        </g>
+      ) : (
+        <path
+          d={path}
+          fill="none"
+          stroke={direction.accent}
+          strokeWidth={direction.stroke.series}
+          strokeLinejoin="round"
+          strokeLinecap="round"
+        />
+      )}
+
+      <circle cx={g.peak.x} cy={g.peak.y} r={3} fill={muted} />
+      <circle cx={g.end.x} cy={g.end.y} r={4} fill={direction.accent} />
+
+      {on("crossing-marked") && g.crossing ? (
+        <circle cx={g.crossing.x} cy={g.crossing.y} r={3.5} fill={ink} />
+      ) : null}
+
+      {drawnEras.map((_, i) => textAt(`era-${i}`))}
+      {textAt("crossing")}
+      {textAt("reference")}
+      {textAt("peak")}
+      {textAt("end-value")}
+    </svg>
+  );
+}

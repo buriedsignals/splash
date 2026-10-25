@@ -76,7 +76,6 @@ function storyboardMeta(storyDir: string): Record<string, any> {
     .meta as unknown as Record<string, any>;
 }
 
-
 /** Both closing offers answered by the journalist, not merely offered ("pending"). */
 async function closingAnswered(exportDir: string): Promise<boolean> {
   if (!existsSync(join(exportDir, "HANDOVER.md"))) return false;
@@ -229,9 +228,7 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
       // are digested into the manifest as "pending"); the delivery is closed when both are answered.
       const beat = firstBeat();
       const exportDir = join(o.storyDir, "export", beat);
-      if (
-        (await closingAnswered(exportDir))
-      ) {
+      if (await closingAnswered(exportDir)) {
         steps.push({
           owner,
           stop: "delivered",
@@ -333,12 +330,9 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
     }
     const beat = String(slot.id);
     const beatDir = join(o.storyDir, "beats", beat);
-    for (const file of ["render-beat.mjs", "beat.example.mjs", "CONTRACT.md"])
+    // The adapter directory is the whole kit: generic runner, worked component, contract, example.
+    for (const file of readdirSync(adapter))
       cpSync(join(adapter, file), join(beatDir, file));
-    cpSync(
-      join(CHECKOUT, "proof/static-bar-top-emitters-2024/DirectedColumns.tsx"),
-      join(beatDir, "DirectedColumns.tsx"),
-    );
     if (!existsSync(join(beatDir, "BRIEF.md"))) {
       writeFileSync(
         join(beatDir, "BRIEF.md"),
@@ -453,8 +447,7 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
       journalist: o.journalist,
       dialogue,
       conversational: true,
-      done: async () =>
-        (await closingAnswered(exportDir)),
+      done: async () => await closingAnswered(exportDir),
       gaps: async () =>
         existsSync(join(exportDir, "HANDOVER.md"))
           ? "The closing offers are not both answered yet."
