@@ -277,7 +277,8 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
         throw new Error("interaction is recorded automatically when you record the journalist's chosen treatment; record chosen");
       if (!all.includes(field))
         throw new Error(`field must be one of ${all.join(", ")}`);
-      if (field === "chosen" && sameTreatment(value, dialogue.lastJournalist, String(currentSlot(slot)?.medium ?? "chart"))) {
+      const answers = [dialogue.lastJournalist, ...(dialogue.history ?? []).map((h) => h.answer)];
+      if (field === "chosen" && answers.some((a) => sameTreatment(value, a, String(currentSlot(slot)?.medium ?? "chart")))) {
         // The journalist named this treatment, in whatever spelling.
       } else if ((JOURNALIST_SLOT_FIELDS as readonly string[]).includes(field))
         assertJournalistOwns(field, value, dialogue);

@@ -162,6 +162,17 @@ describe("claim shape", () => {
   });
 });
 
+describe("treatment chosen a turn late", () => {
+  it("should accept the treatment the journalist named before answering the producer question", async () => {
+    const tools = await withFormat();
+    await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Bar and column", why: "a" }, { type: "Treemap", why: "b" }] });
+    dialogue.history = [{ proposal: "Which one?", answer: "Bar and column." }];
+    dialogue.lastJournalist = "Custom.";
+    await call(tools.recordSlot, { slot: "1", field: "chosen", value: "Bar and column" });
+    expect(meta().slots[0].chosen).toBe("Bar and column");
+  });
+});
+
 describe("dates", () => {
   it("should refuse an as-of date the journalist never wrote", async () => {
     dialogue.lastJournalist = "Narodowy Fundusz Zdrowia, dane za 2025 r., as of 2026-08-21.";
