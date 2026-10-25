@@ -66,6 +66,18 @@ describe("file tools", () => {
     await expect(call(write, { path, content: "x" })).rejects.toThrow(/malformed/);
   });
 
+  it("should read a story-relative path the root does not hold", async () => {
+    const { listDir } = fsTools(bases);
+    const r = await call(listDir, { path: "source/" });
+    expect(textOf(r)).toContain("data.csv");
+  });
+
+  it("should list the story for the path '.'", async () => {
+    const { listDir } = fsTools(bases);
+    const r = await call(listDir, { path: "." });
+    expect(textOf(r)).toContain("source/");
+  });
+
   it("should read a skill file by absolute path", async () => {
     const { readFile: read } = fsTools(bases);
     const r = await call(read, {

@@ -42,9 +42,16 @@ function realOrParent(path: string): string {
 }
 
 // The skills write paths from the Splash root ("stories/<slug>/STORYBOARD.md"), so a relative
-// path is read from the root; a path already inside the story is accepted as-is.
+// path is read from the root; a path already inside the story is accepted as-is. A relative path
+// that names nothing at the root but something in the story ("source/", "beats/1/beat.mjs") is the
+// story's: the 12B often writes them that way.
 function resolveFromRoot(bases: Bases, path: string): string {
-  return resolve(bases.root, path);
+  if (/^\.?\/?$/.test(path.trim())) return bases.storyDir;
+  const fromRoot = resolve(bases.root, path);
+  if (isAbsolute(path) || existsSync(fromRoot)) return fromRoot;
+  const fromStory = resolve(bases.storyDir, path);
+  const first = path.split(/[\\/]/)[0];
+  return existsSync(fromStory) || existsSync(join(bases.storyDir, first)) ? fromStory : fromRoot;
 }
 
 function within(path: string, base: string): boolean {
