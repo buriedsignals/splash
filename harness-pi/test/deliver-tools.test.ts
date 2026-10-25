@@ -12,10 +12,12 @@ import { join, resolve } from "node:path";
 import type { Bases } from "../src/tools/fs.ts";
 import { deliverTools } from "../src/tools/deliver.ts";
 import type { Dialogue } from "../src/tools/storyboard.ts";
-import { approveCurrentOutput } from "../../skills/deliver/test/output-review-fixture.ts";
 
 const CHECKOUT = resolve(import.meta.dirname, "../..");
 const BEAT = "1-lisboa-share";
+// Imported by path so this workspace's strict typecheck is not imposed on Splash's own fixture.
+const FIXTURE: string = join(CHECKOUT, "skills/deliver/test/output-review-fixture.ts");
+const { approveCurrentOutput } = await import(FIXTURE);
 const call = (tool: { execute: Function }, params: object) =>
   tool.execute("t1", params, undefined, undefined, undefined);
 

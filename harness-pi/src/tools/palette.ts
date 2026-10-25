@@ -35,7 +35,11 @@ interface Option {
 function decide(bases: Bases) {
   const storyboard = join(bases.storyDir, "STORYBOARD.md");
   const subject = existsSync(storyboard)
-    ? (parseStoryboard(readFileSync(storyboard, "utf8")).meta as { subject?: string }).subject
+    ? (
+        parseStoryboard(readFileSync(storyboard, "utf8")).meta as {
+          subject?: string;
+        }
+      ).subject
     : undefined;
   return paletteDecision({
     newsroom: readNewsroomBasics(bases.root) ?? undefined,
@@ -52,8 +56,12 @@ export function closeDerivedPalette(bases: Bases): {
   if (existsSync(path))
     return { written: false, reason: "PALETTE.md already recorded" };
   const decision = decide(bases);
-  if (decision.ask || !decision.palette) return { written: false, reason: decision.reason };
-  writeFileSync(path, formatPalette(decision.palette as Parameters<typeof formatPalette>[0]));
+  if (decision.ask || !decision.palette)
+    return { written: false, reason: decision.reason };
+  writeFileSync(
+    path,
+    formatPalette(decision.palette as Parameters<typeof formatPalette>[0]),
+  );
   return { written: true, reason: decision.reason };
 }
 
@@ -73,6 +81,13 @@ export function paletteTools(bases: Bases, gate: GateState) {
     parameters: Type.Object({}),
     async execute() {
       const decision = decide(bases);
+      // Splash asks nobody when the house colours apply and clear the floor: record them and say so.
+      const derived = closeDerivedPalette(bases);
+      if (derived.written || existsSync(join(bases.storyDir, "PALETTE.md"))) {
+        return text(
+          `No question is due: ${decision.reason}. PALETTE.md is recorded from NEWSROOM.md (origin: newsroom). Tell the journalist which colours will be used and move on.`,
+        );
+      }
       options = decision.proposal.options as Option[];
       gate.asked = true;
       gate.answered = false;

@@ -97,3 +97,12 @@ describe("palette as Splash decides it", () => {
     );
   });
 });
+
+describe("propose_palette when no question is due", () => {
+  it("should record the house colours and say nobody is asked", async () => {
+    bases = await story("Lisboa, the network the article opens on");
+    const r = await call(paletteTools(bases, gate).propose, {});
+    expect(r.content[0].text).toMatch(/^No question is due/);
+    expect(readFileSync(join(bases.storyDir, "PALETTE.md"), "utf8")).toContain("origin: newsroom");
+  });
+});

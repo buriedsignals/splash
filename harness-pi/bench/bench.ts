@@ -18,6 +18,12 @@ import { createRunRoot, stageStory } from "../src/run-root.ts";
 import { fsTools } from "../src/tools/fs.ts";
 import { lookTool } from "../src/tools/look.ts";
 import { runCommand, runTools } from "../src/tools/run.ts";
+import { type Dialogue, storyboardTools } from "../src/tools/storyboard.ts";
+import { type GateState, paletteTools } from "../src/tools/palette.ts";
+
+let currentStory = "";
+const dialogue: Dialogue = { lastJournalist: "", lastProposal: "" };
+const gate: GateState = { asked: false, answered: false };
 import { openSession } from "../src/sessions.ts";
 import { type OwnerId, PROFILES } from "../src/profiles.ts";
 import { whereIs } from "../../skills/splash/scripts/where.mjs";
@@ -40,9 +46,9 @@ const modelId = flag("model", "gemma-4-12b");
 const root = flag("root", join(homedir(), ".splash-harness", "bench", "root"));
 const LIMITS = {
   minutes: Number(flag("minutes", "40")),
-  toolCalls: 40,
+  toolCalls: 60,
   sameFailure: 3,
-  rounds: 14,
+  rounds: 26,
 };
 
 // ---------------------------------------------------------------------------------------------
@@ -146,7 +152,8 @@ const SHEET: [RegExp, string][] = [
   [/portrait|square|landscape|\bsize\b/i, "Landscape."],
   [/static|interactive|video|scroll/i, "Static."],
   [/\bmedium\b|chart, (a )?map|map,? or (an )?image/i, "A chart."],
-  [/intent|what should the reader do|compare|ranking|part.to.whole/i, "Comparison between categories."],
+  [/compare it to|what does the reader compare/i, "Porto's 96 million, and the 394 million all six networks carry between them."],
+  [/intent|what should the reader do|ranking|part.to.whole/i, "Comparison between categories."],
   [/maximum|minimum|shape|which column/i, "It is a comparison, about the column trips_millions: Lisboa against Porto and against the six together."],
   [/credit|source|effective|as of|date/i, "Unattributed, as of 2026-08-21."],
   [/position|placement|where should/i, "After the opening paragraph."],
@@ -373,6 +380,12 @@ await approveCurrentOutput(${JSON.stringify(join("BEAT_DIR"))});`.replace("\"BEA
 // ---------------------------------------------------------------------------------------------
 
 function systemPromptFor(owner: OwnerId, storyDir: string): string {
+  if (phase === "storyboard") {
+    return (
+      `You are the storyboard step of Splash, running locally. The story is ${storyDir}. You talk with the journalist one question at a time and end your turn after each question. You never write STORYBOARD.md yourself: every answer is recorded with a record_ tool (record_takeaway, record_hand, record_language, record_slot), and the palette with propose_palette then record_palette. A record only exists if its tool returned "recorded"; never say you recorded something otherwise. Record an answer only after the journalist has given it; when they do not know, propose one with your reasoning and record it only once they accept.\n\n` +
+      [PROFILES["skill:storyboard"].body, ...PROFILES["skill:storyboard"].requiredReads].map((f) => readFileSync(join(CHECKOUT, f), "utf8")).join("\n\n---\n\n")
+    );
+  }
   if (phase === "craft-zones") {
     return (
       `You are the chart-beat craft step of Splash, running locally. The Splash root is ${root}. The story is ${storyDir}. You act only through your tools.\n\n` +
@@ -389,6 +402,13 @@ function systemPromptFor(owner: OwnerId, storyDir: string): string {
   );
 }
 
+async function openGaps(): Promise<string> {
+  const path = join(currentStory, "STORYBOARD.md");
+  if (!existsSync(path)) return "STORYBOARD.md does not exist yet.";
+  const gaps = checkStoryboard(parseStoryboard(readFileSync(path, "utf8")).meta);
+  return gaps.length ? `Still open: ${gaps.slice(0, 5).join(" | ")}.` : "Gate 2 can close.";
+}
+
 async function drive(
   session: AgentSession,
   first: string,
@@ -399,10 +419,12 @@ async function drive(
   let lastFailure = "";
   let sameFailure = 0;
   let stop = "";
+  let recordedThisTurn = 0;
   const transcript: string[] = [];
   const off = session.subscribe((e) => {
     if (e.type === "tool_execution_end") {
       toolCalls++;
+      if (!e.isError && /^(record_|materialise)/.test(e.toolName)) recordedThisTurn++;
       transcript.push(
         `TOOL ${e.toolName}${e.isError ? " ERROR" : ""}: ${JSON.stringify(e.result?.content?.[0]?.text ?? "").slice(0, 300)}`,
       );
@@ -428,8 +450,20 @@ async function drive(
       const said = session.getLastAssistantText() ?? "";
       transcript.push(`MODEL: ${said.slice(0, 1200)}`);
       if (!conversational) break;
+      // A claim of a record with no successful record_ call behind it is answered by the harness,
+      // not passed on: the journalist never sees this message.
+      if (/\b(I have|I've) recorded\b/i.test(said) && recordedThisTurn === 0) {
+        prompt = `[harness] Nothing was recorded in your last turn: no record_ tool succeeded. ${await openGaps()} Record the journalist's last answer with the right tool now (their last message was: ${JSON.stringify(dialogue.lastJournalist)}), then continue.`;
+        transcript.push(`HARNESS: ${prompt}`);
+        recordedThisTurn = 0;
+        continue;
+      }
+      recordedThisTurn = 0;
       // Only the question at the end of the turn is the one being asked.
       prompt = answerFor(said);
+      dialogue.lastProposal = said;
+      dialogue.lastJournalist = prompt;
+      if (gate.asked) gate.answered = true;
       transcript.push(`JOURNALIST: ${prompt}`);
     }
   } catch (e) {
@@ -452,6 +486,7 @@ if (!c)
     `unknown phase ${phase}; one of ${Object.keys(CASES).join(", ")}`,
   );
 const storyDir = await c.prepare();
+currentStory = storyDir;
 const before = await stateOf(storyDir);
 if (args.includes("--dry")) {
   console.log(JSON.stringify({ phase, storyDir, before }, null, 2));
@@ -462,7 +497,11 @@ const f = fsTools(bases);
 const r = runTools(bases);
 const profile = PROFILES[c.owner];
 const writeless = c.owner.startsWith("persona:");
-const tools = phase === "craft-zones"
+const sb = storyboardTools(bases, dialogue);
+const pal = paletteTools(bases, gate);
+const tools = phase === "storyboard"
+  ? [f.readFile, f.listDir, sb.recordTakeaway, sb.recordHand, sb.recordLanguage, sb.recordSlot, pal.propose, pal.record]
+  : phase === "craft-zones"
   ? [f.readFile, f.listDir, f.writeFile, f.editFile, lookTool(bases), r.render]
   : writeless
   ? [f.readFile, f.listDir, lookTool(bases)]
