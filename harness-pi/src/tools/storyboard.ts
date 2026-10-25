@@ -108,7 +108,7 @@ export function assertJournalistOwns(field: string, value: string, d: Dialogue, 
   const question = FIELD_QUESTIONS[field];
   if (question)
     throw new Error(
-      `the journalist has not given the ${field} yet (their last message was ${JSON.stringify(d.lastJournalist.slice(0, 120))}). Ask them exactly this and end your turn: "${question}"`,
+      `${field} must be the journalist's own words. Their last message was ${JSON.stringify(d.lastJournalist.slice(0, 160))}: if that answers the ${field}, record it exactly as they wrote it — no rewording, no translation; if it does not, ask them exactly this and end your turn: "${question}"`,
     );
   throw new Error(
     `${field} must be the journalist's own answer, or a proposal you made that they accepted. Their last message was: ${JSON.stringify(d.lastJournalist.slice(0, 200))}. If that message answers this field, record it in their own words, not a rewording; otherwise ask them, end your turn, and record what they say.`,

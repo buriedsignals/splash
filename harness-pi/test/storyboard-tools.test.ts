@@ -98,7 +98,7 @@ describe("journalist ownership", () => {
         lastJournalist: "Unattributed, as of 2026-08-21.",
         lastProposal: "",
       }),
-    ).toThrow(/has not given the subject yet.*Unattributed.*who is the subject/);
+    ).toThrow(/subject must be the journalist's own words.*Unattributed.*who is the subject/);
   });
 });
 
@@ -118,7 +118,7 @@ describe("storyboard tools", () => {
       call(storyboardTools(bases, dialogue).recordTakeaway, {
         sentence: TAKEAWAY,
       }),
-    ).rejects.toThrow(/has not given the takeaway yet/);
+    ).rejects.toThrow(/takeaway must be the journalist's own words/);
     expect(existsSync(join(bases.storyDir, "STORYBOARD.md"))).toBe(false);
   });
 
@@ -287,7 +287,7 @@ describe("takeaway is verbatim", () => {
     dialogue.lastJournalist = "Yes.";
     await expect(
       call(storyboardTools(bases, dialogue).recordTakeaway, { sentence: "Lisboa's ridership is greater than Porto's" }),
-    ).rejects.toThrow(/has not given the takeaway yet/);
+    ).rejects.toThrow(/takeaway must be the journalist's own words/);
   });
 });
 
