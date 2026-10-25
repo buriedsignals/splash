@@ -24,6 +24,7 @@ import {
   writeOutputReview,
 } from "../../skills/deliver/scripts/output-review.mjs";
 import { converse } from "./conversation.ts";
+import { checkEditorProposals, describeProposals } from "./editor-check.ts";
 import type { Journalist } from "./journalist.ts";
 import { type OwnerId, PROFILES } from "./profiles.ts";
 import { openSession } from "./sessions.ts";
@@ -188,7 +189,10 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
         gaps: async () => "",
         log: transcript,
       });
-      editorProposals = sess.getLastAssistantText() ?? "";
+      const reply = sess.getLastAssistantText() ?? "";
+      const checked = checkEditorProposals(reply, o.storyDir);
+      editorProposals = checked ? describeProposals(checked) : reply;
+      say(`EDITOR ${checked ? `${checked.length} proposal(s): ${checked.map((c) => `${c.grounding}${c.unsourcedNumbers.length ? ` unsourced ${c.unsourcedNumbers.join("/")}` : ""}`).join("; ")}` : "reply held no parseable proposals"}`);
       sess.dispose();
       stop = res.stop;
       // The editor may not write STORYBOARD.md: Gate 1 is answered inside the storyboard session.
@@ -293,7 +297,7 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
     );
     const res = await converse({
       session: sess,
-      first: `The story ${o.storyDir} has been through intake.${editorProposals ? ` The editor prepared these framing proposals for Gate 1:\n${editorProposals}\n` : ""} Run the STORYBOARD phase with the journalist, movement by movement, starting with the restitution.`,
+      first: `The story ${o.storyDir} has been through intake.${editorProposals ? ` The editor prepared these framing proposals for Gate 1, each with the code's check against the data:\n${editorProposals}\n` : ""} Run the STORYBOARD phase with the journalist, movement by movement, starting with the restitution.`,
       journalist: o.journalist,
       dialogue,
       gate,
