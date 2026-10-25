@@ -337,6 +337,20 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       if (!all.includes(field))
         throw new Error(`field must be one of ${all.join(", ")}`);
       const answers = [dialogue.lastJournalist, ...(dialogue.history ?? []).map((h) => h.answer)];
+      if (field === "chosen") {
+        // The journalist named a different catalogue type than the one the model is recording.
+        const medium0 = String(currentSlot(slot)?.medium ?? "chart");
+        let named = "";
+        try { named = canonicalTreatment(dialogue.lastJournalist, medium0); } catch {}
+        if (named && !sameTreatment(value, named, medium0)) {
+          const shown: string[] = Array.isArray(currentSlot(slot)?.candidates) ? currentSlot(slot)!.candidates : [];
+          throw new Error(
+            shown.some((c) => c.toLowerCase() === named.toLowerCase())
+              ? `the journalist chose ${named}, not ${value}: record chosen ${named}.`
+              : `the journalist chose ${named}, not ${value}, and ${named} was not on your menu (${shown.join(", ") || "none"}). Call show_candidates again with ${named} among the candidates, show the menu, and ask them to confirm.`,
+          );
+        }
+      }
       if (field === "chosen" && answers.some((a) => sameTreatment(value, a, String(currentSlot(slot)?.medium ?? "chart")))) {
         // The journalist named this treatment, in whatever spelling.
       } else if ((JOURNALIST_SLOT_FIELDS as readonly string[]).includes(field))

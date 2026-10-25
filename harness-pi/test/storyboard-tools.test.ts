@@ -218,6 +218,17 @@ describe("no menu yet", () => {
   });
 });
 
+describe("the journalist chose another type", () => {
+  it("should say the journalist chose a type that was not on the menu", async () => {
+    const tools = await withFormat();
+    await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Diverging bar", why: "a" }, { type: "Bar and column", why: "b" }] });
+    dialogue.lastJournalist = "Line.";
+    await expect(call(tools.recordSlot, { slot: "1", field: "chosen", value: "Diverging bar" })).rejects.toThrow(
+      /journalist chose Line, not Diverging bar, and Line was not on your menu/,
+    );
+  });
+});
+
 describe("dates", () => {
   it("should refuse an as-of date the journalist never wrote", async () => {
     dialogue.lastJournalist = "Narodowy Fundusz Zdrowia, dane za 2025 r., as of 2026-08-21.";
