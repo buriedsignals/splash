@@ -240,6 +240,26 @@ describe("the journalist's named type outlasts a later yes", () => {
   });
 });
 
+describe("chosen before format", () => {
+  it("should record the interaction when the format arrives after the treatment", async () => {
+    const tools = storyboardTools(bases, dialogue);
+    dialogue.lastJournalist = "A chart.";
+    await call(tools.recordSlot, { slot: "1", field: "medium", value: "chart" });
+    await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Bar and column", why: "a" }, { type: "Treemap", why: "b" }] }).catch(() => {});
+    await mutateFixture({ candidates: ["Bar and column", "Treemap"] });
+    dialogue.lastJournalist = "Bar and column.";
+    await call(tools.recordSlot, { slot: "1", field: "chosen", value: "Bar and column" });
+    dialogue.lastJournalist = "Static.";
+    await call(tools.recordSlot, { slot: "1", field: "format", value: "static" });
+    expect(meta().slots[0].interaction).toBe("none");
+  });
+});
+
+async function mutateFixture(fields: Record<string, unknown>) {
+  const { mutateStoryboard } = await import("../../skills/storyboard/scripts/storyboard.mjs");
+  await mutateStoryboard(join(bases.storyDir, "STORYBOARD.md"), { slot: { id: "1", fields } });
+}
+
 describe("dates", () => {
   it("should refuse an as-of date the journalist never wrote", async () => {
     dialogue.lastJournalist = "Narodowy Fundusz Zdrowia, dane za 2025 r., as of 2026-08-21.";

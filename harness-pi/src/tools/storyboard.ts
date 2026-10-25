@@ -424,6 +424,11 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
           format: value,
           treatment: current.chosen,
         });
+        // A treatment chosen before the format had no interaction to record yet.
+        if (current.chosen) {
+          const [row] = formatCandidateRows({ medium: String(current.medium ?? "chart"), candidates: [{ type: String(current.chosen), why: "chosen", format: value }] });
+          if (row?.interaction?.kind) fields.interaction = row.interaction.kind;
+        }
       }
       await mutateStoryboard(path, { slot: { id: slot, fields } });
       return text(`recorded slot ${slot} ${field}. ${await status()}`);
