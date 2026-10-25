@@ -272,6 +272,16 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
     return beats.sort()[0];
   }
 
+  function recordedSoFar(): string {
+    const meta = storyboardMeta(o.storyDir);
+    const lines = Object.entries(meta)
+      .filter(([k, v]) => k !== "slots" && v !== undefined && v !== "")
+      .map(([k, v]) => `- ${k}: ${typeof v === "string" ? v : JSON.stringify(v)}`);
+    for (const slot of meta.slots ?? [])
+      lines.push(`- slot ${slot.id}: ${Object.entries(slot).filter(([k]) => k !== "id").map(([k, v]) => `${k}=${Array.isArray(v) ? v.join("/") : v}`).join(", ")}`);
+    return lines.join("\n");
+  }
+
   async function storyboardPhase() {
     const sb = storyboardTools(bases, dialogue);
     const pal = paletteTools(bases, gate);
@@ -297,7 +307,9 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
     );
     const res = await converse({
       session: sess,
-      first: `The story ${o.storyDir} has been through intake.${editorProposals ? ` The editor prepared these framing proposals for Gate 1, each with the code's check against the data:\n${editorProposals}\n` : ""} Run the STORYBOARD phase with the journalist, movement by movement, starting with the restitution.`,
+      first: existsSync(join(o.storyDir, "STORYBOARD.md"))
+        ? `The story ${o.storyDir} is in the STORYBOARD phase, resumed. Already recorded, do not ask again:\n${recordedSoFar()}\n${await storyboardGaps()} Continue with the journalist from there.`
+        : `The story ${o.storyDir} has been through intake.${editorProposals ? ` The editor prepared these framing proposals for Gate 1, each with the code's check against the data:\n${editorProposals}\n` : ""} Run the STORYBOARD phase with the journalist, movement by movement, starting with the restitution.`,
       journalist: o.journalist,
       dialogue,
       gate,
