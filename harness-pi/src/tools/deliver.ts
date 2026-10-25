@@ -31,8 +31,11 @@ const NEGATIVE =
 
 function identity(bases: Bases, beat: string) {
   // The 12B names the beat loosely ("beat-1", the story slug); a story with one beat has one answer.
-  let dir = beatDir(bases, beat);
-  if (!existsSync(join(dir, "BRIEF.md"))) {
+  let dir = "";
+  try {
+    dir = beatDir(bases, beat);
+  } catch {}
+  if (!dir || !existsSync(join(dir, "BRIEF.md"))) {
     const beats = existsSync(join(bases.storyDir, "beats"))
       ? readdirSync(join(bases.storyDir, "beats")).filter((d) => existsSync(join(bases.storyDir, "beats", d, "BRIEF.md")))
       : [];

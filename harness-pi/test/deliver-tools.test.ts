@@ -51,7 +51,7 @@ describe("delivery tools", () => {
   });
 
   it("should find the story's only beat when the model names it loosely", async () => {
-    const r = await call(deliverTools(bases, dialogue).offer, { beat: "beat-1" });
+    const r = await call(deliverTools(bases, dialogue).offer, { beat: "stress_ad_stock_1792949309527_beat_1" });
     expect(r.content[0].text).toMatch(/^- owned-file — /m);
   });
 
