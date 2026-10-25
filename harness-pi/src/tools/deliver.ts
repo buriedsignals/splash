@@ -195,11 +195,7 @@ export function deliverTools(bases: Bases, dialogue: Dialogue) {
       }
       if (answer === "taken")
         assertJournalistOwns(offer, value ?? "", dialogue);
-      const exportDir = join(
-        bases.storyDir,
-        "export",
-        basename(beatDir(bases, beat)),
-      );
+      const exportDir = join(bases.storyDir, "export", identity(bases, beat).common.outputId);
       if (offer === "format")
         await recordFormatAnswer({ exportDir, answer, format: value });
       else if (offer === "subject")
