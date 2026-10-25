@@ -432,7 +432,7 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
       reviewer: "journalist",
       decidedAt: new Date().toISOString(),
       notes: answer,
-      replacesReviewId: null,
+      replacesReviewId: undefined,
     });
   }
 
