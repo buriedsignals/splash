@@ -22,6 +22,11 @@ describe("editor proposals checked by code", () => {
     expect(p.unsourcedNumbers).toEqual([]);
   });
 
+  it("should read a number written with thousands separators", () => {
+    const [p] = checkEditorProposals(reply("Lisboa has 545,000 residents.", []), STORY)!;
+    expect(p.unsourcedNumbers).toEqual([]);
+  });
+
   it("should carry Splash's grounding verdict for the takeaway", () => {
     const [p] = checkEditorProposals(reply("Lisboa carries 214 of the 394 million trips.", []), STORY)!;
     expect(p.grounding).toBe("supported");

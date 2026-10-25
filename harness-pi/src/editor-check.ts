@@ -18,10 +18,18 @@ export interface CheckedProposal {
   unsourcedNumbers: string[];
 }
 
-const NUMBER = /\d+(?:[.,]\d+)?/g;
 
+const NUMBER_WITH_THOUSANDS = /\d{1,3}(?:[,\u00a0\u202f ]\d{3})+(?:\.\d+)?|\d+(?:[.,]\d+)?/g;
+
+/** Numbers as written, with thousands separators ("545,000", "3 459") read as one number. */
 function numbersIn(text: string): string[] {
-  return [...new Set(text.match(NUMBER) ?? [])];
+  return [
+    ...new Set(
+      (text.match(NUMBER_WITH_THOUSANDS) ?? []).map((n) =>
+        /^\d{1,3}(?:[,\u00a0\u202f ]\d{3})+(?:\.\d+)?$/.test(n) ? n.replace(/[,\u00a0\u202f ]/g, "") : n,
+      ),
+    ),
+  ];
 }
 
 /** Every numeric cell of the CSV: its commas separate cells, so they are never decimal marks. */
