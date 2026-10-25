@@ -154,3 +154,13 @@ describe("claim shape", () => {
     ).rejects.toThrow(/"Lisbon" is not a row/);
   });
 });
+
+describe("takeaway is verbatim", () => {
+  it("should refuse a paraphrase of the takeaway even when the journalist said yes to it", async () => {
+    dialogue.lastProposal = "Shall I record: Lisboa's ridership is greater than Porto's?";
+    dialogue.lastJournalist = "Yes.";
+    await expect(
+      call(storyboardTools(bases, dialogue).recordTakeaway, { sentence: "Lisboa's ridership is greater than Porto's" }),
+    ).rejects.toThrow(/journalist's own answer/);
+  });
+});

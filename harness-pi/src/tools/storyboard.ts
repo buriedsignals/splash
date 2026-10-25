@@ -69,13 +69,10 @@ function overlap(value: string, source: string): number {
 }
 
 /** Throws unless the journalist said it, or said yes to the model having proposed it. */
-export function assertJournalistOwns(
-  field: string,
-  value: string,
-  d: Dialogue,
-) {
+export function assertJournalistOwns(field: string, value: string, d: Dialogue, { acceptProposal = true } = {}) {
   if (overlap(value, d.lastJournalist) >= 0.6) return;
   if (
+    acceptProposal &&
     AFFIRMATIVE.test(d.lastJournalist.trim()) &&
     overlap(value, d.lastProposal) >= 0.6
   )
@@ -128,7 +125,8 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue) {
       override: Type.Optional(Type.String()),
     }),
     async execute(_id, { sentence, override }) {
-      assertJournalistOwns("takeaway", sentence, dialogue);
+      // G1 records the journalist's sentence verbatim: a paraphrase they nodded at is not their takeaway.
+      assertJournalistOwns("takeaway", sentence, dialogue, { acceptProposal: false });
       const profile = JSON.parse(
         readFileSync(join(bases.storyDir, "source", "profile.json"), "utf8"),
       );

@@ -136,43 +136,6 @@ async function renderedBeat(): Promise<string> {
 // ---------------------------------------------------------------------------------------------
 // The journalist's answers, taken from the reference storyboard (stories/stress-p…/STORYBOARD.md).
 
-// Matched on the question the model asked, most specific first; anything unmatched gets the
-// answer the exchange already accepts from a journalist who does not know.
-const SHEET: [RegExp, string][] = [
-  [/delivery form|which form|owned-file|source-bundle/i, "owned-file"],
-  [/another format|other format/i, "No, thank you."],
-  [/\balt\b|alternative text/i, "A horizontal bar chart: Lisboa's 214 million trips against Porto's 96 million and four smaller networks."],
-  [/caveat/i, "One year only (2025); trips, not people."],
-  [/language/i, "English."],
-  [/palette|colou?r|option \d|ground|accent/i, "Option 1, the house colours."],
-  [/datawrapper|custom|producer/i, "Custom."],
-  [/candidate|which (treatment|chart type)|bar and column|lollipop|treemap/i, "Bar and column."],
-  [/reference|example you (like|admire)|inspiration/i, "No reference, thank you."],
-  [/survey|other (subject|angle)|another subject/i, "No other subject for now."],
-  [/portrait|square|landscape|\bsize\b/i, "Landscape."],
-  [/static|interactive|video|scroll/i, "Static."],
-  [/\bmedium\b|chart, (a )?map|map,? or (an )?image/i, "A chart."],
-  [/compare it to|what does the reader compare/i, "Porto's 96 million, and the 394 million all six networks carry between them."],
-  [/intent|what should the reader do|ranking|part.to.whole/i, "Comparison between categories."],
-  [/maximum|minimum|shape|which column/i, "It is a comparison, about the column trips_millions: Lisboa against Porto and against the six together."],
-  [/credit|source|effective|as of|date/i, "Unattributed, as of 2026-08-21."],
-  [/position|placement|where should/i, "After the opening paragraph."],
-  [/not (let you )?conclude|limit/i, "One year only (2025), so no trend. Six city networks, not all Portuguese public transport. Trips count trips, not people."],
-  [/compare it to|comparison|against what/i, "Porto's 96 million, and the 394 million all six networks carry between them."],
-  [/subject of (your|the) piece|who is the subject/i, "The subject is Lisboa, the network the article opens on."],
-  [/one sentence|takeaway|keeps? one|reader keep/i, "Lisboa alone carries 214 of the 394 million trips these six Portuguese city networks recorded in 2025 — more than twice Porto's 96 million."],
-  [/read in your piece|restitution|correct\??|is that right|did I read/i, "Yes, that is what the piece says. The data is the six city networks for 2025."],
-];
-// Only the LAST question in the turn is the one being asked: the model often restates earlier
-// movements ("landscape is an orientation, but first...") before it.
-const lastQuestion = (said: string) => {
-  const qs = said.split(/(?<=\?)/).map((x) => x.trim()).filter((x) => x.endsWith("?"));
-  return qs.length ? qs[qs.length - 1].split(/[.!\n*]\s/).pop()! : said.slice(-300);
-};
-const answerFor = (said: string) => {
-  const q = lastQuestion(said);
-  return SHEET.find(([re]) => re.test(q))?.[1] ?? "I don't know.";
-};
 
 // ---------------------------------------------------------------------------------------------
 
@@ -403,42 +366,54 @@ function systemPromptFor(owner: OwnerId, storyDir: string): string {
 }
 
 
-// The scripted journalist, played by a model constrained to the story's sheet (KTD8). Keyword
-// matching could not follow the dozens of ways a question gets asked.
-const SHEET_FACTS = `Takeaway (exact words): "Lisboa alone carries 214 of the 394 million trips these six Portuguese city networks recorded in 2025 — more than twice Porto's 96 million."
-Claim shape: a comparison about the column trips_millions — Lisboa against Porto (Lisboa greater), and against the six together.
-Subject: Lisboa, the network the article opens on.
-Comparison: Porto's 96 million, and the 394 million all six networks carry between them.
-Limits: one year only (2025), so no trend; six city networks, not all Portuguese public transport; trips count trips, not people.
-Placement: after the opening paragraph.
-Credit: unattributed, as of 2026-08-21.
-Language: English.
-Medium: a chart. Format: static. Size: landscape. Intent: comparison between categories.
-Reference: none wanted.
-Palette: the newsroom's house colours.
-Treatment: Bar and column (accept the desk's candidate list if it contains it). Producer: custom.
-Delivery form: owned-file. Another format or another subject at the end: no, thank you.`;
+// The scripted journalist. A model only CLASSIFIES which question the desk asked; the answer is
+// the sheet's own text, so the journalist cannot agree to a paraphrase of its takeaway.
+const SHEET: Record<string, string> = {
+  restitution: "Yes, that is what the piece says. The data is the six city networks for 2025.",
+  takeaway: "Lisboa alone carries 214 of the 394 million trips these six Portuguese city networks recorded in 2025 — more than twice Porto's 96 million.",
+  claim: "It is a comparison, about the column trips_millions: Lisboa against Porto, Lisboa greater.",
+  subject: "The subject is Lisboa, the network the article opens on.",
+  comparison: "Porto's 96 million, and the 394 million all six networks carry between them.",
+  limits: "One year only (2025), so no trend. Six city networks, not all Portuguese public transport. Trips count trips, not people.",
+  placement: "After the opening paragraph.",
+  credit: "Unattributed, as of 2026-08-21.",
+  language: "English.",
+  medium: "A chart.",
+  format: "Static.",
+  size: "Landscape.",
+  intent: "Comparison between categories.",
+  reference: "No reference, thank you.",
+  palette: "The newsroom's house colours.",
+  treatment: "Bar and column.",
+  producer: "Custom.",
+  form: "owned-file",
+  closing: "No, thank you.",
+  confirm: "Yes.",
+  other: "I don't know.",
+};
 
 async function journalistAnswer(said: string): Promise<string> {
+  const keys = Object.keys(SHEET);
   const res = await fetch("http://127.0.0.1:8090/v1/chat/completions", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
       temperature: 0,
       seed: 7,
-      max_tokens: 120,
+      max_tokens: 8,
       chat_template_kwargs: { enable_thinking: false },
       messages: [
         {
           role: "system",
-          content: `You are a journalist answering a visual-desk tool about your story. Answer ONLY the last question in the desk's message, in one short sentence, using ONLY these facts:\n${SHEET_FACTS}\nIf the desk proposes something consistent with the facts, say "Yes." If the facts do not cover the question, say "I don't know." Never invent anything.`,
+          content: `Classify the LAST question a visual-desk tool asks a journalist. Reply with exactly one word from: ${keys.join(", ")}. "claim" = maximum/minimum/comparison/total shape; "treatment" = which chart type or candidates; "producer" = Datawrapper or custom; "form" = delivery form; "closing" = another format or another subject; "confirm" = a yes/no confirmation of a summary or proposal the desk already made; "other" = anything else.`,
         },
-        { role: "user", content: said.slice(-2500) },
+        { role: "user", content: said.slice(-1500) },
       ],
     }),
   });
   const body = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-  return body.choices?.[0]?.message?.content?.trim() || "I don't know.";
+  const key = (body.choices?.[0]?.message?.content ?? "").trim().toLowerCase().replace(/[^a-z]/g, "");
+  return SHEET[key] ?? SHEET.other;
 }
 
 async function openGaps(): Promise<string> {
@@ -494,7 +469,16 @@ async function drive(
       if (/\b(I have|I've)( now| also| successfully| just)? (recorded|noted|saved)\b/i.test(said) && recordedThisTurn === 0) {
         prompt = `[harness] Nothing was recorded in your last turn: no record_ tool succeeded. ${await openGaps()} Record the journalist's last answer with the right tool now (their last message was: ${JSON.stringify(dialogue.lastJournalist)}), then continue.`;
         transcript.push(`HARNESS: ${prompt}`);
-        recordedThisTurn = 0;
+        if (/\b(complete|completed|finali[sz]ed|closed|ready to move|we are ready)\b/i.test(said) && phase === "storyboard") {
+        const gaps = await openGaps();
+        if (!gaps.startsWith("Gate 2 can close")) {
+          prompt = `[harness] The storyboard is not complete. ${gaps} Ask the journalist for what is missing, or record what they already said.`;
+          transcript.push(`HARNESS: ${prompt}`);
+          recordedThisTurn = 0;
+          continue;
+        }
+      }
+      recordedThisTurn = 0;
         continue;
       }
       recordedThisTurn = 0;
