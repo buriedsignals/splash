@@ -57,6 +57,9 @@ function report(argv: string[], r: RunResult) {
   // Bun prints the source excerpt before the error line; the reason goes first so a tail never hides it.
   const reason = r.stderr.split("\n").find((l) => /^\s*(error|Error|TypeError|ReferenceError|SyntaxError)\b/.test(l));
   if (reason) body.push(`error: ${reason.replace(/^\s*error:\s*/, "").trim()}`);
+  // A check that compares a raw division with the takeaway's rounded figure (232.954… vs 233).
+  if (reason && /\d+\.\d{4,}/.test(reason) && /expected|not|but/i.test(reason))
+    body.push("hint: compare at the takeaway's precision in check(), e.g. Math.round(value) === 233, not the raw division.");
   if (r.stderr.trim()) body.push(`stderr:\n${tail(r.stderr.trim())}`);
   return {
     content: [{ type: "text" as const, text: body.join("\n") }],
