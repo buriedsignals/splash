@@ -49,6 +49,7 @@ if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")} (
 // The beat's own claim, checked against its own data BEFORE anything is drawn: a number that
 // drifted from the data refuses the render rather than shipping a stale headline.
 beat.check();
+assertDrawsClaimColumn(beat.rows.map((r) => r.value), dirname(fileURLToPath(import.meta.url)));
 assertHeadlineNumbersDrawn([beat.title].flat()[0], beat.rows.map((r) => r.value), "bars");
 // The note is drawn as a bracket over the comparison bars, so the number it states must be theirs:
 // a 12B beat once bracketed the five smaller networks (180) with the six-network total (394).
@@ -146,4 +147,21 @@ function assertHeadlineNumbersDrawn(headline, drawn, label) {
   const missing = stated.filter((n) => !allowed.some((v) => Math.abs(v - n) <= Math.max(0.5, Math.abs(n) * 0.005)));
   if (missing.length)
     throw new Error(`the title states ${missing.join(", ")}, which the drawn ${label} does not contain: the rows selected from data.json are probably not the takeaway's series — read its other columns and filter to the one the takeaway is about`);
+}
+
+// When the journalist named the claim's column, the drawn values are that column's: the Polish run
+// drew raw beds under a per-resident headline.
+function assertDrawsClaimColumn(drawn, here) {
+  const storyboard = join(here, "..", "..", "STORYBOARD.md");
+  const dataPath = join(here, "data.json");
+  if (!storyboardExists(storyboard) || !storyboardExists(dataPath)) return;
+  const column = (readStoryboard(storyboard, "utf8").split("---")[1] ?? "").match(/^claimColumn:\s*"?(.*?)"?\s*$/m)?.[1];
+  if (!column) return;
+  const table = JSON.parse(readStoryboard(dataPath, "utf8"));
+  const at = (table.columns ?? []).findIndex((c) => c.name === column);
+  if (at < 0) return;
+  const held = table.rows.map((r) => Number(String(r[at]).replace(/\s/g, "").replace(",", "."))).filter(Number.isFinite);
+  const foreign = drawn.filter((v) => Number.isFinite(v) && !held.some((h) => Math.abs(h - v) <= Math.max(1e-9, Math.abs(h) * 1e-6)));
+  if (foreign.length)
+    throw new Error(`the claim is about the column ${column}, but the plate draws values that column does not hold (${foreign.slice(0, 3).join(", ")}): draw ${column}'s values`);
 }
