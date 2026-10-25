@@ -63,3 +63,4 @@ training/data/
 # Training outputs and caches
 training/runs/
 __pycache__/
+harness-pi/eval/results/*.jsonl
