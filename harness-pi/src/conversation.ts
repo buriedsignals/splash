@@ -48,7 +48,7 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
   };
   let toolCalls = 0;
   let recorded = 0;
-  let lastFailure = "";
+  const failures = new Map<string, number>();
   let sameFailure = 0;
   let stop = "";
   let menu = "";
@@ -65,9 +65,13 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
     // The menu the code recorded is the one the journalist sees, whatever the model's prose says.
     if (!e.isError && e.toolName === "show_candidates")
       menu = String(e.result?.content?.[0]?.text ?? "").split("ask which one:\n")[1] ?? "";
-    const sig = e.isError ? `${e.toolName}:${out.slice(0, 120)}` : "";
-    sameFailure = sig && sig === lastFailure ? sameFailure + 1 : 0;
-    lastFailure = sig;
+    // Counted per signature, not only back to back: a model that interleaves a successful call
+    // between identical failures (35 renders of a missing beat.mjs, once) still gets stopped.
+    if (e.isError) {
+      const sig = `${e.toolName}:${out.slice(0, 120)}`;
+      failures.set(sig, (failures.get(sig) ?? 0) + 1);
+      sameFailure = Math.max(sameFailure, (failures.get(sig) ?? 0) - 1);
+    }
     if (toolCalls >= limits.toolCalls) stop = "tool-call cap";
     if (sameFailure + 1 >= limits.sameFailure)
       stop = `same failure ${limits.sameFailure}x`;
