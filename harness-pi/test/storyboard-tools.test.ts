@@ -76,6 +76,16 @@ describe("journalist ownership", () => {
     ).toThrow(/in the journalist's words exactly.*Change over time/);
   });
 
+  it("should not take a one-word earlier answer as the wrapped answer", () => {
+    expect(() =>
+      assertJournalistOwns("medium", "chart for the line", {
+        lastJournalist: "Static.",
+        lastProposal: "",
+        history: [{ proposal: "Chart, map or image?", answer: "A chart." }],
+      }),
+    ).not.toThrow(/without additions/);
+  });
+
   it("should accept an answer written in Arabic script", () => {
     expect(() =>
       assertJournalistOwns("subject", "محافظة تونس", { lastJournalist: "محافظة تونس", lastProposal: "" }),

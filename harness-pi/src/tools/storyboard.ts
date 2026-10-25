@@ -93,7 +93,10 @@ export function assertJournalistOwns(field: string, value: string, d: Dialogue, 
     if (acceptProposal && AFFIRMATIVE.test(answer.trim()) && overlap(value, proposal) >= 0.6) return;
   }
   // The journalist's answer is inside the value, with the model's own additions around it.
-  const contained = exchanges.find(({ answer }) => answer.trim() && overlap(answer, value) >= 0.8);
+  const contained =
+    field === "chosen"
+      ? undefined
+      : exchanges.find(({ answer }) => words(answer).length >= 2 && overlap(answer, value) >= 0.8);
   if (contained)
     throw new Error(
       `record ${field} in the journalist's words exactly, without additions: ${JSON.stringify(contained.answer.trim())}`,
