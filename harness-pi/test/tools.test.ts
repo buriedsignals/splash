@@ -84,6 +84,16 @@ describe("file tools", () => {
     expect(textOf(r)).toContain("source/");
   });
 
+  it("should refuse to write the analyst's data.json", async () => {
+    const { writeFile: write } = fsTools(bases);
+    await expect(call(write, { path: "stories/demo/beats/1-top/data.json", content: "{}" })).rejects.toThrow(/not yours to write/);
+  });
+
+  it("should refuse to edit the frozen sources", async () => {
+    const { writeFile: write } = fsTools(bases);
+    await expect(call(write, { path: "stories/demo/source/data.csv", content: "x" })).rejects.toThrow(/not yours to write/);
+  });
+
   it("should read a skill file by absolute path", async () => {
     const { readFile: read } = fsTools(bases);
     const r = await call(read, {

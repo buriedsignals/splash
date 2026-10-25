@@ -62,6 +62,19 @@ function within(path: string, base: string): boolean {
 /** Template tokens, newlines or backticks in a path mean the model's tool call ran into the next one. */
 const MALFORMED_PATH = /<\||\|>|[\n\r`{}]/;
 
+/**
+ * Files the model never writes: the frozen sources, what the analyst built (a data.json it changed
+ * is refused by the analyst on rebuild, which stalled a run), what typed tools record, and the kit
+ * the harness copies into a zoned beat. In a zoned beat the model writes beat.mjs.
+ */
+const PROTECTED = /(^|\/)(source\/.*|STORYBOARD\.md|PALETTE\.md|DIRECTION\.md|SUBJECTS\.md|NEWSROOM\.md|data\.json|data\.csv|DATA-NOTES\.md|BRIEF\.md|OUTPUT-REVIEW\.json|render-beat\.mjs|CONTRACT\.md|beat\.example\.mjs|Directed[A-Za-z]*\.tsx|crossing-geometry\.ts)$/;
+
+function assertWritable(bases: Bases, abs: string) {
+  const rel = relative(bases.storyDir, abs);
+  if (PROTECTED.test(rel))
+    throw new Error(`${rel} is not yours to write: sources, analyst data, recorded files and the beat's kit are produced by Splash. Change beat.mjs instead.`);
+}
+
 export function resolveInStory(bases: Bases, raw: string): string {
   // Gemma 4's tool-call syntax sometimes loses the closing delimiter of the LAST argument, and the
   // 12B writes `path` after a long `content`: the path then runs into the next call
@@ -152,6 +165,7 @@ export function fsTools(bases: Bases) {
     parameters: Type.Object({ path: Type.String(), content: Type.String() }),
     async execute(_id, { path, content }) {
       const abs = resolveInStory(bases, path);
+      assertWritable(bases, abs);
       if (content.length > MAX_WRITE && existsSync(abs)) {
         throw new Error(
           `${path} exists and the new content is ${content.length} characters; rewrite it with several edit_file calls (old_text up to ${MAX_EDIT_OLD}, new_text up to ${MAX_EDIT_NEW} characters)`,
@@ -182,6 +196,7 @@ export function fsTools(bases: Bases) {
         );
       }
       const abs = resolveInStory(bases, path);
+      assertWritable(bases, abs);
       const body = readFileSync(abs, "utf8");
       const count = body.split(old_text).length - 1;
       if (count !== 1)
