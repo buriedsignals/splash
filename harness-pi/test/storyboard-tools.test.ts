@@ -198,12 +198,13 @@ describe("treatment chosen a turn late", () => {
 });
 
 describe("no menu yet", () => {
-  it("should hand the model a ready show_candidates call when the journalist named a drawable type", async () => {
+  it("should build and record a two-idea menu when the journalist named a drawable type and none was shown", async () => {
     const tools = await withFormat();
     dialogue.lastJournalist = "Bar and column.";
     await expect(call(tools.recordSlot, { slot: "1", field: "chosen", value: "Bar and column" })).rejects.toThrow(
-      /Call show_candidates now with Bar and column and one other catalogue type/,
+      /harness recorded this menu.*Bar and column.*Dot strip/s,
     );
+    expect([meta().slots[0].candidates, meta().slots[0].chosen]).toEqual([["Bar and column", "Dot strip"], undefined]);
   });
 });
 

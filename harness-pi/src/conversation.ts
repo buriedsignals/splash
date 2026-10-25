@@ -65,6 +65,8 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
     // The menu the code recorded is the one the journalist sees, whatever the model's prose says.
     if (!e.isError && e.toolName === "show_candidates")
       menu = String(e.result?.content?.[0]?.text ?? "").split("ask which one:\n")[1] ?? "";
+    if (e.isError && e.toolName === "record_slot" && /harness recorded this menu/.test(String(e.result?.content?.[0]?.text ?? "")))
+      menu = String(e.result?.content?.[0]?.text ?? "").split("end your turn:\n")[1] ?? "";
     // Counted per signature, not only back to back: a model that interleaves a successful call
     // between identical failures (35 renders of a missing beat.mjs, once) still gets stopped.
     if (e.isError) {

@@ -332,6 +332,21 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
         const { meta } = existsSync(path) ? parseStoryboard(readFileSync(path, "utf8")) : { meta: { slots: [] as any[] } };
         const current = (meta.slots ?? []).find((s: { id: unknown }) => String(s.id) === slot);
         const candidates: string[] = Array.isArray(current?.candidates) ? current.candidates : [];
+        if (!candidates.length && adapterFor(value) && DISTINCT_FROM[value]?.length) {
+          // The 12B keeps naming the journalist's type without ever building a menu. The harness
+          // builds the smallest honest one — that type and one different idea — records it, and
+          // hands it back to be shown; the choice is recorded only once the journalist answers it.
+          const format = String(currentSlot(slot)?.format ?? "static");
+          const named = [
+            { type: value, why: "the type the journalist named", format },
+            { type: DISTINCT_FROM[value][0], why: "a different way of seeing the same values", format },
+          ];
+          const rows = formatCandidateRows({ medium, candidates: named });
+          await mutateStoryboard(path, { slot: { id: slot, fields: { candidates: named.map((c) => c.type) } } });
+          throw new Error(
+            `no menu had been shown, so nothing is chosen yet. The harness recorded this menu; show it to the journalist, ask which one, and end your turn:\n${rows.map((r: { line: string; type: string }) => (adapterFor(r.type) ? r.line : `${r.line}\n  (this local harness cannot draw it yet)`)).join("\n")}`,
+          );
+        }
         if (!candidates.length) {
           throw new Error(
             adapterFor(value)
