@@ -21,6 +21,12 @@ describe("render facts", () => {
   });
 });
 
+describe("entities", () => {
+  it("should decode hex and decimal character references in drawn text", () => {
+    expect(svgFacts('<svg><text>Centro&#x27;s 205 &#39;x&#39;</text></svg>').texts).toEqual(["Centro's 205 'x'"]);
+  });
+});
+
 describe("review_facts tool", () => {
   it("should find the slot's claim when the beat is given as an absolute path", async () => {
     const { mkdtemp } = await import("node:fs/promises");
