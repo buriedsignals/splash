@@ -20,6 +20,8 @@ import { lookTool } from "../src/tools/look.ts";
 import { runCommand, runTools } from "../src/tools/run.ts";
 import { type Dialogue, storyboardTools } from "../src/tools/storyboard.ts";
 import { type GateState, paletteTools } from "../src/tools/palette.ts";
+import { deliverTools } from "../src/tools/deliver.ts";
+import { reviewTools } from "../src/tools/review.ts";
 
 let currentStory = "";
 const dialogue: Dialogue = { lastJournalist: "", lastProposal: "" };
@@ -343,6 +345,14 @@ await approveCurrentOutput(${JSON.stringify(join("BEAT_DIR"))});`.replace("\"BEA
 // ---------------------------------------------------------------------------------------------
 
 function systemPromptFor(owner: OwnerId, storyDir: string): string {
+  if (phase === "deliver") {
+    return `You are the delivery step of Splash, running locally. The story is ${storyDir}. Call offer_forms, show the forms to the journalist, ask which one and end your turn. When they name one, call materialise with that form id and an alt text describing the chart. Then call offer_closing, show both offers, ask and end your turn, and record each answer with record_closing. A step only happened if its tool returned success; never say otherwise.\n\n` + readFileSync(join(CHECKOUT, PROFILES["skill:deliver"].body), "utf8");
+  }
+  if (phase === "designer") {
+    return readFileSync(join(CHECKOUT, PROFILES["persona:designer"].body), "utf8") +
+      `\n\nThe story is ${storyDir}. Call review_facts first and look at the PNG; cite review_facts' measurements as evidence. Judge also whether the render proves the slot's claim and says the takeaway.\n\n` +
+      readFileSync(join(CHECKOUT, "skills/doctrine/references/design-rubric.md"), "utf8");
+  }
   if (phase === "storyboard") {
     return (
       `You are the storyboard step of Splash, running locally. The story is ${storyDir}. You talk with the journalist one question at a time and end your turn after each question. You never write STORYBOARD.md yourself: every answer is recorded with a record_ tool (record_takeaway, record_claim, record_hand, record_language, record_slot), and the palette with propose_palette then record_palette. A record only exists if its tool returned "recorded"; never say you recorded something otherwise. Record an answer only after the journalist has given it; when they do not know, propose one with your reasoning and record it only once they accept.\n\n` +
@@ -522,7 +532,12 @@ const profile = PROFILES[c.owner];
 const writeless = c.owner.startsWith("persona:");
 const sb = storyboardTools(bases, dialogue);
 const pal = paletteTools(bases, gate);
-const tools = phase === "storyboard"
+const dl = deliverTools(bases, dialogue);
+const tools = phase === "designer"
+  ? [f.readFile, f.listDir, lookTool(bases), reviewTools(bases)]
+  : phase === "deliver"
+  ? [f.readFile, f.listDir, dl.offer, dl.make, dl.closing, dl.recordClosing]
+  : phase === "storyboard"
   ? [f.readFile, f.listDir, sb.recordTakeaway, sb.recordClaim, sb.recordHand, sb.recordLanguage, sb.recordSlot, pal.propose, pal.record]
   : phase === "craft-zones"
   ? [f.readFile, f.listDir, f.writeFile, f.editFile, lookTool(bases), r.render]
