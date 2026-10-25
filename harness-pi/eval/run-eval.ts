@@ -37,7 +37,8 @@ export async function evaluate(story: string, arm: string, out: string) {
       "--model",
       arm,
     ],
-    { stdout: "pipe", stderr: "ignore" },
+    // The run's own log, live: a phase that stalls is visible while it happens, not at the end.
+    { stdout: "pipe", stderr: Bun.file(join(homedir(), ".splash-harness", "runs", `${tag}.log`)) },
   );
   const report = await new Response(child.stdout).text();
   await child.exited;

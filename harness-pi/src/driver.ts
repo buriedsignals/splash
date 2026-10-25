@@ -179,6 +179,7 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
         done: async () => false,
         gaps: async () => "",
         log: transcript,
+        limits: { minutes: 5 },
       });
       const reply = sess.getLastAssistantText() ?? "";
       const checked = checkEditorProposals(reply, o.storyDir);
@@ -308,6 +309,7 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
       done: async () => (await storyboardGaps()) === "Gate 2 can close.",
       gaps: storyboardGaps,
       log: transcript,
+      limits: { minutes: 20 },
     });
     sess.dispose();
     say(`STORYBOARD stop: ${res.stop}`);
@@ -369,6 +371,7 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
       done: async () => false,
       gaps: async () => "",
       log: transcript,
+      limits: { minutes: 15 },
     });
     sess.dispose();
     say(`CRAFT stop: ${res.stop}`);
@@ -401,6 +404,7 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
       done: async () => false,
       gaps: async () => "",
       log: transcript,
+      limits: { minutes: 6 },
     });
     const review = sess.getLastAssistantText() ?? "";
     sess.dispose();
@@ -469,6 +473,7 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
           ? "The closing offers are not both answered yet."
           : "Nothing is materialised yet.",
       log: transcript,
+      limits: { minutes: 8 },
     });
     sess.dispose();
     say(`DELIVER stop: ${res.stop}`);
