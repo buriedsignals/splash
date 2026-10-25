@@ -362,27 +362,37 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
         r.render,
       ],
     );
-    const res = await converse({
-      session: sess,
-      first: `Slot ${beat} of ${o.storyDir} is a static "${slot.chosen}" beat, prepared at beats/${beat}/. The confirmed takeaway is in STORYBOARD.md and is the title, word for word. Write every word on the plate (eyebrow, labels, unit, standfirst, alt) in the story's language, "${meta.language ?? "en"}", whatever language the data's column names are in. Write beats/${beat}/beat.mjs as CONTRACT.md says, render it with render_beat (beat "${beat}", format "static"), look at the PNG, fix what is wrong, and reply DONE when the render is right.`,
-      journalist: o.journalist,
-      dialogue,
-      conversational: false,
-      done: async () => false,
-      gaps: async () => "",
-      log: transcript,
-      limits: { minutes: 15 },
-    });
-    sess.dispose();
-    say(`CRAFT stop: ${res.stop}`);
-    // The delivered render is the render of the beat.mjs on disk: the 12B once fixed beat.mjs after its
-    // last render and shipped the stale, wrong picture. The harness renders once more itself; a
-    // refusal leaves the beat unrendered, so whereIs sends it back to craft.
-    if (existsSync(join(beatDir, "beat.mjs"))) {
-      const final = await runCommand(["bun", join(beatDir, "render-beat.mjs")], bases);
+    // The 12B often says DONE, or stops, while its beat still refuses to render. The harness renders
+    // the beat itself and hands the exact refusal back in the SAME session (its context intact), up to
+    // three times, instead of opening a new session that starts from nothing.
+    let prompt = `Slot ${beat} of ${o.storyDir} is a static "${slot.chosen}" beat, prepared at beats/${beat}/. The confirmed takeaway is in STORYBOARD.md and is the title, word for word. Write every word on the plate (eyebrow, labels, unit, standfirst, alt) in the story's language, "${meta.language ?? "en"}", whatever language the data's column names are in. Write beats/${beat}/beat.mjs as CONTRACT.md says, render it with render_beat (beat "${beat}", format "static"), look at the PNG, fix what is wrong, and reply DONE when the render is right.`;
+    let final: { exitCode: number; stderr: string } = { exitCode: 1, stderr: "beat.mjs was never written" };
+    const craftStart = Date.now();
+    for (let attempt = 0; attempt < 3 && Date.now() - craftStart < 20 * 60_000; attempt++) {
+      const res = await converse({
+        session: sess,
+        first: prompt,
+        journalist: o.journalist,
+        dialogue,
+        conversational: false,
+        done: async () => false,
+        gaps: async () => "",
+        log: transcript,
+        limits: { minutes: 15 },
+      });
+      say(`CRAFT stop: ${res.stop}`);
+      // The delivered render is the render of the beat.mjs on disk: the 12B once fixed beat.mjs after
+      // its last render and shipped the stale, wrong picture.
+      if (existsSync(join(beatDir, "beat.mjs")))
+        final = await runCommand(["bun", join(beatDir, "render-beat.mjs")], bases);
       say(`CRAFT final render: exit ${final.exitCode}${final.exitCode ? ` ${final.stderr.slice(-300)}` : ""}`);
-      if (final.exitCode !== 0) rmSync(join(beatDir, "renders"), { recursive: true, force: true });
+      if (final.exitCode === 0 || res.stop.endsWith("min cap")) break;
+      const reason = final.stderr.split("\n").find((l) => /^\s*error/i.test(l))?.trim() ?? final.stderr.slice(-400);
+      prompt = `[harness] The beat does not render yet: ${reason} Fix beats/${beat}/beat.mjs with small edit_file calls, render it, look at the PNG, and reply DONE only when the render succeeds.`;
     }
+    sess.dispose();
+    // A refusal leaves the beat unrendered, so whereIs sends it back to craft.
+    if (final.exitCode !== 0) rmSync(join(beatDir, "renders"), { recursive: true, force: true });
     return null;
   }
 
