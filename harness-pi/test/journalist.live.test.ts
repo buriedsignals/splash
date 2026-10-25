@@ -14,4 +14,12 @@ describe.skipIf(!up)("scripted journalist on the local server", () => {
     );
     expect(answer).toContain(sheet.takeaway);
   }, 60_000);
+
+  it("should answer the closing offer of another format with the sheet's closing answer", async () => {
+    const sheet = await Bun.file(SHEET).json();
+    const answer = await scriptedJournalist(sheet).answer(
+      "You have this beat (1) in the publication format you chose. You can record a request for the same finding in another format. **Other publication formats:** web, video. Would you like one?",
+    );
+    expect(answer).toBe(sheet.closing);
+  }, 60_000);
 });

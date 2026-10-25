@@ -90,10 +90,14 @@ export function scriptedJournalist(
       const body = (await res.json()) as {
         choices?: { message?: { content?: string } }[];
       };
-      const key = (body.choices?.[0]?.message?.content ?? "")
+      // The closing offers name themselves; the classifier read "another format" as the publication
+      // format question and answered "Static." to it.
+      const closing = /\b(another|other) (publication )?format\b|\b(another|other) subjects?\b/i.test(said.slice(-1500));
+      const classified = (body.choices?.[0]?.message?.content ?? "")
         .trim()
         .toLowerCase()
         .replace(/[^a-z]/g, "");
+      const key = closing ? "closing" : classified;
       // A journalist never agrees to a takeaway that is not theirs: asked to confirm one the desk
       // wrote, the sheet's journalist answers with their own sentence.
       const proposesTakeaway =
