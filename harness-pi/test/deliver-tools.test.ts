@@ -76,6 +76,13 @@ describe("delivery tools", () => {
     expect(handover).toContain("After the opening paragraph.");
   });
 
+  it("should hand over the alt text the render carries, not the model's", async () => {
+    dialogue.lastJournalist = "owned-file";
+    await call(deliverTools(bases, dialogue).make, { beat: BEAT, form: "owned-file", alt: "A line chart about transport stress." });
+    const handover = readFileSync(join(bases.storyDir, "export", BEAT, "HANDOVER.md"), "utf8");
+    expect(handover).not.toContain("transport stress");
+  });
+
   it("should refuse to record a decline the journalist never gave", async () => {
     dialogue.lastJournalist = "owned-file";
     await call(deliverTools(bases, dialogue).make, {

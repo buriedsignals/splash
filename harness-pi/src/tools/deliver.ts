@@ -3,7 +3,7 @@
 // anything and without materialising the chosen form. Here the code knows the beat's identity,
 // format, plan binding and hand-over facts (all already recorded in the story); the model presents
 // the forms, asks, and acts only on what the journalist actually answered.
-import { readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { basename, join } from "node:path";
 import { defineTool } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
@@ -60,6 +60,20 @@ function identity(bases: Bases, beat: string) {
   };
 }
 
+/** The aria-label of the beat's newest SVG render, decoded, or null. */
+export function renderAlt(beatDir: string): string | null {
+  const renders = join(beatDir, "renders");
+  if (!existsSync(renders)) return null;
+  const svgs = readdirSync(renders)
+    .filter((f) => f.endsWith(".svg"))
+    .sort((a, b) => statSync(join(renders, b)).mtimeMs - statSync(join(renders, a)).mtimeMs);
+  if (!svgs.length) return null;
+  const label = readFileSync(join(renders, svgs[0]), "utf8").match(/aria-label="([^"]+)"/)?.[1];
+  return label
+    ? label.replace(/&#x27;|&#39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&")
+    : null;
+}
+
 const text = (t: string) => ({
   content: [{ type: "text" as const, text: t }],
   details: {},
@@ -95,11 +109,11 @@ export function deliverTools(bases: Bases, dialogue: Dialogue) {
     name: "materialise",
     label: "Materialise the chosen form",
     description:
-      "Build the ONE form the journalist chose (its id, e.g. owned-file). alt is the alt text describing the chart. Placement, credit, caveat and language come from the storyboard.",
+      "Build the ONE form the journalist chose (its id, e.g. owned-file). The alt text is the one the beat's render carries; pass alt only if the render has none. Placement, credit, caveat and language come from the storyboard.",
     parameters: Type.Object({
       beat: Type.String(),
       form: Type.String(),
-      alt: Type.String(),
+      alt: Type.Optional(Type.String()),
     }),
     async execute(_id, { beat, form, alt }) {
       assertJournalistOwns("form", form.replace(/-/g, " "), {
@@ -113,12 +127,16 @@ export function deliverTools(bases: Bases, dialogue: Dialogue) {
       ]
         .filter(Boolean)
         .join(" · ");
+      // The beat computes its own alt from the data it drew; the 12B's paraphrase described a line
+      // chart about "transport stress" for a bar chart of trips.
+      const drawnAlt = renderAlt(join(bases.storyDir, "beats", common.outputId));
+      if (!drawnAlt && !alt) throw new Error("the render carries no alt text: pass alt, describing what the chart shows");
       await materialise({
         ...common,
         form,
         handover: {
           placement: meta.placement,
-          alt,
+          alt: drawnAlt ?? alt,
           credit,
           caveat: meta.limits,
           language: meta.language,
