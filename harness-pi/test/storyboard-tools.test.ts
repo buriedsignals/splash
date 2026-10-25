@@ -213,6 +213,14 @@ describe("dates", () => {
   });
 });
 
+describe("dates in other formats", () => {
+  it("should record as ISO a date the journalist wrote in another format", async () => {
+    dialogue.lastJournalist = "Source: Destatis, table 46241-11, as of 7 July 2026.";
+    await call(storyboardTools(bases, dialogue).recordHand, { field: "effectiveDate", value: "July 7, 2026" });
+    expect(String(meta().effectiveDate)).toBe("2026-07-07");
+  });
+});
+
 describe("answers recorded a turn late", () => {
   it("should accept the takeaway the journalist gave one exchange earlier", async () => {
     dialogue.history = [{ proposal: "What should the reader keep?", answer: TAKEAWAY }];

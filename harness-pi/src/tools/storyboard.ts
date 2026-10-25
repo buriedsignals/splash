@@ -141,6 +141,21 @@ const LOCAL_MENU = () =>
     .map((r: { type: string; purpose: string }) => `${r.type} (${r.purpose})`)
     .join("; ");
 
+const MONTHS = ["january", "february", "march", "april", "may", "june", "july", "august", "september", "october", "november", "december"];
+
+/** Every date written in `text` as ISO: 2026-08-21, 7 July 2026, July 7, 2026. */
+export function isoDates(text: string): string[] {
+  const out: string[] = [];
+  const pad = (n: number) => String(n).padStart(2, "0");
+  for (const m of text.matchAll(/\b(\d{4})-(\d{2})-(\d{2})\b/g)) out.push(`${m[1]}-${m[2]}-${m[3]}`);
+  const month = (name: string) => MONTHS.findIndex((x) => x.startsWith(name.toLowerCase().slice(0, 3))) + 1;
+  for (const m of text.matchAll(/\b(\d{1,2})\s+([A-Za-z]{3,})\.?\s+(\d{4})\b/g))
+    if (month(m[2]) > 0) out.push(`${m[3]}-${pad(month(m[2]))}-${pad(Number(m[1]))}`);
+  for (const m of text.matchAll(/\b([A-Za-z]{3,})\.?\s+(\d{1,2}),?\s+(\d{4})\b/g))
+    if (month(m[1]) > 0) out.push(`${m[3]}-${pad(month(m[1]))}-${pad(Number(m[2]))}`);
+  return out;
+}
+
 const text = (t: string) => ({
   content: [{ type: "text" as const, text: t }],
   details: {},
@@ -232,10 +247,13 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
         throw new Error(`field must be one of ${HAND.join(", ")}`);
       if (field === "effectiveDate") {
         // A date is owned only if the journalist wrote that date: word overlap let "2025-01-01" through
-        // on an answer that said "dane za 2025 r., as of 2026-08-21".
+        // on an answer that said "dane za 2025 r., as of 2026-08-21". Formats may differ ("7 July 2026"
+        // and "July 7, 2026" are one date); the record is ISO.
         const said = [dialogue.lastJournalist, ...(dialogue.history ?? []).map((h) => h.answer)];
-        if (!said.some((a) => a.includes(value.trim())))
-          throw new Error(`effectiveDate must be a date the journalist wrote, exactly as written (e.g. 2026-08-21); ${JSON.stringify(value)} is not in their answers`);
+        const iso = isoDates(value)[0];
+        if (!iso || !said.some((a) => isoDates(a).includes(iso)))
+          throw new Error(`effectiveDate must be a date the journalist wrote (e.g. 2026-08-21); ${JSON.stringify(value)} is not among the dates in their answers`);
+        value = iso;
       } else if (!(field === "limits" && /^none$/i.test(value.trim())))
         assertJournalistOwns(field, value, dialogue);
       await ensureFile();
