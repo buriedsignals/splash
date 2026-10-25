@@ -328,9 +328,10 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
       const values = [...new Set(table.rows.map((r) => r[i]).filter((v) => v !== null && v !== "").map(String))];
       return values.length > 1 && values.length <= 6 ? [`- ${c.name}: ${values.map((v) => JSON.stringify(v)).join(", ")}`] : [];
     });
-    return lines.length
+    const shape = `data.json is { columns: [{ name, type }], rows: [[...]] } — each row is an ARRAY of cells in column order; read a cell as row[table.columns.findIndex((c) => c.name === "${table.columns.find((c) => c.type === "number")?.name ?? "name"}")]. Columns: ${table.columns.map((c) => c.name).join(", ")}.\n`;
+    return shape + (lines.length
       ? `data.json has ${table.rows.length} rows, and these text columns split them into groups. For EACH column below keep ONE value — the one covering everything (a total, "all", "both"…) unless the takeaway names a group — so each year or category has exactly one row:\n${lines.join("\n")}\nRead columns by name (columns.findIndex), never by a typed index.\n\n`
-      : "";
+      : "\n");
   }
 
   async function craftPhase(): Promise<string | null> {
