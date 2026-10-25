@@ -66,6 +66,16 @@ if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")} (
   if (notNumbers.length)
     throw new Error(`rows hold values that are not numbers: ${notNumbers.slice(0, 3).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(", ")}. Convert them with Number(), or leave out the rows the data cannot give (say so in the standfirst)`);
 }
+// Labels a reader can tell apart: a per-resident rate printed as 0,004 on every bar told nothing.
+{
+  const values = beat.rows.map((r) => r.value);
+  const labels = new Set(values.map((v) => beat.format(v)));
+  const distinct = new Set(values).size;
+  if (values.every((v) => Math.abs(v) < 0.1))
+    throw new Error(`every value is below 0.1 (${values.slice(0, 3).join(", ")}): draw the rate per 1,000, 10,000 or 100,000 (multiply the values) so the labels read as whole numbers, and say the base in the standfirst or unit`);
+  if (labels.size < Math.min(distinct, values.length) * 0.75)
+    throw new Error(`format() prints ${distinct} different values as only ${labels.size} labels (${[...labels].slice(0, 3).join(", ")}): show enough decimals, or rescale, so different bars read differently`);
+}
 beat.check();
 assertDrawsClaimColumn(beat.rows.map((r) => r.value), dirname(fileURLToPath(import.meta.url)));
 assertHeadlineNumbersDrawn([beat.title].flat()[0], beat.rows.map((r) => r.value), "bars");
