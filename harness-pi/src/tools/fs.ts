@@ -52,7 +52,14 @@ function within(path: string, base: string): boolean {
   return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
 }
 
+/** Template tokens, newlines or backticks in a path mean the model's tool call ran into the next one. */
+const MALFORMED_PATH = /<\||\|>|[\n\r`{}]/;
+
 export function resolveInStory(bases: Bases, path: string): string {
+  if (MALFORMED_PATH.test(path))
+    throw new Error(
+      `the path ${JSON.stringify(path.slice(0, 80))} is malformed (it holds tool-call text); call the tool again with just the file path`,
+    );
   const abs = realOrParent(resolveFromRoot(bases, path));
   if (!within(abs, realpathSync(bases.storyDir))) {
     throw new Error(

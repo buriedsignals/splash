@@ -60,6 +60,12 @@ describe("file tools", () => {
     ).rejects.toThrow(/outside the story directory/);
   });
 
+  it("should refuse a path that swallowed the next tool call", async () => {
+    const { writeFile: write } = fsTools(bases);
+    const path = "stories/demo/beats/1-top/beat.mjs`}<tool_call|><|channel>thought\n<channel|><|tool_call>call:render_beat{beat:";
+    await expect(call(write, { path, content: "x" })).rejects.toThrow(/malformed/);
+  });
+
   it("should read a skill file by absolute path", async () => {
     const { readFile: read } = fsTools(bases);
     const r = await call(read, {
