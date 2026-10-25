@@ -58,6 +58,15 @@ describe("journalist ownership", () => {
     ).not.toThrow();
   });
 
+  it("should say when a proposal was left unanswered because the journalist answered another question", () => {
+    expect(() =>
+      assertJournalistOwns("medium", "chart", {
+        lastJournalist: "Static.",
+        lastProposal: "I recommend a chart as the medium. Static, web or video?",
+      }),
+    ).toThrow(/answered another question.*Shall I record medium: chart/);
+  });
+
   it("should accept an answer written in Arabic script", () => {
     expect(() =>
       assertJournalistOwns("subject", "محافظة تونس", { lastJournalist: "محافظة تونس", lastProposal: "" }),

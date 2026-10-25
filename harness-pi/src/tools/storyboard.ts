@@ -82,6 +82,10 @@ export function assertJournalistOwns(field: string, value: string, d: Dialogue, 
     if (overlap(value, answer) >= 0.6) return;
     if (acceptProposal && AFFIRMATIVE.test(answer.trim()) && overlap(value, proposal) >= 0.6) return;
   }
+  if (acceptProposal && overlap(value, d.lastProposal) >= 0.6)
+    throw new Error(
+      `you proposed this ${field}, but the journalist answered another question (${JSON.stringify(d.lastJournalist.slice(0, 120))}), so they have not accepted it. Ask them only this, in one short sentence (e.g. "Shall I record ${field}: ${value}?"), and end your turn.`,
+    );
   throw new Error(
     `${field} must be the journalist's own answer, or a proposal you made that they accepted. Their last message was: ${JSON.stringify(d.lastJournalist.slice(0, 200))}. If that message answers this field, record it in their own words, not a rewording; otherwise ask them, end your turn, and record what they say.`,
   );
