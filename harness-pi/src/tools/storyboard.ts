@@ -335,7 +335,7 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
         if (!candidates.length) {
           throw new Error(
             adapterFor(value)
-              ? `no candidates are recorded yet. Call show_candidates now with ${value} and one other catalogue type that sees THIS data differently (it need not be one this harness draws — the menu marks those), each with why it fits. Show the journalist the menu it returns, then record their choice.`
+              ? `no candidates are recorded yet. Call show_candidates now with ${value} and one other catalogue type that sees THIS data differently (it need not be one this harness draws — the menu marks those), each with why it fits.${distinctHint([value])} Show the journalist the menu it returns, then record their choice.`
               : "no candidates are recorded yet: call show_candidates with at least two chart types and why each fits, show the journalist the menu it returns, then record their choice",
           );
         }
