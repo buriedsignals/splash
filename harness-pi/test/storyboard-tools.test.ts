@@ -64,7 +64,7 @@ describe("journalist ownership", () => {
         lastJournalist: "Static.",
         lastProposal: "I recommend a chart as the medium. Static, web or video?",
       }),
-    ).toThrow(/answered another question.*Shall I record medium: chart/);
+    ).toThrow(/record exactly those words.*Shall I record medium: chart/);
   });
 
   it("should ask for the journalist's exact words when the value wraps them in additions", () => {

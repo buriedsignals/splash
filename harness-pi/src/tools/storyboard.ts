@@ -100,7 +100,7 @@ export function assertJournalistOwns(field: string, value: string, d: Dialogue, 
     );
   if (acceptProposal && overlap(value, d.lastProposal) >= 0.6)
     throw new Error(
-      `you proposed this ${field}, but the journalist answered another question (${JSON.stringify(d.lastJournalist.slice(0, 120))}), so they have not accepted it. Ask them only this, in one short sentence (e.g. "Shall I record ${field}: ${value}?"), and end your turn.`,
+      `the journalist did not accept your proposed ${field} as you wrote it. Their last answer was ${JSON.stringify(d.lastJournalist.slice(0, 120))}: if that answers the ${field}, record exactly those words; if it answers another question, ask them only this, in one short sentence ("Shall I record ${field}: ${value}?"), and end your turn.`,
     );
   const question = FIELD_QUESTIONS[field];
   if (question)
