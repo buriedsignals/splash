@@ -35,6 +35,8 @@ export interface Dialogue {
   lastJournalist: string;
   /** The model's text in the turn the journalist was answering. */
   lastProposal: string;
+  /** Every earlier exchange of this session: the 12B often records an answer a turn late. */
+  history?: { proposal: string; answer: string }[];
 }
 
 const HAND = [
@@ -74,13 +76,11 @@ function overlap(value: string, source: string): number {
 
 /** Throws unless the journalist said it, or said yes to the model having proposed it. */
 export function assertJournalistOwns(field: string, value: string, d: Dialogue, { acceptProposal = true } = {}) {
-  if (overlap(value, d.lastJournalist) >= 0.6) return;
-  if (
-    acceptProposal &&
-    AFFIRMATIVE.test(d.lastJournalist.trim()) &&
-    overlap(value, d.lastProposal) >= 0.6
-  )
-    return;
+  const exchanges = [{ proposal: d.lastProposal, answer: d.lastJournalist }, ...(d.history ?? [])];
+  for (const { proposal, answer } of exchanges) {
+    if (overlap(value, answer) >= 0.6) return;
+    if (acceptProposal && AFFIRMATIVE.test(answer.trim()) && overlap(value, proposal) >= 0.6) return;
+  }
   throw new Error(
     `${field} must be the journalist's own answer, or a proposal you made that they accepted. Their last message was: ${JSON.stringify(d.lastJournalist.slice(0, 200))}. If that message answers this field, record it in their own words, not a rewording; otherwise ask them, end your turn, and record what they say.`,
   );

@@ -155,6 +155,15 @@ describe("claim shape", () => {
   });
 });
 
+describe("answers recorded a turn late", () => {
+  it("should accept the takeaway the journalist gave one exchange earlier", async () => {
+    dialogue.history = [{ proposal: "What should the reader keep?", answer: TAKEAWAY }];
+    dialogue.lastJournalist = "It is a comparison, about trips_millions.";
+    await call(storyboardTools(bases, dialogue).recordTakeaway, { sentence: TAKEAWAY });
+    expect(meta().takeaway).toBe(TAKEAWAY);
+  });
+});
+
 describe("takeaway is verbatim", () => {
   it("should refuse a paraphrase of the takeaway even when the journalist said yes to it", async () => {
     dialogue.lastProposal = "Shall I record: Lisboa's ridership is greater than Porto's?";

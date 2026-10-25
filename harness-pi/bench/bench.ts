@@ -494,6 +494,8 @@ async function drive(
       recordedThisTurn = 0;
       // Only the question at the end of the turn is the one being asked.
       prompt = await journalistAnswer(said);
+      if (dialogue.lastJournalist)
+        (dialogue.history ??= []).unshift({ proposal: dialogue.lastProposal, answer: dialogue.lastJournalist });
       dialogue.lastProposal = said;
       dialogue.lastJournalist = prompt;
       if (gate.asked) gate.answered = true;

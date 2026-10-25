@@ -104,6 +104,8 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
       recorded = 0;
       const answer = await o.journalist.answer(said);
       o.log.push(`JOURNALIST: ${answer}`);
+      if (o.dialogue.lastJournalist)
+        (o.dialogue.history ??= []).unshift({ proposal: o.dialogue.lastProposal, answer: o.dialogue.lastJournalist });
       o.dialogue.lastProposal = said;
       o.dialogue.lastJournalist = answer;
       if (o.gate?.asked) o.gate.answered = true;
