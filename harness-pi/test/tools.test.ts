@@ -60,10 +60,16 @@ describe("file tools", () => {
     ).rejects.toThrow(/outside the story directory/);
   });
 
-  it("should refuse a path that swallowed the next tool call", async () => {
+  it("should recover the file name from a path that swallowed the next tool call", async () => {
     const { writeFile: write } = fsTools(bases);
     const path = "stories/demo/beats/1-top/beat.mjs`}<tool_call|><|channel>thought\n<channel|><|tool_call>call:render_beat{beat:";
-    await expect(call(write, { path, content: "x" })).rejects.toThrow(/malformed/);
+    await call(write, { path, content: "export default {};" });
+    expect(readFileSync(join(bases.storyDir, "beats/1-top/beat.mjs"), "utf8")).toBe("export default {};");
+  });
+
+  it("should refuse a malformed path that names no file", async () => {
+    const { writeFile: write } = fsTools(bases);
+    await expect(call(write, { path: "stories/demo/<|tool_call>call:x{", content: "x" })).rejects.toThrow(/malformed/);
   });
 
   it("should read a story-relative path the root does not hold", async () => {

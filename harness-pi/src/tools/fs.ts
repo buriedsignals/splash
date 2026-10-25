@@ -62,10 +62,15 @@ function within(path: string, base: string): boolean {
 /** Template tokens, newlines or backticks in a path mean the model's tool call ran into the next one. */
 const MALFORMED_PATH = /<\||\|>|[\n\r`{}]/;
 
-export function resolveInStory(bases: Bases, path: string): string {
-  if (MALFORMED_PATH.test(path))
+export function resolveInStory(bases: Bases, raw: string): string {
+  // Gemma 4's tool-call syntax sometimes loses the closing delimiter of the LAST argument, and the
+  // 12B writes `path` after a long `content`: the path then runs into the next call
+  // ("beat.mjs`}<tool_call|>...call:render_beat{..."). The content parsed whole, so when the text
+  // before the break is a plain file name it is the path; anything else is refused.
+  const path = MALFORMED_PATH.test(raw) ? raw.split(/<\||\|>|[\n\r`{}]/)[0] : raw;
+  if (MALFORMED_PATH.test(raw) && !/\/?[\w.-]+\.[a-z0-9]{1,5}$/i.test(path))
     throw new Error(
-      `the path ${JSON.stringify(path.slice(0, 80))} is malformed (it holds tool-call text); call the tool again with just the file path`,
+      `the path ${JSON.stringify(raw.slice(0, 80))} is malformed (it holds tool-call text); call the tool again with just the file path`,
     );
   const abs = realOrParent(resolveFromRoot(bases, path));
   if (!within(abs, realpathSync(bases.storyDir))) {
