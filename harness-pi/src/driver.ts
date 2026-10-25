@@ -361,7 +361,7 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
     );
     const res = await converse({
       session: sess,
-      first: `Slot ${beat} of ${o.storyDir} is a static "${slot.chosen}" beat, prepared at beats/${beat}/. The confirmed takeaway is in STORYBOARD.md. Write beats/${beat}/beat.mjs as CONTRACT.md says, render it with render_beat (beat "${beat}", format "static"), look at the PNG, fix what is wrong, and reply DONE when the render is right.`,
+      first: `Slot ${beat} of ${o.storyDir} is a static "${slot.chosen}" beat, prepared at beats/${beat}/. The confirmed takeaway is in STORYBOARD.md and is the title, word for word. Write every word on the plate (eyebrow, labels, unit, standfirst, alt) in the story's language, "${meta.language ?? "en"}", whatever language the data's column names are in. Write beats/${beat}/beat.mjs as CONTRACT.md says, render it with render_beat (beat "${beat}", format "static"), look at the PNG, fix what is wrong, and reply DONE when the render is right.`,
       journalist: o.journalist,
       dialogue,
       conversational: false,

@@ -28,6 +28,13 @@ import { existsSync as storyboardExists, readFileSync as readStoryboard } from "
     const credit = field("credit");
     const asOf = field("effectiveDate");
     if (credit) beat.source = asOf && !/\bas of\b/i.test(credit) ? `${credit} · as of ${asOf}` : credit;
+    // The headline is the journalist's confirmed takeaway, word for word, in the story's language: a
+    // 12B beat once translated an English takeaway into German and typed its own numbers.
+    const takeaway = field("takeaway")?.replace(/\\"/g, '"');
+    const norm = (t) => String(t).replace(/\s+/g, " ").trim().replace(/[.。]$/, "");
+    const headline = [beat.title].flat()[0];
+    if (takeaway && headline !== undefined && norm(headline) !== norm(takeaway))
+      throw new Error(`title must open with the journalist's takeaway word for word (shorter forms may follow): ${takeaway}`);
   }
 }
 

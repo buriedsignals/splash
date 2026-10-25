@@ -123,7 +123,7 @@ export function deliverTools(bases: Bases, dialogue: Dialogue) {
       const { meta, common } = identity(bases, beat);
       const credit = [
         meta.credit,
-        meta.effectiveDate ? `as of ${meta.effectiveDate}` : "",
+        meta.effectiveDate && !/\bas of\b/i.test(String(meta.credit ?? "")) ? `as of ${meta.effectiveDate}` : "",
       ]
         .filter(Boolean)
         .join(" · ");

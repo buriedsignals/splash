@@ -27,6 +27,13 @@ import { existsSync as storyboardExists, readFileSync as readStoryboard } from "
     const credit = field("credit");
     const asOf = field("effectiveDate");
     if (credit) beat.source = asOf && !/\bas of\b/i.test(credit) ? `${credit} · as of ${asOf}` : credit;
+    // The headline is the journalist's confirmed takeaway, word for word, in the story's language: a
+    // 12B beat once translated an English takeaway into German and typed its own numbers.
+    const takeaway = field("takeaway")?.replace(/\\"/g, '"');
+    const norm = (t) => String(t).replace(/\s+/g, " ").trim().replace(/[.。]$/, "");
+    const headline = [beat.title].flat()[0];
+    if (takeaway && headline !== undefined && norm(headline) !== norm(takeaway))
+      throw new Error(`title must open with the journalist's takeaway word for word (shorter forms may follow): ${takeaway}`);
   }
 }
 
@@ -40,6 +47,15 @@ const REQUIRED = ["eyebrow", "entity", "data", "unit", "format", "reference", "r
 const missing = REQUIRED.filter((key) => beat[key] === undefined);
 if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")} (see CONTRACT.md)`);
 beat.check();
+// One point per year: a table that keeps several rows per year (by location, by sex...) drawn as one
+// series zig-zags between them, as a 12B beat once did with three rows per year.
+{
+  const seen = new Map();
+  for (const d of beat.data) seen.set(d.year, (seen.get(d.year) ?? 0) + 1);
+  const doubled = [...seen].filter(([, n]) => n > 1);
+  if (doubled.length)
+    throw new Error(`data holds ${doubled[0][1]} values for ${doubled[0][0]} (and ${doubled.length - 1} other year(s)): filter data.json's rows to ONE series — read its other columns — so each year has one value`);
+}
 
 // The component reads { year, mt }; the contract speaks { year, value }.
 const data = beat.data.map((d) => ({ year: d.year, mt: d.value }));
