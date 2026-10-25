@@ -193,7 +193,7 @@ describe("no menu yet", () => {
     const tools = await withFormat();
     dialogue.lastJournalist = "Bar and column.";
     await expect(call(tools.recordSlot, { slot: "1", field: "chosen", value: "Bar and column" })).rejects.toThrow(
-      /Call show_candidates now with Bar and column and one other type.*Line/,
+      /Call show_candidates now with Bar and column and one other catalogue type/,
     );
   });
 });
