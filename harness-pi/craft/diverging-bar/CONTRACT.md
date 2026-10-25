@@ -33,6 +33,8 @@ and some below. One row — the subject — is drawn in the accent; every other 
 
 ## Rules
 
+- In `check()`, compare a computed value with the takeaway's figure at the takeaway's precision (`Math.round(v) === 233`, or to one decimal), never with strict equality on the raw division.
+
 - Every number in a sentence is computed from `data.json`, never typed — except the title's first form, which is the journalist's own sentence, copied as written.
 - The title says the confirmed takeaway; do not invent a different claim. A claim like "the only"
   is checked over ALL the rows in `check()`.

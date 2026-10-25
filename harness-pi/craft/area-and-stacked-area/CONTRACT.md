@@ -35,6 +35,8 @@ part is labelled with its share of the total — the renderer computes those sha
 
 ## Rules
 
+- In `check()`, compare a computed value with the takeaway's figure at the takeaway's precision (`Math.round(v) === 233`, or to one decimal), never with strict equality on the raw division.
+
 - Every number in a sentence is computed from `data.json`, never typed — except the title's first form, which is the journalist's own sentence, copied as written.
 - The title says the confirmed takeaway; do not invent a different claim.
 - A series with a missing year, or a value below zero, is refused: an area cannot be drawn over it.
