@@ -13,6 +13,7 @@ import {
   mutateStoryboard,
   writeStoryboardAtomic,
 } from "../../../skills/storyboard/scripts/storyboard.mjs";
+import { recordSurveyedSubjects } from "../../../skills/deliver/scripts/other-subjects.mjs";
 import {
   confirmFormatReachable,
   groundingScalar,
@@ -266,5 +267,20 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
     },
   });
 
-  return { recordTakeaway, recordClaim, recordHand, recordLanguage, recordSlot };
+  const surveyed: { id: string; learns: string; medium: string; format: string }[] = [];
+  const recordSubject = defineTool({
+    name: "record_subject",
+    label: "Record a surveyed subject",
+    description:
+      "Record one OTHER subject the data could support (movement 4, the survey): id (lowercase words joined by hyphens), learns (what the reader would learn, one sentence), medium, format. Call once per subject; at least one is needed to close the survey.",
+    parameters: Type.Object({ id: Type.String(), learns: Type.String(), medium: Type.String(), format: Type.String() }),
+    async execute(_id, subject) {
+      const next = [...surveyed.filter((s) => s.id !== subject.id), subject];
+      await recordSurveyedSubjects({ storyDir: bases.storyDir, subjects: next });
+      surveyed.splice(0, surveyed.length, ...next);
+      return text(`recorded ${surveyed.length} surveyed subject(s) in SUBJECTS.md.`);
+    },
+  });
+
+  return { recordTakeaway, recordClaim, recordHand, recordLanguage, recordSlot, recordSubject };
 }
