@@ -17,6 +17,13 @@ export function agentDir(): string {
   );
 }
 
+/** The model arms a run can name with --model: the local student and the OpenRouter teacher. */
+export const ARMS: Record<string, { provider: string; id: string; modelsPath: string }> = {
+  stock: { provider: "splash-local", id: "gemma-4-12b", modelsPath: join(SERVE_DIR, "models.json") },
+  teacher: { provider: "splash-teacher", id: "google/gemma-4-31b-it", modelsPath: join(SERVE_DIR, "models.teacher.json") },
+  "teacher-free": { provider: "splash-teacher", id: "google/gemma-4-31b-it:free", modelsPath: join(SERVE_DIR, "models.teacher.json") },
+};
+
 export async function loadModel({
   provider = "splash-local",
   id = "gemma-4-12b",

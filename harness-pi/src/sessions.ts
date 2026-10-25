@@ -12,7 +12,7 @@ import {
   type ToolDefinition,
 } from "@earendil-works/pi-coding-agent";
 import { SLOT } from "./budget.ts";
-import { fixedResources, loadModel } from "./pi.ts";
+import { ARMS, fixedResources, loadModel } from "./pi.ts";
 import type { OwnerId } from "./profiles.ts";
 
 export interface SessionKey {
@@ -50,10 +50,9 @@ export interface OpenOptions {
 }
 
 export async function openSession(opts: OpenOptions): Promise<AgentSession> {
-  const { modelRuntime, model } = await loadModel({
-    provider: opts.provider,
-    id: opts.modelId,
-  });
+  const { modelRuntime, model } = await loadModel(
+    ARMS[opts.modelId ?? "stock"] ?? { provider: opts.provider, id: opts.modelId },
+  );
   const { session } = await createAgentSession({
     cwd: opts.runRoot,
     model,
