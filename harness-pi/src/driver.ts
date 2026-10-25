@@ -414,6 +414,12 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
     return null;
   }
 
+  function pngOf(dir: string): string | null {
+    const renders = join(dir, "renders");
+    const png = existsSync(renders) ? readdirSync(renders).find((f) => f.endsWith(".png")) : undefined;
+    return png ? join(renders, png) : null;
+  }
+
   async function reviewPhase() {
     const beat = firstBeat();
     const beatDir = join(o.storyDir, "beats", beat);
@@ -425,7 +431,7 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
     );
     await converse({
       session: sess,
-      first: `Review the rendered beat ${beatDir} and return your verdicts as the JSON your contract defines.`,
+      first: `Review the rendered beat ${beatDir} and return your verdicts as the JSON your contract defines. Its render is ${pngOf(beatDir) ?? "in renders/"}; call review_facts with beat "${basename(beatDir)}", then look at that PNG.`,
       journalist: o.journalist,
       dialogue,
       conversational: false,
