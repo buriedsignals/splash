@@ -329,7 +329,7 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
       return values.length > 1 && values.length <= 6 ? [`- ${c.name}: ${values.map((v) => JSON.stringify(v)).join(", ")}`] : [];
     });
     return lines.length
-      ? `data.json has ${table.rows.length} rows, and these text columns split them into groups — keep only the rows the takeaway is about:\n${lines.join("\n")}\n\n`
+      ? `data.json has ${table.rows.length} rows, and these text columns split them into groups. For EACH column below keep ONE value — the one covering everything (a total, "all", "both"…) unless the takeaway names a group — so each year or category has exactly one row:\n${lines.join("\n")}\nRead columns by name (columns.findIndex), never by a typed index.\n\n`
       : "";
   }
 
