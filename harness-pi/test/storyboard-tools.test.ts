@@ -211,6 +211,11 @@ describe("slot discipline", () => {
     ).rejects.toThrow(/"Galaxy plot" is not a chart type/);
   });
 
+  it("should refuse a menu of one candidate", async () => {
+    const tools = await withFormat();
+    await expect(call(tools.showCandidates, { slot: "1", candidates: [{ type: "Bar Chart", why: "a" }] })).rejects.toThrow(/at least two/);
+  });
+
   it("should refuse two candidates that are the same idea, as Splash's menu does", async () => {
     const tools = await withFormat();
     await expect(

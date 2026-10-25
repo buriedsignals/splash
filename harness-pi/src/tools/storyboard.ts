@@ -315,6 +315,8 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       const current = currentSlot(slot);
       if (!current?.medium || !current?.format) throw new Error("record the slot's medium and format with the journalist first");
       const medium = String(current.medium);
+      if (candidates.length < 2)
+        throw new Error("show at least two genuinely different chart types, each with why it fits this story, so the journalist has a real choice");
       const named = candidates.map((c) => ({ type: canonicalTreatment(c.type, medium), why: c.why, format: String(current.format) }));
       const profile = JSON.parse(readFileSync(join(bases.storyDir, "source", "profile.json"), "utf8"));
       const rows = formatCandidateRows({ medium, candidates: named, profile });
