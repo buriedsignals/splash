@@ -164,3 +164,21 @@ describe("takeaway is verbatim", () => {
     ).rejects.toThrow(/journalist's own answer/);
   });
 });
+
+describe("slot discipline", () => {
+  it("should refuse a slot the run does not produce", async () => {
+    dialogue.lastJournalist = "A map.";
+    await expect(
+      call(storyboardTools(bases, dialogue).recordSlot, { slot: "2", field: "medium", value: "map" }),
+    ).rejects.toThrow(/produces slot\(s\) 1 only/);
+  });
+
+  it("should refuse a chosen treatment that was never among the candidates", async () => {
+    const tools = storyboardTools(bases, dialogue);
+    await call(tools.recordSlot, { slot: "1", field: "candidates", value: "Bar and column, Lollipop" });
+    dialogue.lastJournalist = "Scatter plot.";
+    await expect(call(tools.recordSlot, { slot: "1", field: "chosen", value: "Scatter plot" })).rejects.toThrow(
+      /must be one of the candidates you showed: Bar and column, Lollipop/,
+    );
+  });
+});

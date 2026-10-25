@@ -87,7 +87,7 @@ const text = (t: string) => ({
   details: {},
 });
 
-export function storyboardTools(bases: Bases, dialogue: Dialogue) {
+export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allowedSlots = ["1"] }: { slots?: string[] } = {}) {
   const path = join(bases.storyDir, "STORYBOARD.md");
 
   async function ensureFile() {
@@ -197,6 +197,18 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue) {
         throw new Error(`field must be one of ${all.join(", ")}`);
       if ((JOURNALIST_SLOT_FIELDS as readonly string[]).includes(field))
         assertJournalistOwns(field, value, dialogue);
+      if (!allowedSlots.includes(slot)) {
+        throw new Error(`this run produces slot(s) ${allowedSlots.join(", ")} only; record the journalist's answers on those`);
+      }
+      if (field === "chosen") {
+        const { meta } = existsSync(path) ? parseStoryboard(readFileSync(path, "utf8")) : { meta: { slots: [] as any[] } };
+        const current = (meta.slots ?? []).find((s: { id: unknown }) => String(s.id) === slot);
+        const candidates: string[] = Array.isArray(current?.candidates) ? current.candidates : [];
+        if (!candidates.length) throw new Error("record the candidates you showed the journalist first (record_slot field candidates)");
+        if (!candidates.some((c) => c.toLowerCase() === value.toLowerCase())) {
+          throw new Error(`chosen must be one of the candidates you showed: ${candidates.join(", ")}`);
+        }
+      }
       await ensureSlot(slot);
       const fields: Record<string, unknown> = {
         [field]:
