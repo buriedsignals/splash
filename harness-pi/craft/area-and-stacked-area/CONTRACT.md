@@ -33,6 +33,18 @@ part is labelled with its share of the total — the renderer computes those sha
 | `check()` | Throws if the data no longer supports the title. |
 | `tickStep`, `yearStep` | Optional: the value-axis and year-axis steps. Leave them out; they are derived. |
 
+## Reading the data
+
+`series.mjs` (in the folder) reads the one series to draw, by column name — use it instead of writing filters:
+
+```js
+import { readTable, series } from "./series.mjs";
+const table = readTable(import.meta.dirname);
+const data = series(table, { x: "year", y: "emissions_mt", where: { region: "All regions" }, from: 1990 });
+```
+
+It throws, by name, on a missing column, a filter that keeps nothing, two values for one year, or a cell that is not a number. Hyphens and empty cells are skipped.
+
 ## Rules
 
 - Draw the measure the takeaway is about. If it speaks of a rate, a share or a ranking per resident / per capita, compute that measure from the columns and draw it — never the raw column beside a per-resident headline.
