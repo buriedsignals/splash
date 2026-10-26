@@ -98,9 +98,16 @@ export function assertDrawsClaimColumn(drawn, here) {
   const at = (table.columns ?? []).findIndex((c) => c.name === column);
   if (at < 0) return;
   const held = table.rows.map((r) => Number(String(r[at]).replace(/\s/g, "").replace(",", "."))).filter(Number.isFinite);
-  const foreign = drawn.filter((v) => Number.isFinite(v) && !held.some((h) => Math.abs(h - v) <= Math.max(1e-9, Math.abs(h) * 1e-6)));
+  // The column may be drawn in a power-of-ten unit (tonnes as billions of tonnes, a share as a percent):
+  // one scale for every drawn value, rounding allowed at the drawn precision.
+  const near = (v, h) => Math.abs(h - v) <= Math.max(1e-9, Math.abs(h) * 1e-6, Math.abs(v) < 1e4 ? 0.05 * 10 ** -decimals(v) * 10 : 0);
+  const foreignAt = (scale) => drawn.filter((v) => Number.isFinite(v) && !held.some((h) => near(v, h * scale)));
+  const scales = Array.from({ length: 25 }, (_, i) => 10 ** (i - 12));
+  const foreign = scales.map(foreignAt).reduce((best, f) => (f.length < best.length ? f : best));
   if (foreign.length)
     throw new Error(`the claim is about the column ${column}, but the plate draws values that column does not hold (${foreign.slice(0, 3).join(", ")}): draw ${column}'s values`);
 }
+
+const decimals = (v) => (String(v).split(".")[1] ?? "").length;
 
 export const beatHere = (url) => dirname(new URL(url).pathname);
