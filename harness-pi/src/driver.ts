@@ -30,7 +30,7 @@ import { checkEditorProposals, describeProposals } from "./editor-check.ts";
 import type { Journalist } from "./journalist.ts";
 import { type OwnerId, PROFILES } from "./profiles.ts";
 import { openSession } from "./sessions.ts";
-import { type Bases, fsTools } from "./tools/fs.ts";
+import { type Bases, beatTools, fsTools } from "./tools/fs.ts";
 import { lookTool } from "./tools/look.ts";
 import {
   closeDerivedPalette,
@@ -380,8 +380,8 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
       [
         f.readFile,
         f.listDir,
-        f.writeFile,
-        f.editFile,
+        beatTools(bases, beat).writeFile,
+        beatTools(bases, beat).editFile,
         lookTool(bases),
         r.render,
       ],

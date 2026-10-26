@@ -240,3 +240,53 @@ export function fsTools(bases: Bases) {
     editFile,
   };
 }
+
+/**
+ * The craft step's write tools: in a zoned beat the model writes beat.mjs and nothing else, so the
+ * tools take no path. The 12B writes a long `content` first and then degenerates on the small argument
+ * after it — a map beat's path came out as `{"path":{"path":{…` nested until the token cap, and the
+ * craft step never wrote its file.
+ */
+export function beatTools(bases: Bases, beat: string) {
+  const file = `beats/${beat}/beat.mjs`;
+  const abs = () => resolveInStory(bases, join(bases.storyDir, file));
+  const writeBeat = defineTool({
+    name: "write_file",
+    label: "Write beat.mjs",
+    description: `Create or replace ${file}, the one file you write. Give its whole content.`,
+    parameters: Type.Object({ content: Type.String() }),
+    async execute(_id, { content }) {
+      const target = abs();
+      assertWritable(bases, target);
+      if (content.length > MAX_WRITE && existsSync(target))
+        throw new Error(
+          `${file} exists and the new content is ${content.length} characters; change it with several edit_file calls (old_text up to ${MAX_EDIT_OLD}, new_text up to ${MAX_EDIT_NEW} characters)`,
+        );
+      await writeFile(target, content);
+      return text(`wrote ${file} (${content.length} characters)`);
+    },
+  });
+  const editBeat = defineTool({
+    name: "edit_file",
+    label: "Edit beat.mjs",
+    description: `Replace one exact, unique occurrence of old_text with new_text in ${file}.`,
+    parameters: Type.Object({ old_text: Type.String(), new_text: Type.String() }),
+    async execute(_id, { old_text, new_text }) {
+      if (old_text.length > MAX_EDIT_OLD || new_text.length > MAX_EDIT_NEW)
+        throw new Error(
+          `edit too large (old_text ${old_text.length}/${MAX_EDIT_OLD}, new_text ${new_text.length}/${MAX_EDIT_NEW} characters); split it into smaller edits`,
+        );
+      const target = abs();
+      if (!existsSync(target)) throw new Error(`${file} does not exist yet: write it with write_file`);
+      const body = readFileSync(target, "utf8");
+      const count = body.split(old_text).length - 1;
+      if (count !== 1)
+        throw new Error(
+          `old_text occurs ${count} times in ${file}; it must occur exactly once.${count === 0 ? nearestLine(body, old_text) : " Include more surrounding text."}`,
+        );
+      await writeFile(target, body.replace(old_text, () => new_text));
+      return text(`edited ${file}`);
+    },
+  });
+  return { writeFile: writeBeat, editFile: editBeat };
+}

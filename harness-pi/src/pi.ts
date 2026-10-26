@@ -10,6 +10,9 @@ import {
 
 export const SERVE_DIR = resolve(import.meta.dirname, "..", "serve");
 
+/** The local server, on the port serve/llama-server.sh reads from SPLASH_PORT (8090 by default). */
+export const LOCAL_SERVER = `http://127.0.0.1:${process.env.SPLASH_PORT ?? "8090"}`;
+
 export function agentDir(): string {
   return (
     process.env.SPLASH_HARNESS_AGENT_DIR ??
@@ -37,6 +40,7 @@ export async function loadModel({
   const model = modelRuntime.getModel(provider, id);
   if (!model)
     throw new Error(`model ${provider}/${id} is not declared in ${modelsPath}`);
+  if (provider === "splash-local") model.baseUrl = `${LOCAL_SERVER}/v1`;
   return { modelRuntime, model };
 }
 
@@ -61,7 +65,7 @@ export function fixedResources(systemPrompt: string): ResourceLoader {
 }
 
 export async function serverIsUp(
-  baseUrl = "http://127.0.0.1:8090",
+  baseUrl = LOCAL_SERVER,
 ): Promise<boolean> {
   try {
     const res = await fetch(`${baseUrl}/health`, {

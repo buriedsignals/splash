@@ -3,6 +3,7 @@
 // model only to recognise WHICH question was asked; the answer is the sheet's own text, so it can
 // never agree to a paraphrase of its own takeaway.
 import { createInterface } from "node:readline/promises";
+import { LOCAL_SERVER } from "./pi.ts";
 
 export interface Journalist {
   answer(said: string): Promise<string>;
@@ -67,7 +68,7 @@ export type Sheet = Partial<Record<keyof typeof SHEET_KEYS, string>>;
 
 export function scriptedJournalist(
   sheet: Sheet,
-  { server = "http://127.0.0.1:8090" } = {},
+  { server = LOCAL_SERVER } = {},
 ): Journalist & {
   log: { said: string; key: string; answer: string }[];
 } {

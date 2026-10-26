@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { copyFile, mkdir, mkdtemp, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { type Bases, fsTools } from "../src/tools/fs.ts";
+import { type Bases, beatTools, fsTools } from "../src/tools/fs.ts";
 import { lookTool } from "../src/tools/look.ts";
 
 const CHECKOUT = resolve(import.meta.dirname, "../..");
@@ -200,5 +200,26 @@ describe("edit size limits", () => {
     const { writeFile: write } = fsTools(bases);
     await call(write, { path: "stories/demo/fresh.tsx", content: "z".repeat(7_000) });
     expect(readFileSync(join(bases.storyDir, "fresh.tsx"), "utf8")).toHaveLength(7_000);
+  });
+});
+
+describe("beat tools", () => {
+  it("should write the beat's beat.mjs from content alone, with no path to get wrong", async () => {
+    const { writeFile: write } = beatTools(bases, "1-top");
+    await call(write, { content: "export default {};\n" });
+    expect(readFileSync(join(bases.storyDir, "beats", "1-top", "beat.mjs"), "utf8")).toBe("export default {};\n");
+  });
+
+  it("should edit the beat's beat.mjs from old_text and new_text alone", async () => {
+    const { writeFile: write, editFile } = beatTools(bases, "1-top");
+    await call(write, { content: "const a = 1;\n" });
+    await call(editFile, { old_text: "a = 1", new_text: "a = 2" });
+    expect(readFileSync(join(bases.storyDir, "beats", "1-top", "beat.mjs"), "utf8")).toBe("const a = 2;\n");
+  });
+
+  it("should ignore a stray path argument and still write beat.mjs", async () => {
+    const { writeFile: write } = beatTools(bases, "1-top");
+    await call(write, { content: "export default 3;\n", path: { path: { path: {} } } });
+    expect(readFileSync(join(bases.storyDir, "beats", "1-top", "beat.mjs"), "utf8")).toBe("export default 3;\n");
   });
 });

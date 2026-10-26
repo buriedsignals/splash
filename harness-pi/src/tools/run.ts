@@ -161,7 +161,7 @@ export function runTools(bases: Bases) {
       if (!existsSync(path))
         throw new Error(`${beat} has no ${runner}; scaffold the beat first`);
       if (zoned && !existsSync(join(beatDir(bases, beat), "beat.mjs")))
-        throw new Error(`beats/${beat}/beat.mjs does not exist yet: write it with write_file (path beats/${beat}/beat.mjs), then render`);
+        throw new Error(`beats/${beat}/beat.mjs does not exist yet: write it with write_file, then render`);
       const result = await exec(["bun", path]);
       // Name every PNG the render wrote by its full path, so the next call can look at it.
       const renders = join(beatDir(bases, beat), "renders");
