@@ -115,3 +115,18 @@ Reading: the web choropleth's contract — four classing rules each with words a
 missing-value sentence — is past what the stock 12B holds across edits; the static choropleth (one rule, no
 control) completed. This is the case the tuned model is for: the teacher's gold `beat.mjs` for this kit is the
 training example the stock model lacks.
+
+## First video run — 2026-10-26
+
+| Story | Format | Completed | Headline | Gate refusals | Wall clock | Storyboard | Craft |
+|---|---|---|---|---|---|---|---|
+| stress-v-top-emitters (Bar and column) | video | ✅ | ✅ | 6 | 19.6 min | 7.3 min | 8.6 min |
+
+- A story shaped like the bar video's choreography (China against the next five together, OWID 2024): the video
+  kits keep their worked example's gesture, which fits data of that shape only.
+- The 12B's own `check()` first summed regional aggregates (102.6 Gt for "the next five"), refused itself, and
+  fixed the selection in the next attempt.
+- Frames looked at, extracted from the mp4: the takeaway word for word on the title card; the next five stacked
+  under China; the final ranking with the bracket "11,652,210,000 t" against China's "12,289,037,000 t", credit
+  dated. Defect: values printed to the tonne where the worked example reads "12,3 Gt" — the legibility guard now
+  refuses labels of 8 digits or more and asks for millions or billions (after this run).

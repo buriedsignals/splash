@@ -55,6 +55,12 @@ export function assertNumbers(entries, label = "values") {
 export function assertLegibleLabels(values, format) {
   if (values.every((v) => Math.abs(v) < 0.1))
     throw new Error(`every value is below 0.1 (${values.slice(0, 3).join(", ")}): draw the rate per 1,000, 10,000 or 100,000 (multiply the values) so the labels read as whole numbers, and say the base in the standfirst or unit`);
+  // A 12B video printed CO₂ to the last tonne ("12,289,037,000 t") where the worked example reads "12,3 Gt".
+  const digits = (t) => (String(t).match(/\d/g) ?? []).length;
+  if (values.every((v) => Math.abs(v) >= 1e7) && values.every((v) => digits(format(v)) >= 8)) {
+    const [scale, word] = Math.min(...values.map(Math.abs)) >= 1e9 ? [1e9, "billions"] : [1e6, "millions"];
+    throw new Error(`every value is printed to 8 digits or more (${format(values[0])}): draw them in ${word} (divide by ${scale.toExponential(0).replace("e+", "e")}) and say it in the unit (e.g. "Gt", "million"), so the labels read at a glance`);
+  }
   const labels = new Set(values.map((v) => format(v)));
   const distinct = new Set(values).size;
   if (labels.size < Math.min(distinct, values.length) * 0.75)

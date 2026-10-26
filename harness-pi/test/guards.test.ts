@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn } from "../craft/_shared/guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels } from "../craft/_shared/guards.mjs";
 
 let beat: string;
 
@@ -40,5 +40,17 @@ describe("assertHeadlineNumbersDrawn", () => {
 describe("applyStoryboard", () => {
   it("should refuse a beat.mjs with no default export, saying how to write one", () => {
     expect(() => applyStoryboard(undefined, beat)).toThrow(/beat\.mjs has no default export.*export default \{/);
+  });
+});
+
+describe("assertLegibleLabels", () => {
+  it("should refuse labels printed to the last tonne, asking for a readable unit", () => {
+    const format = (v: number) => `${v.toLocaleString("en-US")} t`;
+    expect(() => assertLegibleLabels([12_289_037_000, 4_904_120_000, 3_193_478_100], format)).toThrow(/billions .*unit/);
+  });
+
+  it("should accept a population printed in full", () => {
+    const format = (v: number) => v.toLocaleString("en-US");
+    expect(() => assertLegibleLabels([4_465_340, 4_312_005, 3_901_220], format)).not.toThrow();
   });
 });
