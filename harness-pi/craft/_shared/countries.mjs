@@ -56,6 +56,11 @@ export function iso3Of(names, dir, rename = {}) {
     unresolved.push(`${JSON.stringify(raw)} (closest: ${closest})`);
     return null;
   });
+  // A beat copied the contract example's [CODE, NAME, VALUE] onto data with no code column, and passed the
+  // value column as names; the misspelling advice sent it round the same refusal twice.
+  const numeric = names.filter((n) => n !== null && n !== "" && Number.isFinite(Number(n)));
+  if (numeric.length)
+    throw new Error(`these "country names" are numbers (${numeric.slice(0, 3).join(", ")}): beat.mjs reads the value column as the names. Read the names from the column whose cells are country names (find it by name in data.json's columns), and the value from the number column`);
   if (unresolved.length)
     throw new Error(`these country names match no country on the map: ${unresolved.join(", ")}. If one is a misspelling, map it in beat.mjs with rename { "<as written>": "<country>" } — say so in the standfirst — or leave the row out`);
   return out;
