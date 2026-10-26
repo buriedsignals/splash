@@ -82,3 +82,18 @@ spend-gated and have not run.
   map kit's ladder shortens the headline rather than shrink the map — measured by re-rendering the 12B's beat
   with a short standfirst form added. Faithful to the figures, not word for word.
 - Still open: countries absent from the data are drawn as plain land while the key's "no data" swatch is grey.
+
+## First web run — 2026-10-26, harness up to `1c32c8e1d`
+
+| Story | Format | Completed | Headline | Gate refusals | Wall clock | Storyboard | Craft |
+|---|---|---|---|---|---|---|---|
+| stress-p-transport-ridership (Bar and column) | web | ✅ | ✅ | 14 | 23.1 min | 17.3 min | 2.0 min |
+
+- Fourth attempt. The three before it stopped on harness defects, each fixed: the web bar kit refused a
+  leader nothing below it reaches (`09bbd7863`); the 12B passed "interactive web" as the format code, then
+  switched the slot to a map nobody asked for (`9a49ea093`); the medium refusal did not say to ask
+  (`1c32c8e1d`). A size recorded before the format was known is now dropped for web/scrolly slots
+  (`008aac256`, after this run).
+- Page looked at: the takeaway as headline word for word, the journalist's limits as standfirst, Lisboa
+  accented, the stack control offering all six cities; verify-web passed on the delivered page.
+- Storyboard dominates the wall clock (17 of 23 minutes) — the format and size gates of a web slot.
