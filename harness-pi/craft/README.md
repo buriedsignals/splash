@@ -58,3 +58,30 @@ a `PALETTE.md` (`---\nground: "#FFFFFF"\naccent: "#0B7A75"\norigin: newsroom\n--
 `cd ~/.splash-harness/bench/root && bun stories/zz-<you>-<slug>/beats/1/render-beat.mjs`.
 LOOK at the output (PNG for static) and confirm it is a correct, legible plate. Then mutate `data.json` so
 the title is no longer true and confirm `check()` (or a guard) refuses. Delete the scratch story.
+
+## Format-specific obligations
+
+The kit keeps the worked example's gesture, choreography or scroll states: those are the type's design,
+written once by a person and reviewed. The 12B fills only the subject — data, words, checks. Whatever the
+format, `render-beat.mjs` must leave something the model can LOOK at (a PNG) and print its path on a line
+`look at: <absolute png path>`, and must leave `renders/` non-empty only when the render succeeded.
+
+- **static** — PNG + SVG in `renders/` (see the existing kits).
+- **web** — the proof's `render-directions-web.mjs` / `render-web.mjs` path (`skills/chart-web`,
+  `skills/map-web` for maps): write the HTML page(s) into `renders/`, then run the skill's verification
+  (`scripts/verify-web.mjs --shots` or the map equivalent) and keep its screenshots; print a desktop
+  screenshot as `look at:`. The page must degrade to the static frame without JavaScript, as the skill
+  requires. The interaction is the worked example's; the 12B words its labels and tooltips through
+  `beat.mjs`.
+- **video** — the proof's split (`subject.mjs`, `states.mjs`, `scene.mjs`, `timing-contract.ts`, the
+  frame components, `render-directions-video.mjs`): `beat.mjs` replaces the SUBJECT (data, words, the
+  claim's numbers); the timing contract and shots stay the worked example's unless the data's shape
+  forces a change the kit computes. `render-beat.mjs` renders the `--look` stills first (print one as
+  `look at:`), then the mp4 into `renders/`. Rendering is slow on the target Mac: keep it to the
+  directions the run direction selects.
+- **scrolly** — the proof's `render-directions-scrolly.mjs` + drive file: `beat.mjs` gives the subject and
+  the prose of each card; the states and the drive stay the worked example's. Render the page into
+  `renders/` and a screenshot per card for `look at:` (first card at least).
+
+Verify a non-static kit the same way as a static one, LOOKING at its screenshots or stills (and, for video,
+at stills extracted from the mp4 — a still from the composition does not prove the mp4).
