@@ -206,6 +206,25 @@ const text = (t: string) => ({
   details: {},
 });
 
+/**
+ * The format code for the journalist's words. The 12B passed "interactive web" — the journalist's
+ * answer — as the format, was refused, then changed the slot's medium to a map on its own and looped.
+ */
+const MEDIUM_WORDS: Record<string, RegExp> = {
+  chart: /\b(chart|graph|graphique|diagramm|grafik|gráfico|grafico|wykres)/i,
+  map: /\b(map|carte|karte|mapa|mappa)/i,
+  image: /\b(image|photo|picture|bild|imagen|immagine|zdjęcie)/i,
+};
+
+export function formatCode(words: string): string {
+  const w = words.toLowerCase();
+  if (/scroll/.test(w)) return "scrolly";
+  if (/video|motion|animat|film/.test(w)) return "video";
+  if (/\bweb\b|interactive|online|page|html/.test(w)) return "web";
+  if (/static|still|image|png|print|picture/.test(w)) return "static";
+  return words.trim();
+}
+
 export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allowedSlots = ["1"] }: { slots?: string[] } = {}) {
   const path = join(bases.storyDir, "STORYBOARD.md");
 
@@ -338,7 +357,15 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       field: Type.String(),
       value: Type.String(),
     }),
-    async execute(_id, { slot, field, value }) {
+    async execute(_id, { slot, field, value: given }) {
+      let value = field === "format" ? formatCode(given) : given;
+      // The medium is the journalist's: refused a format, the 12B once switched a chart slot to a map
+      // nobody asked for, and looped on the same refusal.
+      if (field === "medium" && MEDIUM_WORDS[value.toLowerCase()]) {
+        const said = [dialogue.lastJournalist, ...(dialogue.history ?? []).map((h) => h.answer)].join(" ");
+        if (!MEDIUM_WORDS[value.toLowerCase()].test(said))
+          throw new Error(`the journalist never asked for a ${value.toLowerCase()}: record the medium they named (their words: ${JSON.stringify(dialogue.lastJournalist)})`);
+      }
       const all = [
         ...JOURNALIST_SLOT_FIELDS,
         ...MODEL_SLOT_FIELDS,

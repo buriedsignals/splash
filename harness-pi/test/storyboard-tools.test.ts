@@ -150,6 +150,22 @@ describe("storyboard tools", () => {
     expect(slot.reachable).toBe("yes");
   });
 
+  it("should record the format code when the model passes the journalist's words for it", async () => {
+    const tools = storyboardTools(bases, dialogue);
+    dialogue.lastJournalist = "A chart.";
+    await call(tools.recordSlot, { slot: "1", field: "medium", value: "chart" });
+    dialogue.lastJournalist = "Interactive web.";
+    await call(tools.recordSlot, { slot: "1", field: "format", value: "interactive web" });
+    expect(meta().slots[0].format).toBe("web");
+  });
+
+  it("should refuse a medium the journalist never named", async () => {
+    const tools = storyboardTools(bases, { lastJournalist: "A chart.", history: [{ said: "Which medium?", answer: "A chart." }] } as never);
+    await expect(call(tools.recordSlot, { slot: "1", field: "medium", value: "map" })).rejects.toThrow(
+      /the journalist never asked for a map/,
+    );
+  });
+
   it("should refuse a field outside the slot vocabulary", async () => {
     await expect(
       call(storyboardTools(bases, dialogue).recordSlot, {
