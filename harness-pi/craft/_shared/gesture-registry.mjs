@@ -38,10 +38,13 @@ export const HIDES_THE_WHOLE = new Set(["zoom", "filter"]);
 
 export const FORMATS = ["static", "web", "video", "scrolly"];
 
+/** Gestures a format cannot draw: a still plate has no zoom (its printed factor would sit on an un-zoomed plate). */
+const NOT_IN = { static: new Set(["zoom"]) };
+
 /** The admissible gestures for a family and format, with their meanings, as a contract or a refusal lists them. */
 export function admissible(family, format) {
   const list = FAMILY_GESTURES[family];
   if (!list) throw new Error(`no gesture family "${family}" is implemented`);
   if (!FORMATS.includes(format)) throw new Error(`format must be one of ${FORMATS.join(", ")}, not "${format}"`);
-  return list.map((d) => ({ do: d, meaning: VOCABULARY[d] }));
+  return list.filter((d) => !NOT_IN[format]?.has(d)).map((d) => ({ do: d, meaning: VOCABULARY[d] }));
 }

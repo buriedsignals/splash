@@ -360,3 +360,26 @@ describe("repairGestures", () => {
     expect(repairs).toEqual([]);
   });
 });
+
+describe("signs and formats", () => {
+  const CHANGE = {
+    rows: [
+      { name: "Alpha", value: 20 },
+      { name: "Beta", value: -12 },
+    ],
+    claim: { takeaway: "Beta lost 12 while Alpha gained 20.", subject: "Beta", comparison: "Alpha" },
+  };
+
+  it("should accept a note stating a negative value with its sign", () => {
+    expect(check(CHANGE, [{ do: "annotate", mark: "Beta", note: "-12" }]).gestures).toHaveLength(1);
+  });
+
+  it("should refuse a note giving a negative row the wrong sign", () => {
+    expect(refusal(() => check(CHANGE, [{ do: "annotate", mark: "Beta", note: "+15" }])).field).toBe("gestures[0].note");
+  });
+
+  it("should not admit a zoom on a still plate", () => {
+    const r = refusal(() => check(LISBOA, [{ do: "zoom", marks: ["Aveiro", "Faro"], note: "×15" }], "static"));
+    expect(r.field).toBe("gestures[0].do");
+  });
+});

@@ -35,7 +35,6 @@ with `write_file`.
 | `compare` | two rows set side by side: a copy of the second's length laid against the first, the note states the gap or ratio |
 | `reference` | a rule at a stated value, named in its note |
 | `filter` | the rows the claim is about keep their ink; the others step back, nothing moves |
-| `zoom` | the value scale enlarges onto a few rows to show what the overview cannot; the factor is printed |
 | `reorder` | the same rows move into the order that answers the question |
 | `rescale` | the value axis travels to a new top, the marks glide with it — never between two shots being compared |
 | `count` | a figure climbs as the rows it counts appear; the note states where it ends |

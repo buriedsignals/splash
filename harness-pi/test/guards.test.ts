@@ -63,3 +63,15 @@ describe("errorText", () => {
     expect(errorText(error)).toMatch(/"a" has already been declared \(line 2: const a = 2;\)/);
   });
 });
+
+describe("assertHeadlineNumbersDrawn with signed values", () => {
+  it("should read a loss stated without its sign against a negative drawn value", () => {
+    expect(() => assertHeadlineNumbersDrawn("Beta lost 12 while Alpha gained 20", [20, -12])).not.toThrow();
+  });
+});
+
+describe("assertHeadlineNumbersDrawn on negative values", () => {
+  it("should refuse a title stating losses the negative drawn values do not hold", () => {
+    expect(() => assertHeadlineNumbersDrawn("Beta fell 40 and Gamma fell 50", [-12, -30])).toThrow(/the title states/);
+  });
+});

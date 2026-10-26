@@ -82,9 +82,11 @@ export function assertOnePerX(points, x = "year") {
  * takeaway may state a figure the plate does not draw, so only a majority missing refuses.
  */
 export function assertHeadlineNumbersDrawn(headline, drawn, label = "marks") {
-  const values = drawn.filter((v) => Number.isFinite(v));
-  if (!values.length) return;
-  const allowed = [...values, values.reduce((a, b) => a + b, 0)];
+  // Magnitudes: a title states a loss as "fell 12" against a drawn -12; signed bounds left negatives unchecked.
+  const signed = drawn.filter((v) => Number.isFinite(v));
+  if (!signed.length) return;
+  const values = signed.map(Math.abs);
+  const allowed = [...values, Math.abs(signed.reduce((a, b) => a + b, 0))];
   const lo = Math.min(...values) / 2;
   const hi = Math.max(...values) * 2;
   // A digit glued to letters is part of a name (CO2, PM2.5, H2O), not a figure the title states.

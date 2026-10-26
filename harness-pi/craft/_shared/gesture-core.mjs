@@ -52,19 +52,24 @@ function rowsNamedIn(text, rows) {
 
 // ── numbers ───────────────────────────────────────────────────────────────────────────────────────
 
-const NUMBER = /(?<![\p{L}\d])(\d{1,3}(?:[ ,  ]\d{3})+(?![.,]?\d)|\d+(?:[.,]\d+)?)(?![\p{L}\d])/gu;
+const NUMBER = /(?<![\p{L}\d])([-−+](?=\d))?(\d{1,3}(?:[ ,  ]\d{3})+(?![.,]?\d)|\d+(?:[.,]\d+)?)(?![\p{L}\d])/gu;
 
-/** Every number a text states, with its precision; years and unit bases (100, 1,000, 100,000…) are not figures. */
+/** Every number a text states, with its sign and precision; years and unit bases (100, 1,000, 100,000…) are not figures. */
 export function figuresIn(text) {
   const out = [];
   for (const m of String(text ?? "").matchAll(NUMBER)) {
-    const raw = m[1];
-    const grouped = /^\d{1,3}(?:[ ,  ]\d{3})+$/.test(raw);
-    const value = Number(grouped ? raw.replace(/[ ,  ]/g, "") : raw.replace(",", "."));
-    const decimals = grouped ? 0 : (raw.split(/[.,]/)[1] ?? "").length;
+    // A sign written right before the digits belongs to the figure ("-12", "+3.4"); a dash between words does not.
+    const sign = m[1] ?? "";
+    const digits = m[2];
+    const raw = sign + digits;
+    const grouped = /^\d{1,3}(?:[ ,\u00a0\u202f]\d{3})+$/.test(digits);
+    const magnitude = Number(grouped ? digits.replace(/[ ,\u00a0\u202f]/g, "") : digits.replace(",", "."));
+    const value = sign === "-" || sign === "\u2212" ? -magnitude : magnitude;
+    const decimals = grouped ? 0 : (digits.split(/[.,]/)[1] ?? "").length;
     if (Number.isInteger(value) && value >= 1700 && value <= 2100) continue;
     if (value >= 100 && /^10+$/.test(String(value))) continue;
-    out.push({ raw, value, decimals, separator: grouped ? raw.match(/[ ,  ]/)[0] : raw.includes(",") ? "," : "." , grouped, index: m.index });
+    const separator = grouped ? digits.match(/[ ,\u00a0\u202f]/)[0] : digits.includes(",") ? "," : ".";
+    out.push({ raw, value, decimals, sign, separator, grouped, index: m.index });
   }
   return out;
 }
@@ -72,9 +77,10 @@ export function figuresIn(text) {
 const matches = (n, f) => Math.abs(n.value - f) <= 0.5 * 10 ** -n.decimals + 1e-9;
 
 function formatLike(n, f) {
-  const fixed = f.toFixed(n.decimals);
-  if (n.grouped) return fixed.replace(/\B(?=(\d{3})+(?!\d))/g, n.separator);
-  return n.separator === "," ? fixed.replace(".", ",") : fixed;
+  const fixed = Math.abs(f).toFixed(n.decimals);
+  const body = n.grouped ? fixed.replace(/\B(?=(\d{3})+(?!\d))/g, n.separator) : n.separator === "," ? fixed.replace(".", ",") : fixed;
+  const sign = f < 0 ? (n.sign === "\u2212" ? "\u2212" : "-") : n.sign === "+" ? "+" : "";
+  return sign + body;
 }
 
 /** "twice", "three times", "half" — a ratio a compare note states in words. */

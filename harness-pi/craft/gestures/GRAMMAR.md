@@ -159,7 +159,7 @@ One definition per gesture; the condition below is the format's real limit, not 
 |---|---|---|---|---|
 | reveal | end state only (all marks) | resting state | any event but `conclusion` | one card |
 | filter | step back the others | a control: the others leave (`filter-to-a-subset`), the scale does not move | not in `conclusion` | one card |
-| zoom | note prints the factor | a control (`zoom-and-pan`), factor printed | not in `conclusion` | one card, factor printed |
+| zoom | ✗ a still has no zoom: its printed factor would sit on an un-zoomed plate (refused, repair drops it) | a control (`zoom-and-pan`), factor printed | not in `conclusion` | one card, factor printed |
 | reorder | the plate is drawn in that order | a control (`sort-or-reorder`) | any event | one card |
 | rescale | refused once a `compare` or `bracket` precedes it (`no-float-baseline-rescale`) | same | same | same |
 | count | prints its final figure | the note in the resting state | the figure climbs over the event | the figure climbs over the card |
