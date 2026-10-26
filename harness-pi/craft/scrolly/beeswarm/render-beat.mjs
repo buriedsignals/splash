@@ -137,7 +137,10 @@ await refusing(HERE, async () => {
   // The two counters: the drive counts the figure up into the {n} of the sentence. It writes the
   // decimal with a comma (the drive's own `.replace(".", ",")`), so a language with a decimal point
   // counts the tail in whole percents.
-  const decimal = /,/.test(beat.format(1.5)) ? "," : ".";
+  // The decimal mark the words use: read off format(1.5), or — when format prints whole numbers — the
+  // language. Read off format alone, a French beat formatting whole numbers took "3,4" in a card as 3 and 4.
+  const sample = plain(beat.format(1.5));
+  const decimal = /\d,\d/.test(sample) ? "," : /\d\.\d/.test(sample) ? "." : /,/.test(new Intl.NumberFormat(beat.lang ?? storyLanguage(HERE) ?? "en").format(1.5)) ? "," : ".";
   const tailDecimals = beat.tailCountDecimals ?? 1;
   if (![0, 1].includes(tailDecimals)) throw new Error(`tailCountDecimals is ${beat.tailCountDecimals}: 0 or 1`);
   if (decimal === "." && tailDecimals !== 0)

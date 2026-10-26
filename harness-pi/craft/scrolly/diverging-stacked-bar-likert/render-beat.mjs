@@ -124,7 +124,10 @@ await refusing(HERE, async () => {
 
   // Every other figure a card, a note or the alt states must be one this kit computed, at the
   // precision it is written with. A year (1900–2100) and a figure glued to letters (CO2, 10e) pass.
-  const decimal = /,/.test(beat.format(1.5)) ? "," : ".";
+  // The decimal mark the words use: read off format(1.5), or — when format prints whole numbers — the
+  // language. Read off format alone, a French beat formatting whole numbers took "3,4" in a card as 3 and 4.
+  const sample = plain(beat.format(1.5));
+  const decimal = /\d,\d/.test(sample) ? "," : /\d\.\d/.test(sample) ? "." : /,/.test(new Intl.NumberFormat(beat.lang ?? storyLanguage(HERE) ?? "en").format(1.5)) ? "," : ".";
   const group = decimal === "," ? "[ .]" : "[ ,]";
   const dec = decimal === "." ? "\\." : ",";
   const known = [
