@@ -362,6 +362,9 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
     // The adapter directory is the whole kit: generic runner, worked component, contract, example.
     for (const file of readdirSync(adapter))
       cpSync(join(adapter, file), join(beatDir, file));
+    // The refusals and readers every kit shares (craft/_shared) travel with it.
+    const shared = join(adapter, "..", "_shared");
+    for (const file of readdirSync(shared)) cpSync(join(shared, file), join(beatDir, file));
     if (!existsSync(join(beatDir, "BRIEF.md"))) {
       writeFileSync(
         join(beatDir, "BRIEF.md"),

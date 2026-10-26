@@ -67,7 +67,7 @@ const MALFORMED_PATH = /<\||\|>|[\n\r`{}]/;
  * is refused by the analyst on rebuild, which stalled a run), what typed tools record, and the kit
  * the harness copies into a zoned beat. In a zoned beat the model writes beat.mjs.
  */
-const PROTECTED = /(^|\/)(source\/.*|STORYBOARD\.md|PALETTE\.md|DIRECTION\.md|SUBJECTS\.md|NEWSROOM\.md|data\.json|data\.csv|DATA-NOTES\.md|BRIEF\.md|OUTPUT-REVIEW\.json|render-beat\.mjs|CONTRACT\.md|beat\.example\.mjs|Directed[A-Za-z]*\.tsx|crossing-geometry\.ts)$/;
+const PROTECTED = /(^|\/)(source\/.*|STORYBOARD\.md|PALETTE\.md|DIRECTION\.md|SUBJECTS\.md|NEWSROOM\.md|data\.json|data\.csv|DATA-NOTES\.md|BRIEF\.md|OUTPUT-REVIEW\.json|render-beat\.mjs|guards\.mjs|series\.mjs|CONTRACT\.md|beat\.example\.mjs|Directed[A-Za-z]*\.tsx|crossing-geometry\.ts)$/;
 
 function assertWritable(bases: Bases, abs: string) {
   const rel = relative(bases.storyDir, abs);

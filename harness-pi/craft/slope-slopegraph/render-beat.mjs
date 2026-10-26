@@ -17,37 +17,8 @@ import { directionReachable, readRunDirection } from "#shared/design-base/run-di
 import { assertBeatMayEnter, directedFrame, exportSizeFromArgv, nameAtSize } from "#shared/chart-beat/directed-size.mjs";
 import { DirectedSlope } from "./DirectedSlope.tsx";
 import beat from "./beat.mjs";
-import { existsSync as storyboardExists, readFileSync as readStoryboard } from "node:fs";
-// The credit line is the journalist's own, as the storyboard recorded it, with its as-of date; a 12B
-// beat once printed "unattributed" with no date. The beat's own `source` is used only without one.
-{
-  const storyboard = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "STORYBOARD.md");
-  if (storyboardExists(storyboard)) {
-    const front = readStoryboard(storyboard, "utf8").split("---")[1] ?? "";
-    const field = (key) => front.match(new RegExp(`^${key}:\\s*"?(.*?)"?\\s*$`, "m"))?.[1];
-    const credit = field("credit");
-    const asOf = field("effectiveDate");
-    if (credit) beat.source = asOf && !/\bas of\b/i.test(credit) ? `${credit} · as of ${asOf}` : credit;
-    // The headline is the journalist's confirmed takeaway, word for word, in the story's language: a
-    // 12B beat once translated an English takeaway into German and typed its own numbers.
-    const takeaway = field("takeaway")?.replace(/\\"/g, '"');
-    const norm = (t) => String(t).replace(/\s+/g, " ").trim().replace(/[.。]$/, "");
-    const headline = [beat.title].flat()[0];
-    // The standfirst carries the limits the journalist named (doctrine: unit, scope, limits); a 12B
-    // beat replaced them with its own sentences ("Lisboa recorded 214 million trips...").
-    const named = field("limits")?.replace(/\\"/g, '"');
-    const standfirst = [beat.limits].flat()[0];
-    if (named && !/^none$/i.test(named) && standfirst !== undefined) {
-      const words = (t) => String(t).toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((w) => w.length > 3);
-      const said = new Set(words(standfirst));
-      const theirs = words(named);
-      if (theirs.length && theirs.filter((w) => said.has(w)).length / theirs.length < 0.4)
-        throw new Error(`the standfirst's first form must carry the limits the journalist named, in their words (shorter forms may follow): ${named}`);
-    }
-    if (takeaway && headline !== undefined && norm(headline) !== norm(takeaway))
-      throw new Error(`title's first form must be the journalist's takeaway copied as a literal string, not computed. It renders as: "${norm(headline)}" — it must be: "${takeaway}"`);
-  }
-}
+import { applyStoryboard, assertNumbers, assertLegibleLabels, assertOnePerX, assertHeadlineNumbersDrawn, assertDrawsClaimColumn } from "./guards.mjs";
+applyStoryboard(beat, dirname(fileURLToPath(import.meta.url)));
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT = join(HERE, "renders");
