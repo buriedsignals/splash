@@ -340,7 +340,9 @@ export function buildGestureVideo({ id, chosen, rows: allRows, gestures, copy, s
   const colours = {
     ground,
     grid,
-    column: walked(mix(accent, ground, 0.42), NON_TEXT_CONTRAST_MIN, "a bar"),
+    // The rows that are not highlighted stay neutral (GRAMMAR.md, highlight): a light accent read as a second hue
+    // beside the subject on the China video.
+    column: walked(mix(ground, ink, 0.42), NON_TEXT_CONTRAST_MIN, "a bar"),
     first: walked(accent, NON_TEXT_CONTRAST_MIN, "a highlighted bar"),
     copy: walked(mix(ink, ground, 0.35), NON_TEXT_CONTRAST_MIN, "a compare's copy"),
     faded: mix(ground, ink, 0.14),

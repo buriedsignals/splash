@@ -146,7 +146,8 @@ export function assertNoAggregates(names, here) {
   if (!existsSync(dataPath)) return;
   const table = JSON.parse(readFileSync(dataPath, "utf8"));
   const columns = table.columns ?? [];
-  const iso = (v) => /^[A-Z]{3}$/.test(String(v ?? ""));
+  // OWID codes Kosovo OWID_KOS: a country with no ISO code, not an aggregate.
+  const iso = (v) => /^([A-Z]{3}|OWID_KOS)$/.test(String(v ?? ""));
   const code = columns.findIndex((_, c) => table.rows.filter((r) => iso(r[c])).length >= table.rows.length * 0.6);
   if (code < 0) return;
   const aggregates = names.filter((name) => {

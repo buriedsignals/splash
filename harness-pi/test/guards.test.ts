@@ -83,7 +83,7 @@ describe("assertNoAggregates", () => {
       join(dir, "data.json"),
       JSON.stringify({
         columns: [{ name: "Entity", type: "text" }, { name: "Code", type: "text" }, { name: "co2", type: "number" }],
-        rows: [["China", "CHN", 12.29], ["Russia", "RUS", 1.78], ["Africa (GCP)", "", 1.5], ["World", "OWID_WRL", 38], ["Japan", "JPN", 0.96]],
+        rows: [["China", "CHN", 12.29], ["Russia", "RUS", 1.78], ["Africa (GCP)", "", 1.5], ["World", "OWID_WRL", 38], ["Japan", "JPN", 0.96], ["Kosovo", "OWID_KOS", 0.008]],
       }),
     );
     return dir;
@@ -95,6 +95,10 @@ describe("assertNoAggregates", () => {
 
   it("should accept rows that all carry a country code", () => {
     expect(() => assertNoAggregates(["China", "Russia", "Japan"], story())).not.toThrow();
+  });
+
+  it("should accept Kosovo, which OWID codes OWID_KOS for want of an ISO code", () => {
+    expect(() => assertNoAggregates(["China", "Kosovo"], story())).not.toThrow();
   });
 });
 
