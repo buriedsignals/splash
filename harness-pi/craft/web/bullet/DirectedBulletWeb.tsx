@@ -1,0 +1,959 @@
+/**
+ * Low-carbon electricity as a share of six countries' own generation in 2024, drawn as bullets
+ * THROUGH the design base and delivered as an interactive page whose reader CHOOSES THE TARGET.
+ *
+ * ── THE GESTURE, AND WHY IT IS THE BULLET'S AND NOBODY ELSE'S ────────────────────────────────
+ *
+ * A bullet is the accountability chart. It is the only type in the catalogue whose reading is not a
+ * quantity but a VERDICT — *did this hit the mark* — and a verdict is a function of two things, only
+ * one of which is in the data. The value is measured. THE TARGET IS CHOSEN BY WHOEVER DREW THE
+ * PLATE, and `chart-beat/references/types/bullet.md` puts its whole warning there: "don't invent a
+ * target just to unlock the bullet's shape", "a bullet chart must not manufacture judgement the
+ * journalist didn't provide".
+ *
+ * A still picks one target, prints it, and asks to be trusted. A video and a scrolly can step
+ * through several, but on the author's clock and in the author's order. None of the three can let
+ * the reader ask the question the form itself provokes — *par rapport à quoi ?* — which is why this
+ * page hands the target over and re-derives every verdict from it (`assets/benchmark.ts`, a new
+ * vocabulary; its header argues why it is not an option in `level.ts` or `cutoff.ts`).
+ *
+ * WHAT MOVES AND WHAT DOES NOT, which is the whole design. **The six bars never move.** The
+ * measurement is not in dispute; the yardstick is. What moves is the apparatus of judgement — the
+ * tick, the gap and the band behind the bar — and all three are drawn at all times and only
+ * transformed, so the change INTERPOLATES instead of cutting. That also keeps the rule
+ * `interaction.mjs` imposes: it resolves the mark under a pointer off `cx`/`cy` read once at init,
+ * so a mark that moves must not be the mark that answers. Here the mark that answers is the measure
+ * bar, and the measure bar is the one thing no option touches.
+ *
+ * WHAT THE PICTURE THEN SHOWS THAT NO STILL CAN. Ranked by the plate's own target — progress since
+ * 2015 — the order is Pologne, Allemagne, France, Suisse, Suède, Norvège. Ranked by distance to the
+ * Suède it is that list read backwards: the best performer becomes the worst, and not one number
+ * moved. The runner asserts the inversion before the render, so the sentence cannot outlive the data.
+ *
+ * ── TREATMENTS SPENT, AND THE ONE REFUSED ───────────────────────────────────────────────────
+ *
+ * `the-track-runs-the-full-scale-so-the-remainder-is-legible` — every track runs the full 0–100 %,
+ * because the remainder is the reading a bare bar cannot give.
+ *
+ * `two-states-of-one-measure-are-one-hue-at-two-chromas` — the stretch beyond the tick is the bar's
+ * OWN hue at a second chroma, hunted until it clears a measured floor against the bar it sits on,
+ * never a second hue and never a dose typed once for three directions. Which SIDE of the fill that
+ * chroma sits on is decided once per direction, for both bar fills together — see the pole block
+ * below, and the plate it was wrong on.
+ *
+ * `the-verdict-is-written-as-a-derived-number` — the gap in points is printed on the row, and it is
+ * RE-DERIVED per target rather than left as a subtraction between a bar and a tick.
+ *
+ * `accent-marks-the-thread` — the subject alone carries the full accent.
+ *
+ * REFUSED: the catalogue's "exactly two accent hues are enough — one for hit, one for miss". The
+ * verdict is drawn in SHAPE here: filled beyond the tick, hollow short of it. Three reasons, all
+ * paid for on this branch. Hue is already spent on which row the story is about. A verdict carried
+ * by hue alone is one a colour-blind reader does not get, while a hollow bar with an outline
+ * survives a photocopy. And two hues calibrated independently against the same floor against the
+ * same ground come out identical by construction — measured twice here already (1,023:1 on one beat,
+ * 1,000:1 on a lollipop).
+ */
+
+import {
+  adjustToContrast,
+  contrast,
+  mix,
+  NON_TEXT_CONTRAST_MIN,
+  TEXT_CONTRAST_MIN,
+} from "#shared/chart-beat/colour.mjs";
+import { figureVars, webRegisters } from "#shared/design-base/web.mjs";
+import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
+// The harness copy reaches the benchmark and keyed-note vocabularies through skillScriptFrom (the
+// proof imported "../../skills/chart-web/assets/…", which resolves only two levels under a
+// checkout): a beat sits at stories/<slug>/beats/<id>/, and an installed root has no skills/ at all.
+const {
+  assertBenchmarkDeclaration,
+  benchmarkChromeCss,
+  benchmarkCss,
+  benchmarkNotesForMarkup,
+  benchmarkOptionsForMarkup,
+  benchmarkStatesForMarkup,
+  benchmarkVerdictKey,
+} = await import(skillScriptFrom(import.meta.dirname, "chart-web", "assets", "benchmark.ts"));
+const {
+  cellHeightPx,
+  cellWidthPx,
+  keyedNoteCss,
+  labelBoxPx,
+  leavesBelow,
+  overlaps,
+  rowFloorCellPx,
+} = await import(skillScriptFrom(import.meta.dirname, "chart-web", "assets", "keyed-note.ts"));
+type BenchmarkDeclaration = Parameters<typeof assertBenchmarkDeclaration>[0];
+type BenchmarkPlacement = Parameters<typeof benchmarkCss>[1]["placements"][number];
+type KeyedNote = Parameters<typeof keyedNoteCss>[0][number];
+type Measure = Parameters<typeof labelBoxPx>[2];
+type Rect = Parameters<typeof overlaps>[0];
+
+export const FRAME = { width: 880, height: 300, xAxisRowPx: 28 };
+
+/** This format's own scope selector, and the radio-id prefix `benchmark.ts` refuses to know about. */
+const SCOPE = ".chart-figure";
+export const BENCHMARK_ID_PREFIX = "chart-benchmark";
+
+/** How long a change of target takes. Long enough that the six ticks are visibly TRAVELLING rather
+ *  than teleporting — which is the reason the movement is legible at all — and short enough that a
+ *  reader working through four options is not waiting on it. */
+const PLACE_MS = 320;
+
+/** The first row's own NAME sits above its track, so the band of rows starts below the top of the
+ *  frame — measured on the first render, where "Pologne" landed on the caveat line above the plot. */
+const TOP_PAD = 24;
+
+/** A ROW'S OWN GEOMETRY, as fractions of the row pitch, named once because the row floor below is
+ *  computed from them and must not drift from what is drawn. The track is the full-scale bed, the
+ *  bar sits centred on it, and the target tick runs past the track at both ends. */
+const TRACK_OF_ROW = 0.56;
+const BAR_OF_ROW = 0.3;
+const TICK_OF_TRACK = 0.62;
+/** The tick's own width, in CSS px (`non-scaling-stroke`). */
+const TICK_STROKE_PX = 2.2;
+
+/** The distance between two row centres, in viewBox units. */
+const rowPitchOf = (rows: number) => (FRAME.height - TOP_PAD) / rows;
+
+/**
+ * THE ROW FLOOR — THE PITCH, IN CSS PIXELS, UNDER WHICH A ROW PRINTS OVER ITS NEIGHBOUR.
+ *
+ * Measured at 375 × 812 before this existed: the six rows were 14,4 px apart (14,1 on `nocturne`),
+ * and every row name from Allemagne down was printed over the bar of the row above — 8,2 px of free
+ * ground between that bar and the name's own track, under a 12–13,2 px name. The verdict chips
+ * (18,8–20 px) overlapped each other by 5 px, the target tick (10 px tall) disappeared inside the chip
+ * it lands under, and Pologne's own-2015 tick ran through « Allemagne ». No placement inside a row
+ * that thin clears any of it, and the owner's ruling is that legibility beats fitting the window
+ * (`render-web.mjs`, `rowFloorCss`): so the plate declares the pitch its row needs, and on a phone
+ * the plot grows taller and the page scrolls for that reason only.
+ *
+ * WHY THE NAME STAYS ABOVE ITS OWN TRACK rather than moving into a y-gutter at phone width. It
+ * already sits above its bar, which is the placement `visual-system.md` asks for — "Labels are
+ * direct; legends are a fallback" — and at 768 px and wider it clears everything with room to
+ * spare; what failed at 375 was the PITCH, not the placement. A gutter column would cost the 70 px
+ * of the widest name out of a 327 px track and — computed from the same cell arithmetic — leave a
+ * 13,3 px pitch under 18,8–20 px verdict chips: the chips would still collide, and a second layout
+ * would exist for one width.
+ * And `information-architecture.md` gives the plot "the largest share of the frame, because it is
+ * the only zone doing job (1)"; at 375 × 812 it had 122 px of 812.
+ *
+ * FOUR THINGS SIT ON A ROW, and the floor is the largest of what each needs, every one measured in
+ * the direction's own register (`labelBoxPx`), never typed:
+ *   - `chips`         two verdict chips, one per row, must not overlap: pitch ≥ the chip's height;
+ *   - `nameOverBar`   a name stands on its own track and must clear the bar of the row above:
+ *                     pitch × (1 − track/2 − bar/2) ≥ the name's height;
+ *   - `nameUnderTick` it must clear that row's target tick too, which runs further down than the
+ *                     bar — Pologne's own 2015, at 13,8 %, lands inside « Allemagne » at any phone
+ *                     width, in the landing state: pitch × (1 − track/2 − tick) ≥ the name's height;
+ *   - `tickOutOfChip` the tick must poke out above and below the verdict chip it can land under
+ *                     (France's 92,2 % sits inside its own « 94,9 % » chip), by at least its own
+ *                     width at each end, or it is not there: pitch × 2 × tick ≥ chip + 2 × stroke.
+ * At 768 px, where the ratio alone gives a 36,9 px pitch, all four already hold — the floor only
+ * redraws, on a phone, the plate the tablet was already drawing.
+ */
+export function rowFloorFor({
+  rows,
+  subject,
+  direction,
+  ink,
+  measure,
+}: {
+  rows: Row[];
+  subject: string;
+  direction: any;
+  ink: { ink: string; muted: string; accent: string };
+  measure: Measure;
+}) {
+  const regs = webRegisters(direction, { ink });
+  const nameH = Math.max(
+    ...rows.map(
+      (r) =>
+        labelBoxPx(r.name, { ...regs.axis, fontWeight: r.code === subject ? 700 : regs.axis.fontWeight }, measure, {
+          chip: false,
+        }).h,
+    ),
+  );
+  const chipH = Math.max(...rows.flatMap((r) => r.verdicts.map((v) => labelBoxPx(v.text, regs.value, measure).h)));
+  const tickReach = TICK_OF_TRACK * TRACK_OF_ROW;
+  const needs = {
+    chips: chipH,
+    nameOverBar: nameH / (1 - TRACK_OF_ROW / 2 - BAR_OF_ROW / 2),
+    nameUnderTick: nameH / (1 - TRACK_OF_ROW / 2 - tickReach),
+    tickOutOfChip: (chipH + 2 * TICK_STROKE_PX) / (2 * tickReach),
+  };
+  const px = Math.ceil(Math.max(...Object.values(needs)));
+  return {
+    floor: {
+      rows: rows.length,
+      pitch: rowPitchOf(rows.length),
+      px,
+      why:
+        "Each row stands its name on its own track under the bar of the row above, and carries a " +
+        "verdict on a ground chip that its target tick must poke out of; under this pitch the name " +
+        "is printed over the neighbour's bar and tick, the chips overlap, and the tick disappears.",
+    },
+    nameH,
+    chipH,
+    needs,
+  };
+}
+
+export type RowFloor = ReturnType<typeof rowFloorFor>["floor"];
+
+/** How many hit points a row is sampled at. `interaction.mjs` resolves a pointer to the nearest mark
+ *  CENTRE, which over six horizontal strips is a Voronoi: with one point per row a pointer near the
+ *  right end of a row is nearer the next row's point than its own. The spacing has to come out under
+ *  the row pitch — at 21 points the worst horizontal distance to a row's own point is 22 viewBox
+ *  units against a 46-unit pitch, so the answer is always the row the reader is pointing at. Only the
+ *  first is in the tab order; the rest carry `tabIndex={-1}` and no accessible name, so the keyboard
+ *  still walks one stop per country. */
+const HITS_PER_ROW = 21;
+
+export type Row = {
+  code: string;
+  name: string;
+  before: number;
+  after: number;
+  change: number;
+  afterLabel: string;
+  detail: string;
+  /** One verdict string per benchmark slug — the derived number this row earns under that target. */
+  verdicts: { slug: string; text: string }[];
+};
+
+const pct = (value: number, extent: number) => (value / extent) * 100;
+
+export function DirectedBulletWeb({
+  rows,
+  subject,
+  benchmark,
+  scaleMax,
+  threshold,
+  thresholdNote,
+  measure,
+  rowFloor,
+  xTicks,
+  title,
+  eyebrow,
+  caveat,
+  source,
+  alt,
+  reading,
+  direction,
+  ground,
+  accent,
+  ink,
+  muted,
+  grid,
+  nameValueSeparator = " : ",
+}: {
+  rows: Row[];
+  subject: string;
+  benchmark: BenchmarkDeclaration;
+  scaleMax: number;
+  threshold: number;
+  thresholdNote: string;
+  measure: Measure;
+  rowFloor: RowFloor;
+  xTicks: number[];
+  title: string;
+  eyebrow: string;
+  caveat: string;
+  source: string;
+  alt: string;
+  reading: string;
+  direction: any;
+  ground: string;
+  accent: string;
+  ink: string;
+  muted: string;
+  grid: string;
+  /** Between a row's name and its reading in its accessible name, and between the threshold's tick
+   *  and its name under the plot. The worked example was French (" : "); the harness copy takes it
+   *  as a prop. */
+  nameValueSeparator?: string;
+}) {
+  // Refused before anything is drawn: a row with no target, a target off the track, a target with no
+  // row, a provenance that cannot be checked, and two targets that leave every row the same distance
+  // from its own mark.
+  assertBenchmarkDeclaration(benchmark, {
+    rows: rows.map((r) => ({ key: r.code, value: r.after })),
+    scaleMax,
+  });
+
+  const regs = webRegisters(direction, { ink: { ink, muted, accent } });
+
+  /**
+   * THE DOSE IS HUNTED, NEVER TYPED, AND IT SEARCHES BOTH POLES.
+   *
+   * A fixed step cannot serve three directions: mixing toward the ink separates a mark on a light
+   * ground and barely moves one on `nocturne`, where the ink is pale and the accent already sits
+   * near it — the shape that measured 1,10:1 on the treemap and was refused. A direction has two
+   * poles, so the smallest dose toward EITHER that clears the floor against the surface the mark
+   * actually lands on is what is taken, and a surface with no such dose is refused rather than
+   * shipped.
+   *
+   * `keepAbove` is the second half and it is why this is not just `darken`: a step taken toward the
+   * ground can walk a mark under the 3:1 non-text floor against that same ground, which is how a
+   * beat ends up with an invisible segment that measured fine against the thing it was lifted off.
+   */
+  const step = (
+    from: string,
+    pole: string,
+    {
+      floor,
+      keepAbove,
+      apart,
+    }: { floor: number; keepAbove: string; apart?: { colour: string; min: number } },
+  ): string | null => {
+    for (let dose = 0.02; dose <= 0.9; dose += 0.02) {
+      const moved = mix(from, pole, dose);
+      if (contrast(moved, from) < floor) continue;
+      if (contrast(moved, keepAbove) < NON_TEXT_CONTRAST_MIN) continue;
+      if (apart && contrast(moved, apart.colour) < apart.min) continue;
+      return moved;
+    }
+    return null;
+  };
+
+  /**
+   * A BACKDROP IS THE OPPOSITE PROBLEM FROM A MARK, so it gets its own search rather than
+   * `separate`'s. A mark has to clear a FLOOR; a neutral backdrop has to clear a much smaller one —
+   * it must be tellable from what it sits on — and then stay UNDER the 3:1 non-text floor against
+   * the ground, because a backdrop that reached it would be a mark, competing with the bars drawn on
+   * top of it. Both ends are checked. Mixing toward the ink is the right single pole here and on
+   * both kinds of ground: on a light ground it darkens the track, on `nocturne` the ink is pale and
+   * it lightens it, and either way the step is away from the ground.
+   */
+  const backdrop = (from: string, floor: number) => {
+    for (let dose = 0.03; dose <= 0.5; dose += 0.01) {
+      const moved = mix(from, ink, dose);
+      if (contrast(moved, from) < floor) continue;
+      if (contrast(moved, ground) >= NON_TEXT_CONTRAST_MIN)
+        throw new Error(
+          `the smallest backdrop step off ${from} that a reader can see (${moved}) already reads ` +
+            `${contrast(moved, ground).toFixed(2)}:1 against the ground — that is a mark, not a ` +
+            `neutral zone, and it would compete with the bars drawn on it`,
+        );
+      return moved;
+    }
+    throw new Error(`no step of this direction's ink separates a backdrop ${floor}:1 from ${from}`);
+  };
+
+  // THE NEUTRAL BACKDROP, IN TWO STEPS, AND THE SECOND ONE IS THE BULLET'S OWN QUALITATIVE BAND.
+  //
+  // `bullet.md` is explicit that the bands must not be manufactured: "when no bands are given, the
+  // honest choice is a single neutral track behind the bar, never an invented poor/ok/good split the
+  // source data doesn't actually support". This page has no invented split and it does have a band,
+  // because THE CHOSEN TARGET ITSELF PARTITIONS THE TRACK: everything from the target to the top of
+  // the scale is the stretch that clears it. The band is a consequence of the READER'S own choice,
+  // not a judgement the journalist never made — which is the distinction that sheet is drawing.
+  const track = backdrop(ground, 1.12);
+  const band = backdrop(track, 1.12);
+
+  // THE TWO BAR FILLS, AND THEY ARE CALIBRATED AGAINST THE BAND, NOT THE GROUND. A bar never touches
+  // the ground: it is drawn on the track, and past the target on the band, which is the darkest
+  // surface behind it. Calibrating against the ground and hoping is how a beat on this branch shipped
+  // 1,75:1 and 2,19:1 — the measurement was made against a surface the page does not paint there.
+  //
+  // AND THEY ARE CALIBRATED WITH HEADROOM, which is not padding for its own sake. The surplus
+  // segment is a step off the bar TOWARD THE GROUND — a tint, the same device the static sibling
+  // uses for the earlier state — and a bar sitting exactly on the 3:1 floor has nowhere to go in
+  // that direction: any tint of it is illegal. Written without the headroom, the neutral bar had
+  // room on one pole only, so its surplus went one way and the subject's went the other, and the
+  // same encoding came out lighter on one row and darker on the next. Looked at, in the creme
+  // capture, before this factor existed.
+  const BAR_HEADROOM = 1.25;
+  const barFloor = NON_TEXT_CONTRAST_MIN * BAR_HEADROOM;
+  const lit = contrast(accent, band) >= barFloor ? accent : (adjustToContrast(accent, band, barFloor) ?? accent);
+  let tint = mix(accent, ground, 0.55);
+  if (contrast(tint, band) < barFloor) tint = adjustToContrast(tint, band, barFloor) ?? tint;
+  const fillOf = (r: Row) => (r.code === subject ? lit : tint);
+
+  /**
+   * THE SURPLUS SEGMENT AND THE ANSWERED BAR ARE THE SAME TRICK PLAYED TWICE ON THE SAME FILL, AND
+   * WRITTEN INDEPENDENTLY THEY COLLIDED. Measured on the first three renders of this page: the
+   * surplus beyond the tick and the bar's own lift under the pointer came out **1,04:1** apart on
+   * `nocturne` and 1,07–1,09:1 on the other two — so a reader who pointed at a row to ask what it
+   * was made of watched the "beyond the target" segment dissolve into the bar, at the exact moment
+   * they were looking at it. Neither colour was wrong on its own: each cleared its own floor against
+   * the fill it was lifted off. They were wrong TOGETHER, which is the failure this branch has now
+   * paid for three times in three dresses — two colours calibrated independently against the same
+   * floor against the same surface come out identical by construction.
+   *
+   * So the second one is hunted WITH THE FIRST IN HAND. The surplus is the smaller step, because it
+   * is a permanent part of the drawing; the answer is the larger, because it has to be noticed while
+   * the reader is looking somewhere else; and the answer is refused unless it also clears the
+   * surplus by a measured margin. Where a direction has room on both poles the two end up on
+   * opposite sides of the fill; where it has room on only one — `nocturne`'s pale field bar has
+   * almost none toward its dark ground before it drops under the 3:1 floor against the band — they
+   * end up on the same side, further apart.
+   */
+  const SURPLUS_OFF_BAR = 1.2;
+  const ANSWER_OFF_BAR = 1.35;
+  const ANSWER_OFF_SURPLUS = 1.25;
+  // ONE POLE PER MEANING, FOR THE WHOLE DIRECTION, and the pairs are tried in the order this beat
+  // wants them: the surplus as a TINT toward the ground (the static sibling's own device for an
+  // earlier state) and the answer as a step toward the INK (the treemap's, and the owner's
+  // "assombrie depuis son propre remplissage"). The same-pole pairs are the fallback and not the
+  // preference: they still work, because the answer is then simply the larger step, but the picture
+  // is better when the two meanings sit on opposite sides of the fill.
+  const pairs: [string, string][] = [
+    [ground, ink],
+    [ink, ground],
+    [ink, ink],
+    [ground, ground],
+  ];
+  const chosen = (() => {
+    for (const [surplusPole, answerPole] of pairs) {
+      const sLit = step(lit, surplusPole, { floor: SURPLUS_OFF_BAR, keepAbove: band });
+      const sTint = step(tint, surplusPole, { floor: SURPLUS_OFF_BAR, keepAbove: band });
+      if (!sLit || !sTint) continue;
+      const aLit = step(lit, answerPole, {
+        floor: ANSWER_OFF_BAR,
+        keepAbove: band,
+        apart: { colour: sLit, min: ANSWER_OFF_SURPLUS },
+      });
+      const aTint = step(tint, answerPole, {
+        floor: ANSWER_OFF_BAR,
+        keepAbove: band,
+        apart: { colour: sTint, min: ANSWER_OFF_SURPLUS },
+      });
+      if (!aLit || !aTint) continue;
+      return { sLit, sTint, aLit, aTint };
+    }
+    throw new Error(
+      `no pair of poles gives this direction a surplus ${SURPLUS_OFF_BAR}:1 off both bar fills and ` +
+        `an answer ${ANSWER_OFF_BAR}:1 off them and ${ANSWER_OFF_SURPLUS}:1 clear of the surplus, ` +
+        `all of them still ${NON_TEXT_CONTRAST_MIN}:1 against the band ${band}`,
+    );
+  })();
+  const deeperOf = (r: Row) => (r.code === subject ? chosen.sLit : chosen.sTint);
+
+  // THE TICK, AND THE HALO THE CATALOGUE ASKS FOR. "The target tick needs enough contrast against
+  // both the bar's fill and the neutral backdrop behind it … a white halo behind the tick is the
+  // reliable way to guarantee that regardless of which colour zone the tick happens to cross." The
+  // halo is the direction's own GROUND rather than white — on `nocturne` white would be a third
+  // colour nobody chose — and it is drawn wider than the tick, so the only surface the tick is ever
+  // measured against is the ground, once, here.
+  const tickInk = adjustToContrast(ink, ground, NON_TEXT_CONTRAST_MIN) ?? ink;
+  const rule = mix(ground, ink, 0.6);
+  const labelInk = adjustToContrast(ink, ground, TEXT_CONTRAST_MIN) ?? ink;
+
+  const rowH = rowPitchOf(rows.length);
+  const trackH = rowH * TRACK_OF_ROW;
+  const barH = rowH * BAR_OF_ROW;
+  // THE FLOOR THE RUNNER DECLARED IS THE ONE THIS PLATE NEEDS. It is computed from the same
+  // registers and the same fractions, by the same function, so a disagreement is a runner that
+  // handed the trunk someone else's floor.
+  const own = rowFloorFor({ rows, subject, direction, ink: { ink, muted, accent }, measure }).floor;
+  if (!rowFloor || rowFloor.px !== own.px || rowFloor.pitch !== own.pitch || rowFloor.rows !== own.rows)
+    throw new Error(
+      `the row floor handed in (${JSON.stringify(rowFloor ?? null)}) is not this plate's own ` +
+        `(${own.rows} rows, pitch ${own.pitch}, ${own.px}px)`,
+    );
+  const cyOf = (i: number) => TOP_PAD + rowH * i + rowH / 2;
+  const x = (share: number) => (share / scaleMax) * FRAME.width;
+
+  // THE PLACEMENTS. One translate for the tick, one translate-plus-x-scale for the gap and one for
+  // the band, per row per option, in the geometry's own units — which is the only unit that survives
+  // `preserveAspectRatio="none"`, where a viewBox unit is a different number of reader pixels at
+  // every width. Everything is authored at the view box's own origin and scaled about it, which is
+  // why the stylesheet states `transform-origin: 0 0` rather than trusting an initial value that has
+  // changed inside one browser's lifetime.
+  const states = benchmarkStatesForMarkup(
+    benchmark,
+    rows.map((r) => ({ key: r.code, value: r.after })),
+  );
+  const placements: BenchmarkPlacement[] = states.map((state) => {
+    const lo = Math.min(state.value, state.target);
+    const hi = Math.max(state.value, state.target);
+    return {
+      slug: state.slug,
+      key: state.key,
+      target: `translate(${x(state.target).toFixed(2)}px)`,
+      // The gap rect is authored across the whole frame and squeezed onto [lo, hi]; a zero-length
+      // gap comes out `scaleX(0)` and the stylesheet puts it at `opacity: 0`, because a rect with no
+      // width still draws its own stroke as a hairline and "exactly on the target" must not look
+      // like "one point short of it".
+      gap: `translate(${x(lo).toFixed(2)}px) scaleX(${((x(hi) - x(lo)) / FRAME.width).toFixed(5)})`,
+      band: `translate(${x(state.target).toFixed(2)}px) scaleX(${(
+        (FRAME.width - x(state.target)) /
+        FRAME.width
+      ).toFixed(5)})`,
+      verdict: state.verdict,
+    };
+  });
+
+  /**
+   * THE THRESHOLD'S NAME, AND THE WIDTH BELOW WHICH IT HAS NO ROOM. It stands on the first row's line,
+   * centred on its rule, in the top inset the row names already use. That line is only as tall as the
+   * inset plus half a row's air, and the rows shrink with the plot while the words do not: at 375 px
+   * (six rows in 94 px, 15,6 px apart) « la moitié » was printed over Pologne's own verdict, which
+   * runs from Pologne's bar end straight across the 50 % rule. There is no ground left in the plot at
+   * that size: every row's verdict or bar crosses the rule, and the gaps between rows are 7 px.
+   *
+   * So the width it can no longer stand at is COMPUTED, from the measured name, the measured row
+   * names and the measured verdicts of EVERY target (they share one anchor per row, and the note has
+   * to be true under all of them), against every row's bar and gap band — and it must also stay
+   * inside the cell, since above the cell is the control's own sentence row. Below that width it
+   * leaves for the keyed line under the plot, led by the « 50 % » the axis already prints at the
+   * rule's foot (`assets/keyed-note.ts`). The track and the band behind the bars are 1,12:1 and
+   * ~1,25:1 against the ground — washes, not marks — and are not counted, as the guard does not.
+   *
+   * UNDER THE ROW FLOOR THAT WIDTH IS NOW NONE. The prediction is made on the floored cell (taller
+   * than its ratio on a phone, so each distance converts through its own axis), and there the first
+   * row keeps enough inset for the name at every plot width `leavesBelow` scans: no `@container`
+   * rule is emitted and the note stays direct. Before the floor it left below 663–701 px. The keyed
+   * line stays in the markup, and the guard below still decides; if the floor or the words change,
+   * the note leaves again on its own.
+   */
+  const thresholdBox = labelBoxPx(thresholdNote, regs.annot, measure);
+  const nameBoxes = rows.map((r) =>
+    labelBoxPx(r.name, { ...regs.axis, fontWeight: r.code === subject ? 700 : regs.axis.fontWeight }, measure, { chip: false }),
+  );
+  const verdictBoxes = rows.map((r) => r.verdicts.map((v) => labelBoxPx(v.text, regs.value, measure)));
+
+  /**
+   * A VERDICT FLIPS INTO ITS OWN BAR WHERE THE CELL HAS NO ROOM FOR IT PAST THE BAR'S END — measured,
+   * not at a typed share. It used to flip past a fixed 80 % of the scale. The chip is a word of fixed
+   * pixels and the room past a bar's end is a share of a cell that shrinks with the page, so at 375 px
+   * Allemagne's 58,6 % left 135 px for chips 127–132 px wide plus their 8 px of air: all four of its
+   * verdicts ran up to 5 px out of the plot into the frame's padding, and under « la Suède » the chip
+   * sat across the whole hollow it is the verdict on, its right edge 4–9 px past the target tick.
+   * Flipped, the chip sits on the bar's own end on its ground chip — where the rows past 80 % always
+   * put it — and the hollow and the tick past it are left in the clear.
+   *
+   * The flip is decided per ROW, from the widest of its verdicts under every target, and never per
+   * option: the anchor stays the bar's end whichever target is chosen, which is the reason given at
+   * `verdictSpans` below. The browser makes the one comparison — the room `(100 − end) %` of the
+   * cell it lays out against `8 px + widest chip + 2 px` — and `clamp(… × 1000 …)` makes it all or
+   * nothing, the same device as the dumbbell's end label (`web-dumbbell-life-expectancy-gains`).
+   * `thresholdClears` asks the same question of the same numbers, so the keyed note predicts the
+   * placement the page draws.
+   */
+  const VERDICT_GAP_PX = 8;
+  const VERDICT_CLEAR_PX = 2;
+  const verdictNeedPx = verdictBoxes.map((boxes) => VERDICT_GAP_PX + Math.max(...boxes.map((b) => b.w)) + VERDICT_CLEAR_PX);
+  const verdictFlips = (i: number, cellW: number) =>
+    verdictNeedPx[i] > cellW * (1 - x(rows[i].after) / FRAME.width);
+  const thresholdClears = (plotWidthPx: number) => {
+    // No y-gutter here. Without the floor the cell is HEIGHT-bound below some width — the box's
+    // ratio counts the 28 px axis row in units, so at 375 px it was 275 px wide inside a 327 px plot;
+    // under the floor it takes the whole track and is TALLER than its ratio, so the two scales
+    // differ and each distance converts through its own.
+    const cellGeometry = {
+      frame: { width: FRAME.width, height: FRAME.height },
+      box: { width: FRAME.width, height: FRAME.height + FRAME.xAxisRowPx },
+      axisPx: FRAME.xAxisRowPx,
+      floorCellPx: rowFloorCellPx(rowFloor, FRAME.height),
+    };
+    const cellW = cellWidthPx(plotWidthPx, cellGeometry);
+    const s = cellW / FRAME.width;
+    const sy = cellHeightPx(plotWidthPx, cellGeometry) / FRAME.height;
+    const lineBottom = (cyOf(0) - trackH / 2) * sy;
+    const note: Rect = {
+      l: x(threshold) * s - thresholdBox.w / 2,
+      r: x(threshold) * s + thresholdBox.w / 2,
+      t: lineBottom - thresholdBox.h,
+      b: lineBottom,
+    };
+    if (note.t < 0 || note.l < 0 || note.r > cellW) return false;
+    for (const [i, r] of rows.entries()) {
+      const top = (cyOf(i) - trackH / 2) * sy;
+      const name = nameBoxes[i];
+      if (overlaps(note, { l: 0, r: name.w, t: top - name.h, b: top })) return false;
+      const bar: Rect = { l: 0, r: cellW, t: (cyOf(i) - barH / 2) * sy, b: (cyOf(i) + barH / 2) * sy };
+      if (overlaps(note, bar)) return false;
+      for (const box of verdictBoxes[i]) {
+        const at = x(r.after) * s;
+        const l = verdictFlips(i, cellW) ? at - VERDICT_GAP_PX - box.w : at + VERDICT_GAP_PX;
+        const verdict: Rect = { l, r: l + box.w, t: cyOf(i) * sy - box.h / 2, b: cyOf(i) * sy + box.h / 2 };
+        if (overlaps(note, verdict)) return false;
+      }
+    }
+    return true;
+  };
+  const halfTick = xTicks.find((t) => t === threshold);
+  if (halfTick === undefined)
+    throw new Error(
+      `the threshold ${threshold} % has no tick of its own on the axis, so nothing the plate already ` +
+        `prints can key its name when the name leaves the plot`,
+    );
+  const keyed: KeyedNote[] = [
+    {
+      id: "threshold",
+      key: `${halfTick} %`,
+      printed: true,
+      below: leavesBelow(thresholdClears, { where: "the threshold's name" }),
+    },
+  ];
+
+  const options = benchmarkOptionsForMarkup(benchmark, BENCHMARK_ID_PREFIX);
+  const notes = benchmarkNotesForMarkup(benchmark);
+  const claimSlug = options[0].slug;
+
+  const css = [
+    // WHAT A BAR BECOMES UNDER THE POINTER, AND IT IS THE BAR ITSELF. The format's own
+    // `.pt[data-mark-ref]` keeps the point invisible and moves `.mark-active` onto the shape it
+    // names; without a `data-mark-ref` this page drew a grey dot floating at the end of each bar,
+    // which is the "rond au survol" the owner has refused three times. Two rules, because there are
+    // two fills, each lifted off ITS OWN colour by a hunted dose — a fixed dose measured 1,104:1 on
+    // `nocturne` on another beat and was refused there.
+    `${SCOPE} rect.mark-active[data-fill="thread"] { fill: ${chosen.aLit}; }`,
+    `${SCOPE} rect.mark-active[data-fill="field"] { fill: ${chosen.aTint}; }`,
+    // The answer is a country's whole low-carbon mix — six sources with their own shares — and the
+    // format's box is 220px wide, which would stack it eight lines tall over the rows it names.
+    // Bare `#tooltip`, because the element is the page's and not this figure's; same specificity as
+    // the format's own rule, and this stylesheet is emitted after it, which is the entire mechanism
+    // — so it is stated rather than relied on silently.
+    `#tooltip { max-width: min(420px, calc(100vw - 32px)); }`,
+    // The layer the non-default verdicts live in: the same grid cell as `.overlay`, and never
+    // `.overlay` itself. `verify-web.mjs` reads every word inside `.overlay` and requires all of
+    // them drawn in the default view, which is correct — `.overlay` IS the plate — and three
+    // options' worth of verdicts belong to targets nobody has chosen yet.
+    `${SCOPE} .chart-plot .verdict-layer { grid-column: 2; grid-row: 1; position: relative; pointer-events: none; }`,
+    benchmarkChromeCss({ scope: SCOPE }),
+    keyedNoteCss(keyed, { scope: SCOPE }),
+    benchmarkCss(benchmark, {
+      scope: SCOPE,
+      idPrefix: BENCHMARK_ID_PREFIX,
+      placements,
+      placeMs: PLACE_MS,
+    }),
+  ].join("\n\n");
+
+  /** One row's verdict labels, by slug — same anchor, same words for the share, only the derived
+   *  number differs. The anchor is the BAR'S END, and the bar's end is what no option moves: the
+   *  owner refused a radar twice for moving its labels under a control that had no visible reason to
+   *  move them, and a number that changes in place has its reason drawn beside it. */
+  const verdictSpans = (r: Row, i: number, only: "claim" | "others") =>
+    r.verdicts
+      .filter((v) => (only === "claim" ? v.slug === claimSlug : v.slug !== claimSlug))
+      .map((v) => {
+        const end = pct(x(r.after), FRAME.width);
+        const box = verdictBoxes[i][r.verdicts.indexOf(v)];
+        const left =
+          `calc(${end}% + ${VERDICT_GAP_PX}px - clamp(0px, calc((${verdictNeedPx[i].toFixed(2)}px - ` +
+          `${(100 - end).toFixed(4)}%) * 1000), ${(box.w + 2 * VERDICT_GAP_PX).toFixed(2)}px))`;
+        return (
+          <span
+            key={`${r.code}-${v.slug}`}
+            className="end-label"
+            data-benchmark-verdict={benchmarkVerdictKey(v.slug, r.code)}
+            style={{
+              ...regs.value,
+              color: r.code === subject ? accent : labelInk,
+              left,
+              top: `${pct(cyOf(i), FRAME.height)}%`,
+              transform: "translateY(-50%)",
+            }}
+          >
+            {v.text}
+          </span>
+        );
+      });
+
+  return (
+    <figure
+      className="chart-figure"
+      style={{
+        ["--ground" as string]: ground,
+        ["--accent" as string]: accent,
+        ["--ink" as string]: ink,
+        ["--muted" as string]: muted,
+        ...figureVars(regs),
+      }}
+    >
+      {/* This beat's own stylesheet, carried inside the figure it styles. The format's shared
+          `buildCss` emits the chrome for a FILTER, which this beat does not declare and must not:
+          nothing leaves this picture — the rows that fail their target are the whole reading. */}
+      <style dangerouslySetInnerHTML={{ __html: css }} />
+
+      <div className="chart-header">
+        <p className="chart-eyebrow" style={{ ...regs.eyebrow, margin: "0 0 6px" }}>{eyebrow}</p>
+        <h2 className="chart-title" style={{ ...regs.display, margin: "0 0 6px" }}>{title}</h2>
+        <p className="chart-caveat" style={{ ...regs.body, margin: 0 }}>{caveat}</p>
+      </div>
+
+      {/* THE CHOICE OF TARGET. Native radios in a real `<fieldset>` with a `<legend>`: a radio group
+          to the keyboard and to a screen reader before this page's stylesheet does anything to it,
+          and `aria-label` carries the reading a reader who is not looking at the picture would
+          otherwise only get from the drawing. The plate's own target is first and is the default, so
+          a reader with no script lands on the claim and can still change it. */}
+      <fieldset className="chart-benchmark">
+        <legend style={{ ...regs.axis, color: muted }}>{benchmark.label}</legend>
+        <div className="options">
+          {options.map((option) => (
+            <label key={option.id} style={{ ...regs.axis }}>
+              <input
+                id={option.id}
+                type="radio"
+                name={BENCHMARK_ID_PREFIX}
+                value={option.slug}
+                aria-label={option.announce}
+                defaultChecked={option.isClaim}
+              />
+              {option.label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
+
+      {/* THE SENTENCE EACH TARGET OWES. Revealed by the same `:checked` that slides the ticks, and it
+          is where this control's DERIVED readings live — how many of the six clear it, by how much
+          the nearest one misses, and what the ORDER of the six becomes under it. None of them can be
+          read off a rect, which is exactly why the control owes them. The plate's own target reveals
+          none: it is not a comparison, it is what the title says. */}
+      <div className="benchmark-notes" role="status">
+        {notes.map((note) => (
+          <p key={note.slug} data-benchmark-note={note.slug} style={{ ...regs.annot, margin: 0 }}>
+            {note.text}
+          </p>
+        ))}
+      </div>
+
+      <div
+        className="chart-plot"
+        style={{
+          ["--y-gutter" as string]: "0px",
+          ["--x-axis-h" as string]: `${FRAME.xAxisRowPx}px`,
+          aspectRatio: `${FRAME.width} / ${FRAME.height + FRAME.xAxisRowPx}`,
+        }}
+      >
+        <div className="y-axis" />
+        <svg
+          role="group"
+          aria-label={title}
+          xmlns="http://www.w3.org/2000/svg"
+          className="chart"
+          data-hit="cell"
+          viewBox={`0 0 ${FRAME.width} ${FRAME.height}`}
+          preserveAspectRatio="none"
+        >
+          <desc>{alt}</desc>
+          <rect x={0} y={0} width={FRAME.width} height={FRAME.height} fill={ground} />
+
+          {/* THE TRACKS AND THE BANDS. The track runs the full scale, so the remainder — the fossil
+              share — stays legible; the band is the stretch of it that clears the chosen target, and
+              it slides with the tick. */}
+          {rows.map((r, i) => (
+            <g key={`bed-${r.code}`}>
+              <rect x={0} y={cyOf(i) - trackH / 2} width={FRAME.width} height={trackH} fill={track} />
+              <rect
+                data-bm-band={r.code}
+                x={0}
+                y={cyOf(i) - trackH / 2}
+                width={FRAME.width}
+                height={trackH}
+                fill={band}
+              />
+            </g>
+          ))}
+
+          {/* THE MEASURES. Drawn from zero — this is a length encoding and the baseline is not
+              optional — and NOT ONE OF THEM MOVES under any option. They are also the marks that
+              answer the pointer, which is the same fact stated twice: `interaction.mjs` reads a
+              mark's coordinates once at init. */}
+          {rows.map((r, i) => (
+            <rect
+              key={`bar-${r.code}`}
+              data-mark={r.code}
+              data-fill={r.code === subject ? "thread" : "field"}
+              x={0}
+              y={cyOf(i) - barH / 2}
+              width={x(r.after)}
+              height={barH}
+              fill={fillOf(r)}
+            />
+          ))}
+
+          {/* THE GAP: the distance between what this row reached and what it was judged against. Past
+              the tick it is the bar's own hue at a second chroma — the part of the bar that is
+              BEYOND the mark. Short of the tick it is a VOID: the ground, outlined in the row's own hue, at
+              the bar's own height, so the reader sees the missing piece of bar rather than being
+              asked to subtract two positions by eye. One rect, two paints, and the stylesheet
+              chooses. `vector-effect` is what keeps the outline 1,2 CSS pixels wide under an x-scale
+              that can squeeze the rect to a twentieth of its authored width. */}
+          {rows.map((r, i) => (
+            <rect
+              key={`gap-${r.code}`}
+              data-bm-gap={r.code}
+              x={0}
+              y={cyOf(i) - barH / 2}
+              width={FRAME.width}
+              height={barH}
+              // 1,6 and not 1,2: at 1,2 the hollow read as an underline rather than as a box the
+              // bar is missing — looked at, in all three captures, on the row whose shortfall is
+              // the claim. `vector-effect` is what keeps it 1,6 CSS pixels under an x-scale that
+              // can squeeze this rect to a fiftieth of its authored width.
+              strokeWidth={1.6}
+              vectorEffect="non-scaling-stroke"
+              style={{
+                // The four colours `benchmark.ts` names and refuses to know the value of, set here,
+                // per row, because there are two bar fills and one page-wide custom property cannot
+                // be two colours. A custom property declared inline does not compete with the
+                // generated `fill:` — it is the value that rule resolves.
+                ["--bm-over-fill" as string]: deeperOf(r),
+                ["--bm-over-stroke" as string]: deeperOf(r),
+                ["--bm-short-fill" as string]: ground,
+                ["--bm-short-stroke" as string]: fillOf(r),
+              }}
+            />
+          ))}
+
+          {/* The threshold the headline names, drawn once across every row and never moved. It is
+              the claim's own line, not a target: under the option that judges the six against it the
+              ticks come and land on it, which is the control saying out loud where it got that
+              number. */}
+          <line
+            x1={x(threshold)}
+            x2={x(threshold)}
+            y1={0}
+            y2={FRAME.height}
+            stroke={rule}
+            strokeWidth={direction.stroke?.rule ?? 0.8}
+            strokeDasharray="5 4"
+            vectorEffect="non-scaling-stroke"
+          />
+
+          {/* THE TARGETS. Halo first, in the direction's own ground and wider, so the tick above it
+              is only ever measured against one surface. Drawn last of the geometry, so a tick that
+              lands inside a bar is still on top of it. */}
+          {rows.map((r, i) => (
+            <g key={`tgt-${r.code}`} data-bm-target={r.code}>
+              <line
+                x1={0}
+                x2={0}
+                y1={cyOf(i) - trackH * TICK_OF_TRACK}
+                y2={cyOf(i) + trackH * TICK_OF_TRACK}
+                stroke={ground}
+                strokeWidth={5}
+                vectorEffect="non-scaling-stroke"
+              />
+              <line
+                x1={0}
+                x2={0}
+                y1={cyOf(i) - trackH * TICK_OF_TRACK}
+                y2={cyOf(i) + trackH * TICK_OF_TRACK}
+                stroke={tickInk}
+                strokeWidth={TICK_STROKE_PX}
+                vectorEffect="non-scaling-stroke"
+              />
+            </g>
+          ))}
+
+          {/* THE HIT TARGETS — see HITS_PER_ROW for why a row gets twenty-one of them. Every one
+              answers with the same reading and names the same mark, the row's own bar. */}
+          {rows.flatMap((r, i) =>
+            Array.from({ length: HITS_PER_ROW }, (_, k) => (
+              <circle
+                key={`hit-${r.code}-${k}`}
+                className="pt"
+                data-mark-ref={r.code}
+                cx={(FRAME.width * (k + 0.5)) / HITS_PER_ROW}
+                cy={cyOf(i)}
+                r={3}
+                fill="transparent"
+                stroke="none"
+                tabIndex={k === 0 ? 0 : -1}
+                role={k === 0 ? "img" : undefined}
+                aria-label={k === 0 ? `${r.name}${nameValueSeparator}${r.detail}` : undefined}
+                aria-hidden={k === 0 ? undefined : true}
+                data-detail={`${r.name} · ${r.detail}`}
+              />
+            )),
+          )}
+          <rect className="hit-area" x={0} y={0} width={FRAME.width} height={FRAME.height} fill="transparent" pointerEvents="all" />
+        </svg>
+
+        {/* THE PLATE'S OWN WORDS: the row names, the verdict under the target the page ships in, and
+            the threshold's name. Every one of them is drawn unconditionally, which is what makes
+            this layer `.overlay`. */}
+        <div className="overlay" aria-hidden="true">
+          {rows.map((r, i) => (
+            <span key={`name-${r.code}`}>
+              <span
+                className="note"
+                style={{
+                  ...regs.axis,
+                  color: r.code === subject ? accent : (regs.axis.color as string),
+                  fontWeight: r.code === subject ? 700 : regs.axis.fontWeight,
+                  left: "0%",
+                  top: `${pct(cyOf(i) - trackH / 2, FRAME.height)}%`,
+                  transform: "translateY(-100%)",
+                  background: "transparent",
+                  padding: 0,
+                }}
+              >
+                {r.name}
+              </span>
+              {verdictSpans(r, i, "claim")}
+            </span>
+          ))}
+          {/* The rule's own name. NOT at its foot, where it landed on the axis's own "50 %" tick and
+              printed the same number twice — a threshold is named in words here because the axis
+              already gives the number. And NOT above the plot either, which is where it was until
+              the control arrived: `top: 0` plus `translateY(-100%)` puts a label OUTSIDE its own
+              layer, into the row the control's sentence occupies, and on `nocturne` it printed
+              straight through it ("…à 18,9 pts — LA MOITIÉ tre 50 %"). Looked at, in the capture.
+              It now sits on the same line as the row names, inside the plot, where the top inset was
+              already reserved for them. */}
+          <span
+            className="note"
+            data-keyed-note-plot={keyed[0].id}
+            style={{
+              ...regs.annot,
+              left: `${pct(x(threshold), FRAME.width)}%`,
+              top: `${pct(cyOf(0) - trackH / 2, FRAME.height)}%`,
+              transform: "translate(-50%, -100%)",
+            }}
+          >
+            {thresholdNote}
+          </span>
+        </div>
+
+        {/* THE VERDICTS THAT BELONG TO A TARGET NOBODY HAS CHOSEN YET. Same anchor, same layer
+            geometry, a different layer — see the `.verdict-layer` rule above for why they are not
+            in `.overlay`. */}
+        <div className="verdict-layer" aria-hidden="true">
+          {rows.map((r, i) => (
+            <span key={`vs-${r.code}`}>{verdictSpans(r, i, "others")}</span>
+          ))}
+        </div>
+
+        <div className="x-axis">
+          {xTicks.map((t) => (
+            <span
+              key={t}
+              className="axis-label x"
+              style={{ ...regs.axis, left: `${pct(x(t), FRAME.width)}%` }}
+              data-keyed-note-handle={t === threshold ? keyed[0].id : undefined}
+            >
+              {`${t} %`}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* THE THRESHOLD'S NAME, WHERE THE PLOT CANNOT HOLD IT — drawn only below the width computed
+          above, led by the axis's own « 50 % » in the axis's own register: the key a reader matches
+          without a leader crossing six rows to reach the rule. */}
+      <ol className="chart-notes">
+        <li data-keyed-note-under={keyed[0].id} style={regs.annot}>
+          <span data-keyed-note-lead="" style={regs.axis}>
+            {keyed[0].key}
+          </span>
+          {nameValueSeparator}
+          {thresholdNote}
+        </li>
+      </ol>
+
+      <p className="chart-reading" style={{ ...regs.body, margin: "10px 0 0" }}>{reading}</p>
+      <p className="chart-source" style={{ ...regs.body, margin: "6px 0 0" }}>{source}</p>
+    </figure>
+  );
+}
