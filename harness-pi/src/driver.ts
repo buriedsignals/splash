@@ -414,7 +414,10 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
       if (final.exitCode === 0 || res.stop.endsWith("min cap")) break;
       // A kit refuses on stdout ("REFUSED — …") or throws on stderr ("error: …").
       const output = `${final.stdout}\n${final.stderr}`;
-      const reason = output.split("\n").find((l) => /^\s*(error|REFUSED)/i.test(l))?.trim() ?? final.stderr.slice(-400);
+      // The refusal line and the lines under it: a build failure says only "2 errors building …" on its first line.
+      const lines = output.split("\n");
+      const at = lines.findIndex((l) => /^\s*(error|REFUSED)/i.test(l));
+      const reason = at >= 0 ? lines.slice(at, at + 6).map((l) => l.trim()).filter(Boolean).join(" ").slice(0, 900) : final.stderr.slice(-400);
       prompt = `[harness] The beat does not render yet: ${reason}${refusalHint(output)} Fix beats/${beat}/beat.mjs with small edit_file calls, render it, look at the PNG, and reply DONE only when the render succeeds.`;
     }
     sess.dispose();
