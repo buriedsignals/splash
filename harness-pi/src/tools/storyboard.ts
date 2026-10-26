@@ -364,7 +364,7 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       if (field === "medium" && MEDIUM_WORDS[value.toLowerCase()]) {
         const said = [dialogue.lastJournalist, ...(dialogue.history ?? []).map((h) => h.answer)].join(" ");
         if (!MEDIUM_WORDS[value.toLowerCase()].test(said))
-          throw new Error(`the journalist never asked for a ${value.toLowerCase()}: record the medium they named (their words: ${JSON.stringify(dialogue.lastJournalist)})`);
+          throw new Error(`the journalist has not named a medium (their last words: ${JSON.stringify(dialogue.lastJournalist)}). Ask them whether this slot is a chart, a map or an image, and end your turn; record the medium they then name.`);
       }
       const all = [
         ...JOURNALIST_SLOT_FIELDS,

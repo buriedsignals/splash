@@ -162,7 +162,7 @@ describe("storyboard tools", () => {
   it("should refuse a medium the journalist never named", async () => {
     const tools = storyboardTools(bases, { lastJournalist: "A chart.", history: [{ said: "Which medium?", answer: "A chart." }] } as never);
     await expect(call(tools.recordSlot, { slot: "1", field: "medium", value: "map" })).rejects.toThrow(
-      /the journalist never asked for a map/,
+      /the journalist has not named a medium.*Ask them whether this slot is a chart, a map or an image, and end your turn/,
     );
   });
 
