@@ -83,6 +83,17 @@ export function shotsDir(bases: Bases, beat: string): string {
   return join(bases.storyDir, ".harness", "shots", checked(beat, SLUG, "beat"));
 }
 
+/**
+ * What a kit refusal leaves unsaid. A map kit asked for "shorter forms" and the 12B shortened the
+ * title's only form, which the takeaway guard then refused: the forms are a list, longest first, and the
+ * shorter ones go after the takeaway, not in its place.
+ */
+export function refusalHint(output: string): string {
+  return /shorter forms/i.test(output)
+    ? "\nhint: the copy fields (title, limits, callout, reading, …) are lists of forms, longest first. Add a shorter form AFTER the first one in each long field; the title's first form stays the journalist's takeaway, word for word."
+    : "";
+}
+
 export function runTools(bases: Bases) {
   const skill = (name: string, script: string) =>
     join(bases.root, "skills", name, "scripts", script);
@@ -163,6 +174,7 @@ export function runTools(bases: Bases) {
       if (zoned && !existsSync(join(beatDir(bases, beat), "beat.mjs")))
         throw new Error(`beats/${beat}/beat.mjs does not exist yet: write it with write_file, then render`);
       const result = await exec(["bun", path]);
+      result.content[0].text += refusalHint(result.content[0].text);
       // Name every PNG the render wrote by its full path, so the next call can look at it.
       const renders = join(beatDir(bases, beat), "renders");
       if (existsSync(renders)) {

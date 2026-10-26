@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createRunRoot, stageStory } from "../src/run-root.ts";
 import type { Bases } from "../src/tools/fs.ts";
-import { runTools } from "../src/tools/run.ts";
+import { runTools , refusalHint } from "../src/tools/run.ts";
 
 const CHECKOUT = resolve(import.meta.dirname, "../..");
 let bases: Bases;
@@ -71,5 +71,17 @@ describe("run tools", () => {
     });
     expect(r.isError).toBe(false);
     expect(textOf(r)).toContain(bases.root.split("/").pop()!);
+  });
+});
+
+describe("refusal hints", () => {
+  it("should say where shorter forms go when a copy-fit refusal asks for them", () => {
+    expect(refusalHint("REFUSED — the panel's copy does not fit its column. Give the beat shorter forms — do not shrink the map")).toMatch(
+      /after the first .*title's first form stays the journalist's takeaway/i,
+    );
+  });
+
+  it("should add nothing to a refusal that does not ask for shorter forms", () => {
+    expect(refusalHint("error: these country names match no country on the map")).toBe("");
   });
 });

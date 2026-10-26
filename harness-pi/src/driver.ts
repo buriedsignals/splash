@@ -38,7 +38,7 @@ import {
   paletteTools,
 } from "./tools/palette.ts";
 import { reviewTools } from "./tools/review.ts";
-import { runCommand, runTools } from "./tools/run.ts";
+import { refusalHint, runCommand, runTools } from "./tools/run.ts";
 import { type Dialogue, gapsForModel, storyboardTools } from "./tools/storyboard.ts";
 export { adapterFor };
 import { deliverTools } from "./tools/deliver.ts";
@@ -390,7 +390,7 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
     // the beat itself and hands the exact refusal back in the SAME session (its context intact), up to
     // three times, instead of opening a new session that starts from nothing.
     let prompt = `${dataSummary(join(beatDir, "data.json"))}Slot ${beat} of ${o.storyDir} is a ${slot.format ?? "static"} "${slot.chosen}" ${slot.medium ?? "chart"} beat, prepared at beats/${beat}/. The confirmed takeaway is in STORYBOARD.md and is the title, word for word. Write every word on the plate (eyebrow, labels, unit, standfirst, alt) in the story's language, "${meta.language ?? "en"}", whatever language the data's column names are in. Draw the measure the takeaway is about: a takeaway about a rate, share or ranking per resident draws that computed measure, not the raw column. Write beats/${beat}/beat.mjs as CONTRACT.md says, render it with render_beat (beat "${beat}", format "${slot.format ?? "static"}"), look at the PNG, fix what is wrong, and reply DONE when the render is right.`;
-    let final: { exitCode: number; stderr: string } = { exitCode: 1, stderr: "beat.mjs was never written" };
+    let final: { exitCode: number; stdout: string; stderr: string } = { exitCode: 1, stdout: "", stderr: "beat.mjs was never written" };
     const craftStart = Date.now();
     for (let attempt = 0; attempt < 3 && Date.now() - craftStart < 20 * 60_000; attempt++) {
       const res = await converse({
@@ -409,10 +409,12 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
       // its last render and shipped the stale, wrong picture.
       if (existsSync(join(beatDir, "beat.mjs")))
         final = await runCommand(["bun", join(beatDir, "render-beat.mjs")], bases);
-      say(`CRAFT final render: exit ${final.exitCode}${final.exitCode ? ` ${final.stderr.slice(-300)}` : ""}`);
+      say(`CRAFT final render: exit ${final.exitCode}${final.exitCode ? ` ${(final.stdout.match(/REFUSED.*/)?.[0] ?? final.stderr).slice(-300)}` : ""}`);
       if (final.exitCode === 0 || res.stop.endsWith("min cap")) break;
-      const reason = final.stderr.split("\n").find((l) => /^\s*error/i.test(l))?.trim() ?? final.stderr.slice(-400);
-      prompt = `[harness] The beat does not render yet: ${reason} Fix beats/${beat}/beat.mjs with small edit_file calls, render it, look at the PNG, and reply DONE only when the render succeeds.`;
+      // A kit refuses on stdout ("REFUSED — …") or throws on stderr ("error: …").
+      const output = `${final.stdout}\n${final.stderr}`;
+      const reason = output.split("\n").find((l) => /^\s*(error|REFUSED)/i.test(l))?.trim() ?? final.stderr.slice(-400);
+      prompt = `[harness] The beat does not render yet: ${reason}${refusalHint(output)} Fix beats/${beat}/beat.mjs with small edit_file calls, render it, look at the PNG, and reply DONE only when the render succeeds.`;
     }
     sess.dispose();
     // A refusal leaves the beat unrendered, so whereIs sends it back to craft.
