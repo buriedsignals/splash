@@ -63,5 +63,8 @@ export function iso3Of(names, dir, rename = {}) {
     throw new Error(`these "country names" are numbers (${numeric.slice(0, 3).join(", ")}): beat.mjs reads the value column as the names. Read the names from the column whose cells are country names (find it by name in data.json's columns), and the value from the number column`);
   if (unresolved.length)
     throw new Error(`these country names match no country on the map: ${unresolved.join(", ")}. If one is a misspelling, map it in beat.mjs with rename { "<as written>": "<country>" } — say so in the standfirst — or leave the row out`);
+  // The codes in the order of the names, and also keyed by each name as written: a 12B beat read codes["Germany"]
+  // off the array and refused its own countries.
+  names.forEach((name, i) => { if (!(String(name) in out)) out[String(name)] = out[i]; });
   return out;
 }
