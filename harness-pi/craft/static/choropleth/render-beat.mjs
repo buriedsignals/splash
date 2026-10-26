@@ -39,7 +39,7 @@ import beat from "./beat.mjs";
 import { applyStoryboard, assertNumbers, assertLegibleLabels, assertHeadlineNumbersDrawn, assertDrawsClaimColumn } from "./guards.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
-applyStoryboard(beat, HERE);
+applyStoryboard(beat, HERE, { basemap: "©MapTiler ©OpenStreetMap contributors" });
 const OUT = join(HERE, "renders");
 const SIZE = exportSizeFromArgv();
 const FRAME = directedFrame(SIZE);

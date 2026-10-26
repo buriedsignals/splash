@@ -15,14 +15,16 @@ const front = (here) => {
  * What the journalist recorded, held on the plate: the credit line with its as-of date (a 12B beat
  * printed "unattributed" with no date), the takeaway as the headline's first form, word for word (one
  * translated it into German, another computed its percentage from the July table), and the named limits
- * carried by the standfirst (one replaced them with its own sentences).
+ * carried by the standfirst (one replaced them with its own sentences). A map kit names its basemap's
+ * attribution, which the journalist's credit replaced on a choropleth's plate.
  */
-export function applyStoryboard(beat, here, { title = "title", standfirst = "limits", source = "source" } = {}) {
+export function applyStoryboard(beat, here, { title = "title", standfirst = "limits", source = "source", basemap } = {}) {
   const field = front(here);
   if (!field) return;
   const credit = field("credit");
   const asOf = field("effectiveDate");
   if (credit) beat[source] = asOf && !/\bas of\b/i.test(credit) ? `${credit} · as of ${asOf}` : credit;
+  if (basemap && !String(beat[source] ?? "").includes(basemap)) beat[source] = [beat[source], basemap].filter(Boolean).join(" · ");
   const named = field("limits");
   const first = [beat[standfirst]].flat()[0];
   if (named && !/^none$/i.test(named) && first !== undefined) {
