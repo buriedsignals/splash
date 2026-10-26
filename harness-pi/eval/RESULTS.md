@@ -130,3 +130,35 @@ training example the stock model lacks.
   under China; the final ranking with the bracket "11,652,210,000 t" against China's "12,289,037,000 t", credit
   dated. Defect: values printed to the tonne where the worked example reads "12,3 Gt" — the legibility guard now
   refuses labels of 8 digits or more and asks for millions or billions (after this run).
+
+## Gesture composition probe (U10) — 2026-10-26, harness `366418348`
+
+The 12B was given each story's takeaway, the journalist's subject and comparison answers, the rows the bar plate
+draws and the draft static contract (`craft/static/bar-and-column.gestures/CONTRACT.md`), and asked for the
+`gestures` field only; the gesture core validated, refusals went back in the same conversation (3 attempts,
+20 min). No rendering. Script: `harness-pi/eval/probe-gestures.ts`; raw lines `eval/results/probe-gestures-*.jsonl`.
+
+| Story (runs as in the 9/9 baseline) | Accepted | First try | Attempts | Time | Refusal chain | Takeaway staged |
+|---|---|---|---|---|---|---|
+| stress-p (Lisboa) #1 | ✅ | ✅ | 1 | 54 s | — | share (Lisboa of the whole) ✅, ratio to Porto ✅ |
+| stress-p (Lisboa) #2 | ✅ | — | 2 | 62 s | `gestures[0].mark` | share ❌ (bracket on all six: the 394 total, not 214 of 394), ratio ✅ |
+| stress-q #1 | ✅ | — | 2 | 72 s | `gestures[2].note` | Sul against Centro ✅ |
+| stress-q #2 | ✅ | — | 3 | 139 s | `gestures[0].mark` → `gestures[4].note` | Sul against Centro ✅ |
+| stress-ad #1 | ✅ | ✅ | 1 | 52 s | — | Mazowieckie against Śląskie and Łódzkie ✅ |
+| stress-ad #2 | ✅ | — | 2 | 108 s | `gestures[0].mark` | ✅ |
+| stress-ad #3 | ✅ | ✅ | 1 | 50 s | — | ✅ |
+| stress-v (China) | ✅ | ✅ | 1 | 48 s | — | China against the next five together ✅ |
+
+**Stop condition: not fired.** The 12B composed an admissible list for Lisboa within budget in both runs, and every
+refusal it met was fixed in the next attempt. Staging differs between runs and stories (Lisboa #1 highlight →
+bracket → compare; stress-q #2 filter → reorder → highlight → compare → annotate → pull back; China filter →
+highlight → bracket → compare).
+
+What the probe showed the core does not yet check:
+- **Superlatives.** stress-q #1 annotated Centro "Highest rate (205)": the figure is Centro's, the claim is false
+  (Sul is highest at 233; Centro has the highest raw count). The core checks a note's numbers, not words like
+  "highest", "lowest", "third". Added after the probe (see the commit following this one).
+- **Note language.** The Polish story's notes came in English. The contract must state the story's language; the
+  kit (U4) carries it as the static kits do.
+- Lisboa #2 shows a share half can be dropped while still passing: the core accepts any claim-touching list; it does
+  not require every half of the takeaway. Judged at U11/U9 on the render (KTD11), not refused here.
