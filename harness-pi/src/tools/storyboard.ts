@@ -428,6 +428,8 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       }
       if (field === "chosen" && answers.some((a) => sameTreatment(value, a, String(currentSlot(slot)?.medium ?? "chart")))) {
         // The journalist named this treatment, in whatever spelling.
+      } else if (field === "format" && answers.some((a) => formatCode(a) === value)) {
+        // The journalist named this format in their words ("Scrollytelling."); the record is its code.
       } else if ((JOURNALIST_SLOT_FIELDS as readonly string[]).includes(field))
         assertJournalistOwns(field, value, dialogue);
       if (!allowedSlots.includes(slot)) {

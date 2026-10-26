@@ -190,6 +190,15 @@ describe("storyboard tools", () => {
     expect(readFileSync(join(bases.storyDir, "SUBJECTS.md"), "utf8")).toContain("Porto's network is the longest per resident.");
   });
 
+  it("should own a format code the journalist named in other words", async () => {
+    const tools = storyboardTools(bases, dialogue);
+    dialogue.lastJournalist = "A chart.";
+    await call(tools.recordSlot, { slot: "1", field: "medium", value: "chart" });
+    dialogue.lastJournalist = "Scrollytelling.";
+    await call(tools.recordSlot, { slot: "1", field: "format", value: "scrollytelling" });
+    expect(meta().slots[0].format).toBe("scrolly");
+  });
+
   it("should refuse a field outside the slot vocabulary", async () => {
     await expect(
       call(storyboardTools(bases, dialogue).recordSlot, {
