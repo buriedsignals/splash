@@ -183,6 +183,13 @@ describe("storyboard tools", () => {
     ).rejects.toThrow(/not a subject.*columns: city, trips_millions/);
   });
 
+  it("should accept 'learn' for learns, the spelling the 12B writes", async () => {
+    await call(storyboardTools(bases, dialogue).recordSubject, {
+      id: "network-length", learn: "Porto's network is the longest per resident.", medium: "chart", format: "static",
+    });
+    expect(readFileSync(join(bases.storyDir, "SUBJECTS.md"), "utf8")).toContain("Porto's network is the longest per resident.");
+  });
+
   it("should refuse a field outside the slot vocabulary", async () => {
     await expect(
       call(storyboardTools(bases, dialogue).recordSlot, {

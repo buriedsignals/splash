@@ -595,8 +595,12 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
     label: "Record a surveyed subject",
     description:
       "Record one OTHER subject the data could support (movement 4, the survey): id names the angle in lowercase words joined by hyphens (e.g. network-length-per-city — never 'none'), learns is the sentence a reader would learn from it (not a chart type), then medium and format. Call once per subject; at least one is needed to close the survey, so find a real second angle in the data.",
-    parameters: Type.Object({ id: Type.String(), learns: Type.String(), medium: Type.String(), format: Type.String() }),
-    async execute(_id, subject) {
+    // `learn` is accepted: the 12B wrote it three times, schema validation refused it each time, and the
+    // same-failure stop ended the step.
+    parameters: Type.Object({ id: Type.String(), learns: Type.Optional(Type.String()), learn: Type.Optional(Type.String()), medium: Type.String(), format: Type.String() }),
+    async execute(_id, given) {
+      const { learn, ...rest } = given;
+      const subject = { ...rest, learns: given.learns ?? learn ?? "" };
       // The 12B called this with id "none" three times and the same-failure stop ended the step: the
       // refusal said what a subject is, not where to find one. It now names the data's columns.
       if ([subject.id, subject.medium, subject.format].some((f) => /^(none|n\/a|-)?$/i.test(String(f).trim())))
