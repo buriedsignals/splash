@@ -17,7 +17,7 @@
 // scale from a zero baseline). The drive (`applyGestureState`) is ONE self-contained function — no import, no
 // reference to this module's scope — emitted as source and inlined by the scrolly skill's renderScrolly.
 // Browser-safe: no Node module.
-import { applyFix, figuresIn, GestureRefusal, validateGestures } from "./gesture-core.mjs";
+import { applyFix, figuresIn, GestureRefusal, implicitAccent, validateGestures } from "./gesture-core.mjs";
 import { createLength } from "./gesture-length.mjs";
 
 /** The rows a page draws at most before the rest is stated as a remainder (every gesture's rows always drawn). */
@@ -88,6 +88,8 @@ export function scheduleScrolly({ gestures, rows, rest = { count: 0, sum: 0 } })
   const base = { lo, hi, ink: gestures.some((g) => g.do === "reveal") ? 0 : 1, note: 0 };
   names.forEach((_, i) => Object.assign(base, { [`slot${i}`]: i, [`accent${i}`]: 0, [`ring${i}`]: 0, [`back${i}`]: 0 }));
   gestures.forEach((_, k) => (base[`g${k}`] = 0));
+  const implicit = implicitAccent(gestures);
+  if (at.has(implicit)) base[`accent${at.get(implicit)}`] = 1;
 
   let picture = { ...length.rest(), domain: [lo, hi] };
   const pictures = [picture];
@@ -292,12 +294,16 @@ export function checkCards({ gestures, plan, rows, rest = { count: 0, sum: 0 }, 
     ...plan.flatMap((p) => [...p.shown, ...(p.steps ?? [])]),
     ...gestures.flatMap((g) => g.marks.map((m) => rankOf.get(m))),
   ].filter((f) => Number.isFinite(f));
+  // The row the staging is about, and the line a card with nothing of its own falls back on.
+  const marked = new Set(gestures.flatMap((g) => g.marks));
+  const subject = gestures.find((g) => g.marks?.length)?.marks[0];
+  const subjectLine = subject === undefined ? format(whole) : `${subject}: ${format(rows.find((r) => r.name === subject)?.value)}`;
 
   return gestures.map((g, k) => {
     const item = plan[k];
     const where = `card ${k + 1} (${g.do}${item.own.length ? ` on ${item.own.join(", ")}` : ""})`;
     const primary = item.shown[0];
-    const fallback = g.note ?? (primary !== undefined ? `${item.own[0] ?? ""}: ${format(primary)}`.replace(/^: /, "") : item.own.join(", ") || g.do);
+    const fallback = g.note ?? (primary !== undefined ? `${item.own[0] ?? ""}: ${format(primary)}`.replace(/^: /, "") : item.own.join(", ") || subjectLine);
     if (g.card === undefined || paragraphsOf(g.card).some((p) => !p.trim()) || !paragraphsOf(g.card).length)
       throw new GestureRefusal(
         `gestures[${k}].card`,
@@ -336,6 +342,16 @@ export function checkCards({ gestures, plan, rows, rest = { count: 0, sum: 0 }, 
         `gestures[${k}].card`,
         `${where} must state the figure its picture shows — ${format(primary)} — and states none of ${item.shown.map((f) => format(f)).join(", ")}`,
         { set: { index: k, field: "card", value: setParagraph(paragraphs.length - 1, `${paragraphs.at(-1).trim()} (${format(primary)})`) } },
+      );
+
+    // A card whose picture shows no figure of its own (a reveal, a pull-back) still carries the takeaway: it names a
+    // row the staging acts on or states a figure of the rows. A 12B pull-back card said only "The chart shows the
+    // relative ridership across six major city networks".
+    if (!shown.length && subject !== undefined && !stated.length && ![...marked].some((m) => paragraphs.some((p) => p.includes(m))))
+      throw new GestureRefusal(
+        `gestures[${k}].card`,
+        `${where} shows no figure of its own, so its card must carry the takeaway: name ${subject} or state one of its figures`,
+        { set: { index: k, field: "card", value: setParagraph(paragraphs.length - 1, `${paragraphs.at(-1).trim()} (${subjectLine})`) } },
       );
 
     // A ratio word holds for the ratio the picture draws, or the picture draws no ratio and the word goes.

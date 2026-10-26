@@ -357,3 +357,13 @@ export function repairGestures({ gestures, steps = 12, ...input }) {
   }
   throw new GestureRefusal("gestures", `no accepted list within ${steps} repairs: ${repairs.at(-1)}`, { remove: 0 });
 }
+
+/**
+ * The row that takes the accent when no gesture highlights one: the first row a gesture acts on (a compare or
+ * bracket names its subject first). A 12B scrolly bracketed and compared Lisboa with no highlight, and every bar
+ * stayed grey: doctrine's one accent carries the argument, so the subject is never left without it.
+ */
+export function implicitAccent(gestures) {
+  if (gestures.some((g) => g.do === "highlight")) return undefined;
+  return gestures.find((g) => g.marks?.length)?.marks[0];
+}

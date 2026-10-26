@@ -13,7 +13,7 @@
 // a reorder, rescale or early pull-back that leaves the picture as it was, and a zoom whose printed factor is not
 // the factor applied. Nothing here reads the data's shape: any row count, any leader, zero and negative values.
 // Browser-safe: no Node module, no `#shared` import.
-import { figuresIn, GestureRefusal } from "./gesture-core.mjs";
+import { figuresIn, GestureRefusal, implicitAccent } from "./gesture-core.mjs";
 import { createLength } from "./gesture-length.mjs";
 import { VIDEO_EVENTS } from "./gesture-registry.mjs";
 
@@ -95,6 +95,8 @@ export function scheduleVideo({ gestures, rows, rest = { count: 0, sum: 0 } }) {
   const base = { title: 0, furniture: 0, grown: 0, ink: 0, lo, hi, release: 0, source: 0 };
   names.forEach((_, i) => Object.assign(base, { [`slot${i}`]: i, [`accent${i}`]: 0, [`ring${i}`]: 0, [`back${i}`]: 0 }));
   gestures.forEach((_, k) => (base[`g${k}`] = 0));
+  const implicit = implicitAccent(gestures);
+  if (at.has(implicit)) base[`accent${at.get(implicit)}`] = 1;
 
   const hasReveal = gestures.some((g) => g.do === "reveal");
   const establish = { ...base, title: 1 };

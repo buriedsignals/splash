@@ -4,7 +4,7 @@
 // compare lays, the reference rules, every note with the rows it is written on, the rows the row-dropping ladder
 // must keep, and the treatment that judges each drawn gesture (shared/chart-beat/treatments.mjs). A temporal
 // gesture (reveal, count, pull-back, rescale) draws its end state. Browser-safe: no Node module.
-import { GestureRefusal } from "./gesture-core.mjs";
+import { GestureRefusal, implicitAccent } from "./gesture-core.mjs";
 import { createLength } from "./gesture-length.mjs";
 
 /** The static treatment each gesture is judged by (GRAMMAR.md §9); null draws nothing a treatment governs. */
@@ -41,6 +41,8 @@ export function composeStatic({ gestures, rows }) {
   let state = length.rest();
   const states = [state];
   const plate = { accent: [], rings: [], stepBack: [], notes: [], brackets: [], copies: [], references: [], top: null };
+  const implicit = implicitAccent(gestures);
+  if (valueOf.has(implicit)) plate.accent.push(implicit);
   const keep = new Set();
   const judged = [];
 

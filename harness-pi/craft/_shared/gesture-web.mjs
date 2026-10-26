@@ -18,7 +18,7 @@
 // any leader, long names, zero and negative values. What it refuses is staging that changes nothing (a reorder into
 // the order already drawn, a zoom or rescale that keeps the scale) and a gesture with no web control; each refusal
 // names the field and carries a fix, so SPLASH_GESTURE_REPAIR repairs it like any other. Browser-safe: no Node module.
-import { applyFix, figuresIn, GestureRefusal, validateGestures } from "./gesture-core.mjs";
+import { applyFix, figuresIn, GestureRefusal, implicitAccent, validateGestures } from "./gesture-core.mjs";
 import { WEB_RESTING } from "./gesture-registry.mjs";
 // The rows a page draws: the same rule as the scrolly page (every gesture's rows, then the largest, the rest stated).
 import { CAPACITY, selectRows } from "./gesture-scrolly.mjs";
@@ -100,6 +100,8 @@ export function scheduleWeb({ gestures, rows, rest = { count: 0, sum: 0 }, forma
   const short = (list) => (list.length <= 3 ? list.join(" + ") : `${list[0]} + ${list.length - 1}`);
 
   const resting = { accent: [], rings: [], notes: [], references: [], reveal: false };
+  const implicit = implicitAccent(gestures);
+  if (rows.some((r) => r.name === implicit)) resting.accent.push(implicit);
   const controls = [];
   const laid = rows.map((r) => r.value);
 
