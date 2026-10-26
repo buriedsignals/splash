@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, errorText } from "../craft/_shared/guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, errorText, importBeat } from "../craft/_shared/guards.mjs";
 
 let beat: string;
 
@@ -95,5 +95,34 @@ describe("assertNoAggregates", () => {
 
   it("should accept rows that all carry a country code", () => {
     expect(() => assertNoAggregates(["China", "Russia", "Japan"], story())).not.toThrow();
+  });
+});
+
+describe("importBeat", () => {
+  const beatWith = (source: string) => {
+    const dir = join(beat, "..", `import-${Math.random().toString(36).slice(2)}`);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "data.json"), JSON.stringify({ columns: [{ name: "city", type: "text" }, { name: "trips", type: "number" }], rows: [["Lisboa", 214], ["Porto", 96]] }));
+    writeFileSync(join(dir, "beat.mjs"), source);
+    return dir;
+  };
+
+  it("should refuse a beat that types its rows instead of reading data.json", async () => {
+    const dir = beatWith(`export default { rows: [{ name: "Lisboa", value: 214 }] };`);
+    await expect(importBeat(dir)).rejects.toThrow(/types its rows instead of reading data\.json/);
+  });
+
+  it("should answer a beat that misreads data.json with its real columns and a first row", async () => {
+    const dir = beatWith(
+      `import { readFileSync } from "node:fs"; import { join } from "node:path";\nconst data = JSON.parse(readFileSync(join(import.meta.dirname, "data.json"), "utf8"));\nexport default { lisboa: data.find((r) => r.name === "Lisboa").value };`,
+    );
+    await expect(importBeat(dir)).rejects.toThrow(/columns are "city", "trips" .*\["Lisboa",214\].*col\("city"\).*col\("trips"\)/);
+  });
+
+  it("should return the beat when it reads data.json", async () => {
+    const dir = beatWith(
+      `import { readFileSync } from "node:fs"; import { join } from "node:path";\nconst data = JSON.parse(readFileSync(join(import.meta.dirname, "data.json"), "utf8"));\nexport default { rows: data.rows.map((r) => ({ name: r[0], value: r[1] })) };`,
+    );
+    expect((await importBeat(dir)).rows[0]).toEqual({ name: "Lisboa", value: 214 });
   });
 });

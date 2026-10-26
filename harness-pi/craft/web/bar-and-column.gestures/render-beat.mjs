@@ -16,7 +16,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { webRegisters } from "#shared/design-base/web.mjs";
 import { GestureBarWeb } from "./GestureBarWeb.tsx";
-import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, assertNumbers } from "./guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, assertNumbers, importBeat } from "./guards.mjs";
 import { GestureRefusal } from "./gesture-core.mjs";
 import { HEADROOM, stageWeb } from "./gesture-web.mjs";
 import { chartWeb, plain, refusing, renderBeatWeb, storyLanguage } from "./web.mjs";
@@ -27,7 +27,7 @@ const REPAIR = process.env.SPLASH_GESTURE_REPAIR === "1";
 const GUTTER = { min: 60, max: 220, pad: 19 };
 
 await refusing(HERE, async () => {
-  const { default: beat } = await import("./beat.mjs");
+  const beat = await importBeat(HERE);
   applyStoryboard(beat, HERE);
   const { renderWeb } = await import(chartWeb(HERE, "scripts", "render-web.mjs"));
   const { deriveFurniture, measureText } = await import(chartWeb(HERE, "scripts", "render-still.mjs"));

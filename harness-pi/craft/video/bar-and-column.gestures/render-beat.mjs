@@ -14,7 +14,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { videoExportSize } from "#shared/chart-video/sizes.mjs";
-import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, assertNumbers } from "./guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, assertNumbers, importBeat } from "./guards.mjs";
 import { applyFix, GestureRefusal, validateGestures } from "./gesture-core.mjs";
 import { valueText } from "./gesture-video.mjs";
 import { assertEventFramesReadable, numberFormat, pickDirection, plain, refusing, renderBeatVideo, storyLanguage } from "./video.mjs";
@@ -26,7 +26,7 @@ const REPAIR = process.env.SPLASH_GESTURE_REPAIR === "1";
 
 await refusing(HERE, async () => {
   const SIZE = videoExportSize();
-  const { default: beat } = await import("./beat.mjs");
+  const beat = await importBeat(HERE);
   applyStoryboard(beat, HERE);
 
   const REQUIRED = ["eyebrow", "rows", "gestures", "unit", "title", "source", "check"];

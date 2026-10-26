@@ -158,3 +158,39 @@ export function assertNoAggregates(names, here) {
       `${aggregates.map((a) => `"${a}"`).join(", ")} ${aggregates.length > 1 ? "are aggregates" : "is an aggregate"} in data.json (its ${columns[code].name} is not a country code): build rows only from rows whose ${columns[code].name} is three capital letters, like "${table.rows.find((r) => iso(r[code]))[code]}"`,
     );
 }
+
+/** How data.json is laid out and how to read it, in this beat's own column names. */
+export function readingHint(here) {
+  const dataPath = join(here, "data.json");
+  if (!existsSync(dataPath)) return "";
+  const table = JSON.parse(readFileSync(dataPath, "utf8"));
+  const columns = (table.columns ?? []).map((c) => c.name);
+  const name = table.columns?.find((c) => c.type === "text")?.name ?? columns[0];
+  const value = table.columns?.find((c) => c.type === "number")?.name ?? columns[1];
+  return (
+    `data.json is { columns: [{ name, type }], rows: [[…]] }: its columns are ${columns.map((c) => `"${c}"`).join(", ")} and each row is an array in that order, e.g. ${JSON.stringify(table.rows?.[0])}. ` +
+    `Read it: const data = JSON.parse(readFileSync(join(import.meta.dirname, "data.json"), "utf8")); const col = (n) => data.columns.findIndex((c) => c.name === n); ` +
+    `const rows = data.rows.map((r) => ({ name: r[col("${name}")], value: Number(r[col("${value}")]) })).sort((a, b) => b.value - a.value);`
+  );
+}
+
+/**
+ * The beat, imported for a gesture kit. A 12B beat read data.json as an array of objects ("data.find(...).value"
+ * on undefined), failed three renders, then typed the six rows and a check() that compared constants with
+ * themselves: a beat that never reads data.json cannot be contradicted by it. So a beat that throws while
+ * loading is answered with data.json's real shape, and one that does not read data.json is refused.
+ */
+export async function importBeat(here) {
+  const file = join(here, "beat.mjs");
+  let beat;
+  try {
+    ({ default: beat } = await import(file));
+  } catch (error) {
+    if (error instanceof TypeError || error instanceof ReferenceError || error instanceof SyntaxError && !error?.errors)
+      throw new Error(`beat.mjs throws while loading: ${errorText(error)} — ${readingHint(here)}`);
+    throw error;
+  }
+  if (existsSync(join(here, "data.json")) && !/data\.json/.test(readFileSync(file, "utf8")))
+    throw new Error(`beat.mjs types its rows instead of reading data.json, so the data can never refuse its title: ${readingHint(here)}`);
+  return beat;
+}

@@ -23,11 +23,14 @@ import { assertBeatMayEnter, directedFrame, exportSizeFromArgv, nameAtSize } fro
 import { GestureColumns } from "./DirectedGestureColumns.tsx";
 import { applyFix, GestureRefusal, validateGestures } from "./gesture-core.mjs";
 import { composeStatic } from "./gesture-static.mjs";
-import beat from "./beat.mjs";
-import { applyStoryboard, assertNumbers, assertLegibleLabels, assertOnePerX, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, assertNoAggregates, errorText } from "./guards.mjs";
-applyStoryboard(beat, dirname(fileURLToPath(import.meta.url)));
+import { applyStoryboard, assertNumbers, assertLegibleLabels, assertOnePerX, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, assertNoAggregates, errorText, importBeat } from "./guards.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
+const beat = await importBeat(HERE).catch((error) => {
+  console.log(`REFUSED — ${errorText(error)}`);
+  process.exit(1);
+});
+applyStoryboard(beat, HERE);
 const OUT = join(HERE, "renders");
 const SIZE = exportSizeFromArgv();
 const FRAME = directedFrame(SIZE);

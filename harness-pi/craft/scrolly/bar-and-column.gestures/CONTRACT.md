@@ -75,6 +75,25 @@ gestures: [
 | `note` | the words drawn with the gesture, in the story's language. A zoom's note prints its factor ("×4") |
 | `card` | the card's prose: the sentence (or an array of paragraphs) the reader reads while this gesture plays, in the story's language |
 
+## Reading the data
+
+Rows are arrays; find columns by name. Example with neutral names:
+
+```js
+const data = JSON.parse(readFileSync(join(import.meta.dirname, "data.json"), "utf8"));
+const col = (name) => data.columns.findIndex((c) => c.name === name);
+const [NAME, VALUE] = [col("region"), col("amount")];
+const rows = data.rows
+  .filter((r) => r[NAME] !== "Total")
+  .map((r) => ({ name: r[NAME], value: Number(r[VALUE]) }))
+  .sort((a, b) => b.value - a.value);
+```
+
+Leave out aggregate rows (a "Total" or "World" row is not a member). Large raw values may be rescaled
+(tonnes → billions of tonnes) when the unit says so.
+
+- Never type the rows or their numbers: `beat.mjs` must read `data.json`, or the render refuses it.
+
 ## Rules
 
 - Every gesture carries a `card`. A card states the figure its picture shows: the value of the row a highlight,

@@ -19,7 +19,7 @@ import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
 import { webRegisters } from "#shared/design-base/web.mjs";
 import { EYEBROW_TO_DISPLAY, gapOf, registerOf } from "#shared/design-base/register.mjs";
 import { GestureBarScrolly } from "./GestureBarScrolly.tsx";
-import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, assertNumbers } from "./guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, assertNumbers, importBeat } from "./guards.mjs";
 import { GestureRefusal } from "./gesture-core.mjs";
 import { APPLY, driveSource, stageScrolly } from "./gesture-scrolly.mjs";
 import { plain, refusing, storyLanguage } from "./web.mjs";
@@ -29,7 +29,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const REPAIR = process.env.SPLASH_GESTURE_REPAIR === "1";
 
 await refusing(HERE, async () => {
-  const { default: beat } = await import("./beat.mjs");
+  const beat = await importBeat(HERE);
   applyStoryboard(beat, HERE);
   const { renderScrolly } = await import(scrollySkill(HERE, "scripts", "render-scrolly.mjs"));
 

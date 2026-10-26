@@ -88,6 +88,8 @@ const rows = data.rows
 Leave out aggregate rows (a "Total" or "World" row is not a member). Large raw values may be rescaled
 (tonnes → billions of tonnes) when the unit says so.
 
+- Never type the rows or their numbers: `beat.mjs` must read `data.json`, or the render refuses it.
+
 ## Rules
 
 - A video takes exactly three gestures. The render refuses two (it says how many to add) and four (it names
