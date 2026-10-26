@@ -97,3 +97,21 @@ spend-gated and have not run.
 - Page looked at: the takeaway as headline word for word, the journalist's limits as standfirst, Lisboa
   accented, the stack control offering all six cities; verify-web passed on the delivered page.
 - Storyboard dominates the wall clock (17 of 23 minutes) — the format and size gates of a web slot.
+
+## Web choropleth — 2026-10-26, four attempts, not completed
+
+| Story | Format | Completed | Attempts | 12B time | Furthest reached |
+|---|---|---|---|---|---|
+| stress-t-europe-recycling (Choropleth) | web (live MapTiler map) | ❌ | 4 | ~2 h 40 | craft: classing and join refusals |
+
+The storyboard closed every time (6–14 min). The craft never produced a page. Each attempt surfaced a harness
+refusal the 12B could not act on, fixed in turn: numbers read as country names (`3d5ec97be`), a missing field or no
+default export (`40bb92202`, `ef5f07c22`), `iso3Of` read by name (`6fa288512`), an empty class and the extremes
+given as class limits (`ed140a44c`, `379cc152d`). On the fourth attempt every refusal named what to change, and the
+12B still cycled between known errors (a variable declared twice, the misspelt "Belgiumm" handled after the call
+that refuses it, named exports), editing a 4 KB `beat.mjs` in small pieces.
+
+Reading: the web choropleth's contract — four classing rules each with words and a note function, the join, the
+missing-value sentence — is past what the stock 12B holds across edits; the static choropleth (one rule, no
+control) completed. This is the case the tuned model is for: the teacher's gold `beat.mjs` for this kit is the
+training example the stock model lacks.
