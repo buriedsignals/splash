@@ -22,8 +22,11 @@ const decode = (s: string) =>
     .replace(/&quot;/g, '"');
 
 export function svgFacts(svg: string) {
-  const texts = [...svg.matchAll(/<text[^>]*>([^<]*)/g)]
-    .map((m) => decode(m[1]).trim())
+  // A web render is an HTML page: its words sit in elements, not only in SVG <text>.
+  const isHtml = /<html|<body|<h1/i.test(svg);
+  const source = isHtml ? svg.replace(/<script[\s\S]*?<\/script>|<style[\s\S]*?<\/style>/gi, "") : svg;
+  const texts = [...source.matchAll(isHtml ? />([^<>]+)</g : /<text[^>]*>([^<]*)/g)]
+    .map((m) => decode(m[1]).replace(/\s+/g, " ").trim())
     .filter(Boolean);
   const rects = [
     ...svg.matchAll(
@@ -60,13 +63,13 @@ export function reviewTools(bases: Bases) {
       const renders = join(beatDir(bases, beat), "renders");
       if (!existsSync(renders)) throw new Error(`${beat} has no renders/`);
       const svgs = readdirSync(renders)
-        .filter((f) => f.endsWith(".svg"))
+        .filter((f) => f.endsWith(".svg") || f.endsWith(".html"))
         .sort(
           (a, b) =>
             statSync(join(renders, b)).mtimeMs -
             statSync(join(renders, a)).mtimeMs,
         );
-      if (!svgs.length) throw new Error(`${beat} has no SVG render to measure`);
+      if (!svgs.length) throw new Error(`${beat} has no SVG or HTML render to measure`);
       const facts = svgFacts(readFileSync(join(renders, svgs[0]), "utf8"));
       const { meta } = parseStoryboard(
         readFileSync(join(bases.storyDir, "STORYBOARD.md"), "utf8"),

@@ -49,7 +49,7 @@ export function fidelity(storyDir: string): { headline: boolean; credit: boolean
   const renders = beat ? join(beats, beat, "renders") : "";
   if (!renders || !existsSync(renders)) return none;
   const svg = readdirSync(renders)
-    .filter((f) => f.endsWith(".svg"))
+    .filter((f) => f.endsWith(".svg") || f.endsWith(".html"))
     .sort((a, b) => statSync(join(renders, b)).mtimeMs - statSync(join(renders, a)).mtimeMs)[0];
   if (!svg) return none;
   const drawn = svgFacts(readFileSync(join(renders, svg), "utf8")).texts.join(" ").replace(/\s+/g, " ");

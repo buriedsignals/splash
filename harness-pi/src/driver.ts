@@ -44,6 +44,8 @@ export { adapterFor };
 import { deliverTools } from "./tools/deliver.ts";
 
 const CHECKOUT = join(import.meta.dirname, "..", "..");
+/** The craft skills whereIs names per medium and format (where.mjs CRAFT_SKILLS); each runs through a zone kit. */
+const CRAFT_OWNERS = new Set(["chart-beat", "chart-web", "chart-video", "map-beat", "map-web", "scrolly"].map((id) => `skill:${id}`));
 const read = (rel: string) => readFileSync(join(CHECKOUT, rel), "utf8");
 
 export interface RunOptions {
@@ -206,7 +208,7 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
           `ANALYST slot ${slot.id}: exit ${res.exitCode} ${res.stderr.slice(0, 300)}`,
         );
       }
-    } else if (s.phase === "production" && owner === "skill:chart-beat") {
+    } else if (s.phase === "production" && CRAFT_OWNERS.has(owner)) {
       const result = await craftPhase();
       if (result)
         return {
@@ -339,7 +341,7 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
     const slot = (meta.slots ?? [])[0];
     const adapter = adapterFor(String(slot?.chosen ?? ""), String(slot?.format ?? "static"));
     if (!adapter)
-      return `no zone adapter yet for "${slot?.chosen}" (harness-pi/craft/)`;
+      return `no zone kit yet for "${slot?.chosen}" in ${slot?.format ?? "static"} (harness-pi/craft/${slot?.format ?? "static"}/)`;
     // Harness-owned closures before craft: palette, the run's one direction, the beat's plan binding.
     closeDerivedPalette(bases);
     if (!existsSync(join(o.storyDir, "DIRECTION.md"))) {
@@ -387,7 +389,7 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
     // The 12B often says DONE, or stops, while its beat still refuses to render. The harness renders
     // the beat itself and hands the exact refusal back in the SAME session (its context intact), up to
     // three times, instead of opening a new session that starts from nothing.
-    let prompt = `${dataSummary(join(beatDir, "data.json"))}Slot ${beat} of ${o.storyDir} is a static "${slot.chosen}" beat, prepared at beats/${beat}/. The confirmed takeaway is in STORYBOARD.md and is the title, word for word. Write every word on the plate (eyebrow, labels, unit, standfirst, alt) in the story's language, "${meta.language ?? "en"}", whatever language the data's column names are in. Draw the measure the takeaway is about: a takeaway about a rate, share or ranking per resident draws that computed measure, not the raw column. Write beats/${beat}/beat.mjs as CONTRACT.md says, render it with render_beat (beat "${beat}", format "static"), look at the PNG, fix what is wrong, and reply DONE when the render is right.`;
+    let prompt = `${dataSummary(join(beatDir, "data.json"))}Slot ${beat} of ${o.storyDir} is a ${slot.format ?? "static"} "${slot.chosen}" ${slot.medium ?? "chart"} beat, prepared at beats/${beat}/. The confirmed takeaway is in STORYBOARD.md and is the title, word for word. Write every word on the plate (eyebrow, labels, unit, standfirst, alt) in the story's language, "${meta.language ?? "en"}", whatever language the data's column names are in. Draw the measure the takeaway is about: a takeaway about a rate, share or ranking per resident draws that computed measure, not the raw column. Write beats/${beat}/beat.mjs as CONTRACT.md says, render it with render_beat (beat "${beat}", format "${slot.format ?? "static"}"), look at the PNG, fix what is wrong, and reply DONE when the render is right.`;
     let final: { exitCode: number; stderr: string } = { exitCode: 1, stderr: "beat.mjs was never written" };
     const craftStart = Date.now();
     for (let attempt = 0; attempt < 3 && Date.now() - craftStart < 20 * 60_000; attempt++) {

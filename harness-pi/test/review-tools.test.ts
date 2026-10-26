@@ -21,6 +21,13 @@ describe("render facts", () => {
   });
 });
 
+describe("web renders", () => {
+  it("should read the words of an HTML render, not its script", () => {
+    const html = "<html><body><h1>Lisboa leads</h1><script>const x = '<b>no</b>';</script><p>One year &#x27;only&#x27;.</p></body></html>";
+    expect(svgFacts(html).texts).toEqual(["Lisboa leads", "One year 'only'."]);
+  });
+});
+
 describe("entities", () => {
   it("should decode hex and decimal character references in drawn text", () => {
     expect(svgFacts('<svg><text>Centro&#x27;s 205 &#39;x&#39;</text></svg>').texts).toEqual(["Centro's 205 'x'"]);

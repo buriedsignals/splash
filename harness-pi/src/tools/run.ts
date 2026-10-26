@@ -148,9 +148,8 @@ export function runTools(bases: Bases) {
     parameters: Type.Object({ beat: Type.String(), format: Type.String() }),
     async execute(_id, { beat, format }) {
       // A beat the harness prepared for zone writing renders through its generic runner.
-      const zoned =
-        format === "static" &&
-        existsSync(join(beatDir(bases, beat), "render-beat.mjs"));
+      // A beat the harness prepared from a zone kit renders through the kit's runner, in any format.
+      const zoned = existsSync(join(beatDir(bases, beat), "render-beat.mjs"));
       const runner = zoned
         ? "render-beat.mjs"
         : { static: "render-directions.mjs", web: "render-directions-web.mjs" }[
