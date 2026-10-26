@@ -135,3 +135,26 @@ export function errorText(error) {
   // One build error comes alone, carrying its own position; several come grouped.
   return error?.errors?.length ? [error.message, ...error.errors.map(one)].join(" — ") : one(error);
 }
+
+/**
+ * No drawn row is an aggregate. OWID-style tables carry regions and the world beside countries, told apart by a
+ * three-letter code column ("CHN"; "" or "OWID_WRL" for an aggregate). A 12B video ranked "Africa (GCP)" among the
+ * next five emitters. Applies only when such a code column exists.
+ */
+export function assertNoAggregates(names, here) {
+  const dataPath = join(here, "data.json");
+  if (!existsSync(dataPath)) return;
+  const table = JSON.parse(readFileSync(dataPath, "utf8"));
+  const columns = table.columns ?? [];
+  const iso = (v) => /^[A-Z]{3}$/.test(String(v ?? ""));
+  const code = columns.findIndex((_, c) => table.rows.filter((r) => iso(r[c])).length >= table.rows.length * 0.6);
+  if (code < 0) return;
+  const aggregates = names.filter((name) => {
+    const row = table.rows.find((r) => r.some((cell) => cell === name));
+    return row && !iso(row[code]);
+  });
+  if (aggregates.length)
+    throw new Error(
+      `${aggregates.map((a) => `"${a}"`).join(", ")} ${aggregates.length > 1 ? "are aggregates" : "is an aggregate"} in data.json (its ${columns[code].name} is not a country code): build rows only from rows whose ${columns[code].name} is three capital letters, like "${table.rows.find((r) => iso(r[code]))[code]}"`,
+    );
+}

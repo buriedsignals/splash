@@ -162,3 +162,25 @@ What the probe showed the core does not yet check:
   kit (U4) carries it as the static kits do.
 - Lisboa #2 shows a share half can be dropped while still passing: the core accepts any claim-touching list; it does
   not require every half of the takeaway. Judged at U11/U9 on the render (KTD11), not refused here.
+
+## Gesture kits, static and video end-to-end gate (U11) — 2026-10-27
+
+Gesture kits only: `SPLASH_GESTURES_STATIC=1`, fallback off (`SPLASH_GESTURE_FALLBACK=0`), repair on (Rémy: the gesture
+kit must never fail; a repaired run would be reported apart — none was needed).
+
+| Story | Format | Completed | Headline | Refusals | Wall clock | Craft | Gestures the 12B composed | Repairs |
+|---|---|---|---|---|---|---|---|---|
+| stress-p (Lisboa) | static | ✅ | ✅ | 3 | 12.4 min | 1.6 min | highlight Lisboa → bracket Lisboa of the whole "214 of 394 million" → compare Lisboa/Porto "more than twice Porto's 96 million" | 0 |
+| stress-p (Lisboa) | video | ✅ | ✅ | 1 | 17.1 min | 2.7 min | highlight Lisboa → compare Lisboa/Porto → bracket Lisboa of the whole | 0 |
+| stress-v (China) | video | ✅ | ✅ | 4 | 27.8 min | 15.0 min | highlight China → compare China against the next five "China (12289.0) vs. next five (11652.2)" → pull back | 0 |
+
+**Gate: passed.** Every run delivered with the takeaway as headline through the gesture kit; Lisboa reached `done` in
+video for the first time (the per-type bar video refuses it at every `drawCount`). Judged on the renders (KTD11):
+- Lisboa static and video draw both halves of the takeaway, the share of the whole and the Porto ratio; the 12B
+  ordered them differently in the two formats.
+- China's comparison is right, but the 12B's rows kept OWID aggregates: "Africa (GCP)" is drawn among the countries,
+  between Russia and Japan, and the remainder reads "7 / 222". A defect of data selection, not of a gesture. Fixed
+  after the run: `assertNoAggregates` (guards.mjs) refuses a drawn row whose three-letter code column is not a
+  country code; both gesture kits call it. To re-run in U9.
+- Fixed during the gate: the core read a note's figure glued to its unit ("12.289037Gt") as "12" and refused it
+  with a broken fix (first China attempt stopped and restarted on `719828cf0`).

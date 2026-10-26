@@ -14,7 +14,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { videoExportSize } from "#shared/chart-video/sizes.mjs";
-import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNumbers } from "./guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, assertNumbers } from "./guards.mjs";
 import { applyFix, GestureRefusal, validateGestures } from "./gesture-core.mjs";
 import { valueText } from "./gesture-video.mjs";
 import { assertEventFramesReadable, numberFormat, pickDirection, plain, refusing, renderBeatVideo, storyLanguage } from "./video.mjs";
@@ -45,6 +45,7 @@ await refusing(HERE, async () => {
   const rows = beat.rows.map((r) => ({ name: plain(r.name), value: r.value }));
   const values = rows.map((r) => r.value);
   assertDrawsClaimColumn(values, HERE);
+  assertNoAggregates(beat.rows.map((r) => r.name), HERE);
   const title = plain([beat.title].flat()[0]);
   assertHeadlineNumbersDrawn(title, values, "bars");
 

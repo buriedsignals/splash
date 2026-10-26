@@ -24,7 +24,7 @@ import { GestureColumns } from "./DirectedGestureColumns.tsx";
 import { applyFix, GestureRefusal, validateGestures } from "./gesture-core.mjs";
 import { composeStatic } from "./gesture-static.mjs";
 import beat from "./beat.mjs";
-import { applyStoryboard, assertNumbers, assertLegibleLabels, assertOnePerX, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, errorText } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertLegibleLabels, assertOnePerX, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, assertNoAggregates, errorText } from "./guards.mjs";
 applyStoryboard(beat, dirname(fileURLToPath(import.meta.url)));
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -42,6 +42,7 @@ assertNumbers(beat.rows.map((r) => [r.name, r.value]));
 assertLegibleLabels(beat.rows.map((r) => r.value), beat.format);
 beat.check();
 assertDrawsClaimColumn(beat.rows.map((r) => r.value), dirname(fileURLToPath(import.meta.url)));
+assertNoAggregates(beat.rows.map((r) => r.name), dirname(fileURLToPath(import.meta.url)));
 assertHeadlineNumbersDrawn([beat.title].flat()[0], beat.rows.map((r) => r.value), "bars");
 
 // The gestures, checked against the rows the plate draws and the claim the journalist confirmed, then

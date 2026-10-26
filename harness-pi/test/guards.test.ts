@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, errorText } from "../craft/_shared/guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, errorText } from "../craft/_shared/guards.mjs";
 
 let beat: string;
 
@@ -73,5 +73,27 @@ describe("assertHeadlineNumbersDrawn with signed values", () => {
 describe("assertHeadlineNumbersDrawn on negative values", () => {
   it("should refuse a title stating losses the negative drawn values do not hold", () => {
     expect(() => assertHeadlineNumbersDrawn("Beta fell 40 and Gamma fell 50", [-12, -30])).toThrow(/the title states/);
+  });
+});
+
+describe("assertNoAggregates", () => {
+  const story = () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-agg-"));
+    writeFileSync(
+      join(dir, "data.json"),
+      JSON.stringify({
+        columns: [{ name: "Entity", type: "text" }, { name: "Code", type: "text" }, { name: "co2", type: "number" }],
+        rows: [["China", "CHN", 12.29], ["Russia", "RUS", 1.78], ["Africa (GCP)", "", 1.5], ["World", "OWID_WRL", 38], ["Japan", "JPN", 0.96]],
+      }),
+    );
+    return dir;
+  };
+
+  it("should refuse a drawn row that is an aggregate, naming it and the code column", () => {
+    expect(() => assertNoAggregates(["China", "Africa (GCP)", "Japan"], story())).toThrow(/Africa \(GCP\).*aggregate.*Code/);
+  });
+
+  it("should accept rows that all carry a country code", () => {
+    expect(() => assertNoAggregates(["China", "Russia", "Japan"], story())).not.toThrow();
   });
 });
