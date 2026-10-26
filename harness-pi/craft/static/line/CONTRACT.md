@@ -30,7 +30,7 @@ this story's from scratch with `write_file`.
 
 ## Reading the data
 
-`series.mjs` (in the folder) reads the one series to draw, by column name — use it instead of writing filters:
+`series.mjs` (in the folder, from craft/_shared) reads the one series to draw, by column name — use it instead of writing filters:
 
 ```js
 import { readTable, series } from "./series.mjs";

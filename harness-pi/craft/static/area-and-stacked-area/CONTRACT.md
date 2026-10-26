@@ -35,7 +35,7 @@ part is labelled with its share of the total — the renderer computes those sha
 
 ## Reading the data
 
-`series.mjs` (in the folder) reads the one series to draw, by column name — use it instead of writing filters:
+`series.mjs` (in the folder, from craft/_shared) reads the one series to draw, by column name — use it instead of writing filters:
 
 ```js
 import { readTable, series } from "./series.mjs";

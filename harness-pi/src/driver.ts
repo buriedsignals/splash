@@ -337,7 +337,7 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
   async function craftPhase(): Promise<string | null> {
     const meta = storyboardMeta(o.storyDir);
     const slot = (meta.slots ?? [])[0];
-    const adapter = adapterFor(String(slot?.chosen ?? ""));
+    const adapter = adapterFor(String(slot?.chosen ?? ""), String(slot?.format ?? "static"));
     if (!adapter)
       return `no zone adapter yet for "${slot?.chosen}" (harness-pi/craft/)`;
     // Harness-owned closures before craft: palette, the run's one direction, the beat's plan binding.
@@ -363,7 +363,7 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
     for (const file of readdirSync(adapter))
       cpSync(join(adapter, file), join(beatDir, file));
     // The refusals and readers every kit shares (craft/_shared) travel with it.
-    const shared = join(adapter, "..", "_shared");
+    const shared = join(adapter, "..", "..", "_shared");
     for (const file of readdirSync(shared)) cpSync(join(shared, file), join(beatDir, file));
     if (!existsSync(join(beatDir, "BRIEF.md"))) {
       writeFileSync(
