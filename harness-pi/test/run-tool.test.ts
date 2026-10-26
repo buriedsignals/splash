@@ -77,7 +77,7 @@ describe("run tools", () => {
 describe("refusal hints", () => {
   it("should say where shorter forms go when a copy-fit refusal asks for them", () => {
     expect(refusalHint("REFUSED — the panel's copy does not fit its column. Give the beat shorter forms — do not shrink the map")).toMatch(
-      /after the first .*title's first form stays the journalist's takeaway/i,
+      /after the first one, to limits and reading first.*title's first form stays the journalist's takeaway/i,
     );
   });
 

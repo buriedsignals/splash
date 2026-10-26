@@ -86,11 +86,12 @@ export function shotsDir(bases: Bases, beat: string): string {
 /**
  * What a kit refusal leaves unsaid. A map kit asked for "shorter forms" and the 12B shortened the
  * title's only form, which the takeaway guard then refused: the forms are a list, longest first, and the
- * shorter ones go after the takeaway, not in its place.
+ * shorter ones go after the takeaway, not in its place. A standfirst with one form then left the headline as
+ * the only thing the plate could shorten, and the delivered map lost the takeaway.
  */
 export function refusalHint(output: string): string {
   return /shorter forms/i.test(output)
-    ? "\nhint: the copy fields (title, limits, callout, reading, …) are lists of forms, longest first. Add a shorter form AFTER the first one in each long field; the title's first form stays the journalist's takeaway, word for word."
+    ? "\nhint: the copy fields (title, limits, callout, reading, …) are lists of forms, longest first. Add shorter forms AFTER the first one, to limits and reading first: the plate shortens those before the headline. The title's first form stays the journalist's takeaway, word for word."
     : "";
 }
 

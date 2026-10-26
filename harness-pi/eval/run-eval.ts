@@ -49,12 +49,19 @@ export async function evaluate(story: string, arm: string, out: string, variant 
     cpSync(join(root, ".splash-harness"), keep, { recursive: true });
   const beats = join(root, "stories", story, "beats");
   if (existsSync(beats))
-    for (const beat of readdirSync(beats).filter((b) => !b.startsWith(".")))
+    for (const beat of readdirSync(beats).filter((b) => !b.startsWith("."))) {
       if (existsSync(join(beats, beat, "renders")))
         cpSync(join(beats, beat, "renders"), join(keep, "renders", beat), {
           recursive: true,
         });
-  for (const f of ["STORYBOARD.md"])
+      // What the model wrote and what it read, so a craft can be replayed against a changed kit.
+      for (const f of ["beat.mjs", "data.json"])
+        if (existsSync(join(beats, beat, f))) {
+          mkdirSync(join(keep, "beats", beat), { recursive: true });
+          cpSync(join(beats, beat, f), join(keep, "beats", beat, f));
+        }
+    }
+  for (const f of ["STORYBOARD.md", "PALETTE.md", "DIRECTION.md"])
     if (existsSync(join(root, "stories", story, f)))
       cpSync(join(root, "stories", story, f), join(keep, f));
   rmSync(root, { recursive: true, force: true });
