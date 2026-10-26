@@ -20,7 +20,7 @@ import { assertBeatMayEnter, directedFrame, exportSizeFromArgv, nameAtSize } fro
 import { summarizeDecade } from "./DecadeBoxplot.tsx";
 import { DirectedBoxplot } from "./DirectedBoxplot.tsx";
 import beat from "./beat.mjs";
-import { applyStoryboard, assertNumbers, assertLegibleLabels, assertDrawsClaimColumn } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertLegibleLabels, assertDrawsClaimColumn, errorText } from "./guards.mjs";
 applyStoryboard(beat, dirname(fileURLToPath(import.meta.url)));
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -127,7 +127,7 @@ for (const { label: id, direction: chosenDirection } of chosen) {
   } catch (error) {
     for (const ext of ["png", "svg"]) await rm(join(OUT, `${nameAtSize(id, SIZE)}.${ext}`), { force: true });
     refused.push({ id, why: error.message });
-    console.log(`REFUSED — ${error.message}`);
+    console.log(`REFUSED — ${errorText(error)}`);
   }
 }
 if (refused.length) process.exit(1);

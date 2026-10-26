@@ -19,6 +19,7 @@ import { composeDirections, filedDirections, report as composeReport } from "#sh
 import { directionReachable, readRunDirection } from "#shared/design-base/run-direction.mjs";
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
 import { splashRoot } from "#shared/design-base/splash-root.mjs";
+import { errorText } from "./guards.mjs";
 
 /** A Remotion process that runs longer than this is killed and the beat refused (the target Mac pays every second). */
 export const RENDER_TIMEOUT_MS = 10 * 60_000;
@@ -86,7 +87,7 @@ export async function refusing(here, body) {
   try {
     await body();
   } catch (error) {
-    refuse(here, error.message);
+    refuse(here, errorText(error));
   }
 }
 

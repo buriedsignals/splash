@@ -11,6 +11,7 @@ import { composeDirections, filedDirections, report as composeReport, resolveDir
 import { directionReachable, readRunDirection } from "#shared/design-base/run-direction.mjs";
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
+import { errorText } from "./guards.mjs";
 
 /** The viewport whose verify-web screenshot is the one to look at (`fit-<w>x<h>.png`). */
 export const DESKTOP_SHOT = "fit-1920x950.png";
@@ -70,7 +71,7 @@ export async function refusing(here, body) {
   try {
     await body();
   } catch (error) {
-    refuse(here, error.message);
+    refuse(here, errorText(error));
   }
 }
 
@@ -125,7 +126,7 @@ export async function renderBeatWeb({ here, render, textPerRegister, evidenceLev
     label = picked.label;
     ({ outPath } = await render({ label, direction: picked.direction, outDir: out }));
   } catch (error) {
-    refuse(here, error.message);
+    refuse(here, errorText(error));
   }
   console.log(`rendered renders/${label}.html`);
 

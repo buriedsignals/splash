@@ -19,7 +19,7 @@ import { assertBeatMayEnter, directedFrame, exportSizeFromArgv, nameAtSize } fro
 import { DirectedTileCartogram } from "./DirectedTileCartogram.tsx";
 import { placeTiles, classOf } from "./tile-grid.mjs";
 import beat from "./beat.mjs";
-import { applyStoryboard, assertNumbers, assertLegibleLabels, assertDrawsClaimColumn } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertLegibleLabels, assertDrawsClaimColumn, errorText } from "./guards.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 applyStoryboard(beat, HERE);
@@ -148,7 +148,7 @@ for (const { label: id, direction: chosenDirection } of chosen) {
   } catch (error) {
     for (const ext of ["png", "svg"]) await rm(join(OUT, `${nameAtSize(id, SIZE)}.${ext}`), { force: true });
     refused.push({ id, why: error.message });
-    console.log(`REFUSED — ${error.message}`);
+    console.log(`REFUSED — ${errorText(error)}`);
   }
 }
 if (refused.length) process.exit(1);

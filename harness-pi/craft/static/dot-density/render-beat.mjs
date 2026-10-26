@@ -30,7 +30,7 @@ import { plateWaterField } from "./plate-water.mjs";
 import { DirectedDotDensity } from "./DirectedDotDensity.tsx";
 import { readPoints, readTable } from "./points.mjs";
 import beat from "./beat.mjs";
-import { applyStoryboard, assertNumbers, assertHeadlineNumbersDrawn } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertHeadlineNumbersDrawn, errorText } from "./guards.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 applyStoryboard(beat, HERE, { basemap: "©MapTiler ©OpenStreetMap contributors" });
@@ -280,6 +280,6 @@ try {
   console.log(`rendered renders/${name}.png`);
 } catch (error) {
   for (const ext of ["png", "svg"]) await rm(join(OUT, `${name}.${ext}`), { force: true });
-  console.log(`REFUSED — ${error.message}`);
+  console.log(`REFUSED — ${errorText(error)}`);
   process.exit(1);
 }

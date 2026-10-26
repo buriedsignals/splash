@@ -14,6 +14,7 @@ import { cpSync, existsSync, mkdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
 import { pickDirection, plainRegisters } from "./web.mjs";
+import { errorText } from "./guards.mjs";
 
 /** The scrolly skill's own scripts and assets, wherever the root put the skill. */
 export const scrollySkill = (here, ...parts) => skillScriptFrom(here, "scrolly", ...parts);
@@ -141,7 +142,7 @@ export async function renderBeatScrolly({ here, render, states, textPerRegister,
     label = picked.label;
     ({ outPath } = await render({ label, direction: picked.direction, outDir: out }));
   } catch (error) {
-    refuse(here, error.message);
+    refuse(here, errorText(error));
   }
   console.log(`rendered renders/${label}.html`);
 
@@ -161,7 +162,7 @@ export async function renderBeatScrolly({ here, render, states, textPerRegister,
   try {
     shot = await shootCards(here, outPath, shots, { states });
   } catch (error) {
-    refuse(here, error.message);
+    refuse(here, errorText(error));
   }
   if (verify.exitCode !== 0) {
     if (shot?.cards[0]) console.log(`the refused page, for diagnosis —\nlook at: ${shot.cards[0]}`);

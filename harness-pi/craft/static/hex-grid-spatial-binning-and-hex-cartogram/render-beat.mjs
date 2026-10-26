@@ -23,7 +23,7 @@ import { directionReachable, readRunDirection } from "#shared/design-base/run-di
 import { assertBeatMayEnter, directedFrame, exportSizeFromArgv, nameAtSize } from "#shared/chart-beat/directed-size.mjs";
 import { DirectedHexGrid } from "./DirectedHexGrid.tsx";
 import beat from "./beat.mjs";
-import { applyStoryboard, assertNumbers, assertDrawsClaimColumn } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertDrawsClaimColumn, errorText } from "./guards.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 applyStoryboard(beat, HERE);
@@ -213,7 +213,7 @@ for (const { label: id, direction: picked } of chosen) {
   } catch (error) {
     for (const ext of ["png", "svg"]) await rm(join(OUT, `${nameAtSize(id, SIZE)}.${ext}`), { force: true });
     refused.push({ id, why: error.message });
-    console.log(`REFUSED — ${error.message}`);
+    console.log(`REFUSED — ${errorText(error)}`);
   }
 }
 if (refused.length) process.exit(1);

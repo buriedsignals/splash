@@ -25,7 +25,7 @@ import { assertBeatMayEnter, directedFrame, exportSizeFromArgv, nameAtSize } fro
 import { plateWaterField } from "./plate-water.mjs";
 import { DirectedFlowMap } from "./DirectedFlowMap.tsx";
 import beat from "./beat.mjs";
-import { applyStoryboard, assertNumbers, assertDrawsClaimColumn } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertDrawsClaimColumn, errorText } from "./guards.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 applyStoryboard(beat, HERE, { basemap: "©MapTiler ©OpenStreetMap contributors" });
@@ -299,7 +299,7 @@ for (const { label: id, direction: picked } of chosen) {
   } catch (error) {
     for (const ext of ["png", "svg"]) await rm(join(OUT, `${nameAtSize(id, SIZE)}.${ext}`), { force: true });
     refused.push({ id, why: error.message });
-    console.log(`REFUSED — ${error.message}`);
+    console.log(`REFUSED — ${errorText(error)}`);
   }
 }
 if (refused.length) process.exit(1);

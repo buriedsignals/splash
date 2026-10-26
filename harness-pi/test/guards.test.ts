@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels } from "../craft/_shared/guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, errorText } from "../craft/_shared/guards.mjs";
 
 let beat: string;
 
@@ -52,5 +52,14 @@ describe("assertLegibleLabels", () => {
   it("should accept a population printed in full", () => {
     const format = (v: number) => v.toLocaleString("en-US");
     expect(() => assertLegibleLabels([4_465_340, 4_312_005, 3_901_220], format)).not.toThrow();
+  });
+});
+
+describe("errorText", () => {
+  it("should spell out each error of a failed build with its line", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-build-"));
+    writeFileSync(join(dir, "bad.mjs"), "const a = 1;\nconst a = 2;\nexport default {};\n");
+    const error = await import(join(dir, "bad.mjs")).catch((e) => e);
+    expect(errorText(error)).toMatch(/"a" has already been declared \(line 2: const a = 2;\)/);
   });
 });

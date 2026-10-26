@@ -120,3 +120,16 @@ export function assertDrawsClaimColumn(drawn, here) {
 const decimals = (v) => (String(v).split(".")[1] ?? "").length;
 
 export const beatHere = (url) => dirname(new URL(url).pathname);
+
+/**
+ * A refusal's text, with every error of a failed build spelled out: Bun reports a beat.mjs that does not parse as
+ * one AggregateError whose message is only "2 errors building <path>", and the 12B retried three times on that.
+ */
+export function errorText(error) {
+  const one = (e) => {
+    const where = e?.position ? ` (line ${e.position.line}: ${String(e.position.lineText ?? "").trim()})` : "";
+    return `${e?.message ?? String(e)}${where}`;
+  };
+  // One build error comes alone, carrying its own position; several come grouped.
+  return error?.errors?.length ? [error.message, ...error.errors.map(one)].join(" — ") : one(error);
+}
