@@ -1,0 +1,256 @@
+// EVERYTHING ONE DIRECTION'S RENDER IS HANDED, BUILT IN BUN — the words, the six rows on one scale, the left edge the whole
+// bars grow from and the anchor they slide onto, the tracks France's bar parts into, the texts, colours and states.
+//
+// Runs in Bun only.
+//
+// ZONE KIT COPY of proof/video-diverging-stacked-electricity/build.mjs. What changed: the subject and the words come from
+// the beat (`./subject.mjs` computes the subject from beat.mjs, render-beat.mjs builds `copy`, whose `share(v)` is
+// beat.mjs's `format` in place of the proof's French `shareText`), the direction is the one the run selects (handed in,
+// not read from a filed id), refusals name the subject instead of France, and the chart-video skill's scripts are found
+// through `skillScriptFrom` — a beat sits at stories/<slug>/beats/<id>/.
+
+import { dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+import { adjustToContrast, contrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
+import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
+import { frameInsetFor, sizeFor, videoExportSize } from "#shared/chart-video/sizes.mjs";
+import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
+import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
+import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
+import { splashRoot } from "#shared/design-base/splash-root.mjs";
+import { statesFor } from "./states.mjs";
+import { DIVERGING_STACKED_VIDEO_TIMING } from "./timing-contract.ts";
+
+const HERE = dirname(fileURLToPath(import.meta.url));
+const chartVideo = (...parts) => skillScriptFrom(HERE, "chart-video", "scripts", ...parts);
+const { applyCase } = await import(chartVideo("registers.mjs"));
+const { BAND_PROBE, bandOf, CREDIT_ONE_LINE, DRAWN_WIDER, haloOf, sourceCreditFor, titleCardFor, verticalInsetFor, widthOf } = await import(chartVideo("shots.mjs"));
+const { videoRegistersOf } = await import(chartVideo("video-registers.mjs"));
+export const ROOT = splashRoot(HERE);
+/** The size this run exports at — `--size`, landscape when nothing asks. R2 names three and
+ *  everything under it already answered per size; only this line pinned the beat to one. */
+export const SIZE = videoExportSize();
+export const REGISTER_NAMES = ["display", "eyebrow", "body", "annot", "value", "axis"];
+const NB = "\u00A0";
+const LABEL_GAP = 0.4;
+/** A bar's share of its row: two bars and the gap between them must hold in one row when France's bar parts. */
+const BAR = 0.44;
+
+/**
+ * The beat one render is handed. `subject` is `subjectOf(beat)` (`./subject.mjs`); `copy` is the beat's words as
+ * render-beat.mjs shapes them — the proof's `copyOf`: `{ eyebrow, title: forms, year, hundred, sides: { left, centre,
+ * right }, source: forms, share(v) }`.
+ */
+export function loadBeat(subject, copy) {
+  return { subject, states: statesFor(), copy };
+}
+
+export function textPerRegisterOf(copy, subject) {
+  return {
+    display: copy.title.join(" "),
+    eyebrow: copy.eyebrow,
+    body: copy.source.join(" "),
+    annot: "",
+    value: `${copy.year} 0123456789`,
+    axis: `${subject.rows.map((r) => r.name).join(" ")} ${Object.values(copy.sides).join(" ")} ${copy.hundred} 0123456789, ${copy.source.join(" ")}`,
+  };
+}
+
+export function buildDirection(id, chosen, { subject, states, copy }) {
+  const direction = resolveDirectionFamilies(chosen, textPerRegisterOf(copy, subject));
+  const resolved = Object.fromEntries(REGISTER_NAMES.map((name) => [name, registerOf(direction, name)]));
+  const registers = videoRegistersOf(resolved, SIZE);
+  const k = registers.axis.fontSize / resolved.axis.fontSize;
+  const row = sizeFor(SIZE);
+  const stage = { width: row.width, height: row.height };
+  const inset = frameInsetFor(SIZE);
+  const vInset = verticalInsetFor(SIZE);
+  for (const [name, r] of Object.entries(registers)) if (!(r.fontSize >= row.minTypePx)) throw new Error(`register ${name} is ${r.fontSize}px, under the ${row.minTypePx}px floor`);
+  const { axis, value } = registers;
+  const measure = (t, r) => {
+    const cased = applyCase(t, r.transform);
+    return { text: cased, width: widthOf(cased, r) };
+  };
+  const drawn = (w) => w * (1 + DRAWN_WIDER);
+  const gap = LABEL_GAP * axis.lead;
+  const band = bandOf(BAND_PROBE, axis);
+  const valueBand = bandOf(BAND_PROBE, value);
+  const shift = (band.ascent - band.descent) / 2;
+
+  const titleCard = titleCardFor({ registers, eyebrow: copy.eyebrow, title: copy.title, size: SIZE, eyebrowToDisplay: EYEBROW_TO_DISPLAY });
+  const { register: sourceRegister, ...credit } = sourceCreditFor({ registers, forms: copy.source, size: SIZE, k, ...CREDIT_ONE_LINE });
+  const creditAt = { x: inset, y: stage.height - vInset - credit.height };
+
+  // THE HORIZONTAL: name | the left totals | the plot | the right totals. One scale holds the widest lean on each side of the
+  // anchor; the whole 100 % bars grow from the plot's left edge, which is where the furthest left lean begins.
+  const names = subject.rows.map((r) => measure(r.name, axis));
+  const lefts = subject.rows.map((r) => measure(copy.share(r.fossil), axis));
+  const rights = subject.rows.map((r) => measure(copy.share(r.renewable), axis));
+  const nameRoom = drawn(Math.max(...names.map((n) => n.width)));
+  const plotLeft = inset + nameRoom + gap + gap / 2 + drawn(Math.max(...lefts.map((w) => w.width)));
+  const plotRight = stage.width - inset - gap / 2 - drawn(Math.max(...rights.map((w) => w.width)));
+  const reachLeft = Math.max(...subject.rows.map((r) => r.fossil + r.centre / 2));
+  const reachRight = Math.max(...subject.rows.map((r) => r.renewable + r.centre / 2));
+  const unit = (plotRight - plotLeft) / (reachLeft + reachRight);
+  const anchor = plotLeft + reachLeft * unit;
+  if (!(plotLeft + 100 * unit <= plotRight + 1e-6)) throw new Error("a whole 100 % bar does not hold in the plot");
+
+  // THE BAND: « 2024 » over the names; « 100 % » over the whole bars' common end; then the three sides over the anchor.
+  const bandBaseline = vInset + Math.max(valueBand.ascent, band.ascent);
+  const year = { ...measure(copy.year, value), x: inset, y: bandBaseline };
+  const hundredWord = measure(copy.hundred, axis);
+  const hundred = { ...hundredWord, x: plotLeft + 100 * unit - drawn(hundredWord.width), y: bandBaseline };
+  const sideWords = Object.fromEntries(Object.entries(copy.sides).map(([key, t]) => [key, measure(t, axis)]));
+
+  // THE SIDE NAMES' ARRANGEMENT IS A LADDER, NOT A LINE.
+  //
+  // Three words over the plot is what 1359-1403px of landscape plot affords. Measured 2026-09-23 on a 1080px
+  // frame: the names, the two totals columns and the two insets take 561-613px of the width before the plot
+  // begins, so the plot falls to 467-519px while the three words still want 640-725px. The row they were
+  // written for has stopped existing. Every rung keeps all three words and every anchor they point at — the
+  // left side where the bars begin, the centre astride the anchor, the right side at the far end — and spends
+  // LINES rather than letters, because a shortened « Renouv. » would be the frame editing the argument.
+  // Landscape takes the first rung, so nothing already delivered moves.
+  const bandStep = band.ascent + 0.5 * gap;
+  const bandLineY = (n) => (n === 0 ? bandBaseline : bandBaseline + Math.max(valueBand.descent, band.descent) + bandStep + (n - 1) * (band.descent + bandStep));
+  const SIDE_RUNGS = [
+    { what: "over the plot", leftX: () => plotLeft, rightEdge: () => plotRight, on: { left: 0, centre: 0, right: 0 } },
+    { what: "on a line of their own, out to the frame's margins", leftX: () => inset, rightEdge: () => stage.width - inset, on: { left: 1, centre: 1, right: 1 } },
+    { what: "the centre on one line, the two sides on the next", leftX: () => plotLeft, rightEdge: () => stage.width - inset, on: { left: 2, centre: 1, right: 2 } },
+  ];
+  const ORDER = ["left", "centre", "right"];
+  const placeSides = (rung) => {
+    const at = {
+      left: { ...sideWords.left, x: rung.leftX(), y: bandLineY(rung.on.left) },
+      centre: { ...sideWords.centre, x: anchor - drawn(sideWords.centre.width) / 2, y: bandLineY(rung.on.centre) },
+      right: { ...sideWords.right, x: rung.rightEdge() - drawn(sideWords.right.width), y: bandLineY(rung.on.right) },
+    };
+    for (let i = 0; i < ORDER.length - 1; i++) {
+      const a = at[ORDER[i]];
+      const b = at[ORDER[i + 1]];
+      if (a.y === b.y && !(a.x + drawn(a.width) + gap <= b.x)) throw new Error(`« ${a.text} » and « ${b.text} » do not hold on one line`);
+    }
+    for (const key of ORDER) {
+      const w = at[key];
+      if (!(w.x >= inset - 1e-6 && w.x + drawn(w.width) <= stage.width - inset + 1e-6)) throw new Error(`« ${w.text} » runs outside the frame's margins`);
+    }
+    const sharingYear = ORDER.filter((key) => rung.on[key] === 0).map((key) => at[key].x);
+    if (!(year.x + drawn(year.width) + gap <= Math.min(hundred.x, ...sharingYear))) throw new Error(`« ${year.text} » runs into the band beside it`);
+    return { sides: at, lastLine: Math.max(...ORDER.map((key) => rung.on[key])) };
+  };
+  let placed = null;
+  const sideRungs = [];
+  for (const rung of SIDE_RUNGS) {
+    try {
+      placed = placeSides(rung);
+      break;
+    } catch (error) {
+      sideRungs.push(`${rung.what} — ${error.message}`);
+    }
+  }
+  if (!placed) throw new Error(`the three side names find no arrangement in a ${stage.width}px frame: ${sideRungs.join("; ")}`);
+  const { sides } = placed;
+
+  // THE VERTICAL: six rows between the band and the credit; France's bar parts into two tracks inside its own row.
+  const top = (placed.lastLine === 0 ? bandBaseline + Math.max(valueBand.descent, band.descent) : bandLineY(placed.lastLine) + band.descent) + 1.5 * gap;
+  const bottom = creditAt.y - gap;
+  const pitch = (bottom - top) / subject.rows.length;
+  if (!(pitch >= axis.lead)) throw new Error(`a row is ${pitch.toFixed(1)}px, shorter than its words`);
+  const barH = pitch * BAR;
+  const trackGap = gap / 2;
+  const lift = (barH + trackGap) / 2;
+  if (!(lift + barH / 2 + gap / 2 <= pitch - barH / 2)) throw new Error(`${subject.rows.find((r) => r.key === subject.subject).name}'s two tracks run into the next row's bar`);
+
+  const sumWord = measure(copy.share(subject.rows.find((r) => r.key === subject.subject).fossil + subject.rows.find((r) => r.key === subject.subject).renewable), axis);
+  const rows = subject.rows.map((r, i) => {
+    const mid = top + i * pitch + pitch / 2;
+    const centreWord = measure(copy.share(r.centre), axis);
+    const holds = r.centre * unit >= drawn(centreWord.width) + gap;
+    if (r.key === subject.subject) {
+      if (!holds) throw new Error(`${r.name}'s centre share does not hold inside its bar`);
+      if (!(anchor - (r.centre / 2) * unit + (r.fossil + r.renewable) * unit + gap / 2 + drawn(sumWord.width) <= anchor + (r.centre / 2) * unit)) throw new Error(`the sum of ${r.name}'s two sides does not hold under its centre`);
+    }
+    return {
+      key: r.key,
+      fossil: r.fossil,
+      centre: r.centre,
+      renewable: r.renewable,
+      left: r.left.map((l) => l.key),
+      right: r.right.map((l) => l.key),
+      mid,
+      y: mid - barH / 2,
+      segments: [
+        ...r.left.slice().reverse().map((l) => ({ key: l.key, group: "left", share: l.share })),
+        { key: "Nuclear", group: "centre", share: r.centre },
+        ...r.right.map((l) => ({ key: l.key, group: "right", share: l.share })),
+      ],
+      name: { ...names[i], x: inset + nameRoom - drawn(names[i].width), y: mid + shift },
+      leftTotal: { ...lefts[i], y: mid + shift },
+      rightTotal: { ...rights[i], y: mid + shift },
+      centreValue: holds ? { ...centreWord, y: mid + shift } : null,
+    };
+  });
+
+  // TWO RAMPS AND A NEUTRAL, the static plate's own (PALETTE.md): fossil toward the ink, renewables toward the accent,
+  // nuclear an achromatic pale grey — edged, so its extent reads on the bare ground when France's bar parts.
+  const { ground, accent } = direction;
+  const { ink, muted } = deriveFurniture(ground);
+  const walked = (c, on, floor, what) => {
+    const w = adjustToContrast(c, on, floor);
+    if (!w) throw new Error(`${what} has no variant that reads at ${floor}:1 on ${on}`);
+    return w;
+  };
+  const leftFill = (i, n) => mix(mix(muted, ground, 0.2), ink, (n > 1 ? i / (n - 1) : 0.5) * 0.6);
+  const rightFill = (j, n) => mix(mix(accent, ground, 0.7), accent, n > 1 ? j / (n - 1) : 0.5);
+  const firstRow = subject.rows[0];
+  const fill = {
+    Nuclear: mix(ground, ink, 0.14),
+    ...Object.fromEntries(firstRow.left.map((l, i) => [l.key, leftFill(i, firstRow.left.length)])),
+    ...Object.fromEntries(firstRow.right.map((l, j) => [l.key, rightFill(j, firstRow.right.length)])),
+  };
+  for (const key of [firstRow.left.at(-1).key, firstRow.right.at(-1).key])
+    if (!(contrast(fill[key], ground) >= NON_TEXT_CONTRAST_MIN)) throw new Error(`${key}, the deepest step of its side, does not read at ${NON_TEXT_CONTRAST_MIN}:1 on ${ground}`);
+  const colours = {
+    ground,
+    fill,
+    edge: walked(mix(ground, ink, 0.3), ground, NON_TEXT_CONTRAST_MIN, "the nuclear's edge"),
+    anchor: walked(ink, ground, NON_TEXT_CONTRAST_MIN, "the anchor"),
+    ring: walked(accent, ground, NON_TEXT_CONTRAST_MIN, "France's ring"),
+    text: {
+      eyebrow: walked(registers.eyebrow.fill ?? accent, ground, TEXT_CONTRAST_MIN, "the eyebrow"),
+      title: walked(registers.display.fill ?? ink, ground, TEXT_CONTRAST_MIN, "the title"),
+      name: walked(ink, ground, TEXT_CONTRAST_MIN, "a name"),
+      subject: walked(accent, ground, TEXT_CONTRAST_MIN, "France's name"),
+      axis: walked(muted, ground, TEXT_CONTRAST_MIN, "a muted word"),
+      renewable: walked(accent, ground, TEXT_CONTRAST_MIN, "the renewable side's name"),
+      onCentre: walked(contrast(ink, fill.Nuclear) >= contrast(ground, fill.Nuclear) ? ink : ground, fill.Nuclear, TEXT_CONTRAST_MIN, "a nuclear share"),
+      sum: walked(ink, ground, TEXT_CONTRAST_MIN, "the sum"),
+    },
+  };
+
+  const props = {
+    frame: stage,
+    registers: { display: titleCard.register, eyebrow: registers.eyebrow, value, axis, source: sourceRegister },
+    titleCard,
+    credit: { ...credit, at: creditAt },
+    colours,
+    subject: subject.subject,
+    rows,
+    plotLeft,
+    anchor,
+    unit,
+    barH,
+    lift,
+    gap,
+    plot: { top: rows[0].y - gap / 2, bottom: rows.at(-1).y + barH + gap / 2 },
+    year,
+    hundred,
+    sides,
+    sum: sumWord,
+    strokes: { anchor: (direction.stroke?.rule ?? 1) * k * 1.2, edge: (direction.stroke?.hairline ?? 0.6) * k, ring: (direction.stroke?.rule ?? 1) * k * 1.4 },
+    halo: { axis: haloOf(axis, k) },
+    states,
+    timing: DIVERGING_STACKED_VIDEO_TIMING,
+  };
+  return { id, direction, props, report: { k, titleForm: titleCard.form, sourceForm: credit.form, pitch: pitch.toFixed(1), unit: unit.toFixed(2) } };
+}
