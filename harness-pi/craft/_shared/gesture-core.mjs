@@ -52,7 +52,8 @@ function rowsNamedIn(text, rows) {
 
 // ── numbers ───────────────────────────────────────────────────────────────────────────────────────
 
-const NUMBER = /(?<![\p{L}\d])([-−+](?=\d))?(\d{1,3}(?:[ ,  ]\d{3})+(?![.,]?\d)|\d+(?:[.,]\d+)?)(?![\p{L}\d])/gu;
+// The unit may be glued to the figure ("12.29Gt", the China video run); an ordinal ("2nd") is not a figure.
+const NUMBER = /(?<![\p{L}\d])([-−+](?=\d))?(\d{1,3}(?:[ ,  ]\d{3})+(?![.,]?\d)|\d+(?:[.,]\d+)?)(?!\d|(?:st|nd|rd|th)\b)/gu;
 
 /** Every number a text states, with its sign and precision; years and unit bases (100, 1,000, 100,000…) are not figures. */
 export function figuresIn(text) {
@@ -73,6 +74,8 @@ export function figuresIn(text) {
   }
   return out;
 }
+
+const SCALES = [0, -3, -6, -9, -12, 3, 6, 9, 12, -1, -2, 1, 2];
 
 const matches = (n, f) => Math.abs(n.value - f) <= 0.5 * 10 ** -n.decimals + 1e-9;
 
@@ -223,8 +226,12 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
 
     // notes: every number is one of the gesture's figures, at the note's precision
     if (g.note !== undefined && g.do !== "zoom") {
-      const figures = [...own, ...context];
-      for (const n of figuresIn(g.note)) {
+      const stated = figuresIn(g.note);
+      // One power-of-ten scale for the whole note: the rows may be in tonnes and the note in Gt.
+      const scale = SCALES.map((k) => ({ k, hits: stated.filter((n) => [...own, ...context].some((f) => matches(n, f * 10 ** k))).length }))
+        .reduce((best, c) => (c.hits > best.hits ? c : best), { k: 0, hits: -1 }).k;
+      const figures = [...own, ...context].map((f) => f * 10 ** scale);
+      for (const n of stated) {
         if (figures.some((f) => matches(n, f))) continue;
         const best = figures.reduce((p, f) => (Math.abs(f - n.value) < Math.abs(p - n.value) ? f : p), figures[0]);
         const fixed = g.note.slice(0, n.index) + formatLike(n, best) + g.note.slice(n.index + n.raw.length);

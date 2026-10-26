@@ -383,3 +383,23 @@ describe("signs and formats", () => {
     expect(r.field).toBe("gestures[0].do");
   });
 });
+
+describe("units and scales in notes", () => {
+  // The China video run: rows in tonnes, the note in Gt, the unit glued to the figure.
+  const TONNES = {
+    rows: CHINA.rows.map((r) => ({ name: r.name, value: Math.round(r.value * 1e9) })),
+    claim: CHINA.claim,
+  };
+  const FIVE = ["United States", "India", "Russia", "Japan", "Indonesia"];
+
+  it("should read a figure glued to its unit and match it at a power-of-ten scale", () => {
+    const note = "China's 12.29Gt vs 11.64Gt for the next five";
+    expect(check(TONNES, [{ do: "compare", marks: ["China", ...FIVE], note }]).gestures).toHaveLength(1);
+  });
+
+  it("should still refuse a false figure glued to its unit, with a fix that keeps the unit", () => {
+    const r = refusal(() => check(TONNES, [{ do: "compare", marks: ["China", ...FIVE], note: "China's 15Gt vs 11.64Gt" }]));
+    expect(r.field).toBe("gestures[0].note");
+    expect(r.fix.set.value).toMatch(/^China's 12Gt vs 11\.64Gt$/);
+  });
+});
