@@ -427,6 +427,13 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
       prompt = `[harness] The beat does not render yet: ${reason}${refusalHint(output)} Fix beats/${beat}/beat.mjs with small edit_file calls, render it, look at the PNG, and reply DONE only when the render succeeds.`;
     }
     sess.dispose();
+    // The gesture kit never fails on its staging: when the 12B's attempts end on a refused gesture list, the kit
+    // applies the core's own fixes to the model's list (SPLASH_GESTURE_REPAIR), and the run reports each repair.
+    if (final.exitCode !== 0 && choice.gestures && existsSync(join(beatDir, "beat.mjs")) && /gestures/.test(`${final.stdout}${final.stderr}`)) {
+      final = await runCommand(["bun", join(beatDir, "render-beat.mjs")], bases, { SPLASH_GESTURE_REPAIR: "1" });
+      for (const line of final.stdout.split("\n").filter((l) => l.startsWith("REPAIRED"))) say(`CRAFT ${line.slice(0, 240)}`);
+      say(`CRAFT repaired render: exit ${final.exitCode}`);
+    }
     // A refusal leaves the beat unrendered, so whereIs sends it back to craft.
     if (final.exitCode !== 0) rmSync(join(beatDir, "renders"), { recursive: true, force: true });
     // The gesture kit failed: record the fallback and craft again on the per-type kit, in a new session on its

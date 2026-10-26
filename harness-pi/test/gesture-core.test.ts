@@ -2,6 +2,7 @@ import { describe, expect, it } from "bun:test";
 import {
   applyFix,
   GestureRefusal,
+  repairGestures,
   validateGestures,
 } from "../craft/_shared/gesture-core.mjs";
 
@@ -342,4 +343,20 @@ describe("refusal chain", () => {
       );
     });
   }
+});
+
+describe("repairGestures", () => {
+  it("should repair a broken Lisboa video list into an accepted one, keeping the model's gestures and listing each repair", () => {
+    const broken = [{ do: "highlight", mark: "Lisbon" }, { ...LISBOA_GESTURES[1], note: "214 of 400 million" }];
+    const { gestures, repairs } = repairGestures({ gestures: broken, rows: LISBOA.rows, family: "length", format: "video", claim: LISBOA.claim });
+    expect(() => check(LISBOA, gestures, "video")).not.toThrow();
+    expect(gestures[0]).toEqual({ do: "highlight", mark: "Lisboa" });
+    expect(repairs.length).toBe(3);
+  });
+
+  it("should leave an accepted list untouched", () => {
+    const { gestures, repairs } = repairGestures({ gestures: LISBOA_GESTURES, rows: LISBOA.rows, family: "length", format: "static", claim: LISBOA.claim });
+    expect(gestures).toEqual(LISBOA_GESTURES);
+    expect(repairs).toEqual([]);
+  });
 });

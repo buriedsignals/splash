@@ -41,10 +41,11 @@ function killTree(pid: number) {
 export async function runCommand(
   argv: string[],
   bases: Bases,
+  env: Record<string, string> = {},
 ): Promise<RunResult> {
   const proc = Bun.spawn(argv, {
     cwd: bases.root,
-    env: { ...process.env, SPLASH_SKILLS: join(bases.root, "skills") },
+    env: { ...process.env, SPLASH_SKILLS: join(bases.root, "skills"), ...env },
     stdout: "pipe",
     stderr: "pipe",
   });

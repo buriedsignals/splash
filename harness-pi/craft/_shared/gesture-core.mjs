@@ -322,3 +322,25 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
 }
 
 export { FAMILY_GESTURES };
+
+/**
+ * The model's list with every refusal's fix applied until the core accepts it: the gesture kit never fails on its
+ * staging. The composition stays the model's — a fix corrects a figure, a mark or a format count, or drops the
+ * gesture the refusal names; it never proposes a sequence. Each repair is returned so a run can report what code
+ * corrected. Refuses only when no accepted list is reached within `steps` (never seen on the eval rows).
+ */
+export function repairGestures({ gestures, steps = 12, ...input }) {
+  let list = structuredClone(gestures ?? []);
+  const repairs = [];
+  for (let step = 0; step <= steps; step++) {
+    try {
+      validateGestures({ ...input, gestures: list });
+      return { gestures: list, repairs };
+    } catch (error) {
+      if (!(error instanceof GestureRefusal)) throw error;
+      repairs.push(error.message);
+      list = applyFix(list, error.fix);
+    }
+  }
+  throw new GestureRefusal("gestures", `no accepted list within ${steps} repairs: ${repairs.at(-1)}`, { remove: 0 });
+}
