@@ -76,7 +76,7 @@ export function renderAlt(beatDir: string): string | null {
   const renders = join(beatDir, "renders");
   if (!existsSync(renders)) return null;
   const svgs = readdirSync(renders)
-    .filter((f) => f.endsWith(".svg"))
+    .filter((f) => f.endsWith(".svg") || f.endsWith(".html"))
     .sort((a, b) => statSync(join(renders, b)).mtimeMs - statSync(join(renders, a)).mtimeMs);
   if (!svgs.length) return null;
   const label = readFileSync(join(renders, svgs[0]), "utf8").match(/aria-label="([^"]+)"/)?.[1];
