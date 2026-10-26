@@ -61,22 +61,24 @@ await refusing(HERE, async () => {
   }
 
   const columns = drawn.map((r, i) => {
+    // A leader that every member below it together does not reach has no run that matches it: its
+    // reading says so (followers null, followersSum = all of them), which is a story's own claim —
+    // "the other five together: 180 million" against Lisboa's 214 — not a dead end.
     const f = followers(i);
-    if (f.followers === null)
-      throw new Error(`no run of members below ${r.name} adds up to its ${beat.format(r.value)}, so its reading has no answer: draw fewer columns (drawCount) or give rows the whole ranking`);
     const reading = { name: r.name, value: r.value, rank: i + 1, share: (r.value / beat.whole) * 100, ...f };
     return { ...reading, code: r.key, gt: r.value, label: plain(beat.format(r.value)), detail: plain(beat.detail(reading)) };
   });
   const subjectColumn = columns.find((c) => c.name === subject.name);
   // The title may state the subject's own run ("more than the next five together") — a figure the
   // gesture computes about the subject, so it counts as drawn beside the values.
-  assertHeadlineNumbersDrawn([beat.title].flat()[0], [...drawn.map((r) => r.value), subjectColumn.under, subjectColumn.followers], "columns");
+  assertHeadlineNumbersDrawn([beat.title].flat()[0], [...drawn.map((r) => r.value), subjectColumn.under, subjectColumn.followers ?? subjectColumn.followersSum], "columns");
 
   // ── the control: a rank is offered only when its whole run is on the plate ──────────────────────
   const stackOptions = [];
   columns.forEach((c, i) => {
-    const last = i + c.followers;
-    if (last > columns.length - 1) return;
+    // No run reaches it: the tower is every member below, offered only when they are all on the plate.
+    const last = c.followers === null ? (ranked.length === columns.length ? columns.length - 1 : Infinity) : i + c.followers;
+    if (last > columns.length - 1 || last === i) return;
     const words = { name: c.name, value: c.value, followers: c.followers, followersSum: c.followersSum };
     const option = {
       key: c.code,

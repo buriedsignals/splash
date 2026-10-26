@@ -25,10 +25,10 @@ this story's from scratch with `write_file`.
 | `whole` | The total the rows are parts of (a "World" row, or the sum of every row), COMPUTED. Shares are of this. |
 | `unit` | The unit printed beside values in the tooltip ("Gt CO₂", "beds", "%"). |
 | `format(v)` | How a value is printed (decimals, decimal comma or point for the language). |
-| `detail(c)` | The tooltip sentence for one column. `c` is `{ name, value, rank, share, followers, followersSum, under, underSum }`: `share` = percent of `whole`; `followers` = the fewest members below it whose sum reaches it, `followersSum` their sum; `under` = the most members below it whose sum stays under it, `underSum` their sum. The page already prints the name and value before it — say what they do not. |
+| `detail(c)` | The tooltip sentence for one column. `c` is `{ name, value, rank, share, followers, followersSum, under, underSum }`: `share` = percent of `whole`; `followers` = the fewest members below it whose sum reaches it, `followersSum` their sum — or `followers` = `null` when even every member below it together stays under it, and then `followersSum` is that total; `under` = the most members below it whose sum stays under it, `underSum` their sum. The page already prints the name and value before it — say what they do not. |
 | `stackLabel` | The control's legend ("Stack against"). |
 | `noneLabel` | The untouched option's words ("The ranking alone"). |
-| `announce(o)` | What a screen reader hears for one option. Must contain `o.name`. `o` is `{ name, value, followers, followersSum }`. |
+| `announce(o)` | What a screen reader hears for one option. Must contain `o.name`. `o` is `{ name, value, followers, followersSum }`; `followers` is `null` when every member below together stays under `value` (the tower then stacks all of them and falls short). |
 | `note(o)` | The sentence shown under the control when that option is chosen. Must state `format(o.followersSum)`. |
 | `total(o)` | What is printed on top of the stacked tower ("= 12.44"). Must state `format(o.followersSum)`. |
 | `title` | The headline: the journalist's takeaway from STORYBOARD.md, copied word for word as a literal string (the render checks it). |
