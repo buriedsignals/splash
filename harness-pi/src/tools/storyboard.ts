@@ -187,6 +187,14 @@ const DISTINCT_FROM: Record<string, string[]> = {
   "Slope (slopegraph)": ["Line", "Dumbbell (range plot)", "Bar and column"],
   "Area (and stacked area)": ["Bar and column", "Small multiples", "Slope (slopegraph)"],
   "Diverging bar": ["Dot strip", "Bar and column", "Slope (slopegraph)"],
+  Choropleth: ["Proportional symbol (symbol / bubble map)", "Cartogram (area distortion — and tile cartogram)", "Hex grid (spatial binning — and hex cartogram)"],
+  "Proportional symbol (symbol / bubble map)": ["Choropleth", "Dot density"],
+  "Cartogram (area distortion — and tile cartogram)": ["Choropleth", "Proportional symbol (symbol / bubble map)"],
+  "Hex grid (spatial binning — and hex cartogram)": ["Choropleth", "Proportional symbol (symbol / bubble map)"],
+  "Dot density": ["Proportional symbol (symbol / bubble map)", "Choropleth"],
+  "Flow map (route — and origin-destination)": ["Proportional symbol (symbol / bubble map)", "Choropleth"],
+  Locator: ["Proportional symbol (symbol / bubble map)", "Choropleth"],
+  "Contour / isoline": ["Choropleth", "Hex grid (spatial binning — and hex cartogram)"],
 };
 const distinctHint = (types: string[]) => {
   const alt = [...new Set(types.flatMap((t) => DISTINCT_FROM[t] ?? []))].filter((t) => !types.includes(t));

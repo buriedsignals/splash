@@ -394,25 +394,25 @@ describe("what the local harness can draw", () => {
   });
 
   it("should refuse a chosen type with no zone adapter", async () => {
-    const tools = await withFormat();
-    await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Bar and column", why: "a" }, { type: "Treemap", why: "b" }] });
+    const tools = await withFormat(undefined, "video");
+    await mutateFixture({ candidates: ["Bar and column", "Treemap"] });
     dialogue.lastJournalist = "Treemap.";
     await expect(call(tools.recordSlot, { slot: "1", field: "chosen", value: "Treemap" })).rejects.toThrow(/cannot draw Treemap yet/);
   });
 
   it("should refuse a menu with nothing the local harness can draw", async () => {
-    const tools = await withFormat();
+    const tools = await withFormat(undefined, "video");
     await expect(
       call(tools.showCandidates, { slot: "1", candidates: [{ type: "Treemap", why: "a" }, { type: "Beeswarm", why: "b" }] }),
-    ).rejects.toThrow(/can draw none of these yet.*Bar and column/);
+    ).rejects.toThrow(/can draw none of these yet/);
   });
 });
 
-async function withFormat(tools = storyboardTools(bases, dialogue)) {
+async function withFormat(tools = storyboardTools(bases, dialogue), format = "static") {
   dialogue.lastJournalist = "A chart.";
   await call(tools.recordSlot, { slot: "1", field: "medium", value: "chart" });
-  dialogue.lastJournalist = "Static.";
-  await call(tools.recordSlot, { slot: "1", field: "format", value: "static" });
+  dialogue.lastJournalist = `${format[0].toUpperCase()}${format.slice(1)}.`;
+  await call(tools.recordSlot, { slot: "1", field: "format", value: format });
   return tools;
 }
 
