@@ -97,6 +97,13 @@ await refusing(HERE, async () => {
     const pos = Math.floor(((i + 1) * N) / CLASSES);
     return (values[pos - 1] + values[pos]) / 2;
   });
+  // Each stated class must hold a reading. A 12B beat set the lowest value itself (18.4) as the first limit, so the
+  // class below it was empty; the classing refusal said so but not which field to change.
+  const statedCounts = Array.from({ length: CLASSES }, (_, k) =>
+    values.filter((v) => (k === 0 || v >= STATED[k - 1]) && (k === CLASSES - 1 || v < STATED[k])).length);
+  const empty = statedCounts.findIndex((c) => c === 0);
+  if (empty >= 0)
+    throw new Error(`breaks ${JSON.stringify(STATED)} leave class ${empty + 1} of ${CLASSES} empty: a value equal to a limit goes to the class above it, and the readings run from ${values[0]} to ${values[N - 1]}. Give breaks strictly above the lowest reading and at or below the highest, each class holding a country (quantile limits for this data: ${quantileBreaks.map((b) => +b.toFixed(1)).join(", ")}), or use fewer breaks`);
   const RANGE_MIN = values[0];
   const STEP = (values[N - 1] - RANGE_MIN) / CLASSES;
   const equalBreaks = Array.from({ length: CLASSES - 1 }, (_, i) => RANGE_MIN + (i + 1) * STEP);
