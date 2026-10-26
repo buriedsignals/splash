@@ -24,7 +24,7 @@ import {
   renderDigest,
   writeOutputReview,
 } from "../../skills/deliver/scripts/output-review.mjs";
-import { adapterFor } from "./adapters.ts";
+import { claimBlock, contractText, craftKit, recordFallback } from "./craft-kit.ts";
 import { converse } from "./conversation.ts";
 import { checkEditorProposals, describeProposals } from "./editor-check.ts";
 import type { Journalist } from "./journalist.ts";
@@ -40,7 +40,7 @@ import {
 import { reviewTools } from "./tools/review.ts";
 import { refusalHint, runCommand, runTools } from "./tools/run.ts";
 import { type Dialogue, dropUnsizedSizes, gapsForModel, storyboardTools } from "./tools/storyboard.ts";
-export { adapterFor };
+export { adapterFor } from "./adapters.ts";
 import { deliverTools } from "./tools/deliver.ts";
 
 const CHECKOUT = join(import.meta.dirname, "..", "..");
@@ -340,7 +340,9 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
   async function craftPhase(): Promise<string | null> {
     const meta = storyboardMeta(o.storyDir);
     const slot = (meta.slots ?? [])[0];
-    const adapter = adapterFor(String(slot?.chosen ?? ""), String(slot?.format ?? "static"));
+    // The gesture kit first, the per-type kit after a recorded fallback (craft-kit.ts).
+    const choice = craftKit(join(o.storyDir, "beats", String(slot?.id ?? "1")), String(slot?.chosen ?? ""), String(slot?.format ?? "static"));
+    const adapter = choice.kit;
     if (!adapter)
       return `no zone kit yet for "${slot?.chosen}" in ${slot?.format ?? "static"} (harness-pi/craft/${slot?.format ?? "static"}/)`;
     // Harness-owned closures before craft: palette, the run's one direction, the beat's plan binding.
@@ -362,6 +364,10 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
     }
     const beat = String(slot.id);
     const beatDir = join(o.storyDir, "beats", beat);
+    // Every run records which kit crafted the beat.
+    mkdirSync(join(beatDir, ".harness"), { recursive: true });
+    writeFileSync(join(beatDir, ".harness", "kit.txt"), `${adapter}\n`);
+    say(`CRAFT kit: ${adapter.split("/craft/")[1] ?? adapter}${choice.gestures ? " (gestures)" : ""}`);
     // The adapter directory is the whole kit: generic runner, worked component, contract, example.
     for (const file of readdirSync(adapter))
       cpSync(join(adapter, file), join(beatDir, file));
@@ -377,7 +383,7 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
     const sess = await session(
       "skill:chart-beat",
       beat,
-      `You are the chart-beat craft step of Splash, running locally. The Splash root is ${o.root}. The story is ${o.storyDir}. You act only through your tools.\n\n${readFileSync(join(adapter, "CONTRACT.md"), "utf8")}`,
+      `You are the chart-beat craft step of Splash, running locally. The Splash root is ${o.root}. The story is ${o.storyDir}. You act only through your tools.\n\n${await contractText(adapter, String(slot.format ?? "static"))}`,
       [
         f.readFile,
         f.listDir,
@@ -390,7 +396,7 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
     // The 12B often says DONE, or stops, while its beat still refuses to render. The harness renders
     // the beat itself and hands the exact refusal back in the SAME session (its context intact), up to
     // three times, instead of opening a new session that starts from nothing.
-    let prompt = `${dataSummary(join(beatDir, "data.json"))}Slot ${beat} of ${o.storyDir} is a ${slot.format ?? "static"} "${slot.chosen}" ${slot.medium ?? "chart"} beat, prepared at beats/${beat}/. The confirmed takeaway is in STORYBOARD.md and is the title, word for word. Write every word on the plate (eyebrow, labels, unit, standfirst, alt) in the story's language, "${meta.language ?? "en"}", whatever language the data's column names are in. Draw the measure the takeaway is about: a takeaway about a rate, share or ranking per resident draws that computed measure, not the raw column. Write beats/${beat}/beat.mjs as CONTRACT.md says, render it with render_beat (beat "${beat}", format "${slot.format ?? "static"}"), look at the PNG, fix what is wrong, and reply DONE when the render is right.`;
+    let prompt = `${dataSummary(join(beatDir, "data.json"))}${choice.gestures ? claimBlock(meta as unknown as Record<string, unknown>) : ""}Slot ${beat} of ${o.storyDir} is a ${slot.format ?? "static"} "${slot.chosen}" ${slot.medium ?? "chart"} beat, prepared at beats/${beat}/. The confirmed takeaway is in STORYBOARD.md and is the title, word for word. Write every word on the plate (eyebrow, labels, unit, standfirst, alt) in the story's language, "${meta.language ?? "en"}", whatever language the data's column names are in. Draw the measure the takeaway is about: a takeaway about a rate, share or ranking per resident draws that computed measure, not the raw column. Write beats/${beat}/beat.mjs as CONTRACT.md says, render it with render_beat (beat "${beat}", format "${slot.format ?? "static"}"), look at the PNG, fix what is wrong, and reply DONE when the render is right.`;
     let final: { exitCode: number; stdout: string; stderr: string } = { exitCode: 1, stdout: "", stderr: "beat.mjs was never written" };
     const craftStart = Date.now();
     for (let attempt = 0; attempt < 3 && Date.now() - craftStart < 20 * 60_000; attempt++) {
@@ -423,6 +429,14 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
     sess.dispose();
     // A refusal leaves the beat unrendered, so whereIs sends it back to craft.
     if (final.exitCode !== 0) rmSync(join(beatDir, "renders"), { recursive: true, force: true });
+    // The gesture kit failed: record the fallback and craft again on the per-type kit, in a new session on its
+    // contract. Measurement runs turn this off so they judge the gesture kit alone.
+    if (final.exitCode !== 0 && choice.fallbackAllowed) {
+      const reason = (final.stdout.match(/REFUSED.*/)?.[0] ?? final.stderr).slice(-400);
+      const to = recordFallback(beatDir, String(slot.chosen), String(slot.format ?? "static"), { from: adapter, refusal: reason });
+      say(`CRAFT fallback: gesture kit refused (${reason.slice(0, 160)}); continuing on ${to?.split("/craft/")[1] ?? to}`);
+      return craftPhase();
+    }
     return null;
   }
 
