@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { assertDrawsClaimColumn, assertHeadlineNumbersDrawn } from "../craft/_shared/guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn } from "../craft/_shared/guards.mjs";
 
 let beat: string;
 
@@ -34,5 +34,11 @@ describe("assertHeadlineNumbersDrawn", () => {
 
   it("should still refuse a title whose figures are not drawn", () => {
     expect(() => assertHeadlineNumbersDrawn("Pedelec deaths rose from 36 to 214", [17, 60, 119])).toThrow(/the title states/);
+  });
+});
+
+describe("applyStoryboard", () => {
+  it("should refuse a beat.mjs with no default export, saying how to write one", () => {
+    expect(() => applyStoryboard(undefined, beat)).toThrow(/beat\.mjs has no default export.*export default \{/);
   });
 });

@@ -19,6 +19,9 @@ const front = (here) => {
  * attribution, which the journalist's credit replaced on a choropleth's plate.
  */
 export function applyStoryboard(beat, here, { title = "title", standfirst = "limits", source = "source", basemap } = {}) {
+  // A 12B beat once exported its fields one by one; the first write below then threw a bare TypeError.
+  if (!beat || typeof beat !== "object")
+    throw new Error("beat.mjs has no default export: put every field in one object, export default { title: …, limits: …, source: …, check(…) { … } } (see CONTRACT.md)");
   const field = front(here);
   if (!field) return;
   const credit = field("credit");
