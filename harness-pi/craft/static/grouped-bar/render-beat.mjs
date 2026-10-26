@@ -27,7 +27,7 @@ assertBeatMayEnter(HERE, SIZE, { what: basename(HERE) });
 
 const REQUIRED = ["eyebrow", "groups", "firstName", "secondName", "subject", "callout", "format", "title", "limits", "source", "alt", "check"];
 const missing = REQUIRED.filter((key) => beat[key] === undefined);
-if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")} (see CONTRACT.md)`);
+if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")}: give each as a field of the default export (export default { …, ${missing[0]}: … }), not as a separate export (see CONTRACT.md)`);
 
 const groups = beat.groups;
 if (!Array.isArray(groups) || groups.length < 2) throw new Error(`groups holds ${groups?.length ?? 0} group(s); a grouped bar compares at least two`);

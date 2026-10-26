@@ -27,7 +27,7 @@ assertBeatMayEnter(HERE, SIZE, { what: basename(HERE) });
 
 const REQUIRED = ["eyebrow", "marks", "subject", "from", "to", "unit", "scaleNote", "title", "limits", "reading", "source", "alt", "check"];
 const missing = REQUIRED.filter((key) => beat[key] === undefined);
-if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")} (see CONTRACT.md)`);
+if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")}: give each as a field of the default export (export default { …, ${missing[0]}: … }), not as a separate export (see CONTRACT.md)`);
 
 const marks = beat.marks;
 if (!Array.isArray(marks) || marks.length < 3) throw new Error(`marks holds ${marks?.length ?? 0} unit(s); a strip shows the shape of a field, which takes at least three`);

@@ -28,7 +28,7 @@ assertBeatMayEnter(HERE, SIZE, { what: basename(HERE) });
 
 const REQUIRED = ["eyebrow", "data", "cut", "unit", "valueUnit", "format", "title", "limits", "reading", "source", "alt", "check"];
 const missing = REQUIRED.filter((key) => beat[key] === undefined);
-if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")} (see CONTRACT.md)`);
+if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")}: give each as a field of the default export (export default { …, ${missing[0]}: … }), not as a separate export (see CONTRACT.md)`);
 // The beat's own claim, checked against its own data BEFORE anything is drawn.
 assertNumbers(beat.data.map((d) => [d.year, d.value]));
 beat.check();

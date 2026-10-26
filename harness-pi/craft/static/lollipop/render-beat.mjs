@@ -30,7 +30,7 @@ assertBeatMayEnter(HERE, SIZE, { what: basename(HERE) });
 
 const REQUIRED = ["eyebrow", "pairs", "subject", "from", "to", "unit", "rule", "format", "title", "limits", "reading", "source", "alt", "check"];
 const missing = REQUIRED.filter((key) => beat[key] === undefined);
-if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")} (see CONTRACT.md)`);
+if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")}: give each as a field of the default export (export default { …, ${missing[0]}: … }), not as a separate export (see CONTRACT.md)`);
 
 assertNumbers(beat.pairs.flatMap((p) => [[`${p.key} before`, p.before], [`${p.key} after`, p.after]]), "pairs");
 const values = beat.pairs.flatMap((p) => [p.before, p.after]);

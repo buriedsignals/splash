@@ -32,7 +32,7 @@ assertBeatMayEnter(HERE, SIZE, { what: basename(HERE) });
 
 const REQUIRED = ["eyebrow", "rings", "wholeBefore", "wholeAfter", "subject", "from", "to", "unit", "wholeNote", "formatShare", "formatAbsolute", "title", "limits", "reading", "source", "alt", "check"];
 const missing = REQUIRED.filter((key) => beat[key] === undefined);
-if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")} (see CONTRACT.md)`);
+if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")}: give each as a field of the default export (export default { …, ${missing[0]}: … }), not as a separate export (see CONTRACT.md)`);
 
 // THE TYPE'S OWN REFUSALS — what this component cannot draw honestly.
 assertNumbers(beat.rings.flatMap((r) => [[`${r.key} before`, r.before], [`${r.key} after`, r.after]]), "ring values");

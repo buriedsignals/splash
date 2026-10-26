@@ -52,7 +52,7 @@ await refusing(HERE, async () => {
 
   const REQUIRED = ["eyebrow", "rings", "wholeBefore", "wholeAfter", "subject", "counterpart", "from", "to", "amountUnit", "unit", "cards", "notes", "title", "limits", "source", "alt", "check"];
   const missing = REQUIRED.filter((key) => beat[key] === undefined);
-  if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")} (see CONTRACT.md)`);
+  if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")}: give each as a field of the default export (export default { …, ${missing[0]}: … }), not as a separate export (see CONTRACT.md)`);
   if (typeof beat.check !== "function") throw new Error(`beat.mjs: check must be a function (see CONTRACT.md)`);
   const groups = { cards: CARDS.slice(0, 5), notes: ["grow", "trap", "split"] };
   for (const [group, keys] of Object.entries(groups)) {

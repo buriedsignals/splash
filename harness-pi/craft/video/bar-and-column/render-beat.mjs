@@ -24,7 +24,7 @@ await refusing(HERE, async () => {
 
   const REQUIRED = ["eyebrow", "rows", "subject", "whole", "wholeName", "unit", "title", "source", "check"];
   const missing = REQUIRED.filter((key) => beat[key] === undefined);
-  if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")} (see CONTRACT.md)`);
+  if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")}: give each as a field of the default export (export default { …, ${missing[0]}: … }), not as a separate export (see CONTRACT.md)`);
   if (typeof beat.check !== "function") throw new Error("beat.mjs: check must be a function (see CONTRACT.md)");
   for (const field of ["eyebrow", "wholeName", "unit"])
     if (typeof beat[field] !== "string") throw new Error(`beat.mjs: ${field} must be a string (see CONTRACT.md)`);

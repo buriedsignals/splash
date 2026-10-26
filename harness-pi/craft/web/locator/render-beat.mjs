@@ -61,7 +61,7 @@ await refusing(HERE, async () => {
   // ── the fields ────────────────────────────────────────────────────────────────────────────────
   const REQUIRED = ["eyebrow", "subject", "others", "places", "removes", "defaultKey", "vantageLabel", "rule", "note", "detail", "distance", "kinds", "callout", "mercator", "title", "limits", "reading", "hint", "source", "alt", "tableCaption", "columns", "drawnWord", "outWord", "check"];
   const missingFields = REQUIRED.filter((key) => beat[key] === undefined);
-  if (missingFields.length) throw new Error(`beat.mjs is missing ${missingFields.join(", ")} (see CONTRACT.md)`);
+  if (missingFields.length) throw new Error(`beat.mjs is missing ${missingFields.join(", ")}: give each as a field of the default export (export default { …, ${missingFields[0]}: … }), not as a separate export (see CONTRACT.md)`);
   for (const fn of ["rule", "note", "detail", "distance", "callout", "mercator", "check"])
     if (typeof beat[fn] !== "function") throw new Error(`beat.mjs: ${fn} must be a function (see CONTRACT.md)`);
   if (!Array.isArray(beat.columns) || beat.columns.length !== 4) throw new Error("columns must be the table's four headings: mark, what it is, distance, at this remove (see CONTRACT.md)");

@@ -34,7 +34,7 @@ assertBeatMayEnter(HERE, SIZE, { what: basename(HERE) });
 
 const REQUIRED = ["eyebrow", "key", "value", "subject", "unit", "format", "title", "limits", "reading", "source", "alt", "check"];
 const missing = REQUIRED.filter((k) => beat[k] === undefined);
-if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")} (see CONTRACT.md)`);
+if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")}: give each as a field of the default export (export default { …, ${missing[0]}: … }), not as a separate export (see CONTRACT.md)`);
 const forms = (v) => [v].flat();
 
 /** THE WORKED EXAMPLE'S LAYOUT, DESIGNED NOT DERIVED: Europe and Ukraine, odd rows offset by half a

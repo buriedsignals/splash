@@ -28,7 +28,7 @@ assertBeatMayEnter(HERE, SIZE, { what: basename(HERE) });
 
 const REQUIRED = ["eyebrow", "keys", "labels", "tracked", "readings", "excluded", "unit", "format", "title", "limits", "reading", "source", "alt", "check"];
 const missing = REQUIRED.filter((key) => beat[key] === undefined);
-if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")} (see CONTRACT.md)`);
+if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")}: give each as a field of the default export (export default { …, ${missing[0]}: … }), not as a separate export (see CONTRACT.md)`);
 
 const { keys, labels, tracked, readings } = beat;
 if (!Array.isArray(keys) || keys.length < 2) throw new Error(`keys must list at least two layers; beat.mjs gives ${JSON.stringify(keys)}`);

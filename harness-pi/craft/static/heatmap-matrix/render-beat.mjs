@@ -28,7 +28,7 @@ assertBeatMayEnter(HERE, SIZE, { what: basename(HERE) });
 
 const REQUIRED = ["eyebrow", "heads", "rows", "breaks", "region", "valueHead", "unit", "format", "title", "limits", "reading", "source", "alt", "check"];
 const missing = REQUIRED.filter((key) => beat[key] === undefined);
-if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")} (see CONTRACT.md)`);
+if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")}: give each as a field of the default export (export default { …, ${missing[0]}: … }), not as a separate export (see CONTRACT.md)`);
 
 const heads = beat.heads;
 if (!Array.isArray(heads) || heads.length < 2) throw new Error(`heads holds ${heads?.length ?? 0} column(s); a matrix crosses at least two`);
