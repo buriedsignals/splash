@@ -61,8 +61,11 @@ the title is no longer true and confirm `check()` (or a guard) refuses. Delete t
 
 ## Format-specific obligations
 
-The kit keeps the worked example's gesture, choreography or scroll states: those are the type's design,
-written once by a person and reviewed. The 12B fills only the subject — data, words, checks. Whatever the
+Two kinds of kit. A **gesture kit** (`<format>/<slug>.gestures/`, `gestures/GRAMMAR.md`) composes the staging
+from the story: the 12B writes an ordered `gestures` list, code renders it per format and refuses false or
+conflicting gestures. A **per-type kit** (`<format>/<slug>/`) keeps the worked example's gesture, choreography
+or scroll states — the type's design, written once by a person and reviewed — and the 12B fills only the
+subject (data, words, checks); it is the fallback where a gesture kit exists, and the only kit elsewhere. Whatever the
 format, `render-beat.mjs` must leave something the model can LOOK at (a PNG) and print its path on a line
 `look at: <absolute png path>`, and must leave `renders/` non-empty only when the render succeeded.
 

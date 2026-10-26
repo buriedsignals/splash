@@ -1,5 +1,8 @@
 # Building a web zone kit from a web proof
 
+> Gesture kits (`<format>/<slug>.gestures/`) compose the staging from the story instead of keeping the worked
+> example's; their contract is `gestures/GRAMMAR.md`. This file describes the per-type kits, which stay the fallback.
+
 Two reference kits follow this pattern: `web/bar-and-column/` (a page with a control: the `stack`
 vocabulary) and `web/line/` (a page with no control: hover/tap/keyboard only). Read both before
 writing a third; `craft/README.md` is the contract, this file is how to meet it for `web`.

@@ -1,5 +1,8 @@
 # Building a video zone kit from a video proof
 
+> Gesture kits (`<format>/<slug>.gestures/`) compose the staging from the story instead of keeping the worked
+> example's; their contract is `gestures/GRAMMAR.md`. This file describes the per-type kits, which stay the fallback.
+
 One reference kit follows this pattern: `video/bar-and-column/` (from `proof/video-bar-top-emitters-2024`).
 `craft/README.md` is the contract; `web/PATTERN.md` holds the rules every format shares (copy with `cp`,
 patch with exact strings, `skillScriptFrom`, `plain()`, import beat.mjs inside the refusal). This file is

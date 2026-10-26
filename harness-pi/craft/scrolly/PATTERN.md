@@ -1,5 +1,8 @@
 # Building a scrolly zone kit from a scrolly proof
 
+> Gesture kits (`<format>/<slug>.gestures/`) compose the staging from the story instead of keeping the worked
+> example's; their contract is `gestures/GRAMMAR.md`. This file describes the per-type kits, which stay the fallback.
+
 One reference kit follows this pattern: `scrolly/bar-and-column/`. Read it, and `craft/README.md`
 (the contract) and `web/PATTERN.md` (whose §1 copy rules, refusal wrapper and pitfalls all apply
 here), before writing a second. This file is how to meet the contract for `scrolly`.
