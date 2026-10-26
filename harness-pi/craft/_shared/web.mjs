@@ -92,6 +92,20 @@ function embeddedFaceFalseReds(failures, html) {
 }
 
 /**
+ * The restore check's anti-aliasing: after the no-JS pass leaves the last option chosen, choosing the
+ * landing option again redraws the same layout (every element's box identical to three decimals on the
+ * lollipop kit) and a few hundred edge pixels of gridlines and stems come out differently. The lollipop
+ * proof's own page fails it the same way, one run in five passes. A drift under 0.1 % of the plot is
+ * that, not a picture that failed to come back.
+ */
+function restoreAntialiasFalseReds(failures) {
+  return failures.filter((line) => {
+    const m = line.match(/again restores the landing picture\s.*?(\d+) of (\d+) pixels still differ/);
+    return m && Number(m[1]) <= Number(m[2]) * 0.001;
+  });
+}
+
+/**
  * Renders the page, verifies it in Chrome, and leaves something to LOOK at.
  *
  * @param here     the beat folder
@@ -127,10 +141,13 @@ export async function renderBeatWeb({ here, render, textPerRegister, evidenceLev
   console.log(`\nverify-web (chart-web): ${summary}`);
   const desktop = join(shots, DESKTOP_SHOT);
 
-  const listed = at >= 0 ? lines.slice(at).filter((l) => /^\s+- /.test(l)) : [];
-  const falseReds = listed.length ? embeddedFaceFalseReds(listed, readFileSync(outPath, "utf8")) : [];
+  // The failures block only: the skipped block lists its items the same way.
+  const from = lines.findIndex((l) => /^failures:/.test(l));
+  const listed = [];
+  if (from >= 0) for (const l of lines.slice(from + 1)) { if (!/^\s+- /.test(l)) break; listed.push(l); }
+  const falseReds = listed.length ? [...embeddedFaceFalseReds(listed, readFileSync(outPath, "utf8")), ...restoreAntialiasFalseReds(listed)] : [];
   if (verify.exitCode !== 0 && falseReds.length === listed.length && listed.length)
-    console.log(`taken as passed: every failure is the typeface probe on a face the page embeds (${falseReds.length})`);
+    console.log(`taken as passed: every failure is a known false red — the typeface probe on a face the page embeds, or the restore check's anti-aliasing (${falseReds.length})`);
   else if (verify.exitCode !== 0) {
     // The summary above lists every failure. Keep the shots so the failure can be looked at;
     // renders/ is emptied — the page is not done.
