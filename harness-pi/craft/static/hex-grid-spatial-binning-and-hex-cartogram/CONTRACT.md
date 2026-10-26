@@ -69,6 +69,20 @@ data.json does not report and that is listed neither in `unmeasured` nor in `dro
 no reading; breaks that do not ascend or that put every unit in one class; and a hexagon too small to
 hold its own code.
 
+## Country names without codes
+
+When `data.json` names countries instead of giving ISO alpha-3 codes, resolve them with `countries.mjs` (in the
+folder, from craft/_shared) rather than typing codes by hand:
+
+```js
+import { iso3Of } from "./countries.mjs";
+const codes = iso3Of(table.rows.map((r) => r[NAME]), import.meta.dirname, { /* "Belgiumm": "Belgium" */ });
+```
+
+It knows the map's own country names and usual aliases (Holland, Macedonia, Czech Republic, UK…) and refuses,
+all at once, every name it cannot place, with the closest name. A misspelling is fixed in `rename` only as a
+visible decision — say so in the standfirst.
+
 ## Rules
 
 - Draw the measure the takeaway is about. If it speaks per inhabitant, name the denominator column

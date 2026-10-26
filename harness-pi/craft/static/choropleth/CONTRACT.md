@@ -49,6 +49,20 @@ const rows = table.rows.map((r) => ({ iso: r[CODE], name: r[NAME], value: r[VALU
 Keep ONE row per country (filter to one year or one series first). If the table holds country names
 but no ISO alpha-3 column, map names to codes in `beat.mjs` and check every row got one.
 
+## Country names without codes
+
+When `data.json` names countries instead of giving ISO alpha-3 codes, resolve them with `countries.mjs` (in the
+folder, from craft/_shared) rather than typing codes by hand:
+
+```js
+import { iso3Of } from "./countries.mjs";
+const codes = iso3Of(table.rows.map((r) => r[NAME]), import.meta.dirname, { /* "Belgiumm": "Belgium" */ });
+```
+
+It knows the map's own country names and usual aliases (Holland, Macedonia, Czech Republic, UK…) and refuses,
+all at once, every name it cannot place, with the closest name. A misspelling is fixed in `rename` only as a
+visible decision — say so in the standfirst.
+
 ## Rules
 
 - Shade by a rate or a share, never by a raw count: a big country with a big count would look like

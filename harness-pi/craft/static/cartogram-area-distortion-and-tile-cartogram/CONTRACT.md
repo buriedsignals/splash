@@ -60,6 +60,20 @@ own argument when the takeaway compares the two; use it rather than computing ar
 - A value that is not a number; breaks not ascending, outside the data's range, or leaving a class empty.
 - A label too wide for its tile, or a grid too dense for the frame.
 
+## Country names without codes
+
+When `data.json` names countries instead of giving ISO alpha-3 codes, resolve them with `countries.mjs` (in the
+folder, from craft/_shared) rather than typing codes by hand:
+
+```js
+import { iso3Of } from "./countries.mjs";
+const codes = iso3Of(table.rows.map((r) => r[NAME]), import.meta.dirname, { /* "Belgiumm": "Belgium" */ });
+```
+
+It knows the map's own country names and usual aliases (Holland, Macedonia, Czech Republic, UK…) and refuses,
+all at once, every name it cannot place, with the closest name. A misspelling is fixed in `rename` only as a
+visible decision — say so in the standfirst.
+
 ## Rules
 
 - A rate per resident is drawn per 1,000, 10,000 or 100,000 residents (whichever gives whole-number values), with that base said in the unit or the standfirst — never as 0.0039.
