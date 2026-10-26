@@ -63,3 +63,22 @@ went into low-battery sleep for 2.5 h mid-run.)
 `releaseDecision` (score.ts) compares completions with a faithful headline, then gate refusals; a tie ships stock.
 No tuned model exists yet: teacher gold generation (`eval/teacher.ts`) and training (`training/pod/`) are
 spend-gated and have not run.
+
+## First map — 2026-10-26, harness `7037e62df`…`52299a98d`
+
+| Story | Format | Completed | Headline | Gate refusals | Wall clock | Storyboard | Craft |
+|---|---|---|---|---|---|---|---|
+| stress-t-europe-recycling (Choropleth) | static | ✅ | ❌ (shorter form) | 7 | 17.2 min | 8.5 min | 4.8 min |
+
+- First attempt failed in craft: the 12B wrote beat.mjs's content, then degenerated on the `path` argument after it
+  (`{"path":{"path":…` to the token cap). The craft step's write tools now take no path (`7037e62df`).
+- Render looked at: the eleven reporting countries in classes, Germany darkest, Macedonia ringed and named, the
+  misspelt "Belgiumm" and "Holland" joined through `rename` by the 12B after the join refused them. Defects found
+  and fixed in the kit since: no class key (the key treatments apply from 20 cells, a grid threshold;
+  `52299a98d`) and the MapTiler/OSM attribution replaced by the journalist's credit (`applyStoryboard`'s
+  `basemap`).
+- Headline: the plate prints the 12B's shorter form ("Germany has the highest rate (67.8%) vs Macedonia (18.4%).").
+  The 171-character takeaway does not fit four lines of the headline register even at the widest panel, and the
+  map kit's ladder shortens the headline rather than shrink the map — measured by re-rendering the 12B's beat
+  with a short standfirst form added. Faithful to the figures, not word for word.
+- Still open: countries absent from the data are drawn as plain land while the key's "no data" swatch is grey.
