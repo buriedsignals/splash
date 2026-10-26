@@ -18,10 +18,10 @@ import { scoreRun } from "./score.ts";
 const CHECKOUT = resolve(import.meta.dirname, "..", "..");
 const KEPT = join(homedir(), ".splash-harness", "kept-runs");
 
-export async function evaluate(story: string, arm: string, out: string) {
-  const tag = `${story}-${arm}-${Date.now()}`;
+export async function evaluate(story: string, arm: string, out: string, variant = "") {
+  const tag = `${story}${variant ? `-${variant}` : ""}-${arm}-${Date.now()}`;
   const root = join(homedir(), ".splash-harness", "runs", tag);
-  const sheet = join(CHECKOUT, "harness-pi", "eval", "sheets", `${story}.json`);
+  const sheet = join(CHECKOUT, "harness-pi", "eval", "sheets", `${story}${variant ? `.${variant}` : ""}.json`);
   const t0 = Date.now();
   const child = Bun.spawn(
     [
@@ -80,6 +80,7 @@ if (import.meta.main) {
   const stories = (flag("stories") ?? "").split(",").filter(Boolean);
   const arm = flag("arm", "stock")!;
   const times = Number(flag("times", "1"));
+  const variant = flag("variant", "")!;
   if (!stories.length || arm.startsWith("teacher")) {
     console.error(
       "usage: bun harness-pi/eval/run-eval.ts --stories a,b [--arm stock] [--times 1]  (teacher runs go through eval/teacher.ts, which is spend-gated)",
@@ -98,7 +99,7 @@ if (import.meta.main) {
   });
   for (let n = 0; n < times; n++)
     for (const story of stories) {
-      const r = await evaluate(story, arm, out);
+      const r = await evaluate(story, arm, out, variant);
       console.log(
         `${story} ${arm}: ${r.phase} completed=${r.completed} headline=${r.faithful.headline} refusals=${r.gateRefusals} turns=${r.turns} ${r.wallSeconds}s ${JSON.stringify(r.phaseSeconds)}`,
       );
