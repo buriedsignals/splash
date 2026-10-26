@@ -433,18 +433,12 @@ describe("what the local harness can draw", () => {
     );
   });
 
+  // Every type has a kit in every format except the web slope, parked because its worked example fails verify-web.
   it("should refuse a chosen type with no zone adapter", async () => {
-    const tools = await withFormat(undefined, "video");
-    await mutateFixture({ candidates: ["Bar and column", "Treemap"] });
-    dialogue.lastJournalist = "Treemap.";
-    await expect(call(tools.recordSlot, { slot: "1", field: "chosen", value: "Treemap" })).rejects.toThrow(/cannot draw Treemap yet/);
-  });
-
-  it("should refuse a menu with nothing the local harness can draw", async () => {
-    const tools = await withFormat(undefined, "video");
-    await expect(
-      call(tools.showCandidates, { slot: "1", candidates: [{ type: "Treemap", why: "a" }, { type: "Beeswarm", why: "b" }] }),
-    ).rejects.toThrow(/can draw none of these yet/);
+    const tools = await withFormat(undefined, "web");
+    await mutateFixture({ candidates: ["Bar and column", "Slope (slopegraph)"] });
+    dialogue.lastJournalist = "Slope (slopegraph).";
+    await expect(call(tools.recordSlot, { slot: "1", field: "chosen", value: "Slope (slopegraph)" })).rejects.toThrow(/cannot draw Slope \(slopegraph\) yet/);
   });
 });
 
