@@ -260,16 +260,18 @@ export async function probeLiveMarks({ keyedPath, shots, layers, keyProp, expect
         // a rule (a symbol map answers with the SMALLEST circle under the pointer) — the hit with
         // the lowest order.
         const resolve = (hits) => {
-          const keys = hits.map((h) => h.properties?.[keyProp]).filter(Boolean);
+          const keys = hits.map((h) => h.properties?.[keyProp]).filter((k) => k !== undefined && k !== null && k !== "");
           if (!order) return keys[0];
           return keys.filter((k) => k in order).sort((a, b) => order[a] - order[b])[0];
         };
         const points = {};
-        const top = Math.max(r.top, 0) + 1;
+        // Whole CSS pixels: a pointer event's clientX/Y arrive as integers, so the pixel queried
+        // here must be the pixel the page's own handler will be asked about.
+        const top = Math.ceil(Math.max(r.top, 0)) + 1;
         const bottom = Math.min(r.bottom, window.innerHeight) - 1;
         const right = Math.min(r.right, window.innerWidth) - 1;
         for (let y = top; y < bottom; y += step)
-          for (let x = Math.max(r.left, 0) + 1; x < right; x += step) {
+          for (let x = Math.ceil(Math.max(r.left, 0)) + 1; x < right; x += step) {
             if (document.elementFromPoint(x, y) !== canvas) continue;
             const k = resolve(map.queryRenderedFeatures([x - r.left, y - r.top], { layers: live }));
             if (k) (points[k] ??= []).push([x, y]);
@@ -292,7 +294,8 @@ export async function probeLiveMarks({ keyedPath, shots, layers, keyProp, expect
                 const x = Math.round(r.left + c.x + dx);
                 const y = Math.round(r.top + c.y + dy);
                 if (y < 0 || y >= window.innerHeight || document.elementFromPoint(x, y) !== canvas) continue;
-                if (resolve(map.queryRenderedFeatures([x - r.left, y - r.top], { layers: live })) === k) {
+                // As strings: an object key always is one, a feature property may be a number.
+                if (String(resolve(map.queryRenderedFeatures([x - r.left, y - r.top], { layers: live }))) === k) {
                   out[k] = [x, y];
                   break search;
                 }
