@@ -168,6 +168,33 @@ function thin(ring) {
   }
   return out.length >= 4 ? out : ring;
 }
+/** Sutherland–Hodgman against the camera's box (plus a margin). KIT CHANGE: a zoomed camera left a
+ *  neighbour's ring running 2 000 units off the plate, and resvg panicked rasterising it. Clipped,
+ *  every drawn ring stays near the frame; what the camera shows is unchanged. */
+function clipRing(ring, { x0, y0, x1, y1 }) {
+  const edges = [
+    [(p) => p[0] >= x0, (a, b) => [x0, a[1] + ((b[1] - a[1]) * (x0 - a[0])) / (b[0] - a[0])]],
+    [(p) => p[0] <= x1, (a, b) => [x1, a[1] + ((b[1] - a[1]) * (x1 - a[0])) / (b[0] - a[0])]],
+    [(p) => p[1] >= y0, (a, b) => [a[0] + ((b[0] - a[0]) * (y0 - a[1])) / (b[1] - a[1]), y0]],
+    [(p) => p[1] <= y1, (a, b) => [a[0] + ((b[0] - a[0]) * (y1 - a[1])) / (b[1] - a[1]), y1]],
+  ];
+  let out = ring;
+  for (const [inside, cut] of edges) {
+    const input = out;
+    out = [];
+    for (let i = 0; i < input.length; i++) {
+      const a = input[(i + input.length - 1) % input.length];
+      const b = input[i];
+      if (inside(b)) {
+        if (!inside(a)) out.push(cut(a, b));
+        out.push(b);
+      } else if (inside(a)) out.push(cut(a, b));
+    }
+    if (!out.length) return out;
+  }
+  if (out.length) out.push(out[0]);
+  return out;
+}
 const shapes = geo.features
   .map((f) => {
     // KIT CHANGE: rings wholly off the camera are culled. The worked example never zoomed, so it drew
@@ -179,7 +206,13 @@ const shapes = geo.features
       const ys = ring.map((p) => p[1]);
       return Math.max(...xs) >= -M && Math.min(...xs) <= VIEW + M && Math.max(...ys) >= -M && Math.min(...ys) <= H + M;
     };
-    const rings = f.geometry.coordinates.flatMap((poly) => poly).map((ring) => ring.map(project)).filter(onCamera).map(thin);
+    const rings = f.geometry.coordinates
+      .flatMap((poly) => poly)
+      .map((ring) => ring.map(project))
+      .filter(onCamera)
+      .map((ring) => clipRing(ring, { x0: -M, y0: -M, x1: VIEW + M, y1: H + M }))
+      .filter((ring) => ring.length >= 4)
+      .map(thin);
     if (!rings.length) return null;
     return { iso: f.properties.iso, d: rings.map((ring) => `M ${ring.map(([x, y]) => `${x.toFixed(1)} ${y.toFixed(1)}`).join(" L ")} Z`).join(" ") };
   })
