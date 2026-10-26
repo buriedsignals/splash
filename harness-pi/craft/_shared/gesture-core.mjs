@@ -86,6 +86,15 @@ const RATIO_WORDS = [
   [/\bhalf\b/i, 0.5],
 ];
 
+/** Rank words a note may state about its row (English). The probe saw "Highest rate (205)" on the second row. */
+const RANK_WORDS = [
+  [/\b(highest|largest|biggest|greatest|most|top|first)\b/i, (rank, n) => rank === 1, "the highest"],
+  [/\b(lowest|smallest|least|fewest|bottom|last)\b/i, (rank, n) => rank === n, "the lowest"],
+  [/\bsecond\b/i, (rank) => rank === 2, "second"],
+  [/\bthird\b/i, (rank) => rank === 3, "third"],
+  [/\bfourth\b/i, (rank) => rank === 4, "fourth"],
+];
+
 // ── the core ──────────────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -219,6 +228,16 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
           { set: { index: i, field: "note", value: fixed } },
         );
       }
+      if (marks.length === 1 && ["name", "annotate", "highlight"].includes(g.do))
+        for (const [word, holds, said] of RANK_WORDS) {
+          if (!word.test(g.note) || holds(rankOf.get(marks[0]), rows.length)) continue;
+          const actual = [...rankOf].find(([, r]) => (said === "the highest" ? r === 1 : said === "the lowest" ? r === rows.length : r === ["second", "third", "fourth"].indexOf(said) + 2));
+          throw new GestureRefusal(
+            `gestures[${i}].note`,
+            `calls ${marks[0]} ${said}, but ${marks[0]} ranks ${rankOf.get(marks[0])} of ${rows.length}${actual ? ` and ${actual[0]} is ${said}` : ""}: drop the word, or write the note on ${actual ? actual[0] : "that row"}`,
+            { set: { index: i, field: "note", value: g.note.replace(word, "").replace(/\s{2,}/g, " ").trim() } },
+          );
+        }
       if (ratio !== undefined)
         for (const [word, x] of RATIO_WORDS) {
           if (!word.test(g.note)) continue;

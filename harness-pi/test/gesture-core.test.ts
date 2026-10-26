@@ -232,6 +232,18 @@ describe("validateGestures", () => {
   });
 });
 
+describe("superlatives", () => {
+  it("should refuse a note calling a row highest when another row is higher", () => {
+    const r = refusal(() => check(SAFETY, [{ do: "annotate", mark: "Centro", note: "Highest rate (205)" }]));
+    expect(r.field).toBe("gestures[0].note");
+    expect(r.message).toMatch(/Sul/);
+  });
+
+  it("should accept a note calling the third row third", () => {
+    expect(check(BEDS, [{ do: "name", mark: "Mazowieckie", note: "third, at 3.88" }]).gestures).toHaveLength(1);
+  });
+});
+
 describe("refusal chain", () => {
   // Every refusal carries a fix; applying the fixes in turn must end on an accepted list without revisiting one.
   // Seeded with the per-type bar video's trap on Lisboa (4 → 5 → 6 → "too few members").

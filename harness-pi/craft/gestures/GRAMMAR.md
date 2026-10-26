@@ -186,6 +186,7 @@ suggests a value the next check would refuse, and the core proves it on the eval
 | vocabulary | `do` is not in §3, or not available for the family and format (§6) | the admissible `do` values for this family and format |
 | marks | a `mark`/`marks` name is not a drawn row | the closest drawn row |
 | figures | a number in `note` differs from the gesture's derived figure at the note's precision | the derived figure, formatted as the note writes it |
+| rank words | a note on one row calls it highest, lowest, second, third or fourth and the row does not rank so (English words for now) | dropping the word, and the row that does rank so |
 | claim | a gesture touches neither the takeaway's entity, its comparison entity, nor one of its figures | the takeaway's entities (claim fields, else subject/comparison answers, else row names found in the takeaway text) |
 | change | a gesture leaves the picture as it was (a highlight on the already-highlighted row) | dropping it |
 | conflict | two gestures on one scale, two notes on one mark, a broken family invariant (§8) | the gesture to drop or move (the later one) |
