@@ -70,8 +70,10 @@ const MALFORMED_PATH = /<\||\|>|[\n\r`{}]/;
 const PROTECTED = /(^|\/)(source\/.*|STORYBOARD\.md|PALETTE\.md|DIRECTION\.md|SUBJECTS\.md|NEWSROOM\.md|data\.json|data\.csv|DATA-NOTES\.md|BRIEF\.md|OUTPUT-REVIEW\.json|render-beat\.mjs|guards\.mjs|series\.mjs|CONTRACT\.md|beat\.example\.mjs|Directed[A-Za-z]*\.tsx|crossing-geometry\.ts)$/;
 
 function assertWritable(bases: Bases, abs: string) {
-  const rel = relative(bases.storyDir, abs);
-  if (PROTECTED.test(rel))
+  const rel = relative(realpathSync(bases.storyDir), abs);
+  // In a beat folder the model writes beat.mjs and nothing else: every other file there is the kit's,
+  // the analyst's or the render's.
+  if (/^beats\/[^/]+\/(?!beat\.mjs$)/.test(rel) || PROTECTED.test(rel))
     throw new Error(`${rel} is not yours to write: sources, analyst data, recorded files and the beat's kit are produced by Splash. Change beat.mjs instead.`);
 }
 

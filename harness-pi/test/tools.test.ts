@@ -39,9 +39,9 @@ beforeAll(async () => {
 describe("file tools", () => {
   it("should write a file inside the story directory", async () => {
     const { writeFile: write } = fsTools(bases);
-    await call(write, { path: "stories/demo/beats/1-top/Chart.tsx", content: "export {};" });
+    await call(write, { path: "stories/demo/beats/1-top/beat.mjs", content: "export {};" });
     expect(
-      readFileSync(join(bases.storyDir, "beats/1-top/Chart.tsx"), "utf8"),
+      readFileSync(join(bases.storyDir, "beats/1-top/beat.mjs"), "utf8"),
     ).toBe("export {};");
   });
 
@@ -89,14 +89,20 @@ describe("file tools", () => {
     await expect(call(write, { path: "stories/demo/beats/1-top/data.json", content: "{}" })).rejects.toThrow(/not yours to write/);
   });
 
+  it("should refuse any beat file other than beat.mjs", async () => {
+    const { writeFile: write } = fsTools(bases);
+    await expect(call(write, { path: "stories/demo/beats/1-top/bake.mjs", content: "x" })).rejects.toThrow(/not yours to write/);
+  });
+
   it("should refuse to edit the frozen sources", async () => {
     const { writeFile: write } = fsTools(bases);
     await expect(call(write, { path: "stories/demo/source/data.csv", content: "x" })).rejects.toThrow(/not yours to write/);
   });
 
   it("should find a beat file asked for at the story root in the story's only beat", async () => {
-    const { writeFile: write, readFile: read } = fsTools(bases);
-    await call(write, { path: "stories/demo/beats/1-top/notes.txt", content: "beat note" });
+    const { readFile: read } = fsTools(bases);
+    const { writeFileSync } = await import("node:fs");
+    writeFileSync(join(bases.storyDir, "beats/1-top/notes.txt"), "beat note");
     const r = await call(read, { path: join(bases.storyDir, "notes.txt") });
     expect(textOf(r)).toContain("beat note");
   });

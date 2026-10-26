@@ -76,7 +76,8 @@ export function assertHeadlineNumbersDrawn(headline, drawn, label = "marks") {
   const allowed = [...values, values.reduce((a, b) => a + b, 0)];
   const lo = Math.min(...values) / 2;
   const hi = Math.max(...values) * 2;
-  const stated = [...String(headline).matchAll(/(\d{1,3}(?:[ ,  ]\d{3})+|\d+(?:[.,]\d+)?)(\s*%)?/g)]
+  // A digit glued to letters is part of a name (CO2, PM2.5, H2O), not a figure the title states.
+  const stated = [...String(headline).matchAll(/(?<![\p{L}\d])(\d{1,3}(?:[ ,  ]\d{3})+|\d+(?:[.,]\d+)?)(?![\p{L}\d])(\s*%)?/gu)]
     .filter((m) => !m[2])
     .map((m) => Number(m[1].replace(/[ ,  ](?=\d{3}\b)/g, "").replace(",", ".")))
     .filter((n) => !(Number.isInteger(n) && n >= 1900 && n <= 2100) && n >= lo && n <= hi);
