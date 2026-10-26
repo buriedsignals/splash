@@ -15,7 +15,8 @@ const SLUG = /^[a-z0-9][a-z0-9-]*$/;
 const PASCAL = /^[A-Z][A-Za-z0-9]*$/;
 const PAGE = /^[a-z0-9][a-z0-9._-]*$/;
 const OUTPUT_TAIL = 4_000;
-const TIMEOUT_MS = 5 * 60_000;
+// A map video renders in up to 7.5 minutes on the target Mac (its runner stops Remotion itself at 8).
+const TIMEOUT_MS = 12 * 60_000;
 
 function checked(value: string, shape: RegExp, what: string): string {
   if (!shape.test(value) || value.includes(".."))
@@ -29,6 +30,14 @@ export interface RunResult {
   stderr: string;
 }
 
+function killTree(pid: number) {
+  const children = Bun.spawnSync(["pgrep", "-P", String(pid)]).stdout.toString().split("\n").filter(Boolean);
+  for (const child of children) killTree(Number(child));
+  try {
+    process.kill(pid, "SIGKILL");
+  } catch {}
+}
+
 export async function runCommand(
   argv: string[],
   bases: Bases,
@@ -39,7 +48,8 @@ export async function runCommand(
     stdout: "pipe",
     stderr: "pipe",
   });
-  const timer = setTimeout(() => proc.kill(), TIMEOUT_MS);
+  // The whole tree: killing bun alone left a render's Remotion and Chrome children running.
+  const timer = setTimeout(() => killTree(proc.pid), TIMEOUT_MS);
   const [stdout, stderr, exitCode] = await Promise.all([
     new Response(proc.stdout).text(),
     new Response(proc.stderr).text(),
@@ -156,7 +166,7 @@ export function runTools(bases: Bases) {
     name: "render_beat",
     label: "Render beat",
     description:
-      "Render a beat: format 'static' runs render-directions.mjs (PNG+SVG into renders/), 'web' runs render-directions-web.mjs (HTML into renders/). Then look at the result.",
+      "Render a beat. A beat prepared from a zone kit renders through its render-beat.mjs in any format: static (PNG+SVG), web (HTML + screenshots), video (look stills, then the mp4), scrolly (the page + one screenshot per card). Otherwise static runs render-directions.mjs and web render-directions-web.mjs. Then look at the PNG it names.",
     parameters: Type.Object({ beat: Type.String(), format: Type.String() }),
     async execute(_id, { beat, format }) {
       // A beat the harness prepared for zone writing renders through its generic runner.
