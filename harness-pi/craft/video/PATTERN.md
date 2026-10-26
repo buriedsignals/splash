@@ -166,3 +166,11 @@ scratch story.
   names only static/web, its 5-minute timeout kills `bun` and not the Remotion child, and it lists only
   `renders/*.png` (the final frame). `src/tools/review.ts` and `src/tools/deliver.ts` look only for
   `.svg`/`.html` in `renders/`: a video beat has neither, so review throws and delivery finds nothing.
+
+## Map videos
+
+The eight map types render through `_shared/map-video.mjs` (imported as `./map-video.mjs`), not `video.mjs`:
+it measures the story's live MapTiler map once (`measured.json` beside the beat, reused while the plan is
+unchanged), serves it through the keyless proxy, bundles once, renders the look stills then the mp4, and
+writes `renders/<label>-frames.svg`. Remotion runs without the key in its environment. See
+`video/choropleth/` for the worked map kit. Full renders take 2.5 to 7.5 minutes; `render_beat` allows 12.

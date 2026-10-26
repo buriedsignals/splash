@@ -26,8 +26,8 @@ proofs. `_shared/web.mjs`'s `renderBeatWeb` is wrong for a map twice over: it ve
 page (the layer never boots — 10 failures on the choropleth proof's own committed page), and it
 refuses on ANY verify-web failure, while every map proof fails a few by construction (§3).
 
-The map runner is `map-web.mjs`, kept in each map kit as a BYTE-IDENTICAL copy of
-`web/choropleth/map-web.mjs` (check with `md5 -q web/*/map-web.mjs | sort -u`). It imports `./web.mjs`
+The map runner is `_shared/map-web.mjs`, imported as `./map-web.mjs` (the harness copies `_shared/` flat
+beside the kit; no kit carries its own copy). It imports `./web.mjs`
 (`chartWeb`, `DESKTOP_SHOT`) and gives:
 
 | export | what it does |
@@ -54,7 +54,7 @@ Into `web/<slug>/`: `Directed<Type>Web.tsx`, `bake.mjs` (if the type bakes a pla
 (the proof's own — `cmp` it: the locator's differs from the choropleth's), any other file the runner
 reads (`camera.ts`), `plate-water.mjs` from `static/locator/` when the proof measures occupancy
 (the proof imports `scripts/map-beat/plate-water.mjs`, which needs `pngjs`; the static kit's copy
-decodes with resvg), and `map-web.mjs`.
+decodes with resvg). `map-web.mjs` comes from `_shared/`.
 
 - `../../skills/<skill>/assets/x.ts` imports → top-level `await import(skillScriptFrom(import.meta.dirname, "<skill>", "assets", "x.ts"))`;
   a `type T` import becomes a local alias (`type ClassingDeclaration = Parameters<typeof assertClassingDeclaration>[0]`).

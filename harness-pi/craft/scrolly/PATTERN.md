@@ -34,12 +34,12 @@ The PROOF RUNNER is not copied: its `import { renderScrolly } from "../../skills
 only from `proof/`. The kit imports it inside `refusing` through the resolver:
 `await import(scrollySkill(HERE, "scripts", "render-scrolly.mjs"))`.
 
-## 2. `scrolly.mjs` — the shared half (carried in the kit folder for now)
+## 2. `scrolly.mjs` — the shared half (`_shared/scrolly.mjs`)
 
-`scrolly/bar-and-column/scrolly.mjs` is the scrolly analogue of `_shared/web.mjs`, and builds on it
-(`pickDirection`, `plainRegisters` from `./web.mjs`). Copy it into every scrolly kit **unchanged**
-until it moves to `_shared/scrolly.mjs` (then delete the copies and import `./scrolly.mjs` as now —
-the harness copies `_shared/` flat, so the import does not change). It gives:
+`_shared/scrolly.mjs` is the scrolly analogue of `_shared/web.mjs`, and builds on it
+(`pickDirection`, `plainRegisters` from `./web.mjs`). Import it as `./scrolly.mjs`: the harness copies `_shared/`
+flat beside the kit, so no kit carries its own copy. Map scrollys also import `./scrolly-map.mjs`
+(`_shared/scrolly-map.mjs`). It gives:
 
 - `scrollySkill(here, …parts)` — finds the scrolly skill wherever the root put it.
 - `renderBeatScrolly({ here, render, states, textPerRegister, evidenceLevels })` — picks the ONE
