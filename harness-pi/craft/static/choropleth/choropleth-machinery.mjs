@@ -17,7 +17,7 @@ import {
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
 import { mix } from "#shared/chart-beat/colour.mjs";
-import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
+import { beatFacts, applicableTreatments, TREATMENTS } from "#shared/chart-beat/treatments.mjs";
 import { plateTints, WATER_HUE } from "#shared/map-beat/tints.mjs";
 import { maptilerFace } from "#shared/map-beat/glyphs.mjs";
 import { BEAT } from "./bake.mjs";
@@ -343,7 +343,19 @@ export function loadSubject(beat, dir) {
       declaredSequence: "value",
     },
   );
-  const offered = applicableTreatments(facts);
+  // A map in classes needs its key whatever its count. The key treatments apply from 20 cells, a
+  // threshold set for grids (a calendar, a matrix); eleven reporting countries were drawn in classes
+  // with no key at all.
+  const KEY = [
+    "the-scale-is-stepped-not-continuous",
+    "the-key-prints-its-breaks-in-the-data-s-units",
+    "the-key-names-its-classes-in-their-own-colours",
+    ...(unreported.length ? ["a-missing-cell-is-drawn-as-missing"] : []),
+  ];
+  const applicable = applicableTreatments(facts);
+  const offered = [...applicable, ...TREATMENTS.filter((t) => KEY.includes(t.id) && !applicable.includes(t))].sort(
+    (a, b) => b.priority - a.priority,
+  );
 
   const studyAreas = {
     type: "FeatureCollection",
