@@ -192,6 +192,16 @@ suggests a value the next check would refuse, and the core proves it on the eval
 | conflict | two gestures on one scale, two notes on one mark, a broken family invariant (§8) | the gesture to drop or move (the later one) |
 | format | the list breaks a format condition (video: not three; `zoom` in `conclusion`) | the count to add or the gesture to drop, or `pull-back` |
 
+### 7.1 The gesture kit never fails on its staging
+
+A gesture kit refuses false or conflicting gestures, never the shape of the data: no "the subject must lead",
+"the sum must reach", "exactly N rows" — the layout adapts instead (rows when names are long, a stated remainder when
+rows are many, a baseline at zero for negative values). When the 12B's craft attempts end on a refused gesture
+list, the kit applies each refusal's fix to the model's own list until the core accepts it
+(`repairGestures`, `SPLASH_GESTURE_REPAIR=1`) and reports every repair; measurement runs count repaired runs
+apart from the ones the 12B got right alone. The per-type kit is the fallback only for a `beat.mjs` that does not
+run at all.
+
 ## 8. Family invariants (the type sheets' `no-…` ids)
 
 | invariant | ids | families |
