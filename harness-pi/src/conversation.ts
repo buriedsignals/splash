@@ -35,6 +35,8 @@ export interface ConverseResult {
 
 const CLAIMED_RECORD =
   /\b(I have|I've|I)( now| also| successfully| just)? (recorded|saved|materiali[sz]ed|updated|refined|registered)\b/i;
+/** The storyboard gate's gap while no slot exists (skills/storyboard/scripts/gate-contract.mjs). */
+const NO_SLOT = /no slot: nothing would be produced/;
 const CLAIMED_DONE =
   /\b(complete|completed|finali[sz]ed|closed|ready to move|we are ready|all set)\b/i;
 
@@ -48,6 +50,8 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
   };
   let toolCalls = 0;
   let recorded = 0;
+  // Turns in a row that went to the journalist with nothing recorded.
+  let silent = 0;
   const failures = new Map<string, number>();
   let sameFailure = 0;
   let stop = "";
@@ -99,6 +103,16 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
         stop = "ended";
         break;
       }
+      // A 12B discussed medium, format, treatment and producer over a dozen turns, said "I have everything
+      // recorded", and never called record_slot; the claim nudge pointed it at the journalist's last words, a
+      // repeated takeaway, and the storyboard ended on the round cap with no slot. Silence is counted, not claims.
+      if (recorded === 0 && silent >= 3 && NO_SLOT.test(await o.gaps())) {
+        const answers = [o.dialogue.lastJournalist, ...(o.dialogue.history ?? []).map((h) => h.answer)].filter(Boolean).slice(0, 8).reverse();
+        prompt = `[harness] The slot is still not recorded: ${silent} turns went to the journalist with no tool called, so nothing would be produced. Call record_slot for slot "1" now, one call per field the journalist has answered (medium, format, size), then show_candidates, then record chosen and producer from their choice. Their answers so far, oldest first: ${JSON.stringify(answers)}.`;
+        o.log.push(`HARNESS: ${prompt}`);
+        silent = 0;
+        continue;
+      }
       if (CLAIMED_RECORD.test(said) && recorded === 0) {
         prompt = `[harness] Nothing was recorded in your last turn: no record tool succeeded. ${await o.gaps()} Record the journalist's last answer with the right tool now (their last message was: ${JSON.stringify(o.dialogue.lastJournalist)}), then continue.`;
         o.log.push(`HARNESS: ${prompt}`);
@@ -113,6 +127,7 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
         recorded = 0;
         continue;
       }
+      silent = recorded === 0 ? silent + 1 : 0;
       recorded = 0;
       const shown = menu ? `The candidates, as recorded:\n${menu}\n\n${said}` : said;
       menu = "";
