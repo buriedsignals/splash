@@ -168,7 +168,7 @@ One definition per gesture; the condition below is the format's real limit, not 
 | name | ring + label | resting state | any event | one card |
 | pull-back | no-op on one plate (accepted, draws nothing new) | resting state | `conclusion` | the closing card follows it |
 | highlight | accent on the mark | resting state | any event | one card |
-| bracket | a run of ≥ 2 contiguous drawn rows, or one row `of: "whole"` | a control (`toggle-a-comparison`) | a run of ≥ 2 rows piled under the leader, or one row of the whole | a run of ≥ 2 rows (`stackCount ≥ 2`), or one row of the whole |
+| bracket | a run of ≥ 2 contiguous drawn rows, or one row `of: "whole"` | a control (`toggle-a-comparison`) | a run of rows (members ticked on one spine, the sum climbing beside it), or one row of the whole | a run of ≥ 2 rows (`stackCount ≥ 2`), or one row of the whole |
 | reference | rule + note | resting state | any event | one card |
 | annotate | note beside the mark | resting state | any event | one card |
 

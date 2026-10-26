@@ -46,7 +46,7 @@ export function composeStatic({ gestures, rows }) {
 
   gestures.forEach((g, i) => {
     // validateGestures merged `of` rows into `marks`: the gesture's own rows come first.
-    const own = (g.mark !== undefined ? 1 : 0) + (Array.isArray(g.marks) ? g.marks.length : 0);
+    const own = g.marks.length - (Array.isArray(g.of) ? g.of.length : 0);
     const marks = g.marks.slice(0, own);
     const of = g.marks.slice(own);
     const note = g.note === undefined ? undefined : String(g.note);
