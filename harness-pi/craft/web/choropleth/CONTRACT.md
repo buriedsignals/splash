@@ -32,7 +32,7 @@ asks for more, refuses saying how many numbers `breaks` may hold.
 |---|---|
 | `eyebrow` | The rubric above the title, two to four words, in the story's language. |
 | `rows` | THE JOIN. One `{ iso, name, value }` per country the source is supposed to report. `iso` is the ISO alpha-3 code; `name` is the country's name in the story's language; `value` is the number the map is shaded by, or `null` for a country the source does not report (drawn hollow, in no class). A row may carry more fields (e.g. the two columns a share is computed from): `detail()` receives them. |
-| `breaks` | 1 to 3 rising numbers: the class limits the STORY states. The takeaway's own threshold is one of them ("above 94 %" → `94`). The map opens on this rule. |
+| `breaks` | 1 to 3 rising numbers: the class limits the STORY states. When the takeaway states a threshold, it is one of them ("above 94 %" → `94`). The highest and lowest readings are never limits: a takeaway about the extremes ("highest … lowest") states no threshold, so use the quantile limits the render suggests. Each class must hold at least one country. The map opens on this rule. |
 | `format(v)` | How a value or a class limit is printed ("94,0 %"), in the story's language. |
 | `bound(c)` | One legend chip. `c` is `{ index, lower, upper, count }`: `lower` is `null` for the lightest class, `upper` is `null` for the darkest. Must print `format(lower)`, `format(upper)` (when not null) and `count` (how many countries the class holds). |
 | `ruleLabel` | The control's name ("Classing rule"). |

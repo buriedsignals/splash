@@ -97,6 +97,9 @@ await refusing(HERE, async () => {
     const pos = Math.floor(((i + 1) * N) / CLASSES);
     return (values[pos - 1] + values[pos]) / 2;
   });
+  const extremes = STATED.filter((v) => v <= values[0] || v > values[N - 1]);
+  if (extremes.length)
+    throw new Error(`breaks ${JSON.stringify(STATED)} include ${extremes.join(" and ")}, the lowest or beyond the highest reading (${values[0]} to ${values[N - 1]}): the extremes are not class limits. If the takeaway names the highest and lowest, it states no threshold: use limits inside the range, e.g. the quantile limits ${quantileBreaks.map((q) => +q.toFixed(1)).join(", ")}`);
   // Each stated class must hold a reading. A 12B beat set the lowest value itself (18.4) as the first limit, so the
   // class below it was empty; the classing refusal said so but not which field to change.
   const statedCounts = Array.from({ length: CLASSES }, (_, k) =>
