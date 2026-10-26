@@ -32,7 +32,10 @@ delivered render opens with the journalist's takeaway word for word (read from t
 
 Renders looked at: r8 drew a true line (the journalist asked for Line; the earlier substitution is fixed),
 36 → 214 with the 2015 level marked. The Polish ranking was right but every bar read "0,004"; the bar kit now
-refuses sub-0.1 values and labels that collapse distinct values (`cc624c98d`), not yet re-measured.
+refuses sub-0.1 values and labels that collapse distinct values (`cc624c98d`). Re-measured on a ninth run
+(completed, headline faithful, 3 refusals): beds per 1,000 residents, labels 4,05 / 4,02 / 3,88 …, Mazowieckie
+third and accented — though the base "per 1,000" is not printed. (Its wall clock is not comparable: the Mac
+went into low-battery sleep for 2.5 h mid-run.)
 
 ## What the renders show (first pass) (looked at, not inferred)
 
