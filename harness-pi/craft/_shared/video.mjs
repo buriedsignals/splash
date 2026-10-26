@@ -101,6 +101,22 @@ export function assertEventFramesReadable(Frame, props, size, what) {
   }
 }
 
+const escapeXml = (t) => String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+
+/**
+ * The words a video draws, as SVG: the title card (eyebrow, title, the shared chart-video props) and the credit, then
+ * the frame's markup at each event's end. The title card is a shared Remotion component that does not render outside
+ * a composition, so its lines are taken from the props the video was rendered with.
+ */
+function wordsDrawn(Frame, props) {
+  const card = props.titleCard ?? {};
+  const title = (card.title ?? []).map((l) => l.text).join(" ");
+  const lines = [card.eyebrow?.text, ...(card.title ?? []).map((l) => l.text), ...(props.credit?.lines ?? []).map((l) => l.text)].filter(Boolean);
+  const head = `<svg xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${escapeXml(title)}">${lines.map((t) => `<text>${escapeXml(t)}</text>`).join("")}</svg>`;
+  const frames = EVENT_ORDER.map((event) => renderToStaticMarkup(createElement(Frame, { ...props, at: Math.min(endOf(props.timing[event]), props.timing.total) - 1 })));
+  return [head, ...frames].join("\n");
+}
+
 function mp4Size(path) {
   const probe = spawnSync("ffprobe", ["-v", "error", "-select_streams", "v:0", "-show_entries", "stream=width,height", "-of", "json", path], { encoding: "utf8" });
   if (probe.status !== 0) throw new Error(`ffprobe could not read ${path}: ${probe.stderr.trim()}`);
@@ -132,8 +148,11 @@ function remotion(root, args, what) {
  * @param wanted       `wantedOf(props.registers)` — the faces to embed
  * @param lookFrames   [{ name, frame }] — the proof's `--look` list; the frame named `final` is printed as `look at:`
  * @param lookOnly     stop after the stills (renders/ stays empty: nothing was delivered)
+ * @param Frame        the kit's frame component: the markup at each event's end is written beside the mp4 as
+ *                     renders/<label>-frames.svg, so review, delivery's alt and the headline score read the words a
+ *                     video draws (its title card included) as they read a static plate's SVG
  */
-export async function renderBeatVideo({ here, label, composition, size, props, wanted, lookFrames, lookOnly = false }) {
+export async function renderBeatVideo({ here, label, composition, size, props, wanted, lookFrames, lookOnly = false, Frame }) {
   const root = splashRoot(here);
   const { writeRenderProps } = await import(skillScriptFrom(here, "chart-video", "scripts", "video-faces.mjs"));
   const out = join(here, "renders");
@@ -173,6 +192,7 @@ export async function renderBeatVideo({ here, label, composition, size, props, w
     const seconds = remotion(root, ["render", bundle, composition, movie, `--props=${propsPath}`, "--concurrency=1", "--timeout=180000", `--env-file=${envFile}`], "render");
     assertDeliveredSize(mp4Size(movie), size, { what: `renders/${label}.mp4` });
     copyFileSync(final.png, join(out, `${label}-final-frame.png`));
+    if (Frame) writeFileSync(join(out, `${label}-frames.svg`), wordsDrawn(Frame, props));
     renameSync(audit, join(out, `${label}-props.json`));
     console.log(`rendered renders/${label}.mp4 (${seconds}s, ${props.timing.total} frames at ${props.timing.fps} fps, concurrency 1)`);
     console.log(`look at the mp4's own frames, not only the stills: ffmpeg -ss <seconds> -i ${movie} -frames:v 1 <png>`);

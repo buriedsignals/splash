@@ -110,6 +110,7 @@ await refusing(HERE, async () => {
   ];
   const { wantedOf } = await import((await import("#shared/design-base/skill-script.mjs")).skillScriptFrom(HERE, "chart-video", "scripts", "video-faces.mjs"));
   await renderBeatVideo({
+    Frame: BarFrame,
     here: HERE,
     label: SIZE === "landscape" ? label : `${label}-${SIZE}`,
     composition: `${COMPOSITION_BASE}-${SIZE}`,
