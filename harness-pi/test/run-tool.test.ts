@@ -81,6 +81,10 @@ describe("refusal hints", () => {
     );
   });
 
+  it("should tell the model to rewrite beat.mjs whole when an edit left a name declared twice", () => {
+    expect(refusalHint('REFUSED — "whole" has already been declared')).toMatch(/declares "whole" twice.*write_file/);
+  });
+
   it("should add nothing to a refusal that does not ask for shorter forms", () => {
     expect(refusalHint("error: these country names match no country on the map")).toBe("");
   });

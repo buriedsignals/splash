@@ -100,6 +100,11 @@ export function shotsDir(bases: Bases, beat: string): string {
  * the only thing the plate could shorten, and the delivered map lost the takeaway.
  */
 export function refusalHint(output: string): string {
+  // Twice the 12B's small edits added a declaration without removing the old one ("rows", then "whole"),
+  // and it went on editing around the error.
+  const twice = output.match(/"([^"]+)" has already been declared/);
+  if (twice)
+    return `\nhint: beat.mjs declares "${twice[1]}" twice — an edit added a declaration without removing the old one. Read beat.mjs, then rewrite it whole with write_file, each name declared once.`;
   return /shorter forms/i.test(output)
     ? "\nhint: the copy fields (title, limits, callout, reading, …) are lists of forms, longest first. Add shorter forms AFTER the first one, to limits and reading first: the plate shortens those before the headline. The title's first form stays the journalist's takeaway, word for word."
     : "";
