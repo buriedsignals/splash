@@ -39,7 +39,7 @@ import {
 } from "./tools/palette.ts";
 import { reviewTools } from "./tools/review.ts";
 import { refusalHint, runCommand, runTools } from "./tools/run.ts";
-import { type Dialogue, gapsForModel, storyboardTools } from "./tools/storyboard.ts";
+import { type Dialogue, dropUnsizedSizes, gapsForModel, storyboardTools } from "./tools/storyboard.ts";
 export { adapterFor };
 import { deliverTools } from "./tools/deliver.ts";
 
@@ -112,6 +112,7 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
   const storyboardGaps = async () => {
     if (!existsSync(join(o.storyDir, "STORYBOARD.md")))
       return "STORYBOARD.md does not exist yet.";
+    await dropUnsizedSizes(join(o.storyDir, "STORYBOARD.md"));
     const gaps = gapsForModel(checkStoryboard(storyboardMeta(o.storyDir)));
     const subjects = existsSync(join(o.storyDir, "SUBJECTS.md"))
       ? []

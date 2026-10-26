@@ -5,7 +5,7 @@
 // a journalist field is recorded only if the value is the journalist's own words, or a proposal the
 // model made in its previous turn that the journalist then accepted — which is exactly what the
 // exchange allows when the answer was "I don't know" (references/exchange.md).
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { defineTool } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
@@ -27,6 +27,7 @@ import {
   parseStoryboard,
   RECORDED_CLAIM_SHAPES,
   recordedClaimGaps,
+  SIZED_FORMATS,
 } from "../../../skills/splash/scripts/gate-contract.mjs";
 import { adapterFor } from "../adapters.ts";
 import type { Bases } from "./fs.ts";
@@ -207,6 +208,34 @@ const text = (t: string) => ({
 });
 
 /**
+ * Removes the size of every slot whose format takes none (web, scrolly). The journalist answered
+ * "Landscape" before the format was known; Splash then asks for the field to be left out, and no tool
+ * removes a field, so the 12B apologised and looped until the same-failure stop.
+ */
+/** The header of the story's frozen CSV, for refusals that must point the model at the data. */
+function sourceColumns(storyDir: string): string[] {
+  const dir = join(storyDir, "source");
+  if (!existsSync(dir)) return [];
+  const csv = readdirSync(dir).find((f) => f.endsWith(".csv"));
+  if (!csv) return [];
+  const head = readFileSync(join(dir, csv), "utf8").split("\n")[0] ?? "";
+  return head.split(/[,;\t]/).map((c) => c.trim().replace(/^"|"$/g, "")).filter(Boolean);
+}
+
+export async function dropUnsizedSizes(path: string): Promise<string[]> {
+  if (!existsSync(path)) return [];
+  const { meta } = parseStoryboard(readFileSync(path, "utf8"));
+  const dropped: string[] = [];
+  for (const slot of meta.slots ?? []) {
+    if (slot.size === undefined || slot.size === null || !slot.format || slot.medium === "image") continue;
+    if ((SIZED_FORMATS as readonly string[]).includes(String(slot.format))) continue;
+    await mutateStoryboard(path, { slot: { id: String(slot.id), fields: { size: null } } });
+    dropped.push(String(slot.id));
+  }
+  return dropped;
+}
+
+/**
  * The format code for the journalist's words. The 12B passed "interactive web" — the journalist's
  * answer — as the format, was refused, then changed the slot's medium to a map on its own and looped.
  */
@@ -259,6 +288,7 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
   const drawable = (type: string, id = "1") => adapterFor(type, slotFormat(id));
 
   const status = async () => {
+    await dropUnsizedSizes(path);
     const { meta } = parseStoryboard(readFileSync(path, "utf8"));
     const gaps = gapsForModel(checkStoryboard(meta));
     return gaps.length
@@ -567,6 +597,12 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       "Record one OTHER subject the data could support (movement 4, the survey): id names the angle in lowercase words joined by hyphens (e.g. network-length-per-city — never 'none'), learns is the sentence a reader would learn from it (not a chart type), then medium and format. Call once per subject; at least one is needed to close the survey, so find a real second angle in the data.",
     parameters: Type.Object({ id: Type.String(), learns: Type.String(), medium: Type.String(), format: Type.String() }),
     async execute(_id, subject) {
+      // The 12B called this with id "none" three times and the same-failure stop ended the step: the
+      // refusal said what a subject is, not where to find one. It now names the data's columns.
+      if ([subject.id, subject.medium, subject.format].some((f) => /^(none|n\/a|-)?$/i.test(String(f).trim())))
+        throw new Error(
+          `"${subject.id}" is not a subject: the survey needs one OTHER angle this data supports. The data's columns: ${sourceColumns(bases.storyDir).join(", ") || "(see source/)"}. Pick one the takeaway does not use, and record what a reader would learn from it (id in hyphenated words, learns as a sentence, medium chart or map, format static).`,
+        );
       const next = [...surveyed.filter((s) => s.id !== subject.id), subject];
       await recordSurveyedSubjects({ storyDir: bases.storyDir, subjects: next });
       surveyed.splice(0, surveyed.length, ...next);

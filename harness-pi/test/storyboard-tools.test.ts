@@ -166,6 +166,23 @@ describe("storyboard tools", () => {
     );
   });
 
+  it("should drop a size recorded for a format that takes none", async () => {
+    const tools = storyboardTools(bases, dialogue);
+    dialogue.lastJournalist = "A chart.";
+    await call(tools.recordSlot, { slot: "1", field: "medium", value: "chart" });
+    dialogue.lastJournalist = "Landscape.";
+    await call(tools.recordSlot, { slot: "1", field: "size", value: "landscape" });
+    dialogue.lastJournalist = "Interactive web.";
+    await call(tools.recordSlot, { slot: "1", field: "format", value: "web" });
+    expect(meta().slots[0].size).toBeUndefined();
+  });
+
+  it("should refuse a 'none' subject by naming the data's columns to survey", async () => {
+    await expect(
+      call(storyboardTools(bases, dialogue).recordSubject, { id: "none", learns: "nothing", medium: "none", format: "none" }),
+    ).rejects.toThrow(/not a subject.*columns: city, trips_millions/);
+  });
+
   it("should refuse a field outside the slot vocabulary", async () => {
     await expect(
       call(storyboardTools(bases, dialogue).recordSlot, {
