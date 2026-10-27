@@ -84,3 +84,40 @@ describe("a scrolly card whose picture shows no figure", () => {
     expect(refusal?.fix).toEqual({ set: { index: 2, field: "card", value: "Lisboa: 214" } });
   });
 });
+
+describe("a still plate's one row", () => {
+  const PL = [
+    { name: "Śląskie", value: 405 },
+    { name: "Łódzkie", value: 402 },
+    { name: "Mazowieckie", value: 388 },
+    { name: "Lubelskie", value: 385 },
+  ];
+  const claim = { takeaway: "Mazowieckie ma najwięcej łóżek szpitalnych w kraju, ale w przeliczeniu na mieszkańca jest dopiero trzecie — wyprzedzają je Śląskie i Łódzkie." };
+  /** The list a 12B wrote for the Polish beds (U9): one name and two compares, all on Mazowieckie. */
+  const LIST = [
+    { do: "highlight", mark: "Mazowieckie" },
+    { do: "name", mark: "Mazowieckie", note: "Najwięcej łóżek całkowicie" },
+    { do: "compare", marks: ["Mazowieckie", "Śląskie"], note: "Śląskie ma wyższy wskaźnik" },
+    { do: "compare", marks: ["Mazowieckie", "Łódzkie"] },
+  ];
+  const compose = (list: object[]) => () => composeStatic({ gestures: validateGestures({ gestures: list, rows: PL, family: "length", format: "static", claim }).gestures, rows: PL, format: (v: number) => String(Math.round(v)) });
+  const refusalOf = (list: object[]) => {
+    try {
+      compose(list)();
+    } catch (error) {
+      return error as GestureRefusal;
+    }
+  };
+
+  it("should refuse a second note on the row, keeping the gesture", () => {
+    expect(refusalOf(LIST.slice(0, 3))?.fix).toEqual({ set: { index: 2, field: "note", value: undefined } });
+  });
+
+  it("should refuse a second compare's copy in the row's band", () => {
+    expect(refusalOf([LIST[0], { ...LIST[2], note: undefined }, LIST[3]])?.fix).toEqual({ remove: 2 });
+  });
+
+  it("should not count a note that only repeats the printed value", () => {
+    expect(compose([{ do: "name", mark: "Mazowieckie", note: "388" }, LIST[2]])).not.toThrow();
+  });
+});

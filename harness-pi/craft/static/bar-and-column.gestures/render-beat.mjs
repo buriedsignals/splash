@@ -85,7 +85,7 @@ const factsOf = (order, plate, extra = {}) =>
 /** Validate, compose onto one plate, and judge each drawn gesture by its treatment on the plate's own rows. */
 function stage(gestures) {
   const { gestures: valid } = validateGestures({ gestures, rows: beat.rows, family: "length", format: "static", claim });
-  const plate = composeStatic({ gestures: valid, rows: beat.rows });
+  const plate = composeStatic({ gestures: valid, rows: beat.rows, format: beat.format });
   const order = plate.order.map((name) => beat.rows.find((r) => r.name === name));
   for (const t of plate.treatments) {
     if (applicableTreatments(factsOf(order, plate, t.facts)).some((a) => a.id === t.id)) continue;

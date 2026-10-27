@@ -29,9 +29,10 @@ export const STATIC_TREATMENT = {
 /**
  * @param gestures the `gestures` validateGestures returned (marks resolved, figures derived)
  * @param rows     the rows the beat draws: [{ name, value }]
+ * @param format   the beat's value format: a note that only repeats a row's printed value is not a second note
  * @returns        the plate: { order, accent, rings, stepBack, notes, brackets, copies, references, top, keep, treatments }
  */
-export function composeStatic({ gestures, rows }) {
+export function composeStatic({ gestures, rows, format = String }) {
   const length = createLength({ rows, frame: { x: 0, y: 0, width: 1, height: 1 } });
   const valueOf = new Map(rows.map((r) => [r.name, r.value]));
   const all = rows.map((r) => r.name);
@@ -45,6 +46,16 @@ export function composeStatic({ gestures, rows }) {
   if (valueOf.has(implicit)) plate.accent.push(implicit);
   const keep = new Set();
   const judged = [];
+  // One plate draws every gesture at once: a row carries one note and one compare's copy. A 12B Polish beat named
+  // Mazowieckie and compared it twice, and three notes ran along its one line while two copies crowded its band.
+  const noted = new Set();
+  const copied = new Set();
+  const oneNote = (row, i, text) => {
+    if (text !== undefined && text.trim() === format(valueOf.get(row))) return;
+    if (noted.has(row))
+      throw new GestureRefusal(`gestures[${i}].note`, `${row} already carries a note, and every note is drawn at once on a still plate: drop this note (the gesture stays)`, { set: { index: i, field: "note", value: undefined } });
+    noted.add(row);
+  };
 
   gestures.forEach((g, i) => {
     // validateGestures merged `of` rows into `marks`: the gesture's own rows come first.
@@ -61,15 +72,18 @@ export function composeStatic({ gestures, rows }) {
         state = length.with(state, { emphasis: Object.fromEntries(marks.map((m) => [m, "accent"])) });
         plate.accent.push(...marks.filter((m) => !plate.accent.includes(m)));
         judge({ subject: marks[0] });
+        if (note !== undefined && marks.length === 1) oneNote(marks[0], i, note);
         if (note !== undefined) write("mark", marks);
         break;
       case "name":
+        oneNote(marks[0], i, note);
         state = length.with(state, { emphasis: { [marks[0]]: "ring" } });
         plate.rings.push(marks[0]);
         plate.notes.push({ index: i, do: g.do, anchor: "mark", marks, text: note ?? `${marks[0]} ${valueOf.get(marks[0])}`, value: note === undefined });
         judge({});
         break;
       case "annotate":
+        oneNote(marks[0], i, note);
         // An annotate with no words writes the row's value: the plate adapts rather than refusing.
         plate.notes.push({ index: i, do: g.do, anchor: "mark", marks, text: note?.trim() ? note : String(valueOf.get(marks[0])), value: !note?.trim() });
         judge({});
@@ -94,6 +108,10 @@ export function composeStatic({ gestures, rows }) {
       }
       case "compare": {
         const subject = marks[0];
+        if (copied.has(subject))
+          throw new GestureRefusal(`gestures[${i}]`, `${subject} already carries a compare's copy, and a second copy in its band cannot be read on a still plate: drop it`, { remove: i });
+        copied.add(subject);
+        if (note !== undefined) oneNote(subject, i, note);
         const others = marks.length > 1 ? marks.slice(1) : g.of === "whole" ? all.filter((n) => n !== subject) : of;
         others.forEach((m) => keep.add(m));
         const value = marks.length > 1 ? sum(marks.slice(1)) : g.of === "whole" ? whole : sum(of);
