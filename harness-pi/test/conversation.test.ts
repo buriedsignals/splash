@@ -46,3 +46,43 @@ describe("converse", () => {
     expect(prompts.some((p) => p.startsWith("[harness]"))).toBe(false);
   });
 });
+
+describe("converse narrowing a stalled turn", () => {
+  const narrowed = async () => {
+    const offered: string[][] = [];
+    let active = ["read_file", "record_slot", "show_candidates"];
+    const session = {
+      subscribe: () => () => {},
+      prompt: async () => void offered.push([...active]),
+      getLastAssistantText: () => "Which medium would you like?",
+      abort: async () => {},
+      getActiveToolNames: () => active,
+      setActiveToolsByName: (names: string[]) => void (active = names),
+    };
+    await converse({
+      session: session as never,
+      first: "Start the storyboard.",
+      journalist: { answer: async () => "A chart." },
+      dialogue: { lastJournalist: "", lastProposal: "" },
+      conversational: true,
+      done: async () => false,
+      gaps: async () => "no slot: nothing would be produced",
+      limits: { rounds: 8 },
+      log: [],
+      recordTools: ["record_slot", "show_candidates"],
+    });
+    return offered;
+  };
+
+  it("should offer only the record tools on the turn after the stall nudge", async () => {
+    expect((await narrowed())[4]).toEqual(["record_slot", "show_candidates"]);
+  });
+
+  it("should give every tool back on the turn after that", async () => {
+    expect((await narrowed())[5]).toEqual(["read_file", "record_slot", "show_candidates"]);
+  });
+
+  it("should narrow the last round too", async () => {
+    expect((await narrowed())[7]).toEqual(["record_slot", "show_candidates"]);
+  });
+});

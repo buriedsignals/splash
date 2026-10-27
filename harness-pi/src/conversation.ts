@@ -25,6 +25,8 @@ export interface ConverseOptions {
     sameFailure?: number;
   };
   log: string[];
+  /** The record tools a stalled turn is narrowed to (Spotlight's last-turn narrowing); none narrows nothing. */
+  recordTools?: string[];
 }
 
 export interface ConverseResult {
@@ -90,9 +92,22 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
 
   let prompt = o.first;
   let rounds = 0;
+  // A stalled step's next turn offers only the record tools: talk cannot be its answer.
+  let narrow = false;
   try {
     for (; rounds < limits.rounds && !stop; rounds++) {
-      await o.session.prompt(prompt);
+      const lastRound = rounds === limits.rounds - 1;
+      if ((narrow || (lastRound && rounds > 0)) && o.recordTools?.length) {
+        const all = o.session.getActiveToolNames();
+        o.session.setActiveToolsByName(all.filter((t) => o.recordTools?.includes(t)));
+        o.log.push(`HARNESS: tools narrowed to ${o.recordTools.join(", ")}`);
+        try {
+          await o.session.prompt(prompt);
+        } finally {
+          o.session.setActiveToolsByName(all);
+        }
+      } else await o.session.prompt(prompt);
+      narrow = false;
       const said = o.session.getLastAssistantText() ?? "";
       o.log.push(`MODEL: ${said.slice(0, 1500)}`);
       if (await o.done()) {
@@ -111,6 +126,7 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
         prompt = `[harness] The slot is still not recorded: ${silent} turns went to the journalist with no tool called, so nothing would be produced. Call record_slot for slot "1" now, one call per field the journalist has answered (medium, format, size), then show_candidates, then record chosen and producer from their choice. Their answers so far, oldest first: ${JSON.stringify(answers)}.`;
         o.log.push(`HARNESS: ${prompt}`);
         silent = 0;
+        narrow = true;
         continue;
       }
       if (CLAIMED_RECORD.test(said) && recorded === 0) {

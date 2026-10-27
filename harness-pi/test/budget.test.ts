@@ -1,7 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import { resolve } from "node:path";
 import { PROFILES, type Profile } from "../src/profiles.ts";
-import { describeOverflow, measureProfile } from "../src/budget.ts";
+import { describeOverflow, foldAt, measureProfile } from "../src/budget.ts";
 
 const CHECKOUT = resolve(import.meta.dirname, "../..");
 
@@ -47,5 +47,15 @@ describe("context budget", () => {
       .map((p) => describeOverflow(measureProfile(p, CHECKOUT)))
       .filter(Boolean);
     expect(overflowing).toEqual([]);
+  });
+});
+
+describe("foldAt", () => {
+  it("should fold a small session at Spotlight's 20,480 tokens", () => {
+    expect(foldAt(4_000)).toBe(20_480);
+  });
+
+  it("should fold a session with a large floor above what it needs to fold back under", () => {
+    expect(foldAt(25_720)).toBe(25_720 + 4_000 + 2_000 + 6_000);
   });
 });

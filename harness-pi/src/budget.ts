@@ -8,6 +8,22 @@ import type { Profile } from "./profiles.ts";
 
 export const SLOT = { contextWindow: 98_304, reserveTokens: 8_192 } as const;
 
+/**
+ * Where a session folds (Spotlight's 12B tier: compact at 20,480 tokens, keep 4,000). Tom measured the 12B's discipline
+ * failing with depth — at ~40k it looped and replied empty, after a fold at ~13k it delegated correctly — so a
+ * session folds early, but never under what it needs to fold back under: its floor, the kept tail, the summary and
+ * room for a turn.
+ */
+export const FOLD = { at: 20_480, keep: 4_000, turn: 6_000 } as const;
+
+/** The context size at which a session with this floor compacts. */
+export function foldAt(floorTokens: number): number {
+  return Math.min(
+    SLOT.contextWindow - SLOT.reserveTokens,
+    Math.max(FOLD.at, floorTokens + FOLD.keep + SUMMARY_ALLOWANCE_TOKENS + FOLD.turn),
+  );
+}
+
 /** Preamble plus tool schemas, until U5/U6 measure the real ones. */
 export const HARNESS_OVERHEAD_TOKENS = 3_000;
 /** Upper bound for one 1280 px image through the Gemma 4 projector. */

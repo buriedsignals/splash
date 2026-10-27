@@ -2,6 +2,8 @@
 // session starts with (the body is injected, not discovered), which references the skill itself
 // tells the model to read before working, and how the session compacts.
 
+import { FOLD } from "./budget.ts";
+
 export type OwnerId =
   | "persona:editor"
   | "skill:storyboard"
@@ -29,48 +31,48 @@ export const PROFILES: Record<OwnerId, Profile> = {
     body: "agents/editor.md",
     requiredReads: [],
     craft: false,
-    keepRecentTokens: 8_000,
+    keepRecentTokens: FOLD.keep,
   },
   "skill:storyboard": {
     owner: "skill:storyboard",
     body: "skills/storyboard/SKILL.md",
     requiredReads: ["skills/storyboard/references/exchange.md"],
     craft: false,
-    keepRecentTokens: 8_000,
+    keepRecentTokens: FOLD.keep,
   },
   "skill:analyst": {
     owner: "skill:analyst",
     body: "skills/analyst/SKILL.md",
     requiredReads: [],
     craft: false,
-    keepRecentTokens: 8_000,
+    keepRecentTokens: FOLD.keep,
   },
   "skill:chart-beat": {
     owner: "skill:chart-beat",
     body: "skills/chart-beat/SKILL.md",
     requiredReads: ["skills/chart-beat/references/static-discipline.md"],
     craft: true,
-    keepRecentTokens: 8_000,
+    keepRecentTokens: FOLD.keep,
   },
   "skill:chart-web": {
     owner: "skill:chart-web",
     body: "skills/chart-web/SKILL.md",
     requiredReads: ["skills/chart-web/references/web-discipline.md"],
     craft: true,
-    keepRecentTokens: 8_000,
+    keepRecentTokens: FOLD.keep,
   },
   "persona:designer": {
     owner: "persona:designer",
     body: "agents/designer.md",
     requiredReads: ["skills/doctrine/references/design-rubric.md"],
     craft: false,
-    keepRecentTokens: 8_000,
+    keepRecentTokens: FOLD.keep,
   },
   "skill:deliver": {
     owner: "skill:deliver",
     body: "skills/deliver/SKILL.md",
     requiredReads: [],
     craft: false,
-    keepRecentTokens: 8_000,
+    keepRecentTokens: FOLD.keep,
   },
 };

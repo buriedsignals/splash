@@ -317,6 +317,7 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
       gaps: storyboardGaps,
       log: transcript,
       limits: { minutes: 20 },
+      recordTools: ["record_takeaway", "record_claim", "record_hand", "record_language", "record_slot", "show_candidates", "record_subject", "propose_palette", "record_palette"],
     });
     sess.dispose();
     say(`STORYBOARD stop: ${res.stop}`);

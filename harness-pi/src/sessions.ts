@@ -11,7 +11,7 @@ import {
   SettingsManager,
   type ToolDefinition,
 } from "@earendil-works/pi-coding-agent";
-import { SLOT } from "./budget.ts";
+import { estimateTokens, foldAt, HARNESS_OVERHEAD_TOKENS, SLOT } from "./budget.ts";
 import { ARMS, fixedResources, loadModel } from "./pi.ts";
 import type { OwnerId } from "./profiles.ts";
 
@@ -66,7 +66,8 @@ export async function openSession(opts: OpenOptions): Promise<AgentSession> {
     settingsManager: SettingsManager.inMemory({
       compaction: {
         enabled: true,
-        reserveTokens: SLOT.reserveTokens,
+        // Pi compacts past contextWindow - reserveTokens: reserve what lies above this session's fold point.
+        reserveTokens: SLOT.contextWindow - foldAt(estimateTokens(opts.systemPrompt) + HARNESS_OVERHEAD_TOKENS),
         keepRecentTokens: opts.keepRecentTokens,
       },
       // A long prompt on a laptop can take many minutes before the first byte comes back.
