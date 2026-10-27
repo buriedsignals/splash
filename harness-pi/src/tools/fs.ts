@@ -223,7 +223,7 @@ export function fsTools(bases: Bases) {
     async execute(_id, { path, old_text, new_text }) {
       if (old_text.length > MAX_EDIT_OLD || new_text.length > MAX_EDIT_NEW) {
         throw new Error(
-          `edit too large (old_text ${old_text.length}/${MAX_EDIT_OLD}, new_text ${new_text.length}/${MAX_EDIT_NEW} characters); split it into smaller edits`,
+          `edit too large (old_text ${old_text.length}/${MAX_EDIT_OLD}, new_text ${new_text.length}/${MAX_EDIT_NEW} characters); split it into smaller edits, or write the whole file again with write_file`,
         );
       }
       const abs = resolveInStory(bases, path);
@@ -283,7 +283,7 @@ export function beatTools(bases: Bases, beat: string) {
     async execute(_id, { old_text, new_text }) {
       if (old_text.length > MAX_EDIT_OLD || new_text.length > MAX_EDIT_NEW)
         throw new Error(
-          `edit too large (old_text ${old_text.length}/${MAX_EDIT_OLD}, new_text ${new_text.length}/${MAX_EDIT_NEW} characters); split it into smaller edits`,
+          `edit too large (old_text ${old_text.length}/${MAX_EDIT_OLD}, new_text ${new_text.length}/${MAX_EDIT_NEW} characters); split it into smaller edits, or write the whole file again with write_file`,
         );
       const target = abs();
       if (!existsSync(target)) throw new Error(`${file} does not exist yet: write it with write_file`);
