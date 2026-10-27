@@ -747,3 +747,11 @@ describe("numbers inside names", () => {
     expect(v.entities).not.toContain("2023 · India");
   });
 });
+
+describe("a takeaway that names no drawn row", () => {
+  const CLOUD = [{ name: "A", value: 82 }, { name: "B", value: 61 }, { name: "C", value: 75 }];
+  const claim = { takeaway: "Above $30,000 a year, life expectancy spreads by 14 years, not 41." };
+  it("should accept a pull-back when another gesture states the takeaway's figure", () => {
+    expect(() => validateGestures({ gestures: [{ do: "reference", value: 75, note: "14 years" }, { do: "pull-back" }], rows: CLOUD, family: "length", format: "static", claim, hooks: { figures: () => [14] } })).not.toThrow();
+  });
+});

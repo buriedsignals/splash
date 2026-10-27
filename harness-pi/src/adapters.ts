@@ -20,6 +20,10 @@ const GESTURE_FAMILY: Record<string, string> = {
   bullet: "paired",
   "diverging-bar": "paired",
   "population-pyramid": "paired",
+  "scatter-and-bubble": "xy",
+  "connected-scatter": "xy",
+  "heatmap-matrix": "cell",
+  "calendar-heatmap": "cell",
 };
 
 export interface AdapterOptions {

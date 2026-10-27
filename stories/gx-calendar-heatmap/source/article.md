@@ -1,0 +1,1 @@
+L’été 2024 a été long à Genève. Du 18 juillet au 17 août, la température moyenne de chaque jour est restée au-dessus de 20 °C : 31 jours d’affilée, la plus longue série de l’année. Août a été le mois le plus chaud, plus que juillet. Les relevés viennent de la réanalyse ERA5, une moyenne journalière à 2 mètres.

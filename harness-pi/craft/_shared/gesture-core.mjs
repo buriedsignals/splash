@@ -379,7 +379,7 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
     if (g.do === "reference") own.push(Number(g.value));
     // A rule sits on the drawn measure's axis: one placed at another column's figure draws it as if it were that
     // measure (a 12B ruled Centro's raw count, 412, across a per-100,000 axis). Said in a note it stays true.
-    if (g.do === "reference" && !rows.some((r) => Math.abs(r.value - Number(g.value)) < 1e-9) && Object.values(claim.facts ?? {}).flat().some((f) => Math.abs(f - Number(g.value)) < 1e-9))
+    if (g.do === "reference" && g.axis !== "x" && !rows.some((r) => Math.abs(r.value - Number(g.value)) < 1e-9) && Object.values(claim.facts ?? {}).flat().some((f) => Math.abs(f - Number(g.value)) < 1e-9))
       throw new GestureRefusal(`gestures[${i}].value`, `${g.value} is a figure of another column, not of the measure the axis draws: write it in a note on its row (annotate) instead of a rule`, { remove: i });
     if (g.do === "rescale") own.push(Number(g.value));
     // The family's own figures (a crossing, a slope, a median) and conflicts, from its kit.
@@ -389,7 +389,9 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
     own.push(...familyFigures);
     percents.push(...familyFigures);
     hooks.refuse?.(g, ctx);
-    const context = [whole, ...marks.map((m) => rankOf.get(m)), ...marks.flatMap((m) => claim.facts?.[m] ?? [])];
+    // The whole only where values add up, and ranks only for a few marks: a highlighted series of thirty readings made
+    // every integer up to thirty a "rank", and a sum of ranks at a power of ten passed for "rank 2".
+    const context = [...(additive ? [whole] : []), ...(marks.length <= 3 ? marks.map((m) => rankOf.get(m)) : []), ...marks.flatMap((m) => claim.facts?.[m] ?? [])];
 
     // notes: every number is one of the gesture's figures, at the note's precision
     if (g.note !== undefined && g.do !== "zoom") {
@@ -468,7 +470,9 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
     const touches = [...marks, ...of].some((m) => entities.has(m));
     const statesFigure = own.some((f) => takeawayFigures.some((t) => Math.abs(t - f) <= Math.max(0.5, Math.abs(t) * 0.005)));
     const wholeChart = WHOLE_CHART.has(g.do) || (g.do === "count" && !marks.length);
-    if (!touches && !statesFigure && !(wholeChart && entities.size))
+    // A whole-chart gesture serves a takeaway that names no drawn row when another gesture states one of its figures.
+    const listStatesFigure = gestures.some((h) => figuresIn(h?.note).some((n) => takeawayFigures.some((t) => Math.abs(t - n.value) <= Math.max(0.5, Math.abs(t) * 0.005))));
+    if (!touches && !statesFigure && !(wholeChart && (entities.size || listStatesFigure)))
       throw new GestureRefusal(
         `gestures[${i}]`,
         `${g.do} on ${[...marks, ...of].join(", ") || "nothing"} does not serve the takeaway, which is about ${[...entities].join(", ") || "no drawn row"}: drop it, or act on those rows`,
