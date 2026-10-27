@@ -69,6 +69,15 @@ const MALFORMED_PATH = /<\||\|>|[\n\r`{}]/;
  */
 const PROTECTED = /(^|\/)(source\/.*|STORYBOARD\.md|PALETTE\.md|DIRECTION\.md|SUBJECTS\.md|NEWSROOM\.md|data\.json|data\.csv|DATA-NOTES\.md|BRIEF\.md|OUTPUT-REVIEW\.json|render-beat\.mjs|guards\.mjs|series\.mjs|CONTRACT\.md|beat\.example\.mjs|Directed[A-Za-z]*\.tsx|crossing-geometry\.ts)$/;
 
+/**
+ * An empty write over a non-empty file is refused: a call cut off at the output cap arrives with empty content, and
+ * writing it would erase the file (Spotlight's write_file rule).
+ */
+export function assertNotErasing(abs: string, content: string, shown: string) {
+  if (content.trim() === "" && existsSync(abs) && readFileSync(abs, "utf8").trim() !== "")
+    throw new Error(`${shown} exists and the new content is empty: an empty write would erase it. Give the whole content, or change it with edit_file`);
+}
+
 function assertWritable(bases: Bases, abs: string) {
   const rel = relative(realpathSync(bases.storyDir), abs);
   // In a beat folder the model writes beat.mjs and nothing else: every other file there is the kit's,
@@ -197,6 +206,7 @@ export function fsTools(bases: Bases) {
     async execute(_id, { path, content }) {
       const abs = resolveInStory(bases, path);
       assertWritable(bases, abs);
+      assertNotErasing(abs, content, path);
       if (content.length > MAX_WRITE && existsSync(abs)) {
         throw new Error(
           `${path} exists and the new content is ${content.length} characters; rewrite it with several edit_file calls (old_text up to ${MAX_EDIT_OLD}, new_text up to ${MAX_EDIT_NEW} characters)`,
@@ -267,6 +277,7 @@ export function beatTools(bases: Bases, beat: string) {
     async execute(_id, { content }) {
       const target = abs();
       assertWritable(bases, target);
+      assertNotErasing(target, content, file);
       if (content.length > MAX_WRITE && existsSync(target))
         throw new Error(
           `${file} exists and the new content is ${content.length} characters; change it with several edit_file calls (old_text up to ${MAX_EDIT_OLD}, new_text up to ${MAX_EDIT_NEW} characters)`,
