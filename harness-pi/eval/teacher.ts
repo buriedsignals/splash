@@ -15,6 +15,7 @@ import {
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { scoreRun } from "./score.ts";
+import { assertWithinCap, record } from "./spend.ts";
 
 const CHECKOUT = resolve(import.meta.dirname, "..", "..");
 const HELDOUT: string[] = JSON.parse(
@@ -46,6 +47,8 @@ export function assertPlan(plan: BatchPlan) {
       throw new Error(
         `batch ceiling $${plan.batchCeiling} exceeds the approved budget $${plan.approvedBudget}`,
       );
+    // The whole batch may spend its ceiling: the ledger's OpenRouter total plus it must stay under the cap.
+    assertWithinCap("OpenRouter", plan.batchCeiling);
     if (!process.env.OPENROUTER_API_KEY)
       throw new Error("OPENROUTER_API_KEY is not set");
   }
@@ -53,6 +56,28 @@ export function assertPlan(plan: BatchPlan) {
     throw new Error(
       "ceilings must be positive, and the batch ceiling at least one run's",
     );
+}
+
+/** Tokens Pi recorded across every session of a run root (cache reads are billed, KTD6). */
+export function sessionUsage(root: string) {
+  const usage = { input: 0, output: 0, cacheRead: 0 };
+  const walk = (d: string) => {
+    if (!existsSync(d)) return;
+    for (const name of readdirSync(d)) {
+      const p = join(d, name);
+      if (statSync(p).isDirectory()) walk(p);
+      else if (name.endsWith(".jsonl"))
+        for (const line of readFileSync(p, "utf8").split("\n")) {
+          if (!line.includes('"usage"')) continue;
+          const u = JSON.parse(line).message?.usage ?? {};
+          usage.input += u.input ?? 0;
+          usage.output += u.output ?? 0;
+          usage.cacheRead += u.cacheRead ?? 0;
+        }
+    }
+  };
+  walk(join(root, ".splash-harness", "sessions"));
+  return usage;
 }
 
 /** Dollars Pi recorded across every session of a run root. */
@@ -143,6 +168,10 @@ export async function runBatch(
     clearInterval(watch);
     const cost = sessionCost(root);
     spent += cost;
+    if (PAID_ARMS.has(plan.arm)) {
+      const u = sessionUsage(root);
+      record({ step: `gold ${story}`, service: "OpenRouter", quantity: `${u.input} in / ${u.output} out / ${u.cacheRead} cache-read tokens`, usd: cost });
+    }
     const score = await scoreRun(root, story);
     const kept = score.completed && !stop;
     appendFileSync(

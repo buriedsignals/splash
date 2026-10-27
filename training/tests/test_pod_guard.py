@@ -201,3 +201,32 @@ class VerifyCopyTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class LedgerTest(unittest.TestCase):
+    def ledger(self, rows, rate="Rate: 1 USD = 0.90 EUR on 2026-10-28"):
+        path = Path(tempfile.mkdtemp()) / "SPEND.md"
+        path.write_text(f"# Spend ledger\n\n{rate}\n\n| date | step | service | quantity | usd | eur | total |\n|---|---|---|---|---|---|---|\n" + "\n".join(rows) + "\n")
+        return path
+
+    def test_should_refuse_a_pod_whose_worst_case_crosses_the_remaining_euro_balance(self):
+        path = self.ledger(["| 2026-10-27 | pod full a | RunPod | 5 GPU-h | 50.0000 | 46.0000 | 46.0000 |"])
+        with self.assertRaisesRegex(pod.Refusal, r"allows 4.00 €"):
+            pod.ledger_guard("smoke", 5.0, path, today="2026-10-28")
+
+    def test_should_refuse_a_smoke_above_its_five_euro_draw(self):
+        with self.assertRaisesRegex(pod.Refusal, r"allows 5.00 €"):
+            pod.ledger_guard("smoke", 6.0, self.ledger([]), today="2026-10-28")
+
+    def test_should_refuse_a_rate_from_another_day(self):
+        with self.assertRaisesRegex(pod.Refusal, r"not today"):
+            pod.ledger_guard("smoke", 1.0, self.ledger([]), today="2026-10-29")
+
+    def test_should_pass_a_smoke_within_its_draw_in_euros(self):
+        self.assertAlmostEqual(pod.ledger_guard("smoke", 4.9, self.ledger([]), today="2026-10-28"), 4.41)
+
+    def test_should_record_a_pod_with_its_euro_running_total(self):
+        path = self.ledger(["| 2026-10-27 | pod smoke a | RunPod | 1 GPU-h | 2.0000 | 1.8000 | 1.8000 |"])
+        pod.ledger_record("pod full b", 2.0, 10.0, path)
+        self.assertAlmostEqual(pod.runpod_spent_eur(path), 10.8)
+

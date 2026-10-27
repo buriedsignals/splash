@@ -33,7 +33,7 @@
           "cost": {
             "input": 0.2,
             "output": 0.4,
-            "cacheRead": 0,
+            "cacheRead": 0.2,
             "cacheWrite": 0
           }
         },

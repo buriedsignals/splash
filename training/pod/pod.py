@@ -98,6 +98,59 @@ class Refusal(Exception):
     pass
 
 
+# The spend ledger (plan U2, KTD10): one RunPod budget in euros, drawn per job; harness-pi/eval/SPEND.md.
+RUNPOD_CAP_EUR = 50.0
+DRAW_EUR = {"smoke": 5.0, "full": 25.0}
+
+
+def ledger_path() -> Path:
+    return Path(os.environ.get("SPLASH_SPEND_LEDGER") or TRAINING.parent / "harness-pi" / "eval" / "SPEND.md")
+
+
+def ledger_rows(path: Path) -> list[list[str]]:
+    rows = []
+    for line in path.read_text().splitlines():
+        if re.match(r"^\|\s*\d{4}-\d{2}-\d{2}\s*\|", line):
+            rows.append([c.strip() for c in line.split("|")[1:-1]])
+    return rows
+
+
+def runpod_spent_eur(path: Path) -> float:
+    return sum(float(r[5] or 0) for r in ledger_rows(path) if r[2] == "RunPod")
+
+
+def eur_rate(path: Path, today: str) -> float:
+    m = re.search(r"^Rate: 1 USD = ([0-9.]+) EUR on (\d{4}-\d{2}-\d{2})", path.read_text(), re.M)
+    if not m:
+        raise Refusal(f"{path.name} has no dollar-to-euro rate: set its Rate line to today's rate before a pod")
+    if m.group(2) != today:
+        raise Refusal(f"{path.name}'s rate is from {m.group(2)}, not today ({today}): update its Rate line")
+    return float(m.group(1))
+
+
+def ledger_guard(job: str, worst_usd: float, path: Path | None = None, today: str | None = None) -> float:
+    """The job's worst case in euros, refused when it crosses the job's draw or the remaining RunPod balance."""
+    path = path or ledger_path()
+    today = today or time.strftime("%Y-%m-%d")
+    eur = worst_usd * eur_rate(path, today)
+    remaining = RUNPOD_CAP_EUR - runpod_spent_eur(path)
+    allowed = min(DRAW_EUR.get(job, remaining), remaining)
+    if eur > allowed:
+        raise Refusal(f"job '{job}' may cost {eur:.2f} € (worst case); the ledger allows {allowed:.2f} € ({remaining:.2f} € of {RUNPOD_CAP_EUR:.0f} € left) — ask Rémy")
+    return eur
+
+
+def ledger_record(step: str, hours: float, usd: float, path: Path | None = None) -> None:
+    path = path or ledger_path()
+    today = time.strftime("%Y-%m-%d")
+    # Recorded whatever the rate's day: a pod that ran past midnight has still spent the money.
+    m = re.search(r"^Rate: 1 USD = ([0-9.]+) EUR", path.read_text(), re.M)
+    eur = usd * float(m.group(1)) if m else 0.0
+    total = runpod_spent_eur(path) + eur
+    with path.open("a") as f:
+        f.write(f"| {today} | {step} | RunPod | {hours:.3f} GPU-h | {usd:.4f} | {eur:.4f} | {total:.4f} |\n")
+
+
 @dataclass(frozen=True)
 class Plan:
     job: str
@@ -380,6 +433,7 @@ def run(client: RunPodClient, plan: Plan, rows: Path, images: Path, out: Path, s
     cost = {"pod": pod_id, "gpu": gpu, "price_usd_hr": plan.price_usd_hr, "hours": round(hours, 3), "estimated_usd": round(hours * plan.price_usd_hr, 2)}
     out.mkdir(parents=True, exist_ok=True)
     (out / "cost.json").write_text(json.dumps(cost, indent=2))
+    ledger_record(f"pod {plan.job} {pod_id}", hours, cost["estimated_usd"])
     log(f"Wall {hours:.2f} h, about ${cost['estimated_usd']:.2f} so far.")
 
     if exit_code == 0 and saw_success and not copied:
@@ -453,8 +507,14 @@ def main(argv=None) -> int:
     except Refusal as e:
         print(f"REFUSED: {e}", file=sys.stderr)
         return 2
+    try:
+        eur = ledger_guard(cli.job, plan.worst_case_usd)
+    except Refusal as e:
+        print(f"REFUSED: {e}", file=sys.stderr)
+        return 2
     for line in plan.lines():
         print(line)
+    print(f"Ledger:         {eur:.2f} € worst case against the RunPod budget")
     if not plan.launch:
         print("Not launched. Re-run with --confirm to start the pod at this price.")
         return 3
