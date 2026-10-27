@@ -32,6 +32,11 @@ const GESTURE_FAMILY: Record<string, string> = {
   treemap: "part",
   "marimekko-mosaic-plot": "part",
   "pie-and-donut": "part",
+  gantt: "interval",
+  "small-multiples": "multiples",
+  sankey: "flow",
+  "radar-spider": "profile",
+  "parallel-coordinates": "profile",
 };
 
 export interface AdapterOptions {
