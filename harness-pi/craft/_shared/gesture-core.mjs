@@ -53,7 +53,9 @@ function rowsNamedIn(text, rows) {
 // ── numbers ───────────────────────────────────────────────────────────────────────────────────────
 
 // The unit may be glued to the figure ("12.29Gt", the China video run); an ordinal ("2nd") is not a figure.
-const NUMBER = /(?<![\p{L}\d])([-−+](?=\d))?(\d{1,3}(?:[ ,  ]\d{3})+(?![.,]?\d)|\d+(?:[.,]\d+)?)(?!\d|(?:st|nd|rd|th)\b)/gu;
+// Grouped thousands may carry a decimal part: "12,289.037" (a 12B card) was read as 12.289 and 37; "4 191,4" and
+// "12.289,5" are the comma-decimal forms (points group only when a comma decimal follows: "1.234" stays 1.234).
+const NUMBER = /(?<![\p{L}\d])([-\u2212+](?=\d))?(\d{1,3}(?:[ ,\u00a0\u202f]\d{3})+(?:\.\d+)?(?![.,]?\d)|\d{1,3}(?:[. \u00a0\u202f]\d{3})+,\d+(?![.,]?\d)|\d+(?:[.,]\d+)?)(?!\d|(?:st|nd|rd|th)\b)/gu;
 
 /** Every number a text states, with its sign and precision; years and unit bases (100, 1,000, 100,000…) are not figures. */
 export function figuresIn(text) {
@@ -63,20 +65,26 @@ export function figuresIn(text) {
     const sign = m[1] ?? "";
     const digits = m[2];
     const raw = sign + digits;
-    const grouped = /^\d{1,3}(?:[ ,\u00a0\u202f]\d{3})+$/.test(digits);
-    const magnitude = Number(grouped ? digits.replace(/[ ,\u00a0\u202f]/g, "") : digits.replace(",", "."));
+    const groupSep = digits.match(/^\d{1,3}([ ,.\u00a0\u202f])\d{3}/)?.[1];
+    const grouped = groupSep !== undefined && /^\d{1,3}(?:[ ,.\u00a0\u202f]\d{3})+(?:[.,]\d+)?$/.test(digits) && (groupSep !== "." || digits.includes(","));
+    const tail = grouped ? digits.match(/([.,])(\d+)$/) : null;
+    const fraction = tail && tail[1] !== groupSep ? tail : null;
+    const decimalMark = fraction?.[1];
+    const magnitude = grouped
+      ? Number(digits.slice(0, fraction ? -fraction[0].length : undefined).replace(/[ ,.\u00a0\u202f]/g, "") + (fraction ? `.${fraction[2]}` : ""))
+      : Number(digits.replace(",", "."));
     const value = sign === "-" || sign === "\u2212" ? -magnitude : magnitude;
-    const decimals = grouped ? 0 : (digits.split(/[.,]/)[1] ?? "").length;
+    const decimals = grouped ? (fraction?.[2].length ?? 0) : (digits.split(/[.,]/)[1] ?? "").length;
     if (Number.isInteger(value) && value >= 1700 && value <= 2100) continue;
     if (value >= 100 && /^10+$/.test(String(value))) continue;
-    const separator = grouped ? digits.match(/[ ,\u00a0\u202f]/)[0] : digits.includes(",") ? "," : ".";
+    const separator = grouped ? groupSep : digits.includes(",") ? "," : ".";
     // A percent sign or word after the figure: it may only be a percentage the gesture draws, never a gap in the unit.
     const percent = /^\s?(%|per ?cent\b|procent|pour ?cent)/i.test(String(text).slice(m.index + m[0].length));
     // A magnitude suffix glued on ("12B", "4.9bn", "250k"): the figure is read at that power of ten as well. A 12B card
     // wrote "(12B)" for China's 12,289,000,000 tonnes, it was read as 12 against tonnes, and repair appended it again.
     const suffix = String(text).slice(m.index + m[0].length).match(/^\s?(k|K|M|B|bn|mn|mln|mld|mrd)(?![\p{L}])/u)?.[1];
     const exp = suffix ? ({ k: 3, K: 3, M: 6, mn: 6, mln: 6 })[suffix] ?? 9 : 0;
-    out.push({ raw, value, decimals, sign, separator, grouped, index: m.index, percent, exp });
+    out.push({ raw, value, decimals, sign, separator, grouped, decimalMark, index: m.index, percent, exp });
   }
   return out;
 }
@@ -86,8 +94,10 @@ const SCALES = [0, -3, -6, -9, -12, 3, 6, 9, 12, -1, -2, 1, 2];
 const matches = (n, f) => [f, ...(n.exp ? [f / 10 ** n.exp] : [])].some((x) => Math.abs(n.value - x) <= 0.5 * 10 ** -n.decimals + 1e-9);
 
 function formatLike(n, f) {
-  const fixed = Math.abs(f).toFixed(n.decimals);
-  const body = n.grouped ? fixed.replace(/\B(?=(\d{3})+(?!\d))/g, n.separator) : n.separator === "," ? fixed.replace(".", ",") : fixed;
+  const [whole, part] = Math.abs(f).toFixed(n.decimals).split(".");
+  const body = n.grouped
+    ? whole.replace(/\B(?=(\d{3})+$)/g, n.separator) + (part ? (n.decimalMark ?? (n.separator === "," ? "." : ",")) + part : "")
+    : part ? whole + n.separator + part : whole;
   const sign = f < 0 ? (n.sign === "\u2212" ? "\u2212" : "-") : n.sign === "+" ? "+" : "";
   return sign + body;
 }
@@ -95,6 +105,23 @@ function formatLike(n, f) {
 /** The words that run a compare's gap up or down from its subject, in the stories' languages. */
 const MORE = /\b(more|higher|greater|larger|above|bigger|więcej|wyższ\p{L}*|większ\p{L}*|plus|mehr|höher|mais|maior|más|mayor)\b/iu;
 const LESS = /\b(less|fewer|lower|smaller|below|mniej|niższ\p{L}*|mniejsz\p{L}*|moins|weniger|niedriger|menos|menor)\b/iu;
+
+/**
+ * The figures a text states as a gap: followed, before any comma or stop, by "more"/"less" (or their forms), and
+ * not by "times" or "than twice". A 12B card said China's 12,289 was "12,289 more than the 11,652 from the next five":
+ * every figure true, the sentence false.
+ */
+export function gapFigures(text) {
+  const t = String(text ?? "");
+  return figuresIn(t).filter((n) => {
+    if (n.percent) return false;
+    const after = t.slice(n.index + n.raw.length);
+    const m = after.match(new RegExp(`^([^\\d.;,:]{0,30}?)(${MORE.source}|${LESS.source})([^.;]{0,24})`, "iu"));
+    if (!m) return false;
+    if (/(×|\btimes\b|\brazy\b|\bfois\b|\bmal\b|\bvezes\b|\bveces\b)/iu.test(m[1])) return false;
+    return !/^\s*(than|niż|que|als|do que)\s+(twice|double|triple|half|dwa razy|deux fois|doppelt|\d+([.,]\d+)?\s*(×|times|razy|fois|mal|vezes|veces))/iu.test(m[m.length - 1]);
+  });
+}
 
 /** "twice", "three times", "half" — a ratio a compare note states in words. */
 const RATIO_WORDS = [
@@ -273,6 +300,16 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
       own.push(a, b, a - b, b - a, ratio, 1 / ratio, ...gaps);
       percents.push(...gaps);
       gapPercents.push(...gaps);
+      // A figure the note states as a gap is the gap.
+      for (const n of gapFigures(said)) {
+        const gap = Math.abs(a - b);
+        const scaleOf = SCALES.find((k) => matches(n, gap * 10 ** k) || matches(n, a * 10 ** k) || matches(n, b * 10 ** k)) ?? 0;
+        if (matches(n, gap * 10 ** scaleOf)) continue;
+        const fixed = said.slice(0, n.index) + formatLike(n, gap * 10 ** scaleOf) + said.slice(n.index + n.raw.length);
+        throw new GestureRefusal(`gestures[${i}].note`, `states ${n.raw} as a gap, but the gap between ${marks[0]} and what it is compared with is ${formatLike(n, gap * 10 ** scaleOf)}: write "${fixed}"`, {
+          set: { index: i, field: "note", value: fixed },
+        });
+      }
       if (ofWhole) own.push((a / whole) * 100);
       if (ofWhole) percents.push((a / whole) * 100);
     }

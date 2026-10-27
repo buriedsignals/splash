@@ -17,7 +17,7 @@
 // scale from a zero baseline). The drive (`applyGestureState`) is ONE self-contained function — no import, no
 // reference to this module's scope — emitted as source and inlined by the scrolly skill's renderScrolly.
 // Browser-safe: no Node module.
-import { applyFix, figuresIn, GestureRefusal, implicitAccent, validateGestures } from "./gesture-core.mjs";
+import { applyFix, figuresIn, gapFigures, GestureRefusal, implicitAccent, validateGestures } from "./gesture-core.mjs";
 import { createLength } from "./gesture-length.mjs";
 
 /** The rows a page draws at most before the rest is stated as a remainder (every gesture's rows always drawn). */
@@ -247,8 +247,10 @@ const RATIO_WORDS = [
 
 /** A figure written as the stated number is: its decimals, separator and grouping (as the core writes a fix). */
 function formatLike(n, f) {
-  const fixed = Math.abs(f).toFixed(n.decimals);
-  const body = n.grouped ? fixed.replace(/\B(?=(\d{3})+(?!\d))/g, n.separator) : n.separator === "," ? fixed.replace(".", ",") : fixed;
+  const [whole, part] = Math.abs(f).toFixed(n.decimals).split(".");
+  const body = n.grouped
+    ? whole.replace(/\B(?=(\d{3})+$)/g, n.separator) + (part ? (n.decimalMark ?? (n.separator === "," ? "." : ",")) + part : "")
+    : part ? whole + n.separator + part : whole;
   const sign = f < 0 ? (n.sign === "−" ? "−" : "-") : n.sign === "+" ? "+" : "";
   return sign + body;
 }
@@ -336,6 +338,20 @@ export function checkCards({ gestures, plan, rows, rest = { count: 0, sum: 0 }, 
         { set: { index: k, field: "card", value: setParagraph(n.p, fixed) } },
       );
     }
+
+    // A compare card's figure stated as a gap is the gap its picture draws ("12,289 more than the 11,652" was not).
+    if (item.do === "compare")
+      for (const [p, text] of paragraphs.entries())
+        for (const n of gapFigures(text)) {
+          const gap = Math.abs(item.shown[0] - item.shown[1]) * 10 ** scale;
+          if (matches(n, gap)) continue;
+          const fixed = text.slice(0, n.index) + formatLike(n, gap) + text.slice(n.index + n.raw.length);
+          throw new GestureRefusal(
+            `gestures[${k}].card`,
+            `${where} states ${n.raw} as a gap, but its picture draws a gap of ${formatLike(n, gap)}: write "${fixed}"`,
+            { set: { index: k, field: "card", value: setParagraph(p, fixed) } },
+          );
+        }
 
     // The figure the card's picture shows, stated (at the card's scale).
     const shown = item.shown.map((f) => f * 10 ** scale);

@@ -121,3 +121,18 @@ describe("a still plate's one row", () => {
     expect(compose([{ do: "name", mark: "Mazowieckie", note: "388" }, LIST[2]])).not.toThrow();
   });
 });
+
+describe("a scrolly compare card stating a gap", () => {
+  const CO2 = [
+    { name: "China", value: 12289.037 },
+    { name: "United States", value: 4904.1 },
+    { name: "India", value: 3193.5 },
+  ];
+  const claim = { takeaway: "China emitted more CO₂ in 2024 than the next two emitters together.", comparison: "United States, India" };
+  /** The card a 12B China scrolly shipped (U9), on two rows instead of five. */
+  const card = "China's emissions were 12,289.037 million tonnes, which is 12,289.037 more than the 8,097.6 million tonnes from the next two emitters combined.";
+  it("should be refused and repaired to the gap its picture draws", () => {
+    const staged = stageScrolly({ gestures: [{ do: "highlight", mark: "China", card: "China: 12,289.037." }, { do: "compare", marks: ["China", "United States", "India"], card }], rows: CO2, claim, repair: true });
+    expect(staged.cards[1].prose.at(-1)).toContain("which is 4,191.437 more than");
+  });
+});

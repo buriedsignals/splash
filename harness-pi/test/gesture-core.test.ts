@@ -507,8 +507,12 @@ describe("a note figure far from anything the gesture draws", () => {
     }
   };
 
-  it("should drop the note rather than offer the percent gap for a figure in the unit", () => {
-    expect(refusalOf("o 4,3 łóżka na mln mieszkańców mniej niż Łódzkie")?.fix).toEqual({ set: { index: 0, field: "note", value: undefined } });
+  it("should offer the gap in the unit, never the percent gap, for a figure stated as a gap", () => {
+    expect(refusalOf("o 4,3 łóżka na mln mieszkańców mniej niż Łódzkie")?.fix).toEqual({ set: { index: 0, field: "note", value: "o 132,0 łóżka na mln mieszkańców mniej niż Łódzkie" } });
+  });
+
+  it("should drop a note whose figure is far from anything drawn and not stated as a gap", () => {
+    expect(refusalOf("Mazowieckie: 9,1")?.fix).toEqual({ set: { index: 0, field: "note", value: undefined } });
   });
 
   it("should still offer the near figure when one is close", () => {
@@ -553,5 +557,27 @@ describe("a bracket whose words name the rows it should span", () => {
       refusal = error as GestureRefusal;
     }
     expect(refusal?.fix).toEqual({ set: { index: 0, value: { do: "bracket", note: "Next 3", card: "The United States, India and Russia together emitted 9.9 billion tonnes.", marks: ["United States", "India", "Russia"] } } });
+  });
+});
+
+describe("a figure stated as a gap", () => {
+  const ROWS = [
+    { name: "China", value: 12289.037 },
+    { name: "United States", value: 4904.1 },
+    { name: "India", value: 3193.5 },
+  ];
+  const claim = { takeaway: "China emitted more CO₂ in 2024 than the next two emitters together.", comparison: "United States, India" };
+  const note = (text: string) => () => validateGestures({ gestures: [{ do: "compare", marks: ["China", "United States", "India"], note: text }], rows: ROWS, family: "length", format: "static", claim });
+
+  it("should refuse a row's own value written as the gap", () => {
+    expect(note("12,289 more than the 8,098 of the next two")).toThrow(/as a gap.*4,191/);
+  });
+
+  it("should accept the gap", () => {
+    expect(note("4,191 more than the next two")).not.toThrow();
+  });
+
+  it("should not read a value followed by more than twice as a gap", () => {
+    expect(() => validateGestures({ gestures: [{ do: "compare", marks: ["China", "United States"], note: "12,289 is more than twice the 4,904 of the United States" }], rows: ROWS, family: "length", format: "static", claim: { takeaway: "China emitted more CO₂ than the United States." } })).not.toThrow();
   });
 });
