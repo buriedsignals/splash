@@ -39,6 +39,8 @@ const FIELDS = {
  */
 export async function readCellBeat(here, variant, { extra = [] } = {}) {
   const beat = await importBeat(here);
+  /** What the grid leaves out, said on it (a year narrowed to, rows the frame has no room for). */
+  const scope = [];
   applyStoryboard(beat, here);
   const missing = [...FIELDS[variant], ...extra].filter((key) => beat[key] === undefined);
   if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")}: give each as a field of the default export (export default { …, ${missing[0]}: … }), not as a separate export (see CONTRACT.md)`);
@@ -63,8 +65,15 @@ export async function readCellBeat(here, variant, { extra = [] } = {}) {
       if (!Array.isArray(list) || list.length !== 12) throw new Error(`${field} must hold the twelve month names in the story's language`);
       if (new Set(list).size !== 12) throw new Error(`${field} names two months alike (${list.join(", ")}): write each abbreviation out so no two rows share a name`);
     }
-    const years = [...new Set(beat.days.map((d) => String(d.date).slice(0, 4)))];
-    if (years.length !== 1) throw new Error(`days cover ${years.length} years (${years.join(", ")}): a calendar heatmap draws ONE year — filter data.json's rows to one year`);
+    // SEVERAL YEARS ARE NARROWED, NEVER REFUSED: the year the takeaway names, else the latest year with the most days.
+    const years = [...new Set(beat.days.map((d) => String(d.date).slice(0, 4)))].sort();
+    if (years.length > 1) {
+      const named = years.filter((y) => new RegExp(`(?<!\\d)${y}(?!\\d)`).test(frontOf(here)("takeaway") ?? [beat.title].flat()[0] ?? ""));
+      const count = (y) => beat.days.filter((d) => String(d.date).startsWith(y)).length;
+      const year = named.at(-1) ?? [...years].reverse().reduce((a, b) => (count(b) > count(a) ? b : a));
+      beat.days = beat.days.filter((d) => String(d.date).startsWith(year));
+      scope.push(typeof beat.scope === "function" ? beat.scope(year, years) : `${year} (${years[0]}–${years.at(-1)})`);
+    }
     const seen = new Set();
     for (const d of beat.days) {
       if (seen.has(d.date)) throw new Error(`two readings for ${d.date}: one value per day — filter data.json to one station or series`);
@@ -81,7 +90,33 @@ export async function readCellBeat(here, variant, { extra = [] } = {}) {
   if (grid.breaks.at(-1) <= lo || grid.breaks[0] > hi)
     throw new Error(`every cell falls in one class (cells run ${lo} to ${hi}, breaks ${grid.breaks.join(", ")}): put the breaks inside the cells' range`);
   if (new Set(grid.breaks).size !== grid.breaks.length) throw new Error(`two classes share a break (${grid.breaks.join(", ")}): set breakDecimals to 1 (or more) in beat.mjs`);
-  return { beat, grid };
+  return { beat, grid, scope };
+}
+
+/** The rows a frame holds at most; past it the rows the gestures name and the first others are drawn, the rest stated. */
+export const CAPACITY = { static: 12, web: 16, scrolly: 12, video: 12 };
+
+/**
+ * NEVER REFUSE A HEATMAP FOR ITS ROW COUNT: keep every row a gesture names (by row, cell, column-free), then the first
+ * others in the beat's order up to the format's capacity; the grid is rebuilt on them and the rest is stated.
+ */
+export async function fitRows(beat, grid, format, scope) {
+  if (grid.variant !== "heatmap-matrix" || beat.rows.length <= CAPACITY[format]) return grid;
+  const { cellsNamed } = await import("./gesture-family-cell.mjs");
+  const named = new Set();
+  for (const g of beat.gestures ?? []) {
+    if (!g || typeof g !== "object") continue;
+    const cells = cellsNamed(grid, [g.mark, g.marks, g.along, g.of].flat().filter((x) => typeof x === "string"));
+    // A whole column names every row; it keeps none in particular.
+    const rows = new Set(cells.map((c) => c.r));
+    if (rows.size < grid.rows.length) rows.forEach((r) => named.add(r));
+  }
+  const keep = new Set([...named].slice(0, CAPACITY[format]));
+  for (let r = 0; r < beat.rows.length && keep.size < CAPACITY[format]; r++) keep.add(r);
+  const all = beat.rows.length;
+  beat.rows = beat.rows.filter((_, r) => keep.has(r));
+  scope.push(typeof beat.scope === "function" ? beat.scope(beat.rows.length, all) : `${beat.rows.length} / ${all}`);
+  return gridOf("heatmap-matrix", beat);
 }
 
 /** The claim the journalist confirmed, as the core reads it, with the family's facts. */
@@ -189,10 +224,13 @@ export async function runStatic(here, variant) {
 
   let beat, grid, staged;
   try {
-    ({ beat, grid } = await readCellBeat(here, variant));
+    let scope;
+    ({ beat, grid, scope } = await readCellBeat(here, variant));
+    grid = await fitRows(beat, grid, "static", scope);
     const claim = claimOf(here, beat, grid);
     staged = stageWithRepair({ beat, grid, claim, format: "static", then: ({ plan, orders }) => ({ plate: composeCellStatic({ plan, orders, grid, format: beat.format }) }) });
     assertHeadlineNumbersDrawn([beat.title].flat()[0], drawnFigures(grid, staged.plan), "cells");
+    for (const line of scope) staged.plate.notes.push({ index: -1, do: "scope", text: String(line), accent: false });
   } catch (error) {
     console.log(`REFUSED — ${errorText(error)}`);
     process.exit(1);
@@ -268,7 +306,8 @@ export async function runWeb(here, variant) {
   const { webRegisters } = await import("#shared/design-base/web.mjs");
   await refusing(here, async () => {
     const { renderWeb } = await import(chartWeb(here, "scripts", "render-web.mjs"));
-    const { beat, grid } = await readCellBeat(here, variant, { extra: ["restLabel"] });
+    const { beat, grid: full, scope } = await readCellBeat(here, variant, { extra: ["restLabel"] });
+    const grid = await fitRows(beat, full, "web", scope);
     if (!String(beat.restLabel).trim()) throw new Error('beat.mjs: restLabel is empty: give the words of the option that shows the page as it lands, e.g. "The grid alone"');
     const format = (v) => plain(beat.format(v));
     const claim = claimOf(here, beat, grid);
@@ -289,7 +328,7 @@ export async function runWeb(here, variant) {
       const note = [c.note, ...c.pieces].filter(Boolean).map(plain).join(" · ");
       return { ...c, legend: plain(c.legend), chip, note, announce: `${chip} — ${note}` };
     });
-    const restNotes = scheduled.resting.notes.map((n) => ({ text: plain(n.text), accent: n.accent }));
+    const restNotes = [...scheduled.resting.notes, ...scope.map((text) => ({ text: String(text), accent: false }))].map((n) => ({ text: plain(n.text), accent: n.accent }));
     const interaction = cellInteractionPlan({ scheduled, grid });
     const rowLabels = grid.rows.map((r) => plain(r.label));
     const colLabels = grid.cols.map((c) => plain(c.label));
@@ -349,7 +388,8 @@ export async function runScrolly(here, variant) {
   const { EYEBROW_TO_DISPLAY, gapOf, registerOf } = await import("#shared/design-base/register.mjs");
   await refusing(here, async () => {
     const { renderScrolly } = await import(scrollySkill(here, "scripts", "render-scrolly.mjs"));
-    const { beat, grid } = await readCellBeat(here, variant);
+    const { beat, grid: full, scope } = await readCellBeat(here, variant);
+    const grid = await fitRows(beat, full, "scrolly", scope);
     const format = (v) => plain(beat.format(v));
     const claim = claimOf(here, beat, grid);
     const staged = stageWithRepair({
@@ -377,7 +417,7 @@ export async function runScrolly(here, variant) {
     const rowLabels = grid.rows.map((r) => plain(r.label));
     const colLabels = grid.cols.map((c) => plain(c.short ?? c.label));
     const colTicks = variant === "calendar-heatmap" ? [0, 4, 9, 14, 19, 24, 30] : colLabels.map((_, i) => i);
-    const prose = [...cards.map((c) => c.prose.map(plain)), [plain([beat.limits].flat()[0])]];
+    const prose = [...cards.map((c) => c.prose.map(plain)), [plain([beat.limits].flat()[0]), ...scope.map((t) => plain(String(t)))]];
     const steps = [...cards.map((c) => c.id), "limits"];
     const eyebrow = plain(beat.eyebrow);
     const source = plain(beat.source);
@@ -431,13 +471,15 @@ export async function runVideo(here, variant) {
   const { noteLine } = await import("./gesture-family-cell.mjs");
   await refusing(here, async () => {
     const SIZE = videoExportSize();
-    const { beat, grid } = await readCellBeat(here, variant);
+    const { beat, grid: full, scope } = await readCellBeat(here, variant);
+    const grid = await fitRows(beat, full, "video", scope);
     const format = (v) => plain(beat.format(v));
     const b = grid.breaks;
     const copy = {
       eyebrow: plain(beat.eyebrow),
       title: plain([beat.title].flat()[0]),
-      source: [beat.source].flat().map(plain),
+      // What the frame leaves out is stated with the credit.
+      source: [beat.source].flat().map((t) => plain([...scope, t].join(" · "))),
       unit: plain(beat.unit),
       format,
       cols: grid.cols.map((c) => plain(c.label)),

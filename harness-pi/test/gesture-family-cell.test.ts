@@ -501,3 +501,15 @@ describe("calendar-heatmap", () => {
     expect(pic.back.length).toBe(CAL.cells.length - 31);
   });
 });
+
+describe("the data's shape never refuses", () => {
+  it("should draw the rows a gesture names plus the first others when a heatmap has too many rows, and state the rest", async () => {
+    const { fitRows } = (await import("../craft/_shared/gesture-cell-run.mjs")) as any;
+    const beat: any = heatmapBeat();
+    beat.rows = [...beat.rows, ...beat.rows.map((r: any) => ({ ...r, key: `${r.key}2`, label: `${r.label} 2` }))];
+    beat.gestures = [{ do: "highlight", mark: beat.rows[20].label }];
+    const scope: string[] = [];
+    const grid = await fitRows(beat, gridOf("heatmap-matrix", beat), "static", scope);
+    expect([grid.rows.length, grid.rows[0].label, scope[0]]).toEqual([12, beat.rows[0].label, "12 / 24"]);
+  });
+});

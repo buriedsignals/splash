@@ -10,8 +10,10 @@ const col = (name) => table.columns.findIndex((c) => c.name === name);
 const [DATE, VALUE] = [col("date"), col("mean_c")];
 
 // One reading per day of the year (a day the data does not give is left out: the grid draws it as missing).
-const days = table.rows.filter((r) => Number.isFinite(Number(r[VALUE])) && r[VALUE] !== null).map((r) => ({ date: String(r[DATE]), value: Number(r[VALUE]) }));
-const year = Number(days[0].date.slice(0, 4));
+// One year is drawn: the latest the data holds (the kit narrows to the takeaway's year too, and says so).
+const readings = table.rows.filter((r) => Number.isFinite(Number(r[VALUE])) && r[VALUE] !== null).map((r) => ({ date: String(r[DATE]), value: Number(r[VALUE]) }));
+const year = Math.max(...readings.map((d) => Number(d.date.slice(0, 4))));
+const days = readings.filter((d) => d.date.startsWith(String(year)));
 
 const THRESHOLD = 20;
 const UNIT = "°C";
