@@ -436,14 +436,14 @@ describe("a percent in a compare note", () => {
     expect(() => validateGestures({ gestures: compare("Mazowieckie ma o 13% mniej łóżek na mieszkańca niż Łódzkie"), rows: RATES, family: "length", format: "static", claim: { takeaway } })).toThrow(/states 13/);
   });
 
-  it("should offer the gap as a percent, not the gap in the unit", () => {
+  it("should drop the note when the stated percent is far from the gap, not offer the gap in the unit", () => {
     let refusal: GestureRefusal | undefined;
     try {
       validateGestures({ gestures: compare("o 13% mniej niż Łódzkie"), rows: RATES, family: "length", format: "static", claim: { takeaway } });
     } catch (error) {
       refusal = error as GestureRefusal;
     }
-    expect(refusal?.fix).toEqual({ set: { index: 0, field: "note", value: "o 4% mniej niż Łódzkie" } });
+    expect(refusal?.fix).toEqual({ set: { index: 0, field: "note", value: undefined } });
   });
 
   it("should be accepted when it states the gap", () => {
@@ -489,5 +489,29 @@ describe("a figure with a magnitude suffix", () => {
 
   it("should still refuse a suffixed figure the rows do not give", () => {
     expect(() => validateGestures({ gestures: [{ do: "name", mark: "China", note: "15B tonnes" }], rows: ROWS, family: "length", format: "static", claim })).toThrow(/states 15/);
+  });
+});
+
+describe("a note figure far from anything the gesture draws", () => {
+  const PER_MILLION = [
+    { name: "Śląskie", value: 4045 },
+    { name: "Łódzkie", value: 4016 },
+    { name: "Mazowieckie", value: 3884 },
+  ];
+  const claim = { takeaway: "Mazowieckie ma najwięcej łóżek szpitalnych w kraju, ale w przeliczeniu na mieszkańca jest dopiero trzecie — wyprzedzają je Śląskie i Łódzkie." };
+  const refusalOf = (note: string) => {
+    try {
+      validateGestures({ gestures: [{ do: "compare", marks: ["Mazowieckie", "Łódzkie"], note }], rows: PER_MILLION, family: "length", format: "static", claim });
+    } catch (error) {
+      return error as GestureRefusal;
+    }
+  };
+
+  it("should drop the note rather than offer the percent gap for a figure in the unit", () => {
+    expect(refusalOf("o 4,3 łóżka na mln mieszkańców mniej niż Łódzkie")?.fix).toEqual({ set: { index: 0, field: "note", value: undefined } });
+  });
+
+  it("should still offer the near figure when one is close", () => {
+    expect(refusalOf("o 130 łóżek mniej niż Łódzkie")?.fix).toEqual({ set: { index: 0, field: "note", value: "o 132 łóżek mniej niż Łódzkie" } });
   });
 });

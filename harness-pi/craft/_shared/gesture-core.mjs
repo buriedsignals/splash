@@ -226,6 +226,7 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
     const own = [];
     // The percentages this gesture draws: a stated "n %" is checked against these and the rows' own values only.
     const percents = [];
+    const gapPercents = [];
     if (["highlight", "name", "annotate", "filter", "zoom", "count"].includes(g.do)) own.push(...marks.map((m) => valueOf.get(m)));
     if (g.do === "count") own.push(marks.length || rows.length, sumOf(marks.length ? marks : rows.map((r) => r.name)));
     if (g.do === "bracket") {
@@ -245,6 +246,7 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
       const gaps = [(a / b - 1) * 100, (1 - a / b) * 100, (b / a - 1) * 100, (1 - b / a) * 100];
       own.push(a, b, a - b, b - a, ratio, 1 / ratio, ...gaps);
       percents.push(...gaps);
+      gapPercents.push(...gaps);
       if (ofWhole) own.push((a / whole) * 100);
       if (ofWhole) percents.push((a / whole) * 100);
     }
@@ -261,9 +263,22 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
         .reduce((best, c) => (c.hits > best.hits ? c : best), { k: 0, hits: -1 }).k;
       const figures = [...own, ...context].map((f) => f * 10 ** scale);
       for (const n of stated) {
-        const pool = n.percent && asPercent.length ? asPercent : figures;
+        // A figure with no percent sign is never a percentage gap: "4,3 beds per million fewer" was offered "3,4", the
+        // gap in percent, when the gap is 132 beds per million.
+        const pool = n.percent && asPercent.length ? asPercent : figures.filter((f) => !gapPercents.some((p) => Math.abs(p * 10 ** scale - f) < 1e-9));
         if (pool.some((f) => matches(n, f))) continue;
-        const best = pool.reduce((p, f) => (Math.abs(f - n.value) < Math.abs(p - n.value) ? f : p), pool[0]);
+        // A fix offers only what this gesture itself draws: a rank or a count may be stated, never substituted for a
+        // figure ("4,3 beds fewer" was offered Mazowieckie's rank, "3,0").
+        const drawn = n.percent && percents.length ? percents : [...own, ...(ofWhole ? [whole] : [])].map((x) => x * 10 ** scale).filter((x) => n.percent || !gapPercents.some((p) => Math.abs(p * 10 ** scale - x) < 1e-9));
+        const best = drawn.length ? drawn.reduce((p, f) => (Math.abs(f - n.value) < Math.abs(p - n.value) ? f : p), drawn[0]) : Infinity;
+        // Nothing this gesture draws is near the figure: the nearest would only swap one false number for another (a
+        // China bracket on the wrong rows was offered the United States' total as "the next five"), so the note goes.
+        if (Math.abs(best - n.value) > Math.abs(n.value) * 0.5)
+          throw new GestureRefusal(
+            `gestures[${i}].note`,
+            `states ${n.raw}, which nothing this ${g.do} draws comes near (${[...new Set(own.map((x) => formatLike(n, x * 10 ** scale)))].slice(0, 4).join(", ")}): drop the note, or check the rows the gesture acts on`,
+            { set: { index: i, field: "note", value: undefined } },
+          );
         const fixed = g.note.slice(0, n.index) + formatLike(n, best) + g.note.slice(n.index + n.raw.length);
         throw new GestureRefusal(
           `gestures[${i}].note`,
