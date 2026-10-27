@@ -39,6 +39,21 @@ export function hasSession(runRoot: string, key: SessionKey): boolean {
   return existsSync(dir) && readdirSync(dir).some((f) => f.endsWith(".jsonl"));
 }
 
+const LEVELS = ["off", "minimal", "low", "medium", "high"] as const;
+export type Thinking = (typeof LEVELS)[number];
+
+/**
+ * One thinking setting for every arm (plan KTD4): SPLASH_THINKING, default off. Teacher, student and the dataset
+ * must agree on it; on the local 12B llama-server caps it with --reasoning-budget 400.
+ */
+export function thinkingLevel(env = process.env): Thinking {
+  const raw = (env.SPLASH_THINKING ?? "off").trim().toLowerCase();
+  const level = raw === "on" ? "medium" : raw;
+  if (!(LEVELS as readonly string[]).includes(level))
+    throw new Error(`SPLASH_THINKING is "${env.SPLASH_THINKING}": use off, on, ${LEVELS.slice(1).join(", ")}`);
+  return level as Thinking;
+}
+
 export interface OpenOptions {
   runRoot: string;
   key: SessionKey;
@@ -57,7 +72,7 @@ export async function openSession(opts: OpenOptions): Promise<AgentSession> {
     cwd: opts.runRoot,
     model,
     modelRuntime,
-    thinkingLevel: "off",
+    thinkingLevel: thinkingLevel(),
     resourceLoader: fixedResources(opts.systemPrompt),
     sessionManager: SessionManager.continueRecent(
       opts.runRoot,

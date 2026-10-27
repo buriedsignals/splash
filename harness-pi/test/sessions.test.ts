@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { hasSession, type SessionKey, sessionDir } from "../src/sessions.ts";
+import { hasSession, type SessionKey, sessionDir, thinkingLevel } from "../src/sessions.ts";
 
 const key = (over: Partial<SessionKey> = {}): SessionKey => ({
   story: "demo",
@@ -44,5 +44,19 @@ describe("session keys", () => {
     expect(hasSession(root, key())).toBe(false);
     await writeFile(join(sessionDir(root, key()), "s.jsonl"), "{}\n");
     expect(hasSession(root, key())).toBe(true);
+  });
+});
+
+describe("thinkingLevel", () => {
+  it("should run thinking off with the env unset", () => {
+    expect(thinkingLevel({})).toBe("off");
+  });
+
+  it("should run thinking on for every arm when SPLASH_THINKING is on", () => {
+    expect(thinkingLevel({ SPLASH_THINKING: "on" })).toBe("medium");
+  });
+
+  it("should refuse a level Pi does not know, naming the ones it does", () => {
+    expect(() => thinkingLevel({ SPLASH_THINKING: "loud" })).toThrow(/use off, on, minimal/);
   });
 });
