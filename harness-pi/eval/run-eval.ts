@@ -13,16 +13,32 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
+import { createRunRoot, stageStory } from "../src/run-root.ts";
 import { scoreRun } from "./score.ts";
 
 const CHECKOUT = resolve(import.meta.dirname, "..", "..");
 const KEPT = join(homedir(), ".splash-harness", "kept-runs");
 
-export async function evaluate(story: string, arm: string, out: string, variant = "") {
-  const tag = `${story}${variant ? `-${variant}` : ""}-${arm}-${Date.now()}`;
+/**
+ * @param seed a kept run whose storyboard to start from: its STORYBOARD.md, PALETTE.md, DIRECTION.md and beat data.json
+ *             are laid into a freshly staged story, so the driver resumes at craft. The storyboard is most of a run's
+ *             wall clock and none of a craft kit's measurement; a seeded run measures the kit in about a third of it.
+ */
+export async function evaluate(story: string, arm: string, out: string, variant = "", seed = "") {
+  const tag = `${story}${variant ? `-${variant}` : ""}${seed ? "-seeded" : ""}-${arm}-${Date.now()}`;
   const root = join(homedir(), ".splash-harness", "runs", tag);
   const sheet = join(CHECKOUT, "harness-pi", "eval", "sheets", `${story}${variant ? `.${variant}` : ""}.json`);
   const t0 = Date.now();
+  if (seed) {
+    await createRunRoot({ checkout: CHECKOUT, dir: root });
+    await stageStory({ root, checkout: CHECKOUT, slug: story });
+    const storyDir = join(root, "stories", story);
+    for (const f of ["STORYBOARD.md", "PALETTE.md", "DIRECTION.md", "SUBJECTS.md"]) if (existsSync(join(seed, f))) cpSync(join(seed, f), join(storyDir, f));
+    for (const beat of readdirSync(join(seed, "beats"))) {
+      mkdirSync(join(storyDir, "beats", beat), { recursive: true });
+      cpSync(join(seed, "beats", beat, "data.json"), join(storyDir, "beats", beat, "data.json"));
+    }
+  }
   const child = Bun.spawn(
     [
       "bun",
@@ -61,7 +77,7 @@ export async function evaluate(story: string, arm: string, out: string, variant 
           cpSync(join(beats, beat, f), join(keep, "beats", beat, f));
         }
     }
-  for (const f of ["STORYBOARD.md", "PALETTE.md", "DIRECTION.md"])
+  for (const f of ["STORYBOARD.md", "PALETTE.md", "DIRECTION.md", "SUBJECTS.md"])
     if (existsSync(join(root, "stories", story, f)))
       cpSync(join(root, "stories", story, f), join(keep, f));
   rmSync(root, { recursive: true, force: true });
@@ -88,6 +104,8 @@ if (import.meta.main) {
   const arm = flag("arm", "stock")!;
   const times = Number(flag("times", "1"));
   const variant = flag("variant", "")!;
+  // Seeded runs: --seeds a,b (kept-run directories, one per story in --stories, same order).
+  const seeds = (flag("seeds") ?? "").split(",").filter(Boolean);
   if (!stories.length || arm.startsWith("teacher")) {
     console.error(
       "usage: bun harness-pi/eval/run-eval.ts --stories a,b [--arm stock] [--times 1]  (teacher runs go through eval/teacher.ts, which is spend-gated)",
@@ -105,8 +123,8 @@ if (import.meta.main) {
     recursive: true,
   });
   for (let n = 0; n < times; n++)
-    for (const story of stories) {
-      const r = await evaluate(story, arm, out, variant);
+    for (const [k, story] of stories.entries()) {
+      const r = await evaluate(story, arm, out, variant, seeds[k] ?? "");
       console.log(
         `${story} ${arm}: ${r.phase} completed=${r.completed} headline=${r.faithful.headline} refusals=${r.gateRefusals} turns=${r.turns} ${r.wallSeconds}s ${JSON.stringify(r.phaseSeconds)}`,
       );
