@@ -421,3 +421,32 @@ describe("a note stating a figure of its row's other columns", () => {
     expect(() => validateGestures({ gestures, rows: RATES, family: "length", format: "static", claim: { takeaway, facts: { Centro: [400, 201000] } } })).toThrow(/states 412/);
   });
 });
+
+describe("a percent in a compare note", () => {
+  const RATES = [
+    { name: "Śląskie", value: 405 },
+    { name: "Łódzkie", value: 402 },
+    { name: "Mazowieckie", value: 388 },
+    { name: "Lubelskie", value: 385 },
+  ];
+  const takeaway = "Mazowieckie ma najwięcej łóżek szpitalnych w kraju, ale w przeliczeniu na mieszkańca jest dopiero trzecie — wyprzedzają je Śląskie i Łódzkie.";
+  const compare = (note: string) => [{ do: "compare", marks: ["Mazowieckie", "Łódzkie"], note }];
+
+  it("should be refused when it is the subject's share of the whole, not the gap", () => {
+    expect(() => validateGestures({ gestures: compare("Mazowieckie ma o 13% mniej łóżek na mieszkańca niż Łódzkie"), rows: RATES, family: "length", format: "static", claim: { takeaway } })).toThrow(/states 13/);
+  });
+
+  it("should offer the gap as a percent, not the gap in the unit", () => {
+    let refusal: GestureRefusal | undefined;
+    try {
+      validateGestures({ gestures: compare("o 13% mniej niż Łódzkie"), rows: RATES, family: "length", format: "static", claim: { takeaway } });
+    } catch (error) {
+      refusal = error as GestureRefusal;
+    }
+    expect(refusal?.fix).toEqual({ set: { index: 0, field: "note", value: "o 4% mniej niż Łódzkie" } });
+  });
+
+  it("should be accepted when it states the gap", () => {
+    expect(() => validateGestures({ gestures: compare("o 3,5% mniej niż Łódzkie"), rows: RATES, family: "length", format: "static", claim: { takeaway } })).not.toThrow();
+  });
+});

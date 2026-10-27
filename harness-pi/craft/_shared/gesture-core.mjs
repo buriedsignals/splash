@@ -70,7 +70,9 @@ export function figuresIn(text) {
     if (Number.isInteger(value) && value >= 1700 && value <= 2100) continue;
     if (value >= 100 && /^10+$/.test(String(value))) continue;
     const separator = grouped ? digits.match(/[ ,\u00a0\u202f]/)[0] : digits.includes(",") ? "," : ".";
-    out.push({ raw, value, decimals, sign, separator, grouped, index: m.index });
+    // A percent sign or word after the figure: it may only be a percentage the gesture draws, never a gap in the unit.
+    const percent = /^\s?(%|per ?cent\b|procent|pour ?cent)/i.test(String(text).slice(m.index + m[0].length));
+    out.push({ raw, value, decimals, sign, separator, grouped, index: m.index, percent });
   }
   return out;
 }
@@ -207,19 +209,29 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
     // derived figures: own (what this gesture states) and context
     const sumOf = (names) => names.reduce((s, n) => s + valueOf.get(n), 0);
     const own = [];
+    // The percentages this gesture draws: a stated "n %" is checked against these and the rows' own values only.
+    const percents = [];
     if (["highlight", "name", "annotate", "filter", "zoom", "count"].includes(g.do)) own.push(...marks.map((m) => valueOf.get(m)));
     if (g.do === "count") own.push(marks.length || rows.length, sumOf(marks.length ? marks : rows.map((r) => r.name)));
     if (g.do === "bracket") {
       const s = sumOf(marks);
       own.push(s, ...marks.map((m) => valueOf.get(m)));
       if (ofWhole) own.push((s / whole) * 100, s / whole);
+      if (ofWhole) percents.push((s / whole) * 100);
     }
     let ratio;
     if (g.do === "compare") {
       const a = valueOf.get(marks[0]);
       const b = marks.length > 1 ? sumOf(marks.slice(1)) : ofWhole ? whole : sumOf(of);
       ratio = a / b;
-      own.push(a, b, a - b, b - a, ratio, 1 / ratio, (a / whole) * 100);
+      // A compare states the two lengths, their gap, their ratio, or the gap as a percent of either. Its share of the
+      // whole was admitted once, and "13% fewer beds per resident than Łódzkie" passed on Mazowieckie's 12.8 % share
+      // when the gap is 3.5 %.
+      const gaps = [(a / b - 1) * 100, (1 - a / b) * 100, (b / a - 1) * 100, (1 - b / a) * 100];
+      own.push(a, b, a - b, b - a, ratio, 1 / ratio, ...gaps);
+      percents.push(...gaps);
+      if (ofWhole) own.push((a / whole) * 100);
+      if (ofWhole) percents.push((a / whole) * 100);
     }
     if (g.do === "reference") own.push(Number(g.value));
     if (g.do === "rescale") own.push(Number(g.value));
@@ -228,13 +240,15 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
     // notes: every number is one of the gesture's figures, at the note's precision
     if (g.note !== undefined && g.do !== "zoom") {
       const stated = figuresIn(g.note);
+      const asPercent = [...percents, ...marks.map((m) => valueOf.get(m)), ...marks.flatMap((m) => claim.facts?.[m] ?? [])];
       // One power-of-ten scale for the whole note: the rows may be in tonnes and the note in Gt.
-      const scale = SCALES.map((k) => ({ k, hits: stated.filter((n) => [...own, ...context].some((f) => matches(n, f * 10 ** k))).length }))
+      const scale = SCALES.map((k) => ({ k, hits: stated.filter((n) => !n.percent && [...own, ...context].some((f) => matches(n, f * 10 ** k))).length }))
         .reduce((best, c) => (c.hits > best.hits ? c : best), { k: 0, hits: -1 }).k;
       const figures = [...own, ...context].map((f) => f * 10 ** scale);
       for (const n of stated) {
-        if (figures.some((f) => matches(n, f))) continue;
-        const best = figures.reduce((p, f) => (Math.abs(f - n.value) < Math.abs(p - n.value) ? f : p), figures[0]);
+        const pool = n.percent && asPercent.length ? asPercent : figures;
+        if (pool.some((f) => matches(n, f))) continue;
+        const best = pool.reduce((p, f) => (Math.abs(f - n.value) < Math.abs(p - n.value) ? f : p), pool[0]);
         const fixed = g.note.slice(0, n.index) + formatLike(n, best) + g.note.slice(n.index + n.raw.length);
         throw new GestureRefusal(
           `gestures[${i}].note`,
