@@ -73,7 +73,10 @@ export function applyGesture({ position, state, g, i, model, entities = [], mode
         throw new GestureRefusal(`gestures[${i}].marks`, `a filter keeps the rows the claim is about: name them`, { set: { index: i, field: "marks", value: [names[0]] } });
       if (kept.length === names.length) unchanged(`keeps every drawn row`);
       const rest = names.filter((n) => !kept.includes(n));
-      next = position.with(state, mode === "hide" ? { hidden: rest } : { back: rest });
+      // The kept rows stay marked once the field returns (a pull-back): ringed, the subject keeping the accent. A 12B
+      // beeswarm filtered the six rows above 20 t and the plate showed one of them.
+      const rings = [...new Set([...state.rings, ...kept.filter((n) => !state.accent.includes(n))])];
+      next = position.with(state, mode === "hide" ? { hidden: rest, rings } : { back: rest, rings });
       if (note) written = { index: i, marks: [kept[0]], text: note };
       break;
     }

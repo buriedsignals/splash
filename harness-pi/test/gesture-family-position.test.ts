@@ -280,6 +280,15 @@ describe("the family's own rules", () => {
     expect(refusalOf(() => validate(ex, [{ do: "highlight", mark: "années 1970" }, { do: "name", mark: "années 2010", note }]))).not.toBeNull();
   });
 
+  it("should mark every row a filter keeps, so a pull-back cannot unmark them", async () => {
+    const ex = await example("beeswarm");
+    const above = (ex.model.rows as any[]).filter((r) => r.value > 20).map((r) => r.name);
+    const { gestures } = validate(ex, [{ do: "filter", marks: above }]);
+    const out = staticModule.composeStaticPosition({ gestures, model: ex.model, format: ex.format, delta: ex.delta });
+    const last = out.state;
+    expect(above.every((n: string) => last.accent.includes(n) || last.rings.includes(n))).toBe(true);
+  });
+
   it("should state a reference's share of the field's size above it", async () => {
     const ex = await example("beeswarm");
     const people = (ex.model.rows as any[]).reduce((s, r) => s + r.size, 0);
