@@ -92,6 +92,10 @@ function formatLike(n, f) {
   return sign + body;
 }
 
+/** The words that run a compare's gap up or down from its subject, in the stories' languages. */
+const MORE = /\b(more|higher|greater|larger|above|bigger|więcej|wyższ\p{L}*|większ\p{L}*|plus|mehr|höher|mais|maior|más|mayor)\b/iu;
+const LESS = /\b(less|fewer|lower|smaller|below|mniej|niższ\p{L}*|mniejsz\p{L}*|moins|weniger|niedriger|menos|menor)\b/iu;
+
 /** "twice", "three times", "half" — a ratio a compare note states in words. */
 const RATIO_WORDS = [
   [/\b(twice|double|two times)\b/i, 2],
@@ -212,6 +216,16 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
         });
       }
     }
+    // A bracket whose own words name three or more drawn rows spans those rows: a 12B wrote mark "United States", of
+    // "whole", and a card naming the next five, twice; the plate then bracketed one row against everything.
+    if (g.do === "bracket" && marks.length === 1) {
+      const words = rowsNamedIn([g.note, ...[g.card ?? []].flat()].filter(Boolean).join(" "), rows);
+      // Three or more: two may be the subject and the row it is compared with ("214 … more than twice Porto").
+      if (words.length > 2 && words.includes(marks[0]))
+        throw new GestureRefusal(`gestures[${i}].marks`, `the bracket's words name ${words.join(", ")}, but it spans only ${marks[0]}: give marks: [${words.map((w) => JSON.stringify(w)).join(", ")}]`, {
+          set: { index: i, value: { ...Object.fromEntries(Object.entries(g).filter(([k]) => k !== "mark" && k !== "of")), marks: words } },
+        });
+    }
     if (g.do === "compare" && marks.length === 1 && !ofWhole && !of.length)
       throw new GestureRefusal(`gestures[${i}].marks`, `a compare needs a second row: marks: [subject, other], or of: [rows]`, {
         set: { index: i, field: "of", value: "whole" },
@@ -243,7 +257,19 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
       // A compare states the two lengths, their gap, their ratio, or the gap as a percent of either. Its share of the
       // whole was admitted once, and "13% fewer beds per resident than Łódzkie" passed on Mazowieckie's 12.8 % share
       // when the gap is 3.5 %.
-      const gaps = [(a / b - 1) * 100, (1 - a / b) * 100, (b / a - 1) * 100, (1 - b / a) * 100];
+      // The note's own word says which way the gap runs from the subject: "China emitted 60% more" was offered for
+      // a subject 150 % above the United States (60 % is how far the United States falls short of China).
+      const said = String(g.note ?? "");
+      const more = MORE.test(said);
+      const less = LESS.test(said);
+      // A sentence that names the compared row before its direction word speaks of it ("the United States emitted
+      // 60% less"); named after it, the row is the reference ("3,5% mniej niż Łódzkie").
+      const at = (name) => said.toLowerCase().indexOf(String(name).toLowerCase());
+      const other = marks.length > 1 ? marks[1] : of[0];
+      const word = said.search(more ? MORE : LESS);
+      const flipped = other !== undefined && at(other) >= 0 && word >= 0 && at(other) < word && (at(marks[0]) < 0 || at(other) < at(marks[0]));
+      const [x, y] = flipped ? [b, a] : [a, b];
+      const gaps = more && !less ? [(x / y - 1) * 100] : less && !more ? [(1 - x / y) * 100] : [(a / b - 1) * 100, (1 - a / b) * 100, (b / a - 1) * 100, (1 - b / a) * 100];
       own.push(a, b, a - b, b - a, ratio, 1 / ratio, ...gaps);
       percents.push(...gaps);
       gapPercents.push(...gaps);

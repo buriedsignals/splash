@@ -515,3 +515,43 @@ describe("a note figure far from anything the gesture draws", () => {
     expect(refusalOf("o 130 łóżek mniej niż Łódzkie")?.fix).toEqual({ set: { index: 0, field: "note", value: "o 132 łóżek mniej niż Łódzkie" } });
   });
 });
+
+describe("a compare's percent and its direction", () => {
+  const ROWS = [
+    { name: "China", value: 12.3 },
+    { name: "United States", value: 4.9 },
+  ];
+  const claim = { takeaway: "China emitted more CO₂ in 2024 than the United States." };
+  const check = (note: string) => () => validateGestures({ gestures: [{ do: "compare", marks: ["China", "United States"], note }], rows: ROWS, family: "length", format: "static", claim });
+
+  it("should refuse 60% more when 60 % is how far the other row falls short", () => {
+    expect(check("China emitted 60% more")).toThrow(/states 60/);
+  });
+
+  it("should accept 151% more for the subject's own gap", () => {
+    expect(check("China emitted 151% more")).not.toThrow();
+  });
+
+  it("should accept 60% less said of the other row's shortfall", () => {
+    expect(check("the United States emitted 60% less")).not.toThrow();
+  });
+});
+
+describe("a bracket whose words name the rows it should span", () => {
+  const ROWS = [
+    { name: "China", value: 12.3 },
+    { name: "United States", value: 4.9 },
+    { name: "India", value: 3.2 },
+    { name: "Russia", value: 1.8 },
+  ];
+  const claim = { takeaway: "China emitted more CO₂ in 2024 than the next three emitters together.", comparison: "United States, India, Russia" };
+  it("should offer the rows its card names when it spans one of them", () => {
+    let refusal: GestureRefusal | undefined;
+    try {
+      validateGestures({ gestures: [{ do: "bracket", mark: "United States", of: "whole", note: "Next 3", card: "The United States, India and Russia together emitted 9.9 billion tonnes." }], rows: ROWS, family: "length", format: "scrolly", claim });
+    } catch (error) {
+      refusal = error as GestureRefusal;
+    }
+    expect(refusal?.fix).toEqual({ set: { index: 0, value: { do: "bracket", note: "Next 3", card: "The United States, India and Russia together emitted 9.9 billion tonnes.", marks: ["United States", "India", "Russia"] } } });
+  });
+});
