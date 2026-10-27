@@ -167,3 +167,13 @@ describe("runCheck", () => {
     expect(() => runCheck({ check() { throw new Error("Mazowieckie is rank 3"); } })).toThrow(/check\(\) is inverted/);
   });
 });
+
+describe("runCheck on a figure that only rounds", () => {
+  it("should ask for a tolerance when both sides print the same figure", () => {
+    expect(() => runCheck({ check: () => { throw new Error("share is 99.5%, expected 99.5%"); } })).toThrow(/compare with a tolerance/);
+  });
+
+  it("should keep the inverted-condition hint otherwise", () => {
+    expect(() => runCheck({ check: () => { throw new Error("rank 3"); } })).toThrow(/check\(\) is inverted/);
+  });
+});

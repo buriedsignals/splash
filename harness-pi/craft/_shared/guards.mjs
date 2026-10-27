@@ -100,7 +100,13 @@ export function runCheck(beat) {
   try {
     beat.check();
   } catch (error) {
-    throw new Error(`check() threw: ${error?.message ?? error}. If that is what the takeaway says, check() is inverted: it must throw only when the data contradicts the takeaway — fix its condition, not the data`);
+    const message = String(error?.message ?? error);
+    // The same figure twice ("99.5%, expected 99.5%"): an exact === on a computed value that only rounds to it.
+    const figures = (message.match(/\d+(?:[.,]\d+)?/g) ?? []).map((d) => d.replace(",", "."));
+    const sameTwice = figures.some((f, i) => f.includes(".") && figures.indexOf(f) !== i);
+    if (sameTwice)
+      throw new Error(`check() threw: ${message}. Both sides print the same figure: the computed value only rounds to it, so compare with a tolerance, e.g. Math.abs(value - expected) > 0.05, never ===`);
+    throw new Error(`check() threw: ${message}. If that is what the takeaway says, check() is inverted: it must throw only when the data contradicts the takeaway — fix its condition, not the data`);
   }
 }
 
