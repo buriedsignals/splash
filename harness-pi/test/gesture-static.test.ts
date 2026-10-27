@@ -356,7 +356,7 @@ describe.skipIf(!existsSync(join(BENCH, "package.json")))(
       ]).toEqual([false, ["Indonesia", "Indonesia : 0,8"]]);
     });
 
-    it("should refuse the false 214 when Lisboa is 150, the model's check() no longer deciding", () => {
+    it("should refuse on the title's figures, before any gesture check, when Lisboa is 150", () => {
       const data = structuredClone(LISBOA_DATA);
       data.rows.find((r) => r[0] === "Lisboa")![1] = 150;
       const { exitCode, output, svg } = render(
@@ -368,8 +368,8 @@ describe.skipIf(!existsSync(join(BENCH, "package.json")))(
       );
       expect([
         exitCode,
-        /REFUSED — .*states 214/.test(output),
-        /Lisboa carries 150 of 330/.test(output),
+        /title states 214, 394/.test(output),
+        /gestures\[/.test(output),
         svg,
       ]).toEqual([1, true, false, ""]);
     });

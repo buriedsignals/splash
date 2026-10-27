@@ -177,3 +177,19 @@ describe("runCheck on a figure that only rounds", () => {
     expect(() => runCheck({ check: () => { throw new Error("rank 3"); } })).toThrow(/check\(\) is inverted/);
   });
 });
+
+describe("assertHeadlineNumbersDrawn, strict", () => {
+  const lisboa = [150, 96, 31, 28, 14, 11];
+
+  it("should refuse a title stating a figure the drawn rows no longer give", () => {
+    expect(() => assertHeadlineNumbersDrawn("Lisboa alone carries 214 of the 394 million trips — more than twice Porto's 96 million.", lisboa, "bars")).toThrow(/title states 214, 394/);
+  });
+
+  it("should accept a gap between two drawn values", () => {
+    expect(() => assertHeadlineNumbersDrawn("Lisboa leads Porto by 54 million trips", lisboa, "bars")).not.toThrow();
+  });
+
+  it("should accept a round figure for the drawn values' total, whatever follows them", () => {
+    expect(() => assertHeadlineNumbersDrawn("72 réacteurs sur 8 900 centrales", [3884, 2317, 2070, 498, 72, 51, 8, 100, 500, 7], "groups")).not.toThrow();
+  });
+});

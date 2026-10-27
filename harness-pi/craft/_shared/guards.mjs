@@ -129,16 +129,30 @@ export function assertHeadlineNumbersDrawn(headline, drawn, label = "marks") {
   const signed = drawn.filter((v) => Number.isFinite(v));
   if (!signed.length) return;
   const values = signed.map(Math.abs);
-  const allowed = [...values, Math.abs(signed.reduce((a, b) => a + b, 0))];
+  const total = Math.abs(signed.reduce((a, b) => a + b, 0));
+  // Callers pass the values first and their own figures after (breaks, counts): every running total, so the values'
+  // own total is in, whatever follows them.
+  let run = 0;
+  const totals = signed.map((v) => Math.abs((run += v)));
+  const allowed = [...new Set([...values, ...totals])];
   const lo = Math.min(...values) / 2;
-  const hi = Math.max(...values) * 2;
+  const hi = Math.max(Math.max(...values) * 2, total * 1.2);
   // A digit glued to letters is part of a name (CO2, PM2.5, H2O), not a figure the title states.
-  const stated = [...String(headline).matchAll(/(?<![\p{L}\d])(\d{1,3}(?:[ ,  ]\d{3})+|\d+(?:[.,]\d+)?)(?![\p{L}\d])(\s*%)?/gu)]
+  const stated = [...String(headline).matchAll(/(?<![\p{L}\d])(\d{1,3}(?:[ ,  ]\d{3})+|\d+(?:[.,]\d+)?)(?![\p{L}\d])(\s*%)?/gu)]
     .filter((m) => !m[2])
-    .map((m) => Number(m[1].replace(/[ ,  ](?=\d{3}\b)/g, "").replace(",", ".")))
+    .map((m) => Number(m[1].replace(/[ ,  ](?=\d{3}\b)/g, "").replace(",", ".")))
     .filter((n) => !(Number.isInteger(n) && n >= 1700 && n <= 2100) && n >= lo && n <= hi);
-  const missing = stated.filter((n) => !allowed.some((v) => Math.abs(v - n) <= Math.max(0.5, Math.abs(n) * 0.005)));
-  if (missing.length && missing.length * 2 > stated.length)
+  // A round figure ("8 900 centrales") stands for anything it rounds from: its unit is the tolerance.
+  const unit = (n) => (Number.isInteger(n) && n >= 100 ? 10 ** (String(n).match(/0*$/)[0].length) : 0);
+  const near = (v, n) => Math.abs(v - n) <= Math.max(0.5, Math.abs(n) * 0.005, unit(n));
+  // A figure the title states is a drawn value, their total, or the sum or gap of two drawn values (a change, a lead).
+  // Every one must be: the model's check() used to stand behind the title, and it no longer decides (Lisboa drawn at
+  // 150 under a title stating 214 of 394 passed the earlier majority rule).
+  // Pairs of drawn values only: a running total paired with a value made almost any figure derivable (Lisboa's 214).
+  const pool = [...new Set(values)].slice(0, 1500);
+  const derivable = (n) => allowed.some((v) => near(v, n)) || pool.some((a, i) => pool.some((b, j) => j > i && (near(a + b, n) || near(Math.abs(a - b), n))));
+  const missing = stated.filter((n) => !derivable(n));
+  if (missing.length)
     throw new Error(`the title states ${missing.join(", ")}, which the drawn ${label} do not contain: the rows selected from data.json are probably not the takeaway's series — read its other columns and filter to the one the takeaway is about`);
 }
 
