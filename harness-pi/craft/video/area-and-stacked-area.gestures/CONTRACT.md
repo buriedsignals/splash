@@ -1,6 +1,6 @@
 # Area and stacked area (video), composed — what you write
 
-The marks, the colours, the layout and the timing (21 s at 30 fps) are already done: one area from zero (stacked, bottom-up in the order of `points`, when there are several series); the area is the stock, in the story's
+The marks, the colours, the layout and the timing (21 s at 30 fps) are already done: one area from zero (stacked, bottom-up in the order of `points`, when there are several series); the area is the stock (give each time its own reading, as data.json holds it — never a running total you added up, the surface already adds them), in the story's
 PALETTE.md and DIRECTION.md. The video opens on a title card (the eyebrow and the takeaway); then the axes arrive
 and the series with them. YOU decide what happens next: an ordered list `gestures` of exactly THREE gestures, in
 story order — the reveal, the subject, the conclusion. A `reveal` or a `trace` makes the series arrive empty and

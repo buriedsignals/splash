@@ -1,6 +1,6 @@
 # Area and stacked area, composed, on the web — what you write
 
-The marks, the type, the colours and the layout are done: a filled area from ZERO (the surface is the stock); several series stack, the first at the bottom, in the story's PALETTE.md and DIRECTION.md, as a
+The marks, the type, the colours and the layout are done: a filled area from ZERO (the surface is the stock: give each time its own reading, as data.json holds it — never a running total you added up, the surface already adds them); several series stack, the first at the bottom, in the story's PALETTE.md and DIRECTION.md, as a
 page that fills its container. YOU decide the staging: an ordered list `gestures`, in the order the story tells it.
 The page the reader lands on draws every resting gesture at once; every further gesture becomes ONE reader control
 (two options: the page as it lands, and the page with that gesture). You write ONE file, `beat.mjs`, beside

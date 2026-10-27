@@ -228,7 +228,10 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
     const of = rows.filter((r) => (r.series !== undefined && fold(r.series) === fold(name)) || (r.key !== undefined && fold(String(r.key)) === fold(name)));
     return of.length ? of.map((r) => r.name) : null;
   };
+  // A mark written as an object ({ t: 1988 }, { name: "…" }, a 12B area run) names the same thing as its string.
+  const asName = (m) => (m && typeof m === "object" && !Array.isArray(m) ? String(m.name ?? m.key ?? m.t ?? m.series ?? "") : typeof m === "number" ? String(m) : m);
   const listed = (value) => {
+    value = asName(value);
     if (typeof value !== "string" || named(value)) return null;
     const whole = grouped(value);
     if (whole) return whole;
@@ -255,19 +258,22 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
     // marks
     let marks = [];
     // A list given as `mark` is the gesture's marks (a 12B China scrolly wrote mark: [the next five]).
-    if (g.mark !== undefined) marks = (Array.isArray(g.mark) ? g.mark.flatMap((m) => listed(m) ?? [m]) : listed(g.mark) ?? [g.mark]).map((m) => resolve(m, i, "mark"));
+    if (g.mark !== undefined) marks = (Array.isArray(g.mark) ? g.mark.flatMap((m) => listed(m) ?? [asName(m)]) : listed(g.mark) ?? [asName(g.mark)]).map((m) => resolve(m, i, "mark"));
     if (g.marks !== undefined) {
-      const given = (Array.isArray(g.marks) ? g.marks : [g.marks]).flatMap((m) => listed(m) ?? [m]);
-      marks = given.map((m, k) => {
+      const given = (Array.isArray(g.marks) ? g.marks : [g.marks]).flatMap((m) => listed(m) ?? [asName(m)]);
+      const drawn = (m) => named(m);
+      const bad = given.findIndex((m) => !drawn(m));
+      if (bad >= 0) {
+        // Every wrong entry is fixed at once: one at a time, a 38-year run took 38 repairs and never converged.
+        const fixed = given.map((m) => (drawn(m) ? m : closest(m, rows)));
         try {
-          return resolve(m, i, `marks[${k}]`);
+          resolve(given[bad], i, `marks[${bad}]`);
         } catch (error) {
           if (!(error instanceof GestureRefusal)) throw error;
-          const fixed = [...given];
-          fixed[k] = closest(m, rows);
           throw new GestureRefusal(error.field, error.message.slice(error.field.length + 2), { set: { index: i, field: "marks", value: fixed } });
         }
-      });
+      }
+      marks = given.map((m, k) => resolve(m, i, `marks[${k}]`));
     }
     let of = [];
     if (Array.isArray(g.of)) of = g.of.flatMap((m) => listed(m) ?? [m]).map((m) => resolve(m, i, "of"));

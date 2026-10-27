@@ -1,6 +1,6 @@
 # Area and stacked area, composed — what you write
 
-The marks, the type, the colours and the layout are already done: one filled surface from ZERO (the area is the stock); several series are stacked bottom-up in the order of `points` (or `order`), every series labelled at its end, in
+The marks, the type, the colours and the layout are already done: one filled surface from ZERO (the area is the stock: give each time its own reading, as data.json holds it — never a running total you added up, the surface already adds them); several series are stacked bottom-up in the order of `points` (or `order`), every series labelled at its end, in
 the story's PALETTE.md and DIRECTION.md. YOU decide the staging: an ordered list `gestures`, in the order the story
 tells it. You write ONE file, `beat.mjs`, in the beat folder. It reads `data.json` beside it and exports what THIS
 story's plate says. `render-beat.mjs` (already in the folder) draws it. `beat.example.mjs` is a worked example:

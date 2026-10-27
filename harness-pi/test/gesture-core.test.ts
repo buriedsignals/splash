@@ -693,6 +693,20 @@ describe("the family interface (phase 2)", () => {
     expect(validateGestures({ gestures: [{ do: "highlight", mark: "2025" }], rows: LINE, family: "length", format: "static", claim }).gestures[0].marks).toEqual(["2025 · Lisboa", "2025 · Porto"]);
   });
 
+  it("should resolve a mark written as an object to the key it names", () => {
+    expect(validateGestures({ gestures: [{ do: "highlight", mark: { t: 2025 } }], rows: LINE, family: "length", format: "static", claim }).gestures[0].marks).toEqual(["2025 · Lisboa", "2025 · Porto"]);
+  });
+
+  it("should fix every wrong entry of a marks list in one refusal", () => {
+    let fix: { set?: { value?: unknown } } = {};
+    try {
+      validateGestures({ gestures: [{ do: "compare", marks: ["2025 · Lisbon", "2015 · Lisboa", "2025 · Portto"] }], rows: LINE, family: "length", format: "static", claim });
+    } catch (error) {
+      fix = (error as GestureRefusal).fix;
+    }
+    expect(fix.set?.value).toEqual(["2025 · Lisboa", "2015 · Lisboa", "2025 · Porto"]);
+  });
+
   it("should admit a figure a family hook draws", () => {
     const hooks = { figures: (g: { do: string }) => (g.do === "annotate" ? [34] : []) };
     expect(() => validateGestures({ gestures: [{ do: "annotate", mark: "2025 · Lisboa", note: "+34 since 2015" }], rows: LINE, family: "length", format: "static", claim, hooks })).not.toThrow();
