@@ -184,3 +184,113 @@ video for the first time (the per-type bar video refuses it at every `drawCount`
   country code; both gesture kits call it. To re-run in U9.
 - Fixed during the gate: the core read a note's figure glued to its unit ("12.289037Gt") as "12" and refused it
   with a broken fix (first China attempt stopped and restarted on `719828cf0`).
+
+## Gesture kits, full measurement (U9) — 2026-10-27/28
+
+All four gesture kits on the local 12B (port 8091), fallback off (`SPLASH_GESTURE_FALLBACK=0`), static gesture kit on
+(`SPLASH_GESTURES_STATIC=1`), one run at a time. Every render below was looked at: scrolly cards, the web page at rest
+and its controls, frames taken from the mp4 for video. KTD11: `done`, headline faithful, every drawn gesture states the
+takeaway's entity or one of its figures, and (as applied here) nothing drawn is false or misleading.
+
+U9 ran in two parts. The **working pass** stopped at each defect a run showed, fixed it with a test that fails when the
+fix is removed, and re-ran (17 runs, 14 commits `6fdb27744`…`83f980f64`). The **clean pass** then ran the measured set
+once on the frozen kit `83f980f64`, with no change in between.
+
+### Clean pass on `83f980f64` (the measurement)
+
+| Story | Format | Completed | Headline | KTD11 (looked at) | Wall | Craft | Gestures the 12B composed | Repairs |
+|---|---|---|---|---|---|---|---|---|
+| China | scrolly | ✅ | ✅ | ✅ bracket over the five (11,652M), China 12,289M accented; the compare is China against the United States only | 21.8 min | 10.1 min | highlight → bracket the five → compare → pull-back | **5** (counted apart) |
+| Lisboa | static | ✅ | ✅ | ⚠️ true, but the plate prints "more than twice Porto's `${96}` million" | 14.1 min | 1.4 min | highlight → bracket of whole "214 of 394 million" → compare Porto | 0 |
+| Lisboa | static | ✅ | ✅ | ✅ | 11.5 min | 1.4 min | highlight → bracket of whole "214 of 394" → compare Porto "more than twice Porto's 96 million" | 0 |
+| stress-q | static | ✅ | ✅ | ❌ a reference rule at 412 (Centro's raw count) across the per-100,000 axis | 16.7 min | 5.8 min | highlight → annotate "233 per 100,000" → compare Centro → reference 412 → filter → pull-back | 0 |
+| stress-q | static | ✅ | ✅ | ✅ "raw count (412)" as a note on Centro | 12.2 min | 2.8 min | highlight → name "233 per 100,000" → compare Centro → annotate Centro | 0 |
+| stress-ad | static | ✅ | ✅ | ✅ "o 13,25 punktu mniej niż Łódzkie" (the true gap) | 21.5 min | 9.0 min | highlight → compare Łódzkie | 0 |
+| stress-ad | static | ❌ craft | — | — | 23.2 min | 13.1 min | (the 12B's text crashed the renderer, then its `format()` collapsed the labels, six attempts) | — |
+| stress-ad | static | ✅ | ✅ | ⚠️ true, but "Suma: 3023" is a sum of per-100,000 rates | 14.0 min | 4.2 min | highlight → name "3. miejsce" → compare Śląskie → bracket of whole → filter top 3 → pull-back | 0 |
+
+**Static bar runs: 6/7 completed, 3/7 pass KTD11 strictly, 5/7 counting the two ⚠️.**
+
+### The baseline, re-judged under the same rule (per-type kit, 2026-10-25)
+
+| Run | Verdict | Looked at |
+|---|---|---|
+| stress-q 17:58 | ✅ | Sul 233 accented |
+| stress-ad 18:28 | ❌ | draws raw beds: Mazowieckie first, where the takeaway says third per resident |
+| stress-p 18:43 | ✅ | bracket "The other five together: 180 million" |
+| stress-q 21:46 | ✅ | Sul 233 accented |
+| stress-ad 21:59 | ❌ | every label "0,004" |
+| stress-p 22:13 | ✅ | bracket "Total trips of the next five: 180" |
+| stress-ad 22:29 | ✅ | per 1,000, Mazowieckie third accented ("per 1,000" not printed) |
+
+**5/7 under KTD11** (the "9/9" counted completion and headline only). The baseline draws one or two gestures per plate;
+the gesture kit draws three to six, and every defect it showed came from one of those extra gestures.
+
+### Working pass (stopped and fixed as it went)
+
+| Story | Format | Kit | Outcome | What the render or log showed |
+|---|---|---|---|---|
+| Lisboa | web | `dbc0cb7d0` | ✅ (superseded) | `beat.mjs` typed its rows after three crashes on `data.json` |
+| Lisboa | web | `6fdb27744` | ✅ ✅ | controls 214/394 and 214/96 |
+| Lisboa | scrolly | `6fdb27744` | ✅ ❌ | no highlight → every bar grey; pull-back card said nothing of the takeaway |
+| Lisboa | scrolly | `df3ed5129` | ✅ ✅ | Lisboa accented on every card |
+| China | scrolly | — | ❌ storyboard | twelve turns of talk, `record_slot` never called |
+| China | video | `d1eb9dfff` | ✅ ✅ | no aggregate drawn (the U11 defect); others drawn in a light accent (fixed) |
+| Lisboa | static ×2 | `d1eb9dfff` | ✅ ✅ ×2 | |
+| stress-q | static | old | stopped | a true note (412, another column) refused, and the fix offered was false |
+| stress-q | static | `f6730bef7` | ❌ craft | read `stories/stress_q_…` six times over |
+| stress-ad | static | `f6730bef7` | ✅ ❌ | "13% fewer" drawn; the gap is 3.3 % |
+| stress-ad | static | `17a7a4e39` | ✅ ⚠️ | two copies and three notes on one row |
+| stress-ad | static | — | ❌ storyboard | the journalist's off-menu choice looped ten turns |
+| China | scrolly | `df3ed5129` | ❌ craft | five names in one string → a chain of false fixes |
+| stress-q | static | `da67f9756` | ✅ ✅ | "28 more", "raw count: 412" |
+| stress-ad | static | `da67f9756` | ✅ ✅ | two accents (the regions ahead), subject grey |
+| China | scrolly | → `210e2b07d` | ✅ ❌ | shipped "12,289.037 more than the 11,652.21" |
+| China | "scrolly" | `210e2b07d` | ✅ ❌ | moved to web on a "Yes."; repair delivered "12,289,037,000 … is more than the 12,289,037,000 … of the next five" |
+
+### Fixes, each with a test that fails when it is removed
+
+| Commit | Defect | Fix |
+|---|---|---|
+| `6fdb27744` | typed rows after `data.json` load errors | load error answered with `data.json`'s shape; typed rows refused |
+| `d1eb9dfff` | subject grey without a highlight; empty pull-back card | subject accented when no highlight (4 formats); a figureless card carries the takeaway |
+| `52e59e8d2` | storyboard silent, no slot | 3 silent turns with no slot → ask for `record_slot` field by field |
+| `f42f1838f` | video's other rows in a light accent; Kosovo as an aggregate | neutral rows; `OWID_KOS` accepted |
+| `f6730bef7` | a true figure from another column refused, false fix offered | `rowFacts`; a value printed once |
+| `17a7a4e39` | story folder misspelt | `_` for `-` resolves; refusal names the folder |
+| `585274378` | "13% fewer" passed as a share | a compare's percent is its gap |
+| `df3ed5129` | crowded row | one note, one copy per row on a still plate |
+| `da67f9756` | off-menu choice looped | harness records the journalist's catalogue type |
+| `4b042f5af` | rows in one string; "(12B)" loop | listed rows read as rows; magnitude suffixes |
+| `3bef31b03` | fixes swapping one false figure for another | fixes offer only what the gesture draws; far → note dropped |
+| `210e2b07d` | "60% more" for 151 % more; bracket on one row under a card naming five | direction from the note's word; bracket rows from its words |
+| `444b1c607` | "12,289.037 more than the 11,652.21"; grouped decimals misread | a figure stated as a gap is the gap; grouped decimals read |
+| `83f980f64` | journalist moved off scrolly; repair printed China's total as the five's | the journalist's format kept; true figures of other rows never swapped in |
+| `9205a3490` | (after the clean pass, not measured) `${96}` printed; a list in `mark`; a rule at another column's figure; a number crashing the still renderer | words coerced and `${x}` unwrapped; `mark: [..]` read as marks; such a rule refused |
+
+### Success Criteria
+
+- **Lisboa in all four formats through the gesture kit — met.** static (clean pass, U11), video (U11), web, scrolly:
+  `done`, headline faithful, the share (214 of 394) and the Porto ratio drawn.
+- **China in video and scrolly — met, scrolly only with repair.** Video without repair (no aggregate drawn). Scrolly
+  reached `done` once in the clean pass, after five repairs, with true text; its four earlier scrolly runs failed
+  (storyboard, craft, a false card, a move to web).
+- **The 7 static bar runs re-pass under KTD11 — not met.** 3/7 strictly (5/7 with the two ⚠️), against 5/7 for the
+  re-judged baseline. The static default stays the per-type kit.
+- **Two stories of one type get different staging — met.** Lisboa: share bracket and Porto compare. stress-q: a name,
+  a compare, the raw count from a second column. stress-ad: the third place named, the regions ahead filtered. China:
+  the next five bracketed, then compared.
+
+### Open, for Rémy
+
+1. **A bracket "of the whole" over rates** prints a sum of rates ("Suma: 3023") or a share of it; seen three times.
+   Refuse it when the measure is a rate? The kit cannot tell a rate from a count without the unit.
+2. **One accent:** two highlights left the subject grey (stress-ad). Keep the subject always accented?
+3. **Words are checked through their numbers only.** A true figure under a false label passes; rank words are
+   checked in English only.
+4. **Repair delivers, but rarely and riskily.** Two repaired deliveries: the first (old kit) printed a false note, the
+   second (clean pass) was true. Repair stays on; its fixes no longer invent a figure, but the evidence is one run.
+5. **Label collapse is still a refusal** ("format() prints … as only … labels"): under the never-fail rule the kit
+   should choose the decimals itself.
+6. **The storyboard** cost three of the 17 working runs (silent slot, menu loop, a move off scrollytelling); fixed, not re-measured
+   across many runs.
