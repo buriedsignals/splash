@@ -268,24 +268,24 @@ describe("no menu yet", () => {
 });
 
 describe("the journalist chose another type", () => {
-  it("should say the journalist chose a type that was not on the menu", async () => {
+  it("should record the type the journalist chose off the menu, putting it on the menu", async () => {
     const tools = await withFormat();
     await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Diverging bar", why: "a" }, { type: "Bar and column", why: "b" }] });
     dialogue.lastJournalist = "Line.";
-    await expect(call(tools.recordSlot, { slot: "1", field: "chosen", value: "Diverging bar" })).rejects.toThrow(
-      /journalist chose Line, not Diverging bar, and Line was not on your menu/,
-    );
+    await call(tools.recordSlot, { slot: "1", field: "chosen", value: "Diverging bar" });
+    expect([meta().slots[0].chosen, meta().slots[0].candidates]).toEqual(["Line", ["Diverging bar", "Bar and column", "Line"]]);
   });
 });
 
 describe("the journalist's named type outlasts a later yes", () => {
-  it("should refuse the model's substitute when the journalist named another type before saying yes", async () => {
+  it("should record the journalist's named type, not the model's substitute they later said yes to", async () => {
     const tools = await withFormat();
     await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Area (and stacked area)", why: "a" }, { type: "Bar and column", why: "b" }] });
     dialogue.history = [{ proposal: "Which treatment?", answer: "Line." }];
     dialogue.lastProposal = "Line is not in the menu; shall we use Area instead?";
     dialogue.lastJournalist = "Yes.";
-    await expect(call(tools.recordSlot, { slot: "1", field: "chosen", value: "Area (and stacked area)" })).rejects.toThrow(/journalist chose Line/);
+    await call(tools.recordSlot, { slot: "1", field: "chosen", value: "Area (and stacked area)" });
+    expect(meta().slots[0].chosen).toBe("Line");
   });
 });
 
@@ -433,13 +433,13 @@ describe("slot discipline", () => {
 });
 
 describe("what the local harness can draw", () => {
-  it("should tell the model to re-offer a type the journalist asked for that the menu lacked", async () => {
+  // A 12B, told to re-offer the journalist's type, apologised for nine turns while they answered "Bar and column.".
+  it("should record a type the journalist asked for that the menu lacked, putting it on the menu", async () => {
     const tools = await withFormat();
     await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Line", why: "a" }, { type: "Treemap", why: "b" }] });
     dialogue.lastJournalist = "Bar and column.";
-    await expect(call(tools.recordSlot, { slot: "1", field: "chosen", value: "Bar and column" })).rejects.toThrow(
-      /asked for Bar and column, which your menu did not offer.*show_candidates again/,
-    );
+    await call(tools.recordSlot, { slot: "1", field: "chosen", value: "Bar and column" });
+    expect([meta().slots[0].chosen, meta().slots[0].candidates]).toEqual(["Bar and column", ["Line", "Treemap", "Bar and column"]]);
   });
 
   // Every type has a kit in every format except the web slope, parked because its worked example fails verify-web.

@@ -419,11 +419,13 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
         }
         if (named && !sameTreatment(value, named, medium0)) {
           const shown: string[] = Array.isArray(currentSlot(slot)?.candidates) ? currentSlot(slot)!.candidates : [];
-          throw new Error(
-            shown.some((c) => c.toLowerCase() === named.toLowerCase())
-              ? `the journalist chose ${named}, not ${value}: record chosen ${named}.`
-              : `the journalist chose ${named}, not ${value}, and ${named} was not on your menu (${shown.join(", ") || "none"}). Call show_candidates again with ${named} among the candidates, show the menu, and ask them to confirm.`,
-          );
+          if (shown.some((c) => c.toLowerCase() === named.toLowerCase()))
+            throw new Error(`the journalist chose ${named}, not ${value}: record chosen ${named}.`);
+          // The journalist named a catalogue type the menu did not offer. Asked to rebuild the menu, a 12B apologised
+          // for nine turns while the journalist answered "Bar and column." each time: the choice is theirs, so the
+          // harness puts it on the menu and records it.
+          await mutateStoryboard(path, { slot: { id: slot, fields: { candidates: [...shown, named] } } });
+          value = named;
         }
       }
       if (field === "chosen" && answers.some((a) => sameTreatment(value, a, String(currentSlot(slot)?.medium ?? "chart")))) {
@@ -462,6 +464,11 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
               ? `no candidates are recorded yet. Call show_candidates now with ${value} and one other catalogue type that sees THIS data differently (it need not be one this harness draws — the menu marks those), each with why it fits.${distinctHint([value])} Show the journalist the menu it returns, then record their choice.`
               : "no candidates are recorded yet: call show_candidates with at least two chart types and why each fits, show the journalist the menu it returns, then record their choice",
           );
+        }
+        if (!candidates.some((c) => c.toLowerCase() === value.toLowerCase()) && sameTreatment(value, dialogue.lastJournalist, medium)) {
+          // The journalist asked for a type the menu did not offer: the harness puts it on the menu (as above).
+          candidates.push(value);
+          await mutateStoryboard(path, { slot: { id: slot, fields: { candidates } } });
         }
         if (!candidates.some((c) => c.toLowerCase() === value.toLowerCase())) {
           throw new Error(
