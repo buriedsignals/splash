@@ -159,6 +159,9 @@ const RATE = /(?<![\p{L}])(per|pour|par|na|pro|je|por)(?![\p{L}])\s+(\d[\d ,.\u0
  * @returns        { gestures: [{ ...gesture, marks, figures }], whole, entities }
  */
 export function validateGestures({ gestures, rows, family, format, claim }) {
+  // An empty note is no note: told to drop a note, a 12B wrote note: "" and was refused for it three times over.
+  if (Array.isArray(gestures))
+    gestures = gestures.map((g) => (g && typeof g.note === "string" && !g.note.trim() ? Object.fromEntries(Object.entries(g).filter(([k]) => k !== "note")) : g));
   const allowed = admissible(family, format).map((a) => a.do);
   if (!Array.isArray(gestures) || !gestures.length)
     throw new GestureRefusal("gestures", `give a list of gestures, in story order, from: ${allowed.join(", ")}`, {

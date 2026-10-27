@@ -81,13 +81,14 @@ export function composeStatic({ gestures, rows, format = String }) {
         oneNote(marks[0], i, note);
         state = length.with(state, { emphasis: { [marks[0]]: "ring" } });
         plate.rings.push(marks[0]);
-        plate.notes.push({ index: i, do: g.do, anchor: "mark", marks, text: note ?? `${marks[0]} ${valueOf.get(marks[0])}`, value: note === undefined });
+        // A note the 12B did not write prints the value as the plate prints it ("388.3847549909256" once).
+        plate.notes.push({ index: i, do: g.do, anchor: "mark", marks, text: note ?? `${marks[0]} ${format(valueOf.get(marks[0]))}`, value: note === undefined });
         judge({});
         break;
       case "annotate":
         oneNote(marks[0], i, note);
         // An annotate with no words writes the row's value: the plate adapts rather than refusing.
-        plate.notes.push({ index: i, do: g.do, anchor: "mark", marks, text: note?.trim() ? note : String(valueOf.get(marks[0])), value: !note?.trim() });
+        plate.notes.push({ index: i, do: g.do, anchor: "mark", marks, text: note?.trim() ? note : format(valueOf.get(marks[0])), value: !note?.trim() });
         judge({});
         break;
       case "filter": {
@@ -150,7 +151,7 @@ export function composeStatic({ gestures, rows, format = String }) {
         break;
       case "count": {
         const on = marks.length ? marks : all;
-        plate.notes.push({ index: i, do: g.do, anchor: "span", marks: on, text: note ?? String(sum(on)), value: note === undefined });
+        plate.notes.push({ index: i, do: g.do, anchor: "span", marks: on, text: note ?? format(sum(on)), value: note === undefined });
         judge({});
         break;
       }

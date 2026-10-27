@@ -170,3 +170,22 @@ describe("the subject's accent", () => {
     expect(plate().rings).toEqual(["Łódzkie", "Śląskie"]);
   });
 });
+
+describe("notes the 12B left empty (seeded pass, 2026-10-28)", () => {
+  const PL = [
+    { name: "Śląskie", value: 405.38 },
+    { name: "Łódzkie", value: 401.64 },
+    { name: "Mazowieckie", value: 388.3847549909256 },
+  ];
+  const claim = { takeaway: "Mazowieckie ma najwięcej łóżek szpitalnych w kraju, ale w przeliczeniu na mieszkańca jest dopiero trzecie — wyprzedzają je Śląskie i Łódzkie." };
+  const fmt = (v: number) => String(Math.round(v));
+  const plate = (list: object[]) => composeStatic({ gestures: validateGestures({ gestures: list, rows: PL, family: "length", format: "static", claim }).gestures, rows: PL, format: fmt });
+
+  it("should count an empty note as no note", () => {
+    expect(() => plate([{ do: "annotate", mark: "Mazowieckie", note: "trzecie miejsce" }, { do: "compare", marks: ["Mazowieckie", "Łódzkie"], note: "" }])).not.toThrow();
+  });
+
+  it("should print a note it writes itself through the beat's format", () => {
+    expect(plate([{ do: "annotate", mark: "Mazowieckie", note: "" }]).notes[0].text).toBe("388");
+  });
+});
