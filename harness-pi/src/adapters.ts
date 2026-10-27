@@ -37,6 +37,10 @@ const GESTURE_FAMILY: Record<string, string> = {
   sankey: "flow",
   "radar-spider": "profile",
   "parallel-coordinates": "profile",
+  choropleth: "geo",
+  "cartogram-area-distortion-and-tile-cartogram": "geo",
+  "hex-grid-spatial-binning-and-hex-cartogram": "geo",
+  "dot-density": "geo",
 };
 
 export interface AdapterOptions {
