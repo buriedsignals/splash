@@ -1,9 +1,7 @@
 ---
 takeaway: "4,5 millions d’Ukrainiens sous protection temporaire — l’Allemagne et la Pologne en accueillent la moitié"
 grounding: supported
-claimShape: comparison
-claimEntity: Allemagne
-claimVersus: Pologne
+claimShape: none
 subject: "Allemagne"
 comparison: "Pologne, et le total européen"
 placement: "After the opening paragraph."

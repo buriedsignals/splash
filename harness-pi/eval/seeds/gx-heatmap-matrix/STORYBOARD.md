@@ -1,7 +1,7 @@
 ---
 takeaway: "Sept pays européens tirent plus de 94 % de leur électricité de sources bas-carbone — par trois chemins différents"
 grounding: supported
-claimShape: threshold
+claimShape: none
 subject: "Les sept pays européens au-dessus de 94 % bas-carbone"
 comparison: "Islande, Albanie, Suède, Norvège, Suisse, Finlande et France, face aux plus gros producteurs du continent"
 placement: "After the opening paragraph."

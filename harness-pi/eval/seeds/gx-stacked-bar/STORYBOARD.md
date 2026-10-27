@@ -1,9 +1,7 @@
 ---
 takeaway: "L’Espagne a ajouté plus d’électricité bas-carbone que la France depuis 2000"
 grounding: supported
-claimShape: comparison
-claimEntity: Espagne
-claimVersus: France
+claimShape: none
 subject: "Espagne"
 comparison: "la France, et les autres pays européens étudiés"
 placement: "After the opening paragraph."

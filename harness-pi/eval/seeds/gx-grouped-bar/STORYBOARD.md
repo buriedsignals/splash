@@ -1,8 +1,7 @@
 ---
 takeaway: "Dans 5 de ces 6 pays l’éolien devance le solaire — la Suisse est l’exception"
 grounding: supported
-claimShape: comparison
-claimEntity: Suisse
+claimShape: none
 subject: "Suisse"
 comparison: "les cinq autres pays"
 placement: "After the opening paragraph."

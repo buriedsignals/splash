@@ -1,9 +1,7 @@
 ---
 takeaway: "La Pologne a gagné 5,0 ans d’espérance de vie depuis 2000, les États-Unis 2,5"
 grounding: supported
-claimShape: comparison
-claimEntity: "Pologne"
-claimVersus: "États-Unis"
+claimShape: none
 subject: "La Pologne"
 comparison: "Les États-Unis, le plus petit gain des dix pays"
 placement: "After the opening paragraph."

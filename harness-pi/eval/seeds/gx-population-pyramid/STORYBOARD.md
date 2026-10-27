@@ -1,9 +1,7 @@
 ---
 takeaway: "Les femmes passent devant les hommes à partir de 60-64 ans"
 grounding: supported
-claimShape: comparison
-claimEntity: Femmes
-claimVersus: Hommes
+claimShape: none
 subject: "les femmes"
 comparison: "les hommes, bande d’âge par bande d’âge"
 placement: "After the opening paragraph."

@@ -2,7 +2,6 @@
 takeaway: "Le plancher européen est monté de 30 points, le plafond de 2"
 grounding: supported
 claimShape: none
-claimEntity: "Poland"
 subject: "Le pays le plus fossile, la Pologne"
 comparison: "Le pays le plus propre"
 placement: "After the opening paragraph."

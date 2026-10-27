@@ -1,8 +1,7 @@
 ---
 takeaway: "All 16 countries cleaned up their own electricity between 2000 and 2024, yet France lost 11.8 points of weight in Europe's low-carbon total"
 grounding: supported
-claimShape: change
-claimEntity: France
+claimShape: none
 subject: France
 comparison: "The other 15 countries, all of which cleaned up their own mix"
 placement: "After the paragraph on France's nuclear fleet."

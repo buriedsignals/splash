@@ -1,8 +1,7 @@
 ---
 takeaway: "Le nucléaire tient le centre : en France il pèse plus que le fossile et le renouvelable réunis"
 grounding: supported
-claimShape: comparison
-claimEntity: France
+claimShape: none
 subject: "France"
 comparison: "le fossile et le renouvelable réunis, et cinq autres pays européens"
 placement: "After the opening paragraph."

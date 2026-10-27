@@ -1,8 +1,7 @@
 ---
 takeaway: "6 pays sur 10 émettent moins de 4 tonnes de CO₂ par personne"
 grounding: supported
-claimShape: distribution
-claimColumn: co2_emissions_per_capita
+claimShape: none
 subject: "les pays sous 4 tonnes par personne"
 comparison: "les 213 pays du jeu de données"
 placement: "After the opening paragraph."

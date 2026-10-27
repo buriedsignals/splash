@@ -1,8 +1,7 @@
 ---
 takeaway: "Coal is 12 % of these six countries' electricity, and almost all of it — 99.5 % — is generated in Germany and Poland."
 grounding: supported
-claimShape: share
-claimColumn: twh
+claimShape: none
 subject: "Coal"
 comparison: "the six countries' whole generation, and the coal of the other four"
 placement: "After the opening paragraph."

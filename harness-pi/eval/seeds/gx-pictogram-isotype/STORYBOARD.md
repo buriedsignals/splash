@@ -1,7 +1,7 @@
 ---
 takeaway: "L’Europe électrique est aux deux bouts : 6 pays seulement au milieu"
 grounding: supported
-claimShape: distribution
+claimShape: none
 subject: "les pays entre 60 et 75 % d’électricité bas-carbone"
 comparison: "les pays au-dessus de 75 % et sous 60 %"
 placement: "After the opening paragraph."

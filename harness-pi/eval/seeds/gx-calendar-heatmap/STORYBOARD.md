@@ -1,7 +1,7 @@
 ---
 takeaway: "Genève a tenu 31 jours d’affilée au-dessus de 20 °C en 2024"
 grounding: supported
-claimShape: run
+claimShape: none
 subject: "La plus longue série de jours chauds de Genève en 2024"
 comparison: "Les autres jours de l’année, et août, le mois le plus chaud"
 placement: "After the opening paragraph."

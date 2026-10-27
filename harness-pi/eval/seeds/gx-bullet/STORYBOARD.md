@@ -1,8 +1,7 @@
 ---
 takeaway: "La Pologne a gagné 17,3 points de bas-carbone depuis 2015, et reste la seule des six sous la moitié"
 grounding: supported
-claimShape: comparison
-claimEntity: Pologne
+claimShape: none
 subject: "Pologne"
 comparison: "les cinq autres pays, tous au-dessus de la moitié"
 placement: "After the opening paragraph."

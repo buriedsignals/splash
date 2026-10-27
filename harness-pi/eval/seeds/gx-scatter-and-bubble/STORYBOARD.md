@@ -1,8 +1,7 @@
 ---
 takeaway: "Beyond $30,000 per person, life expectancy fits in a band 3 times narrower"
 grounding: supported
-claimShape: distribution
-claimColumn: Life expectancy at birth
+claimShape: none
 subject: "The spread of life expectancy among the countries richer than $30,000 per person"
 comparison: "The spread among the countries below $30,000"
 placement: "After the paragraph on income and health."

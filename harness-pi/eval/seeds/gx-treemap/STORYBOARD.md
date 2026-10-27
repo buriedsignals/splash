@@ -1,8 +1,7 @@
 ---
 takeaway: "10 European countries have already tipped to wind and solar; together they hold 14 % of the continent's low-carbon capacity."
 grounding: supported
-claimShape: share
-claimColumn: low_carbon_mw
+claimShape: none
 subject: "the 10 countries where wind and solar are more than half of low-carbon capacity"
 comparison: "Europe's whole low-carbon capacity (469 GW)"
 placement: "After the opening paragraph."

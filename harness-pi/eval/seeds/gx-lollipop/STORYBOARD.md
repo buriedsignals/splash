@@ -1,9 +1,7 @@
 ---
 takeaway: "La Chine a triplé son CO₂ par personne depuis 2000 ; l’Américain moyen n’en émet plus que 1,7 fois plus"
 grounding: supported
-claimShape: comparison
-claimEntity: Chine
-claimVersus: États-Unis
+claimShape: none
 subject: "Chine"
 comparison: "l’Américain moyen (États-Unis)"
 placement: "After the opening paragraph."

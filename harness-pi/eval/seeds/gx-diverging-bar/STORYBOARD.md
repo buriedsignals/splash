@@ -1,8 +1,7 @@
 ---
 takeaway: "La Croatie est le seul pays de l’UE à émettre plus de CO2 par personne qu’en 1990"
 grounding: supported
-claimShape: comparison
-claimEntity: Croatie
+claimShape: none
 subject: "Croatie"
 comparison: "les 26 autres États membres"
 placement: "After the opening paragraph."

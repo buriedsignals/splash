@@ -2,7 +2,6 @@
 takeaway: "La plus grosse centrale bas-carbone d’Europe est en Ukraine"
 grounding: supported
 claimShape: none
-claimEntity: Zaporizhzhia
 subject: "Zaporizhzhia"
 comparison: "Les autres grandes centrales d’Europe"
 placement: "After the opening paragraph."

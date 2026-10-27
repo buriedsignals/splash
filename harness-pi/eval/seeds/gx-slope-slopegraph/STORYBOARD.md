@@ -1,9 +1,7 @@
 ---
 takeaway: "Les 16 pays ont tous gagné du bas-carbone depuis 2000 — un seul a doublé la France"
 grounding: supported
-claimShape: comparison
-claimEntity: "Finlande"
-claimVersus: "France"
+claimShape: none
 subject: "La Finlande"
 comparison: "La France, que la Finlande a dépassée"
 placement: "After the opening paragraph."

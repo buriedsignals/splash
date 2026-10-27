@@ -1,9 +1,7 @@
 ---
 takeaway: "Les émissions de CO2 par personne en France ont culminé dans les années 1970"
 grounding: supported
-claimShape: comparison
-claimEntity: "années 1970"
-claimVersus: "années 2020"
+claimShape: none
 subject: "Les années 1970"
 comparison: "Les années 2020"
 placement: "After the opening paragraph."

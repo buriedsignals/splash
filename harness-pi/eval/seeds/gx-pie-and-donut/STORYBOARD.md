@@ -1,10 +1,7 @@
 ---
 takeaway: "China emitted 32.9 % of the world's CO2 in 2023, more than twice the United States' 13.3 %."
 grounding: supported
-claimShape: share
-claimColumn: t_per_person_2023
-claimEntity: China
-claimVersus: United States
+claimShape: none
 subject: "China"
 comparison: "the United States, and the world's total"
 placement: "After the opening paragraph."

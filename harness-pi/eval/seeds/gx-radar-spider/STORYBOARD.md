@@ -2,8 +2,6 @@
 takeaway: "La France et l’Allemagne produisent presque autant d’électricité, avec des mix opposés"
 grounding: supported
 claimShape: none
-claimEntity: France
-claimVersus: Allemagne
 subject: "La France, dont le mix est aux deux tiers nucléaire"
 comparison: "L’Allemagne, qui n’a plus de nucléaire et mise sur l’éolien et le solaire"
 placement: "After the opening paragraph."

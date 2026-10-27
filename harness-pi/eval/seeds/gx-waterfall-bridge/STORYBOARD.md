@@ -1,7 +1,7 @@
 ---
 takeaway: "L’Allemagne a produit 143 TWh d’électricité de moins en 2024 qu’en 2015"
 grounding: supported
-claimShape: comparison
+claimShape: none
 subject: "la production électrique allemande"
 comparison: "2015 et 2024, et ce qui a changé entre les deux"
 placement: "After the opening paragraph."
