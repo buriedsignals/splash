@@ -168,6 +168,7 @@ const RATE = /(?<![\p{L}])(per|pour|par|na|pro|je|por)(?![\p{L}])\s+(\d[\d ,.\u0
  * @returns        { gestures: [{ ...gesture, marks, figures }], whole, entities }
  */
 export function validateGestures({ gestures, rows, family, format, claim, hooks = {} }) {
+  if (!rows?.length) throw new Error("the beat draws no row, so no gesture can name one: check the readings beat.mjs passes (names and values)");
   const additive = FAMILIES[family]?.additive !== false;
   // An empty note is no note: told to drop a note, a 12B wrote note: "" and was refused for it three times over.
   if (Array.isArray(gestures))

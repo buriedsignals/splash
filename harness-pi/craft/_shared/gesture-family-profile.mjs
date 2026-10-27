@@ -36,6 +36,12 @@ export function profileModel({ axes, entities, ceiling = undefined }) {
     const values = Array.isArray(e.values) ? Object.fromEntries(names.map((a, i) => [a, e.values[i]])) : e.values ?? {};
     return { name, values: Object.fromEntries(names.map((a) => [a, Number(values[a])]).filter(([, v]) => Number.isFinite(v))) };
   });
+  // Values keyed by other names than the axes (a 12B parallel-coordinates beat keyed them by data.json's columns) draw
+  // nothing: say which keys the axes need instead of failing later on rows that do not exist.
+  if (ents.every((e) => !Object.keys(e.values).length)) {
+    const given = Object.keys(Array.isArray(entities[0].values) ? {} : entities[0].values ?? {}).slice(0, 6);
+    throw new Error(`no entity has a number on any axis: each entity's values are keyed by the axes' names (${names.map((a) => JSON.stringify(a)).join(", ")}) or given as an array in that order; ${entities[0].name ?? "the first entity"}'s keys are ${given.map((k) => JSON.stringify(k)).join(", ") || "none"}`);
+  }
   return { axes: names, entities: ents, ceiling: Number.isFinite(ceiling) ? ceiling : undefined };
 }
 

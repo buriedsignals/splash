@@ -37,3 +37,9 @@ describe("profile family (radar, parallel coordinates)", () => {
     expect(() => stage(radar, radarClaim, "static", [{ do: "reorder", value: "descending" }])).toThrow(/not available/);
   });
 });
+
+describe("profile values keyed by other names", () => {
+  it("should name the axes' keys when no entity has a value on any axis", () => {
+    expect(() => profileModel({ axes: ["Nuclear", "Wind", "Solar"], entities: [{ name: "France", values: { nuclear_twh: 1, wind_twh: 2 } }] })).toThrow(/keyed by the axes' names \("Nuclear", "Wind", "Solar"\)/);
+  });
+});

@@ -47,7 +47,7 @@ export function deriveSeed(from: string, to: string, format: string) {
     storyboard,
     readFileSync(storyboard, "utf8")
       .replace(/^(\s*)format:\s*static\s*$/m, `$1format: ${format}`)
-      .replace(/^\s*size:.*\n/m, format === "static" ? "$&" : ""),
+      .replace(/^\s*size:.*\n/m, format === "static" || format === "video" ? "$&" : ""),
   );
   const data = join(to, "beats", "1", "data.json");
   const table = JSON.parse(readFileSync(data, "utf8"));
