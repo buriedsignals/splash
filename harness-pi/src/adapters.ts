@@ -41,6 +41,10 @@ const GESTURE_FAMILY: Record<string, string> = {
   "cartogram-area-distortion-and-tile-cartogram": "geo",
   "hex-grid-spatial-binning-and-hex-cartogram": "geo",
   "dot-density": "geo",
+  line: "time",
+  "area-and-stacked-area": "time",
+  streamgraph: "time",
+  "bump-ranking-over-time": "time",
 };
 
 export interface AdapterOptions {
