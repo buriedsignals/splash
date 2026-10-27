@@ -55,8 +55,13 @@ export async function evaluate(story: string, arm: string, out: string, variant 
     // (seed-matrix sets SPLASH_STOP_AFTER_CRAFT that way). The run's own log, live: a phase that stalls is visible while it happens, not at the end.
     { stdout: "pipe", stderr: Bun.file(join(homedir(), ".splash-harness", "runs", `${tag}.log`)), env: { ...process.env } },
   );
+  // A cap per run (SPLASH_RUN_CAP_MIN, measurement only): a run stuck in a refusal loop is a failed run, and one
+  // 40-minute stall once held up a whole batch.
+  const cap = Number(process.env.SPLASH_RUN_CAP_MIN ?? 0);
+  const timer = cap > 0 ? setTimeout(() => child.kill(), cap * 60_000) : undefined;
   const report = await new Response(child.stdout).text();
   await child.exited;
+  clearTimeout(timer);
   const score = await scoreRun(root, story);
   const keep = join(KEPT, tag);
   mkdirSync(keep, { recursive: true });
