@@ -72,14 +72,18 @@ export function figuresIn(text) {
     const separator = grouped ? digits.match(/[ ,\u00a0\u202f]/)[0] : digits.includes(",") ? "," : ".";
     // A percent sign or word after the figure: it may only be a percentage the gesture draws, never a gap in the unit.
     const percent = /^\s?(%|per ?cent\b|procent|pour ?cent)/i.test(String(text).slice(m.index + m[0].length));
-    out.push({ raw, value, decimals, sign, separator, grouped, index: m.index, percent });
+    // A magnitude suffix glued on ("12B", "4.9bn", "250k"): the figure is read at that power of ten as well. A 12B card
+    // wrote "(12B)" for China's 12,289,000,000 tonnes, it was read as 12 against tonnes, and repair appended it again.
+    const suffix = String(text).slice(m.index + m[0].length).match(/^\s?(k|K|M|B|bn|mn|mln|mld|mrd)(?![\p{L}])/u)?.[1];
+    const exp = suffix ? ({ k: 3, K: 3, M: 6, mn: 6, mln: 6 })[suffix] ?? 9 : 0;
+    out.push({ raw, value, decimals, sign, separator, grouped, index: m.index, percent, exp });
   }
   return out;
 }
 
 const SCALES = [0, -3, -6, -9, -12, 3, 6, 9, 12, -1, -2, 1, 2];
 
-const matches = (n, f) => Math.abs(n.value - f) <= 0.5 * 10 ** -n.decimals + 1e-9;
+const matches = (n, f) => [f, ...(n.exp ? [f / 10 ** n.exp] : [])].some((x) => Math.abs(n.value - x) <= 0.5 * 10 ** -n.decimals + 1e-9);
 
 function formatLike(n, f) {
   const fixed = Math.abs(f).toFixed(n.decimals);
@@ -142,6 +146,15 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
     });
   };
 
+  // Several rows written as one string ("United States,India,Russia,Japan,Indonesia", a 12B China scrolly) are those
+  // rows: the fix offered was the closest single row, "United States", and every later fix followed it into falsehood.
+  // A string that is itself a row's name (one with a comma in it) stays one row.
+  const named = (name) => valueOf.has(name) || rows.some((r) => fold(r.name) === fold(name));
+  const listed = (value) => {
+    if (typeof value !== "string" || named(value)) return null;
+    const parts = value.split(/\s*(?:,|;|&|\band\b|\bet\b|\bund\b|\bi\b|\be\b|\by\b)\s*/i).filter(Boolean);
+    return parts.length > 1 && parts.every(named) ? parts : null;
+  };
   const out = [];
   const seen = new Map();
   let compared = false;
@@ -161,21 +174,23 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
 
     // marks
     let marks = [];
-    if (g.mark !== undefined) marks = [resolve(g.mark, i, "mark")];
+    if (g.mark !== undefined) marks = (listed(g.mark) ?? [g.mark]).map((m) => resolve(m, i, "mark"));
     if (g.marks !== undefined) {
-      marks = g.marks.map((m, k) => {
+      const given = (Array.isArray(g.marks) ? g.marks : [g.marks]).flatMap((m) => listed(m) ?? [m]);
+      marks = given.map((m, k) => {
         try {
           return resolve(m, i, `marks[${k}]`);
         } catch (error) {
           if (!(error instanceof GestureRefusal)) throw error;
-          const fixed = [...g.marks];
+          const fixed = [...given];
           fixed[k] = closest(m, rows);
           throw new GestureRefusal(error.field, error.message.slice(error.field.length + 2), { set: { index: i, field: "marks", value: fixed } });
         }
       });
     }
     let of = [];
-    if (Array.isArray(g.of)) of = g.of.map((m) => resolve(m, i, "of"));
+    if (Array.isArray(g.of)) of = g.of.flatMap((m) => listed(m) ?? [m]).map((m) => resolve(m, i, "of"));
+    else if (listed(g.of)) of = listed(g.of).map((m) => resolve(m, i, "of"));
     const ofWhole = g.of === "whole";
     const needsMark = ["highlight", "name", "annotate", "compare", "bracket", "zoom"];
     if (needsMark.includes(g.do) && !marks.length)
@@ -313,7 +328,8 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
       noted.add(marks[0]);
     }
 
-    out.push({ ...g, marks: [...marks, ...of], figures: own });
+    // `of` resolved to its rows, so a scheduler splitting marks into own and of counts the rows a listed string named.
+    out.push({ ...g, marks: [...marks, ...of], ...(of.length ? { of } : {}), figures: own });
   });
 
   // format limits on the whole list

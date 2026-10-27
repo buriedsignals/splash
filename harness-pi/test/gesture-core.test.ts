@@ -450,3 +450,44 @@ describe("a percent in a compare note", () => {
     expect(() => validateGestures({ gestures: compare("o 3,5% mniej niż Łódzkie"), rows: RATES, family: "length", format: "static", claim: { takeaway } })).not.toThrow();
   });
 });
+
+describe("several rows written as one string", () => {
+  const ROWS = [
+    { name: "China", value: 12.3 },
+    { name: "United States", value: 4.9 },
+    { name: "India", value: 3.2 },
+    { name: "Russia", value: 1.8 },
+    { name: "Japan", value: 1.0 },
+    { name: "Indonesia", value: 0.8 },
+    { name: "Korea, Republic of", value: 0.6 },
+  ];
+  const claim = { takeaway: "China emitted more CO₂ in 2024 than the next five emitters together.", comparison: "United States, India, Russia, Japan, Indonesia; Korea, Republic of" };
+  const run = (g: object) => validateGestures({ gestures: [{ do: "highlight", mark: "China" }, g], rows: ROWS, family: "length", format: "scrolly", claim }).gestures[1];
+
+  it("should read a comma-joined mark as those rows", () => {
+    expect(run({ do: "bracket", mark: "United States,India,Russia,Japan,Indonesia", note: "11.7" }).marks).toEqual(["United States", "India", "Russia", "Japan", "Indonesia"]);
+  });
+
+  it("should read a listed string in of as those rows", () => {
+    expect(run({ do: "compare", mark: "China", of: "United States, India, Russia, Japan and Indonesia", note: "12.3 against 11.7" }).of).toEqual(["United States", "India", "Russia", "Japan", "Indonesia"]);
+  });
+
+  it("should keep a row whose own name has a comma as one row", () => {
+    expect(run({ do: "annotate", mark: "Korea, Republic of", note: "0.6" }).marks).toEqual(["Korea, Republic of"]);
+  });
+});
+
+describe("a figure with a magnitude suffix", () => {
+  const ROWS = [
+    { name: "China", value: 12_289_000_000 },
+    { name: "United States", value: 4_904_000_000 },
+  ];
+  const claim = { takeaway: "China emitted more CO₂ in 2024 than the United States." };
+  it("should read 12B as twelve billion beside a figure written in full", () => {
+    expect(() => validateGestures({ gestures: [{ do: "compare", marks: ["China", "United States"], note: "12B, against 4,904,000,000 tonnes" }], rows: ROWS, family: "length", format: "static", claim })).not.toThrow();
+  });
+
+  it("should still refuse a suffixed figure the rows do not give", () => {
+    expect(() => validateGestures({ gestures: [{ do: "name", mark: "China", note: "15B tonnes" }], rows: ROWS, family: "length", format: "static", claim })).toThrow(/states 15/);
+  });
+});

@@ -233,7 +233,8 @@ export function scheduleScrolly({ gestures, rows, rest = { count: 0, sum: 0 } })
 
 const SCALES = [0, -3, -6, -9, -12, 3, 6, 9, 12, -1, -2, 1, 2];
 // A number written without a sign may state a magnitude ("lost 12 points" over a drawn -12).
-const matches = (n, f) => [f, ...(n.sign ? [] : [Math.abs(f)])].some((x) => Math.abs(n.value - x) <= 0.5 * 10 ** -n.decimals + 1e-9);
+const matches = (n, f) =>
+  [f, ...(n.sign ? [] : [Math.abs(f)])].some((x) => [x, ...(n.exp ? [x / 10 ** n.exp] : [])].some((y) => Math.abs(n.value - y) <= 0.5 * 10 ** -n.decimals + 1e-9));
 
 // The same ratio words the core checks in a note (gesture-core.mjs `RATIO_WORDS`, not exported).
 const RATIO_WORDS = [
