@@ -8,7 +8,7 @@ import {
   statSync,
 } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { defineTool } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 
@@ -98,6 +98,15 @@ export function resolveInStory(bases: Bases, raw: string): string {
 
 export function resolveReadable(bases: Bases, path: string): string {
   let abs = realOrParent(resolveFromRoot(bases, path));
+  // A story folder spelled with _ for - (a 12B read stories/stress_q_safety_incidents/ six times over and never
+  // wrote its beat) is the story's own folder.
+  const story = realpathSync(bases.storyDir);
+  const stories = dirname(story);
+  if (within(abs, stories) && !within(abs, story)) {
+    const [folder, ...rest] = relative(stories, abs).split(sep);
+    const fold = (name: string) => name.toLowerCase().replace(/[-_\s]/g, "");
+    if (fold(folder) === fold(basename(story))) abs = realOrParent(join(story, ...rest));
+  }
   // A beat file asked for at the story root ("data.json") is the story's only beat's.
   if (!existsSync(abs) && dirname(abs) === realpathSync(bases.storyDir)) {
     const beats = join(bases.storyDir, "beats");
@@ -115,7 +124,7 @@ export function resolveReadable(bases: Bases, path: string): string {
     .map((b) => realpathSync(b));
   if (!allowed.some((b) => within(abs, b))) {
     throw new Error(
-      `${path} is outside the readable directories (the story, skills/, shared/, proof/)`,
+      `${path} is outside the readable directories (the story, skills/, shared/, proof/): the story is ${bases.storyDir}`,
     );
   }
   return abs;
