@@ -34,10 +34,8 @@ export async function evaluate(story: string, arm: string, out: string, variant 
     await stageStory({ root, checkout: CHECKOUT, slug: story });
     const storyDir = join(root, "stories", story);
     for (const f of ["STORYBOARD.md", "PALETTE.md", "DIRECTION.md", "SUBJECTS.md"]) if (existsSync(join(seed, f))) cpSync(join(seed, f), join(storyDir, f));
-    for (const beat of readdirSync(join(seed, "beats"))) {
-      mkdirSync(join(storyDir, "beats", beat), { recursive: true });
-      cpSync(join(seed, "beats", beat, "data.json"), join(storyDir, "beats", beat, "data.json"));
-    }
+    // The beat's data.json is NOT laid in: its hashes name the seed's own freeze, so the analyst would refuse it as
+    // stale; it rebuilds it from the staged source in under a second.
   }
   const child = Bun.spawn(
     [
