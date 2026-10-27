@@ -14,7 +14,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { videoExportSize } from "#shared/chart-video/sizes.mjs";
-import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, assertNumbers, importBeat } from "./guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, assertNumbers, importBeat, rowFacts } from "./guards.mjs";
 import { applyFix, GestureRefusal, validateGestures } from "./gesture-core.mjs";
 import { valueText } from "./gesture-video.mjs";
 import { assertEventFramesReadable, numberFormat, pickDirection, plain, refusing, renderBeatVideo, storyLanguage } from "./video.mjs";
@@ -77,6 +77,7 @@ await refusing(HERE, async () => {
     comparison: front("comparison"),
     entity: front("claimEntity"),
     versus: front("claimVersus"),
+    facts: rowFacts(HERE),
   };
   const { buildGestureVideo, textPerRegisterOf } = await import("./build.mjs");
   const { label, chosen } = pickDirection(HERE, textPerRegisterOf(copy, rows, beat.gestures.filter((g) => g && typeof g === "object")), beat.evidenceLevels ?? 2);

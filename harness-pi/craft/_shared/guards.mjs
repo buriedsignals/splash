@@ -195,3 +195,21 @@ export async function importBeat(here) {
     throw new Error(`beat.mjs types its rows instead of reading data.json, so the data can never refuse its title: ${readingHint(here)}`);
   return beat;
 }
+
+/**
+ * Every number data.json holds for each named row, in any number column. A note may state a figure of its own row
+ * that the plate does not draw: a takeaway cited Centro's raw count (412) beside a per-resident rate, the core knew
+ * only the drawn rates, and the fix it offered, "205 raw incidents", was false.
+ */
+export function rowFacts(here) {
+  const dataPath = join(here, "data.json");
+  if (!existsSync(dataPath)) return {};
+  const table = JSON.parse(readFileSync(dataPath, "utf8"));
+  const numeric = (table.columns ?? []).map((c) => c.type === "number");
+  const facts = {};
+  for (const row of table.rows ?? []) {
+    const numbers = row.map((cell, i) => (numeric[i] ? Number(cell) : NaN)).filter(Number.isFinite);
+    for (const cell of row) if (typeof cell === "string" && cell.trim()) (facts[cell] ??= []).push(...numbers);
+  }
+  return facts;
+}

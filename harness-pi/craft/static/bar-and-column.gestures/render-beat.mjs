@@ -23,7 +23,7 @@ import { assertBeatMayEnter, directedFrame, exportSizeFromArgv, nameAtSize } fro
 import { GestureColumns } from "./DirectedGestureColumns.tsx";
 import { applyFix, GestureRefusal, validateGestures } from "./gesture-core.mjs";
 import { composeStatic } from "./gesture-static.mjs";
-import { applyStoryboard, assertNumbers, assertLegibleLabels, assertOnePerX, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, assertNoAggregates, errorText, importBeat } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertLegibleLabels, assertOnePerX, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, assertNoAggregates, errorText, importBeat, rowFacts } from "./guards.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const beat = await importBeat(HERE).catch((error) => {
@@ -67,6 +67,7 @@ const claim = {
   comparison: front("comparison"),
   entity: front("claimEntity"),
   versus: front("claimVersus"),
+  facts: rowFacts(HERE),
 };
 const key = (name) => ({ key: name });
 const factsOf = (order, plate, extra = {}) =>
@@ -94,6 +95,10 @@ function stage(gestures) {
       throw new GestureRefusal(`gestures[${t.index}]`, `the bracket's rows no longer sit together in the order drawn (${order.map((r) => r.name).join(", ")}): drop it, or drop the reorder`, { remove: t.index });
     console.log(`  drawn although ${t.id} does not hold at this plate's shape: gestures[${t.index}] (${t.do})`);
   }
+  // A note on one row that only repeats the value printed on it is drawn once: a 12B "name" on Sul with note "233"
+  // printed 233 twice over the column.
+  const printed = (n) => n.marks?.length === 1 && String(n.text).trim() === beat.format(beat.rows.find((r) => r.name === n.marks[0])?.value);
+  plate.notes = plate.notes.filter((n) => !printed(n));
   return { plate, order };
 }
 const REPAIR = process.env.SPLASH_GESTURE_REPAIR === "1";

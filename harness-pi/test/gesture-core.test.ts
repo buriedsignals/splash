@@ -403,3 +403,21 @@ describe("units and scales in notes", () => {
     expect(r.fix.set.value).toMatch(/^China's 12Gt vs 11\.64Gt$/);
   });
 });
+
+describe("a note stating a figure of its row's other columns", () => {
+  const RATES = [
+    { name: "Sul", value: 233 },
+    { name: "Centro", value: 205 },
+    { name: "Leste", value: 185 },
+  ];
+  const takeaway = "Sul has the worst safety record per resident, not Centro: 233 incidents per 100,000 residents against Centro's 205, even though Centro's raw count of 412 is the highest in the city.";
+  const gestures = [{ do: "highlight", mark: "Sul" }, { do: "annotate", mark: "Centro", note: "412 raw incidents" }];
+
+  it("should be accepted when data.json holds that figure for the row", () => {
+    expect(() => validateGestures({ gestures, rows: RATES, family: "length", format: "static", claim: { takeaway, facts: { Centro: [412, 201000] } } })).not.toThrow();
+  });
+
+  it("should be refused when no column of the row holds it", () => {
+    expect(() => validateGestures({ gestures, rows: RATES, family: "length", format: "static", claim: { takeaway, facts: { Centro: [400, 201000] } } })).toThrow(/states 412/);
+  });
+});

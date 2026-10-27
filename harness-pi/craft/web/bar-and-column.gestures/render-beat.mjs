@@ -16,7 +16,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { webRegisters } from "#shared/design-base/web.mjs";
 import { GestureBarWeb } from "./GestureBarWeb.tsx";
-import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, assertNumbers, importBeat } from "./guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, assertNumbers, importBeat, rowFacts } from "./guards.mjs";
 import { GestureRefusal } from "./gesture-core.mjs";
 import { HEADROOM, stageWeb } from "./gesture-web.mjs";
 import { chartWeb, plain, refusing, renderBeatWeb, storyLanguage } from "./web.mjs";
@@ -68,6 +68,7 @@ await refusing(HERE, async () => {
     comparison: front("comparison"),
     entity: front("claimEntity"),
     versus: front("claimVersus"),
+    facts: rowFacts(HERE),
   };
   let staged;
   try {

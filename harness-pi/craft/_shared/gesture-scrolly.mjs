@@ -280,7 +280,7 @@ function pictureOf(item) {
  *
  * @param format the beat's value format, for a fix that adds the missing figure
  */
-export function checkCards({ gestures, plan, rows, rest = { count: 0, sum: 0 }, drawn = rows, format = String }) {
+export function checkCards({ gestures, plan, rows, rest = { count: 0, sum: 0 }, drawn = rows, format = String, facts = {} }) {
   const whole = rows.reduce((s, r) => s + r.value, 0);
   const rankOf = new Map([...rows].sort((a, b) => b.value - a.value).map((r, i) => [r.name, i + 1]));
   const known = [
@@ -293,6 +293,7 @@ export function checkCards({ gestures, plan, rows, rest = { count: 0, sum: 0 }, 
     ...gestures.flatMap((g) => g.figures ?? []),
     ...plan.flatMap((p) => [...p.shown, ...(p.steps ?? [])]),
     ...gestures.flatMap((g) => g.marks.map((m) => rankOf.get(m))),
+    ...gestures.flatMap((g) => g.marks.flatMap((m) => facts[m] ?? [])),
   ].filter((f) => Number.isFinite(f));
   // The row the staging is about, and the line a card with nothing of its own falls back on.
   const marked = new Set(gestures.flatMap((g) => g.marks));
@@ -390,7 +391,7 @@ export function stageScrolly({ gestures, rows, claim, format = String, capacity 
       const { gestures: valid } = validateGestures({ gestures: list, rows, family: "length", format: "scrolly", claim });
       const { drawn, rest } = selectRows({ rows, gestures: valid, capacity });
       const scheduled = scheduleScrolly({ gestures: valid, rows: drawn, rest });
-      const cards = checkCards({ gestures: valid, plan: scheduled.plan, rows, rest, drawn, format });
+      const cards = checkCards({ gestures: valid, plan: scheduled.plan, rows, rest, drawn, format, facts: claim?.facts });
       return { gestures: list, valid, drawn, rest, scheduled, cards, repairs };
     } catch (error) {
       if (!(error instanceof GestureRefusal) || !repair || step >= steps) throw error;

@@ -111,7 +111,8 @@ const RANK_WORDS = [
  * @param rows     the rows the beat draws: [{ name, value }], values in the unit the plate prints
  * @param family   "length" (phase 1)
  * @param format   static | web | video | scrolly
- * @param claim    { takeaway, subject?, comparison?, entity?, versus? } from STORYBOARD.md
+ * @param claim    { takeaway, subject?, comparison?, entity?, versus?, facts? } from STORYBOARD.md; facts maps a row's name
+ *                 to every number data.json holds for it (guards.mjs rowFacts), figures a note may state beside the drawn one
  * @returns        { gestures: [{ ...gesture, marks, figures }], whole, entities }
  */
 export function validateGestures({ gestures, rows, family, format, claim }) {
@@ -222,7 +223,7 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
     }
     if (g.do === "reference") own.push(Number(g.value));
     if (g.do === "rescale") own.push(Number(g.value));
-    const context = [whole, ...marks.map((m) => rankOf.get(m))];
+    const context = [whole, ...marks.map((m) => rankOf.get(m)), ...marks.flatMap((m) => claim.facts?.[m] ?? [])];
 
     // notes: every number is one of the gesture's figures, at the note's precision
     if (g.note !== undefined && g.do !== "zoom") {
