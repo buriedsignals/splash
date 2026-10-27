@@ -1,0 +1,26 @@
+name,kind,country,capacity_mw,pop,lon,lat
+Zaporizhzhia NPP,station,Ukraine,6000.0,,34.5863,47.5119
+Gravelines NPP,station,France,5460.0,,2.1332,51.0141
+Paluel NPP,station,France,5320.0,,0.6354,49.8582
+Cattenom NPP,station,France,5200.0,,6.2169,49.416
+Kalinin NPP,station,Russia,4000.0,,35.0614,57.905
+Kursk NPP,station,Russia,4000.0,,35.6056,51.675
+Leningrad NPP,station,Russia,4000.0,,29.0486,59.8528
+Rostov NPP,station,Russia,4000.0,,42.3717,47.5993
+Kyiv,city,Ukraine,,2709000,30.5147,50.4353
+Bucharest,city,Romania,,1942000,26.098,44.4353
+Kharkiv,city,Ukraine,,1461000,36.2481,50.0019
+Rostov,city,Russia,,1052000,39.7107,47.2366
+Dnipro,city,Ukraine,,1050000,34.9981,48.4819
+Odessa,city,Ukraine,,991000,30.7081,46.492
+Donetsk,city,Ukraine,,988000,37.828,48.0019
+Voronezh,city,Russia,,844000,39.1868,51.6654
+Chișinău,city,Moldova,,688134,28.8577,47.005
+Krasnodar,city,Russia,,649851,39.0,45.02
+Sevastopol,city,Russia,,379200,33.5244,44.6039
+Stavropol,city,Russia,,363064,41.98,45.05
+Sochi,city,Russia,,327608,39.73,43.59
+Iași,city,Romania,,325914,27.5749,47.1683
+Constanța,city,Romania,,303399,28.61,44.2027
+Zhytomyr,city,Ukraine,,282192,28.6622,50.2456
+Sukhumi,city,Georgia,,81546,41.02,43.02

@@ -5,6 +5,7 @@
 import {
   existsSync,
   mkdirSync,
+  readdirSync,
   readFileSync,
   rmSync,
   writeFileSync,
@@ -110,6 +111,10 @@ export async function contractText(kit: string, format: string): Promise<string>
   // A family registers itself (and may narrow the list per type) in its own module: load it when it exists.
   const module = join(import.meta.dirname, "..", "craft", "_shared", `gesture-family-${family}.mjs`);
   const own = existsSync(module) ? await import(module) : {};
+  // A family may register some of its types from a sibling module (gesture-<family>-<part>-family.mjs): load them too.
+  const shared = join(import.meta.dirname, "..", "craft", "_shared");
+  for (const f of readdirSync(shared).filter((f) => f.startsWith(`gesture-${family}-`) && f.endsWith("-family.mjs")))
+    await import(join(shared, f));
   const slug = basename(kit).replace(/\.gestures$/, "");
   const subset: string[] | undefined = own.gesturesOf?.(slug);
   const rows = admissible(family, format).filter((a: { do: string }) => !subset || subset.includes(a.do)).map((a: { do: string; meaning: string }) => `| \`${a.do}\` | ${a.meaning} |`);

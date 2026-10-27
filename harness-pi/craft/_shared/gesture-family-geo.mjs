@@ -51,6 +51,7 @@ export function registerGeoVariant(slug, { gestures, basemap = "plate", seat = "
 
 /** The gestures a registered variant draws (all the family's when the variant registered none). */
 export const geoGesturesOf = (variant) => VARIANTS.get(variant)?.gestures ?? GEO_GESTURES;
+export const gesturesOf = geoGesturesOf;
 
 /** basemapMode: how a variant's ground is drawn ("plate" | "live" | "none"). */
 export const basemapMode = (variant) => VARIANTS.get(variant)?.basemap ?? "plate";
