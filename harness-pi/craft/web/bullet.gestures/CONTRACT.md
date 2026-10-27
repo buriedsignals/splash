@@ -1,5 +1,7 @@
 # Bullet, composed — what you write (web)
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The marks, the colours and the layout are done: a track per row up to `ceiling` (100 when the unit is a %), `series[0]` the comparative state as a thick pale bar, `series[1]` the measure as a thin saturated bar over it; the measure's value printed after the track. One value scale from zero for every state. YOU decide the
 staging: an ordered list `gestures`. The page the reader lands on draws every resting gesture (highlight, name,
 annotate, reference, reveal, pull-back); every other gesture (compare, filter, reorder) becomes one reader control.
@@ -21,7 +23,6 @@ A page needs at least one control. You write ONE file, `beat.mjs`; `render-beat.
 | `limits` | The standfirst: unit, scope, the limits the journalist named. |
 | `source` | The credit line. |
 | `alt` | The alt text (a string, or a function of the rows). |
-| `check()` | Throws if the data no longer supports the title. |
 | `ceiling` | Optional. Where the track ends (default 100 when the unit is a %). |
 
 ## The gestures you may use

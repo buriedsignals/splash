@@ -1,5 +1,7 @@
 # Bar and column (video), composed — what you write
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The marks, the type, the colours, the layout and the timing (21 s at 30 fps) are already done: one bar per
 row, on one scale from zero, in the story's PALETTE.md and DIRECTION.md. The video opens on a title card
 (the eyebrow and the takeaway); then the chart arrives on its scale — the names, the zero rule, the bars
@@ -30,7 +32,6 @@ with `write_file`.
 | `lang` | Optional: the story's language tag ("fr", "en"). Default: STORYBOARD.md's `language`. It sets the decimal separator. |
 | `decimals` | Optional: decimals on every count (0 to 3). Default: one from 1 and two under 1 while the largest value is under 100, none past it. |
 | `evidenceLevels` | Optional, 2. |
-| `check()` | Throws if the data no longer supports the title. |
 
 ## The gestures you may use
 
@@ -107,8 +108,6 @@ Leave out aggregate rows (a "Total" or "World" row is not a member). Large raw v
   with that base said in the unit — never as 0.0039.
 - Draw the measure the takeaway is about. If it speaks of a rate, a share or a ranking per resident / per
   capita, compute that measure from the columns and draw it — never the raw column beside a per-resident headline.
-- `check()` tests only what the drawn data can decide, comparing a computed value with the takeaway's figure at
-  the takeaway's precision (`Math.round(v) === 233`), never with strict equality on a raw division.
 - Every number in a sentence is computed from `data.json`, never typed — except the title, which is the
   journalist's own sentence, copied as written.
 - After `write_file`, call `render_beat` with format `video`, then `look` at the PNG it names (the last frame:

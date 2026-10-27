@@ -1,5 +1,7 @@
 # Parallel coordinates, composed — what you write
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The marks, the type, the colours and the layout are already done: one line per entity across vertical axes in the beat's order, EACH AXIS ITS OWN SCALE from zero to its own top, in the story's PALETTE.md and
 DIRECTION.md, drawn as a still plate. YOU decide the staging: an ordered list `gestures`, in the order the story tells it.
 Nothing is staged that you do not write. You write ONE file, `beat.mjs`, in the beat folder. It reads `data.json`
@@ -21,7 +23,6 @@ beside it and exports what THIS story says. `render-beat.mjs` (already in the fo
 | `limits` | The standfirst, in forms, longest first: the first form carries the limits the journalist named. |
 | `alt` | The alt text (a string, or a function of the drawn marks). |
 | `source` | The credit line, exactly as the storyboard records it. |
-| `check()` | Throws if the data no longer supports the title. |
 
 ## The marks a gesture names
 

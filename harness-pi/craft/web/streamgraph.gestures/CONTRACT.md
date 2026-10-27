@@ -1,5 +1,7 @@
 # Streamgraph, composed, on the web — what you write
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The marks, the type, the colours and the layout are done: every series stacked as a band around a centre line, the largest at the centre; there is NO value axis: thickness is the quantity, position means nothing, so the quantities are written, in the story's PALETTE.md and DIRECTION.md, as a
 page that fills its container. YOU decide the staging: an ordered list `gestures`, in the order the story tells it.
 The page the reader lands on draws every resting gesture at once; every further gesture becomes ONE reader control
@@ -19,7 +21,6 @@ The page the reader lands on draws every resting gesture at once; every further 
 | `source` | The credit line. |
 | `alt` | The page's description. |
 | `restLabel` | The words of the option that shows the page as it lands, e.g. "The whole series". |
-| `check()` | Throws if the data no longer supports the title. |
 
 ## The gestures you may use
 

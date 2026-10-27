@@ -69,6 +69,7 @@ export function recordFallback(
     `${JSON.stringify({ from, to, refusal, at: new Date().toISOString() }, null, 2)}\n`,
   );
   rmSync(join(beatDir, "beat.mjs"), { force: true });
+  rmSync(join(beatDir, "gestures.json"), { force: true });
   return to;
 }
 
@@ -101,10 +102,8 @@ export function claimBlock(meta: Record<string, unknown>): string {
     : "";
 }
 
-/** A kit's CONTRACT.md as the craft session reads it: a gesture kit's {{GESTURES}} filled from the registry. */
-export async function contractText(kit: string, format: string): Promise<string> {
-  const text = readFileSync(join(kit, "CONTRACT.md"), "utf8");
-  if (!text.includes("{{GESTURES}}")) return text;
+/** The gestures a gesture kit offers in a format: the family's admissible ones, narrowed to the type's own. */
+export async function kitGestures(kit: string, format: string): Promise<{ do: string; meaning: string }[]> {
   const { admissible } = await import("../craft/_shared/gesture-registry.mjs");
   // The kit folder is <format>/<slug>.gestures: its slug names the family whose gestures the contract lists.
   const family = familyOf(basename(kit).replace(/\.gestures$/, "")) ?? "length";
@@ -117,6 +116,13 @@ export async function contractText(kit: string, format: string): Promise<string>
     await import(join(shared, f));
   const slug = basename(kit).replace(/\.gestures$/, "");
   const subset: string[] | undefined = own.gesturesOf?.(slug);
-  const rows = admissible(family, format).filter((a: { do: string }) => !subset || subset.includes(a.do)).map((a: { do: string; meaning: string }) => `| \`${a.do}\` | ${a.meaning} |`);
+  return admissible(family, format).filter((a: { do: string }) => !subset || subset.includes(a.do));
+}
+
+/** A kit's CONTRACT.md as the craft session reads it: a gesture kit's {{GESTURES}} filled from the registry. */
+export async function contractText(kit: string, format: string): Promise<string> {
+  const text = readFileSync(join(kit, "CONTRACT.md"), "utf8");
+  if (!text.includes("{{GESTURES}}")) return text;
+  const rows = (await kitGestures(kit, format)).map((a) => `| \`${a.do}\` | ${a.meaning} |`);
   return text.replace("{{GESTURES}}", rows.join("\n"));
 }

@@ -1,5 +1,7 @@
 # Streamgraph (video), composed — what you write
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The marks, the colours, the layout and the timing (21 s at 30 fps) are already done: one band per series, stacked around a centre line, largest at the centre; no value axis — a band's thickness is its value, and the end labels write it, in the story's
 PALETTE.md and DIRECTION.md. The video opens on a title card (the eyebrow and the takeaway); then the axes arrive
 and the series with them. YOU decide what happens next: an ordered list `gestures` of exactly THREE gestures, in
@@ -21,7 +23,6 @@ renders eight stills, prints `look at: <png>`, then the mp4. Read `beat.example.
 | `unit` | The unit, written above the value axis ("Mt de CO₂ par an"). |
 | `format(v)` | How a value is printed (decimals, decimal comma or point for the language). |
 | `source` | The credit line, exactly as the storyboard records it. |
-| `check()` | Throws if the data no longer supports the title. |
 
 ## Marks
 

@@ -1,5 +1,7 @@
 # Area (stacked when several series) (scrolly), composed — what you write
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The page is already designed: one filled area per series standing on zero — several series stack in the order of `points` (the first at the bottom); the area under the curve is the stock (give each time its own reading, as data.json holds it — never a running total you added up, the surface already adds them), in the story's PALETTE.md and DIRECTION.md, every series labelled at its
 end. The graphic stays fixed while cards of prose travel up over it, and the reader's scroll moves the picture
 continuously from one card's state to the next — time is always traversed linearly. YOU decide the staging: an
@@ -25,7 +27,6 @@ first, then write this story's from scratch.
 | `limits` | The closing card: what the readings count and leave out, the limits the journalist named. |
 | `source` | The credit line. |
 | `alt` | The alt text (a string). |
-| `check()` | Throws if the data no longer supports the title. |
 
 ## The gestures you may use
 

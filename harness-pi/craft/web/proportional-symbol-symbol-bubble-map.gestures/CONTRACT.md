@@ -1,5 +1,7 @@
 # Proportional symbol (gestures, web) — what you write
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The basemap plate, the camera, the circles (hollow, AREA proportional to the value), the key, the
 threshold that keeps the field legible, the type, the colours and the layout are already done: they
 come from the worked example `proof/static-proportional-symbol-europe-capacity` and the story's
@@ -38,7 +40,6 @@ column (zero or more). A column that marks the subject rows (a category, a flag,
 | `reading` | The reading line, in forms, longest first ("Reading: the circle's area is the value"). |
 | `source` | The credit line, exactly as the storyboard records it. |
 | `alt` | The alt text — a string, or `(cut) => string` to say how many circles are drawn. |
-| `check()` | Throws if the data no longer supports the title. |
 
 `cut` is what the render decided to draw so the busiest part of the map stays legible:
 `{ threshold, drawn, total, drawnSubject, totalSubject, drawnShare, drawnValueShare }` — the
@@ -117,8 +118,6 @@ than 180° of longitude, and points of which most sit on water (lon and lat swap
 
 - `value` is the quantity the takeaway is about. A circle's area cannot be negative, and a rate per
   resident is not a symbol map's quantity (that is a choropleth): draw counts or amounts.
-- `check()` tests only what the drawn data can decide. A figure the data cannot confirm stays in the
-  title as the journalist wrote it and is not checked.
 - In `check()`, compare a computed value with the takeaway's figure at the takeaway's precision
   (`Math.round(v) === 233`, or to one decimal), never with strict equality on the raw division.
 - Every number in a sentence is computed from `data.json`, never typed — except the title's first

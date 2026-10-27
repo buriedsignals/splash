@@ -1,5 +1,7 @@
 # Diverging stacked bar (Likert) (scrolly), composed — what you write
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The marks, the type, the colours and the layout are already done: one horizontal bar per row, its parts laid
 OUTWARD from a shared centre — the left side's parts run left, the right side's run right, an optional neutral
 part straddles the axis — each side its own ramp deepening outward, every segment's value written inside it where it
@@ -35,7 +37,6 @@ whole chart returns (what was filtered comes back, what your gestures marked sta
 | `source` | The credit line, exactly as the storyboard records it. |
 | `alt(drawn)` | A function returning the alt text for the bars actually drawn (or a string). |
 | `scope(shown, all)` | Optional. The sentence printed when the frame has room for only some rows (the rows your gestures act on are always kept). |
-| `check()` | Throws if the data no longer supports the title. |
 
 ## The gestures you may use
 
@@ -97,7 +98,6 @@ const rows = data.rows.map((r) => ({ name: r[col("question")], parts: { Disagree
 - A gesture that changes nothing and two notes on one bar are refused.
 - Every number in a sentence is computed from `data.json`, never typed — except the title's first form, which is
   the journalist's own sentence, copied as written.
-- `check()` tests only what the drawn data can decide, at the takeaway's precision (`Math.round(v) === 143`).
 - After `write_file`, call `render_beat` with format `scrolly`, then `look` at the PNG it names (card 1) and at
   the other cards' PNGs. If the render refuses, read
   its message: a refusal on `gestures[i]` names the key to change and a value that works. If the picture is wrong,

@@ -1,5 +1,7 @@
 # Bar and column (web), composed — what you write
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The page is already designed: one bar per row, on one scale from zero, in the story's PALETTE.md and DIRECTION.md;
 names in a left column, each value written after its bar; every bar answers a hover, a tap or the keyboard with its
 share of the whole and its rank. YOU decide the staging: an ordered list `gestures`, in the order the story tells it.
@@ -39,7 +41,6 @@ says. `render-beat.mjs` (already in the folder) checks it, draws the page, check
 | `detail(r)` | Optional. What a bar answers after its name and value, from `r = { name, value, share, rank, count }` (`share` in percent). Without it the bar answers its share and its rank. |
 | `scope(shown, all)` | Optional. The line printed under the bars when the page has room for only some rows, e.g. `(shown, all) => \`The ${shown} largest of ${all}\``. Without it the page prints "12 / 40". |
 | `lang` | Optional: the page's language tag. Default: STORYBOARD.md's `language`. |
-| `check()` | Throws if the data no longer supports the title. |
 
 ## The gestures you may use
 
@@ -108,8 +109,6 @@ Leave out aggregate rows (a "Total" or "World" row is not a member). Large raw v
 - Draw the measure the takeaway is about. If it speaks of a rate, a share or a ranking per resident / per capita,
   compute that measure from the columns and draw it — never the raw column beside a per-resident headline.
 - Leave out aggregate rows (a "Total" or "World" row is not a member).
-- `check()` tests only what the drawn data can decide, comparing a computed value with the takeaway's figure at the
-  takeaway's precision (`Math.round(v) === 233`), never with strict equality on a raw division.
 - Every number in a sentence is computed from `data.json`, never typed — except the title, which is the journalist's
   own sentence, copied as written.
 - After `write_file`, call `render_beat` with format `web`, then `look` at the PNG it names. If the render refuses,

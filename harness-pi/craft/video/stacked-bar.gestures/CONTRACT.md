@@ -1,5 +1,7 @@
 # Stacked bar video, composed — what you write
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The marks, the type, the colours and the layout are already done: one horizontal bar per row, its parts stacked
 from one zero in the order you give them, each part one step of the accent's ramp, every segment's value written
 inside it where it fits and each bar's total printed past its end, in the story's PALETTE.md and DIRECTION.md. YOU
@@ -22,7 +24,6 @@ decide the staging: an ordered list `gestures`, in the order the story tells it.
 | `title` | The journalist's takeaway from STORYBOARD.md, copied word for word as a literal string: the title card. |
 | `source` | The credit line, exactly as the storyboard records it (it closes the video). |
 | `scope(shown, all)` | Optional. The sentence printed when the frame has room for only some rows (the rows your gestures act on are always kept). |
-| `check()` | Throws if the data no longer supports the title. |
 
 ## The gestures you may use
 
@@ -82,7 +83,6 @@ const rows = data.rows.map((r) => ({ name: r[col("country")], parts: { "In 2000"
 - A gesture that changes nothing and two notes on one bar are refused.
 - Every number in a sentence is computed from `data.json`, never typed — except the title's first form, which is
   the journalist's own sentence, copied as written.
-- `check()` tests only what the drawn data can decide, at the takeaway's precision (`Math.round(v) === 143`).
 - After `write_file`, call `render_beat` with format `video`, then `look` at the stills it lists. If the render refuses, read
   its message: a refusal on `gestures[i]` names the key to change and a value that works. If a still is wrong,
   fix `beat.mjs` with a small `edit_file`, render and look again.

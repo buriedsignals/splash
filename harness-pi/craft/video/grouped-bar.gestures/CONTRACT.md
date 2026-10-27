@@ -1,5 +1,7 @@
 # Grouped bar (video), composed — what you write
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The marks, the type, the colours, the layout and the timing (21 s at 30 fps) are already done, in the story's
 PALETTE.md and DIRECTION.md. The video opens on a title card (the eyebrow and the takeaway); then the chart arrives
 on its one scale. YOU decide what happens next: an ordered list `gestures` of exactly THREE gestures, in story order —
@@ -27,7 +29,6 @@ story's from scratch with `write_file`.
 | `scope(shown, all)` | Optional: the sentence printed when the frame holds only some rows. |
 | `ceiling` | Bullet only, optional: the track's end. |
 | `lang`, `decimals` | Optional: the language tag (decimal separator) and the decimals on every figure (0 to 3). |
-| `check()` | Throws if the data no longer supports the title. |
 
 ## The gestures you may use
 

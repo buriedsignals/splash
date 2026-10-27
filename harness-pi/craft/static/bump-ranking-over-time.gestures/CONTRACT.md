@@ -1,5 +1,7 @@
 # Bump chart (ranking over time), composed — what you write
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The marks, the type, the colours and the layout are already done: each series' RANK at every time (1 at the top), computed by the kit from `points`' values among every series at that time; only the top `slots` ranks are drawn, and a series that leaves them stops where it left, every series labelled at its end, in
 the story's PALETTE.md and DIRECTION.md. YOU decide the staging: an ordered list `gestures`, in the order the story
 tells it. You write ONE file, `beat.mjs`, in the beat folder. It reads `data.json` beside it and exports what THIS
@@ -21,7 +23,6 @@ read it first, then write this story's from scratch with `write_file`.
 | `limits` | The standfirst, in forms, longest first: unit, scope, the limits the journalist named. |
 | `source` | The credit line, exactly as the storyboard records it. |
 | `alt` | The alt text: what the plate shows, in one or two sentences. |
-| `check()` | Throws if the data no longer supports the title. |
 
 ## The gestures you may use
 
@@ -83,7 +84,5 @@ millions of tonnes) when the unit says so. Never type the readings: `beat.mjs` m
   choose. A number the readings do not give is refused. "twice", "highest", "third"… are checked against the readings.
 - Write every `note` in the storyboard's `language`, the same language as the title.
 - Two notes on one reading, a gesture that changes nothing, are refused.
-- `check()` tests only what the data can decide, comparing a computed value with the takeaway's figure at the
-  takeaway's precision, never with strict equality on a raw division.
 - After `write_file`, call `render_beat` with format `static`, then `look` at the PNG. A refusal on `gestures[i]`
   names the key to change and a value that works. If the picture is wrong, fix `beat.mjs` with a small `edit_file`.

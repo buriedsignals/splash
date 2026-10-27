@@ -1,5 +1,7 @@
 # Flow map (origin-destination) (gestures) — what you write
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The basemap plate, the camera fitted to the largest flows, the node, the bands (width = the
 quantity, on one scale drawn in the key), the dots for the bands too thin to draw, the names at
 each band's end, the type, the colours and the layout are already done: they come from the worked
@@ -50,7 +52,6 @@ key, not drawn.
 | `reading` | The reading line, in forms, longest first. It must say the line is not an itinerary. |
 | `source` | The credit line, exactly as the storyboard records it. |
 | `alt` | The alt text describing the fan. |
-| `check()` | Throws if the data no longer supports the title. |
 
 ## The gestures
 
@@ -128,8 +129,6 @@ visible decision — say so in the standfirst.
 - The bands are drawn over the sea as much as over the land, so the story's accent must stand 40°
   of hue away from the water's blue. If the render refuses on that, it is PALETTE.md, not beat.mjs:
   say so instead of changing beat.mjs.
-- `check()` tests only what the drawn data can decide (the subject's share, the two largest's share,
-  the total). A figure the data cannot confirm stays in the title as the journalist wrote it.
 - In `check()`, compare a computed value with the takeaway's figure at the takeaway's precision
   (`Math.round(v) === 233`, or to one decimal), never with strict equality on the raw division.
 - Every number in a sentence is computed from `data.json`, never typed — except the title's first

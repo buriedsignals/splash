@@ -1,5 +1,7 @@
 # Dot density — gesture beat (video)
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The map is already done: one dot per row of data.json at its own coordinates, over the land of Europe, the class scale and its colours, the layout and the type come from the kit,
 `PALETTE.md` and `DIRECTION.md`. You write ONE file, `beat.mjs`, in the beat folder. It reads `data.json` beside it
 and exports what THIS story's map says, and the STAGING: an ordered list of `gestures`. `render-beat.mjs` (already in
@@ -25,7 +27,6 @@ a render spends no tile and needs no key (orchestrator choice for this phase, pe
 | `reading` | A reading line in forms, longest first. |
 | `source` | The credit line, exactly as the storyboard records it. |
 | `alt` | The alt text: what the map shows, with its computed numbers. |
-| `check()` | Throws if the data no longer supports the title. |
 
 ## Gestures
 

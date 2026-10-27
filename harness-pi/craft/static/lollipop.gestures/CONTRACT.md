@@ -1,5 +1,7 @@
 # Lollipop, composed — what you write
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The marks, the type, the colours and the layout are already done: two stems per row from zero: the first value (the earlier state) pale, the second (the later state) full. Everything sits on ONE value scale
 from zero, in the story's PALETTE.md and DIRECTION.md. YOU decide the staging: an ordered list `gestures`, in the
 order the story tells it. You write ONE file, `beat.mjs`, in the beat folder; it reads `data.json` beside it.
@@ -21,7 +23,6 @@ scratch with `write_file`.
 | `source` | The credit line, exactly as the storyboard records it. |
 | `alt(drawn)` | A function returning the alt text for the rows actually drawn (`drawn` = those rows). |
 | `scope(shown, all)` | Optional. The sentence printed when the frame holds only some rows (the gestures' rows are always kept). |
-| `check()` | Throws if the data no longer supports the title. |
 
 ## The gestures you may use
 
@@ -52,6 +53,5 @@ A gesture names what it acts on by `mark` / `marks`:
 - One note per row on the still: a second note on the same row is refused. Two notes on two rows are fine.
 - Do not write a number that is part of a row's name (an age band "60-64") in a note: it is read as a figure.
 - Never type the rows or their numbers: `beat.mjs` reads `data.json`. Leave out aggregate rows ("World", "EU").
-- `check()` tests only what the drawn data can decide, at the takeaway's precision.
 - After `write_file`, call `render_beat` with format `static`, then `look` at the PNG. A refusal on `gestures[i]`
   names the key to change and a value that works.

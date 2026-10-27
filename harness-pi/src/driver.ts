@@ -24,12 +24,13 @@ import {
   renderDigest,
   writeOutputReview,
 } from "../../skills/deliver/scripts/output-review.mjs";
-import { claimBlock, contractText, craftKit, recordFallback } from "./craft-kit.ts";
+import { claimBlock, contractText, craftKit, kitGestures, recordFallback } from "./craft-kit.ts";
 import { converse } from "./conversation.ts";
 import { checkEditorProposals, describeProposals } from "./editor-check.ts";
 import type { Journalist } from "./journalist.ts";
 import { type OwnerId, PROFILES } from "./profiles.ts";
 import { openSession } from "./sessions.ts";
+import { gestureTools } from "./tools/gestures.ts";
 import { type Bases, beatTools, fsTools } from "./tools/fs.ts";
 import { lookTool } from "./tools/look.ts";
 import {
@@ -385,6 +386,13 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
         `---\nplanVersion: 1\nfindingIds: [slot-${beat}]\n---\n\n# Beat ${beat}\n\n${slot.proves ?? ""}\n`,
       );
     }
+    // A gesture kit takes its staging through record_gestures (typed, closed names), refreshed whenever beat.mjs changes.
+    const staging = choice.gestures
+      ? gestureTools(bases, { beat, gestures: (await kitGestures(adapter, String(slot.format ?? "static"))).map((g) => g.do) })
+      : null;
+    const bt = beatTools(bases, beat);
+    const refreshing = <T extends { execute: (...a: never[]) => Promise<unknown> }>(t: T): T =>
+      staging ? ({ ...t, execute: async (...a: Parameters<T["execute"]>) => { const out = await t.execute(...a); staging.refresh(); return out; } } as T) : t;
     const sess = await session(
       "skill:chart-beat",
       beat,
@@ -392,8 +400,9 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
       [
         f.readFile,
         f.listDir,
-        beatTools(bases, beat).writeFile,
-        beatTools(bases, beat).editFile,
+        refreshing(bt.writeFile),
+        refreshing(bt.editFile),
+        ...(staging ? [staging.recordGestures] : []),
         lookTool(bases),
         r.render,
       ],
@@ -401,7 +410,7 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
     // The 12B often says DONE, or stops, while its beat still refuses to render. The harness renders
     // the beat itself and hands the exact refusal back in the SAME session (its context intact), up to
     // three times, instead of opening a new session that starts from nothing.
-    let prompt = `${dataSummary(join(beatDir, "data.json"))}${choice.gestures ? claimBlock(meta as unknown as Record<string, unknown>) : ""}Slot ${beat} of ${o.storyDir} is a ${slot.format ?? "static"} "${slot.chosen}" ${slot.medium ?? "chart"} beat, prepared at beats/${beat}/. The confirmed takeaway is in STORYBOARD.md and is the title, word for word. Write every word on the plate (eyebrow, labels, unit, standfirst, alt) in the story's language, "${meta.language ?? "en"}", whatever language the data's column names are in. Draw the measure the takeaway is about: a takeaway about a rate, share or ranking per resident draws that computed measure, not the raw column. Write beats/${beat}/beat.mjs as CONTRACT.md says, render it with render_beat (beat "${beat}", format "${slot.format ?? "static"}"), look at the PNG, fix what is wrong, and reply DONE when the render is right.`;
+    let prompt = `${dataSummary(join(beatDir, "data.json"))}${choice.gestures ? claimBlock(meta as unknown as Record<string, unknown>) : ""}Slot ${beat} of ${o.storyDir} is a ${slot.format ?? "static"} "${slot.chosen}" ${slot.medium ?? "chart"} beat, prepared at beats/${beat}/. The confirmed takeaway is in STORYBOARD.md and is the title, word for word. Write every word on the plate (eyebrow, labels, unit, standfirst, alt) in the story's language, "${meta.language ?? "en"}", whatever language the data's column names are in. Draw the measure the takeaway is about: a takeaway about a rate, share or ranking per resident draws that computed measure, not the raw column. Write beats/${beat}/beat.mjs as CONTRACT.md says${choice.gestures ? ` — its readings and words only: no gestures and no check() (the kit computes the check from the recorded claim); then declare the staging with record_gestures, naming marks only from the names it offers` : ""}, render it with render_beat (beat "${beat}", format "${slot.format ?? "static"}"), look at the PNG, fix what is wrong, and reply DONE when the render is right.`;
     let final: { exitCode: number; stdout: string; stderr: string } = { exitCode: 1, stdout: "", stderr: "beat.mjs was never written" };
     const craftStart = Date.now();
     for (let attempt = 0; attempt < 3 && Date.now() - craftStart < 20 * 60_000; attempt++) {

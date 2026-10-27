@@ -1,5 +1,7 @@
 # pie-and-donut (part-to-whole), composed as a VIDEO — what you write
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The marks, the type, the colours and the layout are already done: one ring is the whole; each part an arc from twelve o'clock, clockwise, its ANGLE its share, in the story's PALETTE.md and
 DIRECTION.md. YOU decide the staging: an ordered list `gestures`, in the order the story tells it. Nothing is
 staged that you do not write. You write ONE file, `beat.mjs`, in the beat folder. It reads `data.json` beside it
@@ -22,7 +24,6 @@ and exports what THIS story's video says: a title card, the parts arriving, your
 | `limits` | The standfirst, in forms, longest first: what the area or angle means, the whole, and the limits the journalist named, in their words. |
 | `source` | The credit line, exactly as the storyboard records it. |
 | `alt(marks)` | A function returning the alt text. |
-| `check()` | Throws if the data no longer supports the title. |
 
 ## The gestures you may use
 
@@ -81,6 +82,5 @@ const rows = data.rows
 - Exactly three gestures; the third never hides part of the whole.
 - The ring is the sum of `rows`: leave out aggregate rows (a "World" or "Total" row is the whole, not a part).
 - Write every `note` in the storyboard's `language`.
-- `check()` tests only what the drawn data can decide, at the takeaway's precision (`Math.round(v) === 14`).
 - After `write_file`, call `render_beat` with format `video`, then `look` at the stills it prints. If the render refuses, read
   its message: a refusal on `gestures[i]` names the key to change and a value that works.

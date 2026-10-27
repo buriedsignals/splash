@@ -1,5 +1,7 @@
 # marimekko-mosaic-plot (part-to-whole), composed as a SCROLLY — what you write
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The marks, the type, the colours and the layout are already done: one column per group, its WIDTH the group's total; inside it one band per segment, its height the segment's share of the column — so a cell's AREA is its value, in the story's PALETTE.md and
 DIRECTION.md. YOU decide the staging: an ordered list `gestures`, in the order the story tells it. Nothing is
 staged that you do not write. You write ONE file, `beat.mjs`, in the beat folder. It reads `data.json` beside it
@@ -22,7 +24,6 @@ and exports what THIS story's scrolly says: one card per gesture, the reader's s
 | `limits` | The closing card's words (its first form), in forms, longest first: what the area or angle means, the whole, and the limits the journalist named, in their words. |
 | `source` | The credit line, exactly as the storyboard records it. |
 | `alt(marks)` | A function returning the alt text. |
-| `check()` | Throws if the data no longer supports the title. |
 
 ## The gestures you may use
 
@@ -77,6 +78,5 @@ const rows = data.rows.map((r) => ({ column: r[GROUP], segment: r[PART], value: 
   highlight, a filter or a count.
 - Column and segment order are the data's: there is no reorder.
 - Write every `note` in the storyboard's `language`.
-- `check()` tests only what the drawn data can decide, at the takeaway's precision (`Math.round(v) === 14`).
 - After `write_file`, call `render_beat` with format `scrolly`, then `look` at the card screenshots. If the render refuses, read
   its message: a refusal on `gestures[i]` names the key to change and a value that works.

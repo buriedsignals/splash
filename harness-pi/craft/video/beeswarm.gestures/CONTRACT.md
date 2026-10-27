@@ -1,5 +1,7 @@
 # Beeswarm, composed — what you write
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The marks, the type, the colours and the layout are already done: every unit a circle at its value on ONE axis, packed off the axis line; with `size`, a circle's AREA is its size (a population). Names are printed for the rows a gesture marks. The subject takes the story's accent;
 every other row one neutral; a row a gesture names is ringed, never given a second colour. YOU decide the staging:
 an ordered list `gestures`, in the order the story tells it. You write ONE file, `beat.mjs`, in the beat folder.
@@ -22,7 +24,6 @@ It reads `data.json` beside it and exports what THIS story says. `render-beat.mj
 | `limits` | The standfirst, in forms, longest first: the measure, the moments, the limits the journalist named. |
 | `source` | The credit line, exactly as the storyboard records it. |
 | `alt(rows)` | A function returning the alt text for the rows drawn. |
-| `check()` | Throws if the data no longer supports the title. |
 
 ## The gestures you may use
 
@@ -74,6 +75,5 @@ Never type the rows or their numbers: `beat.mjs` must read `data.json`, or the r
 - A gap stated with "more"/"less"/"plus"/"moins" in a compare's note is the gap between the two rows' a row's values.
 - One note per row; a gesture that changes nothing is refused.
 - Write every `note` in the storyboard's `language`.
-- `check()` tests only what the drawn data can decide, at the takeaway's precision (`Math.round(v) === 30`).
 - After `write_file`, call `render_beat` with format `video`, then `look` at the result. A refusal on
   `gestures[i]` names the key to change and a value that works.

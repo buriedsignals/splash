@@ -1,5 +1,7 @@
 # Pictogram (isotype), composed — what you write
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The marks, the type, the colours and the layout are already done: one square per real THING (a country, a school), never a slice of a quantity; the squares gathered in BLOCKS by value range, one square size for every block, each block's count printed after it, in the story's PALETTE.md and
 DIRECTION.md. The groups are COUNTED by render-beat.mjs from the readings and the partition you give; it never
 refuses the data's shape (a first edge above the smallest reading moves down, an open tail holding a quarter of the
@@ -77,7 +79,5 @@ Filter to ONE year (or survey) first, so each thing is counted once.
 - Two notes on one group and a gesture that changes nothing are refused.
 - Every number in a sentence is computed from `data.json`, never typed — except the title's first form.
 - Write in the storyboard's `language`. Never put a data column's name in a sentence.
-- `check()` compares a computed value with the takeaway's figure at the takeaway's precision
-  (`Math.round(counts["0-4"] / total * 10) === 6`), never a count you typed elsewhere.
 - After `write_file`, call `render_beat` with format `static`, then `look` at the PNG. A refusal on `gestures[i]` names the key to change and a value that works; fix `beat.mjs` with a
   small `edit_file`, render and look again.

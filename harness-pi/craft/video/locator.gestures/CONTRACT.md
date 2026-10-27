@@ -1,5 +1,7 @@
 # Locator (gestures, video) — what you write
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The basemap plate, the camera (boxed on the subject), the ring on the subject, the three typographic
 classes of place (countries in tracked capitals, settlements on open dots, waters in italic), the
 label placer, the type, the colours and the layout are already done: they come from the worked
@@ -42,7 +44,6 @@ and Russia); waters are declared by you at their own centres.
 | `reading` | The reading line, in forms, longest first (what the three typefaces mean). |
 | `source` | The credit line, exactly as the storyboard records it. |
 | `alt` | The alt text: where the subject is, which places surround it. |
-| `check()` | Throws if the data no longer supports the title. |
 
 ## The gestures
 
@@ -112,8 +113,6 @@ refused with that reason (`origin` in PALETTE.md is the journalist's to change, 
 
 ## Rules
 
-- `check()` tests only what the drawn data can decide. A figure the data cannot confirm stays in the
-  title as the journalist wrote it and is not checked.
 - Every number in a sentence is computed from `data.json`, never typed — except the title's first
   form, which is the journalist's own sentence, copied as written.
 - Coordinates come from data.json. The only coordinates you type are the waters' centres.

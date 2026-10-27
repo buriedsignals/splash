@@ -1,5 +1,7 @@
 # Population pyramid (scrolly), composed — what you write
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The page is already designed: the first series grows left of a central spine, the second right, both on one scale; rows youngest first (the foot), never reordered; names in a left column (the pyramid: on its spine), values at the marks'
 tips, one value scale for every card, in the story's PALETTE.md and DIRECTION.md. The graphic stays fixed while
 cards of prose travel up over it; the scroll moves the picture continuously from one card's state to the next.
@@ -25,7 +27,6 @@ words against the data, draws the page, checks it in a browser and prints `look 
 | `source` | The credit line. |
 | `alt` | The alt text (a string, or a function of the drawn row names). |
 | `scope(shown, all)` | Optional: the line printed when the page draws only some rows. |
-| `check()` | Throws if the data no longer supports the title. |
 
 ## The gestures you may use
 

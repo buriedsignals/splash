@@ -1,5 +1,7 @@
 # Heatmap (matrix), composed (web) — what you write
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The grid, the stepped colour ramp, the key with its printed breaks, the type, the colours and the layout are already
 done, from the story's PALETTE.md and DIRECTION.md. YOU decide the staging: an ordered list `gestures`, in story order.
 You write ONE file, `beat.mjs`, which reads `data.json` beside it. `beat.example.mjs` is a worked example: read it
@@ -23,7 +25,6 @@ first, then write this story's from scratch with `write_file`.
 | `reading` | Optional: the reading line, in forms. |
 | `source` | The credit line, as the storyboard records it. |
 | `alt` | The alt text. |
-| `check()` | Throws if the data no longer supports the title. |
 
 ## Reading the data
 

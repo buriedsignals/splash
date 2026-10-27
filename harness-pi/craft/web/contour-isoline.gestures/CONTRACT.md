@@ -1,5 +1,7 @@
 # Contour / isoline (gestures, web) — what you write
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The field, the isolines, their labels, the summit mark, the basemap plate, the type, the colours and
 the layout are already done: they come from the worked example `proof/static-contour-europe-distance`
 and the story's PALETTE.md and DIRECTION.md. You write ONE file, `beat.mjs`, in the beat folder. It
@@ -55,7 +57,6 @@ or `France`), a code twice, a country the frame CUTS (Russia: leave it out of `s
 | `source` | The credit line, exactly as the storyboard records it (the basemap is MapTiler). |
 | `alt` | The alt text describing the field (a string, or a function of `field`). |
 | `evidenceLevels` | 3. |
-| `check()` | Throws if the field no longer supports the title. |
 
 ## The gestures
 
@@ -114,7 +115,6 @@ explicitly; a name that maps to nothing must throw, never be skipped.
 
 ## Rules
 
-- `check()` tests only what the field can decide. A figure the field cannot confirm stays in the title as the journalist wrote it and is not checked.
 - In `check()`, compare a computed value with the takeaway's figure at the takeaway's precision (`Math.round(field.median) === 132`), never with strict equality on the raw value.
 - The title's figures must be the field's own (its median, its farthest point, a drawn level or a quantile): the render refuses a headline whose numbers the field does not hold.
 

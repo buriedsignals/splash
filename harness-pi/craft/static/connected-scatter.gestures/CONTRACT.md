@@ -1,5 +1,7 @@
 # Connected scatter, composed — what you write (static)
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The marks, the axes, the colours and the layout are already done: each entity drawn as a path through its steps in key order (a year): a hollow circle at its first step, a filled one at its last, both axes fitted to the data. The path's LAST step carries the entity's own name ("France"); earlier steps are "France 2000". A gesture on "France" acts on the whole path; a key ("2000") names every point at that step, in the story's PALETTE.md and
 DIRECTION.md. YOU decide the staging: an ordered list `gestures`, in the order the story tells it. Nothing is staged
 that you do not write. You write ONE file, `beat.mjs`, in the beat folder. It reads `data.json` beside it and exports
@@ -24,7 +26,6 @@ what THIS story says. `render-beat.mjs` (already in the folder) draws it.
 | `limits` | The standfirst, in forms, longest first: scope, units, the limits the journalist named. |
 | `source` | The credit line, exactly as the storyboard records it. |
 | `alt(marks)` | The alt text (a string, or a function of the drawn marks). |
-| `check()` | Throws if the data no longer supports the title. |
 
 ## The gestures you may use
 
@@ -62,7 +63,6 @@ gestures: [
 - A position is data: no gesture moves a point. A `zoom` enlarges the plot onto its marks and prints its factor.
 - Write every `note` in the storyboard's `language`, whatever language the data's columns are in.
 - Never type the rows or their numbers: `beat.mjs` must read `data.json`, or the render refuses it.
-- `check()` tests only what the drawn data can decide, at the takeaway's precision (`Math.round(ratio) === 3`).
 - After `write_file`, call `render_beat` with format `static`, then `look` at the PNG. If the render refuses, read its message: a refusal on `gestures[i]` names the
   key to change and a value that works. If the picture is wrong, fix `beat.mjs` with a small `edit_file`, render and
   look again.

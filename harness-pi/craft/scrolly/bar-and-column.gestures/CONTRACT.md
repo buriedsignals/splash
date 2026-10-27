@@ -1,5 +1,7 @@
 # Bar and column (scrolly), composed — what you write
 
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+
 The page is already designed: one bar per row, on one scale from zero, in the story's PALETTE.md and
 DIRECTION.md; names in a left column, each value written after its bar. The graphic stays fixed while cards of
 prose travel up over it, and the reader's scroll moves the picture continuously from one card's state to the
@@ -33,7 +35,6 @@ with `write_file`.
 | `scope(shown, all)` | Optional. The line printed under the bars when the page has room for only some rows, in the story's language, e.g. `(shown, all) => \`The ${shown} largest of ${all}\``. Without it the page prints "12 / 40". |
 | `lang` | Optional: the page's language tag. Default: STORYBOARD.md's `language`. |
 | `evidenceLevels` | Optional, 2. |
-| `check()` | Throws if the data no longer supports the title. |
 
 ## The gestures you may use
 
@@ -114,8 +115,6 @@ Leave out aggregate rows (a "Total" or "World" row is not a member). Large raw v
 - Draw the measure the takeaway is about. If it speaks of a rate, a share or a ranking per resident / per
   capita, compute that measure from the columns and draw it — never the raw column beside a per-resident headline.
 - Leave out aggregate rows (a "Total" or "World" row is not a member).
-- `check()` tests only what the drawn data can decide, comparing a computed value with the takeaway's figure at
-  the takeaway's precision (`Math.round(v) === 233`), never with strict equality on a raw division.
 - Every number in a sentence is computed from `data.json`, never typed — except the title, which is the
   journalist's own sentence, copied as written.
 - After `write_file`, call `render_beat` with format `scrolly`, then `look` at the PNG it names (card 1) and at
