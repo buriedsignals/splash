@@ -24,6 +24,11 @@ const GESTURE_FAMILY: Record<string, string> = {
   "connected-scatter": "xy",
   "heatmap-matrix": "cell",
   "calendar-heatmap": "cell",
+  "dumbbell-range-plot": "position",
+  "slope-slopegraph": "position",
+  "dot-strip": "position",
+  beeswarm: "position",
+  "box-plot": "position",
 };
 
 export interface AdapterOptions {

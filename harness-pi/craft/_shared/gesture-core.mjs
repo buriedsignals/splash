@@ -142,8 +142,8 @@ const RATIO_WORDS = [
 // łóżek" sat on a per-resident value where its row is third.
 const word = (alternatives) => new RegExp(`(?<![\\p{L}])(${alternatives})(?![\\p{L}])`, "iu");
 const RANK_WORDS = [
-  [word("highest|largest|biggest|greatest|most|top|first|najwięcej|największ\\p{L}*|najwyższ\\p{L}*|pierwsz\\p{L}*|le plus|la plus|premier|première|o maior|a maior|primeir\\p{L}*|höchst\\p{L}*|größt\\p{L}*|meisten|el mayor|la mayor|primer\\p{L}*"), (rank, n) => rank === 1, "the highest"],
-  [word("lowest|smallest|least|fewest|bottom|last|najmniej|najmniejsz\\p{L}*|najniższ\\p{L}*|ostatni\\p{L}*|le moins|la moins|dernier|dernière|o menor|a menor|últim\\p{L}*|niedrigst\\p{L}*|kleinst\\p{L}*|wenigsten|letzt\\p{L}*|el menor|la menor"), (rank, n) => rank === n, "the lowest"],
+  [word("highest|largest|biggest|greatest|most|top|first|najwięcej|największ\\p{L}*|najwyższ\\p{L}*|pierwsz\\p{L}*|le plus (?:élevé|grand|haut|gros|fort)|la plus (?:élevée|grande|haute|grosse|forte)|premier|première|o maior|a maior|primeir\\p{L}*|höchst\\p{L}*|größt\\p{L}*|meisten|el mayor|la mayor|primer\\p{L}*"), (rank, n) => rank === 1, "the highest"],
+  [word("lowest|smallest|least|fewest|bottom|last|najmniej|najmniejsz\\p{L}*|najniższ\\p{L}*|ostatni\\p{L}*|le moins|la moins|le plus (?:faible|bas|petit)|la plus (?:faible|basse|petite)|dernier|dernière|o menor|a menor|últim\\p{L}*|niedrigst\\p{L}*|kleinst\\p{L}*|wenigsten|letzt\\p{L}*|el menor|la menor"), (rank, n) => rank === n, "the lowest"],
   [word("second|drug\\p{L}*|deuxième|segund\\p{L}*|zweit\\p{L}*"), (rank) => rank === 2, "second"],
   [word("third|trzeci\\p{L}*|troisième|terceir\\p{L}*|tercer\\p{L}*|dritt\\p{L}*"), (rank) => rank === 3, "third"],
   [word("fourth|czwart\\p{L}*|quatrième|quart\\p{L}*|viert\\p{L}*"), (rank) => rank === 4, "fourth"],
@@ -410,7 +410,8 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
       for (const n of stated) {
         // A figure with no percent sign is never a percentage gap: "4,3 beds per million fewer" was offered "3,4", the
         // gap in percent, when the gap is 132 beds per million.
-        const pool = n.percent && asPercent.length ? asPercent : figures.filter((f) => !gapPercents.some((p) => Math.abs(p * 10 ** scale - f) < 1e-9));
+        // A percent only ever matches a percentage or a row's own value, never any figure of the gesture.
+        const pool = n.percent ? asPercent : figures.filter((f) => !gapPercents.some((p) => Math.abs(p * 10 ** scale - f) < 1e-9));
         if (pool.some((f) => matches(n, f))) continue;
         // A fix offers only what this gesture itself draws: a rank or a count may be stated, never substituted for a
         // figure ("4,3 beds fewer" was offered Mazowieckie's rank, "3,0").
@@ -508,7 +509,8 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
   if (format === "video") {
     if (gestures.length < 3) {
       const has = (d) => gestures.some((g) => g.do === d);
-      const gesture = !has("pull-back") ? { do: "pull-back" } : !has("reveal") ? { do: "reveal" } : { do: "count" };
+      // A count only where values add up; elsewhere a highlight of the subject fills the event.
+      const gesture = !has("pull-back") ? { do: "pull-back" } : !has("reveal") ? { do: "reveal" } : additive ? { do: "count" } : { do: "highlight", mark: [...entities][0] ?? rows[0].name };
       const at = gesture.do === "pull-back" ? gestures.length : 0;
       throw new GestureRefusal(
         "gestures",

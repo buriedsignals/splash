@@ -755,3 +755,10 @@ describe("a takeaway that names no drawn row", () => {
     expect(() => validateGestures({ gestures: [{ do: "reference", value: 75, note: "14 years" }, { do: "pull-back" }], rows: CLOUD, family: "length", format: "static", claim, hooks: { figures: () => [14] } })).not.toThrow();
   });
 });
+
+describe("French superlatives", () => {
+  const ROWS = [{ name: "A", value: 10 }, { name: "B", value: 5 }];
+  it("should read le plus faible as the lowest", () => {
+    expect(() => validateGestures({ gestures: [{ do: "annotate", mark: "B", note: "le plus faible" }], rows: ROWS, family: "length", format: "static", claim: { takeaway: "B is behind A." } })).not.toThrow();
+  });
+});
