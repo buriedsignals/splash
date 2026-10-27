@@ -443,11 +443,12 @@ describe("what the local harness can draw", () => {
   });
 
   // Every type has a kit in every format except the web slope, parked because its worked example fails verify-web.
-  it("should refuse a chosen type with no zone adapter", async () => {
+  // Phase 2 gave every chart type a gesture kit in every format, so a slope in web is drawable now.
+  it("should record a chosen type that only a gesture kit draws", async () => {
     const tools = await withFormat(undefined, "web");
     await mutateFixture({ candidates: ["Bar and column", "Slope (slopegraph)"] });
     dialogue.lastJournalist = "Slope (slopegraph).";
-    await expect(call(tools.recordSlot, { slot: "1", field: "chosen", value: "Slope (slopegraph)" })).rejects.toThrow(/cannot draw Slope \(slopegraph\) yet/);
+    await expect(call(tools.recordSlot, { slot: "1", field: "chosen", value: "Slope (slopegraph)" })).resolves.toBeDefined();
   });
 });
 
