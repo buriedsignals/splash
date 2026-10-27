@@ -294,3 +294,31 @@ the gesture kit draws three to six, and every defect it showed came from one of 
    should choose the decimals itself.
 6. **The storyboard** cost three of the 17 working runs (silent slot, menu loop, a move off scrollytelling); fixed, not re-measured
    across many runs.
+
+## Static re-measure after the review decisions — 2026-10-28
+
+Rémy's decisions applied (`37e14c039`): the subject always accented, a bracket or count over a rate refused,
+rank words in the stories' languages, decimals chosen by the kit. Measured with **seeded runs** (`--seeds`, the
+storyboard of an earlier run laid in, `bb7ade813`) and **stopped at the craft render** (`SPLASH_STOP_AFTER_CRAFT=1`,
+`af7f72971`): a run is 2–13 min instead of 12–24.
+
+**First seeded pass** (`37e14c039`; delivery still on): Lisboa ✅ ✅, stress-q ⚠️ ✅, stress-ad ⚠️ (repaired) / seed
+artefact (no `SUBJECTS.md`) / ❌ (the 12B rounded the rates to whole numbers: eight bars of 4). Each gesture-kit miss was a
+kit defect, fixed: a plate's own note printed the raw value ("204.97512437810946"), an empty note counted as a note,
+rows rounded until they tie were drawn, a note was read at ten times the drawn value (`02b954653`, `69b348265`).
+
+**Second seeded pass** (`69b348265`…`a2ecb57c5`, stopped at the render):
+
+| Story | Craft | KTD11 (looked at) | Gestures |
+|---|---|---|---|
+| Lisboa | 13.2 min | ✅ | highlight → bracket of whole "214 of 394 million" → compare Porto |
+| Lisboa | 1.8 min | ✅ | the same three |
+| stress-q | 4.0 min | ✅ | highlight Sul → compare Centro "233 vs Centro's 205" → annotate Centro "Highest raw count (412)" |
+| stress-q | 2.6 min | ✅ | the same three |
+| stress-ad | 8.0 min | ✅ | highlight → compare Śląskie "Śląskie wyprzedza Mazowieckie (405 vs 388)" → annotate Łódzkie "402" |
+| stress-ad | 8.6 min | ⚠️ repaired (true; the note lost its unit) | highlight → compare Śląskie "o 1,62" |
+| stress-ad | 38.3 min | ✅ | highlight → annotate "Najwięcej łóżek w liczbie bezwzględnej" → compare Śląskie |
+
+**6/7 pass KTD11 without repair, 7/7 true**, against **5/7** for the per-type baseline re-judged under the same rule.
+Fixed after the pass (`b1afbc011`): a unit base after "na"/"per" ("na 10 tys.") was read as a figure; a check()
+refusal now says an inverted condition may be the cause (the 38-minute run lost three attempts to one).
