@@ -46,3 +46,10 @@ describe("interval family (gantt)", () => {
     expect(scheduled.states[4].b10).toBe(0);
   });
 });
+
+describe("interval rows never refuse their shape", () => {
+  it("should keep a row with no run inside the axis as an empty row of 0 years", () => {
+    const rows = intervalRows({ first: 1990, last: 2024, rows: [{ name: "A", runs: [{ from: 1995, to: 2000 }] }, { name: "B", runs: [{ from: 1970, to: 1980 }] }] });
+    expect(rows.find((r) => r.name === "B")).toEqual({ name: "B", runs: [], years: 0 });
+  });
+});

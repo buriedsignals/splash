@@ -29,7 +29,8 @@ export function intervalRows({ rows, first, last }) {
       .map((run) => ({ from: Math.max(first, Math.round(run.from)), to: Math.min(last, Math.round(run.to)), open: run.open === true || (run.open === undefined && run.to >= last) }))
       .filter((run) => run.to >= run.from)
       .sort((a, b) => a.from - b.from);
-    if (!runs.length) throw new Error(`row ${name} has no run inside ${first}–${last}: give it runs [{ from, to }] in whole years`);
+    // A row with no run inside the axis is drawn as its empty track (0 years), never refused: a 12B gantt lost a whole
+    // run on a country whose runs all fell outside it.
     return { name, runs, years: yearsOf(runs) };
   });
 }
@@ -87,10 +88,10 @@ export function intervalScene({ rows, first, last, plan, box, measure, lead, for
   const marks = rows.map((r, i) => {
     furniture.push({ tag: "rect", role: "track", attrs: { x: x(first), y: yMid(i) - bar / 2, width: x(last + 1) - x(first), height: bar } });
     const shapes = r.runs.map((run) => ({ tag: "rect", paint: "fill", attrs: { x: x(run.from), y: yMid(i) - bar / 2, width: Math.max(1, x(run.to + 1) - x(run.from)), height: bar } }));
-    const lastRun = r.runs.at(-1);
-    const longest = [...r.runs].sort((a, b) => b.to - b.from - (a.to - a.from))[0];
-    const left = x(r.runs[0].from);
-    const right = x(lastRun.to + 1);
+    const lastRun = r.runs.at(-1) ?? { from: first, to: first - 1 };
+    const longest = [...r.runs].sort((a, b) => b.to - b.from - (a.to - a.from))[0] ?? lastRun;
+    const left = x(r.runs[0]?.from ?? first);
+    const right = Math.max(left, x(lastRun.to + 1));
     if (roomy || named.has(r.name)) texts.push({ text: r.name, x: gutter - 8, y: yMid(i) + lead("axis") * 0.3, anchor: "end", reg: "axis", role: "name", mark: i, width: measure(r.name, "axis") });
     return {
       i,
@@ -122,7 +123,7 @@ export function intervalScene({ rows, first, last, plan, box, measure, lead, for
   for (const p of plan) {
     if (p.do === "compare") {
       const i = at.get(p.own[0]);
-      const from = x(rows[i].runs[0].from);
+      const from = x(rows[i].runs[0]?.from ?? first);
       const end = from + (p.b / (last + 1 - first)) * (box.width - gutter);
       const y = yMid(i) + bar / 2 + 2;
       const text = p.label;
