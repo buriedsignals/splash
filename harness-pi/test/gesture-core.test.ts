@@ -653,3 +653,14 @@ describe("Rémy's decisions of 2026-10-28", () => {
     expect(run([{ do: "annotate", mark: "Mazowieckie", note: "Najwięcej łóżek" }], { facts: { "Śląskie": [17800], "Łódzkie": [9800], Mazowieckie: [21400] } })).not.toThrow();
   });
 });
+
+describe("a note's scale", () => {
+  const ROWS = [
+    { name: "Śląskie", value: 4.05 },
+    { name: "Mazowieckie", value: 3.88 },
+  ];
+  const claim = { takeaway: "Mazowieckie is behind Śląskie per resident." };
+  it("should refuse a figure ten times the drawn value", () => {
+    expect(() => validateGestures({ gestures: [{ do: "compare", marks: ["Mazowieckie", "Śląskie"], note: "Śląskie ma 40 łóżek" }], rows: ROWS, family: "length", format: "static", claim })).toThrow(/states 40/);
+  });
+});

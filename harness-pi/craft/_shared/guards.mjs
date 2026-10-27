@@ -53,6 +53,10 @@ export function assertNumbers(entries, label = "values") {
 
 /** Value labels a reader can tell apart (a per-resident rate once printed 0,004 on every bar). */
 export function assertLegibleLabels(values, format) {
+  // Rows rounded before they are drawn: a 12B wrote Math.round(beds / population * 1000), every region became 4, and
+  // the plate could no longer show the subject third.
+  if (values.length >= 4 && values.every(Number.isInteger) && new Set(values).size * 2 <= values.length)
+    throw new Error(`the rows' values tie (${values.slice(0, 4).join(", ")}…): they were rounded before drawing. Keep the computed value unrounded in rows (no Math.round) and let format() choose the decimals`);
   if (values.every((v) => Math.abs(v) < 0.1))
     throw new Error(`every value is below 0.1 (${values.slice(0, 3).join(", ")}): draw the rate per 1,000, 10,000 or 100,000 (multiply the values) so the labels read as whole numbers, and say the base in the standfirst or unit`);
   // A 12B video printed CO₂ to the last tonne ("12,289,037,000 t") where the worked example reads "12,3 Gt".

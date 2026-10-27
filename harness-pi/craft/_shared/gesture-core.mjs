@@ -89,7 +89,9 @@ export function figuresIn(text) {
   return out;
 }
 
-const SCALES = [0, -3, -6, -9, -12, 3, 6, 9, 12, -1, -2, 1, 2];
+// Units move by thousands (t → Gt) and shares by a hundred (0.54 → 54 %); a factor of ten is no unit: "Śląskie ma 40
+// łóżek" passed on a drawn 4.
+const SCALES = [0, -3, -6, -9, -12, 3, 6, 9, 12, -2, 2];
 
 const matches = (n, f) => [f, ...(n.exp ? [f / 10 ** n.exp] : [])].some((x) => Math.abs(n.value - x) <= 0.5 * 10 ** -n.decimals + 1e-9);
 

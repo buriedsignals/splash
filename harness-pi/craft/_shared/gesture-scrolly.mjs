@@ -232,7 +232,9 @@ export function scheduleScrolly({ gestures, rows, rest = { count: 0, sum: 0 } })
 
 // ── the cards' words ──────────────────────────────────────────────────────────────────────────────
 
-const SCALES = [0, -3, -6, -9, -12, 3, 6, 9, 12, -1, -2, 1, 2];
+// Units move by thousands (t → Gt) and shares by a hundred (0.54 → 54 %); a factor of ten is no unit: "Śląskie ma 40
+// łóżek" passed on a drawn 4.
+const SCALES = [0, -3, -6, -9, -12, 3, 6, 9, 12, -2, 2];
 // A number written without a sign may state a magnitude ("lost 12 points" over a drawn -12).
 const matches = (n, f) =>
   [f, ...(n.sign ? [] : [Math.abs(f)])].some((x) => [x, ...(n.exp ? [x / 10 ** n.exp] : [])].some((y) => Math.abs(n.value - y) <= 0.5 * 10 ** -n.decimals + 1e-9));

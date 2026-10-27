@@ -151,3 +151,13 @@ describe("legibleFormat", () => {
     expect(legibleFormat([214, 96, 31], pl)).toBe(pl);
   });
 });
+
+describe("assertLegibleLabels on rounded rows", () => {
+  it("should refuse rows that were rounded until they tie", () => {
+    expect(() => assertLegibleLabels([4, 4, 4, 4, 4, 4, 4, 4], String)).toThrow(/rounded before drawing/);
+  });
+
+  it("should accept whole numbers that differ", () => {
+    expect(() => assertLegibleLabels([214, 96, 31, 28, 14, 11], String)).not.toThrow();
+  });
+});
