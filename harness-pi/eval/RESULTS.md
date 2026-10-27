@@ -322,3 +322,49 @@ rows rounded until they tie were drawn, a note was read at ten times the drawn v
 **6/7 pass KTD11 without repair, 7/7 true**, against **5/7** for the per-type baseline re-judged under the same rule.
 Fixed after the pass (`b1afbc011`): a unit base after "na"/"per" ("na 10 tys.") was read as a figure; a check()
 refusal now says an inverted condition may be the cause (the 38-minute run lost three attempts to one).
+
+## Phase 2 — every family, lean seeded measurement (2026-10-27/28)
+
+Gemma 4 12B Q4_K_M on the local llama-server, seeded runs (`eval/seed-matrix.ts --lean --run`, storyboard laid in,
+stopped at the craft render, fallback off). For each family, its first type in static plus one more format chosen by
+rotation, and the proportional symbol map in static. A run ends at 15 min. Pass = a render that every guard and the
+gesture core accept (the KTD11 rule without the human judgment of the plate; plates looked at: beeswarm, calendar
+heatmap). Raw lines: `results/2026-10-27-phase2.jsonl`, `results/2026-10-28-phase2-reruns.jsonl`.
+
+**18/27 pass.** Six failures in the first pass were our own defects. Each was fixed, then its run was re-run:
+
+| defect | fix |
+|---|---|
+| marks written as `{ t: 1988 }`, fixed one entry per refusal (area looped 40 min) | `3446735a1` |
+| an area of readings the 12B added up itself | `987eded77` |
+| 24 seeds' claim fields failed G1 (invented shapes) | `39083b316` |
+| a gantt row with no run inside the axis was refused (never-fail rule) | `b8fd8e92c` |
+| video seeds lost their size; a profile beat keyed by columns got "undefined" as its fix | `d2ca6cc4e` |
+| the proportional symbol run had no MAPTILER_KEY | environment |
+
+Every other failure was a model error, and in each case the core's refusal was the correct one:
+- cartogram static: false threshold note, then highlighted the wrong country;
+- connected-scatter static: derived weight miscomputed;
+- connected-scatter scrolly: rows in the wrong shape;
+- marimekko static: a note figure not drawn;
+- small-multiples static: `check` missing;
+- small-multiples web: inverted check;
+- bullet static: the French takeaway's "Pologne" against the data's "Poland";
+- bullet scrolly: wrong series;
+- gantt static: no render in 15 min.
+
+Also fixed along the way:
+- a Position filter now rings every row it keeps (`80715f726`);
+- a `check()` that prints the same decimal twice is asked for a tolerance (`e15c170b3`).
+
+**Decision:** the families that failed every format they were measured in (xy, multiples, paired) go back to their
+per-type kits by default (`MEASURED_OFF`). The other 11 families, including length, keep gesture kits as the default
+in all four formats.
+
+**Limits:**
+- one type per family and one run per cell, so a family's other types are covered by unit tests and hand renders only;
+- paired's two failures are model errors against a sound kit, so it is a candidate to re-measure on another type
+  (lollipop) before it is turned off for good;
+- six geo map video kits are built but were never rendered as mp4;
+- left open: the Inde/Chine compare note sits far from its bracket (beeswarm), and the calendar heatmap draws its
+  compare connector across the whole grid.

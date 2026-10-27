@@ -238,8 +238,23 @@ Web gestures without a Length atom (`trace`) are refused for web, naming the sta
 
 ## 10. Status
 
-| family | adapter | static | web | video | scrolly |
-|---|---|---|---|---|---|
-| F1 Length — bar-and-column | U3 | U4 | U7 | U5 | U6 |
-| F1 Length — other members | specified | per-type kit | per-type kit | per-type kit | per-type kit |
-| F2–F8, misfits | specified | per-type kit | per-type kit | per-type kit | per-type kit |
+Phase 2 (2026-10-28): every type has a gesture kit in all four formats (40 types × 4 = 160 kits). The default is the
+gesture kit, except for the families measured off (`MEASURED_OFF` in `src/adapters.ts`; `SPLASH_GESTURES_ALL=1` offers
+them anyway). Measurement: `eval/RESULTS.md`, phase 2.
+
+| family | types | default | measured (12B, seeded, stopped at the render) |
+|---|---|---|---|
+| length | bar-and-column | gesture | static 6/7 (phase 1) |
+| paired | lollipop, grouped-bar, bullet, diverging-bar, population-pyramid | **per-type** | bullet static ❌ · scrolly ❌ |
+| stack | stacked-bar, diverging-stacked-bar-likert, waterfall-bridge | gesture | likert static ✅ · web ✅ |
+| position | dumbbell, slope, dot-strip, beeswarm, box-plot | gesture | beeswarm static ✅ · video ✅ |
+| xy | scatter-and-bubble, connected-scatter | **per-type** | connected-scatter static ❌ · scrolly ❌ |
+| time | line, area-and-stacked-area, streamgraph, bump | gesture | area static ✅ · web ✅ |
+| units | histogram, pictogram-isotype | gesture | histogram static ✅ · scrolly ✅ |
+| part | treemap, marimekko, pie-and-donut | gesture | marimekko static ❌ · web ✅ |
+| cell | heatmap-matrix, calendar-heatmap | gesture | calendar static ✅ · web ✅ |
+| interval | gantt | gesture | static ❌ · video ✅ |
+| multiples | small-multiples | **per-type** | static ❌ · web ❌ |
+| flow | sankey | gesture | static ✅ · scrolly ✅ |
+| profile | radar-spider, parallel-coordinates | gesture | parallel static ✅ · video ✅ |
+| geo | choropleth, cartogram, hex-grid, dot-density, proportional symbol, flow map, locator, contour | gesture | cartogram static ❌ · video ✅ · proportional symbol static ✅ |

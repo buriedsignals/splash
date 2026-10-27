@@ -284,8 +284,8 @@ describe("the family's own rules", () => {
     const ex = await example("beeswarm");
     const above = (ex.model.rows as any[]).filter((r) => r.value > 20).map((r) => r.name);
     const { gestures } = validate(ex, [{ do: "filter", marks: above }]);
-    const out = staticModule.composeStaticPosition({ gestures, model: ex.model, format: ex.format, delta: ex.delta });
-    const last = out.state;
+    const out = (staticModule.composeStaticPosition as any)({ gestures, model: ex.model, format: ex.format, delta: ex.delta });
+    const last = (out as any).state;
     expect(above.every((n: string) => last.accent.includes(n) || last.rings.includes(n))).toBe(true);
   });
 

@@ -97,6 +97,10 @@ export function gestureKit(
     : null;
 }
 
+// Families whose gesture kits failed every format they were measured in (eval/RESULTS.md, phase 2, 2026-10-28): the
+// craft step starts them on their per-type kits. SPLASH_GESTURES_ALL=1 offers their gesture kits anyway.
+const MEASURED_OFF = new Set(["xy", "multiples", "paired"]);
+
 /** "Bar and column", "video" → the kit the craft step starts on: the gesture kit if offered, else the per-type kit. */
 export function adapterFor(
   chosen: string,
@@ -106,7 +110,8 @@ export function adapterFor(
     staticGestures = process.env.SPLASH_GESTURES_STATIC !== "0",
   }: AdapterOptions = {},
 ): string | null {
-  const gestures = gestureKit(chosen, format, { craft });
+  const off = MEASURED_OFF.has(familyOf(chosen) ?? "") && process.env.SPLASH_GESTURES_ALL !== "1";
+  const gestures = off ? null : gestureKit(chosen, format, { craft });
   if (gestures && (format !== "static" || staticGestures)) return gestures;
   return perTypeKit(chosen, format, { craft });
 }

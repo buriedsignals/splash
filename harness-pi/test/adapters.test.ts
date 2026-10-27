@@ -61,3 +61,13 @@ describe("adapterFor", () => {
     );
   });
 });
+
+describe("families measured off", () => {
+  it("should start a scatter on its per-type kit, its family having failed every measured format", () => {
+    expect(adapterFor("Scatter and bubble", "static")).not.toMatch(/\.gestures$/);
+  });
+
+  it("should still start a sankey on its gesture kit", () => {
+    expect(adapterFor("Sankey", "static")).toMatch(/\.gestures$/);
+  });
+});
