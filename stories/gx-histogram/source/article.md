@@ -1,0 +1,1 @@
+En 2023, la plupart des pays du monde émettent peu. Sur les 213 pays recensés par le Global Carbon Budget, 127 émettent moins de 4 tonnes de CO₂ par personne : 6 pays sur 10. Quelques producteurs de pétrole et de gaz sont loin devant, au-delà de 20 tonnes. Chaque pays compte pour un, quelle que soit sa population.

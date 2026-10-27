@@ -13,6 +13,8 @@ const GESTURE_FAMILY: Record<string, string> = {
   "stacked-bar": "stack",
   "diverging-stacked-bar-likert": "stack",
   "waterfall-bridge": "stack",
+  histogram: "units",
+  "pictogram-isotype": "units",
 };
 
 export interface AdapterOptions {

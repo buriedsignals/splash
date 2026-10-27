@@ -1,0 +1,1 @@
+En 2024, l’électricité européenne se partage entre deux camps. Sur les 40 pays qui rapportent leur production, 16 tirent plus de 75 % de leur électricité de sources bas-carbone, renouvelables ou nucléaire, et 18 en tirent moins de 60 %. Seuls 6 pays se tiennent entre les deux.

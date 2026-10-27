@@ -27,6 +27,7 @@ export const FAMILY_GESTURES = {
 /**
  * Each family's spec, static data only (the family's own hooks travel with its kit, see validateGestures):
  *   gestures  the gestures it admits, in every format
+ *   counts    whether its marks count things (histogram bins): their counts add up even when the binned measure is a rate
  *   additive  whether its marks' values add up to a whole (bars, parts, units, stacks) — positions, time series and
  *             rates do not, and a bracket or count over them is refused
  * A family kit adds its entry here (phase 2); FAMILY_GESTURES mirrors the gesture lists for older readers.

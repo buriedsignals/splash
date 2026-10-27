@@ -282,7 +282,8 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
     // A family whose marks do not add up (positions, time series) has no sum or share to bracket or count either.
     if ((g.do === "bracket" || g.do === "count") && !additive)
       throw new GestureRefusal(`gestures[${i}]`, `the ${family} family's values do not add up to a sum or a share: drop the ${g.do}, or compare the marks instead`, { remove: i });
-    if ((g.do === "bracket" || g.do === "count") && RATE.test([claim.takeaway, claim.subject, claim.unit].filter(Boolean).join(" ")))
+    // A family whose marks count things (countries in bins) adds them up whatever the measure binned is.
+    if ((g.do === "bracket" || g.do === "count") && !FAMILIES[family]?.counts && RATE.test([claim.takeaway, claim.subject, claim.unit].filter(Boolean).join(" ")))
       throw new GestureRefusal(`gestures[${i}]`, `the measure is a rate (per resident), and rates do not add up to a sum or a share: drop the ${g.do}, or compare the rows instead`, { remove: i });
     if (g.do === "bracket" && marks.length === 1 && !ofWhole && !of.length)
       throw new GestureRefusal(`gestures[${i}].of`, `a bracket on one row measures it against something: give of: "whole"`, {
