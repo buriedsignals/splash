@@ -15,6 +15,11 @@ const GESTURE_FAMILY: Record<string, string> = {
   "waterfall-bridge": "stack",
   histogram: "units",
   "pictogram-isotype": "units",
+  lollipop: "paired",
+  "grouped-bar": "paired",
+  bullet: "paired",
+  "diverging-bar": "paired",
+  "population-pyramid": "paired",
 };
 
 export interface AdapterOptions {

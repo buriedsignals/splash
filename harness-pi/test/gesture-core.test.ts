@@ -729,3 +729,21 @@ describe("a row whose name ends in punctuation", () => {
     expect(validateGestures({ gestures: [{ do: "highlight", mark: "Autres renouv." }], rows, family: "length", format: "static", claim: { takeaway: "Autres renouv. ont doublé." } }).entities).toContain("Autres renouv.");
   });
 });
+
+describe("numbers inside names", () => {
+  const BANDS = [
+    { name: "60-64 · women", value: 1200, key: "60-64", series: "women" },
+    { name: "60-64 · men", value: 1100, key: "60-64", series: "men" },
+    { name: "2023 · China", value: 12.3, key: "2023", series: "China" },
+    { name: "2023 · India", value: 3.2, key: "2023", series: "India" },
+  ];
+
+  it("should not read an age band's digits in a note as figures", () => {
+    expect(() => validateGestures({ gestures: [{ do: "annotate", mark: "60-64 · women", note: "60-64: 1200 women" }], rows: BANDS, family: "length", format: "static", claim: { takeaway: "More women than men at 60-64." } })).not.toThrow();
+  });
+
+  it("should not make every mark of a year the claim's because the takeaway names the year", () => {
+    const v = validateGestures({ gestures: [{ do: "highlight", mark: "2023 · China" }], rows: BANDS, family: "length", format: "static", claim: { takeaway: "China emitted most in 2023." } });
+    expect(v.entities).not.toContain("2023 · India");
+  });
+});

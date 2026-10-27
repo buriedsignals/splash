@@ -182,7 +182,9 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
   const rankOf = new Map([...rows].sort((a, b) => b.value - a.value).map((r, i) => [r.name, i + 1]));
   // A takeaway may name a mark, or a series / key / group that holds marks ("Nuclear", "Lisboa" for its whole line).
   const claimText = `${claim.takeaway ?? ""} ${claim.subject ?? ""} ${claim.comparison ?? ""} ${[claim.entity, claim.versus].filter(Boolean).join(" ")}`;
-  const holders = [...new Set(rows.flatMap((r) => [r.series, r.key, r.group].filter((v) => v !== undefined).map(String)))].map((name) => ({ name }));
+  const holders = [...new Set(rows.flatMap((r) => [r.series, r.key, r.group].filter((v) => v !== undefined).map(String)))]
+    .filter((name) => !/^[\d\s.,:–—\-+/%]+$/.test(name))
+    .map((name) => ({ name }));
   const namedHolders = new Set(rowsNamedIn(claimText, holders).map(fold));
   const entities = new Set([
     ...rowsNamedIn(`${claim.takeaway ?? ""} ${claim.subject ?? ""} ${claim.comparison ?? ""}`, rows),
@@ -391,7 +393,13 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
 
     // notes: every number is one of the gesture's figures, at the note's precision
     if (g.note !== undefined && g.do !== "zoom") {
-      const stated = figuresIn(g.note);
+      // The digits of a name the note writes ("60-64", "2023") are the name, not a figure: blanked at their place.
+      const names = [...new Set(rows.flatMap((r) => [r.name, r.key, r.series, r.group]).filter((v) => v !== undefined).map(String))]
+        .filter((n) => /\d/.test(n))
+        .sort((a, b) => b.length - a.length);
+      let read = String(g.note);
+      for (const n of names) read = read.split(n).join(" ".repeat(n.length));
+      const stated = figuresIn(read);
       const asPercent = [...percents, ...marks.map((m) => valueOf.get(m)), ...marks.flatMap((m) => claim.facts?.[m] ?? [])];
       // One power-of-ten scale for the whole note: the rows may be in tonnes and the note in Gt.
       const scale = SCALES.map((k) => ({ k, hits: stated.filter((n) => !n.percent && [...own, ...context].some((f) => matches(n, f * 10 ** k))).length }))
@@ -518,8 +526,9 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
     const v = valueOf.get(subject);
     throw new GestureRefusal(
       "gestures",
-      `a web page needs at least one gesture a reader asks for (bracket, compare, filter, zoom, reorder or rescale); every gesture here rests on the page`,
-      { add: { at: gestures.length, gesture: { do: "bracket", mark: subject, of: "whole", note: `${v} of ${whole}` } } },
+      `a web page needs at least one gesture a reader asks for (${allowed.filter((d) => !WEB_RESTING.has(d)).join(", ")}); every gesture here rests on the page`,
+      // The fix is a control this family draws: a bracket only where values add up, else a filter on the subject.
+      { add: { at: gestures.length, gesture: additive && allowed.includes("bracket") ? { do: "bracket", mark: subject, of: "whole", note: `${v} of ${whole}` } : { do: "filter", marks: [subject] } } },
     );
   }
   return { gestures: out, whole, entities: [...entities] };
