@@ -14,8 +14,9 @@ export interface AdapterOptions {
   /** The craft folder (tests use a temporary one). */
   craft?: string;
   /**
-   * Whether the static gesture kit is the static default. Off until the seven static bar runs re-pass through it
-   * (plan KTD11); a run turns it on with SPLASH_GESTURES_STATIC=1.
+   * Whether the static gesture kit is the static default. On since the seven static bar runs passed through it (6/7
+   * without repair, 7/7 true, against 5/7 for the per-type baseline; eval/RESULTS.md 2026-10-28); SPLASH_GESTURES_STATIC=0
+   * turns it off.
    */
   staticGestures?: boolean;
 }
@@ -56,7 +57,7 @@ export function adapterFor(
   format = "static",
   {
     craft = CRAFT,
-    staticGestures = process.env.SPLASH_GESTURES_STATIC === "1",
+    staticGestures = process.env.SPLASH_GESTURES_STATIC !== "0",
   }: AdapterOptions = {},
 ): string | null {
   const gestures = gestureKit(chosen, format, { craft });

@@ -38,6 +38,16 @@ describe("adapterFor", () => {
     ).toBe(join(craft, "static", "bar-and-column.gestures"));
   });
 
+  it("should return the static gesture kit by default since the re-measure", () => {
+    const saved = process.env.SPLASH_GESTURES_STATIC;
+    delete process.env.SPLASH_GESTURES_STATIC;
+    try {
+      expect(adapterFor("Bar and column", "static", { craft })).toBe(join(craft, "static", "bar-and-column.gestures"));
+    } finally {
+      if (saved !== undefined) process.env.SPLASH_GESTURES_STATIC = saved;
+    }
+  });
+
   it("should still return the per-type kit for a type with no gesture family", () => {
     expect(adapterFor("Line", "video", { craft })).toBe(
       join(craft, "video", "line"),

@@ -67,11 +67,9 @@ conflicting gestures. A **per-type kit** (`<format>/<slug>/`) keeps the worked e
 or scroll states — the type's design, written once by a person and reviewed — and the 12B fills only the
 subject (data, words, checks); it is the fallback where a gesture kit exists, and the only kit elsewhere.
 
-**Which path is canonical (2026-10-28, `eval/RESULTS.md` U9).** Only `bar-and-column` has gesture kits. For web,
-video and scrolly they are the default `adapterFor` offers. For **static the per-type kit stays the default**:
-the gesture kit is used only with `SPLASH_GESTURES_STATIC=1` until the 7 static bar runs pass KTD11 at least as
-well as the per-type baseline (5/7 re-judged; the gesture kit measured 3/7). Every other type has only its
-per-type kit. Whatever the
+**Which path is canonical (2026-10-28, `eval/RESULTS.md`).** Only `bar-and-column` has gesture kits, and they are
+the default `adapterFor` offers in all four formats (static since the re-measure: 6/7 without repair against 5/7 for
+the per-type baseline; `SPLASH_GESTURES_STATIC=0` turns static off). Every other type has only its per-type kit. Whatever the
 format, `render-beat.mjs` must leave something the model can LOOK at (a PNG) and print its path on a line
 `look at: <absolute png path>`, and must leave `renders/` non-empty only when the render succeeded.
 
