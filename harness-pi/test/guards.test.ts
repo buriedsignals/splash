@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, errorText, importBeat } from "../craft/_shared/guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, errorText, importBeat, printable } from "../craft/_shared/guards.mjs";
 
 let beat: string;
 
@@ -128,5 +128,15 @@ describe("importBeat", () => {
       `import { readFileSync } from "node:fs"; import { join } from "node:path";\nconst data = JSON.parse(readFileSync(join(import.meta.dirname, "data.json"), "utf8"));\nexport default { rows: data.rows.map((r) => ({ name: r[0], value: r[1] })) };`,
     );
     expect((await importBeat(dir)).rows[0]).toEqual({ name: "Lisboa", value: 214 });
+  });
+});
+
+describe("printable", () => {
+  it("should unwrap a template written in plain quotes", () => {
+    expect(printable({ gestures: [{ do: "compare", note: "more than twice Porto's ${96} million" }] }).gestures[0].note).toBe("more than twice Porto's 96 million");
+  });
+
+  it("should coerce a number where words are expected", () => {
+    expect(printable({ title: ["Lisboa", 214], source: 2025 })).toEqual({ title: ["Lisboa", "214"], source: "2025" });
   });
 });

@@ -193,6 +193,21 @@ export async function importBeat(here) {
   }
   if (existsSync(join(here, "data.json")) && !/data\.json/.test(readFileSync(file, "utf8")))
     throw new Error(`beat.mjs types its rows instead of reading data.json, so the data can never refuse its title: ${readingHint(here)}`);
+  return printable(beat);
+}
+
+/**
+ * The beat's printed words as text, whatever the 12B wrote: a number where a line was expected crashed the still
+ * renderer ("text.replace is not a function") three times; a template written in plain quotes printed "${96}" on the
+ * plate. Words are coerced to strings and a literal "${x}" is unwrapped to x; nothing is refused for it.
+ */
+export function printable(beat) {
+  if (!beat || typeof beat !== "object") return beat;
+  const word = (v) => (v === undefined || v === null || typeof v === "function" ? v : String(v).replace(/\$\{\s*([^}]*?)\s*\}/g, "$1"));
+  const words = (v) => (Array.isArray(v) ? v.map(word) : word(v));
+  for (const key of ["eyebrow", "title", "limits", "source", "unit", "restLabel"]) if (key in beat) beat[key] = words(beat[key]);
+  if (Array.isArray(beat.gestures))
+    beat.gestures = beat.gestures.map((g) => (g && typeof g === "object" ? { ...g, ...(g.note !== undefined ? { note: word(g.note) } : {}), ...(g.card !== undefined ? { card: words(g.card) } : {}), ...(g.label !== undefined ? { label: word(g.label) } : {}) } : g));
   return beat;
 }
 

@@ -608,3 +608,26 @@ describe("a note stating a true figure of other rows", () => {
     expect(refusalOf({ do: "bracket", mark: "China", of: ["United States", "India", "Russia", "Japan", "Indonesia"], note: "12,289 against 11,653" })).toBeUndefined();
   });
 });
+
+describe("the post-measurement defects", () => {
+  const ROWS = [
+    { name: "Sul", value: 233 },
+    { name: "Centro", value: 205 },
+    { name: "Leste", value: 185 },
+  ];
+  const claim = { takeaway: "Sul has the worst safety record per resident, not Centro: 233 against Centro's 205, though Centro's raw count of 412 is the highest.", facts: { Centro: [412, 201000], Sul: [205, 88000] } };
+
+  it("should read a list given as mark as the gesture's marks", () => {
+    expect(validateGestures({ gestures: [{ do: "bracket", mark: ["Sul", "Centro"], note: "438" }], rows: ROWS, family: "length", format: "scrolly", claim }).gestures[0].marks).toEqual(["Sul", "Centro"]);
+  });
+
+  it("should refuse a rule at another column's figure, removing it", () => {
+    let refusal: GestureRefusal | undefined;
+    try {
+      validateGestures({ gestures: [{ do: "highlight", mark: "Sul" }, { do: "reference", value: 412, note: "Centro's raw count: 412" }], rows: ROWS, family: "length", format: "static", claim });
+    } catch (error) {
+      refusal = error as GestureRefusal;
+    }
+    expect(refusal?.fix).toEqual({ remove: 1 });
+  });
+});

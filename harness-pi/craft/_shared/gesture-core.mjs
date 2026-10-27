@@ -211,7 +211,8 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
 
     // marks
     let marks = [];
-    if (g.mark !== undefined) marks = (listed(g.mark) ?? [g.mark]).map((m) => resolve(m, i, "mark"));
+    // A list given as `mark` is the gesture's marks (a 12B China scrolly wrote mark: [the next five]).
+    if (g.mark !== undefined) marks = (Array.isArray(g.mark) ? g.mark.flatMap((m) => listed(m) ?? [m]) : listed(g.mark) ?? [g.mark]).map((m) => resolve(m, i, "mark"));
     if (g.marks !== undefined) {
       const given = (Array.isArray(g.marks) ? g.marks : [g.marks]).flatMap((m) => listed(m) ?? [m]);
       marks = given.map((m, k) => {
@@ -326,6 +327,10 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
       if (ofWhole) percents.push((a / whole) * 100);
     }
     if (g.do === "reference") own.push(Number(g.value));
+    // A rule sits on the drawn measure's axis: one placed at another column's figure draws it as if it were that
+    // measure (a 12B ruled Centro's raw count, 412, across a per-100,000 axis). Said in a note it stays true.
+    if (g.do === "reference" && !rows.some((r) => Math.abs(r.value - Number(g.value)) < 1e-9) && Object.values(claim.facts ?? {}).flat().some((f) => Math.abs(f - Number(g.value)) < 1e-9))
+      throw new GestureRefusal(`gestures[${i}].value`, `${g.value} is a figure of another column, not of the measure the axis draws: write it in a note on its row (annotate) instead of a rule`, { remove: i });
     if (g.do === "rescale") own.push(Number(g.value));
     const context = [whole, ...marks.map((m) => rankOf.get(m)), ...marks.flatMap((m) => claim.facts?.[m] ?? [])];
 
