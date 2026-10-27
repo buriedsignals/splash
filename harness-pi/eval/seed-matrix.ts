@@ -103,7 +103,17 @@ if (import.meta.main) {
   mkdirSync(SHEETS, { recursive: true });
   const args = process.argv.slice(2);
   const only = args.includes("--only") ? args[args.indexOf("--only") + 1].split(",") : null;
-  const chosen = runs.filter((r) => !only || only.includes(familyOf(r.story.slice(3)) ?? ""));
+  // --lean: per family, its first type in static and in ONE further format by rotation (web, video, scrolly), so a
+  // batch of 13 families is 26 runs, about two hours, and every format is measured on four or five families.
+  const lean = args.includes("--lean");
+  const families = [...firstOfFamily.keys()];
+  const leanKeep = (r: { story: string; variant: string }) => {
+    const family = familyOf(r.story.slice(3)) ?? r.story;
+    if (firstOfFamily.get(family) !== r.story) return false;
+    return !r.variant || r.variant === FURTHER[families.indexOf(family) % FURTHER.length];
+  };
+  const skip = args.includes("--skip") ? args[args.indexOf("--skip") + 1].split(",") : [];
+  const chosen = runs.filter((r) => (!only || only.includes(familyOf(r.story.slice(3)) ?? "")) && !skip.includes(r.story.slice(3)) && (!lean || leanKeep(r)));
   for (const r of chosen) console.log(`${r.story}\t${r.variant || "static"}\t${r.seed}`);
   if (args.includes("--run")) {
     process.env.SPLASH_STOP_AFTER_CRAFT = "1";
