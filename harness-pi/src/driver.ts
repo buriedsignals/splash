@@ -57,7 +57,7 @@ export interface RunOptions {
 }
 
 export interface RunReport {
-  outcome: "done" | "stalled" | "blocked";
+  outcome: "done" | "stalled" | "blocked" | "crafted";
   phase: string;
   reason: string;
   steps: { owner: string; stop: string; seconds: number }[];
@@ -136,6 +136,10 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
         steps,
         transcript,
       };
+    // A craft kit's measurement ends at its render: designer and delivery were measured in full runs and cost
+    // minutes per run (SPLASH_STOP_AFTER_CRAFT=1, eval only).
+    if (process.env.SPLASH_STOP_AFTER_CRAFT === "1" && s.phase === "production" && /Invoke designer/.test(s.resume))
+      return { outcome: "crafted", phase: s.phase, reason: s.resume, steps, transcript };
     if (s.status === "blocked")
       return {
         outcome: "blocked",
