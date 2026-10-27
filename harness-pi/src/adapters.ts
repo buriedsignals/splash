@@ -29,6 +29,9 @@ const GESTURE_FAMILY: Record<string, string> = {
   "dot-strip": "position",
   beeswarm: "position",
   "box-plot": "position",
+  treemap: "part",
+  "marimekko-mosaic-plot": "part",
+  "pie-and-donut": "part",
 };
 
 export interface AdapterOptions {
