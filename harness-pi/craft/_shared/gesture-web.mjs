@@ -115,7 +115,8 @@ export function scheduleWeb({ gestures, rows, rest = { count: 0, sum: 0 }, forma
     if (WEB_RESTING.has(g.do)) {
       switch (g.do) {
         case "highlight":
-          for (const m of own) if (!resting.accent.includes(m)) resting.accent.push(m);
+          // The subject carries the accent; a highlight on another row rings it (implicitAccent).
+          for (const m of own) if ((g.subject === undefined || m === g.subject)) { if (!resting.accent.includes(m)) resting.accent.push(m); } else if (!resting.rings.includes(m)) resting.rings.push(m);
           if (note) resting.notes.push({ index: i, do: g.do, marks: own, text: note });
           break;
         case "name":

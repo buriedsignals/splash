@@ -78,6 +78,7 @@ await refusing(HERE, async () => {
     entity: front("claimEntity"),
     versus: front("claimVersus"),
     facts: rowFacts(HERE),
+    unit: beat.unit,
   };
   const { buildGestureVideo, textPerRegisterOf } = await import("./build.mjs");
   const { label, chosen } = pickDirection(HERE, textPerRegisterOf(copy, rows, beat.gestures.filter((g) => g && typeof g === "object")), beat.evidenceLevels ?? 2);

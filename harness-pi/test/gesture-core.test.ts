@@ -618,7 +618,7 @@ describe("the post-measurement defects", () => {
   const claim = { takeaway: "Sul has the worst safety record per resident, not Centro: 233 against Centro's 205, though Centro's raw count of 412 is the highest.", facts: { Centro: [412, 201000], Sul: [205, 88000] } };
 
   it("should read a list given as mark as the gesture's marks", () => {
-    expect(validateGestures({ gestures: [{ do: "bracket", mark: ["Sul", "Centro"], note: "438" }], rows: ROWS, family: "length", format: "scrolly", claim }).gestures[0].marks).toEqual(["Sul", "Centro"]);
+    expect(validateGestures({ gestures: [{ do: "filter", mark: ["Sul", "Centro"] }], rows: ROWS, family: "length", format: "scrolly", claim }).gestures[0].marks).toEqual(["Sul", "Centro"]);
   });
 
   it("should refuse a rule at another column's figure, removing it", () => {
@@ -629,5 +629,27 @@ describe("the post-measurement defects", () => {
       refusal = error as GestureRefusal;
     }
     expect(refusal?.fix).toEqual({ remove: 1 });
+  });
+});
+
+describe("Rémy's decisions of 2026-10-28", () => {
+  const PL = [
+    { name: "Śląskie", value: 405 },
+    { name: "Łódzkie", value: 402 },
+    { name: "Mazowieckie", value: 388 },
+  ];
+  const takeaway = "Mazowieckie ma najwięcej łóżek szpitalnych w kraju, ale w przeliczeniu na mieszkańca jest dopiero trzecie — wyprzedzają je Śląskie i Łódzkie.";
+  const run = (gestures: object[], claim: object) => () => validateGestures({ gestures, rows: PL, family: "length", format: "static", claim: { takeaway, ...claim } });
+
+  it("should refuse a bracket over a rate, whose rows do not add up", () => {
+    expect(run([{ do: "bracket", mark: "Mazowieckie", of: "whole" }], {})).toThrow(/rates do not add up/);
+  });
+
+  it("should refuse a Polish superlative on a row the drawn measure ranks third", () => {
+    expect(run([{ do: "annotate", mark: "Mazowieckie", note: "Najwięcej łóżek" }], {})).toThrow(/calls Mazowieckie the highest/);
+  });
+
+  it("should accept it when another column of the data ranks the row first", () => {
+    expect(run([{ do: "annotate", mark: "Mazowieckie", note: "Najwięcej łóżek" }], { facts: { "Śląskie": [17800], "Łódzkie": [9800], Mazowieckie: [21400] } })).not.toThrow();
   });
 });

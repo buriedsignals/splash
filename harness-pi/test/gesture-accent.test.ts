@@ -34,8 +34,8 @@ describe("implicitAccent", () => {
     expect(implicitAccent(valid(NO_HIGHLIGHT.slice(0, 2), "static"))).toBe("Lisboa");
   });
 
-  it("should accent nothing of its own when a gesture highlights a row", () => {
-    expect(implicitAccent(valid([{ do: "highlight", mark: "Porto" }, ...NO_HIGHLIGHT.slice(0, 1)], "static"))).toBeUndefined();
+  it("should keep the subject accented when a highlight falls on another row", () => {
+    expect(implicitAccent(valid([{ do: "highlight", mark: "Porto" }, ...NO_HIGHLIGHT.slice(0, 1)], "static"))).toBe("Lisboa");
   });
 
   it("should give the static plate its subject in the accent", () => {
@@ -92,7 +92,7 @@ describe("a still plate's one row", () => {
     { name: "Mazowieckie", value: 388 },
     { name: "Lubelskie", value: 385 },
   ];
-  const claim = { takeaway: "Mazowieckie ma najwięcej łóżek szpitalnych w kraju, ale w przeliczeniu na mieszkańca jest dopiero trzecie — wyprzedzają je Śląskie i Łódzkie." };
+  const claim = { takeaway: "Mazowieckie ma najwięcej łóżek szpitalnych w kraju, ale w przeliczeniu na mieszkańca jest dopiero trzecie — wyprzedzają je Śląskie i Łódzkie.", facts: { "Śląskie": [17800], "Łódzkie": [9800], Mazowieckie: [21400], Lubelskie: [7900] } };
   /** The list a 12B wrote for the Polish beds (U9): one name and two compares, all on Mazowieckie. */
   const LIST = [
     { do: "highlight", mark: "Mazowieckie" },
@@ -148,5 +148,25 @@ describe("a scrolly card stating another rows' sum", () => {
   it("should be repaired to its picture's own figure, not to the nearest row", () => {
     const staged = stageScrolly({ gestures: [{ do: "highlight", mark: "China", card: "China: 12,289." }, { do: "name", mark: "United States", card: "The next three combined for 9,879." }], rows: CO2, claim, repair: true });
     expect(staged.cards[1].prose.join(" ")).not.toContain("12,289");
+  });
+});
+
+describe("the subject's accent", () => {
+  const PL = [
+    { name: "Śląskie", value: 405 },
+    { name: "Łódzkie", value: 402 },
+    { name: "Mazowieckie", value: 388 },
+  ];
+  const claim = { takeaway: "Mazowieckie ma najwięcej łóżek szpitalnych w kraju, ale w przeliczeniu na mieszkańca jest dopiero trzecie — wyprzedzają je Śląskie i Łódzkie." };
+  /** The list a 12B wrote (U9 #14): the two regions ahead highlighted, the subject left grey. */
+  const LIST = [{ do: "highlight", mark: "Łódzkie" }, { do: "highlight", mark: "Śląskie" }];
+  const plate = () => composeStatic({ gestures: validateGestures({ gestures: LIST, rows: PL, family: "length", format: "static", claim }).gestures, rows: PL });
+
+  it("should accent the subject alone", () => {
+    expect(plate().accent).toEqual(["Mazowieckie"]);
+  });
+
+  it("should ring the rows the highlights fell on", () => {
+    expect(plate().rings).toEqual(["Łódzkie", "Śląskie"]);
   });
 });

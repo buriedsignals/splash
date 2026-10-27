@@ -133,13 +133,19 @@ const RATIO_WORDS = [
 ];
 
 /** Rank words a note may state about its row (English). The probe saw "Highest rate (205)" on the second row. */
+// Superlatives and ordinals in the stories' languages (comparatives such as "maior que" are left out): "Najwięcej
+// łóżek" sat on a per-resident value where its row is third.
+const word = (alternatives) => new RegExp(`(?<![\\p{L}])(${alternatives})(?![\\p{L}])`, "iu");
 const RANK_WORDS = [
-  [/\b(highest|largest|biggest|greatest|most|top|first)\b/i, (rank, n) => rank === 1, "the highest"],
-  [/\b(lowest|smallest|least|fewest|bottom|last)\b/i, (rank, n) => rank === n, "the lowest"],
-  [/\bsecond\b/i, (rank) => rank === 2, "second"],
-  [/\bthird\b/i, (rank) => rank === 3, "third"],
-  [/\bfourth\b/i, (rank) => rank === 4, "fourth"],
+  [word("highest|largest|biggest|greatest|most|top|first|najwięcej|największ\\p{L}*|najwyższ\\p{L}*|pierwsz\\p{L}*|le plus|la plus|premier|première|o maior|a maior|primeir\\p{L}*|höchst\\p{L}*|größt\\p{L}*|meisten|el mayor|la mayor|primer\\p{L}*"), (rank, n) => rank === 1, "the highest"],
+  [word("lowest|smallest|least|fewest|bottom|last|najmniej|najmniejsz\\p{L}*|najniższ\\p{L}*|ostatni\\p{L}*|le moins|la moins|dernier|dernière|o menor|a menor|últim\\p{L}*|niedrigst\\p{L}*|kleinst\\p{L}*|wenigsten|letzt\\p{L}*|el menor|la menor"), (rank, n) => rank === n, "the lowest"],
+  [word("second|drug\\p{L}*|deuxième|segund\\p{L}*|zweit\\p{L}*"), (rank) => rank === 2, "second"],
+  [word("third|trzeci\\p{L}*|troisième|terceir\\p{L}*|tercer\\p{L}*|dritt\\p{L}*"), (rank) => rank === 3, "third"],
+  [word("fourth|czwart\\p{L}*|quatrième|quart\\p{L}*|viert\\p{L}*"), (rank) => rank === 4, "fourth"],
 ];
+
+/** A measure per resident, per capita or per 1,000…: its rows do not add up to a whole. */
+const RATE = /(?<![\p{L}])(per|pour|par|na|pro|je|por)(?![\p{L}])\s+(\d[\d ,.\u00a0]*\s*)?(resident|inhabitant|capita|person|people|head|habitant|mieszkań|einwohner|kopf|habitante|\d)|per capita|przeliczeniu|par habitant|pro kopf|\brate\b|wskaźnik/iu;
 
 // ── the core ──────────────────────────────────────────────────────────────────────────────────────
 
@@ -166,6 +172,10 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
     ...[claim.entity, claim.versus].filter(Boolean).flatMap((e) => rowsNamedIn(e, rows)),
   ]);
   const takeawayFigures = figuresIn(claim.takeaway).map((n) => n.value);
+  // The row the takeaway is about: the recorded claim entity, else the drawn row the takeaway names first. It always
+  // carries the accent; a highlight on another row rings it instead (two highlights once left the subject grey).
+  const at = (name) => fold(claim.takeaway ?? "").indexOf(fold(name));
+  const subject = rowsNamedIn(claim.entity ?? "", rows)[0] ?? rows.map((r) => r.name).filter((n) => at(n) >= 0).sort((a, b) => at(a) - at(b))[0];
   // Every figure the drawn rows hold: each value, the whole, and every run of rows in rank order added up (the next
   // five, the top three). A stated figure among these that a gesture does not draw belongs to other rows: swapping it
   // for the gesture's nearest figure printed China's 12,289,037,000 as "the next five together".
@@ -237,6 +247,9 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
       });
 
     // per-gesture shape
+    // Rows of a rate do not add up: a bracket printed "Suma: 3023" for eight regions' beds per 100,000 residents.
+    if ((g.do === "bracket" || g.do === "count") && RATE.test([claim.takeaway, claim.subject, claim.unit].filter(Boolean).join(" ")))
+      throw new GestureRefusal(`gestures[${i}]`, `the measure is a rate (per resident), and rates do not add up to a sum or a share: drop the ${g.do}, or compare the rows instead`, { remove: i });
     if (g.do === "bracket" && marks.length === 1 && !ofWhole && !of.length)
       throw new GestureRefusal(`gestures[${i}].of`, `a bracket on one row measures it against something: give of: "whole"`, {
         set: { index: i, field: "of", value: "whole" },
@@ -375,7 +388,10 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
       }
       if (marks.length === 1 && ["name", "annotate", "highlight"].includes(g.do))
         for (const [word, holds, said] of RANK_WORDS) {
-          if (!word.test(g.note) || holds(rankOf.get(marks[0]), rows.length)) continue;
+          // A rank word may speak of another column the row is ranked by ("the most beds", raw, beside a rate).
+          const columns = Math.max(0, ...rows.map((r) => claim.facts?.[r.name]?.length ?? 0));
+          const rankIn = (c) => 1 + rows.filter((r) => (claim.facts?.[r.name]?.[c] ?? -Infinity) > (claim.facts?.[marks[0]]?.[c] ?? -Infinity)).length;
+          if (!word.test(g.note) || holds(rankOf.get(marks[0]), rows.length) || Array.from({ length: columns }, (_, c) => rankIn(c)).some((r) => holds(r, rows.length))) continue;
           const actual = [...rankOf].find(([, r]) => (said === "the highest" ? r === 1 : said === "the lowest" ? r === rows.length : r === ["second", "third", "fourth"].indexOf(said) + 2));
           throw new GestureRefusal(
             `gestures[${i}].note`,
@@ -431,7 +447,7 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
     }
 
     // `of` resolved to its rows, so a scheduler splitting marks into own and of counts the rows a listed string named.
-    out.push({ ...g, marks: [...marks, ...of], ...(of.length ? { of } : {}), figures: own });
+    out.push({ ...g, marks: [...marks, ...of], ...(of.length ? { of } : {}), figures: own, ...(subject !== undefined ? { subject } : {}) });
   });
 
   // format limits on the whole list
@@ -497,6 +513,8 @@ export function repairGestures({ gestures, steps = 12, ...input }) {
  * stayed grey: doctrine's one accent carries the argument, so the subject is never left without it.
  */
 export function implicitAccent(gestures) {
+  const subject = gestures.find((g) => g.subject !== undefined)?.subject;
+  if (subject !== undefined) return gestures.some((g) => g.do === "highlight" && g.marks.includes(subject)) ? undefined : subject;
   if (gestures.some((g) => g.do === "highlight")) return undefined;
   return gestures.find((g) => g.marks?.length)?.marks[0];
 }

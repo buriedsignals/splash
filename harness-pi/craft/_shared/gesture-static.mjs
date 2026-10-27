@@ -69,8 +69,10 @@ export function composeStatic({ gestures, rows, format = String }) {
 
     switch (g.do) {
       case "highlight":
-        state = length.with(state, { emphasis: Object.fromEntries(marks.map((m) => [m, "accent"])) });
-        plate.accent.push(...marks.filter((m) => !plate.accent.includes(m)));
+        // The subject carries the accent; a highlight on another row rings it (implicitAccent).
+        state = length.with(state, { emphasis: Object.fromEntries(marks.map((m) => [m, (g.subject === undefined || m === g.subject) ? "accent" : "ring"])) });
+        plate.accent.push(...marks.filter((m) => (g.subject === undefined || m === g.subject) && !plate.accent.includes(m)));
+        plate.rings.push(...marks.filter((m) => !(g.subject === undefined || m === g.subject) && !plate.rings.includes(m)));
         judge({ subject: marks[0] });
         if (note !== undefined && marks.length === 1) oneNote(marks[0], i, note);
         if (note !== undefined) write("mark", marks);

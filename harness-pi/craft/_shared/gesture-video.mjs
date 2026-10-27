@@ -136,7 +136,8 @@ export function scheduleVideo({ gestures, rows, rest = { count: 0, sum: 0 } }) {
 
     switch (g.do) {
       case "highlight":
-        own.forEach((m) => (next[`accent${at.get(m)}`] = 1));
+        // The subject carries the accent; a highlight on another row rings it (implicitAccent).
+        own.forEach((m) => (next[`${(g.subject === undefined || m === g.subject) ? "accent" : "ring"}${at.get(m)}`] = 1));
         break;
       case "name":
         next[`ring${at.get(own[0])}`] = 1;

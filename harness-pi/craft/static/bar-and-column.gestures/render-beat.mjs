@@ -23,7 +23,7 @@ import { assertBeatMayEnter, directedFrame, exportSizeFromArgv, nameAtSize } fro
 import { GestureColumns } from "./DirectedGestureColumns.tsx";
 import { applyFix, GestureRefusal, validateGestures } from "./gesture-core.mjs";
 import { composeStatic } from "./gesture-static.mjs";
-import { applyStoryboard, assertNumbers, assertLegibleLabels, assertOnePerX, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, assertNoAggregates, errorText, importBeat, rowFacts } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertLegibleLabels, assertOnePerX, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, assertNoAggregates, errorText, importBeat, legibleFormat, rowFacts } from "./guards.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const beat = await importBeat(HERE).catch((error) => {
@@ -42,6 +42,7 @@ if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")}: 
 // The beat's own claim, checked against its own data BEFORE anything is drawn: a number that
 // drifted from the data refuses the render rather than shipping a stale headline.
 assertNumbers(beat.rows.map((r) => [r.name, r.value]));
+beat.format = legibleFormat(beat.rows.map((r) => r.value), beat.format);
 assertLegibleLabels(beat.rows.map((r) => r.value), beat.format);
 beat.check();
 assertDrawsClaimColumn(beat.rows.map((r) => r.value), dirname(fileURLToPath(import.meta.url)));

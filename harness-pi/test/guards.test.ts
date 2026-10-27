@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, errorText, importBeat, printable } from "../craft/_shared/guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, errorText, importBeat, legibleFormat, printable } from "../craft/_shared/guards.mjs";
 
 let beat: string;
 
@@ -138,5 +138,16 @@ describe("printable", () => {
 
   it("should coerce a number where words are expected", () => {
     expect(printable({ title: ["Lisboa", 214], source: 2025 })).toEqual({ title: ["Lisboa", "214"], source: "2025" });
+  });
+});
+
+describe("legibleFormat", () => {
+  const pl = (v: number) => new Intl.NumberFormat("pl-PL", { maximumFractionDigits: 0 }).format(v);
+  it("should add the decimals that keep close values apart, in the beat's decimal mark", () => {
+    expect([4.05, 4.02, 3.88, 3.85].map(legibleFormat([4.05, 4.02, 3.88, 3.85], pl))).toEqual(["4,05", "4,02", "3,88", "3,85"]);
+  });
+
+  it("should keep the beat's format when its labels already differ", () => {
+    expect(legibleFormat([214, 96, 31], pl)).toBe(pl);
   });
 });

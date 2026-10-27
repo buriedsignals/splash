@@ -67,6 +67,27 @@ export function assertLegibleLabels(values, format) {
     throw new Error(`format() prints ${distinct} different values as only ${labels.size} labels (${[...labels].slice(0, 3).join(", ")}): show enough decimals, or rescale, so different marks read differently`);
 }
 
+/**
+ * The beat's format, with as many decimals as keep distinct values distinct: a 12B printed 4.05, 4.02 and 3.88 as
+ * "4", "4", "4" and the render refused six attempts. The kit chooses the decimals rather than refusing (Rémy: the
+ * gesture kit never fails on the data's shape); the decimal mark and grouping are read from the beat's own format.
+ */
+export function legibleFormat(values, format) {
+  const collapsed = (f) => new Set(values.map((v) => f(v))).size < Math.min(new Set(values).size, values.length) * 0.75;
+  if (!collapsed(format)) return format;
+  const group = String(format(1234567)).match(/^1([^\d])234/)?.[1] ?? "";
+  // A format with no decimals shows no decimal mark: a space or point grouping thousands (pl, de, fr) implies a comma.
+  const comma = /\d,\d/.test(String(format(1.5))) || (group !== "" && group !== ",");
+  for (let d = 1; d <= 4; d++) {
+    const f = (v) => {
+      const [whole, part] = Math.abs(Number(v)).toFixed(d).split(".");
+      return `${Number(v) < 0 ? "-" : ""}${whole.replace(/\B(?=(\d{3})+$)/g, group)}${comma ? "," : "."}${part}`;
+    };
+    if (!collapsed(f)) return f;
+  }
+  return format;
+}
+
 /** One point per x: several rows per year drawn as one series zig-zags (three location groups, once). */
 export function assertOnePerX(points, x = "year") {
   const seen = new Map();

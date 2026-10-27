@@ -65,7 +65,13 @@ Two kinds of kit. A **gesture kit** (`<format>/<slug>.gestures/`, `gestures/GRAM
 from the story: the 12B writes an ordered `gestures` list, code renders it per format and refuses false or
 conflicting gestures. A **per-type kit** (`<format>/<slug>/`) keeps the worked example's gesture, choreography
 or scroll states — the type's design, written once by a person and reviewed — and the 12B fills only the
-subject (data, words, checks); it is the fallback where a gesture kit exists, and the only kit elsewhere. Whatever the
+subject (data, words, checks); it is the fallback where a gesture kit exists, and the only kit elsewhere.
+
+**Which path is canonical (2026-10-28, `eval/RESULTS.md` U9).** Only `bar-and-column` has gesture kits. For web,
+video and scrolly they are the default `adapterFor` offers. For **static the per-type kit stays the default**:
+the gesture kit is used only with `SPLASH_GESTURES_STATIC=1` until the 7 static bar runs pass KTD11 at least as
+well as the per-type baseline (5/7 re-judged; the gesture kit measured 3/7). Every other type has only its
+per-type kit. Whatever the
 format, `render-beat.mjs` must leave something the model can LOOK at (a PNG) and print its path on a line
 `look at: <absolute png path>`, and must leave `renders/` non-empty only when the render succeeded.
 

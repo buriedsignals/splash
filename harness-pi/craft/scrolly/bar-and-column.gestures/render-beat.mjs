@@ -19,7 +19,7 @@ import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
 import { webRegisters } from "#shared/design-base/web.mjs";
 import { EYEBROW_TO_DISPLAY, gapOf, registerOf } from "#shared/design-base/register.mjs";
 import { GestureBarScrolly } from "./GestureBarScrolly.tsx";
-import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, assertNumbers, importBeat, rowFacts } from "./guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, assertNumbers, importBeat, legibleFormat, rowFacts } from "./guards.mjs";
 import { GestureRefusal } from "./gesture-core.mjs";
 import { APPLY, driveSource, stageScrolly } from "./gesture-scrolly.mjs";
 import { plain, refusing, storyLanguage } from "./web.mjs";
@@ -66,6 +66,7 @@ await refusing(HERE, async () => {
     entity: front("claimEntity"),
     versus: front("claimVersus"),
     facts: rowFacts(HERE),
+    unit: beat.unit,
   };
   let staged;
   try {
@@ -80,6 +81,7 @@ await refusing(HERE, async () => {
   for (const r of staged.repairs) console.log(`REPAIRED gestures: ${r.field} → ${JSON.stringify(r.fix)}`);
   const { valid, drawn, rest, scheduled, cards } = staged;
   // Only the drawn bars carry a printed value: their labels must read apart (the remainder is stated, not printed).
+  beat.format = legibleFormat(drawn.map((r) => r.value), beat.format);
   assertLegibleLabels(drawn.map((r) => r.value), beat.format);
 
   // ── what the page draws, by drawn row index
