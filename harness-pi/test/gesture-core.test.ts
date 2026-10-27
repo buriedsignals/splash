@@ -675,3 +675,31 @@ describe("a unit base in a note", () => {
     expect(figuresIn("Lisboa: 214 of 394").map((n) => n.value)).toEqual([214, 394]);
   });
 });
+
+describe("the family interface (phase 2)", () => {
+  const LINE = [
+    { name: "2015 · Lisboa", value: 180, key: "2015", series: "Lisboa" },
+    { name: "2025 · Lisboa", value: 214, key: "2025", series: "Lisboa" },
+    { name: "2015 · Porto", value: 90, key: "2015", series: "Porto" },
+    { name: "2025 · Porto", value: 96, key: "2025", series: "Porto" },
+  ];
+  const claim = { takeaway: "Lisboa grew to 214 by 2025 while Porto stayed near 96." };
+
+  it("should resolve a series name to every mark it holds", () => {
+    expect(validateGestures({ gestures: [{ do: "highlight", mark: "Lisboa" }], rows: LINE, family: "length", format: "static", claim }).gestures[0].marks).toEqual(["2015 · Lisboa", "2025 · Lisboa"]);
+  });
+
+  it("should resolve a key to every mark at that key", () => {
+    expect(validateGestures({ gestures: [{ do: "highlight", mark: "2025" }], rows: LINE, family: "length", format: "static", claim }).gestures[0].marks).toEqual(["2025 · Lisboa", "2025 · Porto"]);
+  });
+
+  it("should admit a figure a family hook draws", () => {
+    const hooks = { figures: (g: { do: string }) => (g.do === "annotate" ? [34] : []) };
+    expect(() => validateGestures({ gestures: [{ do: "annotate", mark: "2025 · Lisboa", note: "+34 since 2015" }], rows: LINE, family: "length", format: "static", claim, hooks })).not.toThrow();
+  });
+
+  it("should let a family hook refuse a conflict", () => {
+    const hooks = { refuse: () => { throw new GestureRefusal("gestures[0]", "a gap in the series cannot be traced: drop it", { remove: 0 }); } };
+    expect(() => validateGestures({ gestures: [{ do: "highlight", mark: "Lisboa" }], rows: LINE, family: "length", format: "static", claim, hooks })).toThrow(/gap in the series/);
+  });
+});

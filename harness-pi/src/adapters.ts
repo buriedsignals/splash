@@ -39,6 +39,11 @@ export function perTypeKit(
   return kitAt(join(craft, format, slugOf(chosen)));
 }
 
+/** The gesture family a type belongs to, if its gesture kits are implemented (GRAMMAR.md §4). */
+export function familyOf(chosenOrSlug: string): string | null {
+  return GESTURE_FAMILY[slugOf(chosenOrSlug)] ?? GESTURE_FAMILY[chosenOrSlug] ?? null;
+}
+
 /** The gesture kit for that type in that format, if its family is implemented and the kit exists. */
 export function gestureKit(
   chosen: string,

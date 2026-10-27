@@ -3,7 +3,7 @@
 // gesture serves the confirmed takeaway, refuses conflicts and the format's limits. A refusal names the field and
 // carries a fix that, applied, moves toward an accepted list — the 12B is told what works, never only what failed.
 // Browser-safe: no Node module.
-import { admissible, FAMILY_GESTURES, HIDES_THE_WHOLE, VOCABULARY, WEB_RESTING, WHOLE_CHART } from "./gesture-registry.mjs";
+import { admissible, FAMILIES, FAMILY_GESTURES, HIDES_THE_WHOLE, VOCABULARY, WEB_RESTING, WHOLE_CHART } from "./gesture-registry.mjs";
 
 export class GestureRefusal extends Error {
   /**
@@ -156,13 +156,18 @@ const RATE = /(?<![\p{L}])(per|pour|par|na|pro|je|por)(?![\p{L}])\s+(\d[\d ,.\u0
 /**
  * @param gestures the beat's list
  * @param rows     the rows the beat draws: [{ name, value }], values in the unit the plate prints
- * @param family   "length" (phase 1)
+ * @param rows     the family's MARKS: [{ name, value, key?, series? }] — a bar is { name: "Lisboa", value }, a line point is
+ *                 { name: "2015 · Lisboa", value, key: "2015", series: "Lisboa" }; a gesture may name a mark, a key or a series
+ * @param family   a FAMILIES id ("length", "time", …)
+ * @param hooks    the family kit's own checks: figures(g, ctx) → extra figures the gesture draws (a crossing, a slope),
+ *                 refuse(g, ctx) → throws a GestureRefusal for a family-specific conflict; ctx = { marks, of, valueOf, rows }
  * @param format   static | web | video | scrolly
  * @param claim    { takeaway, subject?, comparison?, entity?, versus?, facts? } from STORYBOARD.md; facts maps a row's name
  *                 to every number data.json holds for it (guards.mjs rowFacts), figures a note may state beside the drawn one
  * @returns        { gestures: [{ ...gesture, marks, figures }], whole, entities }
  */
-export function validateGestures({ gestures, rows, family, format, claim }) {
+export function validateGestures({ gestures, rows, family, format, claim, hooks = {} }) {
+  const additive = FAMILIES[family]?.additive !== false;
   // An empty note is no note: told to drop a note, a 12B wrote note: "" and was refused for it three times over.
   if (Array.isArray(gestures))
     gestures = gestures.map((g) => (g && typeof g.note === "string" && !g.note.trim() ? Object.fromEntries(Object.entries(g).filter(([k]) => k !== "note")) : g));
@@ -188,7 +193,7 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
   // for the gesture's nearest figure printed China's 12,289,037,000 as "the next five together".
   const ranked = [...rows].sort((a, b) => b.value - a.value).slice(0, 30).map((r) => r.value);
   const dataFigures = [whole, ...rows.map((r) => r.value)];
-  for (let i = 0; i < ranked.length; i++) for (let j = i + 2, run = ranked[i]; j <= ranked.length; j++) dataFigures.push((run += ranked[j - 1]));
+  if (additive) for (let i = 0; i < ranked.length; i++) for (let j = i + 2, run = ranked[i]; j <= ranked.length; j++) dataFigures.push((run += ranked[j - 1]));
 
   const resolve = (name, i, field) => {
     if (valueOf.has(name)) return name;
@@ -204,10 +209,18 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
   // rows: the fix offered was the closest single row, "United States", and every later fix followed it into falsehood.
   // A string that is itself a row's name (one with a comma in it) stays one row.
   const named = (name) => valueOf.has(name) || rows.some((r) => fold(r.name) === fold(name));
+  // A key or a series names every mark it holds: "Lisboa" is the whole line of a time series, "2015" every mark at 2015.
+  const grouped = (name) => {
+    if (typeof name !== "string" || named(name)) return null;
+    const of = rows.filter((r) => (r.series !== undefined && fold(r.series) === fold(name)) || (r.key !== undefined && fold(String(r.key)) === fold(name)));
+    return of.length ? of.map((r) => r.name) : null;
+  };
   const listed = (value) => {
     if (typeof value !== "string" || named(value)) return null;
+    const whole = grouped(value);
+    if (whole) return whole;
     const parts = value.split(/\s*(?:,|;|&|\band\b|\bet\b|\bund\b|\bi\b|\be\b|\by\b)\s*/i).filter(Boolean);
-    return parts.length > 1 && parts.every(named) ? parts : null;
+    return parts.length > 1 && parts.every((p) => named(p) || grouped(p)) ? parts.flatMap((p) => grouped(p) ?? [p]) : null;
   };
   const out = [];
   const seen = new Map();
@@ -255,6 +268,9 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
 
     // per-gesture shape
     // Rows of a rate do not add up: a bracket printed "Suma: 3023" for eight regions' beds per 100,000 residents.
+    // A family whose marks do not add up (positions, time series) has no sum or share to bracket or count either.
+    if ((g.do === "bracket" || g.do === "count") && !additive)
+      throw new GestureRefusal(`gestures[${i}]`, `the ${family} family's values do not add up to a sum or a share: drop the ${g.do}, or compare the marks instead`, { remove: i });
     if ((g.do === "bracket" || g.do === "count") && RATE.test([claim.takeaway, claim.subject, claim.unit].filter(Boolean).join(" ")))
       throw new GestureRefusal(`gestures[${i}]`, `the measure is a rate (per resident), and rates do not add up to a sum or a share: drop the ${g.do}, or compare the rows instead`, { remove: i });
     if (g.do === "bracket" && marks.length === 1 && !ofWhole && !of.length)
@@ -352,6 +368,10 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
     if (g.do === "reference" && !rows.some((r) => Math.abs(r.value - Number(g.value)) < 1e-9) && Object.values(claim.facts ?? {}).flat().some((f) => Math.abs(f - Number(g.value)) < 1e-9))
       throw new GestureRefusal(`gestures[${i}].value`, `${g.value} is a figure of another column, not of the measure the axis draws: write it in a note on its row (annotate) instead of a rule`, { remove: i });
     if (g.do === "rescale") own.push(Number(g.value));
+    // The family's own figures (a crossing, a slope, a median) and conflicts, from its kit.
+    const ctx = { marks, of, valueOf, rows, claim, index: i };
+    if (hooks.figures) own.push(...hooks.figures(g, ctx).filter(Number.isFinite));
+    hooks.refuse?.(g, ctx);
     const context = [whole, ...marks.map((m) => rankOf.get(m)), ...marks.flatMap((m) => claim.facts?.[m] ?? [])];
 
     // notes: every number is one of the gesture's figures, at the note's precision

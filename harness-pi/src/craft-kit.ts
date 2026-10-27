@@ -9,10 +9,11 @@ import {
   rmSync,
   writeFileSync,
 } from "node:fs";
-import { join } from "node:path";
+import { basename, join } from "node:path";
 import {
   type AdapterOptions,
   adapterFor,
+  familyOf,
   gestureKit,
   perTypeKit,
 } from "./adapters.ts";
@@ -104,6 +105,8 @@ export async function contractText(kit: string, format: string): Promise<string>
   const text = readFileSync(join(kit, "CONTRACT.md"), "utf8");
   if (!text.includes("{{GESTURES}}")) return text;
   const { admissible } = await import("../craft/_shared/gesture-registry.mjs");
-  const rows = admissible("length", format).map((a: { do: string; meaning: string }) => `| \`${a.do}\` | ${a.meaning} |`);
+  // The kit folder is <format>/<slug>.gestures: its slug names the family whose gestures the contract lists.
+  const family = familyOf(basename(kit).replace(/\.gestures$/, "")) ?? "length";
+  const rows = admissible(family, format).map((a: { do: string; meaning: string }) => `| \`${a.do}\` | ${a.meaning} |`);
   return text.replace("{{GESTURES}}", rows.join("\n"));
 }

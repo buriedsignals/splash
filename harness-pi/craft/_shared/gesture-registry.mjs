@@ -24,6 +24,17 @@ export const FAMILY_GESTURES = {
   length: ["highlight", "name", "annotate", "bracket", "compare", "reference", "filter", "zoom", "reorder", "rescale", "count", "reveal", "pull-back"],
 };
 
+/**
+ * Each family's spec, static data only (the family's own hooks travel with its kit, see validateGestures):
+ *   gestures  the gestures it admits, in every format
+ *   additive  whether its marks' values add up to a whole (bars, parts, units, stacks) — positions, time series and
+ *             rates do not, and a bracket or count over them is refused
+ * A family kit adds its entry here (phase 2); FAMILY_GESTURES mirrors the gesture lists for older readers.
+ */
+export const FAMILIES = {
+  length: { gestures: FAMILY_GESTURES.length, additive: true },
+};
+
 /** Gestures that act on every drawn row rather than on named ones. */
 export const WHOLE_CHART = new Set(["reveal", "reorder", "rescale", "pull-back"]);
 
@@ -43,7 +54,7 @@ const NOT_IN = { static: new Set(["zoom"]) };
 
 /** The admissible gestures for a family and format, with their meanings, as a contract or a refusal lists them. */
 export function admissible(family, format) {
-  const list = FAMILY_GESTURES[family];
+  const list = FAMILIES[family]?.gestures ?? FAMILY_GESTURES[family];
   if (!list) throw new Error(`no gesture family "${family}" is implemented`);
   if (!FORMATS.includes(format)) throw new Error(`format must be one of ${FORMATS.join(", ")}, not "${format}"`);
   return list.filter((d) => !NOT_IN[format]?.has(d)).map((d) => ({ do: d, meaning: VOCABULARY[d] }));
