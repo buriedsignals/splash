@@ -1,8 +1,11 @@
 // The craft step's staging as a typed record, not free code (Spotlight's report-draft pattern: the model sends a
-// bounded JSON plan, code writes the file). The 12B declares its gestures through record_gestures; the schema
-// offers only the gestures the kit draws and only the names the beat draws, as closed enums; code checks every
-// name again (a server may not constrain decoding) and writes beats/<id>/gestures.json, which the kit's
-// importBeat merges into the beat. Invented names ("Germany – Nuclear") come back with the closest drawn ones.
+// bounded JSON plan, code writes the file). The 12B declares its gestures through record_gestures; the schema's `do`
+// is a closed enum of the gestures the kit draws. Names are a closed set held by code, not by the schema: llama-server
+// did not constrain Gemma 4's tool arguments to an enum (measured: "Polska" against ["Poland", …], 3 of 3), and Pi
+// copies and compiles a tool's schema once per session, so the names the beat draws — which change with beat.mjs —
+// are listed in every beat.mjs write's result and checked here. An unknown name is refused with the closest drawn
+// ones; a gesture refused twice for one is dropped and the rest recorded (Spotlight: back once, then marked). The
+// list goes to beats/<id>/gestures.json, which the kit's importBeat merges into the beat.
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { defineTool } from "@earendil-works/pi-coding-agent";
@@ -10,8 +13,8 @@ import { Type } from "typebox";
 import type { Bases } from "./fs.ts";
 
 const SEP = " · ";
-/** Past this many names the schema carries none (it would crowd the prompt); code still checks each name. */
-export const MAX_ENUM = 400;
+/** How many names a write's result lists (the rest are counted); code checks against all of them. */
+export const MAX_LISTED = 80;
 
 const fold = (v: string) => v.normalize("NFKC").trim().toLowerCase();
 
@@ -105,6 +108,17 @@ function closest(name: string, names: string[], n = 3): string[] {
   return [...names].sort((x, y) => score(x) - score(y)).slice(0, n);
 }
 
+/** The names as a write's result lists them. */
+export function listNames(names: string[]): string {
+  const shown = names
+    .slice(0, MAX_LISTED)
+    .map((n) => JSON.stringify(n))
+    .join(", ");
+  return names.length > MAX_LISTED
+    ? `${shown} … and ${names.length - MAX_LISTED} more`
+    : shown;
+}
+
 export interface GestureToolOptions {
   beat: string;
   /** The gestures this kit draws in this format. */
@@ -121,35 +135,25 @@ export function gestureTools(
   const names: string[] = existsSync(dataFile)
     ? dataNames(JSON.parse(readFileSync(dataFile, "utf8")))
     : [];
-  // The enum arrays are mutated in place: the session re-sends the schema with each request, so it follows the beat.
-  const nameEnum: string[] = [];
-  const setNames = (next: string[]) => {
-    names.splice(0, names.length, ...next);
-    nameEnum.splice(
-      0,
-      nameEnum.length,
-      ...(next.length <= MAX_ENUM ? next : []),
-    );
-  };
-  setNames(names.slice());
-  const name = () =>
-    nameEnum.length ? Type.String({ enum: nameEnum }) : Type.String();
-  const refresh = () => {
+  const refresh = (): string[] | null => {
     const drawn = beatNames(beatDir);
-    if (drawn) setNames([...new Set([...drawn, "whole"])]);
+    if (drawn) names.splice(0, names.length, ...new Set([...drawn, "whole"]));
     return drawn;
   };
+  // Refusals per gesture (by its position and do): the second for an unknown name drops it.
+  const refusedOnce = new Set<string>();
 
   const tool = defineTool({
     name: "record_gestures",
     label: "Record gestures",
-    description: `Record the beat's staging: the ordered gestures list (CONTRACT.md's gestures table). Marks are named only from the names the beat draws. This replaces any gestures in beat.mjs; render with render_beat after.`,
+    description:
+      "Record the beat's staging: the ordered gestures list (CONTRACT.md's gestures table). Marks are named only from the names the beat draws — every beat.mjs write lists them. This replaces any gestures in beat.mjs; render with render_beat after.",
     parameters: Type.Object({
       gestures: Type.Array(
         Type.Object({
           do: Type.String({ enum: gestures }),
-          mark: Type.Optional(name()),
-          marks: Type.Optional(Type.Array(name())),
+          mark: Type.Optional(Type.String()),
+          marks: Type.Optional(Type.Array(Type.String())),
           of: Type.Optional(
             Type.Union([Type.String(), Type.Array(Type.String())]),
           ),
@@ -168,7 +172,8 @@ export function gestureTools(
           'gestures: give at least one gesture, e.g. [{ do: "highlight", mark: "<a drawn name>" }]',
         );
       const known = new Set(names.map(fold));
-      list.forEach((g, i) => {
+      const dropped: string[] = [];
+      const kept = list.filter((g, i) => {
         if (!gestures.includes(g.do))
           throw new Error(
             `gestures[${i}].do: "${g.do}" is not a gesture this kit draws — one of ${gestures.join(", ")}`,
@@ -180,26 +185,38 @@ export function gestureTools(
             ? g.of.map((m: string, k: number) => [`of[${k}]`, m])
             : []),
         ] as [string, string][];
-        for (const [field, m] of named)
-          if (known.size && !known.has(fold(String(m))))
-            throw new Error(
-              `gestures[${i}].${field}: "${m}" is not a name the beat draws — the closest are ${closest(
-                String(m),
-                names,
-              )
-                .map((c) => JSON.stringify(c))
-                .join(", ")}`,
-            );
+        const unknown = named.find(
+          ([, m]) => known.size > 0 && !known.has(fold(String(m))),
+        );
+        if (!unknown) return true;
+        const key = `${i}:${g.do}`;
+        if (refusedOnce.has(key)) {
+          dropped.push(`gestures[${i}] (${g.do} on "${unknown[1]}")`);
+          return false;
+        }
+        refusedOnce.add(key);
+        throw new Error(
+          `gestures[${i}].${unknown[0]}: "${unknown[1]}" is not a name the beat draws — the closest are ${closest(
+            String(unknown[1]),
+            names,
+          )
+            .map((c) => JSON.stringify(c))
+            .join(", ")}. A second unknown name drops this gesture.`,
+        );
       });
+      if (!kept.length)
+        throw new Error(
+          `every gesture named marks the beat does not draw; the names it draws: ${listNames(names)}`,
+        );
       writeFileSync(
         join(beatDir, "gestures.json"),
-        `${JSON.stringify({ gestures: list }, null, 2)}\n`,
+        `${JSON.stringify({ gestures: kept }, null, 2)}\n`,
       );
       return {
         content: [
           {
             type: "text" as const,
-            text: `recorded ${list.length} gestures in beats/${beat}/gestures.json; render with render_beat`,
+            text: `recorded ${kept.length} gestures in beats/${beat}/gestures.json${dropped.length ? `; dropped ${dropped.join(", ")}, refused twice for a name the beat does not draw` : ""}; render with render_beat`,
           },
         ],
         details: {},

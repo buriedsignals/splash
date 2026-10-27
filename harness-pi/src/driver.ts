@@ -30,7 +30,7 @@ import { checkEditorProposals, describeProposals } from "./editor-check.ts";
 import type { Journalist } from "./journalist.ts";
 import { type OwnerId, PROFILES } from "./profiles.ts";
 import { openSession } from "./sessions.ts";
-import { gestureTools } from "./tools/gestures.ts";
+import { gestureTools, listNames } from "./tools/gestures.ts";
 import { type Bases, beatTools, fsTools } from "./tools/fs.ts";
 import { lookTool } from "./tools/look.ts";
 import {
@@ -392,7 +392,17 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
       : null;
     const bt = beatTools(bases, beat);
     const refreshing = <T extends { execute: (...a: never[]) => Promise<unknown> }>(t: T): T =>
-      staging ? ({ ...t, execute: async (...a: Parameters<T["execute"]>) => { const out = await t.execute(...a); staging.refresh(); return out; } } as T) : t;
+      staging
+        ? ({
+            ...t,
+            execute: async (...a: Parameters<T["execute"]>) => {
+              const out = (await t.execute(...a)) as { content: { type: string; text: string }[] };
+              const drawn = staging.refresh();
+              if (drawn) out.content[0].text += `\nNames the beat draws (name marks in record_gestures only from these): ${listNames(drawn)}`;
+              return out;
+            },
+          } as T)
+        : t;
     const sess = await session(
       "skill:chart-beat",
       beat,

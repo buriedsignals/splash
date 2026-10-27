@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } fro
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { importBeat } from "../craft/_shared/guards.mjs";
-import { dataNames, gestureTools } from "../src/tools/gestures.ts";
+import { dataNames, gestureTools, listNames } from "../src/tools/gestures.ts";
 
 const table = {
   columns: [{ name: "Entity", type: "text" }, { name: "Year", type: "number" }, { name: "Share", type: "number" }],
@@ -62,5 +62,18 @@ describe("record_gestures", () => {
     writeFileSync(join(beatDir, "beat.mjs"), `export default { rows: [{ name: "Pologne", value: 25 }, { name: "France", value: 65 }] };`);
     refresh();
     await expect((recordGestures as any).execute("1", { gestures: [{ do: "highlight", mark: "Pologne" }] })).resolves.toBeDefined();
+  });
+
+  it("should drop a gesture refused twice for a name the beat does not draw, recording the rest", async () => {
+    const { root, storyDir, beatDir } = story("claimShape: none");
+    const { recordGestures } = gestureTools({ root, storyDir }, { beat: "1", gestures: ["highlight", "compare"] });
+    const list = [{ do: "highlight", mark: "France" }, { do: "compare", marks: ["Polska", "France"] }];
+    await expect((recordGestures as any).execute("1", { gestures: list })).rejects.toThrow(/A second unknown name drops this gesture/);
+    await (recordGestures as any).execute("1", { gestures: list });
+    expect(JSON.parse(readFileSync(join(beatDir, "gestures.json"), "utf8")).gestures).toEqual([{ do: "highlight", mark: "France" }]);
+  });
+
+  it("should list the names a write's result offers, counting the rest", () => {
+    expect(listNames(Array.from({ length: 82 }, (_, i) => `n${i}`))).toEndWith("… and 2 more");
   });
 });
