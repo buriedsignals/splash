@@ -1,6 +1,6 @@
 # Bullet (scrolly), composed — what you write
 
-> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers (a set of rows is one gesture: `mark: [its rows]`); recording renders the beat and returns the result. Do not write `check()`: the kit computes it from the recorded claim and data.json.
 
 The page is already designed: a track per row up to `ceiling` (100 when `unit` has %), the first value drawn thick and pale (the comparative state: an earlier date, a target), the second thin and full (the measure); names in a left column (the pyramid: on its spine), values at the marks'
 tips, one value scale for every card, in the story's PALETTE.md and DIRECTION.md. The graphic stays fixed while

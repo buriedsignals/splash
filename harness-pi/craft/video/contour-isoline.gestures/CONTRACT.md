@@ -1,6 +1,6 @@
 # Contour / isoline (gestures, video) — what you write
 
-> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers (a set of rows is one gesture: `mark: [its rows]`); recording renders the beat and returns the result. Do not write `check()`: the kit computes it from the recorded claim and data.json.
 
 The field, the isolines, their labels, the summit mark, the basemap plate, the type, the colours and
 the layout are already done: they come from the worked example `proof/static-contour-europe-distance`

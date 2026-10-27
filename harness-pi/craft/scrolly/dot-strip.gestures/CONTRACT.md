@@ -1,6 +1,6 @@
 # Dot strip, composed — what you write
 
-> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers (a set of rows is one gesture: `mark: [its rows]`); recording renders the beat and returns the result. Do not write `check()`: the kit computes it from the recorded claim and data.json.
 
 The marks, the type, the colours and the layout are already done: every unit pinned on ONE axis: one strip per moment (two moments: each unit on both strips, joined by a faint leader), or one strip. A unit's `code` (1 to 4 characters) is printed when a gesture names it. The subject takes the story's accent;
 every other row one neutral; a row a gesture names is ringed, never given a second colour. YOU decide the staging:

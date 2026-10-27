@@ -1,6 +1,6 @@
 # Area and stacked area, composed — what you write
 
-> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers (a set of rows is one gesture: `mark: [its rows]`); recording renders the beat and returns the result. Do not write `check()`: the kit computes it from the recorded claim and data.json.
 
 The marks, the type, the colours and the layout are already done: one filled surface from ZERO (the area is the stock: give each time its own reading, as data.json holds it — never a running total you added up, the surface already adds them); several series are stacked bottom-up in the order of `points` (or `order`), every series labelled at its end, in
 the story's PALETTE.md and DIRECTION.md. YOU decide the staging: an ordered list `gestures`, in the order the story

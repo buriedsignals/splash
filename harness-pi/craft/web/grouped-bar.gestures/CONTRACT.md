@@ -1,6 +1,6 @@
 # Grouped bar, composed — what you write (web)
 
-> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers (a set of rows is one gesture: `mark: [its rows]`); recording renders the beat and returns the result. Do not write `check()`: the kit computes it from the recorded claim and data.json.
 
 The marks, the colours and the layout are done: two bars per row, each from zero: `series[0]` in full, `series[1]` lighter. One value scale from zero for every state. YOU decide the
 staging: an ordered list `gestures`. The page the reader lands on draws every resting gesture (highlight, name,

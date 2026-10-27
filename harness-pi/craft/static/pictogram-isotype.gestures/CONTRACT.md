@@ -1,6 +1,6 @@
 # Pictogram (isotype), composed — what you write
 
-> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers (a set of rows is one gesture: `mark: [its rows]`); recording renders the beat and returns the result. Do not write `check()`: the kit computes it from the recorded claim and data.json.
 
 The marks, the type, the colours and the layout are already done: one square per real THING (a country, a school), never a slice of a quantity; the squares gathered in BLOCKS by value range, one square size for every block, each block's count printed after it, in the story's PALETTE.md and
 DIRECTION.md. The groups are COUNTED by render-beat.mjs from the readings and the partition you give; it never

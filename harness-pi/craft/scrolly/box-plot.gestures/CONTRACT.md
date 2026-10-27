@@ -1,6 +1,6 @@
 # Box plot, composed — what you write
 
-> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers (a set of rows is one gesture: `mark: [its rows]`); recording renders the beat and returns the result. Do not write `check()`: the kit computes it from the recorded claim and data.json.
 
 The marks, the type, the colours and the layout are already done: one group per column, in the order `rows` gives: its box (the middle half of its readings), its median, its whiskers (1.5 × IQR) and every reading as a point beside it. The render computes every summary from the readings. The subject takes the story's accent;
 every other row one neutral; a row a gesture names is ringed, never given a second colour. YOU decide the staging:

@@ -76,4 +76,27 @@ describe("record_gestures", () => {
   it("should list the names a write's result offers, counting the rest", () => {
     expect(listNames(Array.from({ length: 82 }, (_, i) => `n${i}`))).toEndWith("… and 2 more");
   });
+
+  it("should take one gesture on a set of rows given as a mark list", async () => {
+    const { root, storyDir, beatDir } = story("claimShape: none");
+    const { recordGestures } = gestureTools({ root, storyDir }, { beat: "1", gestures: ["highlight"] });
+    await (recordGestures as any).execute("1", { gestures: [{ do: "highlight", mark: ["France", "Spain"], note: "2 pays" }] });
+    expect(JSON.parse(readFileSync(join(beatDir, "gestures.json"), "utf8")).gestures[0].mark).toEqual(["France", "Spain"]);
+  });
+
+  it("should refuse the same list twice in a row when it does not render itself", async () => {
+    const { root, storyDir } = story("claimShape: none");
+    const { recordGestures } = gestureTools({ root, storyDir }, { beat: "1", gestures: ["highlight"] });
+    const list = [{ do: "highlight", mark: "France" }];
+    await (recordGestures as any).execute("1", { gestures: list });
+    await expect((recordGestures as any).execute("1", { gestures: list })).rejects.toThrow(/already recorded: render it/);
+  });
+
+  it("should render on record and return the render's words", async () => {
+    const { root, storyDir } = story("claimShape: none");
+    const { recordGestures } = gestureTools({ root, storyDir }, { beat: "1", gestures: ["highlight"], render: async () => "REFUSED — gestures[0].note: …" });
+    const out = await (recordGestures as any).execute("1", { gestures: [{ do: "highlight", mark: "France" }] });
+    expect(out.content[0].text).toContain("rendered:\nREFUSED — gestures[0].note");
+  });
 });
+

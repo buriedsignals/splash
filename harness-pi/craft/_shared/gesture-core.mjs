@@ -485,7 +485,10 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
     if (!touches && !statesFigure && !(wholeChart && (entities.size || listStatesFigure)))
       throw new GestureRefusal(
         `gestures[${i}]`,
-        `${g.do} on ${[...marks, ...of].join(", ") || "nothing"} does not serve the takeaway, which is about ${[...entities].join(", ") || "no drawn row"}: drop it, or act on those rows`,
+        entities.size
+          ? `${g.do} on ${[...marks, ...of].join(", ") || "nothing"} does not serve the takeaway, which is about ${[...entities].join(", ")}: drop it, or act on those rows`
+          : // A takeaway about a set ("the 6 countries above 20 t") names no row: the set is one gesture stating its figure.
+            `${g.do} on ${[...marks, ...of].join(", ") || "nothing"} does not serve the takeaway, which names no drawn row: act on the set it is about in ONE gesture (mark: [every row of the set]) whose note states one of its figures (${takeawayFigures.join(", ") || "its count"}), or drop it`,
         { remove: i },
       );
 

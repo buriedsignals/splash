@@ -388,7 +388,19 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
     }
     // A gesture kit takes its staging through record_gestures (typed, closed names), refreshed whenever beat.mjs changes.
     const staging = choice.gestures
-      ? gestureTools(bases, { beat, gestures: (await kitGestures(adapter, String(slot.format ?? "static"))).map((g) => g.do) })
+      ? gestureTools(bases, {
+          beat,
+          gestures: (await kitGestures(adapter, String(slot.format ?? "static"))).map((g) => g.do),
+          // Recording renders: the result the 12B reads is the render's, refusal or look-at path.
+          render: async () => {
+            try {
+              const out = (await (r.render.execute as (...a: unknown[]) => Promise<unknown>)("record", { beat, format: String(slot.format ?? "static") })) as { content: { text: string }[] };
+              return out.content[0].text;
+            } catch (e) {
+              return String((e as Error).message);
+            }
+          },
+        })
       : null;
     const bt = beatTools(bases, beat);
     const refreshing = <T extends { execute: (...a: never[]) => Promise<unknown> }>(t: T): T =>

@@ -1,6 +1,6 @@
 # Beeswarm, composed — what you write
 
-> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers (a set of rows is one gesture: `mark: [its rows]`); recording renders the beat and returns the result. Do not write `check()`: the kit computes it from the recorded claim and data.json.
 
 The marks, the type, the colours and the layout are already done: every unit a circle at its value on ONE axis, packed off the axis line; with `size`, a circle's AREA is its size (a population). Names are printed for the rows a gesture marks. The subject takes the story's accent;
 every other row one neutral; a row a gesture names is ringed, never given a second colour. YOU decide the staging:

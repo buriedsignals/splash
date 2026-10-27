@@ -1,6 +1,6 @@
 # Bump chart (ranking over time) (scrolly), composed — what you write
 
-> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers (a set of rows is one gesture: `mark: [its rows]`); recording renders the beat and returns the result. Do not write `check()`: the kit computes it from the recorded claim and data.json.
 
 The page is already designed: the kit ranks every series at every time from `points` and draws the top `slots` (rank 1 at the top); a series outside them is not drawn there. A reading's value in a note is its RANK, in the story's PALETTE.md and DIRECTION.md, every series labelled at its
 end. The graphic stays fixed while cards of prose travel up over it, and the reader's scroll moves the picture

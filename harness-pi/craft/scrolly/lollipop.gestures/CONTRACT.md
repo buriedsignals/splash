@@ -1,6 +1,6 @@
 # Lollipop (scrolly), composed — what you write
 
-> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers (a set of rows is one gesture: `mark: [its rows]`); recording renders the beat and returns the result. Do not write `check()`: the kit computes it from the recorded claim and data.json.
 
 The page is already designed: two stems per row from zero: the first value pale, the second full (e.g. `series: ["2000", "2023"]`, the earlier state first); names in a left column (the pyramid: on its spine), values at the marks'
 tips, one value scale for every card, in the story's PALETTE.md and DIRECTION.md. The graphic stays fixed while

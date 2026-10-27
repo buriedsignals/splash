@@ -1,6 +1,6 @@
 # Locator (gestures) — what you write
 
-> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers (a set of rows is one gesture: `mark: [its rows]`); recording renders the beat and returns the result. Do not write `check()`: the kit computes it from the recorded claim and data.json.
 
 The basemap plate, the camera (boxed on the subject), the ring on the subject, the three typographic
 classes of place (countries in tracked capitals, settlements on open dots, waters in italic), the

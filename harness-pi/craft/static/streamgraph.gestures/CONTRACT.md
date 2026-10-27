@@ -1,6 +1,6 @@
 # Streamgraph, composed — what you write
 
-> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers (a set of rows is one gesture: `mark: [its rows]`); recording renders the beat and returns the result. Do not write `check()`: the kit computes it from the recorded claim and data.json.
 
 The marks, the type, the colours and the layout are already done: the series stacked as a silhouette around a centre line, the largest layers inside; there is NO value axis — a band's thickness is its reading, so quantities are written, never measured off a scale, every series labelled at its end, in
 the story's PALETTE.md and DIRECTION.md. YOU decide the staging: an ordered list `gestures`, in the order the story

@@ -123,12 +123,14 @@ export interface GestureToolOptions {
   beat: string;
   /** The gestures this kit draws in this format. */
   gestures: string[];
+  /** Renders the beat once the list is recorded (code renders, as Spotlight's finalize does); its text is returned. */
+  render?: () => Promise<string>;
 }
 
 /** record_gestures, and refresh(): re-reads the names the beat draws (call it after beat.mjs changes). */
 export function gestureTools(
   bases: Bases,
-  { beat, gestures }: GestureToolOptions,
+  { beat, gestures, render }: GestureToolOptions,
 ) {
   const beatDir = join(bases.storyDir, "beats", beat);
   const dataFile = join(beatDir, "data.json");
@@ -142,6 +144,7 @@ export function gestureTools(
   };
   // Refusals per gesture (by its position and do): the second for an unknown name drops it.
   const refusedOnce = new Set<string>();
+  let last = "";
 
   const tool = defineTool({
     name: "record_gestures",
@@ -152,7 +155,7 @@ export function gestureTools(
       gestures: Type.Array(
         Type.Object({
           do: Type.String({ enum: gestures }),
-          mark: Type.Optional(Type.String()),
+          mark: Type.Optional(Type.Union([Type.String(), Type.Array(Type.String())])),
           marks: Type.Optional(Type.Array(Type.String())),
           of: Type.Optional(
             Type.Union([Type.String(), Type.Array(Type.String())]),
@@ -179,7 +182,7 @@ export function gestureTools(
             `gestures[${i}].do: "${g.do}" is not a gesture this kit draws — one of ${gestures.join(", ")}`,
           );
         const named = [
-          ...(g.mark !== undefined ? [["mark", g.mark]] : []),
+          ...(Array.isArray(g.mark) ? g.mark.map((m: string, k: number) => [`mark[${k}]`, m]) : g.mark !== undefined ? [["mark", g.mark]] : []),
           ...(g.marks ?? []).map((m: string, k: number) => [`marks[${k}]`, m]),
           ...(Array.isArray(g.of)
             ? g.of.map((m: string, k: number) => [`of[${k}]`, m])
@@ -208,15 +211,17 @@ export function gestureTools(
         throw new Error(
           `every gesture named marks the beat does not draw; the names it draws: ${listNames(names)}`,
         );
-      writeFileSync(
-        join(beatDir, "gestures.json"),
-        `${JSON.stringify({ gestures: kept }, null, 2)}\n`,
-      );
+      // The same list again changes nothing: a 12B recorded one list twenty times and never rendered.
+      const signature = JSON.stringify(kept);
+      if (signature === last && !render) throw new Error("this is the list already recorded: render it with render_beat, or change it");
+      last = signature;
+      writeFileSync(join(beatDir, "gestures.json"), `${JSON.stringify({ gestures: kept }, null, 2)}\n`);
+      const rendered = render ? `\n${await render()}` : "";
       return {
         content: [
           {
             type: "text" as const,
-            text: `recorded ${kept.length} gestures in beats/${beat}/gestures.json${dropped.length ? `; dropped ${dropped.join(", ")}, refused twice for a name the beat does not draw` : ""}; render with render_beat`,
+            text: `recorded ${kept.length} gestures in beats/${beat}/gestures.json${dropped.length ? `; dropped ${dropped.join(", ")}, refused twice for a name the beat does not draw` : ""}${render ? "; rendered:" : "; render with render_beat"}${rendered}`,
           },
         ],
         details: {},

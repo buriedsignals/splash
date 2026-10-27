@@ -1,6 +1,6 @@
 # Scatter and bubble, composed — what you write (video)
 
-> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers (a set of rows is one gesture: `mark: [its rows]`); recording renders the beat and returns the result. Do not write `check()`: the kit computes it from the recorded claim and data.json.
 
 The marks, the axes, the colours and the layout are already done: one point per row: `x` on the horizontal axis, `value` on the vertical axis, both fitted to the data (never pulled to zero). Give every row a `size` and the points become bubbles whose AREA is the size (the plate keys it; a point too small to draw is hollow, and the key says under what size), in the story's PALETTE.md and
 DIRECTION.md. YOU decide the staging: an ordered list `gestures`, in the order the story tells it. Nothing is staged

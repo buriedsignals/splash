@@ -1,6 +1,6 @@
 # Calendar heatmap, composed (static) — what you write
 
-> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers (a set of rows is one gesture: `mark: [its rows]`); recording renders the beat and returns the result. Do not write `check()`: the kit computes it from the recorded claim and data.json.
 
 The grid, the stepped colour ramp, the key with its printed breaks, the type, the colours and the layout are already
 done, from the story's PALETTE.md and DIRECTION.md. YOU decide the staging: an ordered list `gestures`, in story order.

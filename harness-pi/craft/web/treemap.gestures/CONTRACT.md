@@ -1,6 +1,6 @@
 # treemap (part-to-whole), composed for the web — what you write
 
-> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers (a set of rows is one gesture: `mark: [its rows]`); recording renders the beat and returns the result. Do not write `check()`: the kit computes it from the recorded claim and data.json.
 
 The marks, the type, the colours and the layout are already done: one tile per part, its AREA its share of the whole, squarified from the largest, in the story's PALETTE.md and
 DIRECTION.md. YOU decide the staging: an ordered list `gestures`, in the order the story tells it. Nothing is

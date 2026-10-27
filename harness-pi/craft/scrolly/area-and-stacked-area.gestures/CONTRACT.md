@@ -1,6 +1,6 @@
 # Area (stacked when several series) (scrolly), composed — what you write
 
-> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers (a set of rows is one gesture: `mark: [its rows]`); recording renders the beat and returns the result. Do not write `check()`: the kit computes it from the recorded claim and data.json.
 
 The page is already designed: one filled area per series standing on zero — several series stack in the order of `points` (the first at the bottom); the area under the curve is the stock (give each time its own reading, as data.json holds it — never a running total you added up, the surface already adds them), in the story's PALETTE.md and DIRECTION.md, every series labelled at its
 end. The graphic stays fixed while cards of prose travel up over it, and the reader's scroll moves the picture

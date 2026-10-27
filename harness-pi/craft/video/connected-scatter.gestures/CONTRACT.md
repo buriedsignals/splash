@@ -1,6 +1,6 @@
 # Connected scatter, composed — what you write (video)
 
-> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers (a set of rows is one gesture: `mark: [its rows]`); recording renders the beat and returns the result. Do not write `check()`: the kit computes it from the recorded claim and data.json.
 
 The marks, the axes, the colours and the layout are already done: each entity drawn as a path through its steps in key order (a year): a hollow circle at its first step, a filled one at its last, both axes fitted to the data. The path's LAST step carries the entity's own name ("France"); earlier steps are "France 2000". A gesture on "France" acts on the whole path; a key ("2000") names every point at that step, in the story's PALETTE.md and
 DIRECTION.md. YOU decide the staging: an ordered list `gestures`, in the order the story tells it. Nothing is staged

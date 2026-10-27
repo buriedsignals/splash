@@ -1,6 +1,6 @@
 # Proportional symbol (gestures, scrolly) — what you write
 
-> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers (a set of rows is one gesture: `mark: [its rows]`); recording renders the beat and returns the result. Do not write `check()`: the kit computes it from the recorded claim and data.json.
 
 The basemap plate, the camera, the circles (hollow, AREA proportional to the value), the key, the
 threshold that keeps the field legible, the type, the colours and the layout are already done: they

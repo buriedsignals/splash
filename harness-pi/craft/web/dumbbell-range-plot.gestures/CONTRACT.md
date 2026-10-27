@@ -1,6 +1,6 @@
 # Dumbbell (range plot), composed — what you write
 
-> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers (a set of rows is one gesture: `mark: [its rows]`); recording renders the beat and returns the result. Do not write `check()`: the kit computes it from the recorded claim and data.json.
 
 The marks, the type, the colours and the layout are already done: one row per unit, its two readings (two moments) as two points on ONE fitted value axis, the link between them its change; rows are drawn in the order `rows` gives (rank them by the change). The change is printed at the row's end. The subject takes the story's accent;
 every other row one neutral; a row a gesture names is ringed, never given a second colour. YOU decide the staging:

@@ -1,6 +1,6 @@
 # Tile cartogram — gesture beat (static)
 
-> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers. Do not write `check()`: the kit computes it from the recorded claim and data.json.
+> **Staging and check.** Declare `gestures` with the `record_gestures` tool, not in beat.mjs: name marks only from the names it offers (a set of rows is one gesture: `mark: [its rows]`); recording renders the beat and returns the result. Do not write `check()`: the kit computes it from the recorded claim and data.json.
 
 The map is already done: one equal square tile per country on a designed grid of 41 European countries, the class scale and its colours, the layout and the type come from the kit,
 `PALETTE.md` and `DIRECTION.md`. You write ONE file, `beat.mjs`, in the beat folder. It reads `data.json` beside it
