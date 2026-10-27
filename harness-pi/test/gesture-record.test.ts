@@ -98,5 +98,13 @@ describe("record_gestures", () => {
     const out = await (recordGestures as any).execute("1", { gestures: [{ do: "highlight", mark: "France" }] });
     expect(out.content[0].text).toContain("rendered:\nREFUSED — gestures[0].note");
   });
+
+  it("should know a composed name when each of its parts is drawn (a row at one of its series)", async () => {
+    const { root, storyDir, beatDir } = story("claimShape: none");
+    const { recordGestures, refresh } = gestureTools({ root, storyDir }, { beat: "1", gestures: ["compare"] });
+    writeFileSync(join(beatDir, "beat.mjs"), `export default { series: ["2015", "2024"], rows: [{ name: "Pologne", values: [20, 37] }, { name: "France", values: [90, 95] }] };`);
+    refresh();
+    await expect((recordGestures as any).execute("1", { gestures: [{ do: "compare", marks: ["Pologne · 2024", "France · 2024"] }] })).resolves.toBeDefined();
+  });
 });
 

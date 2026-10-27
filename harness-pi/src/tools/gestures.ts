@@ -62,7 +62,7 @@ export function beatNames(beatDir: string): string[] | null {
 const out = new Set();
 const visit = (v, d) => {
   if (d > 4 || !v || typeof v !== "object") return;
-  if (Array.isArray(v)) { for (const x of v.slice(0, 3000)) visit(x, d + 1); return; }
+  if (Array.isArray(v)) { for (const x of v.slice(0, 3000)) { if (typeof x === "string" || typeof x === "number") out.add(String(x)); else visit(x, d + 1); } return; }
   for (const k of ["name", "series", "key", "label", "entity", "group"]) if (typeof v[k] === "string" || typeof v[k] === "number") out.add(String(v[k]));
   if (v.series != null && (v.key ?? v.t) != null) out.add(String(v.key ?? v.t) + ${JSON.stringify(SEP)} + String(v.series));
   for (const [k, x] of Object.entries(v)) if (k !== "gestures" && typeof x === "object") visit(x, d + 1);
@@ -188,9 +188,9 @@ export function gestureTools(
             ? g.of.map((m: string, k: number) => [`of[${k}]`, m])
             : []),
         ] as [string, string][];
-        const unknown = named.find(
-          ([, m]) => known.size > 0 && !known.has(fold(String(m))),
-        );
+        // A composed name ("Pologne · 2024": a row at one of its series) is known when each of its parts is.
+        const knownName = (m: string) => known.has(fold(m)) || (m.includes(SEP.trim()) && m.split(SEP.trim()).every((p) => known.has(fold(p))));
+        const unknown = named.find(([, m]) => known.size > 0 && !knownName(String(m)));
         if (!unknown) return true;
         const key = `${i}:${g.do}`;
         if (refusedOnce.has(key)) {
