@@ -703,3 +703,22 @@ describe("the family interface (phase 2)", () => {
     expect(() => validateGestures({ gestures: [{ do: "highlight", mark: "Lisboa" }], rows: LINE, family: "length", format: "static", claim, hooks })).toThrow(/gap in the series/);
   });
 });
+
+describe("the core for the phase-2 families", () => {
+  it("should not take the subject from a code inside a longer word", () => {
+    const rows = [{ name: "ITA", value: 40 }, { name: "CZE", value: 60 }];
+    const v = validateGestures({ gestures: [{ do: "annotate", mark: "CZE", note: "60" }], rows, family: "length", format: "static", claim: { takeaway: "CZE leads, per 1,000 habitants." } });
+    expect(v.gestures[0].subject).toBe("CZE");
+  });
+
+  it("should admit a percentage a family hook draws", () => {
+    const rows = [{ name: "A", value: 10 }, { name: "B", value: 20 }];
+    const hooks = { figures: () => [34.7] };
+    expect(() => validateGestures({ gestures: [{ do: "filter", marks: ["A"], note: "34,7 %" }], rows, family: "length", format: "static", claim: { takeaway: "A is small." }, hooks })).not.toThrow();
+  });
+
+  it("should take the claim's entity from a group a mark belongs to", () => {
+    const rows = [{ name: "site 1", value: 6000, group: "Nuclear" }, { name: "site 2", value: 300, group: "Coal" }];
+    expect(validateGestures({ gestures: [{ do: "highlight", mark: "site 1" }], rows, family: "length", format: "static", claim: { takeaway: "Nuclear dominates." } }).entities).toContain("site 1");
+  });
+});

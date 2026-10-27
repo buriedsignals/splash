@@ -107,6 +107,11 @@ export async function contractText(kit: string, format: string): Promise<string>
   const { admissible } = await import("../craft/_shared/gesture-registry.mjs");
   // The kit folder is <format>/<slug>.gestures: its slug names the family whose gestures the contract lists.
   const family = familyOf(basename(kit).replace(/\.gestures$/, "")) ?? "length";
-  const rows = admissible(family, format).map((a: { do: string; meaning: string }) => `| \`${a.do}\` | ${a.meaning} |`);
+  // A family registers itself (and may narrow the list per type) in its own module: load it when it exists.
+  const module = join(import.meta.dirname, "..", "craft", "_shared", `gesture-family-${family}.mjs`);
+  const own = existsSync(module) ? await import(module) : {};
+  const slug = basename(kit).replace(/\.gestures$/, "");
+  const subset: string[] | undefined = own.gesturesOf?.(slug);
+  const rows = admissible(family, format).filter((a: { do: string }) => !subset || subset.includes(a.do)).map((a: { do: string; meaning: string }) => `| \`${a.do}\` | ${a.meaning} |`);
   return text.replace("{{GESTURES}}", rows.join("\n"));
 }

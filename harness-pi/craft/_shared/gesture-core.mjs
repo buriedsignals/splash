@@ -179,14 +179,24 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
   const whole = rows.reduce((s, r) => s + r.value, 0);
   const valueOf = new Map(rows.map((r) => [r.name, r.value]));
   const rankOf = new Map([...rows].sort((a, b) => b.value - a.value).map((r, i) => [r.name, i + 1]));
+  // A takeaway may name a mark, or a series / key / group that holds marks ("Nuclear", "Lisboa" for its whole line).
+  const claimText = `${claim.takeaway ?? ""} ${claim.subject ?? ""} ${claim.comparison ?? ""} ${[claim.entity, claim.versus].filter(Boolean).join(" ")}`;
+  const holders = [...new Set(rows.flatMap((r) => [r.series, r.key, r.group].filter((v) => v !== undefined).map(String)))].map((name) => ({ name }));
+  const namedHolders = new Set(rowsNamedIn(claimText, holders).map(fold));
   const entities = new Set([
     ...rowsNamedIn(`${claim.takeaway ?? ""} ${claim.subject ?? ""} ${claim.comparison ?? ""}`, rows),
     ...[claim.entity, claim.versus].filter(Boolean).flatMap((e) => rowsNamedIn(e, rows)),
+    ...rows.filter((r) => [r.series, r.key, r.group].some((v) => v !== undefined && namedHolders.has(fold(String(v))))).map((r) => r.name),
   ]);
   const takeawayFigures = figuresIn(claim.takeaway).map((n) => n.value);
   // The row the takeaway is about: the recorded claim entity, else the drawn row the takeaway names first. It always
   // carries the accent; a highlight on another row rings it instead (two highlights once left the subject grey).
-  const at = (name) => fold(claim.takeaway ?? "").indexOf(fold(name));
+  // By whole word: a row coded "ITA" once matched "habITAnts" and took the accent.
+  const at = (name) => {
+    const hay = ` ${fold(claim.takeaway ?? "").replace(/[^\p{L}\p{N}]+/gu, " ")} `;
+    const i = hay.indexOf(` ${fold(name).replace(/[^\p{L}\p{N}]+/gu, " ")} `);
+    return i < 0 ? -1 : i;
+  };
   const subject = rowsNamedIn(claim.entity ?? "", rows)[0] ?? rows.map((r) => r.name).filter((n) => at(n) >= 0).sort((a, b) => at(a) - at(b))[0];
   // Every figure the drawn rows hold: each value, the whole, and every run of rows in rank order added up (the next
   // five, the top three). A stated figure among these that a gesture does not draw belongs to other rows: swapping it
@@ -370,7 +380,10 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
     if (g.do === "rescale") own.push(Number(g.value));
     // The family's own figures (a crossing, a slope, a median) and conflicts, from its kit.
     const ctx = { marks, of, valueOf, rows, claim, index: i };
-    if (hooks.figures) own.push(...hooks.figures(g, ctx).filter(Number.isFinite));
+    // The family's figures may be percentages too (a share of the field): they join both pools.
+    const familyFigures = hooks.figures ? hooks.figures(g, ctx).filter(Number.isFinite) : [];
+    own.push(...familyFigures);
+    percents.push(...familyFigures);
     hooks.refuse?.(g, ctx);
     const context = [whole, ...marks.map((m) => rankOf.get(m)), ...marks.flatMap((m) => claim.facts?.[m] ?? [])];
 
