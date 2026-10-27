@@ -465,3 +465,22 @@ describe("gaps the harness fills", () => {
     expect(gapsForModel(["grounding is missing — the takeaway was never grounded at G1"])[0]).toMatch(/record_takeaway computes it/);
   });
 });
+
+describe("the journalist's format", () => {
+  // A 12B told the journalist Bar and column was not offered in scrollytelling and moved them to web on their "Yes.".
+  it("should refuse moving the journalist off a format that draws the type they named", async () => {
+    const tools = await withFormat(undefined, "scrolly");
+    dialogue.history = [{ proposal: "Which treatment?", answer: "Bar and column." }, { proposal: "Which format?", answer: "Scrollytelling." }];
+    dialogue.lastProposal = "To make this possible, we must change the format to interactive web. Would you like to change the format to interactive web?";
+    dialogue.lastJournalist = "Yes.";
+    await expect(call(tools.recordSlot, { slot: "1", field: "format", value: "web" })).rejects.toThrow(/keep format scrolly and record chosen Bar and column/);
+  });
+
+  it("should record a format the journalist names themselves", async () => {
+    const tools = await withFormat(undefined, "scrolly");
+    dialogue.history = [{ proposal: "Which treatment?", answer: "Bar and column." }];
+    dialogue.lastJournalist = "Web.";
+    await call(tools.recordSlot, { slot: "1", field: "format", value: "web" });
+    expect(meta().slots[0].format).toBe("web");
+  });
+});

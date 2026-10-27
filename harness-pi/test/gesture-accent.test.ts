@@ -136,3 +136,17 @@ describe("a scrolly compare card stating a gap", () => {
     expect(staged.cards[1].prose.at(-1)).toContain("which is 4,191.437 more than");
   });
 });
+
+describe("a scrolly card stating another rows' sum", () => {
+  const CO2 = [
+    { name: "China", value: 12289 },
+    { name: "United States", value: 4904 },
+    { name: "India", value: 3194 },
+    { name: "Russia", value: 1781 },
+  ];
+  const claim = { takeaway: "China emitted more CO₂ in 2024 than the next three emitters together.", comparison: "United States, India, Russia" };
+  it("should be repaired to its picture's own figure, not to the nearest row", () => {
+    const staged = stageScrolly({ gestures: [{ do: "highlight", mark: "China", card: "China: 12,289." }, { do: "name", mark: "United States", card: "The next three combined for 9,879." }], rows: CO2, claim, repair: true });
+    expect(staged.cards[1].prose.join(" ")).not.toContain("12,289");
+  });
+});

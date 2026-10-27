@@ -300,6 +300,10 @@ export function checkCards({ gestures, plan, rows, rest = { count: 0, sum: 0 }, 
   ].filter((f) => Number.isFinite(f));
   // The row the staging is about, and the line a card with nothing of its own falls back on.
   const marked = new Set(gestures.flatMap((g) => g.marks));
+  // Every run of rows in rank order added up: a card stating one its picture does not draw is about other rows.
+  const ranked = [...rows].sort((a, b) => b.value - a.value).slice(0, 30).map((r) => r.value);
+  const runs = [];
+  for (let i = 0; i < ranked.length; i++) for (let j = i + 2, run = ranked[i]; j <= ranked.length; j++) runs.push((run += ranked[j - 1]));
   const subject = gestures.find((g) => g.marks?.length)?.marks[0];
   const subjectLine = subject === undefined ? format(whole) : `${subject}: ${format(rows.find((r) => r.name === subject)?.value)}`;
 
@@ -331,6 +335,14 @@ export function checkCards({ gestures, plan, rows, rest = { count: 0, sum: 0 }, 
       if (figures.some((f) => matches(n, f))) continue;
       const best = figures.reduce((p, f) => (Math.abs(f - n.value) < Math.abs(p - n.value) ? f : p), figures[0]);
       const text = paragraphs[n.p];
+      // A true sum of other rows, or nothing near: the nearest figure would print a false sentence (a repair wrote
+      // "the next five … combined for 12,289,037,000", China's own total), so the sentence becomes the picture's own.
+      if (runs.some((f) => matches(n, f * 10 ** scale)) || Math.abs(best - n.value) > Math.abs(n.value) * 0.5)
+        throw new GestureRefusal(
+          `gestures[${k}].card`,
+          `${where} states ${n.raw}, which its picture does not draw: check the rows the gesture acts on, or say what the picture shows`,
+          { set: { index: k, field: "card", value: setParagraph(n.p, fallback) } },
+        );
       const fixed = text.slice(0, n.index) + formatLike(n, best) + text.slice(n.index + n.raw.length);
       throw new GestureRefusal(
         `gestures[${k}].card`,

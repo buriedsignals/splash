@@ -166,6 +166,12 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
     ...[claim.entity, claim.versus].filter(Boolean).flatMap((e) => rowsNamedIn(e, rows)),
   ]);
   const takeawayFigures = figuresIn(claim.takeaway).map((n) => n.value);
+  // Every figure the drawn rows hold: each value, the whole, and every run of rows in rank order added up (the next
+  // five, the top three). A stated figure among these that a gesture does not draw belongs to other rows: swapping it
+  // for the gesture's nearest figure printed China's 12,289,037,000 as "the next five together".
+  const ranked = [...rows].sort((a, b) => b.value - a.value).slice(0, 30).map((r) => r.value);
+  const dataFigures = [whole, ...rows.map((r) => r.value)];
+  for (let i = 0; i < ranked.length; i++) for (let j = i + 2, run = ranked[i]; j <= ranked.length; j++) dataFigures.push((run += ranked[j - 1]));
 
   const resolve = (name, i, field) => {
     if (valueOf.has(name)) return name;
@@ -275,6 +281,12 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
       own.push(s, ...marks.map((m) => valueOf.get(m)));
       if (ofWhole) own.push((s / whole) * 100, s / whole);
       if (ofWhole) percents.push((s / whole) * 100);
+      // Against a list of rows: their sum, the two together, and the marks' share of them.
+      if (of.length) {
+        const t = sumOf(of);
+        own.push(t, s + t, s - t, t - s, (s / (s + t)) * 100);
+        percents.push((s / (s + t)) * 100);
+      }
     }
     let ratio;
     if (g.do === "compare") {
@@ -334,6 +346,13 @@ export function validateGestures({ gestures, rows, family, format, claim }) {
         // figure ("4,3 beds fewer" was offered Mazowieckie's rank, "3,0").
         const drawn = n.percent && percents.length ? percents : [...own, ...(ofWhole ? [whole] : [])].map((x) => x * 10 ** scale).filter((x) => n.percent || !gapPercents.some((p) => Math.abs(p * 10 ** scale - x) < 1e-9));
         const best = drawn.length ? drawn.reduce((p, f) => (Math.abs(f - n.value) < Math.abs(p - n.value) ? f : p), drawn[0]) : Infinity;
+        // A true figure of other rows: the gesture's marks are likely wrong, not the number, so the note goes.
+        if (!n.percent && dataFigures.some((f) => matches(n, f * 10 ** scale)))
+          throw new GestureRefusal(
+            `gestures[${i}].note`,
+            `states ${n.raw}, a figure of other rows than this ${g.do} draws: check the rows it acts on (mark, marks, of), or drop the note`,
+            { set: { index: i, field: "note", value: undefined } },
+          );
         // Nothing this gesture draws is near the figure: the nearest would only swap one false number for another (a
         // China bracket on the wrong rows was offered the United States' total as "the next five"), so the note goes.
         if (Math.abs(best - n.value) > Math.abs(n.value) * 0.5)

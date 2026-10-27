@@ -428,6 +428,18 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
           value = named;
         }
       }
+      // The journalist named a format and a type the harness draws in it: a 12B told them Bar and column was not
+      // offered in scrollytelling, proposed web, recorded it on their "Yes.", and the scrolly beat became a web page.
+      if (field === "format") {
+        const medium0 = String(currentSlot(slot)?.medium ?? "chart");
+        const named = answers.map((a) => formatCode(a)).find((code) => ["static", "web", "video", "scrolly"].includes(code));
+        let type = "";
+        for (const a of answers) {
+          try { type = canonicalTreatment(a, medium0); break; } catch {}
+        }
+        if (named && named !== value && type && adapterFor(type, named))
+          throw new Error(`the journalist chose ${named}, and ${type} is drawn in ${named}: keep format ${named} and record chosen ${type}; do not move them to another format.`);
+      }
       if (field === "chosen" && answers.some((a) => sameTreatment(value, a, String(currentSlot(slot)?.medium ?? "chart")))) {
         // The journalist named this treatment, in whatever spelling.
       } else if (field === "format" && answers.some((a) => formatCode(a) === value)) {

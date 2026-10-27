@@ -581,3 +581,30 @@ describe("a figure stated as a gap", () => {
     expect(() => validateGestures({ gestures: [{ do: "compare", marks: ["China", "United States"], note: "12,289 is more than twice the 4,904 of the United States" }], rows: ROWS, family: "length", format: "static", claim: { takeaway: "China emitted more CO₂ than the United States." } })).not.toThrow();
   });
 });
+
+describe("a note stating a true figure of other rows", () => {
+  const ROWS = [
+    { name: "China", value: 12289 },
+    { name: "United States", value: 4904 },
+    { name: "India", value: 3194 },
+    { name: "Russia", value: 1781 },
+    { name: "Japan", value: 962 },
+    { name: "Indonesia", value: 812 },
+  ];
+  const claim = { takeaway: "China emitted more CO₂ in 2024 than the next five emitters together.", comparison: "United States, India, Russia, Japan, Indonesia" };
+  const refusalOf = (gesture: object) => {
+    try {
+      validateGestures({ gestures: [gesture], rows: ROWS, family: "length", format: "static", claim });
+    } catch (error) {
+      return error as GestureRefusal;
+    }
+  };
+
+  it("should drop the note rather than swap the next five's sum for China's nearby value", () => {
+    expect(refusalOf({ do: "bracket", mark: "China", of: "whole", note: "the next five together: 11,653" })?.fix).toEqual({ set: { index: 0, field: "note", value: undefined } });
+  });
+
+  it("should accept the sum of a bracket's of-list", () => {
+    expect(refusalOf({ do: "bracket", mark: "China", of: ["United States", "India", "Russia", "Japan", "Indonesia"], note: "12,289 against 11,653" })).toBeUndefined();
+  });
+});
