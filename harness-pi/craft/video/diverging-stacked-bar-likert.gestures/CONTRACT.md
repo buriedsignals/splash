@@ -1,0 +1,92 @@
+# Diverging stacked bar (Likert) video, composed — what you write
+
+The marks, the type, the colours and the layout are already done: one horizontal bar per row, its parts laid
+OUTWARD from a shared centre — the left side's parts run left, the right side's run right, an optional neutral
+part straddles the axis — each side its own ramp deepening outward, every segment's value written inside it where it
+fits and each side's total printed at its end, in the story's PALETTE.md and DIRECTION.md. YOU decide the staging:
+an ordered list `gestures`, in the order the story tells it. Nothing is staged that you do not write. You write ONE file, `beat.mjs`, in the beat folder. It reads
+`data.json` beside it and exports what THIS story's video says. `render-beat.mjs` (already in the folder) draws it.
+
+`beat.example.mjs` (in the folder) is a worked example. Read it first, then write this story's from scratch with
+`write_file`.
+
+## The fields of the default export
+
+| Field | What it is |
+|---|---|
+| `eyebrow` | The rubric above the title, two to four words, in the story's language. |
+| `rows` | One `{ name, parts: { [part]: value } }` per bar (shares of the row usually, so each row adds up to 100), in the order the plate draws them. |
+| `left` | The left side's part names, ordered OUTWARD from the centre (the extreme last). |
+| `right` | The right side's part names, ordered OUTWARD from the centre. |
+| `centre` | Optional: the neutral part that straddles the axis. |
+| `leftName`, `rightName` | Optional: the words printed over each side ("Disagree", "Agree"). |
+| `unit` | The unit printed over the bars ("%"). |
+| `gestures` | The staging, in story order (below). |
+| `decimals` | Optional. How many decimals the values print with (0 to 3); without it the language's rule applies. |
+| `title` | The journalist's takeaway from STORYBOARD.md, copied word for word as a literal string: the title card. |
+| `source` | The credit line, exactly as the storyboard records it (it closes the video). |
+| `scope(shown, all)` | Optional. The sentence printed when the frame has room for only some rows (the rows your gestures act on are always kept). |
+| `check()` | Throws if the data no longer supports the title. |
+
+## The gestures you may use
+
+| `do` | what the reader sees |
+|---|---|
+{{GESTURES}}
+
+```js
+gestures: [
+  { do: "highlight", mark: "Alpha" },
+  { do: "compare", marks: ["Alpha · Added", "Beta · Added"], note: "+60 against +20" },
+  { do: "bracket", mark: "Alpha · Added", of: "whole", note: "75 % of Alpha's total" },
+]
+```
+
+| key | meaning |
+|---|---|
+| `do` | one gesture from the table |
+| `mark` | what the gesture acts on: a whole bar by its name (`"Alpha"`), one segment as `"<bar> · <part>"` (`"Alpha · Added"`, with the middle dot and a space each side), or a part by its name (`"Added"`: that part in every bar) |
+| `marks` | several of those. For `compare`: the subject first, then what it is compared with (added up). For `bracket`: the segments or bars it spans |
+| `of` | what a bracket or compare measures against: `"whole"` (inside one bar, that bar's total; across bars, every bar) or a list of marks |
+| `value` | a number (a reference rule's level), or `"descending"` / `"ascending"` for reorder |
+| `note` | the words drawn with the gesture, in the story's language |
+
+The order of the parts is locked (the order you give); `reorder` moves whole bars, never parts.
+
+A video takes EXACTLY THREE gestures, in story order: the first fills the `reveal` event, the second the
+`subject`, the third the `conclusion`. The title card and the stack arriving on its one scale come before them and
+are not yours to write; the conclusion shows the whole chart (a `filter` there is refused: make the third gesture
+`pull-back`, `annotate` or `name`) and brings the credit; the video then holds on it. A gesture that changes nothing
+in its event (a `pull-back` with nothing filtered before the conclusion, a `reorder` into the order already drawn) is
+refused. A count or a bracket's figure climbs over its event; a compare's copy grows along the scale.
+
+## Reading the data
+
+Rows are arrays; find columns by name. Never type the rows or their numbers: `beat.mjs` must read `data.json`.
+
+```js
+const data = JSON.parse(readFileSync(join(import.meta.dirname, "data.json"), "utf8"));
+const col = (name) => data.columns.findIndex((c) => c.name === name);
+```
+
+Leave out aggregate rows (a "Total", "World" or "EU" row is not a member).
+
+```js
+const rows = data.rows.map((r) => ({ name: r[col("question")], parts: { Disagree: r[col("disagree")], Neutral: r[col("neutral")], Agree: r[col("agree")] } }));
+```
+
+## Rules
+
+- Every gesture must serve the confirmed takeaway: it acts on a bar or part the takeaway names (or its comparison),
+  or it states one of the takeaway's figures. A gesture about anything else is refused.
+- Every number in a `note` is computed from the rows (a segment, a bar's total, a sum, a share, a difference, a
+  ratio), written at the precision you choose. A number the rows do not give is refused. "twice", "highest",
+  "lowest" in a note are checked against the rows (a bar's rank is its total's).
+- Write every `note` in the storyboard's `language` — the same language as the title.
+- A gesture that changes nothing and two notes on one bar are refused.
+- Every number in a sentence is computed from `data.json`, never typed — except the title's first form, which is
+  the journalist's own sentence, copied as written.
+- `check()` tests only what the drawn data can decide, at the takeaway's precision (`Math.round(v) === 143`).
+- After `write_file`, call `render_beat` with format `video`, then `look` at the stills it lists. If the render refuses, read
+  its message: a refusal on `gestures[i]` names the key to change and a value that works. If a still is wrong,
+  fix `beat.mjs` with a small `edit_file`, render and look again.

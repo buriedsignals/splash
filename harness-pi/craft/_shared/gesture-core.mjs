@@ -47,7 +47,8 @@ function closest(name, rows) {
 /** Rows named in a text, by whole word, case- and accent-insensitive. */
 function rowsNamedIn(text, rows) {
   const hay = ` ${fold(text).replace(/[^\p{L}\p{N}]+/gu, " ")} `;
-  return rows.filter((r) => hay.includes(` ${fold(r.name).replace(/[^\p{L}\p{N}]+/gu, " ")} `)).map((r) => r.name);
+  // Trimmed: a name ending in punctuation ("Autres renouv.") left a double space and never matched.
+  return rows.filter((r) => hay.includes(` ${fold(r.name).replace(/[^\p{L}\p{N}]+/gu, " ").trim()} `)).map((r) => r.name);
 }
 
 // ── numbers ───────────────────────────────────────────────────────────────────────────────────────

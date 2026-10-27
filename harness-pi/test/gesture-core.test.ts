@@ -722,3 +722,10 @@ describe("the core for the phase-2 families", () => {
     expect(validateGestures({ gestures: [{ do: "highlight", mark: "site 1" }], rows, family: "length", format: "static", claim: { takeaway: "Nuclear dominates." } }).entities).toContain("site 1");
   });
 });
+
+describe("a row whose name ends in punctuation", () => {
+  it("should be found in the claim", () => {
+    const rows = [{ name: "Autres renouv.", value: 40 }, { name: "Gaz", value: 60 }];
+    expect(validateGestures({ gestures: [{ do: "highlight", mark: "Autres renouv." }], rows, family: "length", format: "static", claim: { takeaway: "Autres renouv. ont doublé." } }).entities).toContain("Autres renouv.");
+  });
+});

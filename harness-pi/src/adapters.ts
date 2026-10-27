@@ -8,7 +8,12 @@ import { join } from "node:path";
 const CRAFT = join(import.meta.dirname, "..", "craft");
 
 /** The types whose family has gesture kits (phase 1: Length, bar-and-column only). */
-const GESTURE_FAMILY: Record<string, string> = { "bar-and-column": "length" };
+const GESTURE_FAMILY: Record<string, string> = {
+  "bar-and-column": "length",
+  "stacked-bar": "stack",
+  "diverging-stacked-bar-likert": "stack",
+  "waterfall-bridge": "stack",
+};
 
 export interface AdapterOptions {
   /** The craft folder (tests use a temporary one). */
