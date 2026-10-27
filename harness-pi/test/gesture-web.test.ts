@@ -372,7 +372,7 @@ describe.skipIf(!existsSync(join(BENCH, "package.json")))(
       });
     }, 240_000);
 
-    it("should refuse the render, before any gesture check, when data.json makes the title false", () => {
+    it("should refuse the false 214 when data.json makes the title false, the model's check() no longer deciding", () => {
       const data = structuredClone(LISBOA_DATA);
       data.rows[0]![1] = 150;
       const { exitCode, output, renders } = run(
@@ -382,8 +382,8 @@ describe.skipIf(!existsSync(join(BENCH, "package.json")))(
       );
       expect([
         exitCode,
-        /REFUSED — .*Lisboa carries 150 of 330/.test(output),
-        /gestures\[/.test(output),
+        /REFUSED — .*states 214/.test(output),
+        /Lisboa carries 150 of 330/.test(output),
         renders,
       ]).toEqual([1, true, false, false]);
     });

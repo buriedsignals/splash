@@ -419,7 +419,7 @@ function run(name: string, data: object, beat: string) {
 describe.skipIf(!existsSync(join(BENCH, "package.json")))(
   "the scrolly bar gesture kit, refusing",
   () => {
-    it("should refuse on the takeaway check, before any gesture check, when Lisboa is 150", () => {
+    it("should refuse the false 214 when Lisboa is 150, the model's check() no longer deciding", () => {
       const data = structuredClone(LISBOA_DATA);
       data.rows[0][1] = 150;
       const { exitCode, output, renders } = run(
@@ -429,8 +429,8 @@ describe.skipIf(!existsSync(join(BENCH, "package.json")))(
       );
       expect([
         exitCode,
-        /REFUSED — .*Lisboa carries 150 of 330/.test(output),
-        /gestures\[/.test(output),
+        /REFUSED — .*states 214/.test(output),
+        /Lisboa carries 150 of 330/.test(output),
         renders,
       ]).toEqual([1, true, false, false]);
     });

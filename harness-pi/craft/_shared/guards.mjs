@@ -224,6 +224,46 @@ export function readingHint(here) {
  * themselves: a beat that never reads data.json cannot be contradicted by it. So a beat that throws while
  * loading is answered with data.json's real shape, and one that does not read data.json is refused.
  */
+/**
+ * The beat's check, derived by code from the recorded claim and data.json (the model no longer writes check(): an
+ * inverted condition was a recurring 12B failure). A maximum, minimum or comparison the journalist recorded is decided
+ * on claimColumn at the latest time the rows share; "none" and "total" leave the title to the figure guards and the
+ * gesture core.
+ */
+export function claimCheck(here) {
+  const f = front(here);
+  const shape = String(f?.("claimShape") ?? "").trim().toLowerCase();
+  const file = join(here, "data.json");
+  if (!["maximum", "minimum", "comparison"].includes(shape) || !existsSync(file)) return () => {};
+  const { columns = [], rows = [] } = JSON.parse(readFileSync(file, "utf8"));
+  const fold = (v) => String(v ?? "").trim().toLowerCase();
+  const at = (name) => columns.findIndex((c) => fold(c.name) === fold(name));
+  const col = at(f("claimColumn"));
+  const entity = f("claimEntity");
+  const versus = f("claimVersus");
+  const named = columns.findIndex((c, i) => i !== col && rows.some((r) => fold(r[i]) === fold(entity)));
+  if (col < 0 || named < 0) return () => {};
+  const time = columns.findIndex((c, i) => i !== col && /^(year|ann[ée]e|jahr|rok|ano|año|anno|date|t|time|period)$/i.test(c.name));
+  return () => {
+    const times = time < 0 ? [null] : [...new Set(rows.filter((r) => fold(r[named]) === fold(entity)).map((r) => Number(r[time])))].sort((a, b) => b - a);
+    const now = times[0];
+    const live = rows.filter((r) => (time < 0 || Number(r[time]) === now) && Number.isFinite(Number(r[col])) && r[col] !== null && r[col] !== "");
+    const valueOf = (name) => live.find((r) => fold(r[named]) === fold(name))?.[col];
+    const mine = Number(valueOf(entity));
+    const when = now === null ? "" : ` in ${now}`;
+    if (!Number.isFinite(mine)) throw new Error(`the data no longer holds ${entity}'s ${columns[col].name}${when}`);
+    const others = live.filter((r) => fold(r[named]) !== fold(entity)).map((r) => Number(r[col]));
+    if (shape === "maximum" && others.some((v) => v > mine)) throw new Error(`the data no longer makes ${entity} the highest ${columns[col].name}${when} (${mine} against ${Math.max(...others)})`);
+    if (shape === "minimum" && others.some((v) => v < mine)) throw new Error(`the data no longer makes ${entity} the lowest ${columns[col].name}${when} (${mine} against ${Math.min(...others)})`);
+    if (shape === "comparison" && versus) {
+      const theirs = Number(valueOf(versus));
+      const less = /^less/i.test(String(f("claimDirection") ?? ""));
+      if (Number.isFinite(theirs) && (less ? !(mine < theirs) : !(mine > theirs)))
+        throw new Error(`the data no longer puts ${entity} ${less ? "below" : "above"} ${versus} on ${columns[col].name}${when} (${mine} against ${theirs})`);
+    }
+  };
+}
+
 export async function importBeat(here) {
   const file = join(here, "beat.mjs");
   let beat;
@@ -236,6 +276,8 @@ export async function importBeat(here) {
   }
   if (existsSync(join(here, "data.json")) && !/data\.json/.test(readFileSync(file, "utf8")))
     throw new Error(`beat.mjs types its rows instead of reading data.json, so the data can never refuse its title: ${readingHint(here)}`);
+  // check() is code's: derived from the recorded claim, whatever the model wrote.
+  beat.check = claimCheck(here);
   return printable(beat);
 }
 
