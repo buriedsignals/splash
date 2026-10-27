@@ -35,6 +35,21 @@
             "output": 0.4,
             "cacheRead": 0.2,
             "cacheWrite": 0
+          },
+          "compat": {
+            "openRouterRouting": {
+              "allow_fallbacks": true,
+              "quantizations": [
+                "bf16",
+                "fp8"
+              ],
+              "ignore": [
+                "coreweave",
+                "venice",
+                "chutes",
+                "modelrun"
+              ]
+            }
           }
         },
         {

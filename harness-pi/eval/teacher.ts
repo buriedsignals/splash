@@ -29,6 +29,10 @@ export interface BatchPlan {
   runCeiling: number;
   batchCeiling: number;
   approvedBudget?: number;
+  /** Samples per story (Tom's k), run one at a time. */
+  k?: number;
+  /** On the free arm, resume a run that hit a 429 on the paid arm (KTD9); needs the paid arm's budget. */
+  paidFallback?: boolean;
 }
 
 /** Throws before any spend when the plan would break a rule. */
@@ -38,10 +42,10 @@ export function assertPlan(plan: BatchPlan) {
     throw new Error(
       `held-out stories never enter training data: ${held.join(", ")}`,
     );
-  if (PAID_ARMS.has(plan.arm)) {
+  if (PAID_ARMS.has(plan.arm) || plan.paidFallback) {
     if (plan.approvedBudget === undefined)
       throw new Error(
-        `the ${plan.arm} arm is paid: pass --approved-budget <usd>, the amount Rémy approved`,
+        `the ${plan.paidFallback ? "paid fallback" : `${plan.arm} arm`} is paid: pass --approved-budget <usd>, the amount Rémy approved`,
       );
     if (plan.batchCeiling > plan.approvedBudget)
       throw new Error(
@@ -113,78 +117,106 @@ function sessionsOf(root: string, story: string): string[] {
   return out;
 }
 
+export interface GoldVerdict {
+  gold: boolean;
+  /** The gates the run passed (recorded as meta.gold_reasons). */
+  reasons: string[];
+  /** The gates it failed: incomplete, headline, render, repair, fallback. */
+  rejected: string[];
+}
+
+/**
+ * Tom's gold gates for Splash (plan KTD3), computed: the story reached done, its headline is faithful, the last craft
+ * render passed, and neither a repair nor a fallback carried it. Repair and fallback are only in the driver's
+ * transcript (report.json) and in a beat's .harness/fallback.json.
+ */
+export function goldGates(storyDir: string, score: { completed: boolean; faithful: { headline: boolean } }, transcript: string[]): GoldVerdict {
+  const renders = transcript.filter((l) => l.startsWith("CRAFT final render:"));
+  const beats = join(storyDir, "beats");
+  const fellBack = existsSync(beats) && readdirSync(beats).some((b) => existsSync(join(beats, b, ".harness", "fallback.json")));
+  const gates: [string, boolean][] = [
+    ["done", score.completed],
+    ["headline", score.faithful.headline],
+    ["render", renders.length > 0 && /exit 0\b/.test(renders.at(-1) ?? "")],
+    ["repair", !transcript.some((l) => l.startsWith("CRAFT repaired"))],
+    ["fallback", !fellBack && !transcript.some((l) => l.startsWith("CRAFT fallback"))],
+  ];
+  const rejected = gates.filter(([, ok]) => !ok).map(([g]) => (g === "done" ? "incomplete" : g));
+  return { gold: rejected.length === 0, reasons: gates.filter(([, ok]) => ok).map(([g]) => (g === "repair" || g === "fallback" ? `no-${g}` : g)), rejected };
+}
+
+/** One manifest line, in the existing {session, meta, roots} format build_from_pi.py reads (KTD2). */
+export function manifestLine(session: string, root: string, m: { story: string; arm: string; sample: number; reasons: string[] }) {
+  return `${JSON.stringify({ session, meta: { story: m.story, arm: m.arm, kind: "gold", sample: m.sample, gold_reasons: m.reasons }, roots: [root] })}\n`;
+}
+
+/** A rate limit in the run's own log (the free tier has one provider; KTD9). */
+export const rateLimited = (log: string) => /\b429\b|rate[- ]?limit/i.test(log);
+
+function transcriptOf(root: string): string[] {
+  const file = join(root, ".splash-harness", "report.json");
+  return existsSync(file) ? (JSON.parse(readFileSync(file, "utf8")).transcript ?? []) : [];
+}
+
+function spawnRun(story: string, root: string, arm: string, log: string) {
+  const sheet = join(CHECKOUT, "harness-pi", "eval", "sheets", `${story}.json`);
+  return Bun.spawn(
+    ["bun", join(CHECKOUT, "harness-pi/src/cli.ts"), "run", "--slug", story, "--root", root, "--journalist", `scripted:${sheet}`, "--model", arm],
+    { stdout: "pipe", stderr: Bun.file(log), env: { ...process.env } },
+  );
+}
+
 export async function runBatch(
   plan: BatchPlan,
   out = join(CHECKOUT, "training", "data"),
 ) {
   assertPlan(plan);
   mkdirSync(out, { recursive: true });
+  const k = Math.max(1, plan.k ?? 2);
   let spent = 0;
-  for (const story of plan.stories) {
-    if (spent + plan.runCeiling > plan.batchCeiling) {
+  for (const story of plan.stories)
+    for (let sample = 1; sample <= k; sample++) {
+      if (spent + plan.runCeiling > plan.batchCeiling) {
+        appendFileSync(join(out, "runs.jsonl"), `${JSON.stringify({ story, sample, arm: plan.arm, skipped: "batch ceiling", spent })}\n`);
+        return spent;
+      }
+      const root = join(homedir(), ".splash-harness", "teacher", `${story}-${sample}-${Date.now()}`);
+      const log = `${root}.log`;
+      mkdirSync(join(homedir(), ".splash-harness", "teacher"), { recursive: true });
+      let stop = "";
+      const arms = [plan.arm];
+      for (let a = 0; a < arms.length; a++) {
+        const child = spawnRun(story, root, arms[a], a ? `${log}.${arms[a]}` : log);
+        const watch = setInterval(() => {
+          if (sessionCost(root) > plan.runCeiling) {
+            stop = "run ceiling";
+            child.kill();
+          }
+        }, 10_000);
+        await new Response(child.stdout).text();
+        await child.exited;
+        clearInterval(watch);
+        // The free tier answered 429: the same run resumes on the paid arm, whose routing falls back between providers.
+        const score = await scoreRun(root, story);
+        if (!stop && !score.completed && plan.paidFallback && arms.length === 1 && rateLimited(readFileSync(log, "utf8"))) arms.push("teacher");
+      }
+      const cost = sessionCost(root);
+      spent += cost;
+      if (cost > 0) {
+        const u = sessionUsage(root);
+        record({ step: `gold ${story} #${sample} (${arms.join(" → ")})`, service: "OpenRouter", quantity: `${u.input} in / ${u.output} out / ${u.cacheRead} cache-read tokens`, usd: cost });
+      }
+      const score = await scoreRun(root, story);
+      const verdict = goldGates(join(root, "stories", story), score, transcriptOf(root));
+      const kept = verdict.gold && !stop;
       appendFileSync(
         join(out, "runs.jsonl"),
-        `${JSON.stringify({ story, arm: plan.arm, skipped: "batch ceiling", spent })}\n`,
+        `${JSON.stringify({ story, sample, arms, root, cost, kept, rejected: stop ? [stop, ...verdict.rejected] : verdict.rejected, score: { ...score, failures: score.failures.length } })}\n`,
       );
-      break;
+      if (kept)
+        for (const session of sessionsOf(root, story))
+          appendFileSync(join(out, "manifest.jsonl"), manifestLine(session, root, { story, arm: arms.at(-1) ?? plan.arm, sample, reasons: verdict.reasons }));
     }
-    const root = join(
-      homedir(),
-      ".splash-harness",
-      "teacher",
-      `${story}-${Date.now()}`,
-    );
-    const sheet = join(
-      CHECKOUT,
-      "harness-pi",
-      "eval",
-      "sheets",
-      `${story}.json`,
-    );
-    const child = Bun.spawn(
-      [
-        "bun",
-        join(CHECKOUT, "harness-pi/src/cli.ts"),
-        "run",
-        "--slug",
-        story,
-        "--root",
-        root,
-        "--journalist",
-        `scripted:${sheet}`,
-        "--model",
-        plan.arm,
-      ],
-      { stdout: "ignore", stderr: "ignore" },
-    );
-    let stop = "";
-    const watch = setInterval(() => {
-      if (sessionCost(root) > plan.runCeiling) {
-        stop = "run ceiling";
-        child.kill();
-      }
-    }, 10_000);
-    await child.exited;
-    clearInterval(watch);
-    const cost = sessionCost(root);
-    spent += cost;
-    if (PAID_ARMS.has(plan.arm)) {
-      const u = sessionUsage(root);
-      record({ step: `gold ${story}`, service: "OpenRouter", quantity: `${u.input} in / ${u.output} out / ${u.cacheRead} cache-read tokens`, usd: cost });
-    }
-    const score = await scoreRun(root, story);
-    const kept = score.completed && !stop;
-    appendFileSync(
-      join(out, "runs.jsonl"),
-      `${JSON.stringify({ story, arm: plan.arm, root, cost, kept, stop: stop || (score.completed ? "done" : `stalled at ${score.phase}`), score: { ...score, failures: score.failures.length } })}\n`,
-    );
-    if (kept)
-      for (const session of sessionsOf(root, story))
-        appendFileSync(
-          join(out, "manifest.jsonl"),
-          `${JSON.stringify({ session, meta: { story, arm: plan.arm, kind: "gold" }, roots: [root] })}\n`,
-        );
-  }
   return spent;
 }
 
@@ -199,16 +231,21 @@ if (import.meta.main) {
     stories: (flag("stories") ?? "").split(",").filter(Boolean),
     runCeiling: Number(flag("run-ceiling") ?? 1),
     batchCeiling: Number(flag("batch-ceiling") ?? 3),
-    approvedBudget:
-      flag("approved-budget") === undefined
-        ? undefined
-        : Number(flag("approved-budget")),
+    approvedBudget: flag("approved-budget") === undefined ? undefined : Number(flag("approved-budget")),
+    k: Number(flag("k") ?? 2),
+    paidFallback: args.includes("--paid-fallback"),
   };
   if (!plan.stories.length) {
     console.error(
-      "usage: bun harness-pi/eval/teacher.ts --stories a,b [--arm teacher|teacher-free] --run-ceiling 1 --batch-ceiling 3 --approved-budget <usd>",
+      "usage: bun harness-pi/eval/teacher.ts --stories a,b [--arm teacher|teacher-free] [--paid-fallback] [--k 2] --run-ceiling 1 --batch-ceiling 3 --approved-budget <usd> [--dry]",
     );
     process.exit(2);
+  }
+  if (args.includes("--dry")) {
+    assertPlan(plan);
+    const runs = plan.stories.length * (plan.k ?? 2);
+    console.log(`stories: ${plan.stories.join(", ")}\nk: ${plan.k}\nruns: ${runs}\nprojected: at most $${Math.min(runs * plan.runCeiling, plan.batchCeiling).toFixed(2)} (run ceiling $${plan.runCeiling}, batch ceiling $${plan.batchCeiling}); nothing spent`);
+    process.exit(0);
   }
   const spent = await runBatch(plan);
   console.log(`spent $${spent.toFixed(3)}`);
