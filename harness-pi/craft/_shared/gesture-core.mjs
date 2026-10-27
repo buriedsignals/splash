@@ -77,6 +77,8 @@ export function figuresIn(text) {
     const decimals = grouped ? (fraction?.[2].length ?? 0) : (digits.split(/[.,]/)[1] ?? "").length;
     if (Number.isInteger(value) && value >= 1700 && value <= 2100) continue;
     if (value >= 100 && /^10+$/.test(String(value))) continue;
+    // A base after "per"/"na"/"pour"… is the unit, not a figure: "o 1,62 łóżka mniej na 10 tys." was refused for its 10.
+    if (/(?<![\p{L}])(per|na|pour|par|je|pro|por)\s+$/iu.test(String(text).slice(Math.max(0, m.index - 8), m.index))) continue;
     const separator = grouped ? groupSep : digits.includes(",") ? "," : ".";
     // A percent sign or word after the figure: it may only be a percentage the gesture draws, never a gap in the unit.
     const percent = /^\s?(%|per ?cent\b|procent|pour ?cent)/i.test(String(text).slice(m.index + m[0].length));

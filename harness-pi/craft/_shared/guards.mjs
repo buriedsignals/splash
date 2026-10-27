@@ -92,6 +92,18 @@ export function legibleFormat(values, format) {
   return format;
 }
 
+/**
+ * The beat's check(), its refusal saying which side may be wrong: a 12B's check() threw "Mazowieckie is rank 3",
+ * which is the takeaway itself, and three attempts went to editing the data rather than the inverted condition.
+ */
+export function runCheck(beat) {
+  try {
+    beat.check();
+  } catch (error) {
+    throw new Error(`check() threw: ${error?.message ?? error}. If that is what the takeaway says, check() is inverted: it must throw only when the data contradicts the takeaway — fix its condition, not the data`);
+  }
+}
+
 /** One point per x: several rows per year drawn as one series zig-zags (three location groups, once). */
 export function assertOnePerX(points, x = "year") {
   const seen = new Map();

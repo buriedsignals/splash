@@ -23,7 +23,7 @@ import { assertBeatMayEnter, directedFrame, exportSizeFromArgv, nameAtSize } fro
 import { GestureColumns } from "./DirectedGestureColumns.tsx";
 import { applyFix, GestureRefusal, validateGestures } from "./gesture-core.mjs";
 import { composeStatic } from "./gesture-static.mjs";
-import { applyStoryboard, assertNumbers, assertLegibleLabels, assertOnePerX, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, assertNoAggregates, errorText, importBeat, legibleFormat, rowFacts } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertLegibleLabels, assertOnePerX, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, assertNoAggregates, errorText, importBeat, legibleFormat, rowFacts, runCheck } from "./guards.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const beat = await importBeat(HERE).catch((error) => {
@@ -44,7 +44,7 @@ if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")}: 
 assertNumbers(beat.rows.map((r) => [r.name, r.value]));
 beat.format = legibleFormat(beat.rows.map((r) => r.value), beat.format);
 assertLegibleLabels(beat.rows.map((r) => r.value), beat.format);
-beat.check();
+runCheck(beat);
 assertDrawsClaimColumn(beat.rows.map((r) => r.value), dirname(fileURLToPath(import.meta.url)));
 assertNoAggregates(beat.rows.map((r) => r.name), dirname(fileURLToPath(import.meta.url)));
 assertHeadlineNumbersDrawn([beat.title].flat()[0], beat.rows.map((r) => r.value), "bars");

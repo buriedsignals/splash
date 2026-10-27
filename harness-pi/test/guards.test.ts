@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from "bun:test";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, errorText, importBeat, legibleFormat, printable } from "../craft/_shared/guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, errorText, importBeat, legibleFormat, printable, runCheck } from "../craft/_shared/guards.mjs";
 
 let beat: string;
 
@@ -159,5 +159,11 @@ describe("assertLegibleLabels on rounded rows", () => {
 
   it("should accept whole numbers that differ", () => {
     expect(() => assertLegibleLabels([214, 96, 31, 28, 14, 11], String)).not.toThrow();
+  });
+});
+
+describe("runCheck", () => {
+  it("should say an inverted check() may be the bug", () => {
+    expect(() => runCheck({ check() { throw new Error("Mazowieckie is rank 3"); } })).toThrow(/check\(\) is inverted/);
   });
 });

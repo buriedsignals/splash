@@ -1,6 +1,7 @@
 import { describe, expect, it } from "bun:test";
 import {
   applyFix,
+  figuresIn,
   GestureRefusal,
   repairGestures,
   validateGestures,
@@ -662,5 +663,15 @@ describe("a note's scale", () => {
   const claim = { takeaway: "Mazowieckie is behind Śląskie per resident." };
   it("should refuse a figure ten times the drawn value", () => {
     expect(() => validateGestures({ gestures: [{ do: "compare", marks: ["Mazowieckie", "Śląskie"], note: "Śląskie ma 40 łóżek" }], rows: ROWS, family: "length", format: "static", claim })).toThrow(/states 40/);
+  });
+});
+
+describe("a unit base in a note", () => {
+  it("should not read the base after na as a figure", () => {
+    expect(figuresIn("o 1,62 łóżka mniej na 10 tys.").map((n) => n.value)).toEqual([1.62]);
+  });
+
+  it("should still read a figure after a word that is not a base preposition", () => {
+    expect(figuresIn("Lisboa: 214 of 394").map((n) => n.value)).toEqual([214, 394]);
   });
 });

@@ -16,7 +16,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { webRegisters } from "#shared/design-base/web.mjs";
 import { GestureBarWeb } from "./GestureBarWeb.tsx";
-import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, assertNumbers, importBeat, legibleFormat, rowFacts } from "./guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, assertNumbers, importBeat, legibleFormat, rowFacts, runCheck } from "./guards.mjs";
 import { GestureRefusal } from "./gesture-core.mjs";
 import { HEADROOM, stageWeb } from "./gesture-web.mjs";
 import { chartWeb, plain, refusing, renderBeatWeb, storyLanguage } from "./web.mjs";
@@ -46,7 +46,7 @@ await refusing(HERE, async () => {
   assertNumbers(beat.rows.map((r) => [r.name, r.value]));
   const names = beat.rows.map((r) => String(r.name));
   if (new Set(names).size !== names.length) throw new Error("rows holds the same name twice: give each row ONE value (filter data.json to one year / one series)");
-  beat.check();
+  runCheck(beat);
   const rows = beat.rows.map((r) => ({ name: plain(r.name), value: r.value }));
   const values = rows.map((r) => r.value);
   const format = (v) => plain(beat.format(v));

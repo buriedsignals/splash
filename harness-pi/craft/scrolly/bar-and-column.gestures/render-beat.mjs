@@ -19,7 +19,7 @@ import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
 import { webRegisters } from "#shared/design-base/web.mjs";
 import { EYEBROW_TO_DISPLAY, gapOf, registerOf } from "#shared/design-base/register.mjs";
 import { GestureBarScrolly } from "./GestureBarScrolly.tsx";
-import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, assertNumbers, importBeat, legibleFormat, rowFacts } from "./guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, assertNumbers, importBeat, legibleFormat, rowFacts, runCheck } from "./guards.mjs";
 import { GestureRefusal } from "./gesture-core.mjs";
 import { APPLY, driveSource, stageScrolly } from "./gesture-scrolly.mjs";
 import { plain, refusing, storyLanguage } from "./web.mjs";
@@ -44,7 +44,7 @@ await refusing(HERE, async () => {
   assertNumbers(beat.rows.map((r) => [r.name, r.value]));
   const names = beat.rows.map((r) => String(r.name));
   if (new Set(names).size !== names.length) throw new Error("rows holds the same name twice: give each row ONE value (filter data.json to one year / one series)");
-  beat.check();
+  runCheck(beat);
   const rows = beat.rows.map((r) => ({ name: plain(r.name), value: r.value }));
   const values = rows.map((r) => r.value);
   const format = (v) => plain(beat.format(v));

@@ -14,7 +14,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { videoExportSize } from "#shared/chart-video/sizes.mjs";
-import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, assertNumbers, importBeat, rowFacts } from "./guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, assertNumbers, importBeat, rowFacts, runCheck } from "./guards.mjs";
 import { applyFix, GestureRefusal, validateGestures } from "./gesture-core.mjs";
 import { valueText } from "./gesture-video.mjs";
 import { assertEventFramesReadable, numberFormat, pickDirection, plain, refusing, renderBeatVideo, storyLanguage } from "./video.mjs";
@@ -41,7 +41,7 @@ await refusing(HERE, async () => {
   assertNumbers(beat.rows.map((r) => [r.name, r.value]));
   const names = beat.rows.map((r) => String(r.name));
   if (new Set(names).size !== names.length) throw new Error("rows holds the same name twice: give each row ONE value (filter data.json to one year / one series)");
-  beat.check();
+  runCheck(beat);
   const rows = beat.rows.map((r) => ({ name: plain(r.name), value: r.value }));
   const values = rows.map((r) => r.value);
   assertDrawsClaimColumn(values, HERE);
