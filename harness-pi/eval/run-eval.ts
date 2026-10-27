@@ -51,8 +51,9 @@ export async function evaluate(story: string, arm: string, out: string, variant 
       "--model",
       arm,
     ],
-    // The run's own log, live: a phase that stalls is visible while it happens, not at the end.
-    { stdout: "pipe", stderr: Bun.file(join(homedir(), ".splash-harness", "runs", `${tag}.log`)) },
+    // env is passed explicitly: a child spawned without it does not see variables a caller set in process.env
+    // (seed-matrix sets SPLASH_STOP_AFTER_CRAFT that way). The run's own log, live: a phase that stalls is visible while it happens, not at the end.
+    { stdout: "pipe", stderr: Bun.file(join(homedir(), ".splash-harness", "runs", `${tag}.log`)), env: { ...process.env } },
   );
   const report = await new Response(child.stdout).text();
   await child.exited;
