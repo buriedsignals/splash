@@ -229,7 +229,9 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
     return of.length ? of.map((r) => r.name) : null;
   };
   // A mark written as an object ({ t: 1988 }, { name: "…" }, a 12B area run) names the same thing as its string.
-  const asName = (m) => (m && typeof m === "object" && !Array.isArray(m) ? String(m.name ?? m.key ?? m.t ?? m.series ?? "") : typeof m === "number" ? String(m) : m);
+  // A name the 12B wrapped in its own quotes (`"${p.t} · ${p.series}"` in a template) is the name inside them.
+  const unquoted = (m) => (typeof m === "string" ? m.replace(/^\s*["'«“](.*)["'»”]\s*$/s, "$1") : m);
+  const asName = (m) => unquoted(m && typeof m === "object" && !Array.isArray(m) ? String(m.name ?? m.key ?? m.t ?? m.series ?? "") : typeof m === "number" ? String(m) : m);
   const listed = (value) => {
     value = asName(value);
     if (typeof value !== "string" || named(value)) return null;

@@ -36,6 +36,34 @@ const WHAT = { line: "line", "area-and-stacked-area": "area", streamgraph: "stre
  *
  * @param required  the format's required fields (beyond points and gestures)
  */
+/**
+ * An area (or stream) of readings the 12B added up itself draws every year's reading once per later year: the surface
+ * already adds them. Refused when a series' steps, not its values, are a numeric column of data.json (a 12B CO₂ run).
+ */
+export function refuseRunningTotal(points, here) {
+  let table;
+  try {
+    table = JSON.parse(readFileSync(join(here, "data.json"), "utf8"));
+  } catch {
+    return;
+  }
+  const near = (a, b) => Math.abs(a - b) <= 1e-6 * Math.max(1, Math.abs(a), Math.abs(b));
+  for (const [c, col] of (table.columns ?? []).entries()) {
+    const held = (table.rows ?? []).map((r) => Number(r[c])).filter(Number.isFinite);
+    if (!held.length || col.type === "string") continue;
+    const holds = (v) => held.some((h) => near(h, v));
+    for (const series of new Set(points.map((p) => p.series))) {
+      const v = points.filter((p) => p.series === series && Number.isFinite(p.value)).sort((a, b) => a.t - b.t).map((p) => p.value);
+      if (v.length < 4) continue;
+      const steps = v.slice(1).map((x, i) => x - v[i]);
+      const stepsHeld = steps.filter(holds).length / steps.length;
+      const valuesHeld = v.slice(1).filter(holds).length / (v.length - 1);
+      if (stepsHeld >= 0.8 && valuesHeld < 0.5)
+        throw new Error(`points: ${series}'s values are a running total of data.json's "${col.name}" — give each time its own reading of "${col.name}" as data.json holds it, not added up (see beat.example.mjs); the surface already adds them, and a bracket of "whole" prints the share`);
+    }
+  }
+}
+
 export async function loadTimeBeat(here, variant, { required = [], format: wanted = "static" } = {}) {
   const beat = await importBeat(here);
   applyStoryboard(beat, here);
@@ -54,6 +82,7 @@ export async function loadTimeBeat(here, variant, { required = [], format: wante
   const model = timeModel({ variant, points, slots: Math.round(Number(beat.slots ?? 10)), lang, order: beat.order });
   if (model.times.length < 2) throw new Error(`points hold ${model.times.length} time(s): a ${WHAT[variant]} needs readings at two times at least`);
   if (!model.marks.length) throw new Error(`no reading of points can be drawn (every value is missing, or no series reaches the top ${model.slots})`);
+  if (variant === "area-and-stacked-area" || variant === "streamgraph") refuseRunningTotal(points, here);
   runCheck(beat);
 
   const measures = model.marks.map((m) => model.measureOf.get(m.name));

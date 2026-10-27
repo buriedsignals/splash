@@ -697,6 +697,10 @@ describe("the family interface (phase 2)", () => {
     expect(validateGestures({ gestures: [{ do: "highlight", mark: { t: 2025 } }], rows: LINE, family: "length", format: "static", claim }).gestures[0].marks).toEqual(["2025 · Lisboa", "2025 · Porto"]);
   });
 
+  it("should read a mark the 12B wrapped in its own quotes", () => {
+    expect(validateGestures({ gestures: [{ do: "highlight", mark: '"2025 · Lisboa"' }], rows: LINE, family: "length", format: "static", claim }).gestures[0].marks).toEqual(["2025 · Lisboa"]);
+  });
+
   it("should fix every wrong entry of a marks list in one refusal", () => {
     let fix: { set?: { value?: unknown } } = {};
     try {
