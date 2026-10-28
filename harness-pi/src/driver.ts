@@ -387,7 +387,10 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
       );
     }
     // A gesture kit takes its staging through record_gestures (typed, closed names), refreshed whenever beat.mjs changes.
-    const staging = choice.gestures
+    // Measured (RESULTS.md, phase 2 second pass): the typed tool gains in static and loses in page, scrolly and video,
+    // where the extra record step was forgotten or looped; those keep their gestures inline in beat.mjs.
+    const typedStaging = choice.gestures && String(slot.format ?? "static") === "static";
+    const staging = typedStaging
       ? gestureTools(bases, {
           beat,
           format: String(slot.format ?? "static"),
@@ -420,7 +423,7 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
     const sess = await session(
       "skill:chart-beat",
       beat,
-      `You are the chart-beat craft step of Splash, running locally. The Splash root is ${o.root}. The story is ${o.storyDir}. You act only through your tools.\n\n${await contractText(adapter, String(slot.format ?? "static"))}`,
+      `You are the chart-beat craft step of Splash, running locally. The Splash root is ${o.root}. The story is ${o.storyDir}. You act only through your tools.\n\n${await contractText(adapter, String(slot.format ?? "static"), { typedStaging })}`,
       [
         f.readFile,
         f.listDir,
@@ -434,7 +437,7 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
     // The 12B often says DONE, or stops, while its beat still refuses to render. The harness renders
     // the beat itself and hands the exact refusal back in the SAME session (its context intact), up to
     // three times, instead of opening a new session that starts from nothing.
-    let prompt = `${dataSummary(join(beatDir, "data.json"))}${choice.gestures ? claimBlock(meta as unknown as Record<string, unknown>) : ""}Slot ${beat} of ${o.storyDir} is a ${slot.format ?? "static"} "${slot.chosen}" ${slot.medium ?? "chart"} beat, prepared at beats/${beat}/. The confirmed takeaway is in STORYBOARD.md and is the title, word for word. Write every word on the plate (eyebrow, labels, unit, standfirst, alt) in the story's language, "${meta.language ?? "en"}", whatever language the data's column names are in. Draw the measure the takeaway is about: a takeaway about a rate, share or ranking per resident draws that computed measure, not the raw column. Write beats/${beat}/beat.mjs as CONTRACT.md says${choice.gestures ? ` — its readings and words only: no gestures and no check() (the kit computes the check from the recorded claim); then declare the staging with record_gestures, naming marks only from the names it offers` : ""}, render it with render_beat (beat "${beat}", format "${slot.format ?? "static"}"), look at the PNG, fix what is wrong, and reply DONE when the render is right.`;
+    let prompt = `${dataSummary(join(beatDir, "data.json"))}${choice.gestures ? claimBlock(meta as unknown as Record<string, unknown>) : ""}Slot ${beat} of ${o.storyDir} is a ${slot.format ?? "static"} "${slot.chosen}" ${slot.medium ?? "chart"} beat, prepared at beats/${beat}/. The confirmed takeaway is in STORYBOARD.md and is the title, word for word. Write every word on the plate (eyebrow, labels, unit, standfirst, alt) in the story's language, "${meta.language ?? "en"}", whatever language the data's column names are in. Draw the measure the takeaway is about: a takeaway about a rate, share or ranking per resident draws that computed measure, not the raw column. Write beats/${beat}/beat.mjs as CONTRACT.md says${typedStaging ? ` — its readings and words only: no gestures and no check() (the kit computes the check from the recorded claim); then declare the staging with record_gestures, naming marks only from the names it offers` : choice.gestures ? ` with its gestures list and no check() (the kit computes the check from the recorded claim)` : ""}, render it with render_beat (beat "${beat}", format "${slot.format ?? "static"}"), look at the PNG, fix what is wrong, and reply DONE when the render is right.`;
     let final: { exitCode: number; stdout: string; stderr: string } = { exitCode: 1, stdout: "", stderr: "beat.mjs was never written" };
     const craftStart = Date.now();
     for (let attempt = 0; attempt < 3 && Date.now() - craftStart < 20 * 60_000; attempt++) {

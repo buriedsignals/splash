@@ -123,3 +123,16 @@ describe("importBeat on a beat.mjs that exports nothing", () => {
   });
 });
 
+
+describe("the contract a craft session reads", () => {
+  it("should ask a still to record its gestures through record_gestures", async () => {
+    const { contractText } = await import("../src/craft-kit.ts");
+    expect(await contractText(join(import.meta.dirname, "..", "craft", "static", "sankey.gestures"), "static")).toContain("record_gestures");
+  });
+
+  it("should keep a page's gestures in beat.mjs, the check still code's", async () => {
+    const { contractText } = await import("../src/craft-kit.ts");
+    const text = await contractText(join(import.meta.dirname, "..", "craft", "web", "sankey.gestures"), "web");
+    expect([text.includes("record_gestures"), text.includes("Do not write `check()`")]).toEqual([false, true]);
+  });
+});
