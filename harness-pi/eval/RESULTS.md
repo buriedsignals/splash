@@ -402,3 +402,30 @@ gestures, render.
 
 **Decision (pre-made, G0):** keep `record_gestures` in static, where it gains, and give web, video and scrolly back their
 inline `gestures`. Then re-measure those 13 cells before the thinking-on check.
+
+## G0 — free-fix re-measure closed, thinking checked (2026-10-28)
+
+**Animated formats after `4e87ddee9`.** Typed `record_gestures` is kept for stills only; pages, scrollys and videos write
+their gestures inline. Re-measured: **6/13** (`results/2026-10-28-phase2c-animated*.jsonl`).
+- **Passed:** beeswarm video, bullet scrolly, cartogram video, likert web, marimekko web, parallel-coordinates video.
+- **Failed:** area web (data read), calendar web (note figure of other rows), connected-scatter scrolly (no render in
+  time), gantt video (beat.mjs never written), histogram scrolly (code error), sankey scrolly (invented
+  "Germany – Nuclear", the failure the typed tool stops in static), small-multiples web (note figure not drawn).
+
+| | first pass | after the free fixes |
+|---|---|---|
+| static | 8/14 | **10/14** |
+| web, video, scrolly | 10/13 | **6/13** |
+| total | 18/27 | **16/27** |
+
+Every failure is the 12B's, and the refusal named it. One run per cell, so a cell's result varies between passes:
+- gantt video passed in pass 2 and failed in pass 3;
+- bullet scrolly failed in pass 2 and passed in pass 3.
+
+**Thinking on** (`SPLASH_THINKING=on`, llama-server `--reasoning-budget 400`): the 7 static cells checked, which all
+passed with thinking off, went **0/7** (`results/2026-10-28-g0-thinking-on.jsonl`).
+- **Failures:** beat.mjs never written (2), broken JavaScript (likert), wrong data read (bullet, sankey), a highlight
+  off the takeaway (cartogram), the analyst's hash text read as data (histogram).
+- **Stopped early:** the last 3 cells were stopped once the result was decided.
+
+**Decision (KTD4):** thinking stays **off** for every arm (teacher, student, dataset). To report to Tom (his question 4).
