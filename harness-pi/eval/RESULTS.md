@@ -429,3 +429,29 @@ passed with thinking off, went **0/7** (`results/2026-10-28-g0-thinking-on.jsonl
 - **Stopped early:** the last 3 cells were stopped once the result was decided.
 
 **Decision (KTD4):** thinking stays **off** for every arm (teacher, student, dataset). To report to Tom (his question 4).
+
+## U11 — held-out set and stock baseline (2026-10-28/29)
+
+Held-out stories (`training/heldout.json`, `d3e1d808c`):
+- r8 and real-gwis, as before;
+- three that the stock 12B fails, or passes only sometimes:
+  - `gx-connected-scatter` (xy) and `gx-small-multiples` (multiples): both failed every format in the lean measurement;
+  - `stress-t-europe-recycling` (web choropleth).
+
+Stock 12B, full runs to delivery, shipped defaults (thinking off, gesture fallback on, xy, multiples and paired on
+their per-type kits), 45-minute cap, **one run per story**. The two gx stories were re-run once after their sheets
+gained the as-of date (`08abfe2a7`); their first runs stalled on `effectiveDate`, a defect in the sheets.
+
+| story | result |
+|---|---|
+| r8 | ✅ delivered, headline faithful (35 min) |
+| real-gwis | ❌ cap at craft (stacked area) |
+| gx-connected-scatter | ❌ cap at craft; the last render refused by a guard |
+| gx-small-multiples | ⚠️ delivered, **headline not faithful** |
+| stress-t (web) | ❌ cap at craft (web choropleth) |
+
+**Baseline: 1/5 faithful completions.** Raw: `results/2026-10-28-u11-baseline.jsonl`.
+
+The plan asks for at least three runs per story. They are moved to U9, where both arms run on one RunPod pod at least
+three times each (KTD8), because local full runs took 20–45 minutes apiece (Rémy, time). This single local run
+confirms the selection.
