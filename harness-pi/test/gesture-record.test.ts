@@ -106,5 +106,20 @@ describe("record_gestures", () => {
     refresh();
     await expect((recordGestures as any).execute("1", { gestures: [{ do: "compare", marks: ["Pologne · 2024", "France · 2024"] }] })).resolves.toBeDefined();
   });
+
+  it("should refuse a video list that is not three gestures, before any render", async () => {
+    const { root, storyDir } = story("claimShape: none");
+    const { recordGestures } = gestureTools({ root, storyDir }, { beat: "1", gestures: ["highlight", "reveal"], format: "video" });
+    await expect((recordGestures as any).execute("1", { gestures: [{ do: "reveal" }, { do: "highlight", mark: "France" }] })).rejects.toThrow(/exactly three gestures/);
+  });
+});
+
+describe("importBeat on a beat.mjs that exports nothing", () => {
+  it("should say to end it with export default, not crash", async () => {
+    const { beatDir } = story("claimShape: none");
+    writeFileSync(join(beatDir, "beat.mjs"), `import { readFileSync } from "node:fs"; JSON.parse(readFileSync(new URL("./data.json", import.meta.url)));`);
+    writeFileSync(join(beatDir, "gestures.json"), JSON.stringify({ gestures: [] }));
+    await expect(importBeat(beatDir)).rejects.toThrow(/exports no object/);
+  });
 });
 

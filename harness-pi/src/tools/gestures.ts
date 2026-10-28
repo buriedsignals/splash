@@ -125,12 +125,14 @@ export interface GestureToolOptions {
   gestures: string[];
   /** Renders the beat once the list is recorded (code renders, as Spotlight's finalize does); its text is returned. */
   render?: () => Promise<string>;
+  /** The beat's format: a video's list is checked for its three gestures before anything renders. */
+  format?: string;
 }
 
 /** record_gestures, and refresh(): re-reads the names the beat draws (call it after beat.mjs changes). */
 export function gestureTools(
   bases: Bases,
-  { beat, gestures, render }: GestureToolOptions,
+  { beat, gestures, render, format }: GestureToolOptions,
 ) {
   const beatDir = join(bases.storyDir, "beats", beat);
   const dataFile = join(beatDir, "data.json");
@@ -207,6 +209,8 @@ export function gestureTools(
             .join(", ")}. A second unknown name drops this gesture.`,
         );
       });
+      if (format === "video" && kept.length !== 3)
+        throw new Error(`a video takes exactly three gestures — reveal, the subject, a conclusion — and this list has ${kept.length}`);
       if (!kept.length)
         throw new Error(
           `every gesture named marks the beat does not draw; the names it draws: ${listNames(names)}`,

@@ -390,9 +390,11 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
     const staging = choice.gestures
       ? gestureTools(bases, {
           beat,
+          format: String(slot.format ?? "static"),
           gestures: (await kitGestures(adapter, String(slot.format ?? "static"))).map((g) => g.do),
-          // Recording renders: the result the 12B reads is the render's, refusal or look-at path.
-          render: async () => {
+          // Recording renders a still (the result the 12B reads is the render's); a page, scrolly or video takes
+          // minutes per render, so there recording only records and the 12B renders once its list is set.
+          render: String(slot.format ?? "static") !== "static" ? undefined : async () => {
             try {
               const out = (await (r.render.execute as (...a: unknown[]) => Promise<unknown>)("record", { beat, format: String(slot.format ?? "static") })) as { content: { text: string }[] };
               return out.content[0].text;

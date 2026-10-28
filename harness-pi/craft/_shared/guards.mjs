@@ -290,6 +290,8 @@ export async function importBeat(here) {
   }
   if (existsSync(join(here, "data.json")) && !/data\.json/.test(readFileSync(file, "utf8")))
     throw new Error(`beat.mjs types its rows instead of reading data.json, so the data can never refuse its title: ${readingHint(here)}`);
+  if (!beat || typeof beat !== "object")
+    throw new Error(`beat.mjs exports no object: end it with export default { … } (see CONTRACT.md) — ${readingHint(here)}`);
   // The gestures recorded through the craft step's typed tool (gestures.json) are the beat's staging; check() is code's.
   const recorded = join(here, "gestures.json");
   if (existsSync(recorded)) beat.gestures = JSON.parse(readFileSync(recorded, "utf8")).gestures;
