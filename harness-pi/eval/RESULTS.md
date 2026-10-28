@@ -368,3 +368,37 @@ in all four formats.
 - six geo map video kits are built but were never rendered as mp4;
 - left open: the Inde/Chine compare note sits far from its bracket (beeswarm), and the calendar heatmap draws its
   compare connector across the whole grid.
+
+## Phase 2, second pass — after the free harness fixes (2026-10-28)
+
+The same lean matrix plus the proportional symbol map, `SPLASH_GESTURES_ALL=1` so xy, multiples and paired run on
+their gesture kits as in the first pass. Fixes in force:
+- output cap `1b7ce2115`;
+- fold at 20,480 tokens, keeping 4,000, with last-turn narrowing `867073f69`;
+- `record_gestures` `2d18ba340` / `18b3bcab8`;
+- `check()` in code `4fff9fc89`;
+- strict title figures `56ddea02c`.
+
+The pass exposed three defects of the new tool, fixed mid-pass (`c12f2057e`, `38693db00`, `1cc175a8f`):
+- a set could not be given as one mark;
+- composed names were not known;
+- recording re-rendered pages and videos, which cost minutes per call.
+
+The 17 cells those defects distorted were re-run; their last run counts. Raw results:
+- `results/2026-10-28-phase2.jsonl`;
+- `results/2026-10-28-phase2b-reruns.jsonl`.
+
+| | first pass | second pass |
+|---|---|---|
+| static | 8/14 | **10/14** — gained bullet, cartogram, small-multiples, gantt; lost calendar heatmap, proportional symbol |
+| web, video, scrolly | 10/13 | **5/13** — kept beeswarm video, cartogram video, gantt video, marimekko web; gained small-multiples web |
+| total | 18/27 | 15/27 |
+
+The new failures in web, video and scrolly come from the typed tool's extra step: write `beat.mjs`, record the
+gestures, render.
+- **Area web:** the 12B never recorded its gestures (refused: `missing gestures`).
+- **Histogram and sankey scrollys:** looped on one refusal.
+- **Parallel-coordinates video:** a syntax error in `beat.mjs`.
+
+**Decision (pre-made, G0):** keep `record_gestures` in static, where it gains, and give web, video and scrolly back their
+inline `gestures`. Then re-measure those 13 cells before the thinking-on check.
