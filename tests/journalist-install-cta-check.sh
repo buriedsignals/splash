@@ -22,7 +22,7 @@ if grep -qE 'curl .*install|setup\\.html|configure\\.html' llms.txt llms_full.tx
   note "LLM documents advertise a retired installer or credential page"
 fi
 grep -q 'https://github.com/buriedsignals/splash' "$page" || note "$page lost the GitHub link"
-grep -q 'https://buriedsignals.com/join' "$page" || note "$page Install CTA is not https://buriedsignals.com/join"
+grep -q 'https://indicator.media/indicator-lab' "$page" || note "$page Install CTA is not https://indicator.media/indicator-lab"
 if grep -qE 'curl .*landing/install\.sh|curl .*github\.io/splash/install\.sh|curl .*install\.sh' "$page"; then
   note "$page still publishes a curl|bash installer CTA"
 fi

@@ -41,7 +41,7 @@ Buried Signals Engine (`bsig`) is the installation and runtime authority. Indica
 
 Indicator Labs provides guided setup, credential management, repair, and automatic updates on macOS and Windows:
 
-https://buriedsignals.com/join
+https://indicator.media/indicator-lab
 
 ### Agent-led installation
 
