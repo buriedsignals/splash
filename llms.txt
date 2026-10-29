@@ -2,6 +2,14 @@
 
 > Local-first, human-gated visual journalism for AI agents. Splash freezes reporting material, develops an approved storyboard, produces real charts, maps, video, scrollytelling, and static graphics, and delivers each approved output into a journalist-owned story directory.
 
+## When to use it
+
+Give Splash reporting material when the next step is a visual: a chart, map, interactive graphic, video, or scrollytelling piece. It helps shape the takeaway and storyboard, builds the selected output, renders it for review, and prepares the approved delivery.
+
+**Input:** source material, data, a journalistic takeaway, and publication constraints. **Output:** editable production files, rendered previews, and the approved export or embed package. You approve the takeaway, treatment, rendered result, and delivery. Splash does not turn unverified leads into established findings.
+
+Spotlight handles investigation casework; Anomaly helps obtain and check structured data; Splash works from the reporting you choose to visualise. Its source material and approvals remain in a journalist-owned story directory. External providers and hosting depend on the chosen output and your configuration.
+
 ## Start here
 
 - [Landing page](https://splash.buriedsignals.com/): public product overview and visual menu
@@ -52,7 +60,7 @@
 
 ## Installation
 
-- [Managed installation](https://buriedsignals.com/join): Indicator Labs on macOS or Windows
+- [Managed installation](https://indicator.media/indicator-lab): Indicator Labs on macOS or Windows
 - [Agent-led installation](https://github.com/buriedsignals/splash/blob/main/README.md#install): signed standalone Engine, catalog sync, reviewed plan, exact apply, and doctor
 - Windows uses a prepared host and `bsig plan install splash`; do not run the Bash contributor installer there.
 - A macOS/Linux contributor checkout can be adopted through `bash installer/install.sh --bsig /absolute/path/to/bsig`.
