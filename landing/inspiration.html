@@ -766,7 +766,7 @@
           font-size:clamp(32px,4.6vw,64px);max-width:16ch}
   .offers .olede{margin:1em 0 0;max-width:58ch;font-size:clamp(13px,1.05vw,15px);
           line-height:1.55;opacity:.62}
-  .ogrid{display:grid;grid-template-columns:1fr 1fr;gap:clamp(16px,1.8vw,26px);
+  .ogrid{display:grid;grid-template-columns:1fr;gap:clamp(16px,1.8vw,26px);
          margin-top:clamp(34px,4vw,56px);align-items:start}
   .offer{border:1px solid rgba(237,234,227,.16);border-radius:var(--rad);
          padding:clamp(22px,2.2vw,34px);display:flex;flex-direction:column;
@@ -792,6 +792,12 @@
         letter-spacing:.1em;text-transform:uppercase;padding:6px 10px;
         border:1px solid rgba(237,234,227,.18);border-radius:99px;opacity:.72}
   .ofoot{margin-top:auto;padding-top:clamp(20px,2vw,30px)}
+  .offer--lab{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);
+         column-gap:clamp(28px,4vw,64px);align-items:start}
+  .offer--lab .omain{display:flex;flex-direction:column}
+  .offer--lab .ofoot{margin-top:0;padding:0 0 0 clamp(28px,4vw,64px);
+         border-left:1px solid rgba(237,234,227,.16)}
+  .offer .oprice{margin:.75em 0 0;font-size:13px;line-height:1.55}
   .onl{font-family:var(--C);font-size:10px;font-weight:500;letter-spacing:.16em;
        text-transform:uppercase;opacity:.55;margin:0 0 12px}
   .onlopt{display:grid;gap:8px}
@@ -847,7 +853,9 @@
   .ook{margin:0;display:flex;align-items:center;gap:8px;color:var(--amber);
        font-size:13px}
   .ohide{display:none}
-  @media (max-width:860px){ .ogrid{grid-template-columns:1fr} }
+  @media (max-width:860px){ .offer--lab{grid-template-columns:1fr}
+    .offer--lab .ofoot{padding:clamp(20px,2vw,30px) 0 0;border-left:0;
+      border-top:1px solid rgba(237,234,227,.16);margin-top:clamp(20px,2vw,30px)} }
 
   /* ═══ LA PASSE MOBILE SUR LES CORPS ═════════════════════════════════════
      Mesuré à 390 px : le chapô de l'accueil et le texte de la boîte de
@@ -994,18 +1002,18 @@
      mêmes choses avec les mots et le découpage que le site porte partout
      ailleurs — une seule offre écrite une seule fois. -->
 <section class="offers" id="offers" data-ground="#14141c">
-  <div class="oeye"><i></i>Work with me</div>
-  <h2>Two ways in</h2>
-  <p class="olede">I use Splash in my own reporting and in collaborative
-  stories with partner newsrooms. If you want to work with me around that
-  system, these are the two ways in.</p>
+  <div class="oeye"><i></i>Membership</div>
+  <h2>Join the Lab</h2>
 
   <div class="ogrid">
-    <article class="offer">
+    <article class="offer offer--lab">
+      <div class="omain">
       <div class="okick"><span>Indicator Lab</span><span class="olaunch">Now open</span></div>
       <h3>Investigations with AI. The tools to run your own</h3>
-      <p class="olede2">The Buried Signals tool suite, a monthly live workshop and Lab Newsletter, office hours every two weeks, and the training course. $10/month add-on to Indicator membership.</p>
+      <p class="olede2">The Buried Signals tool suite, a monthly live workshop and Lab Newsletter, office hours every two weeks, and the training course.</p>
+      <p class="oprice">$22.95/month · billed monthly, cancel anytime.</p>
       <a class="olab" href="https://indicator.media/indicator-lab" target="_blank" rel="noopener">Join Indicator Lab &rarr;</a>
+      </div>
       <div class="ofoot">
         <p class="oerr ohide" id="nl-error"></p>
         <p class="ook ohide" id="nl-success" role="status">
@@ -1031,21 +1039,6 @@
       </div>
     </article>
 
-    <article class="offer">
-      <div class="okick"><span>Hire me</span></div>
-      <h3>I train newsrooms to investigate with AI</h3>
-      <p class="olede2">Talks, workshops, custom tooling, and investigation collaborations.</p>
-      <ul>
-        <li>Le Temps</li><li>Al Jazeera</li><li>MAZ Journalistenschule</li><li>Republik</li>
-        <li>20 Minuten</li><li>SRF</li><li>MediaStorm</li><li>The New Humanitarian</li>
-      </ul>
-      <div class="ofoot">
-        <div class="oacts">
-          <a class="oghost" href="mailto:tom@buriedsignals.com">Get in touch &rarr;</a>
-          <a class="oaside" href="https://buriedsignals.com/consulting" target="_blank" rel="noopener">See case studies</a>
-        </div>
-      </div>
-    </article>
   </div>
 </section>
 
