@@ -136,3 +136,26 @@ describe("the contract a craft session reads", () => {
     expect([text.includes("record_gestures"), text.includes("Do not write `check()`")]).toEqual([false, true]);
   });
 });
+
+// Replay scan 2026-11-07: 17 record_gestures calls refused by the schema since 2026-10-28, each naming a
+// mark as the row it meant ({ name: "Brunei" }, { key: "RUS" }, { series, t, value }). Pi prepares the
+// arguments before it validates them, so the row is read back to its name there.
+describe("record_gestures arguments", () => {
+  const { root, storyDir } = story("claimShape: none");
+  const { recordGestures } = gestureTools({ root, storyDir }, { beat: "1", gestures: ["highlight", "reveal", "bracket"] });
+
+  it("should name a mark given as a row object by its name", () => {
+    const args = recordGestures.prepareArguments!({ gestures: [{ do: "reveal", mark: [{ name: "Brunei" }, { key: "RUS" }] }] });
+    expect(args.gestures[0].mark).toEqual(["Brunei", "RUS"]);
+  });
+
+  it("should name a series point by its time and series", () => {
+    const args = recordGestures.prepareArguments!({ gestures: [{ do: "bracket", mark: { series: "Switzerland", t: 1858, value: 146560 } }] });
+    expect(args.gestures[0].mark).toBe("1858 · Switzerland");
+  });
+
+  it("should leave string marks as they are", () => {
+    const given = { gestures: [{ do: "highlight", mark: "France", marks: ["France", "Poland"] }] };
+    expect(recordGestures.prepareArguments!(given)).toEqual(given);
+  });
+});

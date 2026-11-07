@@ -129,6 +129,36 @@ export interface GestureToolOptions {
   format?: string;
 }
 
+// A mark the model gives as the row it meant ({ name: "Brunei" }, { series, t, value }) is that row's name:
+// read back before Pi validates the arguments, which would otherwise refuse the whole list.
+function markName(m: unknown): unknown {
+  if (m === null || typeof m !== "object" || Array.isArray(m)) return m;
+  const r = m as Record<string, unknown>;
+  for (const k of ["name", "mark", "key", "label", "id", "entity", "category"])
+    if (typeof r[k] === "string" || typeof r[k] === "number") return String(r[k]);
+  if (r.series != null && (r.t ?? r.x ?? r.year) != null) return `${r.t ?? r.x ?? r.year}${SEP}${r.series}`;
+  const first = Object.values(r).find((v) => typeof v === "string");
+  return first ?? m;
+}
+
+export function prepareGestureArguments(args: unknown): unknown {
+  const list = (args as { gestures?: unknown })?.gestures;
+  if (!Array.isArray(list)) return args;
+  let changed = false;
+  const names = (v: unknown) => {
+    const out = Array.isArray(v) ? v.map(markName) : markName(v);
+    if (Array.isArray(v) ? (out as unknown[]).some((x, i) => x !== v[i]) : out !== v) changed = true;
+    return out;
+  };
+  const gestures = list.map((g) => {
+    if (g === null || typeof g !== "object") return g;
+    const out = { ...(g as Record<string, unknown>) };
+    for (const k of ["mark", "marks", "of"]) if (out[k] !== undefined) out[k] = names(out[k]);
+    return out;
+  });
+  return changed ? { ...(args as object), gestures } : args;
+}
+
 /** record_gestures, and refresh(): re-reads the names the beat draws (call it after beat.mjs changes). */
 export function gestureTools(
   bases: Bases,
@@ -171,6 +201,7 @@ export function gestureTools(
         }),
       ),
     }),
+    prepareArguments: prepareGestureArguments as (args: unknown) => never,
     async execute(_id, { gestures: list }) {
       if (!Array.isArray(list) || !list.length)
         throw new Error(
