@@ -14,6 +14,7 @@ import {
 } from "node:fs";
 import { join, resolve } from "node:path";
 import { familyOf } from "../src/adapters.ts";
+import { appendFileSync } from "node:fs";
 import { evaluate } from "./run-eval.ts";
 
 const EVAL = resolve(import.meta.dirname);
@@ -123,8 +124,15 @@ if (import.meta.main) {
     const out = join(EVAL, "results", `${new Date().toISOString().slice(0, 10)}-${args.includes("--out") ? args[args.indexOf("--out") + 1] : "phase2"}.jsonl`);
     mkdirSync(join(EVAL, "results"), { recursive: true });
     for (const r of chosen) {
-      const line = await evaluate(r.story, "stock", out, r.variant, r.seed);
-      console.log(`${r.story} ${r.variant || "static"}: ${line.phase} ${line.wallSeconds}s`);
+      // A cell that cannot start (the run root, the network) is recorded as such, and the matrix goes on.
+      try {
+        const line = await evaluate(r.story, "stock", out, r.variant, r.seed);
+        console.log(`${r.story} ${r.variant || "static"}: ${line.phase} ${line.wallSeconds}s`);
+      } catch (error) {
+        const infraError = String((error as Error)?.message ?? error).slice(0, 500);
+        appendFileSync(out, `${JSON.stringify({ arm: "stock", story: r.story, variant: r.variant || "static", completed: false, infraError })}\n`);
+        console.log(`${r.story} ${r.variant || "static"}: infra error — ${infraError.split("\n")[0]}`);
+      }
     }
   }
 }

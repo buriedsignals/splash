@@ -50,15 +50,13 @@ export async function createRunRoot({
   await symlink(join(checkout, "proof"), join(root, "proof"), "dir");
 
   if (install) {
-    const proc = Bun.spawn(["bun", "install"], {
-      cwd: root,
-      stdout: "pipe",
-      stderr: "pipe",
-    });
-    const code = await proc.exited;
-    if (code !== 0) {
+    // A registry blip (ConnectionRefused, 2026-11-07) ended thirteen matrix cells: try three times.
+    for (let attempt = 1; ; attempt++) {
+      const proc = Bun.spawn(["bun", "install"], { cwd: root, stdout: "pipe", stderr: "pipe" });
+      if ((await proc.exited) === 0) break;
       const err = await new Response(proc.stderr).text();
-      throw new Error(`bun install failed in run root ${root}: ${err.trim()}`);
+      if (attempt === 3) throw new Error(`bun install failed in run root ${root} after 3 attempts: ${err.trim().slice(-2000)}`);
+      await Bun.sleep(30_000 * attempt);
     }
   }
   return root;
