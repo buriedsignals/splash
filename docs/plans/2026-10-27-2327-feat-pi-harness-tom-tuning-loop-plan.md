@@ -9,9 +9,12 @@ execution: code
 
 # Pi Harness Tuning Loop (Tom's Method) - Plan
 
+> **Superseded on 2026-11-07** by `docs/plans/2026-11-07-1448-feat-pi-harness-tom-method-plan.md` (Tom's debrief of 2026-11-05). Kept as history.
+
 ## Goal Capsule
 
-- **Objective:** a journalist running Splash locally gets a tuned Gemma 4 12B that carries a story through the harness to a faithful delivery more often than the stock 12B, measured on held-out stories, so the local mode can ship for Tom's internal pilot.
+- **Objective:** a journalist running Splash locally gets a tuned small model that carries a story through the harness to a faithful delivery more often than the same model untuned, measured on held-out stories, so the local mode can ship for Tom's internal pilot.
+- **Student model (changed 2026-10-28, KTD11):** `LiquidAI/LFM3-VL-2B`, replacing Gemma 4 12B, at Tom's request. Where this plan says "12B" or "stock 12B", read "the student" / "the untuned student" from U12 on; measurements already recorded on the 12B stay as history.
 - **Means:** Tom Vaillant's loop — prove the harness with Gemma 4 31B gold runs, fix the harness where the 31B fails, train a LoRA on gold runs plus correction windows, evaluate the tuned model in the harness, loop the failures back (KTD1).
 - **Authority:** Tom's method and his answers outrank this plan; this plan outranks `training/TOM-ALIGNMENT.md` (its research input). Rémy decides any spend beyond the caps below.
 - **Execution profile:** one session, sequential; OpenRouter for the 31B; RunPod for training and for serving both 12B arms during evaluation; renders and the scripted journalist stay local, one render at a time. Every run sets `SPLASH_PORT` to the live local llama-server (8091 while 8090 is stuck).
@@ -99,11 +102,14 @@ The research input is `training/TOM-ALIGNMENT.md`: Tom's pipeline as implemented
 - KTD9. **Free tier first for gold runs, paid as fallback, switching provider rather than giving up.** Rémy tops up $10, which lifts `google/gemma-4-31b-it:free` from about 50 to about 1,000 requests a day (reported limits, to confirm on the key endpoint). The free variant has a single provider (Google AI Studio, checked 2026-10-27 on `/api/v1/models/google/gemma-4-31b-it:free/endpoints`), so when it answers 429 the run resumes on the paid `teacher` arm, where OpenRouter routes across ~16 providers and falls back between them. The paid route excludes fp4 endpoints (CoreWeave, Venice, Chutes, ModelRun) and asks for bf16/fp8 (`provider.quantizations`), so gold comes from an undegraded teacher. Correction windows use the paid arm directly. Free-tier prompts may be logged by Google; acceptable for the eval stories (public data), never for a journalist's real data. (session-settled: user-directed — chosen over paid-only or local 31B: free first, switch provider on failure.)
 - KTD10. **One RunPod budget in euros.** `SPEND.md` records each pod in dollars and in euros at the day's rate; the cap is 50 €. Draws: smoke ≤ 5 €, first cycle (train + merge + GGUF + evaluation) ≤ 25 €, each later cycle at most the remaining balance.
 
+- KTD11. **The student is LFM3-VL-2B, not Gemma 4 12B.** Tom moved his products from the 12B to Liquid AI's LFM3 (released 2026-10-27) and confirmed Splash follows, with the vision variant because the craft step looks at its renders (`LiquidAI/LFM3-VL-2B`: 1.73B language model + 164M vision encoder, 128K context, tool calls in a `qwen3_coder`-superset XML format, GGUF + mmproj published as `LiquidAI/LFM3-VL-2B-GGUF`; llama.cpp support merged in ggml-org/llama.cpp#31252). Consequences: the teacher stays Gemma 4 31B (gold trajectories are model-agnostic messages, Tom keeps the 31B); the dataset is rendered with LFM3's chat template, so `mask.py`'s Gemma turn markers are replaced by LFM3's; the training recipe follows Liquid's fine-tuning guidance for LFM3 within Tom's gates (LoRA, response-only loss, smoke first). (session-settled: user-directed — chosen over keeping the 12B: Tom's decision, relayed by Rémy on 2026-10-28.) License flag for Tom: LFM Open License v1.0 limits commercial use to organisations under $10M annual revenue.
+
 ### High-Level Technical Design
 
 ```mermaid
 flowchart TB
-  U1[U1 G0 free fixes re-measured + thinking check] --> U2[U2 spend ledger] --> U11[U11 held-out set]
+  U1[U1 G0 free fixes re-measured + thinking check] --> U12[U12 LFM3-VL-2B served + untuned baseline] --> U2[U2 spend ledger] --> U11[U11 held-out set]
+  U12 --> U13[U13 training stack for LFM3] --> U5
   U11 --> U3[U3 gold tooling] --> U4[U4 31B gold runs]
   U4 -->|31B fails| FIX[harness fix + re-run] --> U4
   U4 --> G1{G1: 7-10 gold, 4+ slugs}
@@ -150,6 +156,34 @@ Spend per step (estimates from `training/TOM-ALIGNMENT.md` §5):
   - With the env set to on, every arm's session runs thinking on.
 - **Verification (G0):** RESULTS.md shows both passes and the thinking-on re-run side by side. If thinking on drops any cell that passed with thinking off, report to Rémy (and Tom) and keep thinking off; otherwise set the default to on. No regression from the fixes: continue without waiting.
 
+### U12. Serve LFM3-VL-2B locally and measure it untuned (G0b)
+
+- **Goal:** the harness runs end to end on the untuned student, so its baseline replaces the 12B's before any gold run.
+- **Requirements:** R3, R6; KTD11.
+- **Dependencies:** U1.
+- **Files:** `harness-pi/serve/llama-server.sh` (student GGUF + mmproj, Liquid's recommended sampling), `harness-pi/serve/models.json` (a `student` model entry), `harness-pi/src/pi.ts` (arm), the tool-call parsing path if `qwen3_coder` XML is not already read, `harness-pi/test/pi.test.ts`, `harness-pi/eval/RESULTS.md`.
+- **Approach:**
+  1. Update local llama.cpp to a build that includes #31252; download `LFM3-VL-2B-Q8_0.gguf` (or Q4_K_M) and its mmproj.
+  2. Make the student a selectable arm; the scripted journalist keeps its own model on the local server.
+  3. Run Lisboa static end to end, then the lean matrix (stop after craft), with the thinking setting from G0.
+  4. Record pass/fail per cell beside the 12B's numbers; note whether failures are tool-format errors (a harness fix) or reasoning errors.
+- **Test scenarios:**
+  - A `qwen3_coder`-style XML tool call from the student is parsed into the same tool call as a Gemma JSON call.
+  - An image block sent to `look` reaches the student through the mmproj.
+- **Verification (G0b):** RESULTS.md holds the student's baseline. Report to Rémy; continue without waiting unless the student cannot complete a single static run, in which case stop and report to Rémy and Tom.
+
+### U13. Adapt the training stack to LFM3
+
+- **Goal:** dataset rendering, masking and training work for LFM3-VL-2B before any pod.
+- **Requirements:** R4, R5; KTD11.
+- **Dependencies:** U12.
+- **Files:** `training/dataset/mask.py`, `training/train/labels.py`, `training/train/train.py`, `training/train/merge.py`, `training/train/export_gguf.sh`, `training/tests/test_mask.py`, `training/tests/fixtures/` (an LFM3-rendered fixture).
+- **Approach:** render a real session with LFM3's chat template, measure where tool responses fall, set the turn markers and mask from that measurement (as `mask.py` did for Gemma); base checkpoint `LiquidAI/LFM3-VL-2B`; check Unsloth or TRL support for `lfm3_vl` (the model ships `custom_code`) and follow Liquid's fine-tuning guide; GGUF export through the llama.cpp converter that supports LFM3, with its mmproj.
+- **Test scenarios:**
+  - On the LFM3 fixture, tool responses are excluded from the loss and model turns are included.
+  - A row with an image renders with the LFM3 vision placeholder the processor expects.
+- **Verification:** tests pass; local `SFTConfig`/`SFTTrainer` instantiation on two rows succeeds with the LFM3 base (U5's rule).
+
 ### U2. Spend ledger and guard
 
 - **Goal:** every paid call is priced, recorded and capped before it runs.
@@ -167,7 +201,7 @@ Spend per step (estimates from `training/TOM-ALIGNMENT.md` §5):
 
 - **Goal:** fix the held-out stories before any of them can become gold.
 - **Requirements:** R6; KTD8.
-- **Dependencies:** U1.
+- **Dependencies:** U12 (the baseline is the untuned student's, not the 12B's).
 - **Files:** `training/heldout.json`, `harness-pi/eval/sheets/real-gwis-wildfire-counts.json` (create — the story has no scripted-journalist sheet today), `harness-pi/eval/RESULTS.md`.
 - **Approach:**
   1. Keep r8 and `real-gwis-wildfire-counts`; write the missing sheet.
@@ -235,7 +269,7 @@ Spend per step (estimates from `training/TOM-ALIGNMENT.md` §5):
 
 - **Goal:** a validated SFT dataset from gold runs and correction windows, proven to load locally before any pod.
 - **Requirements:** R4, R5; KTD2, KTD4.
-- **Dependencies:** U6.
+- **Dependencies:** U6, U13.
 - **Files:** `training/dataset/build_from_pi.py`, `training/dataset/validate.py`, `training/train/train.py` (local instantiation path), `training/tests/test_build.py`, `training/tests/test_validate.py`, `training/data/` (output; large files not committed).
 - **Approach:**
   1. Build rows from both manifest kinds: per-tool result caps and the 400-character reasoning cap as Tom does; system prompt as sent; path token consistent with inference.
@@ -264,7 +298,7 @@ Spend per step (estimates from `training/TOM-ALIGNMENT.md` §5):
 - **Requirements:** R5; KTD2.
 - **Dependencies:** U7; Tom's answer on publishing (stop condition).
 - **Files:** `training/train/train.py`, `training/train/merge.py`, `training/train/export_gguf.sh`, `harness-pi/eval/SPEND.md`.
-- **Approach:** Tom's recipe (Unsloth, `unsloth/gemma-4-12b-it` 4-bit, LoRA r16/α16/dropout 0, 3 epochs, lr 2e-4, GA 4, seed 3407); merge with Unsloth's own method; coherence check fatal; Q4_K_M; upstream mmproj kept for `look`. Upload where Tom says, private.
+- **Approach:** Tom's gates and hyperparameters as the starting point (LoRA r16/α16/dropout 0, 3 epochs, lr 2e-4, GA 4, seed 3407) on the LFM3-VL-2B base with the U13 stack (KTD11); a 2B model fits a far cheaper GPU than an A100, so pick the cheapest GPU `pod.py` accepts; merge with the training method's own merge; coherence check fatal; GGUF plus the upstream mmproj for `look`. Upload where Tom says, private.
 - **Test expectation:** none — paid run; the coherence and card checks are the gates.
 - **Verification:** adapter, GGUF and mmproj available where Tom decided; spend within the first-cycle draw.
 
