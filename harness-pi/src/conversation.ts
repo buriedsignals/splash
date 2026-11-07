@@ -70,7 +70,15 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
   let sinceRecord = 0;
   let refusalStreak = 0;
   let refusals = 0;
+  // A record is progress only when it differs from the last one accepted: a 12B recorded one gesture
+  // list forty times between renders (G1a, 2026-11-07), and each repeat reset the bound.
+  const argsOf = new Map<string, string>();
+  let lastRecord = "";
   const off = o.session.subscribe((e) => {
+    if (e.type === "tool_execution_start") {
+      argsOf.set(e.toolCallId, `${e.toolName} ${JSON.stringify(e.args ?? null)}`);
+      return;
+    }
     if (e.type === "turn_end") {
       sinceRecord++;
       if (!everRecorded && sinceRecord >= FIRST_RECORD_TURNS) stop ||= `no first record in ${FIRST_RECORD_TURNS} model turns`;
@@ -88,8 +96,13 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
     if (!e.isError && /^(record_|materialise|propose_palette|show_candidates)/.test(e.toolName)) {
       recorded++;
       everRecorded = true;
-      sinceRecord = 0;
+      const call = argsOf.get(e.toolCallId) ?? `unseen ${toolCalls}`;
+      if (call !== lastRecord) sinceRecord = 0;
+      lastRecord = call;
     }
+    // A file written since makes the same record mean something new (the repair loop: fix beat.mjs, record, render).
+    if (!e.isError && /^(write_file|edit_file)$/.test(e.toolName)) lastRecord = "";
+    argsOf.delete(e.toolCallId);
     if (e.isError) {
       refusals++;
       if (++refusalStreak >= REFUSAL_STREAK) stop ||= `${REFUSAL_STREAK} tool calls refused in a row`;

@@ -88,7 +88,7 @@ describe("converse narrowing a stalled turn", () => {
 });
 
 describe("converse bounds (Spotlight's watchdog: 16 / 12 / 6)", () => {
-  type Ev = { type: string; toolName?: string; isError?: boolean; result?: unknown };
+  type Ev = { type: string; toolName?: string; isError?: boolean; result?: unknown; toolCallId?: string; args?: unknown };
   /** A session whose every prompt plays `turn` (the events of one model turn) through its listener. */
   const scripted = (turn: (i: number) => Ev[]) => {
     let listener: (e: Ev) => void = () => {};
@@ -132,6 +132,28 @@ describe("converse bounds (Spotlight's watchdog: 16 / 12 / 6)", () => {
   it("should stop a session that made no new record within 12 model turns of its last", async () => {
     const r = await go((i) => [i === 0 ? record : read(i), { type: "turn_end" }]);
     expect(r.stop).toBe("no new record in 12 model turns");
+  });
+
+  // G1a, 2026-11-07: a 12B recorded one gesture list forty times between renders; each accepted
+  // repeat reset the bound, and the session ran to the eval's wall clock.
+  it("should not count the same record again as a new one", async () => {
+    const r = await go((i) => [
+      { type: "tool_execution_start", toolCallId: `c${i}`, toolName: "record_gestures", args: { gestures: ["a"] } } as Ev,
+      { type: "tool_execution_end", toolCallId: `c${i}`, toolName: "record_gestures", result: { content: [{ text: "ok" }] } } as Ev,
+      { type: "turn_end" },
+    ]);
+    expect(r.stop).toBe("no new record in 12 model turns");
+  });
+
+  it("should count the same record as new once a file was written since", async () => {
+    const r = await go((i) => [
+      { type: "tool_execution_start", toolCallId: `w${i}`, toolName: "edit_file", args: {} } as Ev,
+      { type: "tool_execution_end", toolCallId: `w${i}`, toolName: "edit_file", result: { content: [{ text: "ok" }] } } as Ev,
+      { type: "tool_execution_start", toolCallId: `c${i}`, toolName: "record_gestures", args: { gestures: ["a"] } } as Ev,
+      { type: "tool_execution_end", toolCallId: `c${i}`, toolName: "record_gestures", result: { content: [{ text: "ok" }] } } as Ev,
+      { type: "turn_end" },
+    ]);
+    expect(r.stop).toBe("round cap");
   });
 
   it("should stop after six tool calls in a row refused, varied or not", async () => {
