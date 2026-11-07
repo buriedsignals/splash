@@ -317,6 +317,22 @@ describe("dates", () => {
     ).rejects.toThrow(/date the journalist wrote/);
   });
 
+  // Replay scan 2026-11-07: 22 refusals, 2 recovered — the example date sent the 12B to another invented one.
+  it("should name the dates the journalist wrote when it refuses one", async () => {
+    dialogue.lastJournalist = "Narodowy Fundusz Zdrowia, dane za 2025 r., as of 2026-08-21.";
+    await expect(
+      call(storyboardTools(bases, dialogue).recordHand, { field: "effectiveDate", value: "2025-01-01" }),
+    ).rejects.toThrow(/the dates they wrote: "2026-08-21"/);
+  });
+
+  it("should send the model to ask when the journalist wrote no date", async () => {
+    dialogue.lastJournalist = "Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data.";
+    dialogue.history = [];
+    await expect(
+      call(storyboardTools(bases, dialogue).recordHand, { field: "effectiveDate", value: "2025-05-22" }),
+    ).rejects.toThrow(/wrote no date: ask them/);
+  });
+
   it("should record the as-of date the journalist wrote", async () => {
     dialogue.lastJournalist = "Narodowy Fundusz Zdrowia, dane za 2025 r., as of 2026-08-21.";
     await call(storyboardTools(bases, dialogue).recordHand, { field: "effectiveDate", value: "2026-08-21" });

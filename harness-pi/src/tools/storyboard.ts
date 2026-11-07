@@ -350,8 +350,13 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
         // and "July 7, 2026" are one date); the record is ISO.
         const said = [dialogue.lastJournalist, ...(dialogue.history ?? []).map((h) => h.answer)];
         const iso = isoDates(value)[0];
-        if (!iso || !said.some((a) => isoDates(a).includes(iso)))
-          throw new Error(`effectiveDate must be a date the journalist wrote (e.g. 2026-08-21); ${JSON.stringify(value)} is not among the dates in their answers`);
+        const written = [...new Set(said.flatMap((a) => (a ? isoDates(a) : [])))];
+        if (!iso || !written.includes(iso))
+          throw new Error(
+            written.length
+              ? `effectiveDate must be a date the journalist wrote; ${JSON.stringify(value)} is not one — the dates they wrote: ${written.map((d) => JSON.stringify(d)).join(", ")}`
+              : `effectiveDate must be a date the journalist wrote, and they wrote no date: ask them what date the data is as of, and end your turn`,
+          );
         value = iso;
       } else if (!(field === "limits" && /^none$/i.test(value.trim())))
         assertJournalistOwns(field, value, dialogue);
