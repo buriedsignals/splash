@@ -62,17 +62,23 @@ describe("journalist ownership", () => {
     expect(() =>
       assertJournalistOwns("medium", "chart", {
         lastJournalist: "Static.",
-        lastProposal: "I recommend a chart as the medium. Static, web or video?",
+        lastProposal:
+          "I recommend a chart as the medium. Static, web or video?",
       }),
     ).toThrow(/record exactly those words.*Shall I record medium: chart/);
   });
 
   it("should ask for the journalist's exact words when the value wraps them in additions", () => {
     expect(() =>
-      assertJournalistOwns("intent", "change over time of pedelec deaths in Germany from 2014 to 2025", {
-        lastJournalist: "Change over time.",
-        lastProposal: "Is the intent a change over time of pedelec deaths in Germany from 2014 to 2025?",
-      }),
+      assertJournalistOwns(
+        "intent",
+        "change over time of pedelec deaths in Germany from 2014 to 2025",
+        {
+          lastJournalist: "Change over time.",
+          lastProposal:
+            "Is the intent a change over time of pedelec deaths in Germany from 2014 to 2025?",
+        },
+      ),
     ).toThrow(/in the journalist's words exactly.*Change over time/);
   });
 
@@ -88,7 +94,10 @@ describe("journalist ownership", () => {
 
   it("should accept an answer written in Arabic script", () => {
     expect(() =>
-      assertJournalistOwns("subject", "محافظة تونس", { lastJournalist: "محافظة تونس", lastProposal: "" }),
+      assertJournalistOwns("subject", "محافظة تونس", {
+        lastJournalist: "محافظة تونس",
+        lastProposal: "",
+      }),
     ).not.toThrow();
   });
 
@@ -98,7 +107,9 @@ describe("journalist ownership", () => {
         lastJournalist: "Unattributed, as of 2026-08-21.",
         lastProposal: "",
       }),
-    ).toThrow(/subject must be the journalist's own words.*Unattributed.*who is the subject/);
+    ).toThrow(
+      /subject must be the journalist's own words.*Unattributed.*who is the subject/,
+    );
   });
 });
 
@@ -153,15 +164,28 @@ describe("storyboard tools", () => {
   it("should record the format code when the model passes the journalist's words for it", async () => {
     const tools = storyboardTools(bases, dialogue);
     dialogue.lastJournalist = "A chart.";
-    await call(tools.recordSlot, { slot: "1", field: "medium", value: "chart" });
+    await call(tools.recordSlot, {
+      slot: "1",
+      field: "medium",
+      value: "chart",
+    });
     dialogue.lastJournalist = "Interactive web.";
-    await call(tools.recordSlot, { slot: "1", field: "format", value: "interactive web" });
+    await call(tools.recordSlot, {
+      slot: "1",
+      field: "format",
+      value: "interactive web",
+    });
     expect(meta().slots[0].format).toBe("web");
   });
 
   it("should refuse a medium the journalist never named", async () => {
-    const tools = storyboardTools(bases, { lastJournalist: "A chart.", history: [{ said: "Which medium?", answer: "A chart." }] } as never);
-    await expect(call(tools.recordSlot, { slot: "1", field: "medium", value: "map" })).rejects.toThrow(
+    const tools = storyboardTools(bases, {
+      lastJournalist: "A chart.",
+      history: [{ said: "Which medium?", answer: "A chart." }],
+    } as never);
+    await expect(
+      call(tools.recordSlot, { slot: "1", field: "medium", value: "map" }),
+    ).rejects.toThrow(
       /the journalist has not named a medium.*Ask them whether this slot is a chart, a map or an image, and end your turn/,
     );
   });
@@ -169,9 +193,17 @@ describe("storyboard tools", () => {
   it("should drop a size recorded for a format that takes none", async () => {
     const tools = storyboardTools(bases, dialogue);
     dialogue.lastJournalist = "A chart.";
-    await call(tools.recordSlot, { slot: "1", field: "medium", value: "chart" });
+    await call(tools.recordSlot, {
+      slot: "1",
+      field: "medium",
+      value: "chart",
+    });
     dialogue.lastJournalist = "Landscape.";
-    await call(tools.recordSlot, { slot: "1", field: "size", value: "landscape" });
+    await call(tools.recordSlot, {
+      slot: "1",
+      field: "size",
+      value: "landscape",
+    });
     dialogue.lastJournalist = "Interactive web.";
     await call(tools.recordSlot, { slot: "1", field: "format", value: "web" });
     expect(meta().slots[0].size).toBeUndefined();
@@ -179,23 +211,41 @@ describe("storyboard tools", () => {
 
   it("should refuse a 'none' subject by naming the data's columns to survey", async () => {
     await expect(
-      call(storyboardTools(bases, dialogue).recordSubject, { id: "none", learns: "nothing", medium: "none", format: "none" }),
+      call(storyboardTools(bases, dialogue).recordSubject, {
+        id: "none",
+        learns: "nothing",
+        medium: "none",
+        format: "none",
+      }),
     ).rejects.toThrow(/not a subject.*columns: city, trips_millions/);
   });
 
   it("should accept 'learn' for learns, the spelling the 12B writes", async () => {
     await call(storyboardTools(bases, dialogue).recordSubject, {
-      id: "network-length", learn: "Porto's network is the longest per resident.", medium: "chart", format: "static",
+      id: "network-length",
+      learn: "Porto's network is the longest per resident.",
+      medium: "chart",
+      format: "static",
     });
-    expect(readFileSync(join(bases.storyDir, "SUBJECTS.md"), "utf8")).toContain("Porto's network is the longest per resident.");
+    expect(readFileSync(join(bases.storyDir, "SUBJECTS.md"), "utf8")).toContain(
+      "Porto's network is the longest per resident.",
+    );
   });
 
   it("should own a format code the journalist named in other words", async () => {
     const tools = storyboardTools(bases, dialogue);
     dialogue.lastJournalist = "A chart.";
-    await call(tools.recordSlot, { slot: "1", field: "medium", value: "chart" });
+    await call(tools.recordSlot, {
+      slot: "1",
+      field: "medium",
+      value: "chart",
+    });
     dialogue.lastJournalist = "Scrollytelling.";
-    await call(tools.recordSlot, { slot: "1", field: "format", value: "scrollytelling" });
+    await call(tools.recordSlot, {
+      slot: "1",
+      field: "format",
+      value: "scrollytelling",
+    });
     expect(meta().slots[0].format).toBe("scrolly");
   });
 
@@ -212,7 +262,8 @@ describe("storyboard tools", () => {
 
 describe("claim shape", () => {
   it("should record a comparison the journalist described", async () => {
-    dialogue.lastJournalist = "It is a comparison, about the column trips_millions: Lisboa against Porto.";
+    dialogue.lastJournalist =
+      "It is a comparison, about the column trips_millions: Lisboa against Porto.";
     await call(storyboardTools(bases, dialogue).recordClaim, {
       shape: "comparison",
       column: "trips_millions",
@@ -226,21 +277,69 @@ describe("claim shape", () => {
   it("should refuse a comparison with no second row, with Splash's own reason", async () => {
     dialogue.lastJournalist = "A comparison about trips_millions.";
     await expect(
-      call(storyboardTools(bases, dialogue).recordClaim, { shape: "comparison", column: "trips_millions", entity: "Lisboa" }),
+      call(storyboardTools(bases, dialogue).recordClaim, {
+        shape: "comparison",
+        column: "trips_millions",
+        entity: "Lisboa",
+      }),
     ).rejects.toThrow(/without claimVersus/);
   });
 
   it("should refuse a column that is not in the data", async () => {
     dialogue.lastJournalist = "A comparison about trips: Lisboa against Porto.";
     await expect(
-      call(storyboardTools(bases, dialogue).recordClaim, { shape: "comparison", column: "trips", entity: "Lisboa", versus: "Porto", direction: "greater" }),
+      call(storyboardTools(bases, dialogue).recordClaim, {
+        shape: "comparison",
+        column: "trips",
+        entity: "Lisboa",
+        versus: "Porto",
+        direction: "greater",
+      }),
     ).rejects.toThrow(/"trips" is not a column.*trips_millions/);
+  });
+
+  it("should record shape none when the journalist refused every shape in French", async () => {
+    dialogue.lastProposal =
+      "Is the claim a maximum, a minimum, a comparison or a total — or none of these?";
+    dialogue.lastJournalist =
+      "Aucune de ces formes : c'est une progression commune et un lien entre point de départ et avancée.";
+    await call(storyboardTools(bases, dialogue).recordClaim, { shape: "none" });
+    expect(meta().claimShape).toBe("none");
+  });
+
+  it("should record a comparison the journalist named in French", async () => {
+    dialogue.lastJournalist =
+      "C'est une comparaison sur trips_millions : Lisboa contre Porto, Lisboa plus grand.";
+    await call(storyboardTools(bases, dialogue).recordClaim, {
+      shape: "comparison",
+      column: "trips_millions",
+      entity: "Lisboa",
+      versus: "Porto",
+      direction: "greater",
+    });
+    expect(meta().claimShape).toBe("comparison");
+  });
+
+  it("should still refuse a shape the journalist did not name", async () => {
+    dialogue.lastProposal = "Is the claim a maximum?";
+    dialogue.lastJournalist = "Aucune de ces formes.";
+    await expect(
+      call(storyboardTools(bases, dialogue).recordClaim, {
+        shape: "maximum",
+        column: "trips_millions",
+        entity: "Lisboa",
+      }),
+    ).rejects.toThrow(/did not accept/);
   });
 
   it("should refuse an entity that is not a row of the data", async () => {
     dialogue.lastJournalist = "A maximum, Lisbon, trips_millions.";
     await expect(
-      call(storyboardTools(bases, dialogue).recordClaim, { shape: "maximum", column: "trips_millions", entity: "Lisbon" }),
+      call(storyboardTools(bases, dialogue).recordClaim, {
+        shape: "maximum",
+        column: "trips_millions",
+        entity: "Lisbon",
+      }),
     ).rejects.toThrow(/"Lisbon" is not a row/);
   });
 });
@@ -248,10 +347,20 @@ describe("claim shape", () => {
 describe("treatment chosen a turn late", () => {
   it("should accept the treatment the journalist named before answering the producer question", async () => {
     const tools = await withFormat();
-    await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Bar and column", why: "a" }, { type: "Treemap", why: "b" }] });
+    await call(tools.showCandidates, {
+      slot: "1",
+      candidates: [
+        { type: "Bar and column", why: "a" },
+        { type: "Treemap", why: "b" },
+      ],
+    });
     dialogue.history = [{ proposal: "Which one?", answer: "Bar and column." }];
     dialogue.lastJournalist = "Custom.";
-    await call(tools.recordSlot, { slot: "1", field: "chosen", value: "Bar and column" });
+    await call(tools.recordSlot, {
+      slot: "1",
+      field: "chosen",
+      value: "Bar and column",
+    });
     expect(meta().slots[0].chosen).toBe("Bar and column");
   });
 });
@@ -260,31 +369,62 @@ describe("no menu yet", () => {
   it("should build and record a two-idea menu when the journalist named a drawable type and none was shown", async () => {
     const tools = await withFormat();
     dialogue.lastJournalist = "Bar and column.";
-    await expect(call(tools.recordSlot, { slot: "1", field: "chosen", value: "Bar and column" })).rejects.toThrow(
-      /harness recorded this menu.*Bar and column.*Dot strip/s,
-    );
-    expect([meta().slots[0].candidates, meta().slots[0].chosen]).toEqual([["Bar and column", "Dot strip"], undefined]);
+    await expect(
+      call(tools.recordSlot, {
+        slot: "1",
+        field: "chosen",
+        value: "Bar and column",
+      }),
+    ).rejects.toThrow(/harness recorded this menu.*Bar and column.*Dot strip/s);
+    expect([meta().slots[0].candidates, meta().slots[0].chosen]).toEqual([
+      ["Bar and column", "Dot strip"],
+      undefined,
+    ]);
   });
 });
 
 describe("the journalist chose another type", () => {
   it("should record the type the journalist chose off the menu, putting it on the menu", async () => {
     const tools = await withFormat();
-    await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Diverging bar", why: "a" }, { type: "Bar and column", why: "b" }] });
+    await call(tools.showCandidates, {
+      slot: "1",
+      candidates: [
+        { type: "Diverging bar", why: "a" },
+        { type: "Bar and column", why: "b" },
+      ],
+    });
     dialogue.lastJournalist = "Line.";
-    await call(tools.recordSlot, { slot: "1", field: "chosen", value: "Diverging bar" });
-    expect([meta().slots[0].chosen, meta().slots[0].candidates]).toEqual(["Line", ["Diverging bar", "Bar and column", "Line"]]);
+    await call(tools.recordSlot, {
+      slot: "1",
+      field: "chosen",
+      value: "Diverging bar",
+    });
+    expect([meta().slots[0].chosen, meta().slots[0].candidates]).toEqual([
+      "Line",
+      ["Diverging bar", "Bar and column", "Line"],
+    ]);
   });
 });
 
 describe("the journalist's named type outlasts a later yes", () => {
   it("should record the journalist's named type, not the model's substitute they later said yes to", async () => {
     const tools = await withFormat();
-    await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Area (and stacked area)", why: "a" }, { type: "Bar and column", why: "b" }] });
+    await call(tools.showCandidates, {
+      slot: "1",
+      candidates: [
+        { type: "Area (and stacked area)", why: "a" },
+        { type: "Bar and column", why: "b" },
+      ],
+    });
     dialogue.history = [{ proposal: "Which treatment?", answer: "Line." }];
-    dialogue.lastProposal = "Line is not in the menu; shall we use Area instead?";
+    dialogue.lastProposal =
+      "Line is not in the menu; shall we use Area instead?";
     dialogue.lastJournalist = "Yes.";
-    await call(tools.recordSlot, { slot: "1", field: "chosen", value: "Area (and stacked area)" });
+    await call(tools.recordSlot, {
+      slot: "1",
+      field: "chosen",
+      value: "Area (and stacked area)",
+    });
     expect(meta().slots[0].chosen).toBe("Line");
   });
 });
@@ -293,85 +433,136 @@ describe("chosen before format", () => {
   it("should record the interaction when the format arrives after the treatment", async () => {
     const tools = storyboardTools(bases, dialogue);
     dialogue.lastJournalist = "A chart.";
-    await call(tools.recordSlot, { slot: "1", field: "medium", value: "chart" });
-    await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Bar and column", why: "a" }, { type: "Treemap", why: "b" }] }).catch(() => {});
+    await call(tools.recordSlot, {
+      slot: "1",
+      field: "medium",
+      value: "chart",
+    });
+    await call(tools.showCandidates, {
+      slot: "1",
+      candidates: [
+        { type: "Bar and column", why: "a" },
+        { type: "Treemap", why: "b" },
+      ],
+    }).catch(() => {});
     await mutateFixture({ candidates: ["Bar and column", "Treemap"] });
     dialogue.lastJournalist = "Bar and column.";
-    await call(tools.recordSlot, { slot: "1", field: "chosen", value: "Bar and column" });
+    await call(tools.recordSlot, {
+      slot: "1",
+      field: "chosen",
+      value: "Bar and column",
+    });
     dialogue.lastJournalist = "Static.";
-    await call(tools.recordSlot, { slot: "1", field: "format", value: "static" });
+    await call(tools.recordSlot, {
+      slot: "1",
+      field: "format",
+      value: "static",
+    });
     expect(meta().slots[0].interaction).toBe("none");
   });
 });
 
 async function mutateFixture(fields: Record<string, unknown>) {
-  const { mutateStoryboard } = await import("../../skills/storyboard/scripts/storyboard.mjs");
-  await mutateStoryboard(join(bases.storyDir, "STORYBOARD.md"), { slot: { id: "1", fields } });
+  const { mutateStoryboard } =
+    await import("../../skills/storyboard/scripts/storyboard.mjs");
+  await mutateStoryboard(join(bases.storyDir, "STORYBOARD.md"), {
+    slot: { id: "1", fields },
+  });
 }
 
 describe("dates", () => {
   it("should refuse an as-of date the journalist never wrote", async () => {
-    dialogue.lastJournalist = "Narodowy Fundusz Zdrowia, dane za 2025 r., as of 2026-08-21.";
+    dialogue.lastJournalist =
+      "Narodowy Fundusz Zdrowia, dane za 2025 r., as of 2026-08-21.";
     await expect(
-      call(storyboardTools(bases, dialogue).recordHand, { field: "effectiveDate", value: "2025-01-01" }),
+      call(storyboardTools(bases, dialogue).recordHand, {
+        field: "effectiveDate",
+        value: "2025-01-01",
+      }),
     ).rejects.toThrow(/date the journalist wrote/);
   });
 
   // Replay scan 2026-11-07: 22 refusals, 2 recovered — the example date sent the 12B to another invented one.
   it("should name the dates the journalist wrote when it refuses one", async () => {
-    dialogue.lastJournalist = "Narodowy Fundusz Zdrowia, dane za 2025 r., as of 2026-08-21.";
+    dialogue.lastJournalist =
+      "Narodowy Fundusz Zdrowia, dane za 2025 r., as of 2026-08-21.";
     await expect(
-      call(storyboardTools(bases, dialogue).recordHand, { field: "effectiveDate", value: "2025-01-01" }),
+      call(storyboardTools(bases, dialogue).recordHand, {
+        field: "effectiveDate",
+        value: "2025-01-01",
+      }),
     ).rejects.toThrow(/the dates they wrote: "2026-08-21"/);
   });
 
   it("should send the model to ask when the journalist wrote no date", async () => {
-    dialogue.lastJournalist = "Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data.";
+    dialogue.lastJournalist =
+      "Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data.";
     dialogue.history = [];
     await expect(
-      call(storyboardTools(bases, dialogue).recordHand, { field: "effectiveDate", value: "2025-05-22" }),
+      call(storyboardTools(bases, dialogue).recordHand, {
+        field: "effectiveDate",
+        value: "2025-05-22",
+      }),
     ).rejects.toThrow(/wrote no date: ask them/);
   });
 
   it("should record the as-of date the journalist wrote", async () => {
-    dialogue.lastJournalist = "Narodowy Fundusz Zdrowia, dane za 2025 r., as of 2026-08-21.";
-    await call(storyboardTools(bases, dialogue).recordHand, { field: "effectiveDate", value: "2026-08-21" });
+    dialogue.lastJournalist =
+      "Narodowy Fundusz Zdrowia, dane za 2025 r., as of 2026-08-21.";
+    await call(storyboardTools(bases, dialogue).recordHand, {
+      field: "effectiveDate",
+      value: "2026-08-21",
+    });
     expect(String(meta().effectiveDate)).toBe("2026-08-21");
   });
 });
 
 describe("dates in other formats", () => {
   it("should record as ISO a date the journalist wrote in another format", async () => {
-    dialogue.lastJournalist = "Source: Destatis, table 46241-11, as of 7 July 2026.";
-    await call(storyboardTools(bases, dialogue).recordHand, { field: "effectiveDate", value: "July 7, 2026" });
+    dialogue.lastJournalist =
+      "Source: Destatis, table 46241-11, as of 7 July 2026.";
+    await call(storyboardTools(bases, dialogue).recordHand, {
+      field: "effectiveDate",
+      value: "July 7, 2026",
+    });
     expect(String(meta().effectiveDate)).toBe("2026-07-07");
   });
 });
 
 describe("answers recorded a turn late", () => {
   it("should accept the takeaway the journalist gave one exchange earlier", async () => {
-    dialogue.history = [{ proposal: "What should the reader keep?", answer: TAKEAWAY }];
+    dialogue.history = [
+      { proposal: "What should the reader keep?", answer: TAKEAWAY },
+    ];
     dialogue.lastJournalist = "It is a comparison, about trips_millions.";
-    await call(storyboardTools(bases, dialogue).recordTakeaway, { sentence: TAKEAWAY });
+    await call(storyboardTools(bases, dialogue).recordTakeaway, {
+      sentence: TAKEAWAY,
+    });
     expect(meta().takeaway).toBe(TAKEAWAY);
   });
 });
 
 describe("takeaway is a reader's sentence", () => {
   it("should refuse the journalist's claim-shape answer recorded as the takeaway", async () => {
-    dialogue.lastJournalist = "It is a comparison, about the column trips_millions: Lisboa against Porto, Lisboa greater.";
+    dialogue.lastJournalist =
+      "It is a comparison, about the column trips_millions: Lisboa against Porto, Lisboa greater.";
     await expect(
-      call(storyboardTools(bases, dialogue).recordTakeaway, { sentence: dialogue.lastJournalist }),
+      call(storyboardTools(bases, dialogue).recordTakeaway, {
+        sentence: dialogue.lastJournalist,
+      }),
     ).rejects.toThrow(/names the data column trips_millions/);
   });
 });
 
 describe("takeaway is verbatim", () => {
   it("should refuse a paraphrase of the takeaway even when the journalist said yes to it", async () => {
-    dialogue.lastProposal = "Shall I record: Lisboa's ridership is greater than Porto's?";
+    dialogue.lastProposal =
+      "Shall I record: Lisboa's ridership is greater than Porto's?";
     dialogue.lastJournalist = "Yes.";
     await expect(
-      call(storyboardTools(bases, dialogue).recordTakeaway, { sentence: "Lisboa's ridership is greater than Porto's" }),
+      call(storyboardTools(bases, dialogue).recordTakeaway, {
+        sentence: "Lisboa's ridership is greater than Porto's",
+      }),
     ).rejects.toThrow(/takeaway must be the journalist's own words/);
   });
 });
@@ -380,63 +571,127 @@ describe("slot discipline", () => {
   it("should refuse a slot the run does not produce", async () => {
     dialogue.lastJournalist = "A map.";
     await expect(
-      call(storyboardTools(bases, dialogue).recordSlot, { slot: "2", field: "medium", value: "map" }),
+      call(storyboardTools(bases, dialogue).recordSlot, {
+        slot: "2",
+        field: "medium",
+        value: "map",
+      }),
     ).rejects.toThrow(/produces slot\(s\) 1 only/);
   });
 
   it("should refuse a chosen treatment that was never among the candidates", async () => {
     const tools = await withFormat();
-    await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Bar and column", why: "ranks six" }, { type: "Treemap", why: "part of a whole" }] });
+    await call(tools.showCandidates, {
+      slot: "1",
+      candidates: [
+        { type: "Bar and column", why: "ranks six" },
+        { type: "Treemap", why: "part of a whole" },
+      ],
+    });
     dialogue.lastProposal = "Shall I go with a scatter plot?";
     dialogue.lastJournalist = "Yes.";
-    await expect(call(tools.recordSlot, { slot: "1", field: "chosen", value: "Scatter plot" })).rejects.toThrow(
+    await expect(
+      call(tools.recordSlot, {
+        slot: "1",
+        field: "chosen",
+        value: "Scatter plot",
+      }),
+    ).rejects.toThrow(
       /must be one of the candidates you showed: Bar and column, Treemap/,
     );
   });
 
   it("should record the catalogue's name for a treatment the model spelled its own way", async () => {
     const tools = await withFormat();
-    await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Bar Chart", why: "ranks six" }, { type: "Treemap chart", why: "part of a whole" }] });
+    await call(tools.showCandidates, {
+      slot: "1",
+      candidates: [
+        { type: "Bar Chart", why: "ranks six" },
+        { type: "Treemap chart", why: "part of a whole" },
+      ],
+    });
     expect(meta().slots[0].candidates).toEqual(["Bar and column", "Treemap"]);
   });
 
   it("should refuse a candidate that is not a type of the catalogue", async () => {
     const tools = await withFormat();
     await expect(
-      call(tools.showCandidates, { slot: "1", candidates: [{ type: "Bar Chart", why: "a" }, { type: "Galaxy plot", why: "b" }] }),
+      call(tools.showCandidates, {
+        slot: "1",
+        candidates: [
+          { type: "Bar Chart", why: "a" },
+          { type: "Galaxy plot", why: "b" },
+        ],
+      }),
     ).rejects.toThrow(/"Galaxy plot" is not a chart type/);
   });
 
   it("should complete a menu of one drawable candidate with a distinct idea", async () => {
     const tools = await withFormat();
-    await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Bar Chart", why: "a" }] });
+    await call(tools.showCandidates, {
+      slot: "1",
+      candidates: [{ type: "Bar Chart", why: "a" }],
+    });
     expect(meta().slots[0].candidates).toEqual(["Bar and column", "Dot strip"]);
   });
 
   it("should refuse a menu of one candidate it cannot complete", async () => {
     const tools = await withFormat();
-    await expect(call(tools.showCandidates, { slot: "1", candidates: [{ type: "Treemap", why: "a" }] })).rejects.toThrow(/at least two/);
+    await expect(
+      call(tools.showCandidates, {
+        slot: "1",
+        candidates: [{ type: "Treemap", why: "a" }],
+      }),
+    ).rejects.toThrow(/at least two/);
   });
 
   it("should replace a same-idea candidate by a distinct idea and say so", async () => {
     const tools = await withFormat();
-    const r = await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Bar Chart", why: "a" }, { type: "Lollipop", why: "b" }] });
-    expect([meta().slots[0].candidates, /Lollipop is the same idea/.test(r.content[0].text)]).toEqual([["Bar and column", "Dot strip"], true]);
+    const r = await call(tools.showCandidates, {
+      slot: "1",
+      candidates: [
+        { type: "Bar Chart", why: "a" },
+        { type: "Lollipop", why: "b" },
+      ],
+    });
+    expect([
+      meta().slots[0].candidates,
+      /Lollipop is the same idea/.test(r.content[0].text),
+    ]).toEqual([["Bar and column", "Dot strip"], true]);
   });
 
   it("should still refuse two same-idea candidates it cannot draw", async () => {
     const tools = await withFormat();
     await expect(
-      call(tools.showCandidates, { slot: "1", candidates: [{ type: "Treemap", why: "a" }, { type: "Treemap", why: "b" }] }),
+      call(tools.showCandidates, {
+        slot: "1",
+        candidates: [
+          { type: "Treemap", why: "a" },
+          { type: "Treemap", why: "b" },
+        ],
+      }),
     ).rejects.toThrow();
   });
 
   it("should accept the journalist's spelling of a candidate and record its format's interaction", async () => {
     const tools = await withFormat();
-    await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Bar Chart", why: "a" }, { type: "Treemap", why: "b" }] });
+    await call(tools.showCandidates, {
+      slot: "1",
+      candidates: [
+        { type: "Bar Chart", why: "a" },
+        { type: "Treemap", why: "b" },
+      ],
+    });
     dialogue.lastJournalist = "Bar and column.";
-    await call(tools.recordSlot, { slot: "1", field: "chosen", value: "Comparison (Bar Chart)" });
-    expect([meta().slots[0].chosen, meta().slots[0].interaction]).toEqual(["Bar and column", "none"]);
+    await call(tools.recordSlot, {
+      slot: "1",
+      field: "chosen",
+      value: "Comparison (Bar Chart)",
+    });
+    expect([meta().slots[0].chosen, meta().slots[0].interaction]).toEqual([
+      "Bar and column",
+      "none",
+    ]);
   });
 
   it("should fill the slot's proves with the confirmed takeaway", async () => {
@@ -452,23 +707,47 @@ describe("what the local harness can draw", () => {
   // A 12B, told to re-offer the journalist's type, apologised for nine turns while they answered "Bar and column.".
   it("should record a type the journalist asked for that the menu lacked, putting it on the menu", async () => {
     const tools = await withFormat();
-    await call(tools.showCandidates, { slot: "1", candidates: [{ type: "Line", why: "a" }, { type: "Treemap", why: "b" }] });
+    await call(tools.showCandidates, {
+      slot: "1",
+      candidates: [
+        { type: "Line", why: "a" },
+        { type: "Treemap", why: "b" },
+      ],
+    });
     dialogue.lastJournalist = "Bar and column.";
-    await call(tools.recordSlot, { slot: "1", field: "chosen", value: "Bar and column" });
-    expect([meta().slots[0].chosen, meta().slots[0].candidates]).toEqual(["Bar and column", ["Line", "Treemap", "Bar and column"]]);
+    await call(tools.recordSlot, {
+      slot: "1",
+      field: "chosen",
+      value: "Bar and column",
+    });
+    expect([meta().slots[0].chosen, meta().slots[0].candidates]).toEqual([
+      "Bar and column",
+      ["Line", "Treemap", "Bar and column"],
+    ]);
   });
 
   // Every type has a kit in every format except the web slope, parked because its worked example fails verify-web.
   // Phase 2 gave every chart type a gesture kit in every format, so a slope in web is drawable now.
   it("should record a chosen type that only a gesture kit draws", async () => {
     const tools = await withFormat(undefined, "web");
-    await mutateFixture({ candidates: ["Bar and column", "Slope (slopegraph)"] });
+    await mutateFixture({
+      candidates: ["Bar and column", "Slope (slopegraph)"],
+    });
     dialogue.lastJournalist = "Slope (slopegraph).";
-    await expect(call(tools.recordSlot, { slot: "1", field: "chosen", value: "Slope (slopegraph)" })).resolves.toBeDefined();
+    await expect(
+      call(tools.recordSlot, {
+        slot: "1",
+        field: "chosen",
+        value: "Slope (slopegraph)",
+      }),
+    ).resolves.toBeDefined();
   });
 });
 
-async function withFormat(tools = storyboardTools(bases, dialogue), format = "static") {
+async function withFormat(
+  tools = storyboardTools(bases, dialogue),
+  format = "static",
+) {
   dialogue.lastJournalist = "A chart.";
   await call(tools.recordSlot, { slot: "1", field: "medium", value: "chart" });
   dialogue.lastJournalist = `${format[0].toUpperCase()}${format.slice(1)}.`;
@@ -479,7 +758,11 @@ async function withFormat(tools = storyboardTools(bases, dialogue), format = "st
 describe("gaps the harness fills", () => {
   it("should point a missing grounding at record_takeaway rather than ask the model for it", async () => {
     const { gapsForModel } = await import("../src/tools/storyboard.ts");
-    expect(gapsForModel(["grounding is missing — the takeaway was never grounded at G1"])[0]).toMatch(/record_takeaway computes it/);
+    expect(
+      gapsForModel([
+        "grounding is missing — the takeaway was never grounded at G1",
+      ])[0],
+    ).toMatch(/record_takeaway computes it/);
   });
 });
 
@@ -487,15 +770,23 @@ describe("the journalist's format", () => {
   // A 12B told the journalist Bar and column was not offered in scrollytelling and moved them to web on their "Yes.".
   it("should refuse moving the journalist off a format that draws the type they named", async () => {
     const tools = await withFormat(undefined, "scrolly");
-    dialogue.history = [{ proposal: "Which treatment?", answer: "Bar and column." }, { proposal: "Which format?", answer: "Scrollytelling." }];
-    dialogue.lastProposal = "To make this possible, we must change the format to interactive web. Would you like to change the format to interactive web?";
+    dialogue.history = [
+      { proposal: "Which treatment?", answer: "Bar and column." },
+      { proposal: "Which format?", answer: "Scrollytelling." },
+    ];
+    dialogue.lastProposal =
+      "To make this possible, we must change the format to interactive web. Would you like to change the format to interactive web?";
     dialogue.lastJournalist = "Yes.";
-    await expect(call(tools.recordSlot, { slot: "1", field: "format", value: "web" })).rejects.toThrow(/keep format scrolly and record chosen Bar and column/);
+    await expect(
+      call(tools.recordSlot, { slot: "1", field: "format", value: "web" }),
+    ).rejects.toThrow(/keep format scrolly and record chosen Bar and column/);
   });
 
   it("should record a format the journalist names themselves", async () => {
     const tools = await withFormat(undefined, "scrolly");
-    dialogue.history = [{ proposal: "Which treatment?", answer: "Bar and column." }];
+    dialogue.history = [
+      { proposal: "Which treatment?", answer: "Bar and column." },
+    ];
     dialogue.lastJournalist = "Web.";
     await call(tools.recordSlot, { slot: "1", field: "format", value: "web" });
     expect(meta().slots[0].format).toBe("web");

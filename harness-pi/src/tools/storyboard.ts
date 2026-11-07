@@ -61,6 +61,15 @@ const MODEL_SLOT_FIELDS = ["proves"] as const;
 const AFFIRMATIVE =
   /^(yes|yep|ok|okay|sure|fine|agreed|that works|go with (that|it)|oui|d'accord|ça marche|parfait|ja|sì|sim)\b/i;
 
+/** Each claim shape as a journalist may name it, in the languages a sheet or newsroom has used. */
+const SHAPE_WORDS: Record<string, RegExp> = {
+  none: /\b(none|neither|no shape|aucune|aucun|ni l['’]une|keine|keiner|ninguna|ninguno|nenhuma|nenhum|nessuna|nessuno|geen|żadna)\b/i,
+  comparison: /\b(comparison|compar[ae]ison|vergleich|comparaci[oó]n|compara[cç][aã]o|confronto)\b/i,
+  maximum: /\b(maximum|max|massimo|m[aá]ximo|le plus haut|la plus haute|highest|largest)\b/i,
+  minimum: /\b(minimum|min|minimo|m[ií]nimo|le plus bas|la plus basse|lowest|smallest)\b/i,
+  total: /\b(total|sum|somme|summe|totale|suma|soma)\b/i,
+};
+
 const words = (s: string) =>
   s
     .toLowerCase()
@@ -592,7 +601,11 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       direction: Type.Optional(Type.String()),
     }),
     async execute(_id, { shape, column, entity, versus, direction }) {
-      assertJournalistOwns("claim shape", shape, dialogue);
+      // A shape is one word of a closed list; a journalist answers it in their own language ("Aucune de ces
+      // formes", G2 on the 26B: six refusals of a correct "none"). Their answer naming the shape is ownership.
+      const named = SHAPE_WORDS[shape];
+      const answers = [dialogue.lastJournalist, ...(dialogue.history ?? []).map((h) => h.answer)];
+      if (!named || !answers.some((a) => named.test(a ?? ""))) assertJournalistOwns("claim shape", shape, dialogue);
       const fields: Record<string, string> = { claimShape: shape };
       // "none" records no claim: a column or rows the model added would only be refused.
       if (shape === "none") column = entity = versus = direction = undefined;
