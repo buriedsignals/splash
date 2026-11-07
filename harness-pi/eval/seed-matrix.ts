@@ -113,11 +113,14 @@ if (import.meta.main) {
     return !r.variant || r.variant === FURTHER[families.indexOf(family) % FURTHER.length];
   };
   const skip = args.includes("--skip") ? args[args.indexOf("--skip") + 1].split(",") : [];
-  const chosen = runs.filter((r) => (!only || only.includes(familyOf(r.story.slice(3)) ?? "")) && !skip.includes(r.story.slice(3)) && (!lean || leanKeep(r)));
+  // --static: the lean matrix's static cells only (gate G1a compares them with G0's 10/14).
+  const staticOnly = args.includes("--static");
+  const also = args.includes("--also") ? args[args.indexOf("--also") + 1].split(",") : [];
+  const chosen = runs.filter((r) => (!only || only.includes(familyOf(r.story.slice(3)) ?? "")) && !skip.includes(r.story.slice(3)) && (!lean || leanKeep(r) || also.includes(r.story)) && (!staticOnly || !r.variant));
   for (const r of chosen) console.log(`${r.story}\t${r.variant || "static"}\t${r.seed}`);
   if (args.includes("--run")) {
     process.env.SPLASH_STOP_AFTER_CRAFT = "1";
-    const out = join(EVAL, "results", `${new Date().toISOString().slice(0, 10)}-phase2.jsonl`);
+    const out = join(EVAL, "results", `${new Date().toISOString().slice(0, 10)}-${args.includes("--out") ? args[args.indexOf("--out") + 1] : "phase2"}.jsonl`);
     mkdirSync(join(EVAL, "results"), { recursive: true });
     for (const r of chosen) {
       const line = await evaluate(r.story, "stock", out, r.variant, r.seed);

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Serve the local Splash model: one 96k slot (the driver sends one request at a time), q8_0 KV
+# Serve the local Splash model: one 64k slot, the launch window (Tom, REMI §1) (the driver sends one request at a time), q8_0 KV
 # cache, a bounded reasoning budget, and the vision projector so renders can be looked at.
 set -euo pipefail
 
 MODELS_DIR="${SPLASH_MODELS_DIR:-$HOME/.splash-harness/models}"
 MODEL="${SPLASH_MODEL:-$MODELS_DIR/gemma-4-12b-it/gemma-4-12b-it-Q4_K_M.gguf}"
 MMPROJ="${SPLASH_MMPROJ:-$MODELS_DIR/gemma-4-12b-it/mmproj-BF16.gguf}"
-CTX="${SPLASH_CTX:-98304}"
+CTX="${SPLASH_CTX:-65536}"
 PORT="${SPLASH_PORT:-8090}"
 
 for f in "$MODEL" "$MMPROJ"; do
