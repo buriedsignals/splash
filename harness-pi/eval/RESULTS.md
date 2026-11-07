@@ -476,5 +476,5 @@ The first attempt measured one cell and stopped, which produced three fixes:
 - a `reference` with no value (`a237414d2` refused it; the 12B then resent the same list nine times and never
   rendered the cartogram, so `7cad760ab` reads the value from the note's figure in code, or drops the gesture).
 
-**Limits:** `7cad760ab` landed mid-rerun, after the cartogram cell; that cell was re-run on it (650 s, pass) and the
-re-run counts. Four cells (marimekko onward) ran on `7cad760ab`. One run per cell.
+**Limits:** `7cad760ab` landed mid-rerun; only small multiples and the cartogram re-run (650 s, pass, the re-run
+counts) started on it, the other twelve ran on `a237414d2`. One run per cell.
