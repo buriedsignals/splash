@@ -159,3 +159,19 @@ describe("record_gestures arguments", () => {
     expect(recordGestures.prepareArguments!(given)).toEqual(given);
   });
 });
+
+// Replay scan 2026-11-07: "Export named 'data' not found" (2 of 11 recovered) and "readFileSync is not defined"
+// (2 of 5): the hint showed readFileSync(...) without its import lines, and never said data.json has no named export.
+describe("a beat that throws while loading", () => {
+  it("should be told the import lines its reading code needs", async () => {
+    const { beatDir } = story("claimShape: none");
+    writeFileSync(join(beatDir, "beat.mjs"), `import { data } from "./data.json";\nexport default { title: "t", rows: data };`);
+    await expect(importBeat(beatDir)).rejects.toThrow(/import \{ readFileSync \} from "node:fs"; import \{ join \} from "node:path";/);
+  });
+
+  it("should be told data.json has no named export when it imports one", async () => {
+    const { beatDir } = story("claimShape: none");
+    writeFileSync(join(beatDir, "beat.mjs"), `import { data } from "./data.json";\nexport default { title: "t", rows: data };`);
+    await expect(importBeat(beatDir)).rejects.toThrow(/data\.json is not a module to import from/);
+  });
+});

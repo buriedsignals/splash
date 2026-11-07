@@ -227,7 +227,7 @@ export function readingHint(here) {
   const value = table.columns?.find((c) => c.type === "number")?.name ?? columns[1];
   return (
     `data.json is { columns: [{ name, type }], rows: [[…]] }: its columns are ${columns.map((c) => `"${c}"`).join(", ")} and each row is an array in that order, e.g. ${JSON.stringify(table.rows?.[0])}. ` +
-    `Read it: const data = JSON.parse(readFileSync(join(import.meta.dirname, "data.json"), "utf8")); const col = (n) => data.columns.findIndex((c) => c.name === n); ` +
+    `Read it: import { readFileSync } from "node:fs"; import { join } from "node:path"; const data = JSON.parse(readFileSync(join(import.meta.dirname, "data.json"), "utf8")); const col = (n) => data.columns.findIndex((c) => c.name === n); ` +
     `const rows = data.rows.map((r) => ({ name: r[col("${name}")], value: Number(r[col("${value}")]) })).sort((a, b) => b.value - a.value);`
   );
 }
@@ -285,7 +285,7 @@ export async function importBeat(here) {
     ({ default: beat } = await import(file));
   } catch (error) {
     if (error instanceof TypeError || error instanceof ReferenceError || error instanceof SyntaxError && !error?.errors)
-      throw new Error(`beat.mjs throws while loading: ${errorText(error)} — ${readingHint(here)}`);
+      throw new Error(`beat.mjs throws while loading: ${errorText(error)} — ${/data\.json/.test(errorText(error)) ? "data.json is not a module to import from: read it as a file. " : ""}${readingHint(here)}`);
     throw error;
   }
   if (existsSync(join(here, "data.json")) && !/data\.json/.test(readFileSync(file, "utf8")))
