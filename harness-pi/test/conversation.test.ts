@@ -86,3 +86,61 @@ describe("converse narrowing a stalled turn", () => {
     expect((await narrowed())[7]).toEqual(["record_slot", "show_candidates"]);
   });
 });
+
+describe("converse bounds (Spotlight's watchdog: 16 / 12 / 6)", () => {
+  type Ev = { type: string; toolName?: string; isError?: boolean; result?: unknown };
+  /** A session whose every prompt plays `turn` (the events of one model turn) through its listener. */
+  const scripted = (turn: (i: number) => Ev[]) => {
+    let listener: (e: Ev) => void = () => {};
+    let i = 0;
+    let aborted = false;
+    return {
+      session: {
+        subscribe: (l: (e: Ev) => void) => ((listener = l), () => {}),
+        prompt: async () => {
+          for (const e of turn(i++)) {
+            if (aborted) break;
+            listener(e);
+          }
+        },
+        getLastAssistantText: () => "Which medium would you like?",
+        abort: async () => void (aborted = true),
+      },
+    };
+  };
+  const go = (turn: (i: number) => Ev[]) =>
+    converse({
+      session: scripted(turn).session as never,
+      first: "Start.",
+      journalist: { answer: async () => "A chart." },
+      dialogue: { lastJournalist: "", lastProposal: "" },
+      conversational: true,
+      done: async () => false,
+      gaps: async () => "effectiveDate is missing",
+      limits: { rounds: 60, toolCalls: 500 },
+      log: [],
+    });
+  const read = (i: number): Ev => ({ type: "tool_execution_end", toolName: "read_file", result: { content: [{ text: `r${i}` }] } });
+  const refused = (i: number): Ev => ({ type: "tool_execution_end", toolName: "record_slot", isError: true, result: { content: [{ text: `refused ${i}` }] } });
+  const record: Ev = { type: "tool_execution_end", toolName: "record_slot", result: { content: [{ text: "ok" }] } };
+
+  it("should stop a session that made no first record within 16 model turns", async () => {
+    const r = await go((i) => [read(i), { type: "turn_end" }]);
+    expect(r.stop).toBe("no first record in 16 model turns");
+  });
+
+  it("should stop a session that made no new record within 12 model turns of its last", async () => {
+    const r = await go((i) => [i === 0 ? record : read(i), { type: "turn_end" }]);
+    expect(r.stop).toBe("no new record in 12 model turns");
+  });
+
+  it("should stop after six tool calls in a row refused, varied or not", async () => {
+    const r = await go((i) => [refused(i), { type: "turn_end" }]);
+    expect(r.stop).toBe("6 tool calls refused in a row");
+  });
+
+  it("should count every refusal it saw, not only the streak that stopped it", async () => {
+    const r = await go((i) => [refused(i), i % 3 === 2 ? record : read(i), { type: "turn_end" }]);
+    expect(r.refusals).toBeGreaterThan(6);
+  });
+});

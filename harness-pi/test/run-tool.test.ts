@@ -89,3 +89,11 @@ describe("refusal hints", () => {
     expect(refusalHint("error: these country names match no country on the map")).toBe("");
   });
 });
+
+describe("report", () => {
+  it("should say how many stderr chars the model does not see, and where they are kept", async () => {
+    const { report, CHILD_LOG } = await import("../src/tools/run.ts");
+    const r = report(["bun", "x"], { exitCode: 1, stdout: "", stderr: "e".repeat(5_000) });
+    expect(r.content[0].text).toContain(`[1000 earlier chars dropped; full output in ${CHILD_LOG}]`);
+  });
+});

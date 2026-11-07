@@ -33,7 +33,15 @@ export interface ConverseResult {
   rounds: number;
   toolCalls: number;
   stop: string;
+  /** Every tool call the harness or a tool refused, whether or not it ended the session. */
+  refusals: number;
 }
+
+// Spotlight's watchdog (harness/pi/src/extension.ts PROGRESS_*_RECORD_TURNS, tools/run.ts
+// REFUSAL_STREAK): measured there, productive workers took at most 14 model turns to a first record.
+export const FIRST_RECORD_TURNS = 16;
+export const NEXT_RECORD_TURNS = 12;
+export const REFUSAL_STREAK = 6;
 
 const CLAIMED_RECORD =
   /\b(I have|I've|I)( now| also| successfully| just)? (recorded|saved|materiali[sz]ed|updated|refined|registered)\b/i;
@@ -58,7 +66,18 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
   let sameFailure = 0;
   let stop = "";
   let menu = "";
+  let everRecorded = false;
+  let sinceRecord = 0;
+  let refusalStreak = 0;
+  let refusals = 0;
   const off = o.session.subscribe((e) => {
+    if (e.type === "turn_end") {
+      sinceRecord++;
+      if (!everRecorded && sinceRecord >= FIRST_RECORD_TURNS) stop ||= `no first record in ${FIRST_RECORD_TURNS} model turns`;
+      if (everRecorded && sinceRecord >= NEXT_RECORD_TURNS) stop ||= `no new record in ${NEXT_RECORD_TURNS} model turns`;
+      if (stop) void o.session.abort();
+      return;
+    }
     if (e.type !== "tool_execution_end") return;
     toolCalls++;
     const out = JSON.stringify(e.result?.content?.[0]?.text ?? "").slice(
@@ -66,8 +85,15 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
       300,
     );
     o.log.push(`TOOL ${e.toolName}${e.isError ? " ERROR" : ""}: ${out}`);
-    if (!e.isError && /^(record_|materialise|propose_palette|show_candidates)/.test(e.toolName))
+    if (!e.isError && /^(record_|materialise|propose_palette|show_candidates)/.test(e.toolName)) {
       recorded++;
+      everRecorded = true;
+      sinceRecord = 0;
+    }
+    if (e.isError) {
+      refusals++;
+      if (++refusalStreak >= REFUSAL_STREAK) stop ||= `${REFUSAL_STREAK} tool calls refused in a row`;
+    } else refusalStreak = 0;
     // The menu the code recorded is the one the journalist sees, whatever the model's prose says.
     if (!e.isError && e.toolName === "show_candidates")
       menu = String(e.result?.content?.[0]?.text ?? "").split("ask which one:\n")[1] ?? "";
@@ -80,9 +106,9 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
       failures.set(sig, (failures.get(sig) ?? 0) + 1);
       sameFailure = Math.max(sameFailure, (failures.get(sig) ?? 0) - 1);
     }
-    if (toolCalls >= limits.toolCalls) stop = "tool-call cap";
+    if (toolCalls >= limits.toolCalls) stop ||= "tool-call cap";
     if (sameFailure + 1 >= limits.sameFailure)
-      stop = `same failure ${limits.sameFailure}x`;
+      stop ||= `same failure ${limits.sameFailure}x`;
     if (stop) void o.session.abort();
   });
   const timer = setTimeout(() => {
@@ -162,5 +188,5 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
     clearTimeout(timer);
     off();
   }
-  return { rounds, toolCalls, stop: stop || "round cap" };
+  return { rounds, toolCalls, stop: stop || "round cap", refusals };
 }

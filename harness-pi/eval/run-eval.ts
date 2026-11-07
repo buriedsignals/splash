@@ -13,6 +13,7 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
+import { routeOf } from "../src/pi.ts";
 import { createRunRoot, stageStory } from "../src/run-root.ts";
 import { scoreRun } from "./score.ts";
 
@@ -87,6 +88,7 @@ export async function evaluate(story: string, arm: string, out: string, variant 
   rmSync(root, { recursive: true, force: true });
   const line = {
     arm,
+    route: routeOf(arm),
     tag,
     wallSeconds: Math.round((Date.now() - t0) / 1000),
     report: report.trim().slice(0, 400),

@@ -14,6 +14,7 @@ import {
 } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
+import { routeOf } from "../src/pi.ts";
 import { scoreRun } from "./score.ts";
 import { assertWithinCap, record } from "./spend.ts";
 
@@ -21,7 +22,7 @@ const CHECKOUT = resolve(import.meta.dirname, "..", "..");
 const HELDOUT: string[] = JSON.parse(
   readFileSync(join(CHECKOUT, "training", "heldout.json"), "utf8"),
 );
-const PAID_ARMS = new Set(["teacher"]);
+const PAID_ARMS = new Set(["teacher", "teacher31"]);
 
 export interface BatchPlan {
   arm: string;
@@ -198,7 +199,7 @@ export async function runBatch(
         clearInterval(watch);
         // The free tier answered 429: the same run resumes on the paid arm, whose routing falls back between providers.
         const score = await scoreRun(root, story);
-        if (!stop && !score.completed && plan.paidFallback && arms.length === 1 && rateLimited(readFileSync(log, "utf8"))) arms.push("teacher");
+        if (!stop && !score.completed && plan.paidFallback && arms.length === 1 && rateLimited(readFileSync(log, "utf8"))) arms.push(arms[0].replace(/-free$/, ""));
       }
       const cost = sessionCost(root);
       spent += cost;
@@ -211,7 +212,7 @@ export async function runBatch(
       const kept = verdict.gold && !stop;
       appendFileSync(
         join(out, "runs.jsonl"),
-        `${JSON.stringify({ story, sample, arms, root, cost, kept, rejected: stop ? [stop, ...verdict.rejected] : verdict.rejected, score: { ...score, failures: score.failures.length } })}\n`,
+        `${JSON.stringify({ story, sample, arms, routes: arms.map(routeOf), root, cost, kept, rejected: stop ? [stop, ...verdict.rejected] : verdict.rejected, score: { ...score, failures: score.failures.length } })}\n`,
       );
       if (kept)
         for (const session of sessionsOf(root, story))

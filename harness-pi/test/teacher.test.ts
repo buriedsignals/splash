@@ -110,3 +110,16 @@ describe("gold gates", () => {
     expect(() => assertPlan({ ...plan, arm: "teacher-free", paidFallback: true })).toThrow(/paid fallback is paid/);
   });
 });
+
+describe("routeOf", () => {
+  it("should label the local arm llama-server and both teachers openrouter", async () => {
+    const { routeOf } = await import("../src/pi.ts");
+    expect(["stock", "teacher", "teacher31-free"].map(routeOf)).toEqual(["llama-server", "openrouter", "openrouter"]);
+  });
+});
+
+describe("the 31B arm", () => {
+  it("should be held to the paid budget like the 26B", () => {
+    expect(() => assertPlan({ ...plan, arm: "teacher31" })).toThrow();
+  });
+});

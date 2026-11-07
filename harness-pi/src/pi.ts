@@ -31,6 +31,16 @@ export const ARMS: Record<string, { provider: string; id: string; modelsPath: st
   "teacher31-free": { provider: "splash-teacher", id: "google/gemma-4-31b-it:free", modelsPath: join(SERVE_DIR, "models.teacher.json"), tier: "31b" },
 };
 
+/**
+ * The serving route a result was measured on (Tom, REMI §1: label every result by route). The local
+ * provider is llama-server unless SPLASH_ROUTE names another (osaurus); the teacher is OpenRouter.
+ */
+export function routeOf(arm: string): string {
+  const a = ARMS[arm];
+  if (!a) return "unknown";
+  return a.provider === "splash-teacher" ? "openrouter" : process.env.SPLASH_ROUTE ?? "llama-server";
+}
+
 export async function loadModel({
   provider = "splash-local",
   id = "gemma-4-12b",

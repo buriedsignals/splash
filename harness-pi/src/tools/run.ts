@@ -5,7 +5,7 @@
 // formatPalette, ...) have no CLI. Its code, like every component a render executes, is model-authored
 // and runs unconfined: the tool layer bounds where files are written, not what that code does.
 import { existsSync, readdirSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
+import { appendFile, mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { defineTool } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
@@ -15,6 +15,8 @@ const SLUG = /^[a-z0-9][a-z0-9-]*$/;
 const PASCAL = /^[A-Z][A-Za-z0-9]*$/;
 const PAGE = /^[a-z0-9][a-z0-9._-]*$/;
 const OUTPUT_TAIL = 4_000;
+/** Every child's full output, under the run root: the model sees a tail, the log keeps the rest. */
+export const CHILD_LOG = "child-output.log";
 // A map video renders in up to 7.5 minutes on the target Mac (its runner stops Remotion itself at 8).
 const TIMEOUT_MS = 12 * 60_000;
 
@@ -60,9 +62,10 @@ export async function runCommand(
   return { exitCode, stdout, stderr };
 }
 
-function report(argv: string[], r: RunResult) {
+export function report(argv: string[], r: RunResult) {
+  // A tail that drops output says how much and where the rest is (Tom, REMI §4: no dropped input unsaid).
   const tail = (s: string) =>
-    s.length > OUTPUT_TAIL ? `…${s.slice(-OUTPUT_TAIL)}` : s;
+    s.length > OUTPUT_TAIL ? `[${s.length - OUTPUT_TAIL} earlier chars dropped; full output in ${CHILD_LOG}]\n…${s.slice(-OUTPUT_TAIL)}` : s;
   const body = [`$ ${argv.slice(1).join(" ")}`, `exit ${r.exitCode}`];
   if (r.stdout.trim()) body.push(`stdout:\n${tail(r.stdout.trim())}`);
   // Bun prints the source excerpt before the error line; the reason goes first so a tail never hides it.
@@ -114,8 +117,14 @@ export function refusalHint(output: string): string {
 export function runTools(bases: Bases) {
   const skill = (name: string, script: string) =>
     join(bases.root, "skills", name, "scripts", script);
-  const exec = async (argv: string[]) =>
-    report(argv, await runCommand(argv, bases));
+  const exec = async (argv: string[]) => {
+    const r = await runCommand(argv, bases);
+    await appendFile(
+      join(bases.root, CHILD_LOG),
+      `=== ${new Date().toISOString()} $ ${argv.slice(1).join(" ")}\nexit ${r.exitCode}\n--- stdout\n${r.stdout}\n--- stderr\n${r.stderr}\n`,
+    ).catch(() => {});
+    return report(argv, r);
+  };
 
   const scaffoldStatic = defineTool({
     name: "scaffold_static_beat",
