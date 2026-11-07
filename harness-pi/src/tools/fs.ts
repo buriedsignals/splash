@@ -111,6 +111,10 @@ export function resolveReadable(bases: Bases, path: string): string {
   // wrote its beat) is the story's own folder.
   const story = realpathSync(bases.storyDir);
   const stories = dirname(story);
+  // An absolute path through this story's folder in a mistyped run directory (a 12B retyped the run's
+  // 13-digit stamp with one digit too many, six times over) is the story's own file.
+  const through = `${sep}stories${sep}${basename(story)}${sep}`;
+  if (!within(abs, story) && abs.includes(through)) abs = realOrParent(join(story, abs.slice(abs.lastIndexOf(through) + through.length)));
   if (within(abs, stories) && !within(abs, story)) {
     const [folder, ...rest] = relative(stories, abs).split(sep);
     const fold = (name: string) => name.toLowerCase().replace(/[-_\s]/g, "");

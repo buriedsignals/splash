@@ -34,4 +34,9 @@ describe("resolveReadable", () => {
   it("should read the only beat's data.json when the model puts it at the run root", () => {
     expect(resolveReadable(bases, join(root, "data.json"))).toBe(join(storyDir, "beats", "1", "data.json"));
   });
+
+  // Replay scan 2026-11-07: a 12B retyped its run's absolute path with one digit too many, six times over.
+  it("should read the story's file through a mistyped run directory", () => {
+    expect(resolveReadable(bases, join(root + "0", "stories", "stress-q-safety-incidents", "beats", "1", "data.json"))).toBe(join(storyDir, "beats", "1", "data.json"));
+  });
 });
