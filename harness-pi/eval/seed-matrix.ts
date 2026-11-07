@@ -116,8 +116,10 @@ if (import.meta.main) {
   const skip = args.includes("--skip") ? args[args.indexOf("--skip") + 1].split(",") : [];
   // --static: the lean matrix's static cells only (gate G1a compares them with G0's 10/14).
   const staticOnly = args.includes("--static");
+  // --further: the lean matrix's web, video and scrolly cells only (gate G1, after G1a measured the static ones).
+  const furtherOnly = args.includes("--further");
   const also = args.includes("--also") ? args[args.indexOf("--also") + 1].split(",") : [];
-  const chosen = runs.filter((r) => (!only || only.includes(familyOf(r.story.slice(3)) ?? "")) && !skip.includes(r.story.slice(3)) && (!lean || leanKeep(r) || also.includes(r.story)) && (!staticOnly || !r.variant));
+  const chosen = runs.filter((r) => (!only || only.includes(familyOf(r.story.slice(3)) ?? "")) && !skip.includes(r.story.slice(3)) && (!lean || leanKeep(r) || also.includes(r.story)) && (!staticOnly || !r.variant) && (!furtherOnly || !!r.variant));
   for (const r of chosen) console.log(`${r.story}\t${r.variant || "static"}\t${r.seed}`);
   if (args.includes("--run")) {
     process.env.SPLASH_STOP_AFTER_CRAFT = "1";
