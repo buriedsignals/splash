@@ -24,6 +24,8 @@ export function agentDir(): string {
 /** The model arms a run can name with --model: the local student and the OpenRouter teacher. */
 export const ARMS: Record<string, { provider: string; id: string; modelsPath: string; tier: Tier }> = {
   stock: { provider: "splash-local", id: "gemma-4-12b", modelsPath: join(SERVE_DIR, "models.json"), tier: "12b" },
+  // The 26B-A4B on the local server (T3 run locally first, 2026-11-07: free, and the Mac is the target).
+  local26: { provider: "splash-local", id: "gemma-4-26b", modelsPath: join(SERVE_DIR, "models.json"), tier: "26b" },
   // The teacher is Gemma 4 26B-A4B (Tom, REMI §2/§8); the 31B stays for a gate the 26B fails.
   teacher: { provider: "splash-teacher", id: "google/gemma-4-26b-a4b-it", modelsPath: join(SERVE_DIR, "models.teacher.json"), tier: "26b" },
   "teacher-free": { provider: "splash-teacher", id: "google/gemma-4-26b-a4b-it:free", modelsPath: join(SERVE_DIR, "models.teacher.json"), tier: "26b" },
