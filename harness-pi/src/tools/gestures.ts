@@ -214,6 +214,13 @@ export function gestureTools(
           throw new Error(
             `gestures[${i}].do: "${g.do}" is not a gesture this kit draws — one of ${gestures.join(", ")}`,
           );
+        // A rule with no value is drawn at NaN, and the render still exits 0 (G1a, 2026-11-07).
+        if (g.do === "reference" && !Number.isFinite(Number(g.value ?? NaN))) {
+          const stated = String(g.note ?? "").match(/-?\d+(?:[.,]\d+)?/)?.[0]?.replace(",", ".");
+          throw new Error(
+            `gestures[${i}].value: a reference is a rule at a stated value and this one has none — e.g. { do: "reference", value: ${stated ?? "<the figure the rule marks>"}, note: ${JSON.stringify(g.note ?? "<what it is>")} }`,
+          );
+        }
         const named = [
           ...(Array.isArray(g.mark) ? g.mark.map((m: string, k: number) => [`mark[${k}]`, m]) : g.mark !== undefined ? [["mark", g.mark]] : []),
           ...(g.marks ?? []).map((m: string, k: number) => [`marks[${k}]`, m]),

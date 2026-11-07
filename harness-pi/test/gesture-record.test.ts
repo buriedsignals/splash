@@ -92,6 +92,13 @@ describe("record_gestures", () => {
     await expect((recordGestures as any).execute("1", { gestures: list })).rejects.toThrow(/already recorded: render it/);
   });
 
+  // G1a, 2026-11-07: a reference with no value was accepted and drawn at NaN, forty times.
+  it("should refuse a reference with no value, offering the figure its note states", async () => {
+    const { root, storyDir } = story("claimShape: none");
+    const { recordGestures } = gestureTools({ root, storyDir }, { beat: "1", gestures: ["reference"] });
+    await expect((recordGestures as any).execute("1", { gestures: [{ do: "reference", mark: "France", note: "1986" }] })).rejects.toThrow(/gestures\[0\]\.value: .*value: 1986/);
+  });
+
   it("should render on record and return the render's words", async () => {
     const { root, storyDir } = story("claimShape: none");
     const { recordGestures } = gestureTools({ root, storyDir }, { beat: "1", gestures: ["highlight"], render: async () => "REFUSED — gestures[0].note: …" });
