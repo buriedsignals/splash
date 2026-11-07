@@ -209,17 +209,23 @@ export function gestureTools(
         );
       const known = new Set(names.map(fold));
       const dropped: string[] = [];
+      const filled: string[] = [];
       const kept = list.filter((g, i) => {
         if (!gestures.includes(g.do))
           throw new Error(
             `gestures[${i}].do: "${g.do}" is not a gesture this kit draws — one of ${gestures.join(", ")}`,
           );
-        // A rule with no value is drawn at NaN, and the render still exits 0 (G1a, 2026-11-07).
+        // A rule with no value is drawn at NaN, and the render still exits 0 (G1a, 2026-11-07). Its value is
+        // paperwork: read from the figure its note states; with none, the gesture is dropped, never refused —
+        // refused, a 12B sent the same list nine times and never rendered.
         if (g.do === "reference" && !Number.isFinite(Number(g.value ?? NaN))) {
           const stated = String(g.note ?? "").match(/-?\d+(?:[.,]\d+)?/)?.[0]?.replace(",", ".");
-          throw new Error(
-            `gestures[${i}].value: a reference is a rule at a stated value and this one has none — e.g. { do: "reference", value: ${stated ?? "<the figure the rule marks>"}, note: ${JSON.stringify(g.note ?? "<what it is>")} }`,
-          );
+          if (stated === undefined) {
+            dropped.push(`gestures[${i}] (reference with no value and no figure in its note)`);
+            return false;
+          }
+          g.value = Number(stated);
+          filled.push(`gestures[${i}].value ${stated}, read from its note`);
         }
         const named = [
           ...(Array.isArray(g.mark) ? g.mark.map((m: string, k: number) => [`mark[${k}]`, m]) : g.mark !== undefined ? [["mark", g.mark]] : []),
@@ -234,7 +240,7 @@ export function gestureTools(
         if (!unknown) return true;
         const key = `${i}:${g.do}`;
         if (refusedOnce.has(key)) {
-          dropped.push(`gestures[${i}] (${g.do} on "${unknown[1]}")`);
+          dropped.push(`gestures[${i}] (${g.do} on "${unknown[1]}", refused twice for a name the beat does not draw)`);
           return false;
         }
         refusedOnce.add(key);
@@ -263,7 +269,7 @@ export function gestureTools(
         content: [
           {
             type: "text" as const,
-            text: `recorded ${kept.length} gestures in beats/${beat}/gestures.json${dropped.length ? `; dropped ${dropped.join(", ")}, refused twice for a name the beat does not draw` : ""}${render ? "; rendered:" : "; render with render_beat"}${rendered}`,
+            text: `recorded ${kept.length} gestures in beats/${beat}/gestures.json${filled.length ? `; filled ${filled.join(", ")}` : ""}${dropped.length ? `; dropped ${dropped.join(", ")}` : ""}${render ? "; rendered:" : "; render with render_beat"}${rendered}`,
           },
         ],
         details: {},

@@ -92,11 +92,19 @@ describe("record_gestures", () => {
     await expect((recordGestures as any).execute("1", { gestures: list })).rejects.toThrow(/already recorded: render it/);
   });
 
-  // G1a, 2026-11-07: a reference with no value was accepted and drawn at NaN, forty times.
-  it("should refuse a reference with no value, offering the figure its note states", async () => {
-    const { root, storyDir } = story("claimShape: none");
+  // G1a, 2026-11-07: a reference with no value was drawn at NaN; refused instead, a 12B resent it nine times.
+  it("should fill a reference's missing value from the figure its note states", async () => {
+    const { root, storyDir, beatDir } = story("claimShape: none");
     const { recordGestures } = gestureTools({ root, storyDir }, { beat: "1", gestures: ["reference"] });
-    await expect((recordGestures as any).execute("1", { gestures: [{ do: "reference", mark: "France", note: "1986" }] })).rejects.toThrow(/gestures\[0\]\.value: .*value: 1986/);
+    await (recordGestures as any).execute("1", { gestures: [{ do: "reference", mark: "France", note: "Moyenne : 65,1 %" }] });
+    expect(JSON.parse(readFileSync(join(beatDir, "gestures.json"), "utf8")).gestures[0].value).toBe(65.1);
+  });
+
+  it("should drop, not refuse, a reference whose note states no figure", async () => {
+    const { root, storyDir } = story("claimShape: none");
+    const { recordGestures } = gestureTools({ root, storyDir }, { beat: "1", gestures: ["highlight", "reference"] });
+    const out = await (recordGestures as any).execute("1", { gestures: [{ do: "highlight", mark: "France" }, { do: "reference", note: "la moyenne" }] });
+    expect(out.content[0].text).toContain("dropped gestures[1] (reference with no value");
   });
 
   it("should render on record and return the render's words", async () => {
