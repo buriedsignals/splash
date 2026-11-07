@@ -502,3 +502,31 @@ video, bullet scrolly, calendar heatmap web, marimekko web, parallel coordinates
 **Limits:** one run per cell; the two fixes (`connected-scatter` scrolly and `small-multiples` web kits, never-fail
 rule) were verified by re-running the cell — the refusal no longer occurs — not by a unit test: no test renders a
 per-type kit. Three cells hit the 15 min cap (Rémy's bound), which also skips the driver's repair.
+
+## G2 — T3 on the 26B-A4B, run locally (2026-11-07, route `llama-server`, `local26` arm)
+
+Rémy chose the local 26B over OpenRouter for T3 (free, the Mac is the target): `ggml-org/gemma-4-26B-A4B-it-GGUF`
+Q4_0 + mmproj Q8_0, same `serve/llama-server.sh` (64k, q8_0 KV, reasoning budget 400). Full runs to delivery, gesture
+fallback off, **15 min cap** (Rémy's bound; U11's 12B baseline ran with 45 min), one run per story. $0 spent.
+Gold gates: delivered, headline faithful, last render exit 0, no code repair, no fallback.
+
+| story | 26B local (15 min) | 12B, U11 (45 min) |
+|---|---|---|
+| stress-p (Lisboa) static | ✅ gold, 8.6 min | ✅ |
+| stress-t recycling, web map | ✅ gold, 10.6 min | ❌ |
+| r8 static | ❌ cap at craft: refused "two readings for Pedelecs at 2025", data.json never filtered | ✅ |
+| real-gwis static | ❌ cap at craft (stacked area) | ❌ |
+| gx-connected-scatter (full sheet) | ❌ cap at craft: filtered to 1 entity, refused (3 to 20) | ❌ |
+| gx-small-multiples (full sheet) | ❌ storyboard blocked by a harness defect (below); after the fix, cap at craft: low-carbon share computed as 0 for every panel, same refusal 7× | ⚠️ headline not faithful |
+
+**2/6 gold** against the 12B's 1/5 on the held-out five (2 counting Lisboa). The storyboard takes 6–9 min on every
+story and the 15 min cap stops four runs inside craft, so the craft misses are measured on 5–6 min of craft.
+
+Misses by owner:
+- **Harness (fixed, `77721b0e6`):** `record_claim` refused a correct `shape: "none"` six times because the
+  journalist said "Aucune de ces formes"; ownership of a closed-list value now accepts the shape named in the
+  journalist's language. Test fails without the fix. Re-run: the storyboard passes.
+- **Operator (mine):** the first held-out pass gave the two gx stories the matrix's short sheets (no claim, intent or
+  confirm answers), so the scripted journalist answered "I don't know." until the bounds; re-run on the `.full` sheets.
+- **Model / cap:** r8, real-gwis, connected-scatter, small-multiples craft. Each refusal names the field and a value
+  that works; whether the 26B repairs them given more than ~5 min is not measured.
