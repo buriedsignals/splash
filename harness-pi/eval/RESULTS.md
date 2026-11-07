@@ -455,3 +455,26 @@ gained the as-of date (`08abfe2a7`); their first runs stalled on `effectiveDate`
 The plan asks for at least three runs per story. They are moved to U9, where both arms run on one RunPod pod at least
 three times each (KTD8), because local full runs took 20–45 minutes apiece (Rémy, time). This single local run
 confirms the selection.
+
+## G1a — lean static matrix on the launch runner (2026-11-07, route `llama-server`, local 12B)
+
+Runner aligned with Tom's launch (T1): window 65,536, fold 32,012, watchdog 16/12/6, thinking off. Same 14 static
+cells as G0, one run each, 15 min cap, `SPLASH_GESTURE_FALLBACK=0`, gesture defaults as they stand (xy, multiples
+and paired on their per-type kits — G0's second pass ran `SPLASH_GESTURES_ALL=1`). Pass = G0's rule: the last
+render accepted by every guard and the gesture core, exit 0, no `NaN` in its output. Raw lines:
+`results/2026-11-07-g1a-static.jsonl` (first attempt), `results/2026-11-07-g1a-static-r2.jsonl`.
+
+**13/14, against G0's 10/14.** Gained calendar heatmap and proportional symbol (G0's two losses), kept the rest;
+lost parallel coordinates (model error: `export const entities = entities;` after 18 writes, the load refusal named
+it and the model never repaired it — a Tune candidate in `TUNE.md`).
+
+The first attempt measured one cell and stopped, which produced three fixes:
+- area looped 80 turns re-recording one gesture list with a `reference` drawn at `NaN`, and every accepted repeat
+  reset the 12-turn bound (`4e885ef75`: a repeat is not progress unless a file was written since);
+- a registry `ConnectionRefused` in `bun install` ended the matrix (`7953a9b58`: three attempts, a cell that cannot
+  start is recorded and the matrix goes on);
+- a `reference` with no value (`a237414d2` refused it; the 12B then resent the same list nine times and never
+  rendered the cartogram, so `7cad760ab` reads the value from the note's figure in code, or drops the gesture).
+
+**Limits:** `7cad760ab` landed mid-rerun, after the cartogram cell; that cell was re-run on it (650 s, pass) and the
+re-run counts. Four cells (marimekko onward) ran on `7cad760ab`. One run per cell.
