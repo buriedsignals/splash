@@ -25,4 +25,13 @@ describe("resolveReadable", () => {
   it("should still refuse another story, naming this story's folder", () => {
     expect(() => resolveReadable(bases, join(root, "stories", "other", "STORYBOARD.md"))).toThrow(`the story is ${storyDir}`);
   });
+
+  // Replay scan 2026-11-07: 56 reads of data.json refused in 11 sessions since 2026-10-28, given bare or at the run root.
+  it("should read the only beat's data.json when the model names it bare", () => {
+    expect(resolveReadable(bases, "data.json")).toBe(join(storyDir, "beats", "1", "data.json"));
+  });
+
+  it("should read the only beat's data.json when the model puts it at the run root", () => {
+    expect(resolveReadable(bases, join(root, "data.json"))).toBe(join(storyDir, "beats", "1", "data.json"));
+  });
 });

@@ -116,6 +116,8 @@ export function resolveReadable(bases: Bases, path: string): string {
     const fold = (name: string) => name.toLowerCase().replace(/[-_\s]/g, "");
     if (fold(folder) === fold(basename(story))) abs = realOrParent(join(story, ...rest));
   }
+  // A missing file named bare or at the run root ("data.json") is asked of the story.
+  if (!existsSync(abs) && dirname(abs) === realpathSync(bases.root)) abs = join(realpathSync(bases.storyDir), basename(abs));
   // A beat file asked for at the story root ("data.json") is the story's only beat's.
   if (!existsSync(abs) && dirname(abs) === realpathSync(bases.storyDir)) {
     const beats = join(bases.storyDir, "beats");
