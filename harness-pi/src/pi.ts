@@ -2,6 +2,7 @@
 // no extensions. A session sees exactly the system prompt and tools the harness gives it.
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
+import type { Tier } from "./budget.ts";
 import {
   createExtensionRuntime,
   ModelRuntime,
@@ -21,10 +22,13 @@ export function agentDir(): string {
 }
 
 /** The model arms a run can name with --model: the local student and the OpenRouter teacher. */
-export const ARMS: Record<string, { provider: string; id: string; modelsPath: string }> = {
-  stock: { provider: "splash-local", id: "gemma-4-12b", modelsPath: join(SERVE_DIR, "models.json") },
-  teacher: { provider: "splash-teacher", id: "google/gemma-4-31b-it", modelsPath: join(SERVE_DIR, "models.teacher.json") },
-  "teacher-free": { provider: "splash-teacher", id: "google/gemma-4-31b-it:free", modelsPath: join(SERVE_DIR, "models.teacher.json") },
+export const ARMS: Record<string, { provider: string; id: string; modelsPath: string; tier: Tier }> = {
+  stock: { provider: "splash-local", id: "gemma-4-12b", modelsPath: join(SERVE_DIR, "models.json"), tier: "12b" },
+  // The teacher is Gemma 4 26B-A4B (Tom, REMI §2/§8); the 31B stays for a gate the 26B fails.
+  teacher: { provider: "splash-teacher", id: "google/gemma-4-26b-a4b-it", modelsPath: join(SERVE_DIR, "models.teacher.json"), tier: "26b" },
+  "teacher-free": { provider: "splash-teacher", id: "google/gemma-4-26b-a4b-it:free", modelsPath: join(SERVE_DIR, "models.teacher.json"), tier: "26b" },
+  teacher31: { provider: "splash-teacher", id: "google/gemma-4-31b-it", modelsPath: join(SERVE_DIR, "models.teacher.json"), tier: "31b" },
+  "teacher31-free": { provider: "splash-teacher", id: "google/gemma-4-31b-it:free", modelsPath: join(SERVE_DIR, "models.teacher.json"), tier: "31b" },
 };
 
 export async function loadModel({

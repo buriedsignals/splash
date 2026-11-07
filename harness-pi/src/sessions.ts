@@ -11,7 +11,7 @@ import {
   SettingsManager,
   type ToolDefinition,
 } from "@earendil-works/pi-coding-agent";
-import { estimateTokens, foldAt, HARNESS_OVERHEAD_TOKENS, SLOT } from "./budget.ts";
+import { estimateTokens, foldAt, HARNESS_OVERHEAD_TOKENS, TIER_FOLD } from "./budget.ts";
 import { ARMS, fixedResources, loadModel } from "./pi.ts";
 import type { OwnerId } from "./profiles.ts";
 
@@ -65,9 +65,9 @@ export interface OpenOptions {
 }
 
 export async function openSession(opts: OpenOptions): Promise<AgentSession> {
-  const { modelRuntime, model } = await loadModel(
-    ARMS[opts.modelId ?? "stock"] ?? { provider: opts.provider, id: opts.modelId },
-  );
+  const arm = ARMS[opts.modelId ?? "stock"];
+  const { modelRuntime, model } = await loadModel(arm ?? { provider: opts.provider, id: opts.modelId });
+  const tier = arm?.tier ?? "12b";
   const { session } = await createAgentSession({
     cwd: opts.runRoot,
     model,
@@ -82,8 +82,10 @@ export async function openSession(opts: OpenOptions): Promise<AgentSession> {
       compaction: {
         enabled: true,
         // Pi compacts past contextWindow - reserveTokens: reserve what lies above this session's fold point.
-        reserveTokens: SLOT.contextWindow - foldAt(estimateTokens(opts.systemPrompt) + HARNESS_OVERHEAD_TOKENS),
-        keepRecentTokens: opts.keepRecentTokens,
+        reserveTokens:
+          model.contextWindow -
+          foldAt(estimateTokens(opts.systemPrompt) + HARNESS_OVERHEAD_TOKENS, tier, model.contextWindow),
+        keepRecentTokens: Math.max(opts.keepRecentTokens, TIER_FOLD[tier].keep),
       },
       // A long prompt on a laptop can take many minutes before the first byte comes back.
       httpIdleTimeoutMs: 30 * 60_000,
