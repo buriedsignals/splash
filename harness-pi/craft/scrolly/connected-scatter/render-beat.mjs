@@ -96,8 +96,10 @@ await refusing(HERE, async () => {
   const down = all.filter((r) => r.dy < 0).sort((a, b) => a.dy - b.dy);
   const left = all.filter((r) => r.dx < 0).sort((a, b) => a.dx - b.dx);
   const right = all.filter((r) => r.dx > 0).sort((a, b) => b.dx - a.dx);
-  if (!left.length) throw new Error(`no entity's x fell between ${beat.from} and ${beat.to}: card 3 keeps the entities that moved LEFT and steps the others back, so it would empty the picture — this choreography does not fit this data`);
-  if (left.length === all.length) throw new Error(`every entity's x fell: card 3 keeps the ones that moved left and would step none back — this choreography does not fit this data`);
+  // Card 3 filters the ones whose x fell; when none or all fell it would change nothing, so it is left out
+  // rather than refused — the data's shape is not the model's to repair (never-fail rule).
+  const cardIds = left.length && left.length < all.length ? CARDS : CARDS.filter((k) => k !== "left");
+  const stateList = STATES.filter((_, i) => cardIds.includes(CARDS[i]));
 
   const topX = Math.max(...all.flatMap((r) => [r.from.x, r.to.x]));
   if (!(topX > 0)) throw new Error(`every x is zero: nothing to draw along the x axis`);
@@ -161,7 +163,7 @@ await refusing(HERE, async () => {
     return parts.map(plain);
   };
   const format = (v) => plain(beat.format(v));
-  const prose = [...CARDS.slice(0, 5).map((k) => say(`cards.${k}`, beat.cards[k])), say("limits", [beat.limits].flat()[0])];
+  const prose = [...cardIds.slice(0, -1).map((k) => say(`cards.${k}`, beat.cards[k])), say("limits", [beat.limits].flat()[0])];
 
   // What each card is ABOUT, so it must say it: the figure its gesture puts on screen.
   const OWES = {
@@ -173,7 +175,7 @@ await refusing(HERE, async () => {
   };
   const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const states = (text, wanted) => new RegExp(`(?<![\\d.,])${escape(wanted)}(?![\\d])`).test(text);
-  CARDS.slice(0, 5).forEach((k, i) => {
+  cardIds.slice(0, -1).forEach((k, i) => {
     const text = prose[i].join(" ");
     for (const [what, wanted] of OWES[k])
       if (!states(text, wanted)) throw new Error(`card ${i + 1} (cards.${k}) must state ${what} = "${wanted}" — the figure its picture shows; it says: ${text}`);
@@ -205,7 +207,7 @@ await refusing(HERE, async () => {
         throw new Error(`${where} states ${raw}, which no figure of this scatter rounds to: every number in a card is computed — use the reading (r.subject.dx, r.subject.dy, r.up.length, r.left.length, r.crowdRight.length, …) through format(), never a typed or recomputed value. It says: ${text}`);
     }
   };
-  CARDS.slice(0, 5).forEach((k, i) => checkFigures(`card ${i + 1} (cards.${k})`, prose[i].join(" ")));
+  cardIds.slice(0, -1).forEach((k, i) => checkFigures(`card ${i + 1} (cards.${k})`, prose[i].join(" ")));
 
   const upSentence = plain(beat.upCount(reading));
   if (!states(upSentence, String(up.length))) throw new Error(`upCount() is card 2's counter, which climbs to the number of entities whose y rose: it must state "${up.length}"; it says: ${upSentence}`);
@@ -243,14 +245,14 @@ await refusing(HERE, async () => {
   const lang = beat.lang ?? storyLanguage(HERE) ?? "en";
   await renderBeatScrolly({
     here: HERE,
-    states: STATES,
+    states: stateList,
     textPerRegister,
     evidenceLevels: beat.evidenceLevels ?? 4,
     async render({ label, direction, outDir }) {
       const { ink, muted } = deriveFurniture(direction.ground);
       const regs = webRegisters(direction, { ink: { ink, muted, accent: direction.accent } });
       const { outPath } = await renderScrolly({
-        steps: prose.map((p, i) => ({ id: CARDS[i], prose: p })),
+        steps: prose.map((p, i) => ({ id: cardIds[i], prose: p })),
         reveal: {
           element: createElement(DirectedScatterScrolly, {
             // The component's own field names: x is `weight`, y is `ownMix`; `lighter` keeps its colour in card 3.
@@ -274,7 +276,7 @@ await refusing(HERE, async () => {
             ink,
             muted,
           }),
-          states: STATES,
+          states: stateList,
           driver,
           apply: "applyScatterState",
         },

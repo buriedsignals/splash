@@ -74,8 +74,7 @@ Every card function, `upCount`, `subjectCounts`, `xName` / `yName` (when functio
 | `check(r)` | Throws if the data no longer supports the title (it receives `r`). |
 
 The render refuses, saying what to change, when: there are fewer than 3 or more than 20 entities; a
-y is outside 0–100 or an x is negative; an entity has no short code; no entity moved left, or every
-one did (card 3 would empty the picture or change nothing); the close-up holds fewer than three
+y is outside 0–100 or an x is negative; an entity has no short code; the close-up holds fewer than three
 entities or every entity; a card does not state its figure; or a card, a label or the alt states a
 number no figure of `r` rounds to (sign aside: "lost 11.8 points" states a dx of −11.8).
 
@@ -111,3 +110,6 @@ worked example does — never read a column that is not in `data.json`.
   (card 1) and at the other cards' PNGs. If the render refuses, read its message and fix `beat.mjs`.
   If a picture is wrong (wrong entity in the accent, a card cut, a wrong number), fix `beat.mjs`
   with a small `edit_file`, render and look again.
+
+When no entity moved left, or every one did, card 3 would change nothing: it is left out and the scrolly
+runs five cards (`cards.left` is then not shown).

@@ -41,7 +41,8 @@ await refusing(HERE, async () => {
     assertOnePerX(p.series);
   }
   const years = [...beat.panels[0].series].sort((a, b) => a.year - b.year).map((s) => s.year);
-  if (years.length < 3) throw new Error(`the panels hold ${years.length} years; a small multiple of lines needs at least 3`);
+  // Two years draw each panel as one slope; the data's shape is not the model's to repair (never-fail rule).
+  if (years.length < 2) throw new Error(`the panels hold ${years.length} year; a small multiple of lines needs at least 2 — filter data.json to the years every panel has`);
   for (const p of beat.panels) {
     const own = [...p.series].sort((a, b) => a.year - b.year).map((s) => s.year);
     if (own.length !== years.length || own.some((y, i) => y !== years[i]))

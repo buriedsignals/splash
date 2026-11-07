@@ -478,3 +478,27 @@ The first attempt measured one cell and stopped, which produced three fixes:
 
 **Limits:** `7cad760ab` landed mid-rerun; only small multiples and the cartogram re-run (650 s, pass, the re-run
 counts) started on it, the other twelve ran on `a237414d2`. One run per cell.
+
+## G1 — the lean matrix's web, video and scrolly cells (2026-11-07, route `llama-server`, local 12B)
+
+Same runner and rules as G1a, `--further` (13 cells, one family each, formats by rotation). Raw lines:
+`results/2026-11-07-g1-further.jsonl`, `results/2026-11-07-g1-further-fix.jsonl`. Pass = the model's last render
+accepted (G0's rule); a cell the driver's repaired render (`SPLASH_GESTURE_REPAIR=1`, the core's own fixes) delivered
+is counted apart, as in G0.
+
+**7/13 by the model, 8/13 delivered (cartogram video repaired), against G0's 5/13** (G0 ran `SPLASH_GESTURES_ALL=1`;
+xy, multiples and paired ran here on their per-type kits, so the comparison is indicative). Passed: area web, beeswarm
+video, bullet scrolly, calendar heatmap web, marimekko web, parallel coordinates video, sankey scrolly.
+
+| Failed cell | Owner | What |
+|---|---|---|
+| connected scatter scrolly | Harness → fixed | the kit refused the data's shape ("every entity's x fell"); card 3 is now left out instead. Re-run: the refusal is gone, the cell fails on the model's own `check()` repeated 5× (TUNE) |
+| small multiples web | Harness → fixed | the kit refused 2 years ("needs at least 3"); two years now draw a slope per panel. Re-run: the refusal is gone, the cell fails on `announce()` lacking the option's label |
+| gantt video | Tune (watch) | one generation ran 7,632+ tokens until the 15 min cap; output cap is Tom's 16,384 |
+| histogram scrolly | model, cap | 15 renders, varied refusals and runtime errors (`counts["0–4"]` key with an en dash), cap reached before the driver's repair could run |
+| diverging stacked bar web | model | ends on the web page verification (labels), not on gestures, so the repair does not apply |
+| cartogram video | delivered by repair | the session ended on a refused note ("40,0 %" of a count); the repaired render passed |
+
+**Limits:** one run per cell; the two fixes (`connected-scatter` scrolly and `small-multiples` web kits, never-fail
+rule) were verified by re-running the cell — the refusal no longer occurs — not by a unit test: no test renders a
+per-type kit. Three cells hit the 15 min cap (Rémy's bound), which also skips the driver's repair.
