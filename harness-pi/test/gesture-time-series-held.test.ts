@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { refuseDoubleCount, refuseExcludedTimes, refuseRewrittenSeries } from "../craft/_shared/gesture-time-run.mjs";
+import { refuseDoubleCount, dropExcludedTimes, refuseRewrittenSeries } from "../craft/_shared/gesture-time-run.mjs";
 
 const here = mkdtempSync(join(tmpdir(), "series-held-"));
 writeFileSync(
@@ -50,18 +50,21 @@ describe("refuseDoubleCount", () => {
   });
 });
 
-describe("refuseExcludedTimes", () => {
+// Osaurus run 5 (2026-11-08): refused for drawing 2026, the MLX 12B spent its last 20 minutes failing to edit the
+// filter in. The storyboard already decided the year is out; the kit leaves it out instead of asking.
+describe("dropExcludedTimes", () => {
   const at = (years: number[]) => years.map((t) => ({ series: "World", key: String(t), t, value: 1 }));
+  const years = (points: { t: number }[]) => points.map((p) => p.t);
 
-  it("should refuse a year the limits say is excluded", () => {
-    expect(() => refuseExcludedTimes(at([2025, 2026]), "Count of fire events. 2026 excluded as incomplete.")).toThrow(/2026/);
+  it("should leave out a year the limits say is excluded", () => {
+    expect(years(dropExcludedTimes(at([2025, 2026]), "Count of fire events. 2026 excluded as incomplete."))).toEqual([2025]);
   });
 
-  it("should accept the points once that year is left out", () => {
-    expect(() => refuseExcludedTimes(at([2024, 2025]), "Count of fire events. 2026 excluded as incomplete.")).not.toThrow();
+  it("should keep every year when the limits exclude none drawn", () => {
+    expect(years(dropExcludedTimes(at([2024, 2025]), "Count of fire events. 2026 excluded as incomplete."))).toEqual([2024, 2025]);
   });
 
-  it("should refuse a year named after excluding", () => {
-    expect(() => refuseExcludedTimes(at([2019, 2020]), "Rates per 100,000, excluding 2020 (pandemic).")).toThrow(/2020/);
+  it("should leave out a year named after excluding", () => {
+    expect(years(dropExcludedTimes(at([2019, 2020, 2021]), "Rates per 100,000, excluding 2020 (pandemic)."))).toEqual([2019, 2021]);
   });
 });

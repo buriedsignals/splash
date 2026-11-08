@@ -146,21 +146,18 @@ export function refuseDoubleCount(points, here, stacked) {
 
 /**
  * A time the storyboard's limits leave out is not drawn. real-gwis said "2026 excluded as incomplete" and drew 2026,
- * its stack falling by half in a year that had only begun.
+ * its stack falling by half in a year that had only begun. Refused at first, the MLX 12B then spent twenty minutes
+ * failing to edit the filter in (Osaurus run 5, 2026-11-08); the storyboard already decided, so the kit leaves it out.
  */
-export function refuseExcludedTimes(points, limits) {
+export function dropExcludedTimes(points, limits) {
   const text = String(limits ?? "");
   const YEAR = "(1[5-9]\\d\\d|2[01]\\d\\d)";
   const said = [
     ...text.matchAll(new RegExp(`\\b${YEAR}\\s+(?:is\\s+|was\\s+)?(?:excluded|omitted|dropped|left out|not shown)`, "gi")),
     ...text.matchAll(new RegExp(`\\b(?:excluding|excludes|exclude|omitting|omits|without)\\s+${YEAR}\\b`, "gi")),
   ];
-  for (const m of said) {
-    const year = Number(m[1]);
-    const drawn = points.filter((p) => p.t === year && Number.isFinite(p.value));
-    if (drawn.length)
-      throw new Error(`points: the storyboard's limits say "${m[0]}", but the beat draws ${drawn.length} reading${drawn.length > 1 ? "s" : ""} at ${year}: leave ${year}'s rows out of the points (filter data.rows to the other years)`);
-  }
+  const out = new Set(said.map((m) => Number(m[1])));
+  return points.filter((p) => !out.has(p.t));
 }
 
 export async function loadTimeBeat(here, variant, { required = [], format: wanted = "static" } = {}) {
@@ -173,7 +170,7 @@ export async function loadTimeBeat(here, variant, { required = [], format: wante
   if (!Array.isArray(beat.gestures)) throw new Error("beat.mjs: gestures must be an array of { do, mark | marks, … } (see CONTRACT.md)");
 
   const front = frontOf(here);
-  const points = readPoints(beat.points, { fallbackSeries: beat.entity ?? front("subject") ?? "—" });
+  const points = dropExcludedTimes(readPoints(beat.points, { fallbackSeries: beat.entity ?? front("subject") ?? "—" }), front("limits"));
   // A reading that is not a number is a gap, drawn as one; a reading that is a number must be a finite one.
   assertNumbers(points.filter((p) => !Number.isNaN(p.value)).map((p) => [`${p.series} ${p.key}`, p.value]), "points");
   if (!(Number(beat.slots ?? 10) >= 2)) throw new Error(`beat.mjs: slots is ${JSON.stringify(beat.slots)}: give how many ranks the bump chart draws, e.g. 10`);
@@ -182,7 +179,6 @@ export async function loadTimeBeat(here, variant, { required = [], format: wante
   if (model.times.length < 2) throw new Error(`points hold ${model.times.length} time(s): a ${WHAT[variant]} needs readings at two times at least`);
   if (!model.marks.length) throw new Error(`no reading of points can be drawn (every value is missing, or no series reaches the top ${model.slots})`);
   if (variant === "area-and-stacked-area" || variant === "streamgraph") refuseRunningTotal(points, here);
-  refuseExcludedTimes(points, front("limits"));
   refuseRewrittenSeries(points, here);
   refuseDoubleCount(points, here, variant === "area-and-stacked-area" || variant === "streamgraph");
   runCheck(beat);
