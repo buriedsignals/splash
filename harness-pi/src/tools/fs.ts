@@ -207,6 +207,33 @@ function nearestLine(body: string, oldText: string): string {
     : "";
 }
 
+/**
+ * Rows of a country table that are totals of others (the world, continents, unions), named in full.
+ * Osaurus runs 1 and 4 (2026-11-08): a 3,900-row data.json was cut at Afghanistan, so the 12B never saw World or
+ * Africa until the render refused a stack that added them to the countries — and ran out of time rewriting.
+ * The same rule as the render's refuseDoubleCount (craft/_shared/gesture-time-run.mjs): a country has an ISO code.
+ */
+export function aggregateNote(body: string): string {
+  let table: { columns?: unknown[]; rows?: unknown[][] };
+  try {
+    table = JSON.parse(body);
+  } catch {
+    return "";
+  }
+  const rows = Array.isArray(table?.rows) ? table.rows.filter(Array.isArray) : [];
+  const width = Array.isArray(table?.columns) ? table.columns.length : 0;
+  if (!rows.length || !width) return "";
+  const iso = (v: unknown) => /^([A-Z]{3}|OWID_KOS)$/.test(String(v ?? ""));
+  const cols = [...Array(width).keys()];
+  const code = cols.find((c) => rows.filter((r) => iso(r[c])).length >= rows.length * 0.6);
+  if (code === undefined) return "";
+  const name = cols.find((c) => c !== code && rows.every((r) => typeof r[c] === "string"));
+  if (name === undefined) return "";
+  const totals = [...new Set(rows.filter((r) => !iso(r[code])).map((r) => String(r[name])))].sort();
+  if (!totals.length) return "";
+  return `\n[harness] Rows without a country code are totals of the country rows: ${totals.map((t) => JSON.stringify(t)).join(", ")}. A stack, a sum or a share draws either the countries or one of these totals, never both; the rest of the world is a total's row minus the part shown.`;
+}
+
 export function fsTools(bases: Bases) {
   const readFileTool = defineTool({
     name: "read_file",
@@ -217,6 +244,7 @@ export function fsTools(bases: Bases) {
     async execute(_id, { path }) {
       const abs = resolveReadable(bases, path);
       const body = await readFile(abs, "utf8");
+      const note = abs.endsWith(".json") ? aggregateNote(body) : "";
       if (abs.endsWith(".csv")) {
         const lines = body.split("\n");
         if (lines.length > CSV_EXCERPT_LINES) {
@@ -227,10 +255,10 @@ export function fsTools(bases: Bases) {
       }
       if (body.length > MAX_READ_BYTES) {
         return text(
-          `${body.slice(0, MAX_READ_BYTES)}\n[truncated at ${MAX_READ_BYTES} of ${body.length} characters]`,
+          `${body.slice(0, MAX_READ_BYTES)}\n[truncated at ${MAX_READ_BYTES} of ${body.length} characters]${note}`,
         );
       }
-      return text(body);
+      return text(body + note);
     },
   });
 
