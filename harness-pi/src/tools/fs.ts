@@ -234,6 +234,49 @@ export function aggregateNote(body: string): string {
   return `\n[harness] Rows without a country code are totals of the country rows: ${totals.map((t) => JSON.stringify(t)).join(", ")}. A stack, a sum or a share draws either the countries or one of these totals, never both; the rest of the world is a total's row minus the part shown.`;
 }
 
+/** A table above this many characters is read as a digest, never whole. */
+const TABLE_DIGEST_AT = 8_000;
+
+/**
+ * A large { columns, rows } table read as its shape: row count, columns, every value of a short column, a few rows,
+ * and every row of the totals (a country table's world and regions) — the rows a takeaway is mostly about.
+ * Osaurus run 5 (2026-11-08): each whole read of a 3,900-row data.json put ~32,000 tokens in the context, about
+ * 200 s of prefill on either server; folded away a turn later, it was read four times, 860 s of a 1,277 s craft.
+ */
+export function tableDigest(body: string): string | null {
+  if (body.length <= TABLE_DIGEST_AT) return null;
+  let table: { columns?: { name?: unknown; type?: unknown }[]; rows?: unknown[][] };
+  try {
+    table = JSON.parse(body);
+  } catch {
+    return null;
+  }
+  if (!Array.isArray(table?.columns) || !Array.isArray(table?.rows)) return null;
+  const columns = table.columns;
+  const rows = table.rows.filter(Array.isArray);
+  const row = (r: unknown[]) => JSON.stringify(r);
+  const values = columns.map((c, i) => {
+    const seen = [...new Set(rows.map((r) => r[i]).filter((v) => v !== null && v !== ""))];
+    if (seen.length <= 30) return `- ${c.name}: ${seen.map((v) => (typeof v === "string" ? JSON.stringify(v) : String(v))).join(", ")}`;
+    const nums = seen.map(Number).filter(Number.isFinite);
+    return nums.length === seen.length
+      ? `- ${c.name}: ${seen.length} values from ${Math.min(...nums)} to ${Math.max(...nums)}`
+      : `- ${c.name}: ${seen.length} values, e.g. ${seen.slice(0, 8).map((v) => JSON.stringify(v)).join(", ")}`;
+  });
+  const iso = (v: unknown) => /^([A-Z]{3}|OWID_KOS)$/.test(String(v ?? ""));
+  const code = columns.findIndex((_, c) => rows.filter((r) => iso(r[c])).length >= rows.length * 0.6);
+  const totals = code < 0 ? [] : rows.filter((r) => !iso(r[code]));
+  const shown = totals.length && totals.length <= 200 ? totals : rows.slice(0, 12);
+  return [
+    `[digest: data.json is ${body.length} characters, too long to read whole; the beat reads the file itself, by column name]`,
+    `${rows.length} rows; columns in order: ${columns.map((c) => `${c.name} (${c.type})`).join(", ")}. Each row is an array of cells in that order.`,
+    "Values by column:",
+    ...values,
+    totals.length && totals.length <= 200 ? `Every row of the totals (${totals.length}):` : `The first ${shown.length} rows:`,
+    ...shown.map(row),
+  ].join("\n");
+}
+
 export function fsTools(bases: Bases) {
   const readFileTool = defineTool({
     name: "read_file",
@@ -245,6 +288,8 @@ export function fsTools(bases: Bases) {
       const abs = resolveReadable(bases, path);
       const body = await readFile(abs, "utf8");
       const note = abs.endsWith(".json") ? aggregateNote(body) : "";
+      const digest = abs.endsWith(".json") ? tableDigest(body) : null;
+      if (digest) return text(digest + note);
       if (abs.endsWith(".csv")) {
         const lines = body.split("\n");
         if (lines.length > CSV_EXCERPT_LINES) {
