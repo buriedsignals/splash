@@ -8,7 +8,15 @@ import {
   statSync,
 } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
+import {
+  basename,
+  dirname,
+  isAbsolute,
+  join,
+  relative,
+  resolve,
+  sep,
+} from "node:path";
 import { defineTool } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 
@@ -51,7 +59,9 @@ function resolveFromRoot(bases: Bases, path: string): string {
   if (isAbsolute(path) || existsSync(fromRoot)) return fromRoot;
   const fromStory = resolve(bases.storyDir, path);
   const first = path.split(/[\\/]/)[0];
-  return existsSync(fromStory) || existsSync(join(bases.storyDir, first)) ? fromStory : fromRoot;
+  return existsSync(fromStory) || existsSync(join(bases.storyDir, first))
+    ? fromStory
+    : fromRoot;
 }
 
 function within(path: string, base: string): boolean {
@@ -67,15 +77,22 @@ const MALFORMED_PATH = /<\||\|>|[\n\r`{}]/;
  * is refused by the analyst on rebuild, which stalled a run), what typed tools record, and the kit
  * the harness copies into a zoned beat. In a zoned beat the model writes beat.mjs.
  */
-const PROTECTED = /(^|\/)(source\/.*|STORYBOARD\.md|PALETTE\.md|DIRECTION\.md|SUBJECTS\.md|NEWSROOM\.md|data\.json|data\.csv|DATA-NOTES\.md|BRIEF\.md|OUTPUT-REVIEW\.json|render-beat\.mjs|guards\.mjs|series\.mjs|CONTRACT\.md|beat\.example\.mjs|Directed[A-Za-z]*\.tsx|crossing-geometry\.ts)$/;
+const PROTECTED =
+  /(^|\/)(source\/.*|STORYBOARD\.md|PALETTE\.md|DIRECTION\.md|SUBJECTS\.md|NEWSROOM\.md|data\.json|data\.csv|DATA-NOTES\.md|BRIEF\.md|OUTPUT-REVIEW\.json|render-beat\.mjs|guards\.mjs|series\.mjs|CONTRACT\.md|beat\.example\.mjs|Directed[A-Za-z]*\.tsx|crossing-geometry\.ts)$/;
 
 /**
  * An empty write over a non-empty file is refused: a call cut off at the output cap arrives with empty content, and
  * writing it would erase the file (Spotlight's write_file rule).
  */
 export function assertNotErasing(abs: string, content: string, shown: string) {
-  if (content.trim() === "" && existsSync(abs) && readFileSync(abs, "utf8").trim() !== "")
-    throw new Error(`${shown} exists and the new content is empty: an empty write would erase it. Give the whole content, or change it with edit_file`);
+  if (
+    content.trim() === "" &&
+    existsSync(abs) &&
+    readFileSync(abs, "utf8").trim() !== ""
+  )
+    throw new Error(
+      `${shown} exists and the new content is empty: an empty write would erase it. Give the whole content, or change it with edit_file`,
+    );
 }
 
 function assertWritable(bases: Bases, abs: string) {
@@ -83,7 +100,9 @@ function assertWritable(bases: Bases, abs: string) {
   // In a beat folder the model writes beat.mjs and nothing else: every other file there is the kit's,
   // the analyst's or the render's.
   if (/^beats\/[^/]+\/(?!beat\.mjs$)/.test(rel) || PROTECTED.test(rel))
-    throw new Error(`${rel} is not yours to write: sources, analyst data, recorded files and the beat's kit are produced by Splash. Change beat.mjs instead.`);
+    throw new Error(
+      `${rel} is not yours to write: sources, analyst data, recorded files and the beat's kit are produced by Splash. Change beat.mjs instead.`,
+    );
 }
 
 export function resolveInStory(bases: Bases, raw: string): string {
@@ -91,7 +110,9 @@ export function resolveInStory(bases: Bases, raw: string): string {
   // 12B writes `path` after a long `content`: the path then runs into the next call
   // ("beat.mjs`}<tool_call|>...call:render_beat{..."). The content parsed whole, so when the text
   // before the break is a plain file name it is the path; anything else is refused.
-  const path = MALFORMED_PATH.test(raw) ? raw.split(/<\||\|>|[\n\r`{}]/)[0] : raw;
+  const path = MALFORMED_PATH.test(raw)
+    ? raw.split(/<\||\|>|[\n\r`{}]/)[0]
+    : raw;
   if (MALFORMED_PATH.test(raw) && !/\/?[\w.-]+\.[a-z0-9]{1,5}$/i.test(path))
     throw new Error(
       `the path ${JSON.stringify(raw.slice(0, 80))} is malformed (it holds tool-call text); call the tool again with just the file path`,
@@ -114,19 +135,40 @@ export function resolveReadable(bases: Bases, path: string): string {
   // An absolute path through this story's folder in a mistyped run directory (a 12B retyped the run's
   // 13-digit stamp with one digit too many, six times over) is the story's own file.
   const through = `${sep}stories${sep}${basename(story)}${sep}`;
-  if (!within(abs, story) && abs.includes(through)) abs = realOrParent(join(story, abs.slice(abs.lastIndexOf(through) + through.length)));
+  if (!within(abs, story) && abs.includes(through))
+    abs = realOrParent(
+      join(story, abs.slice(abs.lastIndexOf(through) + through.length)),
+    );
+  const fold = (name: string) => name.toLowerCase().replace(/[-_\s]/g, "");
+  // Both misspelled at once (the MLX 12B under Osaurus wrote every - as _, run directory and story folder alike).
+  if (!within(abs, story)) {
+    const parts = abs.split(sep);
+    const at = parts.lastIndexOf("stories");
+    if (
+      at >= 0 &&
+      at + 1 < parts.length &&
+      fold(parts[at + 1]) === fold(basename(story))
+    )
+      abs = realOrParent(join(story, ...parts.slice(at + 2)));
+  }
   if (within(abs, stories) && !within(abs, story)) {
     const [folder, ...rest] = relative(stories, abs).split(sep);
-    const fold = (name: string) => name.toLowerCase().replace(/[-_\s]/g, "");
-    if (fold(folder) === fold(basename(story))) abs = realOrParent(join(story, ...rest));
+    if (fold(folder) === fold(basename(story)))
+      abs = realOrParent(join(story, ...rest));
   }
   // A missing file named bare or at the run root ("data.json") is asked of the story.
-  if (!existsSync(abs) && dirname(abs) === realpathSync(bases.root)) abs = join(realpathSync(bases.storyDir), basename(abs));
+  if (!existsSync(abs) && dirname(abs) === realpathSync(bases.root))
+    abs = join(realpathSync(bases.storyDir), basename(abs));
   // A beat file asked for at the story root ("data.json") is the story's only beat's.
   if (!existsSync(abs) && dirname(abs) === realpathSync(bases.storyDir)) {
     const beats = join(bases.storyDir, "beats");
-    const only = existsSync(beats) ? readdirSync(beats).filter((d) => !d.startsWith(".")) : [];
-    const candidate = only.length === 1 ? join(beats, only[0], relative(realpathSync(bases.storyDir), abs)) : "";
+    const only = existsSync(beats)
+      ? readdirSync(beats).filter((d) => !d.startsWith("."))
+      : [];
+    const candidate =
+      only.length === 1
+        ? join(beats, only[0], relative(realpathSync(bases.storyDir), abs))
+        : "";
     if (candidate && existsSync(candidate)) abs = realpathSync(candidate);
   }
   // The newsroom profile at the root is what palette and preflight read the house colours from.
@@ -160,7 +202,9 @@ function nearestLine(body: string, oldText: string): string {
     const hits = line.split(/\W+/).filter((t) => tokens.has(t)).length;
     if (hits > score) [best, score] = [line, hits];
   }
-  return best ? ` The closest line in the file is: ${JSON.stringify(best.slice(0, 200))} — copy old_text from the file exactly.` : "";
+  return best
+    ? ` The closest line in the file is: ${JSON.stringify(best.slice(0, 200))} — copy old_text from the file exactly.`
+    : "";
 }
 
 export function fsTools(bases: Bases) {
@@ -287,7 +331,9 @@ export function beatTools(bases: Bases, beat: string) {
       // A call cut off before its content arrives as "", or as the literal "null": real-gwis wrote a 4-character
       // beat.mjs after an aborted generation and spent the rest of the run reading around it.
       if (/^(null|undefined)?$/.test(content.trim()))
-        throw new Error(`${file}: the call carried no content ("${content.trim()}"). Give the whole module in content, starting with its imports`);
+        throw new Error(
+          `${file}: the call carried no content ("${content.trim()}"). Give the whole module in content, starting with its imports`,
+        );
       if (content.length > MAX_WRITE && existsSync(target))
         throw new Error(
           `${file} exists and the new content is ${content.length} characters; change it with several edit_file calls (old_text up to ${MAX_EDIT_OLD}, new_text up to ${MAX_EDIT_NEW} characters)`,
@@ -300,21 +346,28 @@ export function beatTools(bases: Bases, beat: string) {
     name: "edit_file",
     label: "Edit beat.mjs",
     description: `Replace one exact, unique occurrence of old_text with new_text in ${file}.`,
-    parameters: Type.Object({ old_text: Type.String(), new_text: Type.String() }),
+    parameters: Type.Object({
+      old_text: Type.String(),
+      new_text: Type.String(),
+    }),
     async execute(_id, { old_text, new_text }) {
       if (old_text.length > MAX_EDIT_OLD || new_text.length > MAX_EDIT_NEW)
         throw new Error(
           `edit too large (old_text ${old_text.length}/${MAX_EDIT_OLD}, new_text ${new_text.length}/${MAX_EDIT_NEW} characters); split it into smaller edits, or write the whole file again with write_file`,
         );
       const target = abs();
-      if (!existsSync(target)) throw new Error(`${file} does not exist yet: write it with write_file`);
+      if (!existsSync(target))
+        throw new Error(`${file} does not exist yet: write it with write_file`);
       const body = readFileSync(target, "utf8");
       const count = body.split(old_text).length - 1;
       if (count !== 1)
         throw new Error(
           `old_text occurs ${count} times in ${file}; it must occur exactly once.${count === 0 ? nearestLine(body, old_text) : " Include more surrounding text."}`,
         );
-      await writeFile(target, body.replace(old_text, () => new_text));
+      await writeFile(
+        target,
+        body.replace(old_text, () => new_text),
+      );
       return text(`edited ${file}`);
     },
   });

@@ -39,4 +39,15 @@ describe("resolveReadable", () => {
   it("should read the story's file through a mistyped run directory", () => {
     expect(resolveReadable(bases, join(root + "0", "stories", "stress-q-safety-incidents", "beats", "1", "data.json"))).toBe(join(storyDir, "beats", "1", "data.json"));
   });
+
+  // Osaurus run 2026-11-08: the MLX 12B spelled every - as _ in both the run directory and the story folder,
+  // and spent its craft step on five refused reads of beats/1/data.json.
+  it("should read the story's file when the run directory and the story folder are both spelled with _", () => {
+    const typed = join(root.replace(/-/g, "_"), "stories", "stress_q_safety_incidents", "beats", "1", "data.json");
+    expect(resolveReadable(bases, typed)).toBe(join(storyDir, "beats", "1", "data.json"));
+  });
+
+  it("should list the story's folder when the run directory and the story folder are both spelled with _", () => {
+    expect(resolveReadable(bases, join(root.replace(/-/g, "_"), "stories", "stress_q_safety_incidents") + "/")).toBe(storyDir);
+  });
 });
