@@ -596,3 +596,15 @@ Both new guards replayed over the kept beats: 18 pass, 2 refused (the two wrong 
 the 26B beat passes. Gold here is the gate's gold; looking at the plate still shows three defects no guard owns yet:
 2026 is drawn although the standfirst says "2026 excluded as incomplete"; the y axis reads 0–1,250 for values in the
 hundreds of thousands (no "thousands" in the unit); one annotation reads "962,619 · 6.8 %" with no words.
+
+#### Looking at the gold plate (2026-11-08)
+
+The gold run above still printed wrong figures. Five defects, all the harness's, fixed in `430f2576e` and `ff8b2bf1f`:
+the time kits stripped ",000" from whole ticks as decimals (1,250,000 drawn as 1,250, every format); the note guard
+offered the nearest pool figure regardless of meaning (Africa's 60% share of 2015 for "49% decline", where the readings
+fell 11.4%) — a percent named as a change now answers only to the compare's own change; a bracket printed
+"962,619 · 6.8 %" with no words (now "962,619 in 2022 · 6.8 % of 2012–2026"); a year the limits exclude was drawn
+(all 8 kept real-gwis beats drew 2026 under "2026 excluded"; 0 other kept beat refused); the offered fix dropped a
+minus ("-48%" offered as "68%", a fall printed as a rise). Re-run (1009 s): delivery, headline faithful, no repair,
+axis in full figures; the storyboard now writes "2026 data is incomplete" and draws it; its compare note still carries
+the dropped minus ("68% vs 2015 peak"), the defect the last fix closes.
