@@ -566,3 +566,15 @@ refusal, so by K2 it is the harness's to replay first (the refusal is not unders
 Per the plan, smaller rungs (E4B, LFM3) run only if the 12B passes the held-out stories at least as often as the
 26B's gold rate: 27 % of runs against 40 %, so not yet. Proposed student for now: the 12B; the 26B's lead is in craft
 on web maps and stacked areas, the 12B's in the storyboard of the two seeded stories.
+
+### r8 replayed: the refusal was the harness's (2026-11-08)
+
+Both sizes were refused until the cap for drawing exactly what the storyboard asked: the pedelec column (the claim)
+beside bicycles without a motor (the comparison). `assertDrawsClaimColumn` took every value outside the claim column
+as foreign. Fixed in fc7581b29: values one other column of data.json holds pass while the claim column is drawn too
+(three tests; the acceptance one red before). The kept 12B beat replays clean (24 values).
+
+Re-run on the 12B, k=1: **delivered, render exit 0, 1182 s, 2 refusals** — but `headline=false`: the takeaway (204
+characters) is the title's first form, and the plate drew the second, "Pedelec fatalities vs. non-motorized
+bicycles". Same case as the 26B's connected scatter, now in English: a plate-shortened headline. It joins the
+question for Tom (does a shortened form, in the storyboard's language, count as faithful?). r8 leaves TUNE.md.
