@@ -546,3 +546,23 @@ held-out five. The cap explains one of four (real-gwis); the other three are not
 Misses by owner:
 - **Open question (doctrine vs gate):** the plate's ladder may shorten the headline (doctrine, `shared/chart-beat/type-at-size.mjs`), while the gold gate wants the takeaway drawn verbatim. The model's miss is the language of the shorter forms.
 - **Model:** r8 (repair ignores a refusal naming the column), small-multiples (prose record claims, see TUNE.md).
+
+## G3 — T4 model ladder, first rung: the 12B on the held-out five (2026-11-08)
+
+Local 12B (`stock` arm, Q4_K_M), route `llama-server`, k=3, 30 min cap (the 26B's re-run bound), fallback off, $0.
+
+| story | 12B, k=3 | 26B, k=1 (G2) |
+|---|---|---|
+| gx-connected-scatter (full) | ✅✅✅ gold | ⚠️ headline shortened in French |
+| gx-small-multiples (full) | ✅ 1/3 (two delivered with the headline not drawn verbatim; one stopped in delivery after 12 turns without a record) | ❌ framing |
+| stress-t recycling, web map | ❌❌❌ cap at craft: chart-web verification refused 3–6 failures each time (labels too long) | ✅ gold |
+| real-gwis static | ❌❌❌ cap at craft: continent and World rows refused as aggregates, a running total, one beat.mjs never written | ✅ gold |
+| r8 static | ❌❌❌ cap at craft: the same refusal as the 26B (draws 357, 347, 331 or 1357, … under the Pedelec column) | ❌ same |
+
+**12B: 4/15 runs gold, 2/5 stories at least once. 26B: 2/5 stories (k=1).** The two models pass different stories:
+the 12B the two scatter-family seeds, the 26B the web map and the stacked area. r8 fails on both with the same
+refusal, so by K2 it is the harness's to replay first (the refusal is not understood by either size), not Tune's.
+
+Per the plan, smaller rungs (E4B, LFM3) run only if the 12B passes the held-out stories at least as often as the
+26B's gold rate: 27 % of runs against 40 %, so not yet. Proposed student for now: the 12B; the 26B's lead is in craft
+on web maps and stacked areas, the 12B's in the storyboard of the two seeded stories.
