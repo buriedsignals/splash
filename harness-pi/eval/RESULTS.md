@@ -608,3 +608,9 @@ fell 11.4%) — a percent named as a change now answers only to the compare's ow
 minus ("-48%" offered as "68%", a fall printed as a rise). Re-run (1009 s): delivery, headline faithful, no repair,
 axis in full figures; the storyboard now writes "2026 data is incomplete" and draws it; its compare note still carries
 the dropped minus ("68% vs 2015 peak"), the defect the last fix closes.
+
+Last re-run (1202 s): delivery, headline faithful, no repair, 2026 left out under "2026 excluded as incomplete" (the
+new guard refused it once, the model filtered the rows), the stack is Africa over "World - Africa" as data.json holds
+them, axis in full figures, "~65% of world total" true (64.9%). One note still wrong: the guard offered "-43% since
+2015" for the model's "-45%", the change read backwards (2015 against 2024); Africa fell 30.2%. Fixed in `f92b4ff3c`: a
+signed or change-named percent on a compare answers only to the later reading against the earlier.
