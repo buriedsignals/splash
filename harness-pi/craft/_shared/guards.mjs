@@ -42,6 +42,32 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
   const headline = [beat[title]].flat()[0];
   if (takeaway && headline !== undefined && norm(headline) !== norm(takeaway))
     throw new Error(`title's first form must be the journalist's takeaway copied as a literal string, not computed. It renders as: "${norm(headline)}" — it must be: "${takeaway}"`);
+  // The plate may draw a shorter form instead of the takeaway; a 26B wrote those in French under `language: en` (G2).
+  const language = String(field("language") ?? "").toLowerCase().slice(0, 2);
+  const foreign = [beat[title]].flat().slice(1).find((form) => {
+    const said = languageOf(form);
+    return said && STOPWORDS[language] && said !== language;
+  });
+  if (foreign !== undefined)
+    throw new Error(`the title's shorter forms must be in the storyboard's language (${language}), like the takeaway: "${foreign}" is not. Write each shorter form as a shortening of "${takeaway}"`);
+}
+
+/** Function words that tell a headline's language apart (no figures, no names). */
+const STOPWORDS = {
+  en: ["the", "and", "of", "in", "to", "a", "is", "are", "than", "more", "less", "all", "its", "their", "from", "at", "on", "with", "yet", "but", "lost", "gained"],
+  fr: ["le", "la", "les", "des", "du", "de", "et", "en", "un", "une", "plus", "moins", "chez", "eux", "tous", "toutes", "sont", "est", "que", "qui", "aux", "au", "sur", "dans", "pour"],
+  de: ["der", "die", "das", "und", "ist", "sind", "mehr", "weniger", "alle", "ein", "eine", "im", "mit", "von", "zu", "auf", "als"],
+  es: ["el", "los", "las", "del", "y", "es", "son", "más", "menos", "todos", "una", "con", "por", "para", "que"],
+  it: ["il", "lo", "gli", "della", "dei", "e", "è", "sono", "più", "meno", "tutti", "una", "con", "per", "che"],
+  pt: ["o", "os", "as", "do", "da", "dos", "das", "e", "é", "são", "mais", "menos", "todos", "uma", "com", "por", "para", "que", "em"],
+  nl: ["de", "het", "een", "en", "is", "zijn", "meer", "minder", "alle", "van", "met", "op", "voor", "dan"],
+};
+
+/** The language a short text is most clearly written in, or null when no language leads by two function words. */
+function languageOf(text) {
+  const words = String(text).toLowerCase().split(/[^\p{L}]+/u).filter(Boolean);
+  const scores = Object.entries(STOPWORDS).map(([lang, list]) => [lang, words.filter((w) => list.includes(w)).length]).sort((a, b) => b[1] - a[1]);
+  return scores[0][1] >= 2 && scores[0][1] - scores[1][1] >= 2 ? scores[0][0] : null;
 }
 
 /** Every drawn value is a number (a cell in another digit system once concatenated instead of adding). */

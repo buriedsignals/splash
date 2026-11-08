@@ -43,6 +43,34 @@ describe("applyStoryboard", () => {
   });
 });
 
+describe("applyStoryboard on the title's shorter forms", () => {
+  const TAKEAWAY = "All 16 countries cleaned up their own electricity, yet France lost 11.8 points";
+  const storyIn = (language: string) => {
+    const story = mkdtempSync(join(tmpdir(), "splash-language-"));
+    const dir = join(story, "beats", "1");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(story, "STORYBOARD.md"), `---\ntakeaway: "${TAKEAWAY}"\nlanguage: ${language}\n---\n`);
+    return dir;
+  };
+
+  it("should refuse a shorter form written in another language than the storyboard's", () => {
+    const b = { title: [TAKEAWAY, "Tous plus propres chez eux, plus légers en Europe"] };
+    expect(() => applyStoryboard(b, storyIn("en"))).toThrow(/title's shorter forms must be in the storyboard's language \(en\)/);
+  });
+
+  it("should accept shorter forms in the storyboard's language", () => {
+    const b = { title: [TAKEAWAY, "All 16 cleaner at home, France lighter in Europe"] };
+    expect(() => applyStoryboard(b, storyIn("en"))).not.toThrow();
+  });
+
+  it("should accept French shorter forms under a French storyboard", () => {
+    const b = { title: ["Les seize ont tous progressé", "Tous plus propres chez eux, plus légers en Europe"] };
+    const dir = storyIn("fr");
+    writeFileSync(join(dir, "..", "..", "STORYBOARD.md"), `---\ntakeaway: "Les seize ont tous progressé"\nlanguage: fr\n---\n`);
+    expect(() => applyStoryboard(b, dir)).not.toThrow();
+  });
+});
+
 describe("assertLegibleLabels", () => {
   it("should refuse labels printed to the last tonne, asking for a readable unit", () => {
     const format = (v: number) => `${v.toLocaleString("en-US")} t`;
