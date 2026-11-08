@@ -55,3 +55,12 @@ describe("a compare's signed note", () => {
     ).toThrow(/write "-68% vs 2015 peak"/);
   });
 });
+
+describe("a compare's change runs forward in time", () => {
+  it("should offer the later reading against the earlier (-30%), never the reverse (-43%)", () => {
+    const m = timeModel({ variant: "area-and-stacked-area", points: readPoints([["Africa", 2015, 689651], ["Asia", 2015, 458848], ["Africa", 2024, 481688], ["Asia", 2024, 290000]].map(([series, t, value]) => ({ series, t, value }))) });
+    expect(() =>
+      validateTime({ gestures: [{ do: "compare", marks: ["2024 · Africa", "2015 · Africa"], note: "-45% since 2015" }], model: m, format: "static", claim }),
+    ).toThrow(/write "-30% since 2015"/);
+  });
+});

@@ -463,13 +463,17 @@ export function timeHooks(model) {
     // never another figure the pool holds: real-gwis was offered Africa's 60% share of 2015 for "49% decline" and
     // printed "60% decline since 2015" where its readings fell 11.4%.
     if (g.do === "compare" && ms.length === 2) {
-      const [a, b] = [ms[0].value, ms[1].value];
-      const changes = [(a / b - 1) * 100, (b / a - 1) * 100].map(Math.abs).filter(Number.isFinite);
-      for (const n of stated.filter((x) => x.percent && changeWord(g.note, x))) {
-        if (changes.some((f) => Math.abs(n.value - f) <= 0.5 * 10 ** -n.decimals + 1e-9)) continue;
-        const text = changes[0].toFixed(n.decimals).replace(".", n.separator === "," || n.decimalMark === "," ? "," : ".");
+      // Time runs one way: the change is the later reading against the earlier, never the reverse. "-45% since 2015"
+      // was offered "-43%" (2015 against 2024) where Africa fell 30.2%.
+      const [early, late] = ms[0].t <= ms[1].t ? [ms[0], ms[1]] : [ms[1], ms[0]];
+      const change = (late.value / early.value - 1) * 100;
+      for (const n of Number.isFinite(change) ? stated.filter((x) => x.percent && (x.sign || changeWord(g.note, x))) : []) {
+        const want = n.sign ? change : Math.abs(change);
+        if (Math.abs(n.value - want) <= 0.5 * 10 ** -n.decimals + 1e-9) continue;
+        const digits = Math.abs(change).toFixed(n.decimals).replace(".", n.separator === "," || n.decimalMark === "," ? "," : ".");
+        const text = n.sign ? (change < 0 ? (n.sign === "\u2212" ? "\u2212" : "-") : "+") + digits : digits;
         const fixed = g.note.slice(0, n.index) + text + g.note.slice(n.index + n.raw.length);
-        throw new GestureRefusal(`gestures[${i}].note`, `states a change of ${n.raw}%, but between ${ms[0].name} and ${ms[1].name} the readings change ${text}%: write "${fixed}"`, { set: { index: i, field: "note", value: fixed } });
+        throw new GestureRefusal(`gestures[${i}].note`, `states a change of ${n.raw}%, but from ${early.name} to ${late.name} the readings change ${change < 0 ? "-" : "+"}${digits}%: write "${fixed}"`, { set: { index: i, field: "note", value: fixed } });
       }
     }
     const near = (n, f) => [f, ...(n.exp ? [f / 10 ** n.exp] : [])].some((x) => Math.abs(n.value - x) <= 0.5 * 10 ** -n.decimals + 1e-9);
