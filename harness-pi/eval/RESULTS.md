@@ -536,7 +536,7 @@ Misses by owner:
 | story | 26B, 30 min |
 |---|---|
 | real-gwis static | ✅ gold, 14.4 min (render exit 0, no repair, no fallback) |
-| gx-connected-scatter (full) | ⚠️ delivered, render exit 0, headline not faithful: the storyboard holds `language: en` and an English takeaway, the beat drew a French rewrite ("Tous plus propres chez eux, 5 plus légers en Europe") and no kit or guard compares `title` with the takeaway |
+| gx-connected-scatter (full) | ⚠️ delivered, render exit 0, headline not faithful. Replayed: `beat.mjs` gives the takeaway word for word as the title's first form (the `applyStoryboard` guard holds it), then two shorter forms in French although the storyboard says `language: en`; the plate's ladder took the second form ("headline 2"). With the takeaway as the only form the plate refuses: no rung leaves 84 px of plot with 16 names |
 | r8 static | ❌ 30 min cap at craft: the plate still draws other columns' values (357, 347, 331) under the claim on `Getoetete_Pedelecs_ab_2014`; the refusal names the column every time |
 | gx-small-multiples (full) | ❌ stopped at framing after 4.5 min: the 26B wrote "I've recorded your takeaway" four times without calling a record tool (the run before got past storyboard, so this is not deterministic) |
 
@@ -544,7 +544,5 @@ Misses by owner:
 held-out five. The cap explains one of four (real-gwis); the other three are not time.
 
 Misses by owner:
-- **Harness candidate:** the headline is paperwork the model retypes (K4): every kit takes `title` from `beat.mjs`
-  and nothing holds it to the confirmed takeaway or the storyboard's language. Not fixed: whether the title must be
-  the takeaway verbatim is Rémy's call (doctrine), see the report.
+- **Open question (doctrine vs gate):** the plate's ladder may shorten the headline (doctrine, `shared/chart-beat/type-at-size.mjs`), while the gold gate wants the takeaway drawn verbatim. The model's miss is the language of the shorter forms.
 - **Model:** r8 (repair ignores a refusal naming the column), small-multiples (prose record claims, see TUNE.md).
