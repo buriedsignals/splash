@@ -578,3 +578,21 @@ Re-run on the 12B, k=1: **delivered, render exit 0, 1182 s, 2 refusals** — but
 characters) is the title's first form, and the plate drew the second, "Pedelec fatalities vs. non-motorized
 bicycles". Same case as the 26B's connected scatter, now in English: a plate-shortened headline. It joins the
 question for Tom (does a shortened form, in the storyboard's language, count as faithful?). r8 leaves TUNE.md.
+
+### real-gwis replayed: four harness defects, then gold on the 12B (2026-11-08)
+
+Same method as r8: replay each refusal, fix the harness when the refusal is its own, re-run once (12B, k=1, 30 min cap).
+
+| Run | Outcome | What it showed | Fix |
+|---|---|---|---|
+| 1 | production, capped | the aggregate guard refused the aggregates the takeaway names ("Africa", "World") | `08ca68140` named aggregates pass |
+| 1 | — | the running-total guard read blank `code` cells as zeros and named the `code` column | `08ca68140` text columns and blanks skipped |
+| 2 | production, capped | a plate of continents alone was refused as "regions mixed among countries" | `664ab8fba` |
+| 3 | delivery, REPAIRED | the "World" series summed every row of each year (3,104,880 drawn in 2012, 1,027,500 held) — no guard saw it | `1794d2efd` a series named like a row draws that row |
+| 4 | delivery, clean | the model renamed the sum "Rest of World" (every row but Africa, 2,494,770 in 2012) and passed | `c2b9a1336` no composed series or stack exceeds the year's total |
+| 5 | **gold** (1472 s, 2 refusals in the beat, both recovered) | stacks the six continents as data.json holds them | — |
+
+Both new guards replayed over the kept beats: 18 pass, 2 refused (the two wrong real-gwis beats), 0 false positive;
+the 26B beat passes. Gold here is the gate's gold; looking at the plate still shows three defects no guard owns yet:
+2026 is drawn although the standfirst says "2026 excluded as incomplete"; the y axis reads 0–1,250 for values in the
+hundreds of thousands (no "thousands" in the unit); one annotation reads "962,619 · 6.8 %" with no words.
