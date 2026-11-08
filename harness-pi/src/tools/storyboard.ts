@@ -416,6 +416,9 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       ] as readonly string[];
       if (field === "candidates")
         throw new Error("candidates are recorded with show_candidates, not record_slot");
+      // Asked again once it is set, a 12B looped three times on the refusal below; a repeat changes nothing, so say so.
+      if (field === "interaction" && currentSlot(slot)?.interaction)
+        return text(`interaction is already recorded as ${currentSlot(slot)!.interaction} (it follows the chosen treatment and format); nothing to change. ${await status()}`);
       if (field === "interaction")
         throw new Error("interaction is recorded automatically when you record the journalist's chosen treatment; record chosen");
       if (!all.includes(field))

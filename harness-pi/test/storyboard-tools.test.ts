@@ -460,6 +460,21 @@ describe("chosen before format", () => {
     });
     expect(meta().slots[0].interaction).toBe("none");
   });
+
+  // Osaurus run 2026-11-08: with the interaction already recorded, the MLX 12B asked to record it again three
+  // times, each refused, and the storyboard session stopped on "same failure 3x".
+  it("should answer a repeated interaction as already recorded, not refuse it", async () => {
+    const tools = storyboardTools(bases, dialogue);
+    dialogue.lastJournalist = "A chart.";
+    await call(tools.recordSlot, { slot: "1", field: "medium", value: "chart" });
+    await mutateFixture({ candidates: ["Bar and column", "Treemap"] });
+    dialogue.lastJournalist = "Bar and column.";
+    await call(tools.recordSlot, { slot: "1", field: "chosen", value: "Bar and column" });
+    dialogue.lastJournalist = "Static.";
+    await call(tools.recordSlot, { slot: "1", field: "format", value: "static" });
+    const out = await call(tools.recordSlot, { slot: "1", field: "interaction", value: "none" });
+    expect(JSON.stringify(out)).toContain("already recorded");
+  });
 });
 
 async function mutateFixture(fields: Record<string, unknown>) {
