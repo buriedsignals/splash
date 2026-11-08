@@ -27,6 +27,32 @@ describe("assertDrawsClaimColumn", () => {
   });
 });
 
+describe("assertDrawsClaimColumn beside a comparison series", () => {
+  const story = () => {
+    const root = mkdtempSync(join(tmpdir(), "splash-claim-"));
+    const dir = join(root, "beats", "1");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(root, "STORYBOARD.md"), `---\nclaimColumn: "pedelec"\n---\n`);
+    writeFileSync(
+      join(dir, "data.json"),
+      JSON.stringify({ columns: [{ name: "year" }, { name: "pedelec" }, { name: "bicycle" }, { name: "cars" }], rows: [[2015, "36", "357", 1500], [2024, "195", "250", 1165], [2025, "214", "248", 1210]] }),
+    );
+    return dir;
+  };
+
+  it("should accept the claim column drawn beside one other column of data.json (the storyboard's comparison)", () => {
+    expect(() => assertDrawsClaimColumn([36, 195, 214, 357, 250, 248], story())).not.toThrow();
+  });
+
+  it("should still refuse a plate that draws none of the claim column", () => {
+    expect(() => assertDrawsClaimColumn([357, 250, 248], story())).toThrow(/draws values that column does not hold/);
+  });
+
+  it("should still refuse values no column of data.json holds", () => {
+    expect(() => assertDrawsClaimColumn([36, 195, 214, 999, 888], story())).toThrow(/draws values that column does not hold \(999, 888\)/);
+  });
+});
+
 describe("assertHeadlineNumbersDrawn", () => {
   it("should read a nineteenth-century year in the title as a year, not a figure", () => {
     expect(() => assertHeadlineNumbersDrawn("World population passed 8 billion, from 1 billion in 1858", [1, 8])).not.toThrow();

@@ -197,7 +197,14 @@ export function assertDrawsClaimColumn(drawn, here) {
   const near = (v, h) => Math.abs(h - v) <= Math.max(1e-9, Math.abs(h) * 1e-6, Math.abs(v) < 1e4 ? 0.05 * 10 ** -decimals(v) * 10 : 0);
   const foreignAt = (scale) => drawn.filter((v) => Number.isFinite(v) && !held.some((h) => near(v, h * scale)));
   const scales = Array.from({ length: 25 }, (_, i) => 10 ** (i - 12));
-  const foreign = scales.map(foreignAt).reduce((best, f) => (f.length < best.length ? f : best));
+  const best = scales.map((scale) => ({ scale, foreign: foreignAt(scale) })).reduce((a, b) => (b.foreign.length < a.foreign.length ? b : a));
+  let { foreign } = best;
+  // A comparison draws a second series beside the claim's (pedelecs against bicycles without a motor, r8: both the
+  // 12B and the 26B were refused until the cap for drawing the series the storyboard asked for). Values one other
+  // column holds at the same scale pass, as long as the claim column is drawn too.
+  const columnHolds = (i, v) => table.rows.some((r) => near(v, Number(String(r[i]).replace(/\s/g, "").replace(",", ".")) * best.scale));
+  const drawsClaim = drawn.filter(Number.isFinite).length > foreign.length;
+  if (foreign.length && drawsClaim && (table.columns ?? []).some((_, i) => i !== at && foreign.every((v) => columnHolds(i, v)))) foreign = [];
   if (foreign.length)
     throw new Error(`the claim is about the column ${column}, but the plate draws values that column does not hold (${foreign.slice(0, 3).join(", ")}): draw ${column}'s values`);
 }
