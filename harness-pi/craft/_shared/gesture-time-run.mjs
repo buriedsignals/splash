@@ -66,6 +66,40 @@ export function refuseRunningTotal(points, here) {
   }
 }
 
+/**
+ * A series named like an entity of data.json draws that entity's readings. A 12B real-gwis beat drew "World" as the
+ * sum of every row of the year (countries, continents and the world itself, three times the World row), delivered
+ * under a faithful headline. Readings in a power-of-ten unit pass; a series the beat composed (no such entity) passes.
+ */
+export function refuseRewrittenSeries(points, here) {
+  let table;
+  try {
+    table = JSON.parse(readFileSync(join(here, "data.json"), "utf8"));
+  } catch {
+    return;
+  }
+  const rows = table.rows ?? [];
+  const numeric = (v) => v !== null && v !== "" && typeof v !== "boolean" && Number.isFinite(Number(v));
+  const near = (a, b) => Math.abs(a - b) <= Math.max(1e-9, Math.abs(b) * 0.005);
+  for (const name of new Set(points.map((p) => p.series))) {
+    const own = rows.filter((r) => r.some((cell) => cell === name));
+    if (!own.length) continue;
+    const drawn = points.filter((p) => p.series === name && Number.isFinite(p.value));
+    // The entity's row at a time: a cell equal to the time as written or as a number.
+    const heldAt = (p) => own.filter((r) => r.some((cell) => String(cell) === p.key || (numeric(cell) && Number(cell) === p.t))).flatMap((r) => r.filter(numeric).map(Number));
+    const paired = drawn.map((p) => ({ p, held: heldAt(p) })).filter((x) => x.held.length);
+    if (paired.length < 2) continue;
+    const scales = Array.from({ length: 19 }, (_, i) => 10 ** (i - 9));
+    const off = (scale) => paired.filter(({ p, held }) => !held.some((h) => near(p.value, h * scale)));
+    const wrong = scales.map(off).reduce((a, b) => (b.length < a.length ? b : a));
+    if (wrong.length > paired.length / 2) {
+      const { p, held } = wrong[0];
+      const value = held.filter((h) => h !== p.t).at(-1) ?? held.at(-1);
+      throw new Error(`points: ${name} is a row of data.json, but its readings are not that row's (at ${p.key} it draws ${p.value.toLocaleString("en-US")}, data.json holds ${value.toLocaleString("en-US")}): read ${name}'s rows as data.json holds them, never summed or recomputed from other rows`);
+    }
+  }
+}
+
 export async function loadTimeBeat(here, variant, { required = [], format: wanted = "static" } = {}) {
   const beat = await importBeat(here);
   applyStoryboard(beat, here);
@@ -85,6 +119,7 @@ export async function loadTimeBeat(here, variant, { required = [], format: wante
   if (model.times.length < 2) throw new Error(`points hold ${model.times.length} time(s): a ${WHAT[variant]} needs readings at two times at least`);
   if (!model.marks.length) throw new Error(`no reading of points can be drawn (every value is missing, or no series reaches the top ${model.slots})`);
   if (variant === "area-and-stacked-area" || variant === "streamgraph") refuseRunningTotal(points, here);
+  refuseRewrittenSeries(points, here);
   runCheck(beat);
 
   const measures = model.marks.map((m) => model.measureOf.get(m.name));
