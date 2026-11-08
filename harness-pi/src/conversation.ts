@@ -6,6 +6,7 @@ import type { AgentSession } from "@earendil-works/pi-coding-agent";
 import type { Journalist } from "./journalist.ts";
 import type { Dialogue } from "./tools/storyboard.ts";
 import type { GateState } from "./tools/palette.ts";
+import { thinkingLevel } from "./sessions.ts";
 
 export interface ConverseOptions {
   session: AgentSession;
@@ -23,6 +24,8 @@ export interface ConverseOptions {
     toolCalls?: number;
     minutes?: number;
     sameFailure?: number;
+    /** With thinking off, seconds a turn may sit in hidden reasoning before it is cut and asked again. */
+    hiddenReasoningSeconds?: number;
   };
   log: string[];
   /** The record tools a stalled turn is narrowed to (Spotlight's last-turn narrowing); none narrows nothing. */
@@ -56,7 +59,19 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
     toolCalls: 80,
     minutes: 45,
     sameFailure: 3,
+    hiddenReasoningSeconds: 90,
     ...o.limits,
+  };
+  // With thinking off, the MLX 12B under Osaurus still opened its thought channel and ran 16,384 hidden tokens
+  // (over ten minutes, nothing streamed) in one storyboard turn. llama-server's --reasoning-budget 400 cut that;
+  // Osaurus honours no budget (seven request and environment forms tried, 2026-11-08), so the harness cuts it here.
+  const reasoningOff = thinkingLevel() === "off";
+  let hidden: ReturnType<typeof setTimeout> | undefined;
+  let cut = false;
+  let cuts = 0;
+  const disarm = () => {
+    clearTimeout(hidden);
+    hidden = undefined;
   };
   let toolCalls = 0;
   let recorded = 0;
@@ -75,6 +90,17 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
   const argsOf = new Map<string, string>();
   let lastRecord = "";
   const off = o.session.subscribe((e) => {
+    if (e.type === "message_update" && reasoningOff) {
+      const t = e.assistantMessageEvent?.type;
+      if (t === "thinking_start" && !hidden)
+        hidden = setTimeout(() => {
+          cut = true;
+          void o.session.abort();
+        }, limits.hiddenReasoningSeconds * 1000);
+      else if (t === "text_start" || t === "toolcall_start") disarm();
+      return;
+    }
+    if (e.type === "message_end") disarm();
     if (e.type === "tool_execution_start") {
       argsOf.set(e.toolCallId, `${e.toolName} ${JSON.stringify(e.args ?? null)}`);
       return;
@@ -147,6 +173,17 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
         }
       } else await o.session.prompt(prompt);
       narrow = false;
+      disarm();
+      if (cut) {
+        cut = false;
+        if (++cuts >= limits.sameFailure) {
+          stop = `hidden reasoning cut ${cuts}x`;
+          break;
+        }
+        prompt = `[harness] Your last turn stayed in hidden reasoning for ${limits.hiddenReasoningSeconds} s with nothing said and no tool called, and was cut. Thinking is off: do not reason first. Answer the last message directly, or call the tool it needs. ${await o.gaps()}`.trimEnd();
+        o.log.push(`HARNESS: ${prompt}`);
+        continue;
+      }
       const said = o.session.getLastAssistantText() ?? "";
       o.log.push(`MODEL: ${said.slice(0, 1500)}`);
       if (await o.done()) {
@@ -199,6 +236,7 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
     stop ||= `error: ${(e as Error).message}`;
   } finally {
     clearTimeout(timer);
+    disarm();
     off();
   }
   return { rounds, toolCalls, stop: stop || "round cap", refusals };

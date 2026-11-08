@@ -166,3 +166,47 @@ describe("converse bounds (Spotlight's watchdog: 16 / 12 / 6)", () => {
     expect(r.refusals).toBeGreaterThan(6);
   });
 });
+
+// Osaurus run 2026-11-08: with thinking off, the MLX 12B opened its thought channel and ran 16,384 hidden tokens
+// (over ten minutes) in one storyboard turn; llama-server's --reasoning-budget 400 had cut that, Osaurus has no budget.
+describe("converse cutting hidden reasoning", () => {
+  const runaway = async () => {
+    const prompts: string[] = [];
+    let listener: (e: unknown) => void = () => {};
+    let release: () => void = () => {};
+    let turn = 0;
+    const session = {
+      subscribe: (f: (e: unknown) => void) => ((listener = f), () => {}),
+      prompt: async (text: string) => {
+        prompts.push(text);
+        if (turn++ > 0) return;
+        listener({ type: "message_update", assistantMessageEvent: { type: "thinking_start" } });
+        await new Promise<void>((r) => (release = r));
+      },
+      getLastAssistantText: () => "",
+      abort: async () => release(),
+    };
+    const out = await converse({
+      session: session as never,
+      first: "Start the storyboard.",
+      journalist: { answer: async () => "Yes." },
+      dialogue: { lastJournalist: "", lastProposal: "" },
+      conversational: false,
+      done: async () => false,
+      gaps: async () => "",
+      limits: { rounds: 3, hiddenReasoningSeconds: 0.05 },
+      log: [],
+    });
+    return { prompts, out };
+  };
+
+  it("should cut a turn that stays in hidden reasoning and ask it again", async () => {
+    const { prompts } = await runaway();
+    expect(prompts[1]).toStartWith("[harness] Your last turn stayed in hidden reasoning");
+  });
+
+  it("should not end the session on that cut", async () => {
+    const { out } = await runaway();
+    expect(out.stop).toBe("ended");
+  });
+});
