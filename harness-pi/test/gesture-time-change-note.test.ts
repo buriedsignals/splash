@@ -46,3 +46,12 @@ describe("bracketText", () => {
     expect(bracketText(en, { sum: 962619, from: 2022, to: 2022, ofWhole: true, share: 6.8, span: [2012, 2026] })).toBe("962,619 in 2022 · 6.8 % of 2012–2026");
   });
 });
+
+describe("a compare's signed note", () => {
+  it("should keep the minus when it offers the readings' own fall (-48% → -68%)", () => {
+    const fall = timeModel({ variant: "area-and-stacked-area", points: readPoints([["Africa", 2015, 689651], ["Asia", 2015, 458848], ["Africa", 2026, 222057], ["Asia", 2026, 148337]].map(([series, t, value]) => ({ series, t, value }))) });
+    expect(() =>
+      validateTime({ gestures: [{ do: "compare", marks: ["2026 · Africa", "2015 · Africa"], note: "-48% vs 2015 peak" }], model: fall, format: "static", claim }),
+    ).toThrow(/write "-68% vs 2015 peak"/);
+  });
+});

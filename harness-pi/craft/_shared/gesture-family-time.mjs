@@ -482,7 +482,8 @@ export function timeHooks(model) {
       if (!(Math.abs(best - n.value) <= Math.abs(n.value) * 0.5))
         throw new GestureRefusal(`gestures[${i}].note`, `states ${n.raw}, which no reading this ${g.do} draws gives: drop the note, or check the readings it acts on (mark, marks)`, { set: { index: i, field: "note", value: undefined } });
       const text = Math.abs(best).toFixed(n.decimals).replace(".", n.separator === "," || n.decimalMark === "," ? "," : ".");
-      const fixed = g.note.slice(0, n.index) + (best < 0 && !n.sign ? "-" : "") + text + g.note.slice(n.index + n.raw.length);
+      // n.raw carries its sign, so the replacement carries best's: "-48%" was offered as "68%", a fall printed as a rise.
+      const fixed = g.note.slice(0, n.index) + (best < 0 ? (n.sign === "\u2212" ? "\u2212" : "-") : n.sign === "+" ? "+" : "") + text + g.note.slice(n.index + n.raw.length);
       throw new GestureRefusal(`gestures[${i}].note`, `states ${n.raw}, but the readings this ${g.do} draws give ${text}: write "${fixed}"`, { set: { index: i, field: "note", value: fixed } });
     }
   }
