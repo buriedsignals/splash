@@ -51,6 +51,28 @@ export function timeOf(raw) {
   return NaN;
 }
 
+/**
+ * A whole tick's label with the formatter's trailing decimal zeros dropped ("1,250.0" → "1,250"). The decimal mark is
+ * read from the formatter itself: stripping any [.,]0+ took the thousands group of "1,250,000" for decimals and drew
+ * 1,250 for a million and a quarter (real-gwis, 2026-11-08).
+ */
+export function tickLabel(format, v) {
+  const text = format(v);
+  if (!Number.isInteger(v)) return text;
+  const mark = /0([.,])5/.exec(format(0.5))?.[1];
+  return mark ? text.replace(new RegExp(`\\${mark}0+$`), "") : text;
+}
+
+/**
+ * A bracket's figure when its note gives none: the sum with the times it covers, and, of the whole, the share with
+ * the times the whole covers. "962,619 · 6.8 %" (real-gwis) said neither: 6.8 % of every reading 2012–2026.
+ */
+export function bracketText(format, b) {
+  const run = (a, z) => (a === z ? `${a}` : `${a}–${z}`);
+  const sum = `${format(b.sum)} in ${run(b.from, b.to)}`;
+  return b.ofWhole && b.span ? `${sum} · ${b.share.toFixed(1)} % of ${run(b.span[0], b.span[1])}` : sum;
+}
+
 /** Round axis ticks over [lo, hi] (d3's nice-ticks rule, written out so the scrolly page and the bundle need no d3). */
 export function niceTicks(lo, hi, count = 5) {
   if (!(hi > lo)) return [lo];
@@ -370,6 +392,14 @@ function assertFactor(g, i, factor) {
   throw new GestureRefusal(`gestures[${i}].note`, `prints the factor ${n.raw}, but the zoom enlarges the time axis ×${factor.toFixed(2)}: write "${value}"`, { set: { index: i, field: "note", value } });
 }
 
+const CHANGE = /^(declin|fall|fell|drop|rise|rose|increas|decreas|grow|grew|gain|loss|lower|higher|down|up|less|more|fewer|cut|jump|climb|slump|plung|surg)/i;
+/** Whether a stated percent is named as a change: a change word right after it ("60% decline") or right before ("down 49%", "fell by 49%"). */
+function changeWord(note, n) {
+  const after = String(note).slice(n.index + n.raw.length).replace(/^\s?(%|per ?cent)\s*/i, "");
+  const before = String(note).slice(0, n.index).trim().split(/\s+/).slice(-2);
+  return CHANGE.test(after) || (before.join(" ").toLowerCase() !== "up to" && before.some((w) => CHANGE.test(w) && !/^more$/i.test(w)));
+}
+
 /** The family's hooks for validateGestures: its own figures and its own refusals, per variant. */
 export function timeHooks(model) {
   const additive = ADDITIVE.has(model.variant);
@@ -429,6 +459,19 @@ export function timeHooks(model) {
     if (g.do === "reference") pool.push(Number(g.value));
     const figures = pool.filter(Number.isFinite);
     const stated = figuresIn(g.note);
+    // A percent the note calls a change ("60% decline", "down 49%") is the change between the compare's two readings,
+    // never another figure the pool holds: real-gwis was offered Africa's 60% share of 2015 for "49% decline" and
+    // printed "60% decline since 2015" where its readings fell 11.4%.
+    if (g.do === "compare" && ms.length === 2) {
+      const [a, b] = [ms[0].value, ms[1].value];
+      const changes = [(a / b - 1) * 100, (b / a - 1) * 100].map(Math.abs).filter(Number.isFinite);
+      for (const n of stated.filter((x) => x.percent && changeWord(g.note, x))) {
+        if (changes.some((f) => Math.abs(n.value - f) <= 0.5 * 10 ** -n.decimals + 1e-9)) continue;
+        const text = changes[0].toFixed(n.decimals).replace(".", n.separator === "," || n.decimalMark === "," ? "," : ".");
+        const fixed = g.note.slice(0, n.index) + text + g.note.slice(n.index + n.raw.length);
+        throw new GestureRefusal(`gestures[${i}].note`, `states a change of ${n.raw}%, but between ${ms[0].name} and ${ms[1].name} the readings change ${text}%: write "${fixed}"`, { set: { index: i, field: "note", value: fixed } });
+      }
+    }
     const near = (n, f) => [f, ...(n.exp ? [f / 10 ** n.exp] : [])].some((x) => Math.abs(n.value - x) <= 0.5 * 10 ** -n.decimals + 1e-9);
     const SCALES = [0, -3, -6, -9, -12, 3, 6, 9, 12, -2, 2];
     const scale = SCALES.map((k) => ({ k, hits: stated.filter((n) => figures.some((f) => near(n, f * 10 ** k))).length })).reduce((a, b) => (b.hits > a.hits ? b : a), { k: 0, hits: -1 }).k;
@@ -592,7 +635,7 @@ export function pictureOf(model, valid, { format = String, subject } = {}) {
         const sum = ms.reduce((s, m) => s + m.value, 0);
         const whole = model.marks.reduce((s, m) => s + m.value, 0);
         const layers = [...new Set(ms.map((m) => m.series))];
-        return { ...base, from: Math.min(...ts), to: Math.max(...ts), layers, sum, whole, ofWhole: g.of === "whole", share: (sum / whole) * 100 };
+        return { ...base, from: Math.min(...ts), to: Math.max(...ts), layers, sum, whole, ofWhole: g.of === "whole", share: (sum / whole) * 100, span: [model.t0, model.t1] };
       }
       case "reference":
         return { ...base, value: Number(g.value) };

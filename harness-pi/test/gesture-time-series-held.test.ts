@@ -2,7 +2,7 @@ import { describe, expect, it } from "bun:test";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { refuseDoubleCount, refuseRewrittenSeries } from "../craft/_shared/gesture-time-run.mjs";
+import { refuseDoubleCount, refuseExcludedTimes, refuseRewrittenSeries } from "../craft/_shared/gesture-time-run.mjs";
 
 const here = mkdtempSync(join(tmpdir(), "series-held-"));
 writeFileSync(
@@ -47,5 +47,21 @@ describe("refuseDoubleCount", () => {
 
   it("should accept a composed series within the world's total (World minus Africa)", () => {
     expect(() => refuseDoubleCount([...series("Africa", [600, 500, 400]), ...series("Rest of World", [400, 400, 400])], here, true)).not.toThrow();
+  });
+});
+
+describe("refuseExcludedTimes", () => {
+  const at = (years: number[]) => years.map((t) => ({ series: "World", key: String(t), t, value: 1 }));
+
+  it("should refuse a year the limits say is excluded", () => {
+    expect(() => refuseExcludedTimes(at([2025, 2026]), "Count of fire events. 2026 excluded as incomplete.")).toThrow(/2026/);
+  });
+
+  it("should accept the points once that year is left out", () => {
+    expect(() => refuseExcludedTimes(at([2024, 2025]), "Count of fire events. 2026 excluded as incomplete.")).not.toThrow();
+  });
+
+  it("should refuse a year named after excluding", () => {
+    expect(() => refuseExcludedTimes(at([2019, 2020]), "Rates per 100,000, excluding 2020 (pandemic).")).toThrow(/2020/);
   });
 });

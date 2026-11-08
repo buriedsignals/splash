@@ -55,7 +55,7 @@ export function composeTimeStatic({ model, valid, format = String, subject }) {
         }
         break;
       case "bracket":
-        plate.brackets.push({ k: it.k, from: it.from, to: it.to, layers: it.layers, sum: it.sum, share: it.share, ofWhole: it.ofWhole, text: it.note });
+        plate.brackets.push({ k: it.k, from: it.from, to: it.to, layers: it.layers, sum: it.sum, share: it.share, ofWhole: it.ofWhole, span: it.span, text: it.note });
         break;
       case "reference":
         plate.references.push({ k: it.k, value: it.value, text: it.note });

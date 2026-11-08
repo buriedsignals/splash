@@ -10,7 +10,7 @@ import { createElement } from "react";
 import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
 import { EYEBROW_TO_DISPLAY, gapOf, registerOf } from "#shared/design-base/register.mjs";
 import { webRegisters } from "#shared/design-base/web.mjs";
-import { niceTicks, validateTime } from "./gesture-family-time.mjs";
+import { niceTicks, tickLabel, validateTime } from "./gesture-family-time.mjs";
 import { loadTimeBeat, staged } from "./gesture-time-run.mjs";
 import { APPLY, checkTimeCards, driveSource, scheduleTimeScrolly } from "./gesture-time-scrolly.mjs";
 import { GestureTimeScrolly } from "./GestureTimeScrolly.tsx";
@@ -44,7 +44,7 @@ export async function runTimeScrolly(here, variant) {
       return { from: g.from, to: g.to, rect: false, a: pts.find((p) => p.t === g.from).y1, b: pts.find((p) => p.t === g.to).y1 };
     }).filter((g) => g.rect || (Number.isFinite(g.a) && Number.isFinite(g.b)));
     const yTicks = variant === "line" || variant === "area-and-stacked-area" ? niceTicks(model.domain[0], model.domain[1], 5) : variant === "bump-ranking-over-time" ? Array.from({ length: model.slots }, (_, i) => i + 1) : [];
-    const yLabels = yTicks.map((v) => (variant === "bump-ranking-over-time" ? String(v) : Number.isInteger(v) ? format(v).replace(/[.,]0+$/, "") : format(v)));
+    const yLabels = yTicks.map((v) => (variant === "bump-ranking-over-time" ? String(v) : tickLabel(format, v)));
     const span = model.t1 - model.t0;
     let xTicks = niceTicks(model.t0, model.t1, 6).filter((t) => Number.isInteger(t) || span < 6);
     if (!xTicks.length) xTicks = [model.t0, model.t1];

@@ -6,7 +6,7 @@
 // refusal's fix is applied instead and the list staged again, at most 12 times. Nothing here refuses the data's SHAPE.
 // Node only.
 import { validateTime } from "./gesture-family-time.mjs";
-import { niceTicks } from "./gesture-family-time.mjs";
+import { niceTicks, tickLabel } from "./gesture-family-time.mjs";
 import { loadTimeBeat, staged } from "./gesture-time-run.mjs";
 import { interactionPlanTime, scheduleTimeWeb } from "./gesture-time-web.mjs";
 import { chartWeb, plain, refusing, renderBeatWeb } from "./web.mjs";
@@ -62,7 +62,7 @@ export async function runTimeWeb(here, variant) {
     const restNotes = scheduled.resting.captions.map((c) => plain(c.text));
 
     // ── axes: a line fitted, an area from zero (value ticks); a stream has none; a bump writes its ranks
-    const tickLabel = (v) => (Number.isInteger(v) ? format(v).replace(/[.,]0+$/, "") : format(v));
+    const tickLabel = (v) => tickLabel(format, v);
     const [lo, hi] = model.domain;
     const yTicks = bump
       ? Array.from({ length: model.slots }, (_, i) => ({ value: i + 1, label: String(i + 1) }))

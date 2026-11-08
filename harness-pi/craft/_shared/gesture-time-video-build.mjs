@@ -15,7 +15,7 @@ import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
-import { niceTicks, pictureOf } from "./gesture-family-time.mjs";
+import { bracketText, niceTicks, pictureOf, tickLabel } from "./gesture-family-time.mjs";
 import { EVENTS, scheduleTimeVideo } from "./gesture-time-video.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -136,7 +136,7 @@ export function buildTimeVideo({ id, chosen, model, valid, subject, copy, size, 
 
   // ── the value axis: fitted ticks (line), from zero (area), ranks (bump), none (stream)
   const [lo, hi] = model.domain;
-  const tickText = (v) => (Number.isInteger(v) ? F(v).replace(/[.,]0+$/, "") : F(v));
+  const tickText = (v) => tickLabel(F, v);
   const yTicks = variant === "line" || variant === "area-and-stacked-area" ? niceTicks(lo, hi, 5).map((v) => ({ v, ...word(tickText(v), axis) })) : variant === "bump-ranking-over-time" ? Array.from({ length: model.slots }, (_, i) => ({ v: i + 1, ...word(String(i + 1), axis) })) : [];
   const leftGutter = yTicks.length ? Math.max(...yTicks.map((t) => wide(t.width))) + gap : 0;
 
@@ -217,7 +217,7 @@ export function buildTimeVideo({ id, chosen, model, valid, subject, copy, size, 
     } else if (it.do === "reference") out.value = it.value;
     if (captionOf.has(it.k)) out.caption = captionOf.get(it.k);
     else if (it.do === "bracket") {
-      const t = text ?? (it.ofWhole ? `${F(it.sum)} · ${it.share.toFixed(1)} %` : F(it.sum));
+      const t = text ?? bracketText(F, it);
       const w = word(t, annot);
       const cx = (Xfull(it.from) + Xfull(it.to)) / 2;
       out.note = { ...w, x: Math.max(plot.left, Math.min(plot.right - wide(w.width), cx - wide(w.width) / 2)), y: plot.top + annot.lead * 1.2 };

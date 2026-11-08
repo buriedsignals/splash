@@ -25,7 +25,7 @@ import {
   leadOf,
   registerOf,
 } from "#shared/design-base/register.mjs";
-import { niceTicks } from "./gesture-family-time.mjs";
+import { bracketText, niceTicks, tickLabel } from "./gesture-family-time.mjs";
 
 type Pt = { t: number; key: string; y0: number; y1: number; gap: boolean };
 type At = {
@@ -58,6 +58,7 @@ export type TimePlate = {
     sum: number;
     share: number;
     ofWhole: boolean;
+    span?: [number, number];
     text?: string;
   }[];
   references: { k: number; value: number; text?: string }[];
@@ -255,8 +256,7 @@ export function GestureTimeStatic({
     variant === "line" || variant === "area-and-stacked-area"
       ? niceTicks(lo, hi, 5)
       : [];
-  const yLabel = (v: number) =>
-    Number.isInteger(v) ? format(v).replace(/[.,]0+$/, "") : format(v);
+  const yLabel = (v: number) => tickLabel(format, v);
   const leftGutter =
     variant === "bump-ranking-over-time"
       ? Math.max(
@@ -779,10 +779,7 @@ export function GestureTimeStatic({
       />,
     );
     const figure =
-      b.text ??
-      (b.ofWhole
-        ? `${format(b.sum)} · ${b.share.toFixed(1)} %`
-        : format(b.sum));
+      b.text ?? bracketText(format, b);
     notes.push({
       text: figure,
       x: (X(b.from) + X(b.to)) / 2,

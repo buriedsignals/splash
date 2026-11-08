@@ -144,6 +144,25 @@ export function refuseDoubleCount(points, here, stacked) {
   }
 }
 
+/**
+ * A time the storyboard's limits leave out is not drawn. real-gwis said "2026 excluded as incomplete" and drew 2026,
+ * its stack falling by half in a year that had only begun.
+ */
+export function refuseExcludedTimes(points, limits) {
+  const text = String(limits ?? "");
+  const YEAR = "(1[5-9]\\d\\d|2[01]\\d\\d)";
+  const said = [
+    ...text.matchAll(new RegExp(`\\b${YEAR}\\s+(?:is\\s+|was\\s+)?(?:excluded|omitted|dropped|left out|not shown)`, "gi")),
+    ...text.matchAll(new RegExp(`\\b(?:excluding|excludes|exclude|omitting|omits|without)\\s+${YEAR}\\b`, "gi")),
+  ];
+  for (const m of said) {
+    const year = Number(m[1]);
+    const drawn = points.filter((p) => p.t === year && Number.isFinite(p.value));
+    if (drawn.length)
+      throw new Error(`points: the storyboard's limits say "${m[0]}", but the beat draws ${drawn.length} reading${drawn.length > 1 ? "s" : ""} at ${year}: leave ${year}'s rows out of the points (filter data.rows to the other years)`);
+  }
+}
+
 export async function loadTimeBeat(here, variant, { required = [], format: wanted = "static" } = {}) {
   const beat = await importBeat(here);
   applyStoryboard(beat, here);
@@ -163,6 +182,7 @@ export async function loadTimeBeat(here, variant, { required = [], format: wante
   if (model.times.length < 2) throw new Error(`points hold ${model.times.length} time(s): a ${WHAT[variant]} needs readings at two times at least`);
   if (!model.marks.length) throw new Error(`no reading of points can be drawn (every value is missing, or no series reaches the top ${model.slots})`);
   if (variant === "area-and-stacked-area" || variant === "streamgraph") refuseRunningTotal(points, here);
+  refuseExcludedTimes(points, front("limits"));
   refuseRewrittenSeries(points, here);
   refuseDoubleCount(points, here, variant === "area-and-stacked-area" || variant === "streamgraph");
   runCheck(beat);
