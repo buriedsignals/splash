@@ -284,6 +284,10 @@ export function beatTools(bases: Bases, beat: string) {
       const target = abs();
       assertWritable(bases, target);
       assertNotErasing(target, content, file);
+      // A call cut off before its content arrives as "", or as the literal "null": real-gwis wrote a 4-character
+      // beat.mjs after an aborted generation and spent the rest of the run reading around it.
+      if (/^(null|undefined)?$/.test(content.trim()))
+        throw new Error(`${file}: the call carried no content ("${content.trim()}"). Give the whole module in content, starting with its imports`);
       if (content.length > MAX_WRITE && existsSync(target))
         throw new Error(
           `${file} exists and the new content is ${content.length} characters; change it with several edit_file calls (old_text up to ${MAX_EDIT_OLD}, new_text up to ${MAX_EDIT_NEW} characters)`,
