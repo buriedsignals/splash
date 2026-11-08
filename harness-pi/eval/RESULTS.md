@@ -623,3 +623,23 @@ write_file wrote as a 4-character beat.mjs (fixed in `94dd28683`: a write carryi
 to give), and its last turn ran ~9 min into the cap. The non-ending generation is the model's (TUNE.md, now two
 runs). So real-gwis on the 12B stands at 2 gold of the last 3 runs, not proved stable; k=3 would say.
 Peak memory: llama-server 18.3 GB, harness under 200 MB (HANDOFF.md).
+
+## Osaurus / MLX, first runs (2026-11-08)
+
+Route `osaurus`: Osaurus 0.25.31 (Homebrew cask), `mlx-community/gemma-4-12B-it-OptiQ-4bit` rev `de9e1838…`, port 1337,
+arm `osaurus`, `SPLASH_LOCAL_MODEL=gemma-4-12b-it-optiq-4bit`. Tool calls and image input work (smoke-tested).
+Three real-gwis runs, 30 min cap, fallback off; none delivered.
+
+| Run | Ended in | What cost the time | Harness fix |
+|---|---|---|---|
+| 1 | craft, cap | every `-` typed as `_` in run and story folders: five refused reads of `data.json`; a stacked area adding Africa to the world (refused, rightly) | `e27651ac7` path fold |
+| 1 | storyboard | asked to record `interaction` three more times after it was set | `69b584034` repeat answered |
+| 2 | storyboard, cap | **my own setting**: disk KV cache off ⇒ full prefill each turn (~2 min/turn). Not a model result. | cache back on, capped |
+| 3 | storyboard 1,498 s | one turn ran 16,384 hidden reasoning tokens with thinking off (>10 min, 18 chars streamed); then 12 turns with no record | `2c9955ca4` 90 s cut |
+
+Runtime facts measured: Osaurus refuses a request with no `model` (fixed in the journalist classifier); no request
+or environment form of a reasoning budget is honoured (7 tried); `osaurus stop` stops the server but leaves the app
+process alive (five accumulated, killed by PID). Disk: the block-disk KV cache wrote 21 GB in one run uncapped;
+`cache.blockDisk.maxSizeGB: 8` in `~/.osaurus/config/server-runtime.json` held it at ≤8.9 GB, but local Time Machine
+snapshots retain what it churns (free disk 57 → 16 GB over the day). Peak memory: Osaurus RSS 11.6 GB, footprint
+9.9 GB, system wired 17.4 GB; harness ≤ 350 MB.
