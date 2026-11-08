@@ -18,4 +18,10 @@ describe("refuseRunningTotal", () => {
   it("should accept the readings as data.json holds them", () => {
     expect(() => refuseRunningTotal(points(yearly), here)).not.toThrow();
   });
+
+  it("should not read blank codes of a text column as zeros, so a flat series is no running total of it", () => {
+    const dir = mkdtempSync(join(tmpdir(), "running-total-blank-"));
+    writeFileSync(join(dir, "data.json"), JSON.stringify({ columns: [{ name: "entity", type: "text" }, { name: "code", type: "text" }, { name: "events", type: "number" }], rows: [["World", "", 20], ["Angola", "AGO", 9], ["World", "", 18]] }));
+    expect(() => refuseRunningTotal(points([7, 7, 7, 7, 7]), dir)).not.toThrow(/"code"/);
+  });
 });

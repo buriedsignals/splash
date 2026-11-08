@@ -49,8 +49,10 @@ export function refuseRunningTotal(points, here) {
   }
   const near = (a, b) => Math.abs(a - b) <= 1e-6 * Math.max(1, Math.abs(a), Math.abs(b));
   for (const [c, col] of (table.columns ?? []).entries()) {
-    const held = (table.rows ?? []).map((r) => Number(r[c])).filter(Number.isFinite);
-    if (!held.length || col.type === "string") continue;
+    if (col.type === "string" || col.type === "text") continue;
+    // A blank or missing cell is no reading: Number("") is 0, and a flat series then "ran up" a column of codes.
+    const held = (table.rows ?? []).filter((r) => r[c] !== null && String(r[c] ?? "").trim() !== "").map((r) => Number(r[c])).filter(Number.isFinite);
+    if (!held.length) continue;
     const holds = (v) => held.some((h) => near(h, v));
     for (const series of new Set(points.map((p) => p.series))) {
       const v = points.filter((p) => p.series === series && Number.isFinite(p.value)).sort((a, b) => a.t - b.t).map((p) => p.value);

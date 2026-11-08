@@ -240,13 +240,22 @@ export function assertNoAggregates(names, here) {
   const iso = (v) => /^([A-Z]{3}|OWID_KOS)$/.test(String(v ?? ""));
   const code = columns.findIndex((_, c) => table.rows.filter((r) => iso(r[c])).length >= table.rows.length * 0.6);
   if (code < 0) return;
+  // An aggregate the storyboard names is the story's subject, not a stray region (real-gwis: "Africa accounts for two
+  // thirds of the world's wildfires" — refused, the 12B rebuilt the continents from a country list it made up).
+  const field = front(here);
+  const told = ["takeaway", "subject", "comparison"].map((k) => field?.(k) ?? "").join(" ").toLowerCase();
+  const escape = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const named = (name) => new RegExp(`(?<![\\p{L}])${escape(String(name).toLowerCase())}(?![\\p{L}])`, "u").test(told);
   const aggregates = names.filter((name) => {
     const row = table.rows.find((r) => r.some((cell) => cell === name));
-    return row && !iso(row[code]);
+    return row && !iso(row[code]) && !named(name);
   });
+  // The aggregates the story names are drawn as data.json holds them: never rebuilt from a country list.
+  const namedRows = [...new Set(table.rows.filter((r) => !iso(r[code])).map((r) => r.find((cell) => typeof cell === "string" && cell !== r[code])).filter((n) => n && named(n)))];
+  const namedHint = namedRows.length ? `, or take the aggregates the storyboard names (${namedRows.map((n) => `"${n}"`).join(", ")}) as data.json holds them, never summed from a country list you wrote` : "";
   if (aggregates.length)
     throw new Error(
-      `${aggregates.map((a) => `"${a}"`).join(", ")} ${aggregates.length > 1 ? "are aggregates" : "is an aggregate"} in data.json (its ${columns[code].name} is not a country code): build rows only from rows whose ${columns[code].name} is three capital letters, like "${table.rows.find((r) => iso(r[code]))[code]}"`,
+      `${aggregates.map((a) => `"${a}"`).join(", ")} ${aggregates.length > 1 ? "are aggregates" : "is an aggregate"} in data.json (its ${columns[code].name} is not a country code): build rows only from rows whose ${columns[code].name} is three capital letters, like "${table.rows.find((r) => iso(r[code]))[code]}"${namedHint}`,
     );
 }
 

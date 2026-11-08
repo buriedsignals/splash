@@ -156,6 +156,32 @@ describe("assertNoAggregates", () => {
   });
 });
 
+describe("assertNoAggregates when the storyboard names the aggregate", () => {
+  const story = () => {
+    const root = mkdtempSync(join(tmpdir(), "splash-agg-named-"));
+    const dir = join(root, "beats", "1");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(root, "STORYBOARD.md"), `---\ntakeaway: "Africa accounts for about two-thirds of the world's recorded wildfires, and the World count has fallen."\n---\n`);
+    writeFileSync(
+      join(dir, "data.json"),
+      JSON.stringify({ columns: [{ name: "entity", type: "text" }, { name: "code", type: "text" }, { name: "events", type: "number" }], rows: [["Angola", "AGO", 9], ["Chad", "TCD", 4], ["Peru", "PER", 2], ["Mali", "MLI", 1], ["Laos", "LAO", 3], ["Chile", "CHL", 2], ["Africa", "OWID_AFR", 13], ["Asia", "OWID_ASI", 3], ["World", "", 20]] }),
+    );
+    return dir;
+  };
+
+  it("should accept the aggregates the takeaway names (Africa, World)", () => {
+    expect(() => assertNoAggregates(["Africa", "World"], story())).not.toThrow();
+  });
+
+  it("should still refuse an aggregate the storyboard does not name", () => {
+    expect(() => assertNoAggregates(["Africa", "Asia"], story())).toThrow(/"Asia" is an aggregate/);
+  });
+
+  it("should name, in the refusal, the aggregates the storyboard does name, to take as data.json holds them", () => {
+    expect(() => assertNoAggregates(["Asia"], story())).toThrow(/storyboard names \("Africa", "World"\) as data.json holds them/);
+  });
+});
+
 describe("importBeat", () => {
   const beatWith = (source: string) => {
     const dir = join(beat, "..", `import-${Math.random().toString(36).slice(2)}`);
