@@ -148,13 +148,15 @@ export function refuseDoubleCount(points, here, stacked) {
  * A time the storyboard's limits leave out is not drawn. real-gwis said "2026 excluded as incomplete" and drew 2026,
  * its stack falling by half in a year that had only begun. Refused at first, the MLX 12B then spent twenty minutes
  * failing to edit the filter in (Osaurus run 5, 2026-11-08); the storyboard already decided, so the kit leaves it out.
+ * An incomplete year goes too: run 6 drew "2026 is incomplete" and the series halved in its last year.
  */
 export function dropExcludedTimes(points, limits) {
   const text = String(limits ?? "");
   const YEAR = "(1[5-9]\\d\\d|2[01]\\d\\d)";
   const said = [
-    ...text.matchAll(new RegExp(`\\b${YEAR}\\s+(?:is\\s+|was\\s+)?(?:excluded|omitted|dropped|left out|not shown)`, "gi")),
+    ...text.matchAll(new RegExp(`\\b${YEAR}\\s+(?:is\\s+|was\\s+)?(?:excluded|omitted|dropped|left out|not shown|incomplete|partial|provisional)`, "gi")),
     ...text.matchAll(new RegExp(`\\b(?:excluding|excludes|exclude|omitting|omits|without)\\s+${YEAR}\\b`, "gi")),
+    ...text.matchAll(new RegExp(`\\b(?:incomplete|partial)\\s+(?:year\\s+|data\\s+for\\s+)?${YEAR}\\b`, "gi")),
   ];
   const out = new Set(said.map((m) => Number(m[1])));
   return points.filter((p) => !out.has(p.t));
