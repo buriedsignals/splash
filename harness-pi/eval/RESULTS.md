@@ -614,3 +614,12 @@ new guard refused it once, the model filtered the rows), the stack is Africa ove
 them, axis in full figures, "~65% of world total" true (64.9%). One note still wrong: the guard offered "-43% since
 2015" for the model's "-45%", the change read backwards (2015 against 2024); Africa fell 30.2%. Fixed in `f92b4ff3c`: a
 signed or change-named percent on a compare answers only to the later reading against the earlier.
+
+### A memory-sampled real-gwis re-run (2026-11-08)
+
+Run for the hand-off's memory table, same setting. **Capped at craft, beat.mjs never written** (1802 s): the
+model's first write was aborted after 14 min with no output kept, a second write sent content `"null"`, which
+write_file wrote as a 4-character beat.mjs (fixed in `94dd28683`: a write carrying no content is refused with what
+to give), and its last turn ran ~9 min into the cap. The non-ending generation is the model's (TUNE.md, now two
+runs). So real-gwis on the 12B stands at 2 gold of the last 3 runs, not proved stable; k=3 would say.
+Peak memory: llama-server 18.3 GB, harness under 200 MB (HANDOFF.md).
