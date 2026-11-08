@@ -643,3 +643,18 @@ process alive (five accumulated, killed by PID). Disk: the block-disk KV cache w
 `cache.blockDisk.maxSizeGB: 8` in `~/.osaurus/config/server-runtime.json` held it at ≤8.9 GB, but local Time Machine
 snapshots retain what it churns (free disk 57 → 16 GB over the day). Peak memory: Osaurus RSS 11.6 GB, footprint
 9.9 GB, system wired 17.4 GB; harness ≤ 350 MB.
+
+### Runs 4–6 on Osaurus (2026-11-08)
+
+| Run | Outcome | What cost the time | Harness fix |
+|---|---|---|---|
+| 4 | craft, cap | 5 hidden-reasoning cuts (the watchdog worked; one turn had 9,739 chars of thought); the stack again added World and Africa to countries | `b64c302fa` names the total rows on read |
+| 5a | void | the Mac slept: a 24 GB `sleepimage` filled the disk, the sampler stopped the run | runs now under `caffeinate -i` |
+| 5 | craft, cap | refused for drawing 2026 (limits: "excluded"), then 20 min failing to edit the filter in; each whole read of the 3,900-row data.json cost ~32k tokens, ~200 s of prefill, four times | `f401109c1` drops excluded times; `d550b819c` reads a large table as a digest (~2k tokens) |
+| 6 | **delivered**, headline faithful, 1,519 s, 3 refusals | craft 900 s (26 turns, median 39 s) | — |
+
+Turn time, Osaurus vs llama-server, same story: storyboard median 5–8 s vs 3–5 s; a ~32k-token turn 195–256 s vs
+207–248 s. Osaurus is not the slower server; the whole-table reads were the cost on both.
+
+Run 6's plate draws 2026 although the limits say "2026 is incomplete" (not "excluded", which `dropExcludedTimes`
+reads), so the last year plunges by half. Not gold until that is settled.
