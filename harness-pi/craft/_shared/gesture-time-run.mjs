@@ -100,6 +100,50 @@ export function refuseRewrittenSeries(points, here) {
   }
 }
 
+/**
+ * No reading counts a row twice. When a code column tells countries from aggregates, nothing the plate draws at a time
+ * (a composed series, or a stack's total) exceeds that time's largest aggregate or the sum of its countries. A 12B
+ * real-gwis beat drew "Rest of World" as every row but Africa: countries, continents and the World row added together.
+ */
+export function refuseDoubleCount(points, here, stacked) {
+  let table;
+  try {
+    table = JSON.parse(readFileSync(join(here, "data.json"), "utf8"));
+  } catch {
+    return;
+  }
+  const rows = table.rows ?? [];
+  const iso = (v) => /^([A-Z]{3}|OWID_KOS)$/.test(String(v ?? ""));
+  const code = (table.columns ?? []).findIndex((_, c) => rows.filter((r) => iso(r[c])).length >= rows.length * 0.6);
+  if (code < 0) return;
+  const numeric = (v) => v !== null && v !== "" && typeof v !== "boolean" && Number.isFinite(Number(v));
+  const timeCol = (table.columns ?? []).findIndex((c, i) => i !== code && rows.length && rows.every((r) => numeric(r[i]) && Number.isInteger(Number(r[i])) && Number(r[i]) >= 1000 && Number(r[i]) <= 2200));
+  const valueCols = (table.columns ?? []).map((_, i) => i).filter((i) => i !== timeCol && rows.some((r) => numeric(r[i])) && i !== code);
+  if (timeCol < 0 || valueCols.length !== 1) return;
+  const [value] = valueCols;
+  const ceiling = new Map();
+  for (const t of new Set(rows.map((r) => Number(r[timeCol])))) {
+    const at = rows.filter((r) => Number(r[timeCol]) === t && numeric(r[value]));
+    const countries = at.filter((r) => iso(r[code])).reduce((s, r) => s + Number(r[value]), 0);
+    const largest = Math.max(0, ...at.filter((r) => !iso(r[code])).map((r) => Number(r[value])));
+    ceiling.set(t, Math.max(countries, largest));
+  }
+  const fmt = (v) => Math.round(v).toLocaleString("en-US");
+  const entities = new Set(rows.flatMap((r) => r.filter((cell) => typeof cell === "string")));
+  for (const p of points) {
+    const top = ceiling.get(p.t);
+    if (!entities.has(p.series) && top && Number.isFinite(p.value) && p.value > top * 1.005)
+      throw new Error(`points: ${p.series} at ${p.key} draws ${fmt(p.value)}, more than everything data.json holds that year (${fmt(top)}): it adds rows that are already totals of others (regions, the world) to countries — take one aggregate row as data.json holds it, or subtract (the world's row minus Africa's)`);
+  }
+  if (!stacked) return;
+  for (const [t, top] of ceiling) {
+    const at = points.filter((p) => p.t === t && Number.isFinite(p.value));
+    const total = at.reduce((s, p) => s + p.value, 0);
+    if (at.length > 1 && top && total > top * 1.005)
+      throw new Error(`points: the stack at ${at[0].key} totals ${fmt(total)}, more than everything data.json holds that year (${fmt(top)}): a stacked series counts rows another series already holds — stack parts that do not overlap (Africa, and the world's row minus Africa's)`);
+  }
+}
+
 export async function loadTimeBeat(here, variant, { required = [], format: wanted = "static" } = {}) {
   const beat = await importBeat(here);
   applyStoryboard(beat, here);
@@ -120,6 +164,7 @@ export async function loadTimeBeat(here, variant, { required = [], format: wante
   if (!model.marks.length) throw new Error(`no reading of points can be drawn (every value is missing, or no series reaches the top ${model.slots})`);
   if (variant === "area-and-stacked-area" || variant === "streamgraph") refuseRunningTotal(points, here);
   refuseRewrittenSeries(points, here);
+  refuseDoubleCount(points, here, variant === "area-and-stacked-area" || variant === "streamgraph");
   runCheck(beat);
 
   const measures = model.marks.map((m) => model.measureOf.get(m.name));
