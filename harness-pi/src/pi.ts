@@ -24,6 +24,8 @@ export function agentDir(): string {
 /** The model arms a run can name with --model: the local student and the OpenRouter teacher. */
 export const ARMS: Record<string, { provider: string; id: string; modelsPath: string; tier: Tier }> = {
   stock: { provider: "splash-local", id: "gemma-4-12b", modelsPath: join(SERVE_DIR, "models.json"), tier: "12b" },
+  // The same 12B as MLX OptiQ 4-bit under Osaurus, Tom's launch runner (REMI §6): SPLASH_PORT=1337 SPLASH_ROUTE=osaurus.
+  osaurus: { provider: "splash-local", id: "gemma-4-12b-it-optiq-4bit", modelsPath: join(SERVE_DIR, "models.json"), tier: "12b" },
   // The 26B-A4B on the local server (T3 run locally first, 2026-11-07: free, and the Mac is the target).
   local26: { provider: "splash-local", id: "gemma-4-26b", modelsPath: join(SERVE_DIR, "models.json"), tier: "26b" },
   // The teacher is Gemma 4 26B-A4B (Tom, REMI §2/§8); the 31B stays for a gate the 26B fails.

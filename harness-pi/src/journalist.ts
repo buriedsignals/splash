@@ -83,6 +83,8 @@ export function scriptedJournalist(
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
+          // llama-server ignores the name; Osaurus refuses a request without one ("Invalid request format").
+          model: process.env.SPLASH_LOCAL_MODEL ?? "gemma-4-12b",
           temperature: 0,
           seed: 7,
           max_tokens: 8,
