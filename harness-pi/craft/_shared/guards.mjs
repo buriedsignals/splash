@@ -246,8 +246,12 @@ export function assertNoAggregates(names, here) {
   const told = ["takeaway", "subject", "comparison"].map((k) => field?.(k) ?? "").join(" ").toLowerCase();
   const escape = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const named = (name) => new RegExp(`(?<![\\p{L}])${escape(String(name).toLowerCase())}(?![\\p{L}])`, "u").test(told);
+  const rowOf = (name) => table.rows.find((r) => r.some((cell) => cell === name));
+  // A plate of aggregates only (every continent stacked, real-gwis: the journalist asked for "the other five
+  // continents in the same stack") mixes no region among countries: the refusal is for the mix.
+  if (!names.some((name) => rowOf(name) && iso(rowOf(name)[code]))) return;
   const aggregates = names.filter((name) => {
-    const row = table.rows.find((r) => r.some((cell) => cell === name));
+    const row = rowOf(name);
     return row && !iso(row[code]) && !named(name);
   });
   // The aggregates the story names are drawn as data.json holds them: never rebuilt from a country list.

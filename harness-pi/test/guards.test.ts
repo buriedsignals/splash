@@ -174,11 +174,15 @@ describe("assertNoAggregates when the storyboard names the aggregate", () => {
   });
 
   it("should still refuse an aggregate the storyboard does not name", () => {
-    expect(() => assertNoAggregates(["Africa", "Asia"], story())).toThrow(/"Asia" is an aggregate/);
+    expect(() => assertNoAggregates(["Angola", "Chad", "Asia"], story())).toThrow(/"Asia" is an aggregate/);
+  });
+
+  it("should accept a plate drawn only from aggregates (every continent stacked), which mixes no country among them", () => {
+    expect(() => assertNoAggregates(["Africa", "Asia"], story())).not.toThrow();
   });
 
   it("should name, in the refusal, the aggregates the storyboard does name, to take as data.json holds them", () => {
-    expect(() => assertNoAggregates(["Asia"], story())).toThrow(/storyboard names \("Africa", "World"\) as data.json holds them/);
+    expect(() => assertNoAggregates(["Peru", "Asia"], story())).toThrow(/storyboard names \("Africa", "World"\) as data.json holds them/);
   });
 });
 
