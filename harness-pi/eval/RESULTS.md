@@ -658,3 +658,19 @@ Turn time, Osaurus vs llama-server, same story: storyboard median 5–8 s vs 3�
 
 Run 6's plate draws 2026 although the limits say "2026 is incomplete" (not "excluded", which `dropExcludedTimes`
 reads), so the last year plunges by half. Not gold until that is settled.
+
+### Runs 7–11 on Osaurus, disk cache 2 GB (2026-11-09)
+
+The disk was too full for the 8 GB block cache (Time Machine local snapshots kept every deleted cache file), so
+`maxSizeGB` went to 2 for these runs.
+
+| Run | Cap | Outcome | Note |
+|---|---|---|---|
+| 7 | 30 min | craft, cap | storyboard 859 s; 9 refusals |
+| 8 | 30 min | storyboard, cap | 3 hidden-reasoning cuts; limits "2026 data incomplete" missed by the year drop (fixed `046763238`) |
+| 9 | 45 min | craft, cap | the stack counted World with the continents; refused twice with the totals, not repaired in time |
+| 10 | 45 min | **headline faithful, render made**, cap during delivery | 2026 dropped as the limits ask; the 2015 peak annotation draws two overlapping rules and labels |
+| 11 | — | void | the Mac went on battery for 4 s; the run stops on battery since a low-power sleep wrote a 19.7 GB sleepimage and filled the disk |
+
+Craft turn median: 39 s in run 6 (8 GB cache) against 60–72 s in runs 9–10 (2 GB), on contexts of 20–29k tokens.
+Likely the smaller cache re-prefilling, not proved: the runs differ in other ways too.
