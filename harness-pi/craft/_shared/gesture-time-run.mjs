@@ -167,6 +167,15 @@ export function dropExcludedTimes(points, limits) {
  * minus six continents, which is 0 in every year, and the plate labelled "Rest of World 0" (Osaurus runs 12, 13).
  * A line at zero stays: on a chart that does not stack, a flat zero is a reading.
  */
+/** The column names data.json holds, or none when it is absent or unreadable. */
+function dataColumns(here) {
+  try {
+    return JSON.parse(readFileSync(join(here, "data.json"), "utf8")).columns.map((c) => String(c.name));
+  } catch {
+    return [];
+  }
+}
+
 export function dropEmptyLayers(points, stacked) {
   if (!stacked) return points;
   const held = new Set(points.filter((p) => Number.isFinite(p.value) && p.value !== 0).map((p) => p.series));
@@ -185,7 +194,7 @@ export async function loadTimeBeat(here, variant, { required = [], format: wante
 
   const front = frontOf(here);
   const stacks = variant === "area-and-stacked-area" || variant === "streamgraph";
-  const points = dropEmptyLayers(dropExcludedTimes(readPoints(beat.points, { fallbackSeries: beat.entity ?? front("subject") ?? "—" }), front("limits")), stacks);
+  const points = dropEmptyLayers(dropExcludedTimes(readPoints(beat.points, { fallbackSeries: beat.entity ?? front("subject") ?? "—", columns: dataColumns(here) }), front("limits")), stacks);
   // A reading that is not a number is a gap, drawn as one; a reading that is a number must be a finite one.
   assertNumbers(points.filter((p) => !Number.isNaN(p.value)).map((p) => [`${p.series} ${p.key}`, p.value]), "points");
   if (!(Number(beat.slots ?? 10) >= 2)) throw new Error(`beat.mjs: slots is ${JSON.stringify(beat.slots)}: give how many ranks the bump chart draws, e.g. 10`);

@@ -99,15 +99,17 @@ export function niceDomain(lo, hi, count = 5) {
  * never a refusal. Two readings for one series at one time cannot both be drawn: that is refused, with the fix.
  */
 /** @param {{ fallbackSeries?: string }} [options] */
-export function readPoints(points, { fallbackSeries = "—" } = {}) {
-  if (!Array.isArray(points) || !points.length) throw new Error("beat.mjs: points must be a non-empty array of { series, t, value } — one per series per time, read from data.json (see CONTRACT.md)");
+export function readPoints(points, { fallbackSeries = "—", columns = [] } = {}) {
+  // A column read by a name data.json does not hold ("Year" for "year") leaves every point empty: say the names it holds.
+  const named = columns.length ? ` — data.json's columns are ${columns.map((c) => JSON.stringify(c)).join(", ")}, read each by exactly that name` : "";
+  if (!Array.isArray(points) || !points.length) throw new Error(`beat.mjs: points must be a non-empty array of { series, t, value } — one per series per time, read from data.json (see CONTRACT.md)${named}`);
   const out = [];
   const seen = new Map();
   for (const p of points) {
     if (!p || typeof p !== "object") continue;
     const rawT = p.t ?? p.year ?? p.x ?? p.date ?? p.time;
     const t = timeOf(rawT);
-    if (!Number.isFinite(t)) throw new Error(`beat.mjs: a point has no time it can be drawn at (${JSON.stringify(p)}): give each point t, a year or an ISO date`);
+    if (!Number.isFinite(t)) throw new Error(`beat.mjs: a point has no time it can be drawn at (${JSON.stringify(p)}): give each point t, a year or an ISO date${named}`);
     const series = String(p.series ?? p.name ?? p.entity ?? fallbackSeries);
     const v = p.value ?? p.y;
     const value = v === null || v === undefined || v === "" ? NaN : Number(v);
