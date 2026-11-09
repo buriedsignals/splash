@@ -688,3 +688,18 @@ After `1cd385355` (a compare naming one row twice is refused). On AC power, 45 m
 3/3 delivered (k=3 on Osaurus for the first time). Craft turn median 8–18 s against 60–72 s at 2 GB: the cache size was the cost.
 Not gold: three plate defects recur and are harness work — a figure of another series labelled on the subject's mark,
 a series that is zero in every year kept in the stack, and the compare copy painted black in a time stack.
+
+### Runs 15–17 on Osaurus, after the three plate fixes (2026-11-09)
+
+After `246cb53a9` (a stack total alone on one layer is refused), `b35b7c8ee` (a layer zero at every time is left out)
+and `a1427568a` (the compare copy draws as a dashed outline). On AC power, 8 GB cache, 45 min cap.
+
+| Run | Outcome | Time | Refusals | Plate |
+|---|---|---|---|---|
+| 15 | **delivered**, headline faithful | 981 s | 5 | gold: six continents stacked, Africa's 2015 note reads "689,651 of 1,148,499", no zero layer |
+| 16 | craft, not rendered | 2,702 s | 4 | storyboard chose web; beat.mjs never read its points (`points` empty, then `t: null`), every final render refused |
+| 17 | **delivered**, headline faithful | 1,152 s | 6 | not gold: "World peak: 1.15 million" on Africa's layer, and "Africa's count down 1%" for 2015→2016, where Africa rose 1.5% |
+
+2/3 delivered, 1/3 gold. Run 17's two false notes passed guards with holes, fixed in `8f8467e9f` (a change word's
+direction is read; a stack total written at a scale is matched). Run 16 is a craft miss on the web kit, not triaged yet.
+Disk free fell from 31 GB to 16 GB over the three runs; `runs/` holds 1.5 GB of it.

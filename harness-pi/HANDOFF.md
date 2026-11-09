@@ -25,9 +25,19 @@ Serving (`harness-pi/serve/llama-server.sh`): llama.cpp `llama-server` (measured
 one 64k slot (`-c 65536 --parallel 1`), q8_0 KV cache, flash attention, `--reasoning-budget 400`, `--jinja`,
 mmap+mlock, all layers on the GPU. Output cap 16,384 tokens, temperature 1, top_p 0.95 (`harness-pi/serve/models.json`).
 
-**Route:** every result here is route `llama-server`. **Osaurus/MLX was not run.** `SPLASH_ROUTE=osaurus` only labels
-results; the provider is OpenAI-compatible on `http://127.0.0.1:$SPLASH_PORT/v1`, so an Osaurus server on that port
-with the same model id should drop in, but that is untested and the MLX quantization is not the GGUF above.
+**Route:** G3 below is route `llama-server`. Since 2026-11-08 real-gwis also runs on **Osaurus 0.25.31 / MLX**
+(`eval/RESULTS.md`, runs 7 onward):
+
+- Model `mlx-community/gemma-4-12B-it-OptiQ-4bit`, revision `de9e183868050b34bf6b4272518500ffcebf15b3`, served by
+  `osaurus serve` on port 1337. This MLX quantization is not the GGUF above.
+- `SPLASH_PORT=1337 SPLASH_ROUTE=osaurus SPLASH_LOCAL_MODEL=gemma-4-12b-it-optiq-4bit`; `SPLASH_LOCAL_MODEL` names
+  the model id the server lists.
+- `~/.osaurus/config/server-runtime.json`: keep `"maxSizeGB": 8`. At 2 GB, craft turns took 60–72 s against
+  8–18 s at 8 GB.
+- After `osaurus stop`, an `Osaurus.app/Contents/MacOS` process can stay alive; kill it and clear
+  `~/.osaurus/cache/kv_v2/` before the next run.
+- Run on AC power only. A low-power sleep on battery wrote a 19.7 GB `/private/var/vm/sleepimage` and filled the
+  disk mid-run; `caffeinate -i` does not prevent it.
 
 ## Variables
 
