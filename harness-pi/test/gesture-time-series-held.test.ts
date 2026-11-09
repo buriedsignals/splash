@@ -64,6 +64,10 @@ describe("dropExcludedTimes", () => {
     expect(years(dropExcludedTimes(at([2025, 2026]), "Not area burned; 2026 is incomplete."))).toEqual([2025]);
   });
 
+  it("should leave out a year whose data the limits call incomplete", () => {
+    expect(years(dropExcludedTimes(at([2025, 2026]), "Fire count only; 2026 data incomplete."))).toEqual([2025]);
+  });
+
   it("should leave out a year the limits call a partial year", () => {
     expect(years(dropExcludedTimes(at([2025, 2026]), "Data for the partial year 2026 are provisional."))).toEqual([2025]);
   });

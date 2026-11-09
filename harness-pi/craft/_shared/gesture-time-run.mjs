@@ -154,7 +154,7 @@ export function dropExcludedTimes(points, limits) {
   const text = String(limits ?? "");
   const YEAR = "(1[5-9]\\d\\d|2[01]\\d\\d)";
   const said = [
-    ...text.matchAll(new RegExp(`\\b${YEAR}\\s+(?:is\\s+|was\\s+)?(?:excluded|omitted|dropped|left out|not shown|incomplete|partial|provisional)`, "gi")),
+    ...text.matchAll(new RegExp(`\\b${YEAR}\\s+(?:data\\s+|figures\\s+)?(?:is\\s+|are\\s+|was\\s+)?(?:excluded|omitted|dropped|left out|not shown|incomplete|partial|provisional)`, "gi")),
     ...text.matchAll(new RegExp(`\\b(?:excluding|excludes|exclude|omitting|omits|without)\\s+${YEAR}\\b`, "gi")),
     ...text.matchAll(new RegExp(`\\b(?:incomplete|partial)\\s+(?:year\\s+|data\\s+for\\s+)?${YEAR}\\b`, "gi")),
   ];
