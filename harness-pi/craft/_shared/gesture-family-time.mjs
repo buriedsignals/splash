@@ -16,7 +16,7 @@
 //
 // It registers the family at import and wraps the core's validateGestures with the family's own figures and
 // refusals (`validateTime`). Browser-safe: no Node module.
-import { applyFix, figuresIn, GestureRefusal, validateGestures } from "./gesture-core.mjs";
+import { applyFix, figuresIn, formatLike, GestureRefusal, validateGestures } from "./gesture-core.mjs";
 import { FAMILIES, VOCABULARY, WEB_RESTING } from "./gesture-registry.mjs";
 
 /** The gestures this family draws in all four formats (zoom is dropped from the still by the registry). */
@@ -459,6 +459,18 @@ export function timeHooks(model) {
     if (g.do === "reference") pool.push(Number(g.value));
     const figures = pool.filter(Number.isFinite);
     const stated = figuresIn(g.note);
+    // The stack's total printed alone on one layer reads as that layer's: real-gwis drew "Peak: 1,148,499" on Africa's
+    // 2015 reading (689,651), twice on Osaurus. It stands next to the layer's own reading, or not at all.
+    if (model.stacked && ["name", "annotate", "highlight"].includes(g.do) && ms.length === 1) {
+      const m = ms[0];
+      const total = model.series.reduce((t, x) => t + (Number.isFinite(model.read(x, m.t)) ? model.read(x, m.t) : 0), 0);
+      const near = (n, f) => !n.percent && Math.abs(n.value - f) <= 0.5 * 10 ** -n.decimals + 1e-9;
+      const said = stated.find((n) => near(n, total));
+      if (said && total !== m.value && !stated.some((n) => near(n, m.value)))
+        throw new GestureRefusal(`gestures[${i}].note`, `states ${said.raw}, the whole stack at ${m.t}, on ${m.series}'s layer alone, where a reader takes it for ${m.series}'s: write "${formatLike(said, m.value)} of ${formatLike(said, total)}"`, {
+          set: { index: i, field: "note", value: `${formatLike(said, m.value)} of ${formatLike(said, total)}` },
+        });
+    }
     // A percent the note calls a change ("60% decline", "down 49%") is the change between the compare's two readings,
     // never another figure the pool holds: real-gwis was offered Africa's 60% share of 2015 for "49% decline" and
     // printed "60% decline since 2015" where its readings fell 11.4%.

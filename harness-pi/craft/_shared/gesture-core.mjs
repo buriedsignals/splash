@@ -98,7 +98,7 @@ const SCALES = [0, -3, -6, -9, -12, 3, 6, 9, 12, -2, 2];
 
 const matches = (n, f) => [f, ...(n.exp ? [f / 10 ** n.exp] : [])].some((x) => Math.abs(n.value - x) <= 0.5 * 10 ** -n.decimals + 1e-9);
 
-function formatLike(n, f) {
+export function formatLike(n, f) {
   const [whole, part] = Math.abs(f).toFixed(n.decimals).split(".");
   const body = n.grouped
     ? whole.replace(/\B(?=(\d{3})+$)/g, n.separator) + (part ? (n.decimalMark ?? (n.separator === "," ? "." : ",")) + part : "")
