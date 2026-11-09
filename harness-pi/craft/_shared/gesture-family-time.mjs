@@ -400,6 +400,18 @@ function changeWord(note, n) {
   return CHANGE.test(after) || (before.join(" ").toLowerCase() !== "up to" && before.some((w) => CHANGE.test(w) && !/^more$/i.test(w)));
 }
 
+const DOWN = /^(declin|fall|fell|drop|decreas|loss|lower|down|less|fewer|cut|slump|plung)/i;
+const UP = /^(rise|rose|increas|grow|grew|gain|higher|up|jump|climb|surg)/i;
+/** The word right before a stated percent that names its direction ("down 1%", "fell by 30%"), and which way it runs. */
+function changeDirection(note, n) {
+  const before = String(note).slice(0, n.index);
+  for (const m of [...before.matchAll(/\p{L}+/gu)].slice(-2).reverse()) {
+    if (DOWN.test(m[0])) return { text: m[0], index: m.index, down: true };
+    if (UP.test(m[0])) return { text: m[0], index: m.index, down: false };
+  }
+  return undefined;
+}
+
 /** The family's hooks for validateGestures: its own figures and its own refusals, per variant. */
 export function timeHooks(model) {
   const additive = ADDITIVE.has(model.variant);
@@ -464,12 +476,18 @@ export function timeHooks(model) {
     if (model.stacked && ["name", "annotate", "highlight"].includes(g.do) && ms.length === 1) {
       const m = ms[0];
       const total = model.series.reduce((t, x) => t + (Number.isFinite(model.read(x, m.t)) ? model.read(x, m.t) : 0), 0);
-      const near = (n, f) => !n.percent && Math.abs(n.value - f) <= 0.5 * 10 ** -n.decimals + 1e-9;
-      const said = stated.find((n) => near(n, total));
-      if (said && total !== m.value && !stated.some((n) => near(n, m.value)))
-        throw new GestureRefusal(`gestures[${i}].note`, `states ${said.raw}, the whole stack at ${m.t}, on ${m.series}'s layer alone, where a reader takes it for ${m.series}'s: write "${formatLike(said, m.value)} of ${formatLike(said, total)}"`, {
-          set: { index: i, field: "note", value: `${formatLike(said, m.value)} of ${formatLike(said, total)}` },
+      // A total may be written at a scale ("1.15 million" for 1,148,499): read it at the scale it matches.
+      const scaleOf = (n, f) =>
+        n.percent ? undefined : [0, -3, -6, -9].find((k) => [f * 10 ** k, ...(n.exp ? [(f * 10 ** k) / 10 ** n.exp] : [])].some((x) => Math.abs(n.value - x) <= 0.5 * 10 ** -n.decimals + 1e-9));
+      const said = stated.find((n) => scaleOf(n, total) !== undefined);
+      if (said && total !== m.value && !stated.some((n) => scaleOf(n, m.value) !== undefined)) {
+        const k = scaleOf(said, total);
+        const unit = k ? (g.note.slice(said.index + said.raw.length).match(/^\s?\p{L}+/u)?.[0] ?? "") : "";
+        const value = `${formatLike(said, m.value * 10 ** k)} of ${formatLike(said, total * 10 ** k)}${unit}`;
+        throw new GestureRefusal(`gestures[${i}].note`, `states ${said.raw}, the whole stack at ${m.t}, on ${m.series}'s layer alone, where a reader takes it for ${m.series}'s: write "${value}"`, {
+          set: { index: i, field: "note", value },
         });
+      }
     }
     // A percent the note calls a change ("60% decline", "down 49%") is the change between the compare's two readings,
     // never another figure the pool holds: real-gwis was offered Africa's 60% share of 2015 for "49% decline" and
@@ -481,6 +499,11 @@ export function timeHooks(model) {
       const change = (late.value / early.value - 1) * 100;
       for (const n of Number.isFinite(change) ? stated.filter((x) => x.percent && (x.sign || changeWord(g.note, x))) : []) {
         const want = n.sign ? change : Math.abs(change);
+        const word = n.sign ? undefined : changeDirection(g.note, n);
+        if (word && word.down !== change < 0 && Math.round(Math.abs(change) * 10 ** n.decimals) !== 0) {
+          const fixed = g.note.slice(0, word.index) + (word.down ? "up" : "down") + g.note.slice(word.index + word.text.length);
+          throw new GestureRefusal(`gestures[${i}].note`, `says "${word.text}", but from ${early.name} to ${late.name} the readings ${change < 0 ? "fall" : "rise"}: write "${fixed}"`, { set: { index: i, field: "note", value: fixed } });
+        }
         if (Math.abs(n.value - want) <= 0.5 * 10 ** -n.decimals + 1e-9) continue;
         const digits = Math.abs(change).toFixed(n.decimals).replace(".", n.separator === "," || n.decimalMark === "," ? "," : ".");
         const text = n.sign ? (change < 0 ? (n.sign === "\u2212" ? "\u2212" : "-") : "+") + digits : digits;

@@ -25,3 +25,14 @@ describe("a note on one layer of a stack", () => {
     expect(name("Peak: 689,651")).not.toThrow();
   });
 });
+
+// Run 17: the same total written at the million scale, "World peak: 1.15 million", passed as a figure the plate holds.
+describe("a stack's total on one layer, written at a scale", () => {
+  it("should refuse the total in millions printed alone on one layer", () => {
+    expect(name("World peak: 1.15 million")).toThrow(/0\.69 of 1\.15 million/);
+  });
+
+  it("should accept the layer's own reading in millions", () => {
+    expect(name("Peak: 0.69 million")).not.toThrow();
+  });
+});
