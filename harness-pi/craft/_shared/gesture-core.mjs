@@ -319,6 +319,14 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
           set: { index: i, value: { ...Object.fromEntries(Object.entries(g).filter(([k]) => k !== "mark" && k !== "of")), marks: words } },
         });
     }
+    // Run 10 on Osaurus compared "2015 · Africa" with "2015 · Africa": the plate drew two rules and two labels on one spot.
+    if (g.do === "compare" && marks.length > 1 && new Set(marks).size < marks.length) {
+      const kept = [...new Set(marks)];
+      const rest = Object.fromEntries(Object.entries(g).filter(([k]) => k !== "mark" && k !== "marks"));
+      throw new GestureRefusal(`gestures[${i}].marks`, `the compare names the same row twice (${kept.join(", ")}): compare it with another row, or with the whole`, {
+        set: { index: i, value: kept.length > 1 ? { ...rest, marks: kept } : { do: g.do, mark: kept[0], of: "whole", ...rest } },
+      });
+    }
     if (g.do === "compare" && marks.length === 1 && !ofWhole && !of.length)
       throw new GestureRefusal(`gestures[${i}].marks`, `a compare needs a second row: marks: [subject, other], or of: [rows]`, {
         set: { index: i, field: "of", value: "whole" },
