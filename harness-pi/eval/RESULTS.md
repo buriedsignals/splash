@@ -674,3 +674,17 @@ The disk was too full for the 8 GB block cache (Time Machine local snapshots kep
 
 Craft turn median: 39 s in run 6 (8 GB cache) against 60–72 s in runs 9–10 (2 GB), on contexts of 20–29k tokens.
 Likely the smaller cache re-prefilling, not proved: the runs differ in other ways too.
+
+### Runs 12–14 on Osaurus, disk cache back to 8 GB (2026-11-09)
+
+After `1cd385355` (a compare naming one row twice is refused). On AC power, 45 min cap.
+
+| Run | Outcome | Time | Refusals | Plate |
+|---|---|---|---|---|
+| 12 | **delivered**, headline faithful | 1,986 s | 5 | 2026 dropped; the World's 1,148,499 peak is labelled on Africa's mark; a zero "Rest of World 0" series is drawn and labelled |
+| 13 | **delivered**, headline faithful | 1,454 s | 2 | 2026 dropped; "Rest of world 0" again; the compare's copy draws as a solid black bar at 2024 |
+| 14 | **delivered**, headline faithful | 1,440 s | 5 | 2026 dropped; World's peak labelled on Africa's mark again; same black compare bar |
+
+3/3 delivered (k=3 on Osaurus for the first time). Craft turn median 8–18 s against 60–72 s at 2 GB: the cache size was the cost.
+Not gold: three plate defects recur and are harness work — a figure of another series labelled on the subject's mark,
+a series that is zero in every year kept in the stack, and the compare copy painted black in a time stack.
