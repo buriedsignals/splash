@@ -715,8 +715,8 @@ the refusal never said which names exist. Fixed in `16eb2a980` (an empty or time
 | 19 | **delivered**, headline faithful | 2,262 s | 8 | gold: Africa's 2015 note "689,651 of 1,148,499", compare "41% lower than peak" (2015→2025, 689,651→406,220: −41.1%) |
 | 20 | craft cut by the 45 min run cap, last beat never rendered | 2,702 s | 5 | none |
 
-1/3 delivered, 1/3 gold. Both misses are time, not judgment: one storyboard turn in run 18 (and one in run 20's craft
-neighbourhood) took 864–868 s with nothing streamed until a run of `<|channel>thought` tokens at its end. The
+1/3 delivered, 1/3 gold. Both misses are time, not judgment: two storyboard turns in run 18 (864 s, 868 s) and one
+craft turn in run 20 (859 s) streamed nothing until a run of `<|channel>thought` tokens at their end. The
 hidden-reasoning cut arms on the first thought token, so it fired thirteen minutes late. Fourteen other empty turns
 were cut at 90 s as designed (115–134 s wall). Fixed in the next commit: a turn that sends no word and no tool call
 within 300 s of its request is cut and asked again. Osaurus wrote no log that says why it stalled.
