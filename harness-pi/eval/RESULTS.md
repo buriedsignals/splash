@@ -703,3 +703,20 @@ and `a1427568a` (the compare copy draws as a dashed outline). On AC power, 8 GB 
 2/3 delivered, 1/3 gold. Run 17's two false notes passed guards with holes, fixed in `8f8467e9f` (a change word's
 direction is read; a stack total written at a scale is matched). Run 16 is a craft miss on the web kit, not triaged yet.
 Disk free fell from 31 GB to 16 GB over the three runs; `runs/` holds 1.5 GB of it.
+
+Run 16 triaged: beat.mjs read `col("Entity")` and `col("Year")` where data.json names them `entity` and `year`;
+the refusal never said which names exist. Fixed in `16eb2a980` (an empty or timeless reading names data.json's columns).
+
+### Runs 18–20 on Osaurus, after `16eb2a980` (2026-11-09/10)
+
+| Run | Outcome | Time | Refusals | Plate |
+|---|---|---|---|---|
+| 18 | storyboard ran to its 20 min cap; craft cut by the 45 min run cap | 2,703 s | 3 | none |
+| 19 | **delivered**, headline faithful | 2,262 s | 8 | gold: Africa's 2015 note "689,651 of 1,148,499", compare "41% lower than peak" (2015→2025, 689,651→406,220: −41.1%) |
+| 20 | craft cut by the 45 min run cap, last beat never rendered | 2,702 s | 5 | none |
+
+1/3 delivered, 1/3 gold. Both misses are time, not judgment: one storyboard turn in run 18 (and one in run 20's craft
+neighbourhood) took 864–868 s with nothing streamed until a run of `<|channel>thought` tokens at its end. The
+hidden-reasoning cut arms on the first thought token, so it fired thirteen minutes late. Fourteen other empty turns
+were cut at 90 s as designed (115–134 s wall). Fixed in the next commit: a turn that sends no word and no tool call
+within 300 s of its request is cut and asked again. Osaurus wrote no log that says why it stalled.

@@ -210,3 +210,40 @@ describe("converse cutting hidden reasoning", () => {
     expect(out.stop).toBe("ended");
   });
 });
+
+// Osaurus runs 18 and 20 (2026-11-09): a storyboard turn sent nothing for about thirteen minutes before its first
+// thought token, so the hidden-reasoning cut, armed by that token, came too late, and the run ran out of its 45 minutes.
+describe("converse cutting a turn that sends nothing", () => {
+  const stalled = async () => {
+    const prompts: string[] = [];
+    let release: () => void = () => {};
+    let turn = 0;
+    const session = {
+      subscribe: () => () => {},
+      prompt: async (text: string) => {
+        prompts.push(text);
+        if (turn++ > 0) return;
+        await new Promise<void>((r) => (release = r));
+      },
+      getLastAssistantText: () => "",
+      abort: async () => release(),
+    };
+    const out = await converse({
+      session: session as never,
+      first: "Start the storyboard.",
+      journalist: { answer: async () => "Yes." },
+      dialogue: { lastJournalist: "", lastProposal: "" },
+      conversational: false,
+      done: async () => false,
+      gaps: async () => "",
+      limits: { rounds: 3, silentTurnSeconds: 0.05 },
+      log: [],
+    });
+    return { prompts, out };
+  };
+
+  it("should cut a turn that sends nothing and ask it again", async () => {
+    const { prompts } = await stalled();
+    expect(prompts[1]).toStartWith("[harness] Your last turn sent nothing");
+  });
+});

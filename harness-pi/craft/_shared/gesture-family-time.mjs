@@ -99,7 +99,7 @@ export function niceDomain(lo, hi, count = 5) {
  * never a refusal. Two readings for one series at one time cannot both be drawn: that is refused, with the fix.
  */
 /** @param {{ fallbackSeries?: string }} [options] */
-export function readPoints(points, { fallbackSeries = "—", columns = [] } = {}) {
+export function readPoints(points, { fallbackSeries = "—", columns = /** @type {string[]} */ ([]) } = {}) {
   // A column read by a name data.json does not hold ("Year" for "year") leaves every point empty: say the names it holds.
   const named = columns.length ? ` — data.json's columns are ${columns.map((c) => JSON.stringify(c)).join(", ")}, read each by exactly that name` : "";
   if (!Array.isArray(points) || !points.length) throw new Error(`beat.mjs: points must be a non-empty array of { series, t, value } — one per series per time, read from data.json (see CONTRACT.md)${named}`);

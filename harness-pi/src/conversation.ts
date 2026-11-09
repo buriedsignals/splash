@@ -26,6 +26,8 @@ export interface ConverseOptions {
     sameFailure?: number;
     /** With thinking off, seconds a turn may sit in hidden reasoning before it is cut and asked again. */
     hiddenReasoningSeconds?: number;
+    /** Seconds a turn may go from its request to its first word or tool call before it is cut and asked again. */
+    silentTurnSeconds?: number;
   };
   log: string[];
   /** The record tools a stalled turn is narrowed to (Spotlight's last-turn narrowing); none narrows nothing. */
@@ -60,6 +62,7 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
     minutes: 45,
     sameFailure: 3,
     hiddenReasoningSeconds: 90,
+    silentTurnSeconds: 300,
     ...o.limits,
   };
   // With thinking off, the MLX 12B under Osaurus still opened its thought channel and ran 16,384 hidden tokens
@@ -69,6 +72,14 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
   let hidden: ReturnType<typeof setTimeout> | undefined;
   let cut = false;
   let cuts = 0;
+  // Osaurus runs 18 and 20 (2026-11-09): a turn sent nothing for about thirteen minutes, then its thought channel.
+  // The hidden-reasoning cut only arms on that first thought token; this one arms when the request goes out.
+  let mute: ReturnType<typeof setTimeout> | undefined;
+  let cutSilent = false;
+  const hush = () => {
+    clearTimeout(mute);
+    mute = undefined;
+  };
   const disarm = () => {
     clearTimeout(hidden);
     hidden = undefined;
@@ -90,6 +101,7 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
   const argsOf = new Map<string, string>();
   let lastRecord = "";
   const off = o.session.subscribe((e) => {
+    if (e.type === "message_update" && /^(text_start|toolcall_start)$/.test(e.assistantMessageEvent?.type ?? "")) hush();
     if (e.type === "message_update" && reasoningOff) {
       const t = e.assistantMessageEvent?.type;
       if (t === "thinking_start" && !hidden)
@@ -100,7 +112,10 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
       else if (t === "text_start" || t === "toolcall_start") disarm();
       return;
     }
-    if (e.type === "message_end") disarm();
+    if (e.type === "message_end") {
+      disarm();
+      hush();
+    }
     if (e.type === "tool_execution_start") {
       argsOf.set(e.toolCallId, `${e.toolName} ${JSON.stringify(e.args ?? null)}`);
       return;
@@ -162,6 +177,10 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
   try {
     for (; rounds < limits.rounds && !stop; rounds++) {
       const lastRound = rounds === limits.rounds - 1;
+      mute = setTimeout(() => {
+        cut = cutSilent = true;
+        void o.session.abort();
+      }, limits.silentTurnSeconds * 1000);
       if ((narrow || (lastRound && rounds > 0)) && o.recordTools?.length) {
         const all = o.session.getActiveToolNames();
         o.session.setActiveToolsByName(all.filter((t) => o.recordTools?.includes(t)));
@@ -174,13 +193,18 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
       } else await o.session.prompt(prompt);
       narrow = false;
       disarm();
+      hush();
       if (cut) {
         cut = false;
+        const why = cutSilent
+          ? `sent nothing for ${limits.silentTurnSeconds} s, no word and no tool call, and was cut`
+          : `stayed in hidden reasoning for ${limits.hiddenReasoningSeconds} s with nothing said and no tool called, and was cut`;
+        cutSilent = false;
         if (++cuts >= limits.sameFailure) {
           stop = `hidden reasoning cut ${cuts}x`;
           break;
         }
-        prompt = `[harness] Your last turn stayed in hidden reasoning for ${limits.hiddenReasoningSeconds} s with nothing said and no tool called, and was cut. Thinking is off: do not reason first. Answer the last message directly, or call the tool it needs. ${await o.gaps()}`.trimEnd();
+        prompt = `[harness] Your last turn ${why}. Thinking is off: do not reason first. Answer the last message directly, or call the tool it needs. ${await o.gaps()}`.trimEnd();
         o.log.push(`HARNESS: ${prompt}`);
         continue;
       }
@@ -236,6 +260,7 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
     stop ||= `error: ${(e as Error).message}`;
   } finally {
     clearTimeout(timer);
+    hush();
     disarm();
     off();
   }
