@@ -162,6 +162,18 @@ export function dropExcludedTimes(points, limits) {
   return points.filter((p) => !out.has(p.t));
 }
 
+/**
+ * A stack layer that is zero at every time holds nothing to draw: real-gwis computed "Rest of World" as the World row
+ * minus six continents, which is 0 in every year, and the plate labelled "Rest of World 0" (Osaurus runs 12, 13).
+ * A line at zero stays: on a chart that does not stack, a flat zero is a reading.
+ */
+export function dropEmptyLayers(points, stacked) {
+  if (!stacked) return points;
+  const held = new Set(points.filter((p) => Number.isFinite(p.value) && p.value !== 0).map((p) => p.series));
+  const out = points.filter((p) => held.has(p.series));
+  return out.length ? out : points;
+}
+
 export async function loadTimeBeat(here, variant, { required = [], format: wanted = "static" } = {}) {
   const beat = await importBeat(here);
   applyStoryboard(beat, here);
@@ -172,7 +184,8 @@ export async function loadTimeBeat(here, variant, { required = [], format: wante
   if (!Array.isArray(beat.gestures)) throw new Error("beat.mjs: gestures must be an array of { do, mark | marks, … } (see CONTRACT.md)");
 
   const front = frontOf(here);
-  const points = dropExcludedTimes(readPoints(beat.points, { fallbackSeries: beat.entity ?? front("subject") ?? "—" }), front("limits"));
+  const stacks = variant === "area-and-stacked-area" || variant === "streamgraph";
+  const points = dropEmptyLayers(dropExcludedTimes(readPoints(beat.points, { fallbackSeries: beat.entity ?? front("subject") ?? "—" }), front("limits")), stacks);
   // A reading that is not a number is a gap, drawn as one; a reading that is a number must be a finite one.
   assertNumbers(points.filter((p) => !Number.isNaN(p.value)).map((p) => [`${p.series} ${p.key}`, p.value]), "points");
   if (!(Number(beat.slots ?? 10) >= 2)) throw new Error(`beat.mjs: slots is ${JSON.stringify(beat.slots)}: give how many ranks the bump chart draws, e.g. 10`);
