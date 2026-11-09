@@ -695,7 +695,10 @@ export function GestureTimeStatic({
         y={Y(c.a.y0) - thick}
         width={6}
         height={Math.max(1, thick)}
-        fill={labelInk}
+        fill="none"
+        stroke={labelInk}
+        strokeWidth={1.5}
+        strokeDasharray="4 3"
       />,
     );
     overlay.push(
