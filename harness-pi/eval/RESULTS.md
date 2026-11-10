@@ -763,4 +763,4 @@ reasoning three times each. Fixed in the next commit: after three silent turns w
 chosen, the harness asks for `record_slot chosen` with the journalist's own words and narrows the turn to the record
 tools; the tool, not the model, says what is reachable.
 
-Battery: 100% → 76% over run 27 (the charger was reconnected during run 28); no sleep image, disk 12–21 GB free.
+Battery: 100% at the start of run 27, 76% and charging at its end (the charger came back during run 27); no sleep image, disk 12–21 GB free.
