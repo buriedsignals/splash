@@ -734,3 +734,15 @@ runs 18 and 20 is not measured. All three plates call Africa's 2015 its peak; th
 Africa in 2016 (699,806). No guard read the word. Fixed in the next commit: "peak" on one reading holds only at its
 series' highest, or on a stack where the whole stack peaks and the note states its total. Replayed, all three kept
 beats are refused with a value that works ("2015: 689,651", "Africa's 2015").
+
+### Runs 24–26 on Osaurus, after `3ac3d26f5` (2026-11-10)
+
+| Run | Outcome | Time | Refusals | Plate |
+|---|---|---|---|---|
+| 24 | **delivered**, headline faithful | 1,373 s | 6 | not gold: "2015: 689,651" (the peak guard's own fix, taken) is right, but the compare 2016 vs 2015 says "up 1% since peak" |
+| 25 | **delivered**, headline faithful | 1,847 s | 6 | gold on the figures: "689,651 of 1,148,499", "up 1.5%"; axis numbers without separators, and two one-event territories (Northern Cyprus, Akrotiri and Dhekelia) drawn as layers |
+| 26 | **delivered**, headline faithful | 1,589 s | 4 | gold: "Africa: 689,651", "Down 41% from 2015" (Africa 2025 vs 2015: −41.1%) |
+
+3/3 delivered, 2/3 gold. Over runs 21–26: 6/6 delivered, no stalled turn. Run 24's miss is the peak word again, this
+time in a compare's note, which the guard did not read (it held single-reading notes only). Fixed in the next commit:
+a compare's peak word is held on its earlier reading; replayed, run 24's beat is refused with "up 1% since 2015".

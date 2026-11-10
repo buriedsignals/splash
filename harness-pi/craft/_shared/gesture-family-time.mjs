@@ -533,13 +533,15 @@ export function timeHooks(model) {
 
   /**
    * "Peak" on one reading holds only where that reading is its series' highest, or, on a stack, where the whole stack
-   * peaks and the note states its total. real-gwis runs 21–23 wrote "peak" on Africa's 2015 (689,651): the world
+   * peaks and the note states its total. A compare's peak word is held on its earlier reading. real-gwis runs 21–24 wrote "peak" on Africa's 2015 (689,651): the world
    * peaked in 2015, Africa in 2016 (699,806).
    */
   function refusePeak(g, { marks, index: i }) {
-    if (typeof g.note !== "string" || marks.length !== 1 || model.variant === "bump-ranking-over-time") return;
+    if (typeof g.note !== "string" || model.variant === "bump-ranking-over-time") return;
+    // One reading, or a compare's earlier reading: "up 1% since peak" measures from it (run 24).
+    const read = marks.map((n) => model.markOf.get(n)).filter(Boolean);
+    const m = marks.length === 1 ? read[0] : g.do === "compare" && read.length === marks.length ? read.reduce((a, b) => (b.t < a.t ? b : a)) : undefined;
     const word = g.note.match(PEAK);
-    const m = model.markOf.get(marks[0]);
     if (!word || !m || !Number.isFinite(m.value)) return;
     const own = model.marks.filter((x) => x.series === m.series && Number.isFinite(x.value));
     const top = own.reduce((a, b) => (b.value > a.value ? b : a), m);

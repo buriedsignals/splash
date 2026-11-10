@@ -16,6 +16,9 @@ const claim = { takeaway: "Africa accounts for about two-thirds of the world's r
 const name = (mark: string, note: string) => () =>
   validateTime({ gestures: [{ do: "highlight", mark: "Africa" }, { do: "name", mark, note }], model, format: "static", claim });
 
+const compare = (marks: string[], note: string) => () =>
+  validateTime({ gestures: [{ do: "highlight", mark: "Africa" }, { do: "compare", marks, note }], model, format: "static", claim });
+
 describe("a note that calls a reading a peak", () => {
   it("should refuse a peak written on a reading that is not its series' highest", () => {
     expect(name("2015 · Africa", "peak: 689,651")).toThrow(/2016/);
@@ -31,5 +34,14 @@ describe("a note that calls a reading a peak", () => {
 
   it("should accept the whole stack's peak stated with the stack's total", () => {
     expect(name("2015 · Africa", "World peak: 689,651 of 1,148,499")).not.toThrow();
+  });
+
+  // Run 24: the compare's own note said "since peak" from Africa's 2015, the world's peak, not Africa's.
+  it("should refuse a compare's peak word when its earlier reading is not its series' highest", () => {
+    expect(compare(["2016 · Africa", "2015 · Africa"], "up 1% since peak")).toThrow(/"up 1% since 2015"/);
+  });
+
+  it("should accept a compare's peak word measured from its series' highest", () => {
+    expect(compare(["2024 · Africa", "2016 · Africa"], "down 31% since peak")).not.toThrow();
   });
 });
