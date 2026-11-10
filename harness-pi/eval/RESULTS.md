@@ -764,3 +764,19 @@ chosen, the harness asks for `record_slot chosen` with the journalist's own word
 tools; the tool, not the model, says what is reachable.
 
 Battery: 100% at the start of run 27, 76% and charging at its end (the charger came back during run 27); no sleep image, disk 12–21 GB free.
+
+### Runs 30–32 on Osaurus, after `06f1edb5e` (2026-11-10, on AC power)
+
+| Run | Outcome | Time | Refusals | Plate |
+|---|---|---|---|---|
+| 30 | stopped at the chart beat | 2,703 s | 2 | none |
+| 31 | stopped at the chart beat | 2,704 s | 5 | none |
+| 32 | **delivered**, headline faithful | 2,439 s | 6 | gold: "down 30% since 2015" (Africa 2024 vs 2015: −30.2%); "nearly half since it peaked in 2015" (World 2025 vs 2015: −45.5%) |
+
+1/3 gold. All three storyboards closed (no repeat of run 28's stall). Runs 30 and 31 both stacked the World row on
+the six continents it is the exact sum of (data.json: World = Σ continents at every year); the render refused the
+doubled stack, and the 12B put World back after each of two or three refusals until the 45-minute cap. Fixed in the
+next commit: a stacked layer that equals the sum of the other layers at every time is the stack's own total and is
+left out, and a gesture marked on it moves to the beat's entity at the same time, where the existing guard turns a
+total written on one layer into "part of total". Replayed on run 30's beat, the render then asks for
+"689,651 of 1,148,499", a refusal the repair loop applies.

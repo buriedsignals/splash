@@ -176,6 +176,44 @@ function dataColumns(here) {
   }
 }
 
+/**
+ * A stacked layer that is the sum of the other layers at every time is the stack's own total, which its top edge
+ * already draws: the 12B stacked the World row on the six continents it adds up, and put it back after each of three
+ * refusals (Osaurus runs 30 and 31, 2026-11-10). The kit leaves that layer out.
+ */
+export function dropStackTotal(points, stacked) {
+  if (!stacked) return points;
+  const names = [...new Set(points.map((p) => p.series))];
+  if (names.length < 3) return points;
+  const times = [...new Set(points.map((p) => p.t))];
+  const at = (n, t) => points.find((p) => p.series === n && p.t === t)?.value;
+  const total = names.find((n) =>
+    times.every((t) => {
+      const v = at(n, t);
+      const rest = names.filter((o) => o !== n).reduce((s, o) => s + (Number.isFinite(at(o, t)) ? at(o, t) : 0), 0);
+      return Number.isFinite(v) && v > 0 && Math.abs(v - rest) <= v * 0.005;
+    }),
+  );
+  return total ? points.filter((p) => p.series !== total) : points;
+}
+
+/**
+ * A gesture marked on the dropped total moves to the beat's entity at the same time (or the first drawn layer): its
+ * note then reads against the stack, where a total printed on one layer is held as "part of total".
+ */
+export function retargetStackTotal(gestures, dropped, entity, drawn) {
+  if (!dropped.length || !Array.isArray(gestures)) return;
+  const onto = drawn.includes(entity) ? entity : drawn[0];
+  const move = (mark) => {
+    const m = /^(.*) · (.*)$/.exec(String(mark ?? ""));
+    return m && dropped.includes(m[2]) ? `${m[1]} · ${onto}` : mark;
+  };
+  for (const g of gestures) {
+    if (g?.mark !== undefined) g.mark = move(g.mark);
+    if (Array.isArray(g?.marks)) g.marks = g.marks.map(move);
+  }
+}
+
 export function dropEmptyLayers(points, stacked) {
   if (!stacked) return points;
   const held = new Set(points.filter((p) => Number.isFinite(p.value) && p.value !== 0).map((p) => p.series));
@@ -194,7 +232,12 @@ export async function loadTimeBeat(here, variant, { required = [], format: wante
 
   const front = frontOf(here);
   const stacks = variant === "area-and-stacked-area" || variant === "streamgraph";
-  const points = dropEmptyLayers(dropExcludedTimes(readPoints(beat.points, { fallbackSeries: beat.entity ?? front("subject") ?? "—", columns: dataColumns(here) }), front("limits")), stacks);
+  const points = dropStackTotal(dropEmptyLayers(dropExcludedTimes(readPoints(beat.points, { fallbackSeries: beat.entity ?? front("subject") ?? "—", columns: dataColumns(here) }), front("limits")), stacks), stacks);
+  {
+    const drawn = [...new Set(points.map((p) => p.series))];
+    const dropped = [...new Set(beat.points?.map?.((p) => p?.series) ?? [])].filter((n) => typeof n === "string" && !drawn.includes(n));
+    retargetStackTotal(beat.gestures, stacks ? dropped : [], beat.entity, drawn);
+  }
   // A reading that is not a number is a gap, drawn as one; a reading that is a number must be a finite one.
   assertNumbers(points.filter((p) => !Number.isNaN(p.value)).map((p) => [`${p.series} ${p.key}`, p.value]), "points");
   if (!(Number(beat.slots ?? 10) >= 2)) throw new Error(`beat.mjs: slots is ${JSON.stringify(beat.slots)}: give how many ranks the bump chart draws, e.g. 10`);
