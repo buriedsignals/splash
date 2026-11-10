@@ -1,5 +1,5 @@
-import { beforeAll, describe, expect, it } from "bun:test";
-import { mkdtemp } from "node:fs/promises";
+import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createRunRoot, stageStory } from "../src/run-root.ts";
@@ -8,13 +8,16 @@ import { runTools , refusalHint } from "../src/tools/run.ts";
 
 const CHECKOUT = resolve(import.meta.dirname, "../..");
 let bases: Bases;
+let parent: string;
+// Each run root holds a ~380 MB node_modules: left in tmpdir, every `bun test` leaked one.
+afterAll(() => rm(parent, { recursive: true, force: true }));
 const call = (tool: { execute: Function }, params: object) =>
   tool.execute("t1", params, undefined, undefined, undefined);
 const textOf = (r: { content: { text?: string }[] }) =>
   r.content.map((c) => c.text ?? "").join("\n");
 
 beforeAll(async () => {
-  const parent = await mkdtemp(join(tmpdir(), "splash-runtool-"));
+  parent = await mkdtemp(join(tmpdir(), "splash-runtool-"));
   const root = await createRunRoot({
     checkout: CHECKOUT,
     dir: join(parent, "root"),
