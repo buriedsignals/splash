@@ -780,3 +780,20 @@ next commit: a stacked layer that equals the sum of the other layers at every ti
 left out, and a gesture marked on it moves to the beat's entity at the same time, where the existing guard turns a
 total written on one layer into "part of total". Replayed on run 30's beat, the render then asks for
 "689,651 of 1,148,499", a refusal the repair loop applies.
+
+### Runs 33–35 on Osaurus, after `00205ed15` (2026-11-10, on AC power)
+
+| Run | Outcome | Time | Refusals | Plate |
+|---|---|---|---|---|
+| 33 | **delivered**, headline faithful | 2,703 s | 4 | gold: "2015: 689,651"; "up 1% since 2015" (Africa 2016 vs 2015: +1.5%, a compare the repair moved off 2026) |
+| 34 | **delivered**, headline faithful | 1,222 s | 2 | gold: "689,651 events" on Africa 2015 |
+| 35 | **delivered**, headline faithful | 1,198 s | 3 | gold: "down 41%" (Africa 2025 vs 2015: −41.1%) |
+
+**3/3 gold: the target batch.** No plate carries a false figure. Neither new mechanism fired: no storyboard reached
+the "nothing chosen" nudge (run 33's first storyboard session stopped on "no new record in 12 model turns" and its
+resume closed the gate), and no beat stacked World on the continents. The batch therefore shows the pipeline holds,
+not that the two fixes were exercised; both rest on their tests and on the replay of run 30's beat.
+
+Remaining form defects: the peak/total references the model writes ("World peak", "peak: 1.15 million") are dropped by
+the repair rather than kept as "part of total"; run 33's compare is true but weak (+1% is not the story). Run 33 spent
+2,703 s, at the cap, of which 962 s in the storyboard.
