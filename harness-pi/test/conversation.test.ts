@@ -47,6 +47,41 @@ describe("converse", () => {
   });
 });
 
+// Osaurus run 28 (2026-11-10): the storyboard listed treatments in prose without show_candidates; the journalist
+// answered "Area (and stacked area)." ten times and the 12B refused it each time on a rule it invented, never
+// calling record_slot, whose answer would have been the truth.
+describe("converse when a slot exists and nothing is chosen", () => {
+  const chosen = async () => {
+    const prompts: string[] = [];
+    const session = {
+      subscribe: () => () => {},
+      prompt: async (text: string) => void prompts.push(text),
+      getLastAssistantText: () => "I cannot record Area for a Static chart. Would you like a Line chart instead?",
+      abort: async () => {},
+    };
+    await converse({
+      session: session as never,
+      first: "Start the storyboard.",
+      journalist: { answer: async () => "Area (and stacked area)." },
+      dialogue: { lastJournalist: "", lastProposal: "" },
+      conversational: true,
+      done: async () => false,
+      gaps: async () => "slot 1: nothing chosen — gate 2 is not closed",
+      limits: { rounds: 6 },
+      log: [],
+    });
+    return prompts;
+  };
+
+  it("should ask for record_slot chosen with the journalist's own answer after three silent turns", async () => {
+    expect((await chosen())[4]).toContain('record_slot for slot "1", field "chosen", value "Area (and stacked area)."');
+  });
+
+  it("should tell the model the tool, not its own reading, decides what is reachable", async () => {
+    expect((await chosen())[4]).toContain("the tool answers whether it is reachable");
+  });
+});
+
 describe("converse narrowing a stalled turn", () => {
   const narrowed = async () => {
     const offered: string[][] = [];

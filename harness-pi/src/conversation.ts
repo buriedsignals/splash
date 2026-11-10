@@ -52,6 +52,7 @@ const CLAIMED_RECORD =
   /\b(I have|I've|I)( now| also| successfully| just)? (recorded|saved|materiali[sz]ed|updated|refined|registered)\b/i;
 /** The storyboard gate's gap while no slot exists (skills/storyboard/scripts/gate-contract.mjs). */
 const NO_SLOT = /no slot: nothing would be produced/;
+const NOTHING_CHOSEN = /slot (\S+): nothing chosen/;
 const CLAIMED_DONE =
   /\b(complete|completed|finali[sz]ed|closed|ready to move|we are ready|all set)\b/i;
 
@@ -224,6 +225,16 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
       if (recorded === 0 && silent >= 3 && NO_SLOT.test(await o.gaps())) {
         const answers = [o.dialogue.lastJournalist, ...(o.dialogue.history ?? []).map((h) => h.answer)].filter(Boolean).slice(0, 8).reverse();
         prompt = `[harness] The slot is still not recorded: ${silent} turns went to the journalist with no tool called, so nothing would be produced. Call record_slot for slot "1" now, one call per field the journalist has answered (medium, format, size), then show_candidates, then record chosen and producer from their choice. Their answers so far, oldest first: ${JSON.stringify(answers)}.`;
+        o.log.push(`HARNESS: ${prompt}`);
+        silent = 0;
+        narrow = true;
+        continue;
+      }
+      // Osaurus run 28: a slot stood, nothing was chosen, and the 12B refused the journalist's treatment ten times on a
+      // rule of its own, never asking the tool. The record tool, not the model's reading, says what is reachable.
+      const open = recorded === 0 && silent >= 3 ? (await o.gaps()).match(NOTHING_CHOSEN) : null;
+      if (open && o.dialogue.lastJournalist) {
+        prompt = `[harness] ${silent} turns went to the journalist with nothing recorded, and slot ${open[1]} has nothing chosen. Their last answer was ${JSON.stringify(o.dialogue.lastJournalist)}. Call record_slot for slot "${open[1]}", field "chosen", value ${JSON.stringify(o.dialogue.lastJournalist)} now: the tool answers whether it is reachable in the slot's format, and shows the menu if none was shown. Do not refuse it yourself.`;
         o.log.push(`HARNESS: ${prompt}`);
         silent = 0;
         narrow = true;

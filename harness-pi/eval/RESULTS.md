@@ -746,3 +746,21 @@ beats are refused with a value that works ("2015: 689,651", "Africa's 2015").
 3/3 delivered, 2/3 gold. Over runs 21–26: 6/6 delivered, no stalled turn. Run 24's miss is the peak word again, this
 time in a compare's note, which the guard did not read (it held single-reading notes only). Fixed in the next commit:
 a compare's peak word is held on its earlier reading; replayed, run 24's beat is refused with "up 1% since 2015".
+
+### Runs 27–29 on Osaurus, after `9f79f0dd5` (2026-11-10, on battery at Rémy's request)
+
+| Run | Outcome | Time | Refusals | Plate |
+|---|---|---|---|---|
+| 27 | **delivered**, headline faithful | 1,358 s | 3 | gold: "2015: 689,651", "30% lower" (Africa 2024 vs 2015: −30.2%) |
+| 28 | stopped at the storyboard | 1,541 s | 1 | none |
+| 29 | **delivered**, headline faithful | 1,724 s | 6 | gold: "689,651", "fallen by 41.1%" (Africa 2025 vs 2015) |
+
+2/3 gold, and no plate since the peak guards carries a false figure (runs 25–27, 29). Run 28: the storyboard listed
+treatments in prose without `show_candidates`; the scripted journalist answered "Area (and stacked area)." ten times,
+and the 12B refused it each time on a rule it invented ("Static does not support Area"), never calling
+`record_slot`. The session stopped on "no new record in 12 model turns"; the two resumes were cut for hidden
+reasoning three times each. Fixed in the next commit: after three silent turns with a slot standing and nothing
+chosen, the harness asks for `record_slot chosen` with the journalist's own words and narrows the turn to the record
+tools; the tool, not the model, says what is reachable.
+
+Battery: 100% → 76% over run 27 (the charger was reconnected during run 28); no sleep image, disk 12–21 GB free.
