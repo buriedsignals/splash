@@ -720,3 +720,17 @@ craft turn in run 20 (859 s) streamed nothing until a run of `<|channel>thought`
 hidden-reasoning cut arms on the first thought token, so it fired thirteen minutes late. Fourteen other empty turns
 were cut at 90 s as designed (115–134 s wall). Fixed in the next commit: a turn that sends no word and no tool call
 within 300 s of its request is cut and asked again. Osaurus wrote no log that says why it stalled.
+
+### Runs 21–23 on Osaurus, after `a668c30a4` (2026-11-10)
+
+| Run | Outcome | Time | Refusals | Plate |
+|---|---|---|---|---|
+| 21 | **delivered**, headline faithful | 2,193 s | 5 | not gold: "peak: 689,651" on Africa's 2015; compare "down 41.1%" (2015→2025) is right |
+| 22 | **delivered**, headline faithful | 1,319 s | 1 | not gold: "Africa's peak" on 2015; "up ~1.5%" (2015→2016) is right, and contradicts the peak on the same plate |
+| 23 | **delivered**, headline faithful | 1,597 s | 6 | not gold: "Peak: 689,651" on Africa's 2015 |
+
+3/3 delivered, 0/3 gold. No turn ran past 250 s, so the silent-turn cut never had to fire: whether it would have saved
+runs 18 and 20 is not measured. All three plates call Africa's 2015 its peak; the world peaked in 2015 (1,148,499),
+Africa in 2016 (699,806). No guard read the word. Fixed in the next commit: "peak" on one reading holds only at its
+series' highest, or on a stack where the whole stack peaks and the note states its total. Replayed, all three kept
+beats are refused with a value that works ("2015: 689,651", "Africa's 2015").

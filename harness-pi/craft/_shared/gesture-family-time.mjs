@@ -402,6 +402,7 @@ function changeWord(note, n) {
   return CHANGE.test(after) || (before.join(" ").toLowerCase() !== "up to" && before.some((w) => CHANGE.test(w) && !/^more$/i.test(w)));
 }
 
+const PEAK = /(?<!\p{L})(peak(?:ed|s)?|maximum|all-time high|pic|sommet|Höchststand)(?!\p{L})/iu;
 const DOWN = /^(declin|fall|fell|drop|decreas|loss|lower|down|less|fewer|cut|slump|plung)/i;
 const UP = /^(rise|rose|increas|grow|grew|gain|higher|up|jump|climb|surg)/i;
 /** The word right before a stated percent that names its direction ("down 1%", "fell by 30%"), and which way it runs. */
@@ -446,6 +447,7 @@ export function timeHooks(model) {
     },
     refuse(g, ctx) {
       refuseShape(g, ctx);
+      refusePeak(g, ctx);
       refuseFigures(g, ctx, hooks.figures(g, ctx));
     },
   };
@@ -527,6 +529,29 @@ export function timeHooks(model) {
       const fixed = g.note.slice(0, n.index) + (best < 0 ? (n.sign === "\u2212" ? "\u2212" : "-") : n.sign === "+" ? "+" : "") + text + g.note.slice(n.index + n.raw.length);
       throw new GestureRefusal(`gestures[${i}].note`, `states ${n.raw}, but the readings this ${g.do} draws give ${text}: write "${fixed}"`, { set: { index: i, field: "note", value: fixed } });
     }
+  }
+
+  /**
+   * "Peak" on one reading holds only where that reading is its series' highest, or, on a stack, where the whole stack
+   * peaks and the note states its total. real-gwis runs 21–23 wrote "peak" on Africa's 2015 (689,651): the world
+   * peaked in 2015, Africa in 2016 (699,806).
+   */
+  function refusePeak(g, { marks, index: i }) {
+    if (typeof g.note !== "string" || marks.length !== 1 || model.variant === "bump-ranking-over-time") return;
+    const word = g.note.match(PEAK);
+    const m = model.markOf.get(marks[0]);
+    if (!word || !m || !Number.isFinite(m.value)) return;
+    const own = model.marks.filter((x) => x.series === m.series && Number.isFinite(x.value));
+    const top = own.reduce((a, b) => (b.value > a.value ? b : a), m);
+    if (top.value <= m.value) return;
+    if (model.stacked) {
+      const totalAt = (t) => model.series.reduce((sum, x) => sum + (Number.isFinite(model.read(x, t)) ? model.read(x, t) : 0), 0);
+      const total = totalAt(m.t);
+      const stated = figuresIn(g.note).some((n) => [1, 1e3, 1e6, 1e9].some((k) => Math.abs(n.value * k - total) <= total * 0.005));
+      if (stated && model.times.every((t) => totalAt(t) <= total)) return;
+    }
+    const value = g.note.slice(0, word.index) + m.key + g.note.slice(word.index + word[0].length);
+    throw new GestureRefusal(`gestures[${i}].note`, `says "${word[0]}" on ${m.name}, but ${m.series} is highest at ${top.key} (${top.value.toLocaleString("en-US")}), not ${m.key}: write "${value}", or name "${top.name}"`, { set: { index: i, field: "note", value } });
   }
 
   function refuseShape(g, { marks, index: i }) {
