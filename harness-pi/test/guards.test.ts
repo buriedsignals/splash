@@ -290,3 +290,16 @@ describe("assertHeadlineNumbersDrawn, strict", () => {
     expect(() => assertHeadlineNumbersDrawn("72 réacteurs sur 8 900 centrales", [3884, 2317, 2070, 498, 72, 51, 8, 100, 500, 7], "groups")).not.toThrow();
   });
 });
+
+// r8 on Osaurus (2026-11-11): the inside-built-up-areas series (17 to 119) drawn under "214 ... against 36 in 2015";
+// told to "read its other columns", the 12B rewrote the beat for 25 minutes.
+describe("assertHeadlineNumbersDrawn, locating the stated figure", () => {
+  const data = join(import.meta.dirname, "fixtures", "headline-locate", "data.json");
+  const title = "214 pedelec riders were killed in 2025 against 36 in 2015.";
+  const inside = [17, 30, 45, 60, 80, 119];
+  it("should name the column and the row that hold the stated figure", () => {
+    expect(() => assertHeadlineNumbersDrawn(title, inside, "line", data)).toThrow(
+      /214 is data.json's column "Getoetete_Pedelecs_ab_2014" in the row where Ortschaft = "Innerhalb und außerhalb von Ortschaften", Jahr = "?2025/,
+    );
+  });
+});

@@ -152,7 +152,7 @@ export function assertOnePerX(points, x = "year") {
  * beat once drew the inside-built-up-areas series (17 to 119) under a takeaway that says 36 to 214. A
  * takeaway may state a figure the plate does not draw, so only a majority missing refuses.
  */
-export function assertHeadlineNumbersDrawn(headline, drawn, label = "marks") {
+export function assertHeadlineNumbersDrawn(headline, drawn, label = "marks", dataPath = join(import.meta.dirname, "data.json")) {
   // Magnitudes: a title states a loss as "fell 12" against a drawn -12; signed bounds left negatives unchecked.
   const signed = drawn.filter((v) => Number.isFinite(v));
   if (!signed.length) return;
@@ -181,7 +181,41 @@ export function assertHeadlineNumbersDrawn(headline, drawn, label = "marks") {
   const derivable = (n) => allowed.some((v) => near(v, n)) || pool.some((a, i) => pool.some((b, j) => j > i && (near(a + b, n) || near(Math.abs(a - b), n))));
   const missing = stated.filter((n) => !derivable(n));
   if (missing.length)
-    throw new Error(`the title states ${missing.join(", ")}, which the drawn ${label} do not contain: the rows selected from data.json are probably not the takeaway's series — read its other columns and filter to the one the takeaway is about`);
+    throw new Error(`the title states ${missing.join(", ")}, which the drawn ${label} do not contain: ${locateStated(missing, stated, dataPath) ?? "the rows selected from data.json are probably not the takeaway's series — read its other columns and filter to the one the takeaway is about"}`);
+}
+
+/**
+ * Where data.json holds a figure the title states: the column holding most of the title's figures, and the row that
+ * holds this one. r8 on Osaurus (2026-11-11): told only to "read its other columns", the 12B rewrote the beat for 25
+ * minutes on the inside-built-up-areas rows while 214 sat in the all-locations row of the same column.
+ */
+export function locateStated(missing, stated, dataPath) {
+  let data;
+  try {
+    data = JSON.parse(readFileSync(dataPath, "utf8"));
+  } catch {
+    return undefined;
+  }
+  const { columns = [], rows = [] } = data;
+  if (!rows.length || !Array.isArray(rows[0])) return undefined;
+  const num = (v) => (typeof v === "number" ? v : typeof v === "string" && /^-?\d+(\.\d+)?$/.test(v.trim()) ? Number(v) : NaN);
+  const hits = (j, n) => rows.filter((r) => num(r[j]) === n);
+  const year = (j) => rows.every((r) => Number.isInteger(num(r[j])) && num(r[j]) >= 1700 && num(r[j]) <= 2100);
+  const scored = columns
+    .map((c, j) => ({ j, name: c.name, score: stated.filter((n) => hits(j, n).length).length, first: missing.filter((n) => hits(j, n).length).length }))
+    .filter((c) => c.first && !year(c.j))
+    .sort((a, b) => b.score - a.score);
+  if (!scored.length) return undefined;
+  const { j, name } = scored[0];
+  const n = missing.find((m) => hits(j, m).length);
+  const row = hits(j, n)[0];
+  // The cells that tell this row from the others: the year, and every text column with more than one value.
+  const keys = columns
+    .map((c, k) => ({ c, k }))
+    .filter(({ k }) => k !== j && (year(k) || (typeof row[k] === "string" && Number.isNaN(num(row[k])) && new Set(rows.map((r) => r[k])).size > 1)));
+  const where = keys.map(({ c, k }) => `${c.name} = ${JSON.stringify(row[k])}`).join(", ");
+  const strings = typeof row[j] === "string" ? ` Its cells are strings ("${row[j]}"): draw Number(cell).` : "";
+  return `${n} is data.json's column "${name}" in the row where ${where}. Draw that column, filtered to rows like that one${keys.some(({ k }) => !year(k)) ? ` (keep ${keys.filter(({ k }) => !year(k)).map(({ c, k }) => `${c.name} = ${JSON.stringify(row[k])}`).join(", ")})` : ""}.${strings}`;
 }
 
 /** When the journalist named the claim's column, the drawn values are that column's (raw beds under a per-resident headline, once). */
