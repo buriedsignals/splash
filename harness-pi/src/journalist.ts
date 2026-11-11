@@ -105,12 +105,33 @@ export function scriptedJournalist(
       };
       // The closing offers name themselves; the classifier read "another format" as the publication
       // format question and answered "Static." to it.
-      const closing = /\b(another|other) (publication )?format\b|\b(another|other) subjects?\b/i.test(said.slice(-1500));
+      const closing =
+        /\b(another|other) (publication )?format\b|\b(another|other) subjects?\b/i.test(
+          said.slice(-1500),
+        );
       const classified = (body.choices?.[0]?.message?.content ?? "")
         .trim()
         .toLowerCase()
         .replace(/[^a-z]/g, "");
-      const key = closing && !excluded.includes("closing") ? "closing" : keys.includes(classified) ? classified : "other";
+      // The candidate menu ("- **Name** (format) — …", then "Which one do you keep?") and the survey's offer of
+      // additional subjects also name themselves: the classifier read the menu's "keep" as the takeaway question
+      // and the survey as the subject question (gx-connected-scatter, 2026-11-11: ten minutes of storyboard lost).
+      const tail = said.slice(-1500);
+      const menu =
+        (tail.match(/^\s*- \*\*[^*\n]+\*\* \(/gm)?.length ?? 0) >= 2 &&
+        /\bwhich (one|treatment|chart|candidate)\b/i.test(tail.slice(-200));
+      const survey =
+        /\b(additional|extra|other) (subjects?|angles?)\b/i.test(tail) && !menu;
+      const key =
+        closing && !excluded.includes("closing")
+          ? "closing"
+          : menu && keys.includes("treatment")
+            ? "treatment"
+            : survey
+              ? "survey"
+              : keys.includes(classified)
+                ? classified
+                : "other";
       // A journalist never agrees to a takeaway that is not theirs: asked to confirm one the desk
       // wrote, the sheet's journalist answers with their own sentence.
       const proposesTakeaway =
@@ -120,7 +141,9 @@ export function scriptedJournalist(
         !said.includes(sheet.takeaway);
       const answer = proposesTakeaway
         ? `No. My takeaway is: ${sheet.takeaway}`
-        : (sheet[key as keyof Sheet] ?? sheet.other ?? "I don't know.");
+        : key === "survey"
+          ? (sheet.closing ?? "No, thank you.")
+          : (sheet[key as keyof Sheet] ?? sheet.other ?? "I don't know.");
       log.push({ said: said.slice(-300), key, answer });
       return answer;
     },
