@@ -234,6 +234,19 @@ describe("legibleFormat", () => {
   it("should keep the beat's format when its labels already differ", () => {
     expect(legibleFormat([214, 96, 31], pl)).toBe(pl);
   });
+
+  // Osaurus runs 36 and 38 (2026-11-11): a compact format collapsed whole counts, and the end labels printed "406220.0".
+  it("should write whole counts whole, grouped, when a compact format collapses them", () => {
+    const compact = (v: number) => new Intl.NumberFormat("en", { notation: "compact" }).format(v);
+    const counts = [406220, 406100, 406300, 68716, 68790, 68700, 67532, 67500];
+    expect(legibleFormat(counts, compact)(406220)).toBe("406,220");
+  });
+
+  it("should group with a space, not a comma, when the compact format writes a decimal comma", () => {
+    const compact = (v: number) => new Intl.NumberFormat("fr", { notation: "compact" }).format(v);
+    const shares = [406220.4, 406100.2, 406300.1, 68716.5, 68790.5, 68700.5, 67532.5, 67500.5];
+    expect(legibleFormat(shares, compact)(406220.4)).toBe("406\u202f220,4");
+  });
 });
 
 describe("assertLegibleLabels on rounded rows", () => {

@@ -105,13 +105,15 @@ export function assertLegibleLabels(values, format) {
 export function legibleFormat(values, format) {
   const collapsed = (f) => new Set(values.map((v) => f(v))).size < Math.min(new Set(values).size, values.length) * 0.75;
   if (!collapsed(format)) return format;
-  const group = String(format(1234567)).match(/^1([^\d])234/)?.[1] ?? "";
+  // A compact format ("1.2M") shows no grouping; whole counts then read best grouped (runs 36 and 38: "406220.0").
+  const decimalComma = /\d,\d/.test(String(format(1.5)));
+  const group = String(format(1234567)).match(/^1([^\d])234/)?.[1] ?? (/1234567/.test(String(format(1234567))) ? "" : decimalComma ? "\u202f" : ",");
   // A format with no decimals shows no decimal mark: a space or point grouping thousands (pl, de, fr) implies a comma.
-  const comma = /\d,\d/.test(String(format(1.5))) || (group !== "" && group !== ",");
-  for (let d = 1; d <= 4; d++) {
+  const comma = decimalComma || (group !== "" && group !== ",");
+  for (let d = values.every((v) => Number.isInteger(Number(v))) ? 0 : 1; d <= 4; d++) {
     const f = (v) => {
       const [whole, part] = Math.abs(Number(v)).toFixed(d).split(".");
-      return `${Number(v) < 0 ? "-" : ""}${whole.replace(/\B(?=(\d{3})+$)/g, group)}${comma ? "," : "."}${part}`;
+      return `${Number(v) < 0 ? "-" : ""}${whole.replace(/\B(?=(\d{3})+$)/g, group)}${part ? `${comma ? "," : "."}${part}` : ""}`;
     };
     if (!collapsed(f)) return f;
   }
