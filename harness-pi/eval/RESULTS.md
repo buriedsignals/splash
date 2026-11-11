@@ -861,3 +861,26 @@ fails without the fix:
   strings.
 
 Next: re-run the four, one at a time, on AC.
+
+### Held-out batch 2 on Osaurus (2026-11-11, on AC power) — the same four, after the five fixes
+
+| Story | Variant | Outcome | Time | The render, looked at |
+|---|---|---|---|---|
+| gx-connected-scatter | full | delivered, headline drawn | 1,939 s | **wrong**: the title is France's 11.8-point loss of share; the plate draws bioenergy against other renewables in TWh, labelled with ambiguous initials |
+| gx-small-multiples | full | **delivered** | 1,836 s | **gold** |
+| stress-t-europe-recycling | web-map | production, cap | 2,702 s | storyboard 1,348 s again (hidden reasoning cut three times); craft stuck on "no shape for Holland, Belgiumm…": rows keyed by country name |
+| r8-german-road-deaths | static | delivered | 1,266 s (craft 344 s, was 1,918 s) | data right (36 → 214), but the axis starts in 1980: two thirds of the plate are empty years |
+
+**3/4 delivered, 1/4 gold.** `headline=true` on the scatter only meant the title text was drawn. The three new misses
+were traced to the harness and fixed with a test that fails without the fix:
+
+- `d0a7e84ce` — a choropleth row keyed by a country name is refused with the code it takes ("Holland" → "NLD",
+  "Belgiumm" → "BEL", closest: belgium), and the four choropleth contracts name `iso3Of(names, here)`.
+- `1f6916cdb` — the time axis starts and ends at the years some series reads (r8 replayed: 2014–2025, both series).
+- `bae2061a3` — the headline guard took 11.8 as the gap of two of the scatter's 64 marks; with that many marks 97 % of
+  figures in range were "derivable". The sum-or-gap rule now counts only where it still excludes most figures (≤ 25 %
+  of the drawn range, ≤ 200 marks); a figure no cell of data.json holds is named as computed, with the instruction to
+  draw the computed measure. The kept scatter beat is now refused with that message.
+
+Still open: stress-t's storyboard (≈ 1,350 s, hidden-reasoning cuts) and r8's "214 killed" / "36 killed" notes
+touching the lines.
