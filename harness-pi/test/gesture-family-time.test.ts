@@ -566,3 +566,14 @@ describe("scrolly cards", () => {
     expect(refusalOf(() => checkTimeCards({ model: LINE.model, valid: v.gestures, plan: s.plan, format: fmt, subject: v.subject }))?.field).toBe("gestures[0].card");
   });
 });
+
+// r8 on Osaurus (2026-11-11): rows from 1980 whose columns start in 2014 left two thirds of the plate blank.
+describe("the time axis", () => {
+  it("should start at the first year some series reads", () => {
+    const points = [1980, 1990, 2014, 2025].flatMap((t) => [
+      { series: "Pedelecs", t, value: t < 2014 ? null : t === 2014 ? 39 : 214 },
+      { series: "Bicycles", t, value: t < 2014 ? null : 300 },
+    ]);
+    expect(timeModel({ variant: "line", points }).t0).toBe(2014);
+  });
+});

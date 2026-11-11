@@ -139,11 +139,17 @@ const labelFor = (lang) =>
 export function timeModel({ variant, points, slots = 10, order, lang }) {
   if (!VARIANTS.includes(variant)) throw new Error(`variant must be one of ${VARIANTS.join(", ")}, not ${JSON.stringify(variant)}`);
   const seriesNames = order ?? [...new Set(points.map((p) => p.series))];
-  const times = [...new Set(points.map((p) => p.t))].sort((a, b) => a - b);
+  const finite = (v) => typeof v === "number" && Number.isFinite(v);
+  // The axis spans the years some series reads: r8 on Osaurus (2026-11-11) kept 1980-2013 rows whose pedelec
+  // column is empty (it starts in 2014), and two thirds of the plate were blank years.
+  const every = [...new Set(points.map((p) => p.t))].sort((a, b) => a - b);
+  const read0 = new Set(points.filter((p) => finite(p.value)).map((p) => p.t));
+  const first = every.findIndex((t) => read0.has(t));
+  const last = every.findLastIndex((t) => read0.has(t));
+  const times = first < 0 ? every : every.slice(first, last + 1);
   const keyOf = new Map(points.map((p) => [p.t, p.key]));
   const valueAt = new Map(points.map((p) => [`${p.series}\u0000${p.t}`, p.value]));
   const read = (s, t) => valueAt.get(`${s}\u0000${t}`);
-  const finite = (v) => typeof v === "number" && Number.isFinite(v);
 
   // Ranks among every series with a reading at t (bump; a stream's rank words are checked against them too).
   const rankAt = new Map();
