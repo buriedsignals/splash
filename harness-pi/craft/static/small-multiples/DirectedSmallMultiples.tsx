@@ -296,15 +296,18 @@ export function DirectedSmallMultiples({
     limit: number;
     reading: number;
   }> = [];
-  /** OUTERMOST IS WHAT IS PRESERVED LONGEST. The first rung that fits wins, so the loops run from
+  /** THE HEADLINE IS THE JOURNALIST'S TAKEAWAY, so it is the outermost loop: gx-small-multiples on
+   *  Osaurus (2026-11-11) delivered its second, shorter title because a sixth column came later on this
+   *  ladder than the title's second form — and the plate no longer said the takeaway.
+   *  OUTERMOST IS WHAT IS PRESERVED LONGEST. The first rung that fits wins, so the loops run from
    *  the thing a reader can least afford to lose — the panels themselves — inward to the thing they
    *  can: the bar's height. Every count is tried with the delta before any count is tried without
    *  it, and every bar height is tried before the delta goes. */
-  for (const count of DRAWN_COUNTS)
-    for (const withDelta of [true, false])
-      for (const barsH of BAR_HEIGHTS)
-        for (const cols of columnChoices)
-          for (let t = 0; t < title.length; t++)
+  for (let t = 0; t < title.length; t++)
+    for (const count of DRAWN_COUNTS)
+      for (const withDelta of [true, false])
+        for (const barsH of BAR_HEIGHTS)
+          for (const cols of columnChoices)
             for (let l = 0; l < limits.length; l++) {
               for (let r = 0; r < reading.length; r++)
                 rungs.push({
