@@ -68,6 +68,7 @@ export async function openSession(opts: OpenOptions): Promise<AgentSession> {
   const arm = ARMS[opts.modelId ?? "stock"];
   const { modelRuntime, model } = await loadModel(arm ?? { provider: opts.provider, id: opts.modelId });
   const tier = arm?.tier ?? "12b";
+  model.maxTokens = outputCap(opts.key.owner, model.maxTokens);
   const { session } = await createAgentSession({
     cwd: opts.runRoot,
     model,
@@ -95,6 +96,18 @@ export async function openSession(opts: OpenOptions): Promise<AgentSession> {
     customTools: opts.tools,
   });
   return session;
+}
+
+/** Owners whose turns only talk and record: none writes a file. */
+const TALK: readonly OwnerId[] = ["persona:editor", "skill:storyboard", "persona:designer", "skill:deliver"];
+
+/**
+ * A talk turn's output cap. A cut turn is only cut on our side: Osaurus generates on to the request's cap and
+ * the next turn waits behind it (storyboard runs 4 and 5, 2026-11-11, ten minutes per loop). Talk turns wrote
+ * 695 tokens at most over 879 turns; craft keeps the model's cap, since it writes whole files.
+ */
+export function outputCap(owner: OwnerId, modelMax: number): number {
+  return TALK.includes(owner) ? Math.min(2_048, modelMax) : modelMax;
 }
 
 export interface TurnOutcome {
