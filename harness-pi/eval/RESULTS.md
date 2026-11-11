@@ -797,3 +797,29 @@ not that the two fixes were exercised; both rest on their tests and on the repla
 Remaining form defects: the peak/total references the model writes ("World peak", "peak: 1.15 million") are dropped by
 the repair rather than kept as "part of total"; run 33's compare is true but weak (+1% is not the story). Run 33 spent
 2,703 s, at the cap, of which 962 s in the storyboard.
+
+### Segmented runs on Osaurus, after `819c11c71` (2026-11-11, on AC power)
+
+Full runs take 20–45 minutes; the craft and the storyboard were measured apart instead.
+
+**Craft only** — five runs seeded from run 32's storyboard (`--seeds`, `SPLASH_STOP_AFTER_CRAFT=1`), stacked area:
+
+| Run | Time | Plate figures |
+|---|---|---|
+| c1 | 1,431 s | end labels only (one refusal: points at one time) |
+| c2 | 1,330 s | end labels only (one refusal: World row added for 2015 alone, stack doubled) |
+| c3 | 723 s | "0.69 of 1.15 million", "Down 30% since 2015" (repaired) |
+| c4 | 1,367 s | "689,651 of 1,148,499"; end labels unformatted ("406220.0") |
+| c5 | 1,324 s | "689,651 of 1,148,499" (repaired) |
+
+5/5 plates rendered, none with a false figure. Run 30's fix fired through the render's guard ("of 1,148,499" in c4,
+c5). c2 escaped it: the 12B pushed one World point, from `data.rows.find`, and `dropStackTotal` required the total at
+every time. Fixed in `007332244`: the total is judged at the times the layer is drawn. Two plates (c1, c2) carry no
+annotation; c4's end labels print raw floats.
+
+**Storyboard only** — five unseeded runs (`SPLASH_STOP_AFTER_STORYBOARD=1`): 550, 604, 965, 1,454, 1,418 s. The first
+three closed the gate (r1 after one "no new record" stop). r4 and r5 hit the 20-minute storyboard cap with the same
+cause: the 12B looped on `<|channel>thought` in a talk turn; the harness cut it at 90 s, but Osaurus generated on to
+the 16,384-token request cap and the next turn waited behind it (r5: turns of 301 s and 610 s). The "nothing
+chosen" nudge never fired. Fixed in `40e4a4ba1`: talk owners (editor, storyboard, designer, deliver) request 2,048
+output tokens at most — 879 talk turns wrote 695 at most — so a loop ends server-side in about 70 s.
