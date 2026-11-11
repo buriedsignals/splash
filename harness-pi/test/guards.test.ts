@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from "bun:test";
-import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, errorText, importBeat, legibleFormat, printable, runCheck } from "../craft/_shared/guards.mjs";
@@ -301,5 +301,25 @@ describe("assertHeadlineNumbersDrawn, locating the stated figure", () => {
     expect(() => assertHeadlineNumbersDrawn(title, inside, "line", data)).toThrow(
       /214 is data.json's column "Getoetete_Pedelecs_ab_2014" in the row where Ortschaft = "Innerhalb und außerhalb von Ortschaften", Jahr = "?2025/,
     );
+  });
+});
+
+// gx-connected-scatter on Osaurus (2026-11-11): 64 TWh readings made "11.8" the gap of two of them, and a plot of
+// bioenergy against other renewables passed under a title about France's share.
+describe("assertHeadlineNumbersDrawn among many marks", () => {
+  const twh: number[] = JSON.parse(readFileSync(join(import.meta.dirname, "fixtures/headline-pairs/scatter-twh.json"), "utf8"));
+  it("should refuse a figure that is only the gap of two unrelated marks", () => {
+    expect(() => assertHeadlineNumbersDrawn("France lost 11.8 points of weight in Europe's low-carbon total", twh, "points", "/nonexistent")).toThrow(/11\.8/);
+  });
+  it("should still accept a change between two of a few marks", () => {
+    expect(() => assertHeadlineNumbersDrawn("Deaths rose by 178, from 36 to 214", [36, 61, 90, 214], "points", "/nonexistent")).not.toThrow();
+  });
+});
+
+describe("assertHeadlineNumbersDrawn on a computed figure", () => {
+  it("should say a figure no cell holds is computed, and to draw the computed measure", () => {
+    const dir = mkdtempSync(join(tmpdir(), "computed-"));
+    writeFileSync(join(dir, "data.json"), JSON.stringify({ columns: [{ name: "twh" }], rows: [[10], [40], [55]] }));
+    expect(() => assertHeadlineNumbersDrawn("France lost 11.8 points", [10, 40, 55], "points", join(dir, "data.json"))).toThrow(/in no cell of data\.json: it is computed/);
   });
 });

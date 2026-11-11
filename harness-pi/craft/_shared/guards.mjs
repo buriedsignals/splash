@@ -178,10 +178,35 @@ export function assertHeadlineNumbersDrawn(headline, drawn, label = "marks", dat
   // 150 under a title stating 214 of 394 passed the earlier majority rule).
   // Pairs of drawn values only: a running total paired with a value made almost any figure derivable (Lisboa's 214).
   const pool = [...new Set(values)].slice(0, 1500);
-  const derivable = (n) => allowed.some((v) => near(v, n)) || pool.some((a, i) => pool.some((b, j) => j > i && (near(a + b, n) || near(Math.abs(a - b), n))));
+  const pairs = (n) => pool.some((a, i) => pool.some((b, j) => j > i && (near(a + b, n) || near(Math.abs(a - b), n))));
+  // With many marks almost every figure is the sum or gap of two of them, and the rule refuses nothing: a connected
+  // scatter of 64 TWh readings passed "France lost 11.8 points" (Osaurus, 2026-11-11). Pairs count only where they
+  // still exclude most figures in the drawn range; there, a change the title states must be drawn by a gesture.
+  const top = Math.max(...values);
+  const probes = Array.from({ length: 1001 }, (_, k) => (top * k) / 1000);
+  const pairsMean = pool.length <= 200 && probes.filter(pairs).length <= 250;
+  const derivable = (n) => allowed.some((v) => near(v, n)) || (pairsMean && pairs(n));
   const missing = stated.filter((n) => !derivable(n));
   if (missing.length)
-    throw new Error(`the title states ${missing.join(", ")}, which the drawn ${label} do not contain: ${locateStated(missing, stated, dataPath) ?? "the rows selected from data.json are probably not the takeaway's series — read its other columns and filter to the one the takeaway is about"}`);
+    throw new Error(`the title states ${missing.join(", ")}, which the drawn ${label} do not contain: ${locateStated(missing, stated, dataPath) ?? computedHint(missing, dataPath) ?? "the rows selected from data.json are probably not the takeaway's series — read its other columns and filter to the one the takeaway is about"}`);
+}
+
+/**
+ * A figure no cell of data.json holds is computed from it (a share, a change in points): no other column will give it.
+ * gx-connected-scatter (2026-11-11) titled a share France lost while drawing two TWh columns.
+ */
+export function computedHint(missing, dataPath) {
+  let rows;
+  try {
+    rows = JSON.parse(readFileSync(dataPath, "utf8")).rows;
+  } catch {
+    return undefined;
+  }
+  if (!Array.isArray(rows) || !rows.length) return undefined;
+  const cells = rows.flatMap((r) => (Array.isArray(r) ? r : Object.values(r ?? {}))).map(Number).filter(Number.isFinite);
+  const absent = missing.filter((n) => !cells.some((c) => Math.abs(Math.abs(c) - n) <= Math.max(0.05, n * 0.005)));
+  if (!absent.length) return undefined;
+  return `${absent.join(", ")} is in no cell of data.json: it is computed from it (a share, a ratio, a change). Map each row to that computed measure and draw it as the marks — the axis then carries ${absent[0]} — or let the title state figures the drawn columns hold`;
 }
 
 /**
