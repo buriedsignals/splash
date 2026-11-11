@@ -823,3 +823,17 @@ cause: the 12B looped on `<|channel>thought` in a talk turn; the harness cut it 
 the 16,384-token request cap and the next turn waited behind it (r5: turns of 301 s and 610 s). The "nothing
 chosen" nudge never fired. Fixed in `40e4a4ba1`: talk owners (editor, storyboard, designer, deliver) request 2,048
 output tokens at most — 879 talk turns wrote 695 at most — so a loop ends server-side in about 70 s.
+
+### Runs 36–38 on Osaurus, after `40e4a4ba1` (2026-11-11, on AC power) — the validation batch
+
+| Run | Outcome | Time | Refusals | Plate |
+|---|---|---|---|---|
+| 36 | **delivered**, headline faithful | 2,680 s | 2 | gold: "down 30% since 2015", "peak: 0.69 of 1.15 million" |
+| 37 | **delivered**, headline faithful | 1,387 s | 5 | gold: "Africa: 689,651", "Africa: 481,688 (down 30%)" (2024 vs 2015: −30.2%) |
+| 38 | **delivered**, headline faithful | 1,497 s | 6 | gold: "up 1% since 2015" (weak), "peak: 0.69 of 1.15 million" |
+
+**3/3 gold, second batch in a row.** The talk cap fired once (run 36's storyboard): a `<|channel>thought` loop ended
+at 2,048 tokens and the session moved on two minutes later, where runs r4 and r5 had lost ten. Run 36 still spent
+1,709 s in craft. Runs 36 and 38 printed end labels as "406220.0": the beat's compact format (406K) collapsed the
+values and the legibility fallback added a decimal without grouping. Fixed in the next commit: whole values fall
+back to grouped integers ("406,220"), checked on run 38's beat replayed with its delivered repair.
