@@ -13,6 +13,12 @@ describe("dropStackTotal", () => {
     expect(new Set(out.map((p: { series: string }) => p.series))).toEqual(new Set(["Africa", "Asia", "Europe"]));
   });
 
+  // Seeded craft run 2 (2026-11-11): the 12B added the World row for one year only, from data.rows.find.
+  it("should leave out a layer drawn at one time only when it is the sum of the others there", () => {
+    const out = dropStackTotal([...parts, { series: "World", t: 2015, key: "2015", value: 1000 }], true);
+    expect(out.some((p: { series: string }) => p.series === "World")).toBe(false);
+  });
+
   it("should keep a layer that is the sum of the others at some times only", () => {
     const out = dropStackTotal([...parts, ...series("Other", [1000, 50, 800])], true);
     expect(out.some((p: { series: string }) => p.series === "Other")).toBe(true);

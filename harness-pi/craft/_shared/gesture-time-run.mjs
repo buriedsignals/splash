@@ -179,7 +179,7 @@ function dataColumns(here) {
 /**
  * A stacked layer that is the sum of the other layers at every time is the stack's own total, which its top edge
  * already draws: the 12B stacked the World row on the six continents it adds up, and put it back after each of three
- * refusals (Osaurus runs 30 and 31, 2026-11-10). The kit leaves that layer out.
+ * refusals (Osaurus runs 30 and 31, 2026-11-10). The kit leaves that layer out, drawn at every time or at one.
  */
 export function dropStackTotal(points, stacked) {
   if (!stacked) return points;
@@ -187,8 +187,10 @@ export function dropStackTotal(points, stacked) {
   if (names.length < 3) return points;
   const times = [...new Set(points.map((p) => p.t))];
   const at = (n, t) => points.find((p) => p.series === n && p.t === t)?.value;
+  // Judged at the times the layer is drawn: a World row added for one year (data.rows.find) doubles that year's stack.
+  const drawnAt = (n) => times.filter((t) => Number.isFinite(at(n, t)));
   const total = names.find((n) =>
-    times.every((t) => {
+    drawnAt(n).length > 0 && drawnAt(n).every((t) => {
       const v = at(n, t);
       const rest = names.filter((o) => o !== n).reduce((s, o) => s + (Number.isFinite(at(o, t)) ? at(o, t) : 0), 0);
       return Number.isFinite(v) && v > 0 && Math.abs(v - rest) <= v * 0.005;
