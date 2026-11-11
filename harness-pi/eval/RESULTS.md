@@ -837,3 +837,27 @@ at 2,048 tokens and the session moved on two minutes later, where runs r4 and r5
 1,709 s in craft. Runs 36 and 38 printed end labels as "406220.0": the beat's compact format (406K) collapsed the
 values and the legibility fallback added a decimal without grouping. Fixed in the next commit: whole values fall
 back to grouped integers ("406,220"), checked on run 38's beat replayed with its delivered repair.
+
+### Held-out batch on Osaurus (2026-11-11, on AC power) — four stories the harness was not tuned on
+
+| Story | Variant | Outcome | Time | Where the time went |
+|---|---|---|---|---|
+| gx-connected-scatter | full | production, cap | 2,702 s | storyboard 1,246 s: the scripted journalist read the candidate menu as the takeaway question and the survey's "additional subjects" as the subject question |
+| gx-small-multiples | full | **delivered**, headline **unfaithful** | 1,443 s | the plate's fit ladder shortened the title before it traded the grid |
+| stress-t-europe-recycling | web-map | production, cap | 2,703 s | storyboard: empty turns cut at the 2,048-token length cap, answered "I don't know."; craft: the phone frame overflowed by 95 then 39 px, and the 12B passed only by cutting the journalist's limits |
+| r8-german-road-deaths | static | headline faithful, cap during delivery | 2,702 s | craft 1,918 s: five rewrites against "the title states 214, which the drawn line do not contain" while 214 sat in the all-locations row of the pedelec column |
+
+**1/4 delivered, 0/4 gold.** No miss was the model's alone; each traced to the harness and was fixed with a test that
+fails without the fix:
+
+- `579a043ec` — the scripted journalist answers the candidate menu with its treatment and declines the survey.
+- `52ddf75ee` — a turn that ends with nothing said and no tool called is asked again, and stops after `sameFailure`.
+- `f42111151` — the small-multiples ladder keeps the takeaway headline before trading the grid (replayed: full
+  takeaway, 16 panels, deltas kept).
+- `7a1c17037` — the web choropleth draws the last limits form on a phone (replayed with the full limits plus a short
+  form: 211 checks, phone fits), and a phone-overflow refusal names the height and the shorter form instead of "a label
+  too long".
+- `ab1a3c9c4` — a title figure the drawn marks miss is located in data.json: column, row, and that its cells are
+  strings.
+
+Next: re-run the four, one at a time, on AC.
