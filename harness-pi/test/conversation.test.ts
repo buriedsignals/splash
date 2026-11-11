@@ -282,3 +282,44 @@ describe("converse cutting a turn that sends nothing", () => {
     expect(prompts[1]).toStartWith("[harness] Your last turn sent nothing");
   });
 });
+
+// Osaurus, stress-t web map (2026-11-11): two storyboard turns spent the 2,048-token talk cap in the thought channel
+// and ended with no word and no tool call; the empty turn went to the journalist, who answered "I don't know."
+describe("converse with a turn that ends empty", () => {
+  const empty = async () => {
+    const prompts: string[] = [];
+    const heard: string[] = [];
+    let turn = 0;
+    const session = {
+      subscribe: () => () => {},
+      prompt: async (text: string) => {
+        prompts.push(text);
+        turn++;
+      },
+      getLastAssistantText: () => (turn === 1 ? "" : "Who is the subject?"),
+      abort: async () => {},
+    };
+    await converse({
+      session: session as never,
+      first: "Start the storyboard.",
+      journalist: { answer: async (said: string) => (heard.push(said), "Germany.") },
+      dialogue: { lastJournalist: "", lastProposal: "" },
+      conversational: true,
+      done: async () => false,
+      gaps: async () => "",
+      limits: { rounds: 3 },
+      log: [],
+    });
+    return { prompts, heard };
+  };
+
+  it("should ask the model again instead of sending the journalist an empty turn", async () => {
+    const { heard } = await empty();
+    expect(heard).not.toContain("");
+  });
+
+  it("should say why it asks again", async () => {
+    const { prompts } = await empty();
+    expect(prompts[1]).toStartWith("[harness] Your last turn ended with nothing said and no tool called");
+  });
+});

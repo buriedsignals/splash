@@ -178,6 +178,7 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
   try {
     for (; rounds < limits.rounds && !stop; rounds++) {
       const lastRound = rounds === limits.rounds - 1;
+      const callsBefore = toolCalls;
       mute = setTimeout(() => {
         cut = cutSilent = true;
         void o.session.abort();
@@ -218,6 +219,17 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
       if (!o.conversational) {
         stop = "ended";
         break;
+      }
+      // Osaurus, stress-t web map (2026-11-11): a turn spent its whole talk budget in the thought channel and ended
+      // with no word and no tool call; sent on, the empty turn drew "I don't know." from the journalist, twice.
+      if (!said.trim() && toolCalls === callsBefore) {
+        if (++cuts >= limits.sameFailure) {
+          stop = `hidden reasoning cut ${cuts}x`;
+          break;
+        }
+        prompt = `[harness] Your last turn ended with nothing said and no tool called. Thinking is off: do not reason first. Answer the last message directly, or call the tool it needs. ${await o.gaps()}`.trimEnd();
+        o.log.push(`HARNESS: ${prompt}`);
+        continue;
       }
       // A 12B discussed medium, format, treatment and producer over a dozen turns, said "I have everything
       // recorded", and never called record_slot; the claim nudge pointed it at the journalist's last words, a
