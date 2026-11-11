@@ -615,3 +615,13 @@ describe("the scrolly scheduler", () => {
     expect(path.attrs.fill).toBe("#ffffff");
   });
 });
+
+// stress-t web map (Osaurus, 2026-11-11): told only to "fix the code", the 12B keyed rows by country name three times.
+describe("choropleth rows keyed by name", () => {
+  const shapes = JSON.parse(readFileSync(join(import.meta.dirname, "..", "craft", "web", "choropleth.gestures", "shapes.geojson"), "utf8"));
+  const rows = [{ key: "Holland", name: "Holland", value: 56.9 }, { key: "Belgiumm", name: "Belgiumm", value: 54.2 }];
+  const box = { x: 0, y: 0, w: 800, h: 600 };
+  it("should give the code each name takes, flagging the misspelling", () => {
+    expect(() => layoutCells("choropleth", { rows, shapes, box })).toThrow(/"Holland" → "NLD", "Belgiumm" → "BEL" \(closest: belgium — a misspelling/);
+  });
+});

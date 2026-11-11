@@ -11,6 +11,8 @@
 //
 // Everything is pure: the caller (render-beat, Node) reads shapes.geojson and passes it in. Browser-safe.
 
+import { codeFor } from "./country-names.mjs";
+
 /** The tile cartogram's designed layout (static/cartogram-area-distortion-and-tile-cartogram/tile-grid.mjs). */
 export const TILE_GRID = [
   "..  ISL ..  ..  ..  ..  ..  ..  NOR SWE FIN ..",
@@ -150,7 +152,17 @@ function layoutShapes({ rows, shapes, box, points = [], groups = [] }) {
   const features = (shapes?.features ?? []).filter((ft) => ft.properties?.iso && ft.properties.iso !== "-99");
   const known = new Set(features.map((ft) => ft.properties.iso));
   const off = rows.filter((r) => !known.has(r.key)).map((r) => r.key);
-  if (off.length) throw new Error(`no shape for ${off.join(", ")}: the map holds ${known.size} countries keyed by ISO alpha-3 (FRA, DEU…); fix the code, or leave the row out and say so`);
+  // stress-t web map (Osaurus, 2026-11-11): told only to "fix the code", the 12B passed country names as keys three
+  // times in a row; the refusal now gives the code each one takes.
+  if (off.length) {
+    const fixes = off.map((k) => {
+      const hit = codeFor(k, features);
+      return !hit ? null : hit.exact ? `${JSON.stringify(k)} → "${hit.code}"` : `${JSON.stringify(k)} → "${hit.code}" (closest: ${hit.closest} — a misspelling: say so in the standfirst)`;
+    });
+    throw new Error(
+      `no shape for ${off.join(", ")}: the map holds ${known.size} countries keyed by ISO alpha-3 (FRA, DEU…), and key is that code, not the name${fixes.some(Boolean) ? `. Use: ${fixes.filter(Boolean).join(", ")} — iso3Of(names, here) from ./countries.mjs gives them` : ""}; or leave the row out and say so`,
+    );
+  }
   const cells = [];
   const land = [];
   for (const ft of features) {

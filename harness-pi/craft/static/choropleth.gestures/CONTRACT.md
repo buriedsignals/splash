@@ -18,7 +18,7 @@ a render spends no tile and needs no key (orchestrator choice for this phase, pe
 | Field | What it is |
 |---|---|
 | `eyebrow` | The rubric above the title, two to four words, in the story's language. |
-| `rows` | THE JOIN. `{ key, name, value }` per country: `key` the ISO alpha-3 code read from the data column holding such codes (`FRA`, `DEU`…), `name` the country in the story's language, `value` the rate or share the colour classes (`null` where the source does not report it — drawn as no data, never as the lowest class). |
+| `rows` | THE JOIN. `{ key, name, value }` per country: `key` the ISO alpha-3 code read from the data column holding such codes (`FRA`, `DEU`…) — with no such column, `iso3Of(names, here)` from `./countries.mjs` turns the country names into them — `name` the country in the story's language, `value` the rate or share the colour classes (`null` where the source does not report it — drawn as no data, never as the lowest class). |
 | `breaks` | Optional: 2 to 6 rising class limits in the measure's units. Use the takeaway's own threshold as one ("above 94 %" → `94`); a `reference` and a filter's "above X" both sit on a break. Leave it out for round steps. |
 | `missingLabel` | The key's word for a place with no value ("no data"). |
 | `gestures` | The staging, in story order (below). |
