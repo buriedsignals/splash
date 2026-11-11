@@ -88,6 +88,16 @@ describe("refusal hints", () => {
     expect(refusalHint('REFUSED — "whole" has already been declared')).toMatch(/declares "whole" twice.*write_file/);
   });
 
+  // stress-t web map (Osaurus, 2026-11-11): the refusal said "a label too long, two marks answering the same"; the
+  // failures were the phone frame's height, and the 12B edited the reading line eleven times.
+  it("should send a phone overflow to a shorter limits form, not to the labels", () => {
+    expect(
+      refusalHint(
+        "  - phone 375x812: no vertical scroll inside the visual  — document 851px in a 812px window (overflow 39px)\nREFUSED — the page rendered but the chart-web verification failed (2)",
+      ),
+    ).toMatch(/phone.*39px.*limits.*shorter form.*title's first form stays/i);
+  });
+
   it("should add nothing to a refusal that does not ask for shorter forms", () => {
     expect(refusalHint("error: these country names match no country on the map")).toBe("");
   });

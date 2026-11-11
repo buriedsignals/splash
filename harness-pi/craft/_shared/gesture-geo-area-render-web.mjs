@@ -73,12 +73,15 @@ export async function renderGeoAreaWeb(here, variant) {
     const title = plain(titles[0]);
     const eyebrow = plain(beat.eyebrow);
     const caveat = plain(limits[0]);
+    // stress-t web map (Osaurus, 2026-11-11): the phone frame overflowed by 39-95px under a long caveat, and the
+    // 12B cut the journalist's limits to pass; a shorter form it had added was never drawn. The phone draws the last.
+    const caveatShort = plain(limits[limits.length - 1]);
     const source = plain(beat.source);
     const alt = plain(typeof beat.alt === "function" ? beat.alt(rows) : beat.alt);
     const textPerRegister = {
       display: title,
       eyebrow,
-      body: `${caveat} ${restNotes.join(" ")} ${restLabel} ${shaped.flatMap((c) => [c.legend, c.chip, c.note]).join(" ")} ${source} ${Object.values(details).join(" ")}`,
+      body: `${caveat} ${caveatShort} ${restNotes.join(" ")} ${restLabel} ${shaped.flatMap((c) => [c.legend, c.chip, c.note]).join(" ")} ${source} ${Object.values(details).join(" ")}`,
       axis: `${unit} ${classLabels.join(" ")} ${beat.missingLabel ?? ""} ${rows.map((r) => r.key).join(" ")}`,
       annot: `${rows.map((r) => r.name).join(" ")} ${restNotes.join(" ")}`,
       value: geo.marks.map((m) => format(m.value)).join(" "),
@@ -111,6 +114,7 @@ export async function renderGeoAreaWeb(here, variant) {
             title,
             eyebrow,
             caveat,
+            caveatShort,
             source,
             unit,
             alt,

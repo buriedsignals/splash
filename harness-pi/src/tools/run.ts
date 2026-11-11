@@ -109,6 +109,9 @@ export function refusalHint(output: string): string {
   const twice = output.match(/"([^"]+)" has already been declared/);
   if (twice)
     return `\nhint: beat.mjs declares "${twice[1]}" twice — an edit added a declaration without removing the old one. Read beat.mjs, then rewrite it whole with write_file, each name declared once.`;
+  const phone = output.match(/phone \d+x\d+: no vertical scroll[^\n]*?overflow (\d+)px/);
+  if (phone)
+    return `\nhint: the failures are the phone frame's height, not a label: on a phone the page is ${phone[1]}px too tall. Make limits a list and add a shorter form AFTER the first one — the phone draws the last form; shorten reading too. The title's first form stays the journalist's takeaway, word for word.`;
   return /shorter forms/i.test(output)
     ? "\nhint: the copy fields (title, limits, callout, reading, …) are lists of forms, longest first. Add shorter forms AFTER the first one, to limits and reading first: the plate shortens those before the headline. The title's first form stays the journalist's takeaway, word for word."
     : "";

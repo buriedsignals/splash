@@ -76,6 +76,7 @@ export function GestureGeoAreaWeb({
   title,
   eyebrow,
   caveat,
+  caveatShort,
   source,
   unit,
   alt,
@@ -103,6 +104,8 @@ export function GestureGeoAreaWeb({
   title: string;
   eyebrow: string;
   caveat: string;
+  /** The last form of limits, drawn instead of `caveat` on a phone-wide page. */
+  caveatShort?: string;
   source: string;
   unit: string;
   alt: string;
@@ -183,6 +186,8 @@ export function GestureGeoAreaWeb({
     `${SCOPE} .gesture-controls { flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 0 28px; margin-top: 4px; }`,
     `${SCOPE} .gesture-controls > fieldset { flex: 0 1 auto; max-width: 100%; }`,
     `${SCOPE} .gesture-notes { flex: 0 0 auto; display: grid; }`,
+    `${SCOPE} .caveat-short { display: none; }`,
+    `@media (max-width: 480px) { ${SCOPE} .caveat-long.has-short { display: none; } ${SCOPE} .caveat-short { display: inline; } }`,
     `${SCOPE} .gesture-notes > div { grid-area: 1 / 1; align-self: start; }`,
     `${SCOPE} .gw-note { visibility: hidden; }`,
     `${SCOPE} .chart-rest-notes { margin: 4px 0 0; }`,
@@ -510,7 +515,8 @@ export function GestureGeoAreaWeb({
           {title}
         </h2>
         <p className="chart-caveat" style={{ ...regs.body, margin: 0 }}>
-          {caveat}
+          <span className={caveatShort && caveatShort !== caveat ? "caveat-long has-short" : "caveat-long"}>{caveat}</span>
+          {caveatShort && caveatShort !== caveat ? <span className="caveat-short">{caveatShort}</span> : null}
         </p>
         {restNotes.length ? (
           <p className="chart-rest-notes" style={{ ...regs.body }}>
