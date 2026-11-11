@@ -58,7 +58,7 @@ export interface RunOptions {
 }
 
 export interface RunReport {
-  outcome: "done" | "stalled" | "blocked" | "crafted";
+  outcome: "done" | "stalled" | "blocked" | "crafted" | "storyboarded";
   phase: string;
   reason: string;
   steps: { owner: string; stop: string; seconds: number }[];
@@ -137,10 +137,8 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
         steps,
         transcript,
       };
-    // A craft kit's measurement ends at its render: designer and delivery were measured in full runs and cost
-    // minutes per run (SPLASH_STOP_AFTER_CRAFT=1, eval only).
-    if (process.env.SPLASH_STOP_AFTER_CRAFT === "1" && s.phase === "production" && /Invoke designer/.test(s.resume))
-      return { outcome: "crafted", phase: s.phase, reason: s.resume, steps, transcript };
+    const measured = measuredStop(s, process.env);
+    if (measured) return { outcome: measured, phase: s.phase, reason: s.resume, steps, transcript };
     if (s.status === "blocked")
       return {
         outcome: "blocked",
@@ -586,4 +584,15 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
     sess.dispose();
     say(`DELIVER stop: ${res.stop}`);
   }
+}
+
+/**
+ * Where a segmented measurement ends (eval only). A craft kit's ends at its render: designer and delivery were
+ * measured in full runs and cost minutes per run (SPLASH_STOP_AFTER_CRAFT=1). A storyboard fix's ends when Gate 2
+ * closes and the run reaches production (SPLASH_STOP_AFTER_STORYBOARD=1).
+ */
+export function measuredStop(s: { phase: string; resume: string }, env: Record<string, string | undefined>): "crafted" | "storyboarded" | undefined {
+  if (env.SPLASH_STOP_AFTER_STORYBOARD === "1" && s.phase === "production") return "storyboarded";
+  if (env.SPLASH_STOP_AFTER_CRAFT === "1" && s.phase === "production" && /Invoke designer/.test(s.resume)) return "crafted";
+  return undefined;
 }
