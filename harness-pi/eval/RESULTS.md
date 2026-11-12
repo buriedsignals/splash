@@ -929,3 +929,16 @@ more than the harness. Per the exit criterion set before the batch, one harness 
 
 Owner of the rest (Tom's triage): drawing TWh where the takeaway is a share, and chart-beat running past the cap,
 are the model's choices — **Tune**, not Harness.
+
+### Fresh batch 1 on Osaurus (2026-11-12, on battery with a 30% guard) — four stories never run before
+
+| Story | Result | Time | Triage |
+|---|---|---|---|
+| stress-x-tunisian-water | production capped (chart-beat) | 2703 s | **Tune**: the kept `beat.mjs` drops `gestures` from the default export after a `rows` redeclaration; the refusals already name the field and the fix. |
+| stress-v-top-emitters | storyboard stopped (14 refusals) | 809 s | **Harness**, fixed in `3f7901620`: `record_subject` blamed a real id when only medium/format were "none"; the scripted journalist answered the survey-subject confirmation with its takeaway rebuttal. |
+| stress-ad-polish-hospital-beds | delivered | 1733 s | Near gold: 8 of 16 voivodeships, said in the standfirst; title right. |
+| stress-p-transport-ridership | delivered | 2126 s | Near gold: Lisboa accented, bracket "214 of 394 million". The "unattributed" credit is the sheet's own. |
+
+Both delivered renders carry the compare gesture's copy (the compared length laid in the subject's
+band, `DirectedGestureColumns.tsx` copies): it reads as a second bar inside the subject's. It is the
+grammar working as designed, not a defect — whether it reads well is a design question for Rémy.
