@@ -180,7 +180,9 @@ export function resolveReadable(bases: Bases, path: string): string {
       : [];
     if (held.length === 1) abs = realpathSync(held[0]);
   }
-  // The newsroom profile at the root is what palette and preflight read the house colours from.
+  // The newsroom profile at the root is what palette and preflight read the house colours from; asked for
+  // under shared/ or source/, it is still that one (stress-v, 2026-11-13: three misses stopped the step).
+  if (basename(abs) === "NEWSROOM.md" && !existsSync(abs)) abs = join(realpathSync(bases.root), "NEWSROOM.md");
   if (abs === join(realpathSync(bases.root), "NEWSROOM.md")) return abs;
   const allowed = [
     bases.storyDir,

@@ -115,6 +115,14 @@ describe("file tools", () => {
     expect(textOf(r)).toMatch(/^---\nname: chart-beat/);
   });
 
+  it("should read the newsroom profile asked for under shared/", async () => {
+    const { writeFileSync } = await import("node:fs");
+    writeFileSync(join(bases.root, "NEWSROOM.md"), "---\nname: Test news\n---\n");
+    const { readFile: read } = fsTools(bases);
+    const r = await call(read, { path: "shared/editorial/NEWSROOM.md" });
+    expect(textOf(r)).toContain("Test news");
+  });
+
   // stress-v (Qwen3.5-9B, 2026-11-13): "references/type-survey.md", refused, then twelve turns listing shared/.
   it("should find a skill reference asked for by its path inside the skill", async () => {
     const { readFile: read } = fsTools(bases);
