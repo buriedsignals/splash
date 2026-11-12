@@ -89,6 +89,32 @@ describe("applyStoryboard", () => {
   it("should refuse a beat.mjs with no default export, saying how to write one", () => {
     expect(() => applyStoryboard(undefined, beat)).toThrow(/beat\.mjs has no default export.*export default \{/);
   });
+
+  // stress-p (E4B, 2026-11-12): French gesture notes on an English plate; only the title's shorter forms were held.
+  const english = () => {
+    const root = mkdtempSync(join(tmpdir(), "splash-lang-"));
+    const dir = join(root, "beats", "1");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(root, "STORYBOARD.md"), `---\nlanguage: en\n---\n`);
+    return dir;
+  };
+
+  it("should refuse a gesture note written in another language than the story's, naming where it is", () => {
+    const beat = { eyebrow: "Urban transport", gestures: [{ do: "compare", note: "Plus de deux fois les 96 millions pour Porto" }] };
+    expect(() => applyStoryboard(beat, english())).toThrow(/gestures\[0\]\.note.*"Plus de deux fois.*\(en\)/);
+  });
+
+  it("should accept a row name copied from the data, whatever its language", () => {
+    const dir = english();
+    writeFileSync(join(dir, "data.json"), JSON.stringify({ columns: [{ name: "country" }, { name: "v" }], rows: [["Saint-Vincent-et-les-Grenadines et les autres", 1]] }));
+    const beat = { gestures: [{ do: "highlight", mark: "Saint-Vincent-et-les-Grenadines et les autres" }] };
+    expect(() => applyStoryboard(beat, dir)).not.toThrow();
+  });
+
+  it("should accept a note in the story's language that names a foreign place", () => {
+    const beat = { eyebrow: "Urban transport", gestures: [{ do: "compare", note: "More than twice Rio de Janeiro's trips" }] };
+    expect(() => applyStoryboard(beat, english())).not.toThrow();
+  });
 });
 
 describe("applyStoryboard on the title's shorter forms", () => {

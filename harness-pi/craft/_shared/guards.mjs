@@ -50,6 +50,25 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
   });
   if (foreign !== undefined)
     throw new Error(`the title's shorter forms must be in the storyboard's language (${language}), like the takeaway: "${foreign}" is not. Write each shorter form as a shortening of "${takeaway}"`);
+  // Every other word the plate prints (eyebrow, unit, gesture notes, labels) is in that language too: the E4B wrote
+  // French notes and a Portuguese eyebrow on an English plate (stress-p, 2026-11-12). The title, standfirst and credit
+  // are held above in the journalist's own words.
+  if (!STOPWORDS[language]) return;
+  const held = new Set([title, standfirst, source, "rows", "check", "format", "alt"]);
+  const strays = [];
+  const walk = (value, path) => {
+    if (typeof value === "string") strays.push([path, value]);
+    else if (Array.isArray(value)) value.forEach((v, i) => walk(v, `${path}[${i}]`));
+    else if (value && typeof value === "object") for (const [k, v] of Object.entries(value)) walk(v, path ? `${path}.${k}` : k);
+  };
+  for (const [k, v] of Object.entries(beat)) if (!held.has(k)) walk(v, k);
+  // A row or series name copied from the data is the journalist's data, not the plate's words.
+  const dataPath = join(here, "data.json");
+  const table = existsSync(dataPath) ? JSON.parse(readFileSync(dataPath, "utf8")) : {};
+  const cells = new Set([...(table.columns ?? []).map((c) => String(c.name)), ...(table.rows ?? []).flat().map(String)]);
+  const stray = strays.find(([, text]) => { const said = !cells.has(text) && languageOf(text); return said && said !== language; });
+  if (stray)
+    throw new Error(`${stray[0]} is "${stray[1]}", not in the storyboard's language (${language}): write every word on the plate in that language, like the takeaway "${takeaway}"`);
 }
 
 /** Function words that tell a headline's language apart (no figures, no names). */
