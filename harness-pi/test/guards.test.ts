@@ -323,3 +323,13 @@ describe("assertHeadlineNumbersDrawn on a computed figure", () => {
     expect(() => assertHeadlineNumbersDrawn("France lost 11.8 points", [10, 40, 55], "points", join(dir, "data.json"))).toThrow(/in no cell of data\.json: it is computed/);
   });
 });
+
+// gx-connected-scatter batch 3 (2026-11-12): Germany's 11.71-point move stood in for France's 11.8-point loss.
+describe("assertHeadlineNumbersDrawn at the precision the title writes", () => {
+  it("should refuse a figure written to one decimal that no mark rounds to", () => {
+    expect(() => assertHeadlineNumbersDrawn("France lost 11.8 points", [17.8, 47.3, 11.0, 61.0, 11.71], "points", "/nonexistent")).toThrow(/11\.8/);
+  });
+  it("should accept a figure written to one decimal that a mark rounds to", () => {
+    expect(() => assertHeadlineNumbersDrawn("France lost 11.8 points", [17.8, 47.3, 11.0, 61.0, 11.76], "points", "/nonexistent")).not.toThrow();
+  });
+});

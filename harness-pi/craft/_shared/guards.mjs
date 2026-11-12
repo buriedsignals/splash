@@ -166,13 +166,21 @@ export function assertHeadlineNumbersDrawn(headline, drawn, label = "marks", dat
   const lo = Math.min(...values) / 2;
   const hi = Math.max(Math.max(...values) * 2, total * 1.2);
   // A digit glued to letters is part of a name (CO2, PM2.5, H2O), not a figure the title states.
+  const places = new Map();
   const stated = [...String(headline).matchAll(/(?<![\p{L}\d])(\d{1,3}(?:[ ,  ]\d{3})+|\d+(?:[.,]\d+)?)(?![\p{L}\d])(\s*%)?/gu)]
     .filter((m) => !m[2])
-    .map((m) => Number(m[1].replace(/[ ,  ](?=\d{3}\b)/g, "").replace(",", ".")))
+    .map((m) => {
+      const text = m[1].replace(/[ ,  ](?=\d{3}\b)/g, "").replace(",", ".");
+      const n = Number(text);
+      places.set(n, Math.max(places.get(n) ?? 0, text.split(".")[1]?.length ?? 0));
+      return n;
+    })
     .filter((n) => !(Number.isInteger(n) && n >= 1700 && n <= 2100) && n >= lo && n <= hi);
   // A round figure ("8 900 centrales") stands for anything it rounds from: its unit is the tolerance.
   const unit = (n) => (Number.isInteger(n) && n >= 100 ? 10 ** (String(n).match(/0*$/)[0].length) : 0);
-  const near = (v, n) => Math.abs(v - n) <= Math.max(0.5, Math.abs(n) * 0.005, unit(n));
+  // A figure written with decimals stands for what rounds to it: "11.8" is 11.75 to 11.85. At ±0.5 it took Germany's
+  // 11.71-point move for France's 11.8-point loss, which no mark drew (gx-connected-scatter, Osaurus, 2026-11-12).
+  const near = (v, n) => Math.abs(v - n) <= (places.get(n) ? 0.5 * 10 ** -places.get(n) + 1e-9 : Math.max(0.5, Math.abs(n) * 0.005, unit(n)));
   // A figure the title states is a drawn value, their total, or the sum or gap of two drawn values (a change, a lead).
   // Every one must be: the model's check() used to stand behind the title, and it no longer decides (Lisboa drawn at
   // 150 under a title stating 214 of 394 passed the earlier majority rule).
@@ -206,7 +214,7 @@ export function computedHint(missing, dataPath) {
   const cells = rows.flatMap((r) => (Array.isArray(r) ? r : Object.values(r ?? {}))).map(Number).filter(Number.isFinite);
   const absent = missing.filter((n) => !cells.some((c) => Math.abs(Math.abs(c) - n) <= Math.max(0.05, n * 0.005)));
   if (!absent.length) return undefined;
-  return `${absent.join(", ")} is in no cell of data.json: it is computed from it (a share, a ratio, a change). Map each row to that computed measure and draw it as the marks — the axis then carries ${absent[0]} — or let the title state figures the drawn columns hold`;
+  return `${absent.join(", ")} is in no cell of data.json: it is computed from it (a share, a ratio, a change). Map each row to that computed measure and draw it as the marks: a mark, or the move between two of the same thing's marks, then carries ${absent[0]}. The title stays word for word`;
 }
 
 /**
