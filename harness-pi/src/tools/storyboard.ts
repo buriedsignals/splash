@@ -622,7 +622,17 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       // formes", G2 on the 26B: six refusals of a correct "none"). Their answer naming the shape is ownership.
       const named = SHAPE_WORDS[shape];
       const answers = [dialogue.lastJournalist, ...(dialogue.history ?? []).map((h) => h.answer)];
-      if (!named || !answers.some((a) => named.test(a ?? ""))) assertJournalistOwns("claim shape", shape, dialogue);
+      if (!named || !answers.some((a) => named.test(a ?? ""))) {
+        // The answer names exactly one other shape: say which, so the refusal ends the loop instead of re-asking.
+        // "None of those: it compares China with the sum…" refuses every shape; its explanation is not a shape.
+        const shapes = Object.keys(SHAPE_WORDS).filter((k) => SHAPE_WORDS[k].test(dialogue.lastJournalist ?? ""));
+        const given = shapes.includes("none") ? "none" : shapes.length === 1 ? shapes[0] : undefined;
+        if (given && given !== shape)
+          throw new Error(
+            `the journalist did not accept ${shape}: their answer names the shape "${given}" (${JSON.stringify((dialogue.lastJournalist ?? "").slice(0, 80))}). Do not ask again: record shape ${given}${given === "none" ? " with no column, entity or versus" : ""}.`,
+          );
+        assertJournalistOwns("claim shape", shape, dialogue);
+      }
       const fields: Record<string, string> = { claimShape: shape };
       // "none" records no claim: a column or rows the model added would only be refused.
       if (shape === "none") column = entity = versus = direction = undefined;

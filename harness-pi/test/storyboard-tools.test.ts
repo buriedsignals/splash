@@ -345,6 +345,16 @@ describe("claim shape", () => {
     ).rejects.toThrow(/did not accept/);
   });
 
+  // stress-v (Qwen3.5-9B, 2026-11-12): "None of those: it compares China with the sum…" refused "comparison" three times
+  // with "Shall I record claim shape: comparison?", which the journalist answered with the same sentence.
+  it("should name the shape the journalist's answer gives when it refuses another", async () => {
+    dialogue.lastProposal = "Is this a maximum, a minimum, a comparison or a total?";
+    dialogue.lastJournalist = "None of those: it compares China with the sum of the next five countries. China is greater.";
+    await expect(
+      call(storyboardTools(bases, dialogue).recordClaim, { shape: "comparison", column: "trips_millions", entity: "Lisboa", versus: "Porto", direction: "greater" }),
+    ).rejects.toThrow(/did not accept.*names the shape "none".*record shape none/);
+  });
+
   // stress-ad (2026-11-12): the claim was beds per resident, recorded as shape none with no column, and the E4B drew
   // absolute beds under a "third per resident" title — no guard knew the measure. Code reads it from the answer.
   it("should record the ratio the journalist named as one column divided by another", async () => {
