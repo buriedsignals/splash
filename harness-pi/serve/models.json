@@ -139,6 +139,37 @@
             "cacheRead": 0,
             "cacheWrite": 0
           }
+        },
+        {
+          "id": "qwen3.5-9b-optiq-4bit",
+          "name": "Qwen3.5 9B OptiQ 4-bit (Osaurus, MLX)",
+          "input": [
+            "text",
+            "image"
+          ],
+          "reasoning": true,
+          "contextWindow": 65536,
+          "maxTokens": 16384,
+          "inputLimits": {
+            "images": {
+              "resize": {
+                "maxWidth": 1280,
+                "maxHeight": 1280,
+                "maxBytes": 1048576
+              }
+            }
+          },
+          "samplingParams": {
+            "temperature": 0.7,
+            "top_p": 0.8,
+            "top_k": 20
+          },
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          }
         }
       ]
     }

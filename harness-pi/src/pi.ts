@@ -28,6 +28,9 @@ export const ARMS: Record<string, { provider: string; id: string; modelsPath: st
   osaurus: { provider: "splash-local", id: "gemma-4-12b-it-optiq-4bit", modelsPath: join(SERVE_DIR, "models.json"), tier: "12b" },
   // The ladder's next rung down (Tom, REMI: shrink step by step), same runner and quantisation as the 12B.
   "osaurus-e4b": { provider: "splash-local", id: "gemma-4-e4b-it-optiq-4bit", modelsPath: join(SERVE_DIR, "models.json"), tier: "12b" },
+  // Tom's shipped main model (going-sovereign: Qwen3.5-9B beat a 4B and another 9B on his hardest phase); sampling is the
+  // model card's non-thinking setting.
+  "osaurus-qwen": { provider: "splash-local", id: "qwen3.5-9b-optiq-4bit", modelsPath: join(SERVE_DIR, "models.json"), tier: "12b" },
   // The 26B-A4B on the local server (T3 run locally first, 2026-11-07: free, and the Mac is the target).
   local26: { provider: "splash-local", id: "gemma-4-26b", modelsPath: join(SERVE_DIR, "models.json"), tier: "26b" },
   // The teacher is Gemma 4 26B-A4B (Tom, REMI §2/§8); the 31B stays for a gate the 26B fails.
