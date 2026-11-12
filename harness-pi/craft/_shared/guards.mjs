@@ -446,3 +446,32 @@ export function rowFacts(here) {
   }
   return facts;
 }
+
+/**
+ * Every entity of data.json is a panel, or the plate says how many were left out. A 12B beat cleared the
+ * hairline refusal by dropping the five smallest of sixteen countries — the subject among them — under a
+ * title about all sixteen, and nothing said they were missing.
+ * @param {string[]} names the panel names drawn
+ * @param {string} here the beat folder
+ * @param {{ foldNote?: unknown, limits?: unknown }} beat
+ */
+export function assertPanelsAccounted(names, here, beat) {
+  const dataPath = join(here, "data.json");
+  if (!existsSync(dataPath)) return;
+  const table = JSON.parse(readFileSync(dataPath, "utf8"));
+  const columns = table.columns ?? [];
+  let at = columns.findIndex((c) => c.name === "entity");
+  if (at < 0) at = columns.findIndex((c) => c.type === "text");
+  if (at < 0) return;
+  const all = [...new Set((table.rows ?? []).map((r) => r[at]).filter((v) => typeof v === "string" && v.trim()))];
+  const dropped = all.filter((e) => !names.includes(e));
+  if (!dropped.length) return;
+  const said = typeof beat.foldNote === "function" ||
+    [beat.limits].flat().some((l) => typeof l === "string" && l.includes(String(all.length)) && l.includes(String(all.length - dropped.length)));
+  if (said) return;
+  throw new Error(
+    `panels draw ${all.length - dropped.length} of the ${all.length} entities in data.json and nothing says so; missing: ${dropped.join(", ")}. ` +
+      `If the takeaway is about all of them, draw them all — a panel too small to see means the scale is wrong for the claim: draw the measure the takeaway names (a share, a rate) so every panel shows. ` +
+      `If leaving some out is right, keep the ones the takeaway names and add foldNote: (drawn, all) => \`\${drawn} of \${all} …\` in the story's language.`,
+  );
+}

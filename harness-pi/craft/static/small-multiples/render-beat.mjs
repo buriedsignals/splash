@@ -19,7 +19,7 @@ import { directionReachable, readRunDirection } from "#shared/design-base/run-di
 import { assertBeatMayEnter, directedFrame, exportSizeFromArgv, nameAtSize } from "#shared/chart-beat/directed-size.mjs";
 import { DirectedSmallMultiples } from "./DirectedSmallMultiples.tsx";
 import beat from "./beat.mjs";
-import { applyStoryboard, assertNumbers, assertLegibleLabels, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, errorText } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertLegibleLabels, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, assertPanelsAccounted, errorText } from "./guards.mjs";
 applyStoryboard(beat, dirname(fileURLToPath(import.meta.url)));
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -42,6 +42,7 @@ const names = beat.panels.map((p) => p.name);
 const doubled = names.filter((n, i) => names.indexOf(n) !== i);
 if (doubled.length)
   throw new Error(`two panels are both named ${doubled[0]}: each panel is one entity — filter data.json's rows so each name appears once`);
+assertPanelsAccounted(names, HERE, beat);
 const largest = Math.max(...beat.panels.flatMap((p) => [p.from, p.to]));
 const smallest = Math.min(...beat.panels.flatMap((p) => [p.from, p.to]));
 if (smallest < 0)

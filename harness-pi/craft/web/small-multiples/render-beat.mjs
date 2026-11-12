@@ -13,7 +13,7 @@ import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
 import { DirectedSmallMultiplesWeb } from "./DirectedSmallMultiplesWeb.tsx";
-import { applyStoryboard, assertNumbers, assertOnePerX, assertHeadlineNumbersDrawn, assertDrawsClaimColumn } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertOnePerX, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, assertPanelsAccounted } from "./guards.mjs";
 import { chartWeb, plain, refusing, renderBeatWeb, storyLanguage } from "./web.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -35,6 +35,7 @@ await refusing(HERE, async () => {
   if (beat.panels.length > 12) throw new Error(`panels holds ${beat.panels.length} members; draw at most 12 (keep the ones the takeaway is about, and say how many of how many in limits)`);
   const names = beat.panels.map((p) => String(p.name));
   if (new Set(names).size !== names.length) throw new Error(`two panels have the same name: give each member ONE panel`);
+  assertPanelsAccounted(names, HERE, beat);
   for (const p of beat.panels) {
     if (!Array.isArray(p.series)) throw new Error(`panel ${p.name} has no series: give it { name, series: [{ year, value }] }`);
     assertNumbers(p.series.map((s) => [`${p.name} ${s.year}`, s.value]));
