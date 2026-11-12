@@ -942,3 +942,20 @@ are the model's choices — **Tune**, not Harness.
 Both delivered renders carry the compare gesture's copy (the compared length laid in the subject's
 band, `DirectedGestureColumns.tsx` copies): it reads as a second bar inside the subject's. It is the
 grammar working as designed, not a defect — whether it reads well is a design question for Rémy.
+
+### Next rung: Gemma 4 E4B on Osaurus, the same four fresh stories (2026-11-12) — arm `osaurus-e4b` (`737e40658`)
+
+Journalist classifier kept on the 12B so the instrument matches the 12B batch. stress-v's first run was lost to a pause
+(killed, not suspended) and re-run from scratch.
+
+| Story | E4B | 12B (fresh batch 1) |
+|---|---|---|
+| stress-x-tunisian-water | ❌ production capped, 2210 s | ❌ capped |
+| stress-v-top-emitters (video) | ⚠️ delivered, 2208 s: the arithmetic is right (12,289 − 11,652 = 637), the fold says "11 / 215", but the unit has no "tonnes" ("12,289 million") | ❌ storyboard (harness, since fixed) |
+| stress-ad-polish-hospital-beds | ❌ delivered, 2311 s, **not faithful**: draws absolute beds (Mazowieckie first) under a title that says per resident it is third; the rings on Śląskie and Łódzkie point at shorter bars | ⚠️ near gold |
+| stress-p-transport-ridership | ❌ delivered, 1101 s: the two notes are in **French** on an English chart ("214 millions sur les 394 millions au total"), eyebrow in Portuguese | ⚠️ near gold |
+
+**E4B: 3/4 delivered, 0/4 gold. 12B: 2/4 delivered, 2/4 near gold.** The exit criterion set before the batch
+counted deliveries, and by it the E4B passes; by the renders it regresses on faithfulness. The 12B stays the student.
+Tune candidates the two rungs share: choosing the measure the takeaway names (12B: TWh for a share in batch 4; E4B:
+absolute beds for a per-resident rank), and the language of what the model writes on the plate.
