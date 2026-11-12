@@ -909,3 +909,23 @@ touching the lines.
 
 Still open: stress-t's storyboard (≈ 1,300 s). r8's bicycle comparison line: the model drew pedelecs alone, which
 is a choice of the beat, not a harness defect.
+
+### Held-out batch 4 on Osaurus (2026-11-12, on AC power, r8 paused mid-run) — after the four fixes above
+
+| Story | Variant | Outcome | Time | The render, looked at |
+|---|---|---|---|---|
+| gx-connected-scatter | full | capped in chart-beat | 2,704 s | — |
+| gx-small-multiples | full | delivered | 2,703 s | **not gold**: 11 of 16 countries, the subject (Denmark) dropped, TWh on one 0–550 scale where the takeaway is a share |
+| stress-t-europe-recycling | web-map | delivered | 2,705 s | **gold**: "Macedonia 18.4 %" labelled |
+| r8-chart-static-german-road-deaths-by-mode | static | capped | — | the run was frozen at 38 min and resumed past the cap; it does not count |
+
+**2/4 delivered, 1/4 gold.** The same stories flip between batches (small-multiples gold in batches 2 and 3, not
+in 4; the scatter delivered in 3, capped in 4): four batches on these four stories now measure the 12B's variance
+more than the harness. Per the exit criterion set before the batch, one harness fix, then fresh stories.
+
+- `fddeca0bd`: the small-multiples kits (static, web) refuse panels that leave out entities of data.json without
+  `foldNote` or a "drawn of all" standfirst, naming the missing ones and pointing to the measure the takeaway names.
+  The kept beat is now refused ("11 of the 16 … missing: Czechia, Denmark, Greece, Ireland, Portugal").
+
+Owner of the rest (Tom's triage): drawing TWh where the takeaway is a share, and chart-beat running past the cap,
+are the model's choices — **Tune**, not Harness.
