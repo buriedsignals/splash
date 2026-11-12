@@ -226,9 +226,12 @@ export function createGeo({ variant, rows, breaks, cameras = {}, seats = {}, gro
     const s = { ...state, rings: [...state.rings], named: [...state.named], notes: [...state.notes] };
     switch (g.do) {
       case "highlight":
-        // One accent carries the subject; a highlight on any other place rings it in ink (emphasis by ring).
-        if (g.subject !== undefined && keys[0] !== resolve(g.subject)) s.rings = uniq([...s.rings, keys[0]]);
-        else s.accent = keys[0];
+        // One accent carries the subject; a highlight on any other place rings it in ink (emphasis by ring) and names
+        // it with its value: stress-t on Osaurus (2026-11-12) ringed Macedonia, the title's lowest, and left it unread.
+        if (g.subject !== undefined && keys[0] !== resolve(g.subject)) {
+          s.rings = uniq([...s.rings, keys[0]]);
+          s.named = uniq([...s.named, keys[0]]);
+        } else s.accent = keys[0];
         if (g.note) s.notes.push({ key: keys[0], text: g.note, kind: "note" });
         break;
       case "name":

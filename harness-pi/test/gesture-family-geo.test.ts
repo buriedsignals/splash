@@ -625,3 +625,13 @@ describe("choropleth rows keyed by name", () => {
     expect(() => layoutCells("choropleth", { rows, shapes, box })).toThrow(/"Holland" → "NLD", "Belgiumm" → "BEL" \(closest: belgium — a misspelling/);
   });
 });
+
+// stress-t on Osaurus (2026-11-12): Macedonia, the title's lowest, was highlighted beside the subject, ringed, and
+// left without its name or value.
+describe("a highlight beside the subject", () => {
+  it("should name the place it rings", () => {
+    const geo = choropleth();
+    const state = geo.apply(geo.rest(), { do: "highlight", marks: ["DEU"], subject: "FRA" });
+    expect(state.named).toContain("DEU");
+  });
+});
