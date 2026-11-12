@@ -176,6 +176,8 @@ export function gapsForModel(gaps: string[]): string[] {
         ? `${g.split(":")[0]}: interaction is missing — record_slot chosen records it from the journalist's choice`
         : /proves is missing/.test(g)
           ? `${g.split(":")[0]}: proves is missing — it is filled from the takeaway once that is recorded`
+          : /^no slot/.test(g)
+            ? `no slot yet — survey what this data could show, then ask the journalist "Should this be a chart, a map or an image?" and record their answer with record_slot 1 medium`
           : /custom or Datawrapper was never chosen/.test(g)
             ? `${g.split(":")[0]}: producer is missing — ask the journalist "Custom or Datawrapper?", then record their answer with record_slot ${g.split(":")[0]} producer (custom or datawrapper)`
             : g,

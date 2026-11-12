@@ -171,6 +171,15 @@ export function resolveReadable(bases: Bases, path: string): string {
         : "";
     if (candidate && existsSync(candidate)) abs = realpathSync(candidate);
   }
+  // A skill's own reference asked for by its path inside the skill ("references/type-survey.md") is that
+  // skill's, when exactly one skill holds it (stress-v, 2026-11-13: twelve turns lost listing shared/).
+  if (!existsSync(abs) && !isAbsolute(path)) {
+    const skills = join(bases.root, "skills");
+    const held = existsSync(skills)
+      ? readdirSync(skills).map((d) => join(skills, d, path)).filter((c) => existsSync(c))
+      : [];
+    if (held.length === 1) abs = realpathSync(held[0]);
+  }
   // The newsroom profile at the root is what palette and preflight read the house colours from.
   if (abs === join(realpathSync(bases.root), "NEWSROOM.md")) return abs;
   const allowed = [

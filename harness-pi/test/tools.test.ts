@@ -115,6 +115,13 @@ describe("file tools", () => {
     expect(textOf(r)).toMatch(/^---\nname: chart-beat/);
   });
 
+  // stress-v (Qwen3.5-9B, 2026-11-13): "references/type-survey.md", refused, then twelve turns listing shared/.
+  it("should find a skill reference asked for by its path inside the skill", async () => {
+    const { readFile: read } = fsTools(bases);
+    const r = await call(read, { path: "references/type-survey.md" });
+    expect(textOf(r).length).toBeGreaterThan(100);
+  });
+
   it("should refuse a read outside the story, skills/, shared/ and proof/", async () => {
     const { readFile: read } = fsTools(bases);
     await expect(call(read, { path: "/etc/hosts" })).rejects.toThrow(

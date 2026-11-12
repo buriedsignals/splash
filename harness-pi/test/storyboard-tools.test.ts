@@ -837,6 +837,11 @@ describe("gaps the harness fills", () => {
 
   // stress-x (Qwen3.5-9B, 2026-11-12): told only that the producer "was never chosen", it re-recorded credit
   // and placement for 24 turns and never asked the journalist.
+  it("should name the question and the tool when no slot is open yet", async () => {
+    const { gapsForModel } = await import("../src/tools/storyboard.ts");
+    expect(gapsForModel(["no slot: nothing would be produced"])[0]).toMatch(/ask the journalist.*chart, a map or an image.*record_slot 1 medium/i);
+  });
+
   it("should name the question and the tool for a producer never chosen", async () => {
     const { gapsForModel } = await import("../src/tools/storyboard.ts");
     expect(
