@@ -314,6 +314,8 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
     await dropUnsizedSizes(path);
     const { meta } = parseStoryboard(readFileSync(path, "utf8"));
     const gaps = gapsForModel(checkStoryboard(meta));
+    if (!gaps.length && !existsSync(join(bases.storyDir, "SUBJECTS.md")))
+      gaps.push("the survey of other subjects is open — propose ONE other angle this data supports to the journalist, then record it with record_subject");
     return gaps.length
       ? `Still open (${gaps.length}): ${gaps.slice(0, 4).join(" | ")}`
       : "Gate 2 can close: every field is recorded.";

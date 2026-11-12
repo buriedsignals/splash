@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "bun:test";
-import { cpSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
@@ -883,5 +883,39 @@ describe("the journalist's format", () => {
     dialogue.lastJournalist = "Web.";
     await call(tools.recordSlot, { slot: "1", field: "format", value: "web" });
     expect(meta().slots[0].format).toBe("web");
+  });
+});
+
+// stress-v (Qwen3.5-9B, 2026-11-12): every slot field recorded, the tool said "Gate 2 can close" while the survey of other
+// subjects was still open; the model told the journalist the storyboard was complete and the step ran out its 20 minutes.
+describe("the status after the last field", () => {
+  it("should name the survey of other subjects while SUBJECTS.md is missing", async () => {
+    writeFileSync(join(bases.storyDir, "STORYBOARD.md"), `---
+takeaway: "Lisboa carries more than half the trips."
+grounding: supported
+claimShape: none
+subject: Lisboa
+comparison: "the other networks"
+limits: "Trips only"
+placement: "After the opening paragraph"
+credit: "INE"
+effectiveDate: 2025-11-13
+language: en
+slots:
+  - id: 1
+    proves: "Lisboa carries more than half the trips."
+    medium: chart
+    format: static
+    reachable: yes
+    intent: "comparison between categories"
+    candidates: ["Bar and column"]
+    chosen: "Bar and column"
+    interaction: none
+    producer: custom
+---
+`);
+    dialogue.lastJournalist = "Landscape.";
+    const res = await call(storyboardTools(bases, dialogue).recordSlot, { slot: "1", field: "size", value: "landscape" });
+    expect(JSON.stringify(res)).toMatch(/survey of other subjects.*record_subject/);
   });
 });
