@@ -645,7 +645,17 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       const subject = { ...rest, learns: given.learns ?? learn ?? "" };
       // The 12B called this with id "none" three times and the same-failure stop ended the step: the
       // refusal said what a subject is, not where to find one. It now names the data's columns.
-      if ([subject.id, subject.medium, subject.format].some((f) => /^(none|n\/a|-)?$/i.test(String(f).trim())))
+      const blank = (f: unknown) => /^(none|n\/a|-)?$/i.test(String(f ?? "").trim());
+      // stress-v (2026-11-12): a real id with medium and format "none" was refused as "not a subject", and
+      // the 12B renamed the id three times. The refusal names the fields that failed, with a value that works.
+      if (!blank(subject.id) && (blank(subject.medium) || blank(subject.format)))
+        throw new Error(
+          [
+            blank(subject.medium) ? `medium "${subject.medium}" is not a medium: give "chart" (or "map" for a place-keyed angle)` : "",
+            blank(subject.format) ? `format "${subject.format}" is not a format: give "static"` : "",
+          ].filter(Boolean).join("; ") + `. Keep id "${subject.id}" and call record_subject again.`,
+        );
+      if ([subject.id, subject.medium, subject.format].some(blank))
         throw new Error(
           `"${subject.id}" is not a subject: the survey needs one OTHER angle this data supports. The data's columns: ${sourceColumns(bases.storyDir).join(", ") || "(see source/)"}. Pick one the takeaway does not use, and record what a reader would learn from it (id in hyphenated words, learns as a sentence, medium chart or map, format static).`,
         );

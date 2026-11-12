@@ -35,4 +35,15 @@ describe("scripted journalist, answers the classifier cannot override", () => {
     j.phase = "storyboard";
     expect(await j.answer(survey)).toBe(sheet.closing);
   });
+
+  // stress-v (2026-11-12): the desk asked to confirm its survey subject and mentioned "your primary takeaway";
+  // the journalist answered with the takeaway rebuttal, and the survey never closed.
+  it("should confirm a survey subject instead of restating the takeaway", async () => {
+    reply = "confirm";
+    const j = scriptedJournalist({ ...sheet, confirm: "Yes." }, { server: server.url.origin });
+    j.phase = "storyboard";
+    const ask =
+      "The survey requires a secondary angle. Since your primary takeaway is about China, I propose:\n\n**Subject:** High-income vs. low-income emissions\n\nDoes this work as the survey subject?";
+    expect(await j.answer(ask)).toBe("Yes.");
+  });
 });

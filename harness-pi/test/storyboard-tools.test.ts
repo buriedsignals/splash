@@ -220,6 +220,19 @@ describe("storyboard tools", () => {
     ).rejects.toThrow(/not a subject.*columns: city, trips_millions/);
   });
 
+  // stress-v (2026-11-12): the id was a real angle, medium and format were "none"; the refusal blamed the id,
+  // and the 12B renamed the id three times until the step stopped.
+  it("should name medium and format, with a value that works, when only they are 'none'", async () => {
+    await expect(
+      call(storyboardTools(bases, dialogue).recordSubject, {
+        id: "china-vs-others-comparison",
+        learns: "China emits more than the next five together.",
+        medium: "none",
+        format: "none",
+      }),
+    ).rejects.toThrow(/medium "none".*"chart".*format "none".*"static"/);
+  });
+
   it("should accept 'learn' for learns, the spelling the 12B writes", async () => {
     await call(storyboardTools(bases, dialogue).recordSubject, {
       id: "network-length",

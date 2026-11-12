@@ -134,8 +134,11 @@ export function scriptedJournalist(
                 : "other";
       // A journalist never agrees to a takeaway that is not theirs: asked to confirm one the desk
       // wrote, the sheet's journalist answers with their own sentence.
+      // A survey subject the desk proposes is not a takeaway: confirming it with the takeaway rebuttal kept
+      // the survey open until the step stopped (stress-v, 2026-11-12).
       const proposesTakeaway =
         key === "confirm" &&
+        !/\bsurvey\b/i.test(tail.slice(-300)) &&
         /\btakeaway\b|\bsentence\b|\bframing\b/i.test(said) &&
         sheet.takeaway &&
         !said.includes(sheet.takeaway);
