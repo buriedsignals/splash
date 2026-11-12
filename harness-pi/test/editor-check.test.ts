@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import { join, resolve } from "node:path";
-import { checkEditorProposals } from "../src/editor-check.ts";
+import { checkEditorProposals, editorBrief } from "../src/editor-check.ts";
 
 const STORY = join(resolve(import.meta.dirname, "../.."), "stories/stress-p-transport-ridership");
 const reply = (takeaway: string, evidence: string[]) =>
@@ -34,5 +34,15 @@ describe("editor proposals checked by code", () => {
 
   it("should return null for a reply with no proposals", () => {
     expect(checkEditorProposals("I could not read the sources.", STORY)).toBeNull();
+  });
+});
+
+// stress-v (Qwen3.5-9B, 2026-11-12): given read_file, the editor read a finished proof of the same story under proof/ and
+// returned an empty reply. Code hands it the frozen sources; it has nothing else to read.
+describe("the editor's brief", () => {
+  it("should carry the frozen article and data in the message itself", () => {
+    const brief = editorBrief(STORY);
+    expect(brief).toContain("Lisboa");
+    expect(brief).toMatch(/source\/article\.md[\s\S]*source\/data\.csv[\s\S]*source\/profile\.json/);
   });
 });

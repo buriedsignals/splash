@@ -26,7 +26,7 @@ import {
 } from "../../skills/deliver/scripts/output-review.mjs";
 import { claimBlock, contractText, craftKit, kitGestures, recordFallback } from "./craft-kit.ts";
 import { converse } from "./conversation.ts";
-import { checkEditorProposals, describeProposals } from "./editor-check.ts";
+import { checkEditorProposals, describeProposals, editorBrief } from "./editor-check.ts";
 import type { Journalist } from "./journalist.ts";
 import { type OwnerId, PROFILES } from "./profiles.ts";
 import { openSession } from "./sessions.ts";
@@ -174,11 +174,11 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
         "persona:editor",
         "story",
         `${read(PROFILES["persona:editor"].body)}\n\nThe story is ${o.storyDir}. Return the JSON your contract defines.`,
-        [f.readFile, f.listDir],
+        [],
       );
       const res = await converse({
         session: sess,
-        first: `The story ${o.storyDir} is at FRAMING (Gate 1). Read its frozen sources and return your proposals.`,
+        first: editorBrief(o.storyDir),
         journalist: o.journalist,
         dialogue,
         conversational: false,
