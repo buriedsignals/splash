@@ -25,6 +25,8 @@ export interface Bases {
   root: string;
   /** The story directory every write is confined to. */
   storyDir: string;
+  /** Root directories readable besides the story; skills/, shared/ and proof/ when absent. */
+  readBases?: string[];
 }
 
 const READ_BASES = ["skills", "shared", "proof"];
@@ -189,7 +191,7 @@ export function resolveReadable(bases: Bases, path: string): string {
   if (abs === join(realpathSync(bases.root), "NEWSROOM.md")) return abs;
   const allowed = [
     bases.storyDir,
-    ...READ_BASES.map((b) => join(bases.root, b)),
+    ...(bases.readBases ?? READ_BASES).map((b) => join(bases.root, b)),
   ]
     .filter(existsSync)
     .map((b) => realpathSync(b));

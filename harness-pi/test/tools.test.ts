@@ -115,6 +115,15 @@ describe("file tools", () => {
     expect(textOf(r)).toMatch(/^---\nname: chart-beat/);
   });
 
+  // stress-v (Qwen3.5-9B, 2026-11-13): the storyboard listed proof/, which holds a finished scrolly of the same story.
+  it("should refuse proof/ to a session whose read bases leave it out", async () => {
+    const { mkdirSync, writeFileSync } = await import("node:fs");
+    mkdirSync(join(bases.root, "proof/some-beat"), { recursive: true });
+    writeFileSync(join(bases.root, "proof/some-beat/BRIEF.md"), "finished");
+    const { readFile: read } = fsTools({ ...bases, readBases: ["skills", "shared"] });
+    await expect(call(read, { path: "proof/some-beat/BRIEF.md" })).rejects.toThrow(/outside the readable directories/);
+  });
+
   it("should read the story's frozen source asked for under proof/", async () => {
     const { readFile: read } = fsTools(bases);
     const r = await call(read, { path: "proof/source/data.csv" });
