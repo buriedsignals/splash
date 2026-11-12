@@ -895,3 +895,17 @@ touching the lines.
 | r8-german-road-deaths | static | delivered | 2,113 s | axis 2014–2025 now; the series is named by its raw row label ("Innerhalb und außerhalb von Ortschaften"), the bicycle comparison line is gone, "36 pedelec riders killed" is struck through by the line |
 
 **4/4 delivered, 1/4 gold** (from 1/4 and 3/4 delivered). Every run under the 45-minute cap.
+
+**Fixes after batch 3**, each with a test that fails without it, each replayed on the kept beat and looked at:
+
+- `b4b221bd5`: the headline guard matches a figure at the precision the title writes (11.8 is no longer met by
+  Germany's 11.71). The kept scatter beat is refused with the computed-figure message.
+- `5bab483a9`: a lone time series takes the beat's `entity` as its name, and its gestures follow. r8 now reads
+  "Pedelecs 214", not the filter value of its rows.
+- `3811aff9d`: a time still's notes step clear of the drawn lines, not only of each other. r8's
+  "36 pedelec riders killed" now sits above the line.
+- `0fc3c8c3a`: a map highlight that rings a place beside the subject also names it with its value. stress-t shows
+  "Macedonia 18.4 %".
+
+Still open: stress-t's storyboard (≈ 1,300 s). r8's bicycle comparison line: the model drew pedelecs alone, which
+is a choice of the beat, not a harness defect.
