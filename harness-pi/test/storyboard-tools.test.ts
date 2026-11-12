@@ -828,6 +828,20 @@ describe("gaps the harness fills", () => {
   });
 });
 
+describe("a slot field recorded again", () => {
+  // stress-v (Qwen3.5-9B, 2026-11-12): the journalist answered "Video." to the format question and the model recorded
+  // medium chart a second time; the repeat was accepted and the format stayed open until the step stopped.
+  it("should refuse a repeat and point at the open field the journalist's last answer fills", async () => {
+    const tools = storyboardTools(bases, dialogue);
+    dialogue.lastJournalist = "A chart.";
+    await call(tools.recordSlot, { slot: "1", field: "medium", value: "chart" });
+    dialogue.lastJournalist = "Video.";
+    await expect(call(tools.recordSlot, { slot: "1", field: "medium", value: "chart" })).rejects.toThrow(
+      /medium is already "chart".*"Video\.".*format/,
+    );
+  });
+});
+
 describe("the journalist's format", () => {
   // A 12B told the journalist Bar and column was not offered in scrollytelling and moved them to web on their "Yes.".
   it("should refuse moving the journalist off a format that draws the type they named", async () => {

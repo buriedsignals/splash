@@ -417,6 +417,11 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
     }),
     async execute(_id, { slot, field, value: given }) {
       let value = field === "format" ? formatCode(given) : given;
+      // A repeat of a recorded value changes nothing; the journalist's last answer belongs to a field still open.
+      if (!["proves", "interaction"].includes(field) && currentSlot(slot)?.[field] !== undefined && String(currentSlot(slot)![field]).toLowerCase() === String(value).toLowerCase()) {
+        const open = gapsForModel(checkStoryboard(parseStoryboard(readFileSync(path, "utf8")).meta)).filter((g) => g.startsWith(`slot ${slot}:`));
+        throw new Error(`slot ${slot} ${field} is already "${value}". The journalist's last answer ${JSON.stringify((dialogue.lastJournalist ?? "").slice(0, 80))} answers a field still open — ${open.slice(0, 3).join(" | ")}: record it there.`);
+      }
       // The medium is the journalist's: refused a format, the 12B once switched a chart slot to a map
       // nobody asked for, and looped on the same refusal.
       if (field === "medium" && MEDIUM_WORDS[value.toLowerCase()]) {
