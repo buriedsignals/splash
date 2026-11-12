@@ -115,6 +115,12 @@ describe("file tools", () => {
     expect(textOf(r)).toMatch(/^---\nname: chart-beat/);
   });
 
+  it("should read the story's frozen source asked for under proof/", async () => {
+    const { readFile: read } = fsTools(bases);
+    const r = await call(read, { path: "proof/source/data.csv" });
+    expect(textOf(r)).toMatch(/full profile is in source\/profile\.json/);
+  });
+
   it("should read the newsroom profile asked for under shared/", async () => {
     const { writeFileSync } = await import("node:fs");
     writeFileSync(join(bases.root, "NEWSROOM.md"), "---\nname: Test news\n---\n");

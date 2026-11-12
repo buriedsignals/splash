@@ -171,6 +171,9 @@ export function resolveReadable(bases: Bases, path: string): string {
         : "";
     if (candidate && existsSync(candidate)) abs = realpathSync(candidate);
   }
+  // A frozen source asked for under another base ("proof/source/article.md") is the story's own (stress-v, 2026-11-13).
+  const src = !existsSync(abs) ? /(?:^|\/)source\/(.+)$/.exec(path) : null;
+  if (src && existsSync(join(bases.storyDir, "source", src[1]))) abs = realpathSync(join(bases.storyDir, "source", src[1]));
   // A skill's own reference asked for by its path inside the skill ("references/type-survey.md") is that
   // skill's, when exactly one skill holds it (stress-v, 2026-11-13: twelve turns lost listing shared/).
   if (!existsSync(abs) && !isAbsolute(path)) {
