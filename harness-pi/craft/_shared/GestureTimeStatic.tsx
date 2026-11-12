@@ -26,6 +26,7 @@ import {
   registerOf,
 } from "#shared/design-base/register.mjs";
 import { bracketText, niceTicks, tickLabel } from "./gesture-family-time.mjs";
+import { nudgeNotes } from "./gesture-time-notes.mjs";
 
 type Pt = { t: number; key: string; y0: number; y1: number; gap: boolean };
 type At = {
@@ -847,24 +848,12 @@ export function GestureTimeStatic({
       bottom: n.y + n.r.fontSize * 0.3,
     };
   };
-  const hit = (a: Box, b: Box) =>
-    Math.min(a.right, b.right) - Math.max(a.left, b.left) > 0 &&
-    Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > 0;
-  for (const n of notes.filter((x) => x.fixed)) boxes.push(boxOf(n));
-  for (const n of notes.filter((x) => !x.fixed)) {
-    const tries = [0, -1, 1, -2, 2, -3, 3, -4, 4, -5, 5, 6, -6, 7, -7, 8];
-    const step = leadOf(n.r) * 0.9;
-    const y0 = n.y;
-    for (const k of tries) {
-      n.y = Math.max(
-        plot.top + n.r.fontSize,
-        Math.min(plot.bottom - 2, y0 + k * step),
-      );
-      if (!boxes.some((b) => hit(b, boxOf(n)))) break;
-    }
-    n.leader = Math.abs(n.y - y0) > step * 1.5;
-    boxes.push(boxOf(n));
-  }
+  // A note also steps clear of the drawn lines (./gesture-time-notes.mjs).
+  const lines =
+    variant === "line" || variant === "bump-ranking-over-time"
+      ? shape.series.flatMap((s) => segments(geometry.get(s) ?? []).map((run) => run.map((p) => [X(p.t), Y(p.y1)])))
+      : [];
+  nudgeNotes(notes, { boxes, boxOf, leadOf: (n: Note) => leadOf(n.r), fontSizeOf: (n: Note) => n.r.fontSize, plot, lines });
 
   const textEl = (
     t: {
