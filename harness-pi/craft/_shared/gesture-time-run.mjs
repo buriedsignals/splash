@@ -200,6 +200,23 @@ export function dropStackTotal(points, stacked) {
 }
 
 /**
+ * A lone series takes the beat's entity as its name, and the gestures follow: r8 on Osaurus (2026-11-12) kept the
+ * all-locations rows and named the pedelec line by their filter value, "Innerhalb und außerhalb von Ortschaften",
+ * while entity said "Pedelecs".
+ */
+export function nameLoneSeries(points, gestures, entity) {
+  const names = [...new Set(points.map((p) => p.series))];
+  if (names.length !== 1 || typeof entity !== "string" || !entity.trim() || names[0] === entity) return points;
+  const old = names[0];
+  const rename = (m) => (m === old ? entity : typeof m === "string" && m.endsWith(` · ${old}`) ? `${m.slice(0, -old.length)}${entity}` : m);
+  for (const g of Array.isArray(gestures) ? gestures : []) {
+    if (g && "mark" in g) g.mark = Array.isArray(g.mark) ? g.mark.map(rename) : rename(g.mark);
+    if (g && Array.isArray(g.marks)) g.marks = g.marks.map(rename);
+  }
+  return points.map((p) => ({ ...p, series: entity }));
+}
+
+/**
  * A gesture marked on the dropped total moves to the beat's entity at the same time (or the first drawn layer): its
  * note then reads against the stack, where a total printed on one layer is held as "part of total".
  */
@@ -234,7 +251,7 @@ export async function loadTimeBeat(here, variant, { required = [], format: wante
 
   const front = frontOf(here);
   const stacks = variant === "area-and-stacked-area" || variant === "streamgraph";
-  const points = dropStackTotal(dropEmptyLayers(dropExcludedTimes(readPoints(beat.points, { fallbackSeries: beat.entity ?? front("subject") ?? "—", columns: dataColumns(here) }), front("limits")), stacks), stacks);
+  const points = nameLoneSeries(dropStackTotal(dropEmptyLayers(dropExcludedTimes(readPoints(beat.points, { fallbackSeries: beat.entity ?? front("subject") ?? "—", columns: dataColumns(here) }), front("limits")), stacks), stacks), beat.gestures, beat.entity);
   {
     const drawn = [...new Set(points.map((p) => p.series))];
     const dropped = [...new Set(beat.points?.map?.((p) => p?.series) ?? [])].filter((n) => typeof n === "string" && !drawn.includes(n));
