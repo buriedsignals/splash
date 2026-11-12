@@ -53,6 +53,28 @@ describe("assertDrawsClaimColumn beside a comparison series", () => {
   });
 });
 
+describe("assertDrawsClaimColumn on a ratio", () => {
+  const story = () => {
+    const root = mkdtempSync(join(tmpdir(), "splash-ratio-"));
+    const dir = join(root, "beats", "1");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(root, "STORYBOARD.md"), `---\nclaimShape: "none"\nclaimRatio: "beds / people"\n---\n`);
+    writeFileSync(
+      join(dir, "data.json"),
+      JSON.stringify({ columns: [{ name: "region" }, { name: "beds" }, { name: "people" }], rows: [["A", 21400, 5510000], ["B", 17800, 4400000], ["C", 9800, 2440000]] }),
+    );
+    return dir;
+  };
+
+  it("should accept the ratio drawn per 10,000, rounded", () => {
+    expect(() => assertDrawsClaimColumn([38.8, 40.5, 40.2], story())).not.toThrow();
+  });
+
+  it("should refuse the numerator drawn under a per-resident claim, naming the division", () => {
+    expect(() => assertDrawsClaimColumn([21400, 17800, 9800], story())).toThrow(/beds divided by people.*21400/);
+  });
+});
+
 describe("assertHeadlineNumbersDrawn", () => {
   it("should read a nineteenth-century year in the title as a year, not a figure", () => {
     expect(() => assertHeadlineNumbersDrawn("World population passed 8 billion, from 1 billion in 1858", [1, 8])).not.toThrow();

@@ -93,6 +93,8 @@ export function claimBlock(meta: Record<string, unknown>): string {
     lines.push(
       `the claim is about ${meta.claimEntity}${meta.claimVersus ? ` against ${meta.claimVersus}` : ""}`,
     );
+  if (meta.claimRatio)
+    lines.push(`the measure is ${String(meta.claimRatio).replace(" / ", " divided by ")} for every row, not either column alone`);
   if (meta.subject)
     lines.push(`the subject, in the journalist's words: ${meta.subject}`);
   if (meta.comparison)

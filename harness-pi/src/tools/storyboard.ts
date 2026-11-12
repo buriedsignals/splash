@@ -70,6 +70,18 @@ const SHAPE_WORDS: Record<string, RegExp> = {
   total: /\b(total|sum|somme|summe|totale|suma|soma)\b/i,
 };
 
+/** "A divided by B", "A / B" or "A per B", with A and B columns of the data: the first such pair an answer names. */
+export function ratioNamed(answers: (string | undefined)[], columns: string[]): string | undefined {
+  const names = columns.filter(Boolean).map((c) => c.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|");
+  if (!names) return undefined;
+  const pair = new RegExp(`(?<![\\p{L}\\p{N}_])(${names})\\s*(?:divided by|/|per)\\s*(${names})(?![\\p{L}\\p{N}_])`, "u");
+  for (const a of answers) {
+    const m = (a ?? "").match(pair);
+    if (m && m[1] !== m[2]) return `${m[1]} / ${m[2]}`;
+  }
+  return undefined;
+}
+
 const words = (s: string) =>
   s
     .toLowerCase()
@@ -625,6 +637,10 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       for (const name of [entity, versus].filter(Boolean) as string[]) {
         if (!csv.includes(name)) throw new Error(`${JSON.stringify(name)} is not a row in source/data.csv`);
       }
+      // A measure computed from two columns (beds per resident) is code's to record, read from the journalist's
+      // answer: the E4B drew absolute beds under a per-resident title (stress-ad, 2026-11-12).
+      const ratio = ratioNamed(answers, header);
+      if (ratio) fields.claimRatio = ratio;
       await ensureFile();
       await mutateStoryboard(path, { topLevel: fields });
       return text(`recorded the claim shape (${shape}). ${await status()}`);

@@ -90,6 +90,10 @@ describe("claim block", () => {
       }),
     ).toMatch(/Sul.*Centro/);
   });
+
+  it("should name the recorded ratio as the measure to draw", () => {
+    expect(claimBlock({ claimRatio: "beds / people" })).toMatch(/beds divided by people/);
+  });
 });
 
 describe("gesture contract", () => {

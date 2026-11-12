@@ -345,6 +345,21 @@ describe("claim shape", () => {
     ).rejects.toThrow(/did not accept/);
   });
 
+  // stress-ad (2026-11-12): the claim was beds per resident, recorded as shape none with no column, and the E4B drew
+  // absolute beds under a "third per resident" title — no guard knew the measure. Code reads it from the answer.
+  it("should record the ratio the journalist named as one column divided by another", async () => {
+    dialogue.lastJournalist =
+      "None of those: it is a ranking by trips per resident, which the data gives as trips_millions divided by population.";
+    await call(storyboardTools(bases, dialogue).recordClaim, { shape: "none" });
+    expect(meta().claimRatio).toBe("trips_millions / population");
+  });
+
+  it("should record no ratio when the answer divides nothing", async () => {
+    dialogue.lastJournalist = "None of those: it is a ranking.";
+    await call(storyboardTools(bases, dialogue).recordClaim, { shape: "none" });
+    expect(meta().claimRatio).toBeUndefined();
+  });
+
   it("should refuse an entity that is not a row of the data", async () => {
     dialogue.lastJournalist = "A maximum, Lisbon, trips_millions.";
     await expect(

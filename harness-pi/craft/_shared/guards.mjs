@@ -255,6 +255,7 @@ export function locateStated(missing, stated, dataPath) {
 export function assertDrawsClaimColumn(drawn, here) {
   const field = front(here);
   const dataPath = join(here, "data.json");
+  if (field?.("claimRatio")) return assertDrawsRatio(drawn, here, field("claimRatio"));
   const column = field?.("claimColumn");
   if (!column || !existsSync(dataPath)) return;
   const table = JSON.parse(readFileSync(dataPath, "utf8"));
@@ -279,6 +280,34 @@ export function assertDrawsClaimColumn(drawn, here) {
 }
 
 const decimals = (v) => (String(v).split(".")[1] ?? "").length;
+
+const cell = (v) => Number(String(v).replace(/\s/g, "").replace(",", "."));
+
+/**
+ * A claim on a measure computed from two columns (beds per resident): every drawn value is that ratio at one
+ * power-of-ten scale (per resident, per 10,000, a percent). The E4B drew absolute beds under a "third per resident"
+ * title (stress-ad, 2026-11-12); the comparison-series exception does not apply, since the numerator is a column.
+ */
+function assertDrawsRatio(drawn, here, ratio) {
+  const dataPath = join(here, "data.json");
+  const [top, bottom] = ratio.split(" / ");
+  if (!existsSync(dataPath)) return;
+  const table = JSON.parse(readFileSync(dataPath, "utf8"));
+  const names = (table.columns ?? []).map((c) => c.name);
+  const a = names.indexOf(top);
+  const b = names.indexOf(bottom);
+  if (a < 0 || b < 0) return;
+  const held = table.rows.map((r) => cell(r[a]) / cell(r[b])).filter(Number.isFinite);
+  const near = (v, h) => Math.abs(h - v) <= Math.max(1e-9, Math.abs(h) * 0.005, 0.5 * 10 ** -decimals(v));
+  const values = drawn.filter(Number.isFinite);
+  const scales = Array.from({ length: 25 }, (_, i) => 10 ** (i - 12));
+  const foreign = scales.map((s) => values.filter((v) => !held.some((h) => near(v, h * s)))).reduce((x, y) => (y.length < x.length ? y : x));
+  if (foreign.length) {
+    const first = table.rows.find((r) => Number.isFinite(cell(r[a]) / cell(r[b])));
+    const show = first ? ` (${first[0]}: ${cell(first[a])} / ${cell(first[b])} = ${+(cell(first[a]) / cell(first[b])).toPrecision(3)}, or ${+((cell(first[a]) / cell(first[b])) * 10000).toPrecision(3)} per 10,000)` : "";
+    throw new Error(`the claim is about ${top} divided by ${bottom}, but the plate draws values that ratio does not hold (${foreign.slice(0, 3).join(", ")}): draw each row's ${top} divided by ${bottom}${show}, at one scale for every row`);
+  }
+}
 
 export const beatHere = (url) => dirname(new URL(url).pathname);
 
