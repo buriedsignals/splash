@@ -123,6 +123,23 @@ describe("storyboard tools", () => {
     expect(meta().grounding).toBe("supported");
   });
 
+  // stress-x (Qwen3.5-9B, 2026-11-12): "Yes, that is the piece: Tunis governorate consumes the most water." confirmed the
+  // restitution; recorded as the takeaway, it replaced the journalist's Arabic sentence and its 142 million.
+  it("should refuse a yes to the reading of the article as the takeaway, giving the question to ask", async () => {
+    dialogue.lastProposal = "Here is what I read in the article: 1. Tunis leads. Is that the piece?";
+    dialogue.lastJournalist = `Yes, that is the piece: ${TAKEAWAY}`;
+    await expect(
+      call(storyboardTools(bases, dialogue).recordTakeaway, { sentence: TAKEAWAY }),
+    ).rejects.toThrow(/confirms your reading of the article.*In one sentence, in your own words/);
+  });
+
+  it("should record a takeaway given in answer to the takeaway question", async () => {
+    dialogue.lastProposal = "In one sentence, in your own words, what should the reader keep from this graphic?";
+    dialogue.lastJournalist = TAKEAWAY;
+    await call(storyboardTools(bases, dialogue).recordTakeaway, { sentence: TAKEAWAY });
+    expect(meta().takeaway).toBe(TAKEAWAY);
+  });
+
   it("should not write STORYBOARD.md when the takeaway is not the journalist's", async () => {
     dialogue.lastJournalist = "Landscape.";
     await expect(

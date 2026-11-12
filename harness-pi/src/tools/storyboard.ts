@@ -331,6 +331,9 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
     async execute(_id, { sentence, override }) {
       // G1 records the journalist's sentence verbatim: a paraphrase they nodded at is not their takeaway.
       assertJournalistOwns("takeaway", sentence, dialogue, { acceptProposal: false });
+      // A "yes" to the desk's reading of the article is not the sentence the reader keeps (stress-x, 2026-11-12).
+      if (AFFIRMATIVE.test((dialogue.lastJournalist ?? "").trim()) && overlap(sentence, dialogue.lastJournalist) >= 0.6 && !/takeaway|one sentence|keep|retenir|reader/i.test(dialogue.lastProposal ?? ""))
+        throw new Error(`that answer confirms your reading of the article; it is not the takeaway. Ask the journalist exactly this and end your turn: "${FIELD_QUESTIONS.takeaway}"`);
       const profile = JSON.parse(
         readFileSync(join(bases.storyDir, "source", "profile.json"), "utf8"),
       );
