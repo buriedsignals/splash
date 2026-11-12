@@ -884,3 +884,14 @@ were traced to the harness and fixed with a test that fails without the fix:
 
 Still open: stress-t's storyboard (≈ 1,350 s, hidden-reasoning cuts) and r8's "214 killed" / "36 killed" notes
 touching the lines.
+
+### Held-out batch 3 on Osaurus (2026-11-12, on AC power) — after `d0a7e84ce`, `1f6916cdb`, `bae2061a3`
+
+| Story | Variant | Outcome | Time | The render, looked at |
+|---|---|---|---|---|
+| gx-connected-scatter | full | delivered | 2,094 s | **on topic, not gold**: axes are each country's share of the group's renewables and nuclear (France 61 → 47); the 11.8-point loss is in no mark or note; crowded labels in the lower-left; x axis ticks 0 and 20 only |
+| gx-small-multiples | full | delivered | 1,362 s | **gold** (second time) |
+| stress-t-europe-recycling | web-map | **delivered** | 1,994 s | right map, right classes; Macedonia (the lowest) marked but not labelled; storyboard still 1,275 s |
+| r8-german-road-deaths | static | delivered | 2,113 s | axis 2014–2025 now; the series is named by its raw row label ("Innerhalb und außerhalb von Ortschaften"), the bicycle comparison line is gone, "36 pedelec riders killed" is struck through by the line |
+
+**4/4 delivered, 1/4 gold** (from 1/4 and 3/4 delivered). Every run under the 45-minute cap.
