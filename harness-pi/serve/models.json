@@ -108,6 +108,37 @@
             "cacheRead": 0,
             "cacheWrite": 0
           }
+        },
+        {
+          "id": "gemma-4-e4b-it-optiq-4bit",
+          "name": "Gemma 4 E4B OptiQ 4-bit (Osaurus, MLX)",
+          "input": [
+            "text",
+            "image"
+          ],
+          "reasoning": true,
+          "contextWindow": 65536,
+          "maxTokens": 16384,
+          "inputLimits": {
+            "images": {
+              "resize": {
+                "maxWidth": 1280,
+                "maxHeight": 1280,
+                "maxBytes": 1048576
+              }
+            }
+          },
+          "samplingParams": {
+            "temperature": 1,
+            "top_p": 0.95,
+            "top_k": 64
+          },
+          "cost": {
+            "input": 0,
+            "output": 0,
+            "cacheRead": 0,
+            "cacheWrite": 0
+          }
         }
       ]
     }
