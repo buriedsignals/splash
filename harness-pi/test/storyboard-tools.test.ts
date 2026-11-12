@@ -372,6 +372,14 @@ describe("claim shape", () => {
     ).rejects.toThrow(/did not accept.*names the shape "none".*record shape none/);
   });
 
+  it("should name shape none when versus is a sum of several rows", async () => {
+    dialogue.lastProposal = "Shall I record claim shape: comparison, Lisboa greater than Porto and Braga together?";
+    dialogue.lastJournalist = "Yes.";
+    await expect(
+      call(storyboardTools(bases, dialogue).recordClaim, { shape: "comparison", column: "trips_millions", entity: "Lisboa", versus: "Porto,Braga (sum)", direction: "greater" }),
+    ).rejects.toThrow(/several rows, not one.*record shape none/i);
+  });
+
   // stress-ad (2026-11-12): the claim was beds per resident, recorded as shape none with no column, and the E4B drew
   // absolute beds under a "third per resident" title — no guard knew the measure. Code reads it from the answer.
   it("should record the ratio the journalist named as one column divided by another", async () => {

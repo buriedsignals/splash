@@ -659,7 +659,11 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       if (column && !header.includes(column))
         throw new Error(`${JSON.stringify(column)} is not a column of source/data.csv; its columns are ${header.join(", ")}. If the claim is about a measure computed from them (a rate, a share, a per-resident figure), record shape "none" with no column.`);
       for (const name of [entity, versus].filter(Boolean) as string[]) {
-        if (!csv.includes(name)) throw new Error(`${JSON.stringify(name)} is not a row in source/data.csv`);
+        if (csv.includes(name)) continue;
+        // stress-v (Qwen3.5-9B, 2026-11-13): "USA,India,Russia,Japan,Indonesia (sum)" refused bare, twice, then the step stopped.
+        if (/,|\+|\bsum\b|\btogether\b|\bcombined\b/i.test(name))
+          throw new Error(`${JSON.stringify(name)} is several rows, not one: no shape compares a row with a sum of rows. Record shape none with no column, entity or versus; the takeaway keeps the journalist's words.`);
+        throw new Error(`${JSON.stringify(name)} is not a row in source/data.csv: write the row's name exactly as the data spells it, or record shape none if the claim is about no single row.`);
       }
       // A measure computed from two columns (beds per resident) is code's to record, read from the journalist's
       // answer: the E4B drew absolute beds under a per-resident title (stress-ad, 2026-11-12).
