@@ -14,17 +14,30 @@ import {
   stageGeoPoint,
 } from "../craft/_shared/gesture-geo-point-family.mjs";
 import { composeGeoPointStatic } from "../craft/_shared/gesture-geo-point-static.mjs";
-import { controlLegend, controlWords, scheduleGeoPointWeb, sideLayoutCss, sizeKeyCorner, wordAnchor } from "../craft/_shared/gesture-geo-point-web.mjs";
+import {
+  controlLegend,
+  controlWords,
+  scheduleGeoPointWeb,
+  sideLayoutCss,
+  sizeKeyCorner,
+  wordAnchor,
+} from "../craft/_shared/gesture-geo-point-web.mjs";
 
 import {
   cameraAt,
   scheduleGeoPointVideo,
   wordsAt,
 } from "../craft/_shared/gesture-geo-point-video.mjs";
-import { flatStates, scheduleGeoPointScrolly } from "../craft/_shared/gesture-geo-point-scrolly.mjs";
+import {
+  flatStates,
+  scheduleGeoPointScrolly,
+} from "../craft/_shared/gesture-geo-point-scrolly.mjs";
 // @ts-ignore — a .tsx helper read as data (boxOf)
 import { boxOf } from "../craft/_shared/GestureGeoPointMap.tsx";
-import { placeGeoNotes, visibleBox } from "../craft/_shared/GestureGeoPointNotes.tsx";
+import {
+  placeGeoNotes,
+  visibleBox,
+} from "../craft/_shared/GestureGeoPointNotes.tsx";
 // @ts-ignore — the kit's own field (Node: reads shapes.geojson)
 import { measureSeaDistance } from "../craft/static/contour-isoline.gestures/field.mjs";
 
@@ -191,6 +204,30 @@ describe("proportional symbol gestures", () => {
       ),
     );
     expect(error.field).toBe("gestures[0].note");
+  });
+
+  // gx-proportional-symbol static (Qwen3.5-9B, 2026-11-13): "880 sites nucléaires" over 72 — 880 MW is one Slovak
+  // plant's capacity, a member's value the core accepted as a figure the group draws.
+  it("should refuse a group note whose figure is one member's value and offer the group's count", () => {
+    const values = nuclearSites.map((m: any) => m.value);
+    const inner = values.find(
+      (v: number) =>
+        Number.isInteger(v) &&
+        v !== Math.max(...values) &&
+        v !== Math.min(...values) &&
+        v !== nuclearSites.length,
+    );
+    const error = refusal(() =>
+      stage(
+        "symbol",
+        SYMBOL,
+        SYMBOL_CLAIM,
+        "static",
+        [{ do: "highlight", mark: "Nuclear", note: `${inner} nuclear sites` }],
+        statics,
+      ),
+    );
+    expect(error.fix?.set?.value).toBe(`${nuclearSites.length} nuclear sites`);
   });
 
   it("should give the web page a resting state and a filter control that differ", () => {
@@ -570,43 +607,170 @@ describe("point-map plate and drive", () => {
   });
 
   it("should give every scrolly card a flat state of finite numbers, each differing from the one before", () => {
-    const G = { variant: "flow", W: 1000, H: 760, plate: "", marks: FLOW.slice(0, 3).map((m: any, i: number) => ({ name: m.name, kind: "band", x: 100 * i, y: 50, d: "", w: 2, label: m.name, detail: m.name })), whole: { x: 0, y: 0, w: 1000, h: 760 } };
+    const G = {
+      variant: "flow",
+      W: 1000,
+      H: 760,
+      plate: "",
+      marks: FLOW.slice(0, 3).map((m: any, i: number) => ({
+        name: m.name,
+        kind: "band",
+        x: 100 * i,
+        y: 50,
+        d: "",
+        w: 2,
+        label: m.name,
+        detail: m.name,
+      })),
+      whole: { x: 0, y: 0, w: 1000, h: 760 },
+    };
     const pictures = [
-      { roles: { accent: ["Germany"], rings: [], back: [], hidden: [], lines: [] }, focus: null, factor: null },
-      { roles: { accent: ["Germany"], rings: ["Poland"], back: [], hidden: [], lines: [] }, focus: null, factor: null },
+      {
+        roles: {
+          accent: ["Germany"],
+          rings: [],
+          back: [],
+          hidden: [],
+          lines: [],
+        },
+        focus: null,
+        factor: null,
+      },
+      {
+        roles: {
+          accent: ["Germany"],
+          rings: ["Poland"],
+          back: [],
+          hidden: [],
+          lines: [],
+        },
+        focus: null,
+        factor: null,
+      },
     ];
     const states = flatStates({ pictures, geometry: G, words: [], boxOf });
-    expect([states.every((s: any) => Object.values(s).every((v) => Number.isFinite(v))), states[0].g1, states[1].g1]).toEqual([true, 0, 1]);
+    expect([
+      states.every((s: any) =>
+        Object.values(s).every((v) => Number.isFinite(v)),
+      ),
+      states[0].g1,
+      states[1].g1,
+    ]).toEqual([true, 0, 1]);
   });
 
   it("should schedule the shipped video examples of the three unrendered types without a held event", () => {
-    const sym = () => stage("symbol", SYMBOL, SYMBOL_CLAIM, "video", [{ do: "reveal" }, { do: "highlight", mark: "Nuclear", note: `${nuclearSites.length} nuclear sites` }, { do: "name", mark: "site 1" }], (v: any, a: any) => scheduleGeoPointVideo({ gestures: v, adapter: a }));
-    const flow = () => stage("flow", FLOW, FLOW_CLAIM, "video", [{ do: "reveal" }, { do: "highlight", mark: "Germany" }, { do: "compare", marks: ["Germany", "Poland"], note: `${(DEU / POL).toFixed(1)} times Poland` }], (v: any, a: any) => scheduleGeoPointVideo({ gestures: v, adapter: a }));
-    const contour = () => stage("contour", CONTOUR, CONTOUR_CLAIM, "video", [{ do: "reveal" }, { do: "reference", value: Math.round(FIELD.median), note: "within the line: half the land" }, { do: "name", mark: km(FIELD.deepest) }], (v: any, a: any) => scheduleGeoPointVideo({ gestures: v, adapter: a }), { field: FIELD });
+    const sym = () =>
+      stage(
+        "symbol",
+        SYMBOL,
+        SYMBOL_CLAIM,
+        "video",
+        [
+          { do: "reveal" },
+          {
+            do: "highlight",
+            mark: "Nuclear",
+            note: `${nuclearSites.length} nuclear sites`,
+          },
+          { do: "name", mark: "site 1" },
+        ],
+        (v: any, a: any) => scheduleGeoPointVideo({ gestures: v, adapter: a }),
+      );
+    const flow = () =>
+      stage(
+        "flow",
+        FLOW,
+        FLOW_CLAIM,
+        "video",
+        [
+          { do: "reveal" },
+          { do: "highlight", mark: "Germany" },
+          {
+            do: "compare",
+            marks: ["Germany", "Poland"],
+            note: `${(DEU / POL).toFixed(1)} times Poland`,
+          },
+        ],
+        (v: any, a: any) => scheduleGeoPointVideo({ gestures: v, adapter: a }),
+      );
+    const contour = () =>
+      stage(
+        "contour",
+        CONTOUR,
+        CONTOUR_CLAIM,
+        "video",
+        [
+          { do: "reveal" },
+          {
+            do: "reference",
+            value: Math.round(FIELD.median),
+            note: "within the line: half the land",
+          },
+          { do: "name", mark: km(FIELD.deepest) },
+        ],
+        (v: any, a: any) => scheduleGeoPointVideo({ gestures: v, adapter: a }),
+        { field: FIELD },
+      );
     for (const run of [sym, flow, contour]) expect(run).not.toThrow();
   });
 });
 
 describe("point-map repair", () => {
   it("should repair a false compare ratio to the true ratio, never to the pair's count", () => {
-    const list = [{ do: "highlight", mark: "Germany" }, { do: "compare", marks: ["Germany", "Poland"], note: "1.9 times Poland" }];
-    const error = refusal(() => stageGeoPoint({ variant: "flow", gestures: list, marks: FLOW, claim: FLOW_CLAIM, format: "static", schedule: statics }));
-    expect((error.fix as any).set.value).toBe(`${(DEU / POL).toFixed(1)} times Poland`);
+    const list = [
+      { do: "highlight", mark: "Germany" },
+      { do: "compare", marks: ["Germany", "Poland"], note: "1.9 times Poland" },
+    ];
+    const error = refusal(() =>
+      stageGeoPoint({
+        variant: "flow",
+        gestures: list,
+        marks: FLOW,
+        claim: FLOW_CLAIM,
+        format: "static",
+        schedule: statics,
+      }),
+    );
+    expect((error.fix as any).set.value).toBe(
+      `${(DEU / POL).toFixed(1)} times Poland`,
+    );
   });
 });
 
 // gx-proportional-symbol web (Qwen3.5-9B, 2026-11-13): a French page printed "Nuclear" and "72 / 8900".
 describe("point-map reader control words", () => {
   it("should refuse a legend that prints the subject's raw data value, naming label", () => {
-    expect(() => controlLegend({ do: "filter", mark: "Nuclear" }, "Nuclear", { subject: { column: "fuel", equals: "Nuclear" } }, "fr")).toThrow(/add label: the words for "Nuclear" in the story's language \("fr"\)/);
+    expect(() =>
+      controlLegend(
+        { do: "filter", mark: "Nuclear" },
+        "Nuclear",
+        { subject: { column: "fuel", equals: "Nuclear" } },
+        "fr",
+      ),
+    ).toThrow(
+      /add label: the words for "Nuclear" in the story's language \("fr"\)/,
+    );
   });
 
   it("should print the label it is given", () => {
-    expect(controlLegend({ do: "filter", mark: "Nuclear", label: "Nucléaire" }, "Nuclear", { subject: { equals: "Nuclear" } }, "fr")).toBe("Nucléaire");
+    expect(
+      controlLegend(
+        { do: "filter", mark: "Nuclear", label: "Nucléaire" },
+        "Nuclear",
+        { subject: { equals: "Nuclear" } },
+        "fr",
+      ),
+    ).toBe("Nucléaire");
   });
 
   it("should group a filter's counts the story's way", () => {
-    const words = controlWords({ do: "filter", state: { kept: Array(72).fill("a") } }, { names: Array(8900).fill("x") }, String, (n: string) => n, "fr");
+    const words = controlWords(
+      { do: "filter", state: { kept: Array(72).fill("a") } },
+      { names: Array(8900).fill("x") },
+      String,
+      (n: string) => n,
+      "fr",
+    );
     expect(words.chip).toBe("72 / 8\u00a0900");
   });
 });
@@ -616,15 +780,25 @@ describe("point-map reader control words", () => {
 describe("point-map web furniture", () => {
   const box = { x: 0, y: 0, w: 1000, h: 750 };
   it("should start a word at its circle's edge, not its centre", () => {
-    expect(wordAnchor({ x: 200, y: 100, r: 15 }, box)).toMatchObject({ x: 215, leftward: false });
+    expect(wordAnchor({ x: 200, y: 100, r: 15 }, box)).toMatchObject({
+      x: 215,
+      leftward: false,
+    });
   });
 
   it("should end a leftward word at its circle's edge", () => {
-    expect(wordAnchor({ x: 800, y: 100, r: 15 }, box)).toMatchObject({ x: 785, leftward: true });
+    expect(wordAnchor({ x: 800, y: 100, r: 15 }, box)).toMatchObject({
+      x: 785,
+      leftward: true,
+    });
   });
 
   it("should seat the size key in the corner with the fewest marks", () => {
-    const marks = [{ x: 50, y: 700, r: 5 }, { x: 60, y: 690, r: 5 }, { x: 950, y: 50, r: 5 }];
+    const marks = [
+      { x: 50, y: 700, r: 5 },
+      { x: 60, y: 690, r: 5 },
+      { x: 950, y: 50, r: 5 },
+    ];
     expect(sizeKeyCorner(marks, { w: 120, h: 90 }, box)).toBe("bottom-right");
   });
 
@@ -637,11 +811,15 @@ describe("point-map web furniture", () => {
 // and centred, with two empty bands beside it while the controls sat above it.
 describe("point-map web side layout", () => {
   it("should engage only on a screen wider than the plate and its side column", () => {
-    expect(sideLayoutCss(".f", 4 / 3)).toMatch(/@media \(min-aspect-ratio: 1\.7\d*\)/);
+    expect(sideLayoutCss(".f", 4 / 3)).toMatch(
+      /@media \(min-aspect-ratio: 1\.7\d*\)/,
+    );
   });
 
   it("should give the plot its own column the full height of the screen", () => {
-    expect(sideLayoutCss(".f", 4 / 3)).toMatch(/\.f \.chart-plot \{[^}]*grid-column: 2[^}]*height: 100%/);
+    expect(sideLayoutCss(".f", 4 / 3)).toMatch(
+      /\.f \.chart-plot \{[^}]*grid-column: 2[^}]*height: 100%/,
+    );
   });
 
   it("should leave a plate as wide as the screen in one column", () => {
@@ -669,14 +847,24 @@ describe("point-map word side", () => {
 // A refusal sent the model between two guards: the staging accepts only the group's size (72), the cut drew 69, and
 // "69" was refused as a figure of other rows (q4, same beat). The count the plate draws is code's to print.
 describe("setNotesDrawn", () => {
-  const notes = () => [{ index: 0, do: "highlight", kind: "set", marks: ["site 1", "site 2", "site 3", "site 4"], text: "4 sites nucléaires" }];
+  const notes = () => [
+    {
+      index: 0,
+      do: "highlight",
+      kind: "set",
+      marks: ["site 1", "site 2", "site 3", "site 4"],
+      text: "4 sites nucléaires",
+    },
+  ];
   it("should print the drawn count in a set note that counts circles the plate leaves out", () => {
     const n = notes();
     setNotesDrawn(n, new Set(["site 1", "site 2", "site 3"]));
     expect(n[0].text).toBe("3 sites nucléaires");
   });
   it("should report the correction it made", () => {
-    expect(setNotesDrawn(notes(), new Set(["site 1", "site 2", "site 3"]))).toEqual(["gestures[0].note: 4 → 3 (the circles the plate draws)"]);
+    expect(
+      setNotesDrawn(notes(), new Set(["site 1", "site 2", "site 3"])),
+    ).toEqual(["gestures[0].note: 4 → 3 (the circles the plate draws)"]);
   });
   it("should leave a set note alone when every circle it counts is drawn", () => {
     const n = notes();
@@ -688,7 +876,13 @@ describe("setNotesDrawn", () => {
 // Web, video and scrolly print a gesture's note from the gestures, not from the still plate's notes.
 describe("setGestureNotesDrawn", () => {
   it("should print the drawn count in a group highlight's note", () => {
-    const valid = [{ do: "highlight", marks: ["site 1", "site 2", "site 3", "site 4"], note: "4 sites nucléaires" }];
+    const valid = [
+      {
+        do: "highlight",
+        marks: ["site 1", "site 2", "site 3", "site 4"],
+        note: "4 sites nucléaires",
+      },
+    ];
     setGestureNotesDrawn(valid, new Set(["site 1", "site 2"]));
     expect(valid[0].note).toBe("2 sites nucléaires");
   });

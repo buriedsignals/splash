@@ -278,6 +278,21 @@ export function createGeoPoint({ variant, marks, bounds = null, span = { lon: 2.
             set: { index: i, field: "value", value: Math.round(field?.median ?? top / 2) },
           });
       }
+      // A note on a SET speaks of the set: its count, its sum, its largest or smallest member. One inner member's value
+      // passed the core as a figure the marks draw, and "880 sites nucléaires" stood over 72 (880 MW is one Slovak plant;
+      // gx-proportional-symbol static, Qwen3.5-9B, 2026-11-13).
+      if ((g.do === "highlight" || g.do === "filter") && ids.length > 1 && typeof g.note === "string") {
+        const own = ids.map((n) => byName.get(n)?.value).filter(Number.isFinite);
+        const ends = [Math.max(...own), Math.min(...own), ids.length, sum(ids)];
+        const near = (a, b) => Math.abs(a - b) <= 0.5;
+        for (const n of figuresIn(g.note)) {
+          if (n.percent || ends.some((v) => near(v, n.value)) || !own.some((v) => near(v, n.value))) continue;
+          const fixed = g.note.slice(0, n.index) + String(ids.length) + g.note.slice(n.index + n.raw.length);
+          throw new GestureRefusal(`gestures[${i}].note`, `states ${n.raw}, the value of one of its ${ids.length} marks, not of the group: a group note states its count (${ids.length}), its total, its largest or its smallest — write "${fixed}"`, {
+            set: { index: i, field: "note", value: fixed },
+          });
+        }
+      }
       if (g.do === "filter" && ids.length >= marks.length)
         throw new GestureRefusal(`gestures[${i}].marks`, `the filter keeps every mark, so nothing steps back: drop it, or keep only the marks the claim is about`, { remove: i });
       if (g.do === "compare" && ids.length !== 2)
