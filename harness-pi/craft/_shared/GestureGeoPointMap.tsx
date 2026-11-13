@@ -31,6 +31,8 @@ export type Geometry = {
   origin?: { x: number; y: number; r: number; label: string } | null;
   furniture?: { text: string; x: number; y: number; kind: "area" | "water" }[];
   references?: { value: number; d: string }[];
+  /** A proportional-symbol map's size key: its unit and circles, radii in view units. */
+  sizeKey?: { unit: string; circles: { r: number; label: string }[] };
   whole: { x: number; y: number; w: number; h: number };
 };
 export type Roles = {
@@ -235,6 +237,7 @@ export function wordsOf(
     text: string;
     x: number;
     y: number;
+    r?: number;
     accent: boolean;
     kind: string;
   }[] = [];
@@ -251,6 +254,7 @@ export function wordsOf(
       text: named_ && !n.text.includes(m.name) ? `${m.name} · ${n.text}` : n.text,
       x: m.x,
       y: m.y,
+      r: m.r,
       accent: accent.has(m.name),
       kind: "note",
     });
@@ -263,6 +267,7 @@ export function wordsOf(
       text: m.label,
       x: m.x,
       y: m.y,
+      r: m.r,
       accent: accent.has(name),
       kind: "name",
     });

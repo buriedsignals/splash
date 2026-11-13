@@ -78,3 +78,23 @@ export function controlLegend(gesture, legend, beat, lang = "en") {
     throw new Error(`gestures: the "${gesture.do}" control on "${raw}" would print the data's own word "${raw}" as its legend; add label: the words for "${raw}" in the story's language ("${lang}"), e.g. { do: "${gesture.do}", mark: "${raw}", label: "…", note: … }`);
   return legend;
 }
+
+/** Where a word on a mark starts: at its circle's edge (a word written from the centre sat over its own circle), and
+ *  leftward in the right part of the picture so it stays inside. */
+export function wordAnchor(w, box) {
+  const leftward = (w.x - box.x) / box.w > 0.6;
+  const r = w.r ?? 0;
+  return { x: leftward ? w.x - r : w.x + r, leftward };
+}
+
+/** The corner a size key is seated in: the one whose key-sized box covers the fewest marks, bottom-left first. */
+export function sizeKeyCorner(marks, key, whole) {
+  const corners = {
+    "bottom-left": [whole.x, whole.y + whole.h - key.h],
+    "bottom-right": [whole.x + whole.w - key.w, whole.y + whole.h - key.h],
+    "top-left": [whole.x, whole.y],
+    "top-right": [whole.x + whole.w - key.w, whole.y],
+  };
+  const under = ([x, y]) => marks.filter((m) => m.x + (m.r ?? 0) >= x && m.x - (m.r ?? 0) <= x + key.w && m.y + (m.r ?? 0) >= y && m.y - (m.r ?? 0) <= y + key.h).length;
+  return Object.entries(corners).reduce((best, [name, at]) => (under(at) < best.n ? { name, n: under(at) } : best), { name: "", n: Infinity }).name;
+}

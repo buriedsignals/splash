@@ -12,7 +12,7 @@ import {
   stageGeoPoint,
 } from "../craft/_shared/gesture-geo-point-family.mjs";
 import { composeGeoPointStatic } from "../craft/_shared/gesture-geo-point-static.mjs";
-import { controlLegend, controlWords, scheduleGeoPointWeb } from "../craft/_shared/gesture-geo-point-web.mjs";
+import { controlLegend, controlWords, scheduleGeoPointWeb, sizeKeyCorner, wordAnchor } from "../craft/_shared/gesture-geo-point-web.mjs";
 
 import {
   cameraAt,
@@ -605,5 +605,27 @@ describe("point-map reader control words", () => {
   it("should group a filter's counts the story's way", () => {
     const words = controlWords({ do: "filter", state: { kept: Array(72).fill("a") } }, { names: Array(8900).fill("x") }, String, (n: string) => n, "fr");
     expect(words.chip).toBe("72 / 8\u00a0900");
+  });
+});
+
+// gx-proportional-symbol web (Qwen3.5-9B, 2026-11-13): "Ukraine 6 000 MW" was written from its circle's centre, over
+// the circle, and the page printed a bare "MW" above the map with no circle to read it by.
+describe("point-map web furniture", () => {
+  const box = { x: 0, y: 0, w: 1000, h: 750 };
+  it("should start a word at its circle's edge, not its centre", () => {
+    expect(wordAnchor({ x: 200, y: 100, r: 15 }, box)).toEqual({ x: 215, leftward: false });
+  });
+
+  it("should end a leftward word at its circle's edge", () => {
+    expect(wordAnchor({ x: 800, y: 100, r: 15 }, box)).toEqual({ x: 785, leftward: true });
+  });
+
+  it("should seat the size key in the corner with the fewest marks", () => {
+    const marks = [{ x: 50, y: 700, r: 5 }, { x: 60, y: 690, r: 5 }, { x: 950, y: 50, r: 5 }];
+    expect(sizeKeyCorner(marks, { w: 120, h: 90 }, box)).toBe("bottom-right");
+  });
+
+  it("should prefer the bottom-left corner when corners are equally clear", () => {
+    expect(sizeKeyCorner([], { w: 120, h: 90 }, box)).toBe("bottom-left");
   });
 });

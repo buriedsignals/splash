@@ -348,6 +348,8 @@ for (const { label: id, direction: picked } of chosen) {
           detail: `${s.place ? `${s.place} · ` : ""}${s.group} · ${fmt(s.value)} · ${s.mark}`,
         })),
         whole: { x: 0, y: 0, w: VIEW, h: VIEW / CAMERA_ASPECT },
+        // The key the still draws beside its map, drawn on the page's map: without it "MW" stood alone above the plate.
+        sizeKey: { unit: plain(beat.unit), circles: keyCircles.map((c) => ({ r: c.r * VIEW, label: c.label })) },
       };
       await renderGeoPointFormat(FORMAT, { here: HERE, variant: "symbol", beat, geometry, valid: staged.valid, adapter: staged.adapter, valueFormat: fmt, label: (n) => staged.adapter.markOf(n)?.series ?? n, land: tints.land, textPerRegister: textFor(cut), alt: typeof beat.alt === "function" ? beat.alt(cut) : beat.alt });
       continue;

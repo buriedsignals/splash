@@ -30,6 +30,7 @@ import {
   type Geometry,
   type Roles,
 } from "./GestureGeoPointMap.tsx";
+import { sizeKeyCorner, wordAnchor } from "./gesture-geo-point-web.mjs";
 const { controlChromeCss } = await import(
   skillScriptFrom(
     import.meta.dirname,
@@ -155,6 +156,22 @@ export function GestureGeoPointWeb({
     const hidden = new Set(p.roles.hidden);
     const asked = G.marks.filter((m) => !hidden.has(m.name) && inBox(m.x, m.y));
     const words = wordsOf(G, p.roles, p.notes, p.named).filter((w) => inBox(w.x, w.y));
+    // THE SIZE KEY, in the picture's own scale (a zoom draws its circles k times larger, and so does its key): nested
+    // circles on one baseline in the clearest corner, their values and the unit as words, so a circle can be read.
+    const key = (() => {
+      if (!G.sizeKey?.circles.length) return null;
+      const rs = G.sizeKey.circles.map((c) => ({ ...c, r: c.r * k }));
+      const rMax = Math.max(...rs.map((c) => c.r));
+      const PAD = 14;
+      const size = { w: 2 * rMax + 110, h: 2 * rMax + 34 };
+      const shown = G.marks.filter((m) => !hidden.has(m.name) && inBox(m.x, m.y)).map((m) => ({ x: tx(m.x), y: ty(m.y), r: (m.r ?? 0) * k }));
+      const corner = sizeKeyCorner(shown, { w: size.w + 2 * PAD, h: size.h + 2 * PAD }, W0);
+      const x0 = corner.endsWith("left") ? W0.x + PAD : W0.x + W0.w - PAD - size.w;
+      const y0 = corner.startsWith("top") ? W0.y + PAD : W0.y + W0.h - PAD - size.h;
+      const cx = x0 + rMax;
+      const base = y0 + size.h;
+      return { cx, base, rMax, x0, y0, circles: rs };
+    })();
     return [
       <svg
         key={`s${id}`}
@@ -187,6 +204,14 @@ export function GestureGeoPointWeb({
             data-detail={m.detail}
           />
         ))}
+        {key
+          ? key.circles.map((c, i) => (
+              <g key={`k${i}`} className="size-key">
+                <circle cx={key.cx} cy={key.base - c.r} r={c.r} fill="none" stroke={inks.ring} strokeWidth={1} vectorEffect="non-scaling-stroke" />
+                <line x1={key.cx} x2={key.cx + key.rMax + 8} y1={key.base - 2 * c.r} y2={key.base - 2 * c.r} stroke={inks.ring} strokeWidth={1} vectorEffect="non-scaling-stroke" />
+              </g>
+            ))
+          : null}
         <rect className="hit-area" x={W0.x} y={W0.y} width={W0.w} height={W0.h} fill="transparent" pointerEvents="all" />
       </svg>,
       <div
@@ -195,6 +220,18 @@ export function GestureGeoPointWeb({
         data-plate={id}
         key={`l${id}`}
       >
+        {key
+          ? [
+              <span key="ku" className="geo-word size-key-unit" style={{ ...regs.axis, color: labelInk, left: pct(key.x0 - W0.x, W0.w), top: pct(key.y0 - W0.y, W0.h), transform: "translate(0, -50%)" }}>
+                {G.sizeKey!.unit}
+              </span>,
+              ...key.circles.map((c, i) => (
+                <span key={`kl${i}`} className="geo-word size-key-label" style={{ ...regs.axis, color: labelInk, left: pct(key.cx + key.rMax + 8 - W0.x, W0.w), top: pct(key.base - 2 * c.r - W0.y, W0.h), transform: "translate(4px, -50%)" }}>
+                  {c.label}
+                </span>
+              )),
+            ]
+          : null}
         {words.map((w, i) => (
           <span
             key={i}
@@ -207,9 +244,9 @@ export function GestureGeoPointWeb({
                   : regs.annot),
               fontStyle: w.kind === "water" ? "italic" : undefined,
               color: w.accent ? accentInk : labelInk,
-              left: pct(w.x - box.x, box.w),
-              // A word in the right part of the picture reads leftward from its mark, so it stays inside.
-              transform: (w.x - box.x) / box.w > 0.6 ? "translate(calc(-100% - 7px), -50%)" : undefined,
+              // A word starts at its circle's edge, and in the right part of the picture reads leftward from it.
+              left: pct(wordAnchor({ ...w, r: (w.r ?? 0) }, box).x - box.x, box.w),
+              transform: wordAnchor(w, box).leftward ? "translate(calc(-100% - 7px), -50%)" : undefined,
               top: pct(w.y - box.y, box.h),
             }}
           >
@@ -301,7 +338,7 @@ export function GestureGeoPointWeb({
           </div>
         ))}
       </div>
-      {unit ? (
+      {unit && !G.sizeKey ? (
         <p className="chart-unit" style={{ ...regs.axis, margin: "4px 0 2px" }}>
           {unit}
         </p>
