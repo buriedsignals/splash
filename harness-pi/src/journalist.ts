@@ -68,7 +68,7 @@ export type Sheet = Partial<Record<keyof typeof SHEET_KEYS, string>>;
 
 export function scriptedJournalist(
   sheet: Sheet,
-  { server = LOCAL_SERVER } = {},
+  { server = LOCAL_SERVER, timeoutMs = 120_000 } = {},
 ): Journalist & {
   log: { said: string; key: string; answer: string }[];
 } {
@@ -79,7 +79,10 @@ export function scriptedJournalist(
     async answer(said) {
       const excluded = LATER_KEYS[this.phase ?? ""] ?? [];
       const keys = Object.keys(SHEET_KEYS).filter((k) => !excluded.includes(k));
-      const res = await fetch(`${server}/v1/chat/completions`, {
+      // Osaurus once held this request open with no model loaded (stress-v, 2026-11-13): the run sat ten minutes
+      // after its storyboard stopped. A hung classification is asked once more, then read as "other".
+      const ask = (): Promise<Response> => fetch(`${server}/v1/chat/completions`, {
+        signal: AbortSignal.timeout(timeoutMs),
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -100,7 +103,10 @@ export function scriptedJournalist(
           ],
         }),
       });
-      const body = (await res.json()) as {
+      const body = (await ask()
+        .catch(() => ask())
+        .then((r) => r.json())
+        .catch(() => ({}))) as {
         choices?: { message?: { content?: string } }[];
       };
       // The closing offers name themselves; the classifier read "another format" as the publication

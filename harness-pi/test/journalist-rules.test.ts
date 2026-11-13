@@ -21,6 +21,19 @@ const menu =
 const survey =
   "The survey found several other interesting angles in your data. Which of these would you like to include as additional subjects?\n\n- **low-carbon-transition-speed**: How fast countries move.\n- **renewable-vs-nuclear-mix**: The relative shares.";
 
+describe("scripted journalist, a classifier that never answers", () => {
+  it("should answer the sheet's fallback instead of waiting forever", async () => {
+    const mute = Bun.serve({ port: 0, fetch: () => new Promise<Response>(() => {}) });
+    try {
+      const j = scriptedJournalist({ other: "I don't know." }, { server: mute.url.origin, timeoutMs: 200 });
+      j.phase = "storyboard";
+      expect(await j.answer("Which colours?")).toBe("I don't know.");
+    } finally {
+      mute.stop(true);
+    }
+  });
+});
+
 describe("scripted journalist, answers the classifier cannot override", () => {
   it("should name the sheet's treatment when the desk shows a candidate menu and asks which one", async () => {
     reply = "takeaway";
