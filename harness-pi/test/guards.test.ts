@@ -498,6 +498,16 @@ describe("assertLegibleLabels", () => {
 });
 
 describe("errorText", () => {
+  // gx-bullet web (12B, 2026-11-13): beat.mjs ended "};" then a line holding one backtick; the refusal read
+  // "Unterminated string literal (line 125: `)" and the 12B edited a template string elsewhere three times.
+  it("should name a lone quote line as stray and say to delete it", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-ref-"));
+    writeFileSync(join(dir, "beat.mjs"), "export default {\n  title: \"t\",\n};\n`\n");
+    let error;
+    try { await import(join(dir, "beat.mjs")); } catch (e) { error = e; }
+    expect(errorText(error)).toMatch(/line 4 holds only a stray ` .*a value that works: delete line 4/);
+  });
+
   // gx-bullet scrolly (Qwen3.5-9B, 2026-11-13): format was written as a field of the beat and called by its bare name
   // inside the cards; the refusal was only "format is not defined", and the craft stopped on it.
   it("should name the bare name, its beat.mjs line, and the definition that works", async () => {

@@ -464,6 +464,11 @@ export function errorText(error) {
       return `${name} is not defined${line ? ` (beat.mjs line ${line})` : ""}: a function in beat.mjs calls ${name} by its bare name, but nothing defines it there — a field of the beat is not a variable — a value that works: const ${name} = … above export default, then give the field as ${name}, (shorthand)`;
     }
     const where = e?.position ? ` (line ${e.position.line}: ${String(e.position.lineText ?? "").trim()})` : "";
+    // A line holding only a quote opens a string nothing closes (gx-bullet web, 12B, 2026-11-13: a lone backtick after
+    // the closing "};"); "Unterminated string literal (line 125: `)" sent the 12B editing template strings elsewhere.
+    const lone = e?.position && /^\s*([`'"])\s*$/.exec(String(e.position.lineText ?? ""));
+    if (lone)
+      return `${e.message}${where}: line ${e.position.line} holds only a stray ${lone[1]} that opens a string nothing closes — a value that works: delete line ${e.position.line} (edit_file its "${lone[1]}" line, with the line before it, to that line alone)`;
     return `${e?.message ?? String(e)}${where}`;
   };
   // One build error comes alone, carrying its own position; several come grouped.
