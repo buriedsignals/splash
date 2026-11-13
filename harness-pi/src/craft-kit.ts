@@ -95,7 +95,9 @@ export function claimBlock(meta: Record<string, unknown>): string {
       `the claim is about ${meta.claimEntity}${meta.claimVersus ? ` against ${meta.claimVersus}` : ""}`,
     );
   if (meta.claimRatio)
-    lines.push(`the measure is ${String(meta.claimRatio).replace(" / ", " divided by ")} for every row, not either column alone`);
+    lines.push(
+      `the measure is ${String(meta.claimRatio).replace(" / ", " divided by ")} for every row, not either column alone`,
+    );
   if (meta.subject)
     lines.push(`the subject, in the journalist's words: ${meta.subject}`);
   if (meta.comparison)
@@ -106,38 +108,69 @@ export function claimBlock(meta: Record<string, unknown>): string {
 }
 
 /** The gestures a gesture kit offers in a format: the family's admissible ones, narrowed to the type's own. */
-export async function kitGestures(kit: string, format: string): Promise<{ do: string; meaning: string }[]> {
+export async function kitGestures(
+  kit: string,
+  format: string,
+): Promise<{ do: string; meaning: string }[]> {
   const { admissible } = await import("../craft/_shared/gesture-registry.mjs");
   // The kit folder is <format>/<slug>.gestures: its slug names the family whose gestures the contract lists.
   const family = familyOf(basename(kit).replace(/\.gestures$/, "")) ?? "length";
   // A family registers itself (and may narrow the list per type) in its own module: load it when it exists.
-  const module = join(import.meta.dirname, "..", "craft", "_shared", `gesture-family-${family}.mjs`);
+  const module = join(
+    import.meta.dirname,
+    "..",
+    "craft",
+    "_shared",
+    `gesture-family-${family}.mjs`,
+  );
   const own = existsSync(module) ? await import(module) : {};
   // A family may register some of its types from a sibling module (gesture-<family>-<part>-family.mjs): load them too.
   const shared = join(import.meta.dirname, "..", "craft", "_shared");
-  for (const f of readdirSync(shared).filter((f) => f.startsWith(`gesture-${family}-`) && f.endsWith("-family.mjs")))
+  for (const f of readdirSync(shared).filter(
+    (f) => f.startsWith(`gesture-${family}-`) && f.endsWith("-family.mjs"),
+  ))
     await import(join(shared, f));
   const slug = basename(kit).replace(/\.gestures$/, "");
   const subset: string[] | undefined = own.gesturesOf?.(slug);
-  return admissible(family, format).filter((a: { do: string }) => !subset || subset.includes(a.do));
+  return admissible(family, format).filter(
+    (a: { do: string }) => !subset || subset.includes(a.do),
+  );
 }
 
 /** A kit's CONTRACT.md as the craft session reads it: a gesture kit's {{GESTURES}} filled from the registry. */
-export async function contractText(kit: string, format: string, { typedStaging = format === "static", beat }: { typedStaging?: boolean; beat?: string } = {}): Promise<string> {
+export async function contractText(
+  kit: string,
+  format: string,
+  {
+    typedStaging = format === "static",
+    beat,
+  }: { typedStaging?: boolean; beat?: string } = {},
+): Promise<string> {
   // A contract names the proof/ beat its kit was copied from; the story holds no proof/, and the path sent
   // Qwen3.5-9B reading there for thirteen of sixteen calls (gx-proportional-symbol web, 2026-11-13).
-  let text = readFileSync(join(kit, "CONTRACT.md"), "utf8").replace(/`?proof\/[\w.-]+\/?`?/g, "the reference beat");
+  let text = readFileSync(join(kit, "CONTRACT.md"), "utf8").replace(
+    /`?proof\/[\w.-]+\/?`?/g,
+    "the reference beat",
+  );
   // "`beat.example.mjs` (in the folder)" was read as the proof/ folder: sixteen turns of reads there and no beat.mjs
   // (Qwen3.5-9B, gx-proportional-symbol static, 2026-11-13). The folder is the beat's, and it is named.
   if (beat !== undefined)
     text = text
-      .replace(/`beat\.example\.mjs`( \(in the folder\))?/g, `\`beats/${beat}/beat.example.mjs\``)
+      .replace(
+        /`beat\.example\.mjs`( \(in the folder\))?/g,
+        `\`beats/${beat}/beat.example.mjs\``,
+      )
       .replace(/\((already )?in the folder\)/g, `($1in beats/${beat}/)`);
   // Without the typed tool the gestures stay in beat.mjs; only the check stays code's.
   if (!typedStaging)
-    text = text.replace(/^> \*\*Staging and check\.\*\*.*$/m, "> **Check.** Do not write `check()`: the kit computes it from the recorded claim and data.json. Write `gestures` in beat.mjs as below.");
+    text = text.replace(
+      /^> \*\*Staging and check\.\*\*.*$/m,
+      "> **Check.** Do not write `check()`: the kit computes it from the recorded claim and data.json. Write `gestures` in beat.mjs as below.",
+    );
   if (!text.includes("{{GESTURES}}")) return text;
-  const rows = (await kitGestures(kit, format)).map((a) => `| \`${a.do}\` | ${a.meaning} |`);
+  const rows = (await kitGestures(kit, format)).map(
+    (a) => `| \`${a.do}\` | ${a.meaning} |`,
+  );
   return text.replace("{{GESTURES}}", rows.join("\n"));
 }
 
@@ -145,7 +178,9 @@ export async function contractText(kit: string, format: string, { typedStaging =
  *  the worked example under proof/ and skills/ through two attempts (gx-proportional-symbol static, 2026-11-13). */
 export function unwrittenBeat(beatDir: string, beat: string): string {
   const held = existsSync(beatDir) ? readdirSync(beatDir).sort() : [];
-  const example = held.includes("beat.example.mjs") ? `read beats/${beat}/beat.example.mjs (the worked example), then ` : "";
+  const example = held.includes("beat.example.mjs")
+    ? `read beats/${beat}/beat.example.mjs (the worked example), then `
+    : "";
   return `beat.mjs was never written. beats/${beat}/ holds: ${held.join(", ")}. Next: ${example}write beats/${beat}/beat.mjs with write_file.`;
 }
 
@@ -157,7 +192,9 @@ export function craftBriefing(beatDir: string, beat: string): string {
   if (!existsSync(file)) return "";
   // The example's header names the proof/ beat it was written from; that folder is not in the story, and the path
   // alone sent Qwen3.5-9B listing proof/ for three attempts (gx-proportional-symbol video, 2026-11-13).
-  const example = readFileSync(file, "utf8").trimEnd().replace(/proof\/[\w.-]+/g, "the reference beat");
+  const example = readFileSync(file, "utf8")
+    .trimEnd()
+    .replace(/proof\/[\w.-]+/g, "the reference beat");
   return `\n\nbeats/${beat}/beat.example.mjs, the worked example, read for you (do not read it again: it is all the reference the beat needs):\n\`\`\`js\n${example}\n\`\`\`\nYour first call is write_file of beats/${beat}/beat.mjs, this story's own, written from this example, the takeaway and the data summary above.`;
 }
 
@@ -169,7 +206,9 @@ function rendersNow(beatDir: string): boolean {
   const renders = join(beatDir, "renders");
   if (!existsSync(file) || !existsSync(renders)) return false;
   const written = statSync(file).mtimeMs;
-  return readdirSync(renders).some((f) => f.endsWith(".png") && statSync(join(renders, f)).mtimeMs > written);
+  return readdirSync(renders).some(
+    (f) => f.endsWith(".png") && statSync(join(renders, f)).mtimeMs > written,
+  );
 }
 
 /** What a craft session's reads are answered with in code: proof/ is not the beat's (the example was written from it
@@ -184,8 +223,18 @@ export function craftReads(beatDir: string, beat: string) {
         : `Next: write_file of beats/${beat}/beat.mjs, this story's own, from the worked example in your first message.`;
   return {
     answered: [
-      { match: /(^|\/)proof(\/|$)/, reply: `proof/ is not part of this beat: the worked example in your first message is all of it the beat needs. ${next().replace("Next: ", "Next: your call is ")}` },
-      { match: /beat\.example\.mjs$/, reply: `beats/${beat}/beat.example.mjs is in your first message, read for you. ${next()}` },
+      {
+        match: /(^|\/)proof(\/|$)/,
+        reply: `proof/ is not part of this beat: the worked example in your first message is all of it the beat needs. ${next().replace("Next: ", "Next: your call is ")}`,
+      },
+      {
+        match: /(^|\/)CONTRACT\.md$/,
+        reply: `CONTRACT.md is your first message, read for you. ${next()}`,
+      },
+      {
+        match: /beat\.example\.mjs$/,
+        reply: `beats/${beat}/beat.example.mjs is in your first message, read for you. ${next()}`,
+      },
     ],
     noRereads: async () => next(),
   };

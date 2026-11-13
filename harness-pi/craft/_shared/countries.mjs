@@ -27,6 +27,9 @@ export function countryIndex(dir) {
  * could not resolve with the closest known name.
  */
 export function iso3Of(names, dir, rename = {}) {
+  // One name gives one code: a beat called iso3Of(country, HERE) per row in a try/catch, names.map threw on the string,
+  // and every row was skipped (Qwen3.5-9B, gx-proportional-symbol web, 2026-11-13).
+  if (!Array.isArray(names)) return iso3Of([names], dir, rename)[0];
   const { names: index, codes } = countryIndex(dir);
   const unresolved = [];
   const out = names.map((raw) => {

@@ -164,6 +164,13 @@ describe("the craft reads", () => {
     expect(craftReads(dir, "1").answered.some((a) => a.match.test("beats/1/beat.example.mjs"))).toBe(true);
   });
 
+  // gx-proportional-symbol web (Qwen3.5-9B, q5): the first read was the run's CONTRACT.md, whose raw text still named
+  // the proof/ folder the system prompt had scrubbed; sixteen turns of reads followed and nothing was written.
+  it("should answer a read of CONTRACT.md it was already given", () => {
+    const dir = mkdtempSync(join(tmpdir(), "beat-"));
+    expect(craftReads(dir, "1").answered.find((a) => a.match.test("/runs/x/CONTRACT.md"))?.reply).toMatch(/write_file of beats\/1\/beat\.mjs/);
+  });
+
   it("should send an unchanged reread to the edit and the render once beat.mjs exists", async () => {
     const dir = mkdtempSync(join(tmpdir(), "beat-"));
     writeFileSync(join(dir, "beat.mjs"), "export default {};");
