@@ -480,6 +480,18 @@ function spacedKey(e) {
   return before && new RegExp(`^${found[1]}\\s*:`).test(line.slice(at)) ? `${before[1].split(/[,{]\s*/).pop()} ${found[1]}` : null;
 }
 
+/** The line before a declaration the parser stopped at, when it ends with "," (a statement closed like a field). */
+function commaBefore(e) {
+  if (!e?.position?.file || !/^Expected identifier but found "(const|let|var|function)"$/.test(String(e.message ?? ""))) return null;
+  if (!existsSync(e.position.file)) return null;
+  const lines = readFileSync(e.position.file, "utf8").split("\n");
+  for (let i = e.position.line - 2; i >= 0; i--) {
+    if (!lines[i].trim()) continue;
+    return lines[i].trimEnd().endsWith(",") ? i + 1 : null;
+  }
+  return null;
+}
+
 export function errorText(error) {
   const one = (e) => {
     // The video credit's only refusal (chart-video shots.mjs sourceCreditFor) names no field: the field is source.
@@ -503,6 +515,11 @@ export function errorText(error) {
     const lone = e?.position && /^\s*([`'"])\s*$/.exec(String(e.position.lineText ?? ""));
     if (lone)
       return `${e.message}${where}: line ${e.position.line} holds only a stray ${lone[1]} that opens a string nothing closes — a value that works: delete line ${e.position.line} (edit_file its "${lone[1]}" line, with the line before it, to that line alone)`;
+    // gx-proportional-symbol web (Qwen3.5-9B, q8, 2026-11-13): "…centrales.`," closed a top-level statement, and the
+    // refusal quoted only the next declaration's line; six edits there, never on the comma.
+    const comma = commaBefore(e);
+    if (comma)
+      return `${e.message}${where}: line ${comma} ends with "," but closes a statement, not a field — a value that works: end line ${comma} with ";"`;
     const key = spacedKey(e);
     if (key)
       return `${key}: ... (line ${e.position.line}) is a key with a space, written without quotes — a value that works: "${key}": (quote the key)`;
@@ -512,7 +529,7 @@ export function errorText(error) {
   // (gx-proportional-symbol web, Qwen3.5-9B, 2026-11-13: `San Marino: "Saint-Marin"`) breaks the parse once and
   // cascades into "Expected ;" errors that point at nothing: only its own error is named.
   if (!error?.errors?.length) return one(error);
-  const first = error.errors.find((e) => spacedKey(e));
+  const first = error.errors.find((e) => spacedKey(e) || commaBefore(e));
   return [error.message, ...(first ? [first] : error.errors).map(one)].join(" — ");
 }
 

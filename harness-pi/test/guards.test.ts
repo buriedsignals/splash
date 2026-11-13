@@ -568,6 +568,20 @@ describe("errorText", () => {
     );
   });
 
+  // gx-proportional-symbol web (Qwen3.5-9B, q8, 2026-11-13): a top-level statement ended "…centrales.`," and the next
+  // read "const mercator = …"; the refusal quoted only line 144 and the model edited it six times, never line 141.
+  it("should name the comma that ends the statement before a declaration", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-ref-"));
+    writeFileSync(join(dir, "beat.mjs"), 'const a = () =>\n  "x",\n\nconst b = 2;\nexport default { a, b };\n');
+    let error;
+    try {
+      await import(join(dir, "beat.mjs"));
+    } catch (e) {
+      error = e;
+    }
+    expect(errorText(error)).toMatch(/line 2 ends with "," .*a value that works: end line 2 with ";"/);
+  });
+
   // gx-proportional-symbol web (Qwen3.5-9B, 2026-11-13): `San Marino: "Saint-Marin"` in a names object; the refusal
   // read 'Expected "}" but found "Marino"' and the model escaped every accent instead, three times, until it stopped.
   it("should name an unquoted key with a space and give it quoted", async () => {
