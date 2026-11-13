@@ -408,7 +408,18 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
           );
         value = iso;
       } else if (!(field === "limits" && /^none$/i.test(value.trim())))
-        assertJournalistOwns(field, value, dialogue);
+        try {
+          assertJournalistOwns(field, value, dialogue);
+        } catch (refused) {
+          // Asked this field's own question, the journalist answered, and the model reworded the answer: the code
+          // records their words itself. stress-v (Qwen3.5-9B, 2026-11-13) rewrote a limit three times past the refusal.
+          const asked = FIELD_QUESTIONS[field] && overlap(FIELD_QUESTIONS[field], dialogue.lastProposal ?? "") >= 0.5;
+          const answer = (dialogue.lastJournalist ?? "").trim();
+          if (!asked || !answer || overlap(answer, value) < 0.4) throw refused;
+          await ensureFile();
+          await mutateStoryboard(path, { topLevel: { [field]: answer } });
+          return text(`recorded ${field} in the journalist's own words: ${JSON.stringify(answer)}. ${await status()}`);
+        }
       await ensureFile();
       await mutateStoryboard(path, { topLevel: { [field]: value } });
       return text(`recorded ${field}. ${await status()}`);

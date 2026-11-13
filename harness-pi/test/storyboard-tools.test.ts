@@ -548,6 +548,31 @@ async function mutateFixture(fields: Record<string, unknown>) {
   });
 }
 
+describe("a hand field the model rewords", () => {
+  // stress-v (Qwen3.5-9B, 2026-11-13): asked the limits question, the journalist answered, and the model recorded
+  // its own longer version three times past the refusal until the step stopped.
+  const answer = "Territorial emissions only: emissions embedded in traded goods and land-use change are not counted.";
+  const reworded =
+    "Data represents territorial emissions only; it excludes emissions embedded in traded goods and land-use change. Comparison is limited to fossil fuels and industry sectors as defined in the text, without any cement, aviation or shipping adjustment for the year reported.";
+
+  it("should record the journalist's own words when the model rewords the answer to that field's question", async () => {
+    dialogue.lastProposal = "Next question: **What does this data NOT let you conclude?**";
+    dialogue.lastJournalist = answer;
+    dialogue.history = [];
+    await call(storyboardTools(bases, dialogue).recordHand, { field: "limits", value: reworded });
+    expect(String(meta().limits)).toBe(answer);
+  });
+
+  it("should still refuse when the journalist was asked another question", async () => {
+    dialogue.lastProposal = "Where should we position this graphic?";
+    dialogue.lastJournalist = answer;
+    dialogue.history = [];
+    await expect(call(storyboardTools(bases, dialogue).recordHand, { field: "limits", value: reworded })).rejects.toThrow(
+      /journalist's own words/,
+    );
+  });
+});
+
 describe("dates", () => {
   it("should refuse an as-of date the journalist never wrote", async () => {
     dialogue.lastJournalist =
