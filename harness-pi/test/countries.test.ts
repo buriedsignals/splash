@@ -16,4 +16,9 @@ describe("iso3Of", () => {
   it("should still return the codes in order when given a list", () => {
     expect([...iso3Of(["France", "Germany"], kit)]).toEqual(["FRA", "DEU"]);
   });
+
+  // q7: the beat wrote its names in French and every "Royaume-Uni" was refused (closest: romania), three passes over.
+  it("should resolve a country written in French", () => {
+    expect([...iso3Of(["Royaume-Uni", "Allemagne", "Espagne"], kit)]).toEqual(["GBR", "DEU", "ESP"]);
+  });
 });

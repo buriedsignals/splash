@@ -7,6 +7,28 @@ import { join } from "node:path";
 
 import { ALIASES, distance, norm } from "./country-names.mjs";
 
+// A country written in the page's language ("Royaume-Uni") → its English name, by Intl's region names: a French beat
+// refused every "Royaume-Uni" (closest: romania) through three passes (Qwen3.5-9B, gx-proportional-symbol web, 2026-11-13).
+let english;
+function ENGLISH() {
+  if (english) return english;
+  english = new Map();
+  const en = new Intl.DisplayNames(["en"], { type: "region" });
+  const others = ["fr", "de", "es", "it", "pt", "nl"].map((l) => new Intl.DisplayNames([l], { type: "region" }));
+  const A = 65;
+  for (let i = 0; i < 26; i++)
+    for (let j = 0; j < 26; j++) {
+      const code = String.fromCharCode(A + i, A + j);
+      const name = en.of(code);
+      if (!name || name === code) continue;
+      for (const d of others) {
+        const local = d.of(code);
+        if (local && local !== code && !english.has(norm(local))) english.set(norm(local), norm(name));
+      }
+    }
+  return english;
+}
+
 /** name → ISO-3 for the shapes beside `dir` (the beat folder). */
 export function countryIndex(dir) {
   const path = join(dir, "shapes.geojson");
@@ -36,7 +58,7 @@ export function iso3Of(names, dir, rename = {}) {
     const given = rename[raw] ?? raw;
     const upper = String(given).trim().toUpperCase();
     if (/^[A-Z]{3}$/.test(upper) && codes.has(upper)) return upper;
-    const hit = index.get(norm(given));
+    const hit = index.get(norm(given)) ?? index.get(ENGLISH().get(norm(given)) ?? "");
     if (hit) return hit;
     const closest = [...index.keys()].sort((a, b) => distance(norm(given), a) - distance(norm(given), b))[0];
     unresolved.push(`${JSON.stringify(raw)} (closest: ${closest})`);
