@@ -121,7 +121,7 @@ describe("file tools", () => {
     mkdirSync(join(bases.root, "proof/some-beat"), { recursive: true });
     writeFileSync(join(bases.root, "proof/some-beat/BRIEF.md"), "finished");
     const { readFile: read } = fsTools({ ...bases, readBases: ["skills", "shared"] });
-    await expect(call(read, { path: "proof/some-beat/BRIEF.md" })).rejects.toThrow(/outside the readable directories/);
+    await expect(call(read, { path: "proof/some-beat/BRIEF.md" })).rejects.toThrow(/outside the readable directories \(the story, skills\/, shared\/\)/);
   });
 
   it("should read the story's frozen source asked for under proof/", async () => {

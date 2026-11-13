@@ -197,7 +197,7 @@ export function resolveReadable(bases: Bases, path: string): string {
     .map((b) => realpathSync(b));
   if (!allowed.some((b) => within(abs, b))) {
     throw new Error(
-      `${path} is outside the readable directories (the story, skills/, shared/, proof/): the story is ${bases.storyDir}`,
+      `${path} is outside the readable directories (the story, ${(bases.readBases ?? READ_BASES).map((b) => `${b}/`).join(", ")}): the story is ${bases.storyDir}`,
     );
   }
   return abs;
