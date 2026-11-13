@@ -8,7 +8,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { claimBlock, contractText, craftKit, recordFallback } from "../src/craft-kit.ts";
+import { claimBlock, contractText, craftKit, recordFallback, unwrittenBeat } from "../src/craft-kit.ts";
 
 let craft: string;
 let beatDir: string;
@@ -116,5 +116,14 @@ describe("contract text", () => {
 
   it("should leave no folder unnamed", async () => {
     expect(await contractText(real, "static", { beat: "1" })).not.toMatch(/in the folder/);
+  });
+});
+
+describe("an unwritten beat", () => {
+  it("should name the worked example in the beat's folder as the next read", () => {
+    const dir = mkdtempSync(join(tmpdir(), "beat-"));
+    writeFileSync(join(dir, "beat.example.mjs"), "");
+    writeFileSync(join(dir, "data.json"), "{}");
+    expect(unwrittenBeat(dir, "1")).toMatch(/holds: beat\.example\.mjs, data\.json\. Next: read beats\/1\/beat\.example\.mjs .*write beats\/1\/beat\.mjs with write_file/);
   });
 });

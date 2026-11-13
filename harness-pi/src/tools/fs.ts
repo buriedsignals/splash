@@ -133,6 +133,19 @@ export function resolveInStory(bases: Bases, raw: string): string {
   return abs;
 }
 
+/** A missing path, answered with what its nearest existing folder holds, in the path as the model wrote it
+ *  (Qwen3.5-9B guessed file and folder names in a worked example, gx static cells, 2026-11-13). */
+function missing(path: string, abs: string): string {
+  let dir = dirname(abs);
+  let shown = dirname(path.replace(/\/+$/, ""));
+  while (!existsSync(dir) && dirname(dir) !== dir) {
+    dir = dirname(dir);
+    shown = dirname(shown);
+  }
+  const held = readdirSync(dir, { withFileTypes: true }).map((d) => (d.isDirectory() ? `${d.name}/` : d.name)).sort();
+  return `${path} does not exist; ${shown === "." ? "the root" : `${shown}/`} holds: ${held.slice(0, 40).join(", ")}${held.length > 40 ? ", …" : ""}.`;
+}
+
 export function resolveReadable(bases: Bases, path: string): string {
   let abs = realOrParent(resolveFromRoot(bases, path));
   // A story folder spelled with _ for - (a 12B read stories/stress_q_safety_incidents/ six times over and never
@@ -324,12 +337,7 @@ export function fsTools(bases: Bases) {
       const done = answeredFor(bases, path);
       if (done) return text(done);
       const abs = resolveReadable(bases, path);
-      if (!existsSync(abs)) {
-        let dir = dirname(abs);
-        while (!existsSync(dir) && dirname(dir) !== dir) dir = dirname(dir);
-        const held = readdirSync(dir, { withFileTypes: true }).map((d) => (d.isDirectory() ? `${d.name}/` : d.name)).sort();
-        throw new Error(`${path} does not exist; ${relative(bases.root, dir) || "."}/ holds: ${held.slice(0, 40).join(", ")}${held.length > 40 ? ", …" : ""}. Read one of these.`);
-      }
+      if (!existsSync(abs)) throw new Error(missing(path, abs));
       if (bases.noRereads) {
         // stress-ad (Qwen3.5-9B, 2026-11-13): eight alternating reads of the same two references and no question, until the cap.
         const stamp = String(statSync(abs).mtimeMs);
@@ -366,6 +374,7 @@ export function fsTools(bases: Bases) {
       const done = answeredFor(bases, path);
       if (done) return text(done);
       const abs = resolveReadable(bases, path);
+      if (!existsSync(abs)) throw new Error(missing(path, abs));
       const entries = readdirSync(abs).map((name) =>
         statSync(join(abs, name)).isDirectory() ? `${name}/` : name,
       );

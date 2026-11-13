@@ -137,3 +137,11 @@ export async function contractText(kit: string, format: string, { typedStaging =
   const rows = (await kitGestures(kit, format)).map((a) => `| \`${a.do}\` | ${a.meaning} |`);
   return text.replace("{{GESTURES}}", rows.join("\n"));
 }
+
+/** The refusal for a beat whose beat.mjs was never written names the folder and the next step: Qwen3.5-9B looked for
+ *  the worked example under proof/ and skills/ through two attempts (gx-proportional-symbol static, 2026-11-13). */
+export function unwrittenBeat(beatDir: string, beat: string): string {
+  const held = existsSync(beatDir) ? readdirSync(beatDir).sort() : [];
+  const example = held.includes("beat.example.mjs") ? `read beats/${beat}/beat.example.mjs (the worked example), then ` : "";
+  return `beat.mjs was never written. beats/${beat}/ holds: ${held.join(", ")}. Next: ${example}write beats/${beat}/beat.mjs with write_file.`;
+}

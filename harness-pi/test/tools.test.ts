@@ -85,6 +85,11 @@ describe("file tools", () => {
     await expect(call(read, { path: "stories/demo/source/BEATS.md" })).rejects.toThrow(/does not exist.*holds: .*data\.csv/);
   });
 
+  it("should name what the nearest folder holds when the folder listed does not exist", async () => {
+    const { listDir } = fsTools(bases);
+    await expect(call(listDir, { path: "stories/demo/source/nope/deeper" })).rejects.toThrow(/does not exist; stories\/demo\/source\/ holds: .*data\.csv/);
+  });
+
   it("should list the story for the path '.'", async () => {
     const { listDir } = fsTools(bases);
     const r = await call(listDir, { path: "." });
