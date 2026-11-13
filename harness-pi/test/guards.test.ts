@@ -204,7 +204,10 @@ describe("applyStoryboard", () => {
       title: ['Un tiers d\'Europe, "en bas"', "Un tiers d’Europe"],
     };
     applyStoryboard(b, dir);
-    expect(b.title).toEqual(["Un tiers d’Europe, « en bas »", "Un tiers d’Europe"]);
+    expect(b.title).toEqual([
+      "Un tiers d’Europe, « en bas »",
+      "Un tiers d’Europe",
+    ]);
   });
 
   // gx-proportional-symbol static (Qwen3.5-9B, 2026-11-13): the copy ladder spent the headline first and printed the
@@ -213,18 +216,39 @@ describe("applyStoryboard", () => {
     const root = mkdtempSync(join(tmpdir(), "splash-short-"));
     const dir = join(root, "beats", "1");
     mkdirSync(dir, { recursive: true });
-    writeFileSync(join(root, "STORYBOARD.md"), `---\ntakeaway: "Un centième des sites porte plus d’un tiers de la puissance bas-carbone d’Europe"\n---\n`);
-    const b = { title: ["Un centième des sites porte plus d’un tiers de la puissance bas-carbone d’Europe", "Un centième des sites, plus d’un tiers de la puissance", "La puissance tient dans peu de sites"] };
-    expect(() => applyStoryboard(b, dir)).toThrow(/title: its form 3, "La puissance tient dans peu de sites", drops the takeaway's claim.*a value that works: title: \[.*"Un centième des sites, plus d’un tiers de la puissance"\]/);
+    writeFileSync(
+      join(root, "STORYBOARD.md"),
+      `---\ntakeaway: "Un centième des sites porte plus d’un tiers de la puissance bas-carbone d’Europe"\n---\n`,
+    );
+    const b = {
+      title: [
+        "Un centième des sites porte plus d’un tiers de la puissance bas-carbone d’Europe",
+        "Un centième des sites, plus d’un tiers de la puissance",
+        "La puissance tient dans peu de sites",
+      ],
+    };
+    expect(() => applyStoryboard(b, dir)).toThrow(
+      /title: its form 3, "La puissance tient dans peu de sites", drops the takeaway's claim.*a value that works: title: \[.*"Un centième des sites, plus d’un tiers de la puissance"\]/,
+    );
   });
 
   it("should refuse a shorter title form that drops a number of the takeaway", () => {
     const root = mkdtempSync(join(tmpdir(), "splash-short-"));
     const dir = join(root, "beats", "1");
     mkdirSync(dir, { recursive: true });
-    writeFileSync(join(root, "STORYBOARD.md"), `---\ntakeaway: "Lisboa carries 214 of the 394 million trips"\n---\n`);
-    const b = { title: ["Lisboa carries 214 of the 394 million trips", "Lisboa carries most million trips"] };
-    expect(() => applyStoryboard(b, dir)).toThrow(/form 2.*drops the takeaway's claim \(214, 394\)/);
+    writeFileSync(
+      join(root, "STORYBOARD.md"),
+      `---\ntakeaway: "Lisboa carries 214 of the 394 million trips"\n---\n`,
+    );
+    const b = {
+      title: [
+        "Lisboa carries 214 of the 394 million trips",
+        "Lisboa carries most million trips",
+      ],
+    };
+    expect(() => applyStoryboard(b, dir)).toThrow(
+      /form 2.*drops the takeaway's claim \(214, 394\)/,
+    );
   });
 
   // gx-bullet web (Qwen3.5-9B, 2026-11-13): the credit line ended "· as of 2025-06-26" on a French plate.
@@ -495,10 +519,7 @@ describe("applyStoryboard on the title's shorter forms", () => {
 
   it("should accept French shorter forms under a French storyboard", () => {
     const b = {
-      title: [
-        "Les seize ont tous progressé",
-        "Les seize ont progressé",
-      ],
+      title: ["Les seize ont tous progressé", "Les seize ont progressé"],
     };
     const dir = storyIn("fr");
     writeFileSync(
@@ -572,14 +593,39 @@ describe("errorText", () => {
   // read "const mercator = …"; the refusal quoted only line 144 and the model edited it six times, never line 141.
   it("should name the comma that ends the statement before a declaration", async () => {
     const dir = mkdtempSync(join(tmpdir(), "splash-ref-"));
-    writeFileSync(join(dir, "beat.mjs"), 'const a = () =>\n  "x",\n\nconst b = 2;\nexport default { a, b };\n');
+    writeFileSync(
+      join(dir, "beat.mjs"),
+      'const a = () =>\n  "x",\n\nconst b = 2;\nexport default { a, b };\n',
+    );
     let error;
     try {
       await import(join(dir, "beat.mjs"));
     } catch (e) {
       error = e;
     }
-    expect(errorText(error)).toMatch(/line 2 ends with "," .*a value that works: end line 2 with ";"/);
+    expect(errorText(error)).toMatch(
+      /line 2 ends with "," .*a value that works: end line 2 with ";"/,
+    );
+  });
+
+  // gx-proportional-symbol web (12B, 2026-11-13): beat.mjs held a first draft (lines 1–122, no export default) and a
+  // second whole beat from line 123; the refusal listed "has already been declared" names and the 12B looped.
+  it("should name a second copy of the beat and the lines to delete", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-ref-"));
+    const head = 'import { join } from "node:path";\n';
+    writeFileSync(
+      join(dir, "beat.mjs"),
+      `${head}const a = 1;\n\n${head}const a = 2;\nexport default { a, join };\n`,
+    );
+    let error;
+    try {
+      await import(join(dir, "beat.mjs"));
+    } catch (e) {
+      error = e;
+    }
+    expect(errorText(error)).toMatch(
+      /two copies.*line 4.*a value that works: delete lines 1–3/,
+    );
   });
 
   // gx-proportional-symbol web (Qwen3.5-9B, 2026-11-13): `San Marino: "Saint-Marin"` in a names object; the refusal

@@ -492,6 +492,31 @@ function commaBefore(e) {
   return null;
 }
 
+/**
+ * A beat.mjs holding the beat twice: the line where its imports start again, and the lines to delete — the copy
+ * without `export default` goes, else the first (gx-proportional-symbol web, 12B, 2026-11-13: a draft in lines 1–122,
+ * a whole beat from 123, and six refusals listing "has already been declared" names).
+ */
+function secondCopy(e) {
+  if (!e?.position?.file || !/has already been declared$/.test(String(e.message ?? ""))) return null;
+  if (!existsSync(e.position.file)) return null;
+  const lines = readFileSync(e.position.file, "utf8").replace(/\n$/, "").split("\n");
+  const seen = new Set();
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line.startsWith("import ")) continue;
+    if (!seen.has(line)) {
+      seen.add(line);
+      continue;
+    }
+    const exports = (from, to) => lines.slice(from, to).some((l) => /^export default\b/.test(l.trim()));
+    const keepFirst = exports(0, i) && !exports(i, lines.length);
+    const drop = keepFirst ? `${i + 1}–${lines.length}` : `1–${i}`;
+    return `beat.mjs holds two copies of the beat: the second starts at line ${i + 1}, where "${line}" comes again — a value that works: delete lines ${drop} (keep the copy with export default)`;
+  }
+  return null;
+}
+
 export function errorText(error) {
   const one = (e) => {
     // The video credit's only refusal (chart-video shots.mjs sourceCreditFor) names no field: the field is source.
@@ -520,6 +545,8 @@ export function errorText(error) {
     const comma = commaBefore(e);
     if (comma)
       return `${e.message}${where}: line ${comma} ends with "," but closes a statement, not a field — a value that works: end line ${comma} with ";"`;
+    const copy = secondCopy(e);
+    if (copy) return copy;
     const key = spacedKey(e);
     if (key)
       return `${key}: ... (line ${e.position.line}) is a key with a space, written without quotes — a value that works: "${key}": (quote the key)`;
@@ -529,7 +556,7 @@ export function errorText(error) {
   // (gx-proportional-symbol web, Qwen3.5-9B, 2026-11-13: `San Marino: "Saint-Marin"`) breaks the parse once and
   // cascades into "Expected ;" errors that point at nothing: only its own error is named.
   if (!error?.errors?.length) return one(error);
-  const first = error.errors.find((e) => spacedKey(e) || commaBefore(e));
+  const first = error.errors.find((e) => spacedKey(e) || commaBefore(e) || secondCopy(e));
   return [error.message, ...(first ? [first] : error.errors).map(one)].join(" — ");
 }
 
