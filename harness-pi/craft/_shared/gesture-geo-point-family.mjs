@@ -333,19 +333,30 @@ export function stageGeoPoint({ variant, gestures, marks, claim, format, adapter
   }
 }
 
-/** A set note (a highlight on a group) that counts its circles counts the ones the plate draws: the legibility cut
+/** A set note (a highlight on a group) that counts its circles prints the count the plate draws: the legibility cut
  *  leaves the smallest out, and "72 sites nucléaires" stood over 69 drawn (gx-proportional-symbol static, Qwen3.5-9B,
- *  2026-11-13). `drawn` is the set of marks the plate draws. */
+ *  2026-11-13). Code prints it, not the model: the staging, before the cut, accepts only the group's size, so a refusal
+ *  asking for 69 sent the model between two guards. `drawn` is the set of marks the plate draws; returns what changed. */
 export function setNotesDrawn(notes, drawn) {
+  const changed = [];
   for (const n of notes) {
     if (n.kind !== "set") continue;
     const shown = n.marks.filter((m) => drawn.has(m)).length;
     if (shown === n.marks.length) continue;
     const count = figuresIn(n.text).find((f) => f.value === n.marks.length);
     if (!count) continue;
-    const fixed = n.text.slice(0, count.index) + String(shown) + n.text.slice(count.index + count.raw.length);
-    throw new GestureRefusal(`gestures[${n.index}].note`, `the note prints ${count.raw}, every circle of the group, but the plate draws ${shown} of them (the rest fall under the legibility cut)`, { set: { index: n.index, field: "note", value: fixed } });
+    n.text = n.text.slice(0, count.index) + String(shown) + n.text.slice(count.index + count.raw.length);
+    changed.push(`gestures[${n.index}].note: ${count.raw} → ${shown} (the circles the plate draws)`);
   }
+  return changed;
+}
+
+/** The same count for the formats that print a gesture's note from the gestures (web, video, scrolly). */
+export function setGestureNotesDrawn(valid, drawn) {
+  const notes = valid.map((g, index) => ({ index, kind: g.do === "highlight" && g.marks?.length > 1 && g.note !== undefined ? "set" : "other", marks: g.marks ?? [], text: String(g.note ?? "") }));
+  const changed = setNotesDrawn(notes, drawn);
+  for (const n of notes) if (n.kind === "set") valid[n.index].note = n.text;
+  return changed;
 }
 
 /** A refusal as the runners print it: the field, what is wrong, and a value that works. */

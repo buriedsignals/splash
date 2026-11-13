@@ -9,7 +9,7 @@ import {
 import {
   createGeoPoint,
   pointMarks,
-  refusalText,
+  setGestureNotesDrawn,
   setNotesDrawn,
   stageGeoPoint,
 } from "../craft/_shared/gesture-geo-point-family.mjs";
@@ -665,14 +665,30 @@ describe("point-map word side", () => {
 
 // gx-proportional-symbol static (Qwen3.5-9B, 2026-11-13): the highlight note printed "72 sites nucléaires", the count of
 // every Nuclear row, while the legibility cut drew 69 of those circles.
+// A refusal sent the model between two guards: the staging accepts only the group's size (72), the cut drew 69, and
+// "69" was refused as a figure of other rows (q4, same beat). The count the plate draws is code's to print.
 describe("setNotesDrawn", () => {
-  const notes = [{ index: 0, do: "highlight", kind: "set", marks: ["site 1", "site 2", "site 3", "site 4"], text: "4 sites nucléaires" }];
-  it("should refuse a set note counting circles the plate does not draw, with the drawn count as the value that works", () => {
-    let error: unknown;
-    try { setNotesDrawn(notes, new Set(["site 1", "site 2", "site 3"])); } catch (e) { error = e; }
-    expect(refusalText(error)).toMatch(/gestures\[0\]\.note.*prints 4.*draws 3 .*value that works: "3 sites nucléaires"/);
+  const notes = () => [{ index: 0, do: "highlight", kind: "set", marks: ["site 1", "site 2", "site 3", "site 4"], text: "4 sites nucléaires" }];
+  it("should print the drawn count in a set note that counts circles the plate leaves out", () => {
+    const n = notes();
+    setNotesDrawn(n, new Set(["site 1", "site 2", "site 3"]));
+    expect(n[0].text).toBe("3 sites nucléaires");
   });
-  it("should accept a set note when every circle it counts is drawn", () => {
-    expect(() => setNotesDrawn(notes, new Set(["site 1", "site 2", "site 3", "site 4"]))).not.toThrow();
+  it("should report the correction it made", () => {
+    expect(setNotesDrawn(notes(), new Set(["site 1", "site 2", "site 3"]))).toEqual(["gestures[0].note: 4 → 3 (the circles the plate draws)"]);
+  });
+  it("should leave a set note alone when every circle it counts is drawn", () => {
+    const n = notes();
+    setNotesDrawn(n, new Set(["site 1", "site 2", "site 3", "site 4"]));
+    expect(n[0].text).toBe("4 sites nucléaires");
+  });
+});
+
+// Web, video and scrolly print a gesture's note from the gestures, not from the still plate's notes.
+describe("setGestureNotesDrawn", () => {
+  it("should print the drawn count in a group highlight's note", () => {
+    const valid = [{ do: "highlight", marks: ["site 1", "site 2", "site 3", "site 4"], note: "4 sites nucléaires" }];
+    setGestureNotesDrawn(valid, new Set(["site 1", "site 2"]));
+    expect(valid[0].note).toBe("2 sites nucléaires");
   });
 });

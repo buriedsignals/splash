@@ -29,7 +29,7 @@ import { plateWaterField } from "./plate-water.mjs";
 import { minMapShare, worstCellInk } from "./GestureGeoPointStaticSymbol.tsx";
 import { GestureGeoPointStatic } from "./GestureGeoPointStatic.tsx";
 import { GestureRefusal } from "./gesture-core.mjs";
-import { pointMarks, refusalText, setNotesDrawn, stageGeoPoint } from "./gesture-geo-point-family.mjs";
+import { pointMarks, refusalText, setGestureNotesDrawn, stageGeoPoint } from "./gesture-geo-point-family.mjs";
 import { composeGeoPointStatic } from "./gesture-geo-point-static.mjs";
 import { applyStoryboard, assertNumbers, assertDrawsClaimColumn, errorText, importBeat, rowFacts } from "./guards.mjs";
 
@@ -308,13 +308,7 @@ for (const { label: id, direction: picked } of chosen) {
     const limitNote = forms(beat.limitNote(cut));
     if (threshold > 0 && !limitNote.every((f) => plain(f).includes(plain(beat.format(threshold)))))
       throw new Error(`the plate does not draw the points under ${beat.format(threshold)} ${beat.unit}, and every form of limitNote(cut) must say so with cut.threshold printed by format(): ${JSON.stringify(limitNote[0])}`);
-    try {
-      setNotesDrawn(plate.notes, new Set(shownStations.map((s) => s.mark)));
-    } catch (error) {
-      if (!(error instanceof GestureRefusal)) throw error;
-      console.log(`REFUSED — ${refusalText(error)}`);
-      process.exit(1);
-    }
+    for (const c of setGestureNotesDrawn(staged.valid, new Set(shownStations.map((s) => s.mark)))) console.log(`ADJUSTED ${c}`);
     console.log(`threshold ${threshold} · ${cut.drawn} of ${total} drawn, carrying ${cut.drawnValueShare.toFixed(1)} % of the total · worst cell ${worstCellInk(shown, SMALLEST_MAP, CAMERA_ASPECT, 0.7).toFixed(0)} %`);
 
     /** The key: two named circles on the marks' own function, at one significant figure — the
