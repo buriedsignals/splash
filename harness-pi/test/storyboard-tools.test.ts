@@ -438,9 +438,9 @@ describe("no menu yet", () => {
         field: "chosen",
         value: "Bar and column",
       }),
-    ).rejects.toThrow(/harness recorded this menu.*Bar and column.*Dot strip/s);
+    ).rejects.toThrow(/harness recorded this menu.*Bar and column.*Treemap/s);
     expect([meta().slots[0].candidates, meta().slots[0].chosen]).toEqual([
-      ["Bar and column", "Dot strip"],
+      ["Bar and column", "Treemap"],
       undefined,
     ]);
   });
@@ -735,7 +735,13 @@ describe("slot discipline", () => {
       slot: "1",
       candidates: [{ type: "Bar Chart", why: "a" }],
     });
-    expect(meta().slots[0].candidates).toEqual(["Bar and column", "Dot strip"]);
+    // One row per network: a dot strip's lanes would each hold one dot, so the distinct idea is the next one.
+    expect(meta().slots[0].candidates).toEqual(["Bar and column", "Treemap"]);
+  });
+
+  it("should keep the dot strip as the distinct idea when categories repeat across rows", async () => {
+    const { distinctAlternative } = await import("../src/tools/storyboard.ts");
+    expect(distinctAlternative("Bar and column", { rowCount: 12, columns: [{ type: "text", distinct: 4 }] })).toBe("Dot strip");
   });
 
   it("should refuse a menu of one candidate it cannot complete", async () => {
@@ -760,7 +766,7 @@ describe("slot discipline", () => {
     expect([
       meta().slots[0].candidates,
       /Lollipop is the same idea/.test(r.content[0].text),
-    ]).toEqual([["Bar and column", "Dot strip"], true]);
+    ]).toEqual([["Bar and column", "Treemap"], true]);
   });
 
   it("should still refuse two same-idea candidates it cannot draw", async () => {

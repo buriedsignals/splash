@@ -225,6 +225,14 @@ export function isoDates(text: string): string[] {
   return out;
 }
 
+/** The first alternative whose catalogue "Not for" the data does not hit: a dot strip shows several readings per
+ *  lane, so with one row per category it is the wrong type (stress-x, Qwen3.5-9B, 2026-11-13: the menu offered it,
+ *  the model read its "Not for" as a refusal and resubmitted twelve times). */
+export function distinctAlternative(type: string, profile: { rowCount?: number; columns?: { type?: string; distinct?: number }[] }): string | undefined {
+  const onePerCategory = (profile.columns ?? []).filter((c) => c.type === "text").every((c) => c.distinct === profile.rowCount);
+  return (DISTINCT_FROM[type] ?? []).find((t) => !(t === "Dot strip" && onePerCategory));
+}
+
 /** For a type the 12B reached for, catalogue types that see the same data as a DIFFERENT idea. */
 const DISTINCT_FROM: Record<string, string[]> = {
   "Bar and column": ["Dot strip", "Treemap", "Pie and donut"],
@@ -532,14 +540,15 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
         const { meta } = existsSync(path) ? parseStoryboard(readFileSync(path, "utf8")) : { meta: { slots: [] as any[] } };
         const current = (meta.slots ?? []).find((s: { id: unknown }) => String(s.id) === slot);
         const candidates: string[] = Array.isArray(current?.candidates) ? current.candidates : [];
-        if (!candidates.length && drawable(value) && DISTINCT_FROM[value]?.length) {
+        const alt = drawable(value) ? distinctAlternative(value, JSON.parse(readFileSync(join(bases.storyDir, "source", "profile.json"), "utf8"))) : undefined;
+        if (!candidates.length && alt) {
           // The 12B keeps naming the journalist's type without ever building a menu. The harness
           // builds the smallest honest one — that type and one different idea — records it, and
           // hands it back to be shown; the choice is recorded only once the journalist answers it.
           const format = String(currentSlot(slot)?.format ?? "static");
           const named = [
             { type: value, why: "the type the journalist named", format },
-            { type: DISTINCT_FROM[value][0], why: "a different way of seeing the same values", format },
+            { type: alt, why: "a different way of seeing the same values", format },
           ];
           const rows = formatCandidateRows({ medium, candidates: named });
           await mutateStoryboard(path, { slot: { id: slot, fields: { candidates: named.map((c) => c.type) } } });
@@ -621,8 +630,8 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
         // One candidate the harness can draw: add the smallest honest alternative, a distinct idea.
         let only = "";
         try { only = canonicalTreatment(candidates[0].type, medium); } catch {}
-        if (drawable(only) && DISTINCT_FROM[only]?.length)
-          candidates = [...candidates, { type: DISTINCT_FROM[only][0], why: "a different way of seeing the same values" }];
+        const alt = drawable(only) ? distinctAlternative(only, JSON.parse(readFileSync(join(bases.storyDir, "source", "profile.json"), "utf8"))) : undefined;
+        if (alt) candidates = [...candidates, { type: alt, why: "a different way of seeing the same values" }];
       }
       if (candidates.length < 2) {
         const given = candidates.flatMap((c) => { try { return [canonicalTreatment(c.type, medium)]; } catch { return []; } });
@@ -637,11 +646,11 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       } catch (e) {
         // Two candidates of one idea (the 12B's habit: Bar and column with Lollipop). Keep the first
         // drawable one and replace the others by distinct ideas, saying so in the menu.
-        const lead = named.find((c) => drawable(c.type) && DISTINCT_FROM[c.type]?.length);
+        const lead = named.find((c) => drawable(c.type) && distinctAlternative(c.type, profile));
         const sameIdea = /way\(s\) of seeing this data/.test((e as Error).message);
         if (!sameIdea || !lead) throw new Error(`${(e as Error).message}${distinctHint(named.map((c) => c.type))} Types this local harness can draw: ${LOCAL_MENU(slotFormat(), slotMedium())}.`);
         const dropped = named.filter((c) => c !== lead).map((c) => c.type);
-        named.splice(0, named.length, lead, { type: DISTINCT_FROM[lead.type][0], why: "a different way of seeing the same values", format: lead.format });
+        named.splice(0, named.length, lead, { type: distinctAlternative(lead.type, profile)!, why: "a different way of seeing the same values", format: lead.format });
         rows = formatCandidateRows({ medium, candidates: named, profile });
         swapped = ` (${dropped.join(", ")} ${dropped.length > 1 ? "are" : "is"} the same idea as ${lead.type}; replaced by ${named[1].type})`;
       }
