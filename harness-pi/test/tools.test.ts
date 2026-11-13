@@ -130,6 +130,12 @@ describe("file tools", () => {
     await expect(call(read, { path: "proof/source/data.csv" })).rejects.toThrow(/already read .* Ask the journalist\./);
   });
 
+  it("should refuse a second listing of an unchanged directory and name what to do instead", async () => {
+    const { listDir } = fsTools({ ...bases, noRereads: "Ask the journalist." });
+    await call(listDir, { path: "skills" });
+    await expect(call(listDir, { path: "skills" })).rejects.toThrow(/already listed .* Ask the journalist\./);
+  });
+
   it("should read a file again once it has changed", async () => {
     const { writeFileSync, utimesSync } = await import("node:fs");
     const f = join(bases.storyDir, "NOTE.md");

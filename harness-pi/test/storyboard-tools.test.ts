@@ -881,6 +881,13 @@ describe("gaps the harness fills", () => {
     expect(out).toEqual([expect.stringMatching(/^slot 1: no treatment chosen — call show_candidates/)]);
   });
 
+  // stress-ad (Qwen3.5-9B, 2026-11-13): twelve turns of list_dir looking for the Datawrapper mapping the gate had already checked.
+  it("should say the producer question needs nothing read first", async () => {
+    const { gapsForModel } = await import("../src/tools/storyboard.ts");
+    const [out] = gapsForModel(["slot 1: custom or Datawrapper was never chosen — gate 2d"]);
+    expect(out).toMatch(/already checked.*read nothing.*record_slot 1 producer/);
+  });
+
   it("should name the question and the tool for each open slot field", async () => {
     const { gapsForModel } = await import("../src/tools/storyboard.ts");
     const out = gapsForModel([
@@ -905,7 +912,7 @@ describe("gaps the harness fills", () => {
     const { gapsForModel } = await import("../src/tools/storyboard.ts");
     expect(
       gapsForModel(["slot 1: custom or Datawrapper was never chosen after the treatment selection"])[0],
-    ).toMatch(/ask the journalist.*custom or Datawrapper.*record_slot slot 1 producer/i);
+    ).toMatch(/ask the journalist.*custom or Datawrapper.*record_slot 1 producer/i);
   });
 });
 

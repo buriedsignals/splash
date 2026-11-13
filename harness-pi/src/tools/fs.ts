@@ -342,7 +342,13 @@ export function fsTools(bases: Bases) {
       const entries = readdirSync(abs).map((name) =>
         statSync(join(abs, name)).isDirectory() ? `${name}/` : name,
       );
-      return text(entries.sort().join("\n"));
+      const listing = entries.sort().join("\n");
+      if (bases.noRereads) {
+        // stress-ad (Qwen3.5-9B, 2026-11-13): the same three directories listed in turn for twelve turns, no question asked.
+        if (seen.get(`dir:${abs}`) === listing) throw new Error(`you already listed ${path} above and it has not changed — do not list it again. ${bases.noRereads}`);
+        seen.set(`dir:${abs}`, listing);
+      }
+      return text(listing);
     },
   });
 
