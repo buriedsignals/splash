@@ -74,7 +74,13 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
   const dated = credit && asOf ? datedCredit(credit, asOf, field("language")) : credit;
   // A beat that gives its source as forms (a video's one-line credit) keeps forms: the dated credit, then the credit
   // alone. One dated string ran past the line and every render refused (gx-bullet video, Qwen3.5-9B, 2026-11-13).
-  if (credit) beat[source] = Array.isArray(beat[source]) && dated !== credit ? [dated, credit] : dated;
+  // The beat's own forms shorter than the credit stay too, dated first: the credit with its date overran a video's line,
+  // its shorter forms were dropped, and the plate printed it undated (gx-bullet video, Qwen3.5-9B, 2026-11-13).
+  if (credit && Array.isArray(beat[source]) && dated !== credit) {
+    const shorter = beat[source].map((f) => String(f ?? "").trim()).filter((f) => f && f.length < credit.length);
+    const lang = field("language");
+    beat[source] = [...new Set([dated, ...shorter.map((f) => datedCredit(f, asOf, lang)), credit, ...shorter])];
+  } else if (credit) beat[source] = dated;
   const withBasemap = (form) => (String(form ?? "").includes(basemap) ? form : [form, basemap].filter(Boolean).join(" · "));
   if (basemap) beat[source] = Array.isArray(beat[source]) ? beat[source].map(withBasemap) : withBasemap(beat[source]);
   const named = field("limits");
