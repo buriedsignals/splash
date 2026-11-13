@@ -241,6 +241,16 @@ describe("applyStoryboard", () => {
   // shorter form to source) could never take effect.
   // gx-bullet video (Qwen3.5-9B, 2026-11-13): the axis read "part du bas-carbone dans l'électricité" with a typewriter
   // apostrophe; the plate's own words print the typographic one, and a data cell keeps its spelling for the join.
+  // gx-bullet scrolly (Qwen3.5-9B, 2026-11-13) and stress-p (E4B, nine refusals in a row, 2026-11-12): the refusal
+  // said "the standfirst's first form" where the kit's field is limits; Qwen wrote a standfirst field the kit never reads.
+  it("should name the field the limits belong in and the value that works", () => {
+    const root = mkdtempSync(join(tmpdir(), "splash-limits-"));
+    const dir = join(root, "beats", "1");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(root, "STORYBOARD.md"), `---\nlimits: "Six pays seulement, 2015 et 2024."\n---\n`);
+    expect(() => applyStoryboard({ limits: "Rangés par niveau, les six retrouvent l'ordre." }, dir)).toThrow(/^limits: .*a value that works: limits: "Six pays seulement, 2015 et 2024\."/);
+  });
+
   describe("apostrophes", () => {
     const beatIn = () => {
       const root = mkdtempSync(join(tmpdir(), "splash-apos-"));

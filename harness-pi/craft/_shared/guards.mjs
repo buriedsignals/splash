@@ -90,7 +90,9 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
     const said = new Set(words(first));
     const theirs = words(named);
     if (theirs.length && theirs.filter((w) => said.has(w)).length / theirs.length < 0.4)
-      throw new Error(`the standfirst's first form must carry the limits the journalist named, in their words (shorter forms may follow): ${named}`);
+      // The refusal names the kit's own field: "the standfirst" sent Qwen3.5-9B to write a standfirst field the scrolly kit
+      // never reads (gx-bullet scrolly, 2026-11-13), and the E4B refused nine times in a row on it (stress-p, 2026-11-12).
+      throw new Error(`${standfirst}: its first form must carry the limits the journalist named, in their words (shorter forms may follow) — a value that works: ${standfirst}: ${Array.isArray(beat[standfirst]) ? `[${JSON.stringify(named)}, …]` : JSON.stringify(named)}`);
   }
   const takeaway = field("takeaway");
   const norm = (t) => String(t).replace(/\s+/g, " ").trim().replace(/[.。]$/, "");
