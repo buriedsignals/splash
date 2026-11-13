@@ -124,6 +124,23 @@ describe("file tools", () => {
     await expect(call(read, { path: "proof/some-beat/BRIEF.md" })).rejects.toThrow(/outside the readable directories \(the story, skills\/, shared\/\)/);
   });
 
+  it("should refuse a second read of an unchanged file and name what to do instead", async () => {
+    const { readFile: read } = fsTools({ ...bases, noRereads: "Ask the journalist." });
+    await call(read, { path: "proof/source/data.csv" });
+    await expect(call(read, { path: "proof/source/data.csv" })).rejects.toThrow(/already read .* Ask the journalist\./);
+  });
+
+  it("should read a file again once it has changed", async () => {
+    const { writeFileSync, utimesSync } = await import("node:fs");
+    const f = join(bases.storyDir, "NOTE.md");
+    writeFileSync(f, "one");
+    const { readFile: read } = fsTools({ ...bases, noRereads: "Ask the journalist." });
+    await call(read, { path: f });
+    writeFileSync(f, "two");
+    utimesSync(f, new Date(), new Date(Date.now() + 5000));
+    expect(textOf(await call(read, { path: f }))).toBe("two");
+  });
+
   it("should read the story's frozen source asked for under proof/", async () => {
     const { readFile: read } = fsTools(bases);
     const r = await call(read, { path: "proof/source/data.csv" });

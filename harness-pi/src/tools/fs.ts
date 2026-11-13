@@ -27,6 +27,8 @@ export interface Bases {
   storyDir: string;
   /** Root directories readable besides the story; skills/, shared/ and proof/ when absent. */
   readBases?: string[];
+  /** Refuse a second read of a file unchanged since this session read it, naming what to do instead. */
+  noRereads?: string;
 }
 
 const READ_BASES = ["skills", "shared", "proof"];
@@ -294,6 +296,7 @@ export function tableDigest(body: string): string | null {
 }
 
 export function fsTools(bases: Bases) {
+  const seen = new Map<string, string>();
   const readFileTool = defineTool({
     name: "read_file",
     label: "Read file",
@@ -302,6 +305,12 @@ export function fsTools(bases: Bases) {
     parameters: Type.Object({ path: Type.String() }),
     async execute(_id, { path }) {
       const abs = resolveReadable(bases, path);
+      if (bases.noRereads) {
+        // stress-ad (Qwen3.5-9B, 2026-11-13): eight alternating reads of the same two references and no question, until the cap.
+        const stamp = String(statSync(abs).mtimeMs);
+        if (seen.get(abs) === stamp) throw new Error(`you already read ${path} above and it has not changed — do not read it again. ${bases.noRereads}`);
+        seen.set(abs, stamp);
+      }
       const body = await readFile(abs, "utf8");
       const note = abs.endsWith(".json") ? aggregateNote(body) : "";
       const digest = abs.endsWith(".json") ? tableDigest(body) : null;

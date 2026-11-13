@@ -284,7 +284,11 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
     const sb = storyboardTools(bases, dialogue);
     const pal = paletteTools(bases, gate);
     const p = PROFILES["skill:storyboard"];
-    const fb = fsTools({ ...bases, readBases: ["skills", "shared"] });
+    const fb = fsTools({
+      ...bases,
+      readBases: ["skills", "shared"],
+      noRereads: "Ask the journalist the open question now and end your turn, or record their last answer with its record_ tool.",
+    });
     const sess = await session(
       "skill:storyboard",
       "story",
