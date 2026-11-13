@@ -20,6 +20,34 @@ import { scoreRun } from "./score.ts";
 const CHECKOUT = resolve(import.meta.dirname, "..", "..");
 const KEPT = join(homedir(), ".splash-harness", "kept-runs");
 
+export const LEGS = ["craft", "designer", "deliver"] as const;
+
+/**
+ * A kept run's state laid into a freshly staged story, up to the leg measured (plan U1, SPLASH_SEED_FROM):
+ * craft takes the storyboard files only — the analyst rebuilds data.json from the staged source in under a second;
+ * designer also takes the crafted beat.mjs, data.json and renders (whereIs then names the designer next, measured
+ * 2026-11-13 on gx-bullet static); deliver also takes the beat's OUTPUT-REVIEW.json.
+ */
+export function layIn(seed: string, storyDir: string, from: string) {
+  if (!(LEGS as readonly string[]).includes(from))
+    throw new Error(`SPLASH_SEED_FROM: "${from}" is not a leg a kept run can seed; one of: ${LEGS.join(", ")}`);
+  for (const f of ["STORYBOARD.md", "PALETTE.md", "DIRECTION.md", "SUBJECTS.md"])
+    if (existsSync(join(seed, f))) cpSync(join(seed, f), join(storyDir, f));
+  if (from === "craft") return;
+  const beats = join(seed, "beats");
+  for (const beat of existsSync(beats) ? readdirSync(beats) : []) {
+    const to = join(storyDir, "beats", beat);
+    mkdirSync(to, { recursive: true });
+    const files = from === "deliver" ? ["beat.mjs", "data.json", "OUTPUT-REVIEW.json"] : ["beat.mjs", "data.json"];
+    for (const f of files) {
+      if (existsSync(join(beats, beat, f))) cpSync(join(beats, beat, f), join(to, f));
+      else if (f === "OUTPUT-REVIEW.json")
+        throw new Error(`SPLASH_SEED_FROM: deliver needs beats/${beat}/OUTPUT-REVIEW.json in ${seed}; seed from a run the designer approved, or from designer`);
+    }
+    if (existsSync(join(seed, "renders", beat))) cpSync(join(seed, "renders", beat), join(to, "renders"), { recursive: true });
+  }
+}
+
 /**
  * @param seed a kept run whose storyboard to start from: its STORYBOARD.md, PALETTE.md, DIRECTION.md and beat data.json
  *             are laid into a freshly staged story, so the driver resumes at craft. The storyboard is most of a run's
@@ -33,10 +61,7 @@ export async function evaluate(story: string, arm: string, out: string, variant 
   if (seed) {
     await createRunRoot({ checkout: CHECKOUT, dir: root });
     await stageStory({ root, checkout: CHECKOUT, slug: story });
-    const storyDir = join(root, "stories", story);
-    for (const f of ["STORYBOARD.md", "PALETTE.md", "DIRECTION.md", "SUBJECTS.md"]) if (existsSync(join(seed, f))) cpSync(join(seed, f), join(storyDir, f));
-    // The beat's data.json is NOT laid in: its hashes name the seed's own freeze, so the analyst would refuse it as
-    // stale; it rebuilds it from the staged source in under a second.
+    layIn(seed, join(root, "stories", story), process.env.SPLASH_SEED_FROM ?? "craft");
   }
   const child = Bun.spawn(
     [
@@ -76,7 +101,7 @@ export async function evaluate(story: string, arm: string, out: string, variant 
           recursive: true,
         });
       // What the model wrote and what it read, so a craft can be replayed against a changed kit.
-      for (const f of ["beat.mjs", "data.json"])
+      for (const f of ["beat.mjs", "data.json", "OUTPUT-REVIEW.json"])
         if (existsSync(join(beats, beat, f))) {
           mkdirSync(join(keep, "beats", beat), { recursive: true });
           cpSync(join(beats, beat, f), join(keep, "beats", beat, f));

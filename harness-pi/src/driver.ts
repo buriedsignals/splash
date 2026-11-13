@@ -58,7 +58,7 @@ export interface RunOptions {
 }
 
 export interface RunReport {
-  outcome: "done" | "stalled" | "blocked" | "crafted" | "storyboarded";
+  outcome: "done" | "stalled" | "blocked" | "storyboarded" | "analysed" | "crafted" | "reviewed";
   phase: string;
   reason: string;
   steps: { owner: string; stop: string; seconds: number }[];
@@ -604,12 +604,24 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
 }
 
 /**
- * Where a segmented measurement ends (eval only). A craft kit's ends at its render: designer and delivery were
- * measured in full runs and cost minutes per run (SPLASH_STOP_AFTER_CRAFT=1). A storyboard fix's ends when Gate 2
- * closes and the run reaches production (SPLASH_STOP_AFTER_STORYBOARD=1).
+ * Where a segmented measurement ends (eval only), so each step runs alone (plan U1): SPLASH_STOP_AFTER=<step>.
+ * storyboard: Gate 2 closed and the run reached production. analyst: data.json built, a craft owner is next.
+ * craft: rendered, the designer is next. designer: reviewed, the run reached delivery. The two older names,
+ * SPLASH_STOP_AFTER_STORYBOARD=1 and SPLASH_STOP_AFTER_CRAFT=1, still read.
  */
-export function measuredStop(s: { phase: string; resume: string }, env: Record<string, string | undefined>): "crafted" | "storyboarded" | undefined {
-  if (env.SPLASH_STOP_AFTER_STORYBOARD === "1" && s.phase === "production") return "storyboarded";
-  if (env.SPLASH_STOP_AFTER_CRAFT === "1" && s.phase === "production" && /Invoke designer/.test(s.resume)) return "crafted";
+export const STOPS = ["storyboard", "analyst", "craft", "designer"] as const;
+export function measuredStop(
+  s: { phase: string; resume: string },
+  env: Record<string, string | undefined>,
+): "storyboarded" | "analysed" | "crafted" | "reviewed" | undefined {
+  const named = env.SPLASH_STOP_AFTER;
+  if (named && !(STOPS as readonly string[]).includes(named))
+    throw new Error(`SPLASH_STOP_AFTER: "${named}" is not a step it can stop after; one of: ${STOPS.join(", ")}`);
+  const stop = named ?? (env.SPLASH_STOP_AFTER_STORYBOARD === "1" ? "storyboard" : env.SPLASH_STOP_AFTER_CRAFT === "1" ? "craft" : undefined);
+  const production = s.phase === "production";
+  if (stop === "storyboard" && production) return "storyboarded";
+  if (stop === "analyst" && production && !/Invoke (analyst|intake)\b/.test(s.resume)) return "analysed";
+  if (stop === "craft" && production && /Invoke designer/.test(s.resume)) return "crafted";
+  if (stop === "designer" && (s.phase === "delivery" || s.phase === "done")) return "reviewed";
   return undefined;
 }
