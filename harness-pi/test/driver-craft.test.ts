@@ -105,3 +105,16 @@ describe("gesture contract", () => {
     expect(text).toMatch(/\| `bracket` \|/);
   });
 });
+
+// gx-proportional-symbol static (Qwen3.5-9B, 2026-11-13): "`beat.example.mjs` (in the folder)" was read as the proof/
+// folder; sixteen turns of reads there, and the beat was never written.
+describe("contract text", () => {
+  const real = join(import.meta.dirname, "..", "craft", "static", "proportional-symbol-symbol-bubble-map.gestures");
+  it("should name the worked example by its path in the beat's folder", async () => {
+    expect(await contractText(real, "static", { beat: "1" })).toContain("`beats/1/beat.example.mjs`");
+  });
+
+  it("should leave no folder unnamed", async () => {
+    expect(await contractText(real, "static", { beat: "1" })).not.toMatch(/in the folder/);
+  });
+});

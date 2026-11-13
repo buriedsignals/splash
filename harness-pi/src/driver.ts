@@ -437,7 +437,7 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
     const sess = await session(
       "skill:chart-beat",
       beat,
-      `You are the chart-beat craft step of Splash, running locally. The Splash root is ${o.root}. The story is ${o.storyDir}. You act only through your tools.\n\n${await contractText(adapter, String(slot.format ?? "static"), { typedStaging })}`,
+      `You are the chart-beat craft step of Splash, running locally. The Splash root is ${o.root}. The story is ${o.storyDir}. You act only through your tools.\n\n${await contractText(adapter, String(slot.format ?? "static"), { typedStaging, beat })}`,
       [
         f.readFile,
         f.listDir,

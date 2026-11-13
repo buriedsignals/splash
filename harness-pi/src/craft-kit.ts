@@ -122,8 +122,14 @@ export async function kitGestures(kit: string, format: string): Promise<{ do: st
 }
 
 /** A kit's CONTRACT.md as the craft session reads it: a gesture kit's {{GESTURES}} filled from the registry. */
-export async function contractText(kit: string, format: string, { typedStaging = format === "static" } = {}): Promise<string> {
+export async function contractText(kit: string, format: string, { typedStaging = format === "static", beat }: { typedStaging?: boolean; beat?: string } = {}): Promise<string> {
   let text = readFileSync(join(kit, "CONTRACT.md"), "utf8");
+  // "`beat.example.mjs` (in the folder)" was read as the proof/ folder: sixteen turns of reads there and no beat.mjs
+  // (Qwen3.5-9B, gx-proportional-symbol static, 2026-11-13). The folder is the beat's, and it is named.
+  if (beat !== undefined)
+    text = text
+      .replace(/`beat\.example\.mjs`( \(in the folder\))?/g, `\`beats/${beat}/beat.example.mjs\``)
+      .replace(/\((already )?in the folder\)/g, `($1in beats/${beat}/)`);
   // Without the typed tool the gestures stay in beat.mjs; only the check stays code's.
   if (!typedStaging)
     text = text.replace(/^> \*\*Staging and check\.\*\*.*$/m, "> **Check.** Do not write `check()`: the kit computes it from the recorded claim and data.json. Write `gestures` in beat.mjs as below.");
