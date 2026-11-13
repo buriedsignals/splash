@@ -324,6 +324,12 @@ export function fsTools(bases: Bases) {
       const done = answeredFor(bases, path);
       if (done) return text(done);
       const abs = resolveReadable(bases, path);
+      if (!existsSync(abs)) {
+        let dir = dirname(abs);
+        while (!existsSync(dir) && dirname(dir) !== dir) dir = dirname(dir);
+        const held = readdirSync(dir, { withFileTypes: true }).map((d) => (d.isDirectory() ? `${d.name}/` : d.name)).sort();
+        throw new Error(`${path} does not exist; ${relative(bases.root, dir) || "."}/ holds: ${held.slice(0, 40).join(", ")}${held.length > 40 ? ", …" : ""}. Read one of these.`);
+      }
       if (bases.noRereads) {
         // stress-ad (Qwen3.5-9B, 2026-11-13): eight alternating reads of the same two references and no question, until the cap.
         const stamp = String(statSync(abs).mtimeMs);

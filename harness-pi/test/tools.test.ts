@@ -78,6 +78,13 @@ describe("file tools", () => {
     expect(textOf(r)).toContain("data.csv");
   });
 
+  // gx-bullet static (Qwen3.5-9B, 2026-11-13): reads of beat.example.mjs, data.json and BEATS.md, three files the
+  // worked example does not hold, each answered with a bare ENOENT, before one list_dir showed what was there.
+  it("should name what the folder holds when the file read does not exist", async () => {
+    const { readFile: read } = fsTools(bases);
+    await expect(call(read, { path: "stories/demo/source/BEATS.md" })).rejects.toThrow(/does not exist.*holds: .*data\.csv/);
+  });
+
   it("should list the story for the path '.'", async () => {
     const { listDir } = fsTools(bases);
     const r = await call(listDir, { path: "." });
