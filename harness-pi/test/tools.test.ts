@@ -212,6 +212,23 @@ describe("file tools", () => {
     ).rejects.toThrow(/closest line in the file is: "const title = `Lisboa leads`;"/);
   });
 
+  it("should quote the whole closest passage of a near-miss Arabic block, not only its key line", async () => {
+    const { writeFile: write, editFile } = fsTools(bases);
+    const block = "  limits: [\n    `استهلاك المياه السنوي بالمتر المكعب.`,\n  ],";
+    await call(write, { path: "stories/demo/ar.mjs", content: `const beat = {\n  title: "x",\n${block}\n};` });
+    await expect(
+      call(editFile, { path: "stories/demo/ar.mjs", old_text: "  limits: [\n    `استهلاك المياه السنوي بالمتر مكعب.`,\n  ],", new_text: "y" }),
+    ).rejects.toThrow(`closest passage in the file is: ${JSON.stringify(block)}`);
+  });
+
+  it("should find the closest line of a near-miss written only in Arabic", async () => {
+    const { writeFile: write, editFile } = fsTools(bases);
+    await call(write, { path: "stories/demo/ar1.mjs", content: "const a = 1;\nconst s = `الجدول يغطي سبع محافظات فقط`;\nconst b = 2;" });
+    await expect(
+      call(editFile, { path: "stories/demo/ar1.mjs", old_text: "`الجدول يغطي سبع محافظات`", new_text: "y" }),
+    ).rejects.toThrow("closest line in the file is: \"const s = `الجدول يغطي سبع محافظات فقط`;\"");
+  });
+
   it("should refuse an edit whose old text is not unique", async () => {
     const { writeFile: write, editFile } = fsTools(bases);
     await call(write, { path: "stories/demo/twice.md", content: "a a" });

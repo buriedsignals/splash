@@ -212,18 +212,24 @@ const text = (t: string) => ({
   details: {},
 });
 
-/** The file's line closest to old_text's first line, quoted, so a near-miss edit can be retried exactly. */
+/** The file's passage closest to old_text, as many lines long, quoted, so a near-miss edit can be retried exactly.
+ *  Tokens are letters in any script: an ASCII split left an Arabic block matching only its key line, and the model
+ *  retyped the same misspelt value three times (stress-x, Qwen3.5-9B, 2026-11-13). */
 function nearestLine(body: string, oldText: string): string {
-  const first = oldText.split("\n").find((l) => l.trim()) ?? "";
-  const tokens = new Set(first.split(/\W+/).filter((t) => t.length > 2));
+  const words = (t: string) => t.split(/[^\p{L}\p{N}_]+/u).filter((w) => w.length > 2);
+  const tokens = new Set(words(oldText));
+  const lines = body.split("\n");
+  const span = Math.max(1, oldText.replace(/\n+$/, "").split("\n").length);
   let best = "";
   let score = 0;
-  for (const line of body.split("\n")) {
-    const hits = line.split(/\W+/).filter((t) => tokens.has(t)).length;
-    if (hits > score) [best, score] = [line, hits];
+  for (let i = 0; i < lines.length; i++) {
+    const passage = lines.slice(i, i + span).join("\n");
+    const said = words(passage);
+    const hits = said.filter((w) => tokens.has(w)).length - 0.1 * said.filter((w) => !tokens.has(w)).length;
+    if (hits > score) [best, score] = [passage, hits];
   }
   return best
-    ? ` The closest line in the file is: ${JSON.stringify(best.slice(0, 200))} — copy old_text from the file exactly.`
+    ? ` The closest ${span > 1 ? "passage" : "line"} in the file is: ${JSON.stringify(best.slice(0, 200 * span))} — copy old_text from the file exactly.`
     : "";
 }
 
