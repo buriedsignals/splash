@@ -397,6 +397,10 @@ export function fsTools(bases: Bases) {
       const abs = resolveInStory(bases, path);
       assertWritable(bases, abs);
       assertNotErasing(abs, content, path);
+      if (existsSync(abs) && readFileSync(abs, "utf8") === content)
+        throw new Error(
+          `${path} already holds exactly this content: this write changes nothing. If the beat already renders, call render_beat (it is the last step); otherwise change only the text the last refusal names.`,
+        );
       if (content.length > MAX_WRITE && existsSync(abs)) {
         throw new Error(
           `${path} exists and the new content is ${content.length} characters; rewrite it with several edit_file calls (old_text up to ${MAX_EDIT_OLD}, new_text up to ${MAX_EDIT_NEW} characters)`,

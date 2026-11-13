@@ -234,6 +234,16 @@ describe("file tools", () => {
     ).rejects.toThrow(/new_text is old_text: this edit changes nothing/);
   });
 
+  // gx-proportional-symbol static (Qwen3.5-9B, 2026-11-13): after a passing render, the same 4221-character beat.mjs was
+  // written four more times until the fifteen-minute cap.
+  it("should refuse a write that changes nothing", async () => {
+    const { writeFile: write } = fsTools(bases);
+    await call(write, { path: "stories/demo/again.mjs", content: "const x = 1;\n" });
+    await expect(
+      call(write, { path: "stories/demo/again.mjs", content: "const x = 1;\n" }),
+    ).rejects.toThrow(/already holds exactly this content: this write changes nothing/);
+  });
+
   it("should quote the closest line when old text is not found", async () => {
     const { writeFile: write, editFile } = fsTools(bases);
     await call(write, { path: "stories/demo/near.mjs", content: "const title = `Lisboa leads`;\nconst x = 1;" });
