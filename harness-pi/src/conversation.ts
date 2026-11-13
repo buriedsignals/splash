@@ -160,6 +160,7 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
     }
     // A file written since makes the same record mean something new (the repair loop: fix beat.mjs, record, render).
     if (!e.isError && /^(write_file|edit_file)$/.test(e.toolName)) lastRecord = "";
+    const callOf = argsOf.get(e.toolCallId) ?? e.toolName;
     argsOf.delete(e.toolCallId);
     if (e.isError) {
       refusals++;
@@ -173,7 +174,9 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
     // Counted per signature, not only back to back: a model that interleaves a successful call
     // between identical failures (35 renders of a missing beat.mjs, once) still gets stopped.
     if (e.isError) {
-      const sig = `${e.toolName}:${out.slice(0, 120)}`;
+      // The call and its whole refusal: cut to 120 characters, reads of three different missing files under one long
+      // proof/ path were one failure three times and ended a craft after 22 s (gx-bullet, Qwen3.5-9B, 2026-11-13).
+      const sig = `${callOf}:${out}`;
       failures.set(sig, (failures.get(sig) ?? 0) + 1);
       sameFailure = Math.max(sameFailure, (failures.get(sig) ?? 0) - 1);
     }
@@ -233,7 +236,7 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
         break;
       }
       if (!o.conversational) {
-        stop = "ended";
+        stop ||= "ended";
         break;
       }
       // Osaurus, stress-t web map (2026-11-11): a turn spent its whole talk budget in the thought channel and ended

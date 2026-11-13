@@ -196,6 +196,32 @@ describe("converse bounds (Spotlight's watchdog: 16 / 12 / 6)", () => {
     expect(r.stop).toBe("6 tool calls refused in a row");
   });
 
+  // gx-bullet static, Qwen3.5-9B (2026-11-13): three reads of three different missing files under one long proof/
+  // path shared their first 120 characters, counted as one failure three times, and ended the craft after 22 s.
+  const missing = (i: number): Ev[] => [
+    { type: "tool_execution_start", toolCallId: `m${i}`, toolName: "read_file", args: { path: `proof/f${i}` } },
+    { type: "tool_execution_end", toolCallId: `m${i}`, toolName: "read_file", isError: true, result: { content: [{ text: `ENOENT: no such file or directory, open '${"/deep".repeat(30)}/f${i}'` }] } },
+  ];
+  it("should not count reads of three different missing files as the same failure", async () => {
+    const r = await go((i) => [...(i < 3 ? missing(i) : [read(i)]), { type: "turn_end" }]);
+    expect(r.stop).not.toBe("same failure 3x");
+  });
+
+  it("should keep the reason a one-shot session was stopped for, instead of calling it ended", async () => {
+    const r = await converse({
+      session: scripted(() => missing(0)).session as never,
+      first: "Start.",
+      journalist: { answer: async () => "" },
+      dialogue: { lastJournalist: "", lastProposal: "" },
+      conversational: false,
+      done: async () => false,
+      gaps: async () => "",
+      limits: { sameFailure: 1 },
+      log: [],
+    });
+    expect(r.stop).toBe("same failure 1x");
+  });
+
   it("should count every refusal it saw, not only the streak that stopped it", async () => {
     const r = await go((i) => [refused(i), i % 3 === 2 ? record : read(i), { type: "turn_end" }]);
     expect(r.refusals).toBeGreaterThan(6);
