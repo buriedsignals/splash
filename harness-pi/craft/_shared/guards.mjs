@@ -424,9 +424,16 @@ function assertDrawsRatio(drawn, here, ratio) {
  * refusal says so and names the call that prints it as drawn.
  */
 export function figureRefusal(where, what, wanted, value, text) {
+  const read = (n) => Number(n.replace(",", "."));
+  const drawn = value ?? read(String(wanted).replace(/[\s\u00a0\u202f]/g, ""));
+  // The same figure rounded otherwise: the drawn value, rounded to the stated figure's decimals, gives it back.
   const near = [...String(text).matchAll(/(?<![\d.,])\d+(?:[.,]\d+)?/g)]
     .map((m) => m[0])
-    .find((n) => n !== wanted && Math.abs(Number(n.replace(",", ".")) - value) < 1);
+    .find((n) => {
+      if (n === wanted || !Number.isFinite(drawn)) return false;
+      const places = /[.,](\d+)$/.exec(n)?.[1].length ?? 0;
+      return Math.abs(read(n) - Number(drawn.toFixed(places))) < 1e-9;
+    });
   const hint = near
     ? `; it states ${near}, the same figure rounded otherwise — a value that works: "${wanted}", printed by format(r.${what}) with no decimals argument`
     : ` — a value that works: a sentence that states "${wanted}"`;

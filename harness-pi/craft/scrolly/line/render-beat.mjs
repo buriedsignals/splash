@@ -25,7 +25,7 @@ import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
 import { webRegisters } from "#shared/design-base/web.mjs";
 import { EYEBROW_TO_DISPLAY, gapOf, registerOf } from "#shared/design-base/register.mjs";
 import { DirectedLineScrolly } from "./DirectedLineScrolly.tsx";
-import { applyStoryboard, assertNumbers, assertOnePerX, assertHeadlineNumbersDrawn, assertDrawsClaimColumn } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertOnePerX, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, figureRefusal } from "./guards.mjs";
 import { plain, refusing, storyLanguage } from "./web.mjs";
 import { renderBeatScrolly, scrollySkill } from "./scrolly.mjs";
 
@@ -143,7 +143,7 @@ await refusing(HERE, async () => {
   CARDS.slice(0, 5).forEach((k, i) => {
     const text = prose[i].join(" ");
     for (const [what, wanted] of OWES[k])
-      if (!owns(text, wanted)) throw new Error(`card ${i + 1} (cards.${k}) must state ${what} = "${wanted}" — the figure its picture shows; it says: ${text}`);
+      if (!owns(text, wanted)) throw new Error(figureRefusal(`card ${i + 1} (cards.${k})`, what, wanted, undefined, text));
   });
   const LABEL_OWES = { reference: reference.value, peak: peak.value, runnerUp: runnerUp.value, plateau: floor.value, cross: cross.value, end: last.value };
   for (const k of LABELS)

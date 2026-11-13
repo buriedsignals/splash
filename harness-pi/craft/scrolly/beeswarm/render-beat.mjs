@@ -27,7 +27,7 @@ import { deriveFurniture, measureText } from "#shared/chart-beat/render-still.mj
 import { webRegisters } from "#shared/design-base/web.mjs";
 import { EYEBROW_TO_DISPLAY, gapOf, registerOf } from "#shared/design-base/register.mjs";
 import { DirectedBeeswarmScrolly } from "./DirectedBeeswarmScrolly.tsx";
-import { applyStoryboard, assertNumbers, assertHeadlineNumbersDrawn, assertDrawsClaimColumn } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, figureRefusal } from "./guards.mjs";
 import { plain, refusing, storyLanguage } from "./web.mjs";
 import { renderBeatScrolly, scrollySkill } from "./scrolly.mjs";
 
@@ -131,7 +131,7 @@ await refusing(HERE, async () => {
   CARDS.slice(0, 5).forEach((k, i) => {
     const text = prose[i].join(" ");
     for (const [what, wanted] of OWES[k])
-      if (!owns(text, wanted)) throw new Error(`card ${i + 1} (cards.${k}) must state ${what} = "${wanted}" — the figure its picture shows; it says: ${text}`);
+      if (!owns(text, wanted)) throw new Error(figureRefusal(`card ${i + 1} (cards.${k})`, what, wanted, undefined, text));
   });
 
   // The two counters: the drive counts the figure up into the {n} of the sentence. It writes the

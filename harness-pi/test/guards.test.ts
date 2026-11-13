@@ -941,4 +941,12 @@ describe("figureRefusal", () => {
   it("should keep the plain refusal when the card states no near figure", () => {
     expect(figureRefusal("card 1 (cards.tracks)", "lastBefore.marker", "13,8", 13.8, "en dernier.")).not.toMatch(/rounded/);
   });
+
+  it("should not call a different figure at the same precision a rounding", () => {
+    expect(figureRefusal("card 1 (cards.tracks)", "lastBefore.marker", "13,8", 13.8, "en dernier, à 13,1 %.")).not.toMatch(/rounded/);
+  });
+
+  it("should read the value from the printed figure when the kit only holds the string", () => {
+    expect(figureRefusal("card 2 (cards.cut)", "othersSum", "13,8", undefined, "les autres, 14 %.")).toMatch(/it states 14, the same figure rounded otherwise/);
+  });
 });

@@ -25,7 +25,7 @@ import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
 import { webRegisters } from "#shared/design-base/web.mjs";
 import { EYEBROW_TO_DISPLAY, gapOf, registerOf } from "#shared/design-base/register.mjs";
 import { DirectedStreamScrolly } from "./DirectedStreamScrolly.tsx";
-import { applyStoryboard, assertNumbers, assertOnePerX, assertLegibleLabels, assertHeadlineNumbersDrawn, assertDrawsClaimColumn } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertOnePerX, assertLegibleLabels, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, figureRefusal } from "./guards.mjs";
 import { plain, refusing, storyLanguage } from "./web.mjs";
 import { renderBeatScrolly, scrollySkill } from "./scrolly.mjs";
 
@@ -174,7 +174,7 @@ await refusing(HERE, async () => {
   CARDS.slice(0, 5).forEach((k, i) => {
     const text = prose[i].join(" ");
     for (const [what, wanted] of OWES[k])
-      if (!states(text, wanted)) throw new Error(`card ${i + 1} (cards.${k}) must state ${what} = "${wanted}" — the figure its picture shows; it says: ${text}`);
+      if (!states(text, wanted)) throw new Error(figureRefusal(`card ${i + 1} (cards.${k})`, what, wanted, undefined, text));
   });
   for (const [k, m, want] of [["cross", marks[0], [reachedAt[tracked], reachedAt[rival]].map(formatCross)], ["end", marks[1], [last[tracked], last[rival]].map(format)]])
     for (const w of want) if (!states(m.text, w)) throw new Error(`marks.${k} is written beside the rule at ${m.year} and must state both bands' values there ("${want.join('", "')}"); it says: ${m.text}`);

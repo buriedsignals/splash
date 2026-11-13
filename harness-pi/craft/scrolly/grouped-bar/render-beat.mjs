@@ -25,7 +25,7 @@ import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
 import { webRegisters } from "#shared/design-base/web.mjs";
 import { EYEBROW_TO_DISPLAY, gapOf, registerOf } from "#shared/design-base/register.mjs";
 import { DirectedWindSolarScrolly } from "./DirectedWindSolarScrolly.tsx";
-import { applyStoryboard, assertNumbers, assertLegibleLabels, assertHeadlineNumbersDrawn, assertDrawsClaimColumn } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertLegibleLabels, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, figureRefusal } from "./guards.mjs";
 import { plain, refusing, storyLanguage } from "./web.mjs";
 import { renderBeatScrolly, scrollySkill } from "./scrolly.mjs";
 
@@ -139,7 +139,7 @@ await refusing(HERE, async () => {
     const text = prose[i].join(" ");
     for (const [what, wanted] of OWES[k])
       if (!new RegExp(`(?<![\\d.,])${escape(wanted)}(?![\\d])`).test(text))
-        throw new Error(`card ${i + 1} (cards.${k}) must state ${what} = "${wanted}" — the figure its picture shows; it says: ${text}`);
+        throw new Error(figureRefusal(`card ${i + 1} (cards.${k})`, what, wanted, undefined, text));
   });
 
   // Every other figure a card, a note or the alt states must be one this kit computed, at the
