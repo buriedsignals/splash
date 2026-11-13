@@ -52,7 +52,18 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
   const dataPath = join(here, "data.json");
   const table = existsSync(dataPath) ? JSON.parse(readFileSync(dataPath, "utf8")) : {};
   const cells = new Set([...(table.columns ?? []).map((c) => String(c.name)), ...(table.rows ?? []).flat().map(String)]);
-  const isForeign = (text) => { const said = !cells.has(text) && languageOf(text); return said && said !== language; };
+  const isForeign = (text) => {
+    if (cells.has(text)) return false;
+    const said = languageOf(text);
+    if (said) return said !== language;
+    // A note too short for languageOf ("214 contra 96", "de 394": Qwen3.5-9B on an English plate, stress-p 2026-11-13)
+    // is foreign when it holds a function word no English plate prints. Only these: the broad lists hold words an
+    // English plate does print ("per cent", "as", "en", "CHE"), 21 false refusals over 238 delivered beats.
+    // A particle inside a name ("Rio de Janeiro") is the name's, not the note's.
+    if (language !== "en") return false;
+    const words = String(text).replace(/\p{Lu}\p{L}*\s+(?:\p{Ll}{1,3}\s+)+(?=\p{Lu})/gu, "").toLowerCase().split(/[^\p{L}]+/u).filter(Boolean);
+    return words.some((w) => NOT_ENGLISH.has(w));
+  };
   // The title's and standfirst's first forms are held above in the journalist's own words; the credit is the storyboard's.
   const held = new Set([title, standfirst, source, "rows", "check", "format", "alt"]);
   const strays = [];
@@ -71,6 +82,9 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
     `${titled ? `the title's shorter forms must be in the storyboard's language (${language}), like the takeaway. ` : ""}${list}: not in the storyboard's language (${language}). Rewrite each of them in that language${titled ? ` (each shorter title form as a shortening of "${takeaway}")` : `, like the takeaway "${takeaway}"`}.`,
   );
 }
+
+/** Function words of other languages that no English plate prints, read on notes too short for languageOf. */
+const NOT_ENGLISH = new Set(["de", "des", "du", "le", "les", "et", "em", "da", "dos", "das", "contra", "und", "der", "mit", "von", "para", "com", "mais", "del", "los", "más"]);
 
 /** Function words that tell a headline's language apart (no figures, no names). */
 const STOPWORDS = {

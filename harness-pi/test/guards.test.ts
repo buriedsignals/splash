@@ -111,6 +111,21 @@ describe("applyStoryboard", () => {
     expect(() => applyStoryboard(beat, dir)).not.toThrow();
   });
 
+  it("should refuse a short note whose only function word is another language's", () => {
+    const beat = { gestures: [{ do: "compare", note: "214 contra 96" }, { do: "bracket", note: "de 394" }] };
+    expect(() => applyStoryboard(beat, english())).toThrow(/gestures\[0\]\.note is "214 contra 96".*gestures\[1\]\.note is "de 394"/);
+  });
+
+  it("should accept a short note that names a place with a particle", () => {
+    const beat = { gestures: [{ do: "compare", note: "Rio de Janeiro: 96" }] };
+    expect(() => applyStoryboard(beat, english())).not.toThrow();
+  });
+
+  it("should accept a short note in the story's language", () => {
+    const beat = { gestures: [{ do: "compare", note: "214 against 96" }, { do: "bracket", note: "of 394" }] };
+    expect(() => applyStoryboard(beat, english())).not.toThrow();
+  });
+
   it("should accept a note in the story's language that names a foreign place", () => {
     const beat = { eyebrow: "Urban transport", gestures: [{ do: "compare", note: "More than twice Rio de Janeiro's trips" }] };
     expect(() => applyStoryboard(beat, english())).not.toThrow();
