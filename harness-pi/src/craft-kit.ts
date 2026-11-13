@@ -124,7 +124,9 @@ export async function kitGestures(kit: string, format: string): Promise<{ do: st
 
 /** A kit's CONTRACT.md as the craft session reads it: a gesture kit's {{GESTURES}} filled from the registry. */
 export async function contractText(kit: string, format: string, { typedStaging = format === "static", beat }: { typedStaging?: boolean; beat?: string } = {}): Promise<string> {
-  let text = readFileSync(join(kit, "CONTRACT.md"), "utf8");
+  // A contract names the proof/ beat its kit was copied from; the story holds no proof/, and the path sent
+  // Qwen3.5-9B reading there for thirteen of sixteen calls (gx-proportional-symbol web, 2026-11-13).
+  let text = readFileSync(join(kit, "CONTRACT.md"), "utf8").replace(/`?proof\/[\w.-]+\/?`?/g, "the reference beat");
   // "`beat.example.mjs` (in the folder)" was read as the proof/ folder: sixteen turns of reads there and no beat.mjs
   // (Qwen3.5-9B, gx-proportional-symbol static, 2026-11-13). The folder is the beat's, and it is named.
   if (beat !== undefined)

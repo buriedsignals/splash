@@ -115,6 +115,13 @@ describe("contract text", () => {
     expect(await contractText(real, "static", { beat: "1" })).toContain("`beats/1/beat.example.mjs`");
   });
 
+  // gx-proportional-symbol web (q4): the per-type kit's CONTRACT.md named proof/web-proportional-symbol-europe-capacity,
+  // and thirteen of sixteen calls tried to read it before beat.mjs was written.
+  it("should name no proof/ folder the story does not hold", async () => {
+    const web = join(import.meta.dirname, "..", "craft", "web", "proportional-symbol-symbol-bubble-map");
+    expect(await contractText(web, "web", { beat: "1" })).not.toMatch(/proof\//);
+  });
+
   it("should leave no folder unnamed", async () => {
     expect(await contractText(real, "static", { beat: "1" })).not.toMatch(/in the folder/);
   });
