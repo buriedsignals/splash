@@ -127,6 +127,28 @@ describe("applyStoryboard", () => {
     expect(b.source).toBe("Ember · données au 26/06/2025");
   });
 
+  // gx-bullet video (Qwen3.5-9B, 2026-11-13): the beat gave two source forms for the one-line credit; the credit
+  // replaced them with ONE dated string too long for the line, and every render refused.
+  it("should keep the credit as forms, dated first, when the beat gives forms", () => {
+    const root = mkdtempSync(join(tmpdir(), "splash-forms-"));
+    const dir = join(root, "beats", "1");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(root, "STORYBOARD.md"), `---\nlanguage: fr\ncredit: "Ember"\neffectiveDate: 2025-06-26\n---\n`);
+    const b: Record<string, unknown> = { source: ["long", "short"] };
+    applyStoryboard(b, dir);
+    expect(b.source).toEqual(["Ember · données au 26/06/2025", "Ember"]);
+  });
+
+  it("should carry the basemap attribution on every source form", () => {
+    const root = mkdtempSync(join(tmpdir(), "splash-forms-"));
+    const dir = join(root, "beats", "1");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(root, "STORYBOARD.md"), `---\nlanguage: fr\ncredit: "Ember"\neffectiveDate: 2025-06-26\n---\n`);
+    const b: Record<string, unknown> = { source: ["long", "short"] };
+    applyStoryboard(b, dir, { basemap: "©MapTiler" });
+    expect(b.source).toEqual(["Ember · données au 26/06/2025 · ©MapTiler", "Ember · ©MapTiler"]);
+  });
+
   // stress-p (E4B, 2026-11-12): French gesture notes on an English plate; only the title's shorter forms were held.
   const english = () => {
     const root = mkdtempSync(join(tmpdir(), "splash-lang-"));

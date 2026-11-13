@@ -55,6 +55,7 @@ function explainFaults(beat) {
   }
 }
 
+/** @param {any} beat @param {string} here @param {{ title?: string, standfirst?: string, source?: string, basemap?: string }} [options] */
 export function applyStoryboard(beat, here, { title = "title", standfirst = "limits", source = "source", basemap } = {}) {
   // A 12B beat once exported its fields one by one; the first write below then threw a bare TypeError.
   if (!beat || typeof beat !== "object")
@@ -64,8 +65,12 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
   if (!field) return;
   const credit = field("credit");
   const asOf = field("effectiveDate");
-  if (credit) beat[source] = asOf && !/\bas of\b|\bdonnées au\b|\bStand\b|\bdatos a\b|\bdados de\b|\bdati al\b/i.test(credit) ? `${credit} · ${asOfIn(String(field("language") ?? ""), asOf)}` : credit;
-  if (basemap && !String(beat[source] ?? "").includes(basemap)) beat[source] = [beat[source], basemap].filter(Boolean).join(" · ");
+  const dated = credit && asOf && !/\bas of\b|\bdonnées au\b|\bStand\b|\bdatos a\b|\bdados de\b|\bdati al\b/i.test(credit) ? `${credit} · ${asOfIn(String(field("language") ?? ""), asOf)}` : credit;
+  // A beat that gives its source as forms (a video's one-line credit) keeps forms: the dated credit, then the credit
+  // alone. One dated string ran past the line and every render refused (gx-bullet video, Qwen3.5-9B, 2026-11-13).
+  if (credit) beat[source] = Array.isArray(beat[source]) && dated !== credit ? [dated, credit] : dated;
+  const withBasemap = (form) => (String(form ?? "").includes(basemap) ? form : [form, basemap].filter(Boolean).join(" · "));
+  if (basemap) beat[source] = Array.isArray(beat[source]) ? beat[source].map(withBasemap) : withBasemap(beat[source]);
   const named = field("limits");
   const first = [beat[standfirst]].flat()[0];
   if (named && !/^none$/i.test(named) && first !== undefined) {
