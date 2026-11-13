@@ -1,9 +1,9 @@
 import { describe, expect, it } from "bun:test";
-import { mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { importBeat } from "../craft/_shared/guards.mjs";
-import { dataNames, gestureTools, listNames } from "../src/tools/gestures.ts";
+import { beatNames, dataNames, gestureTools, listNames } from "../src/tools/gestures.ts";
 
 const table = {
   columns: [{ name: "Entity", type: "text" }, { name: "Year", type: "number" }, { name: "Share", type: "number" }],
@@ -221,5 +221,33 @@ describe("record_gestures and the render's names", () => {
     writeFileSync(join(beatDir, "beat.mjs"), `export default { rows: [{ name: "Pologne" }] };`);
     refresh();
     await expect((recordGestures as any).execute("1", { gestures: [{ do: "bracket", mark: "Pologne", of: ["whole"] }] })).resolves.toBeDefined();
+  });
+});
+
+// gx-proportional-symbol static (12B, 2026-11-13, m3): the column-mapped beat holds no "site 1" and no "Nuclear", yet the
+// kit draws both; record_gestures refused them four times and the craft never reached a render to learn them.
+describe("the names a column-mapped kit draws", () => {
+  const kit = join(import.meta.dirname, "..", "craft", "static", "proportional-symbol-symbol-bubble-map.gestures");
+  const beatWith = () => {
+    const dir = mkdtempSync(join(tmpdir(), "beat-names-"));
+    copyFileSync(join(kit, "names.mjs"), join(dir, "names.mjs"));
+    writeFileSync(join(dir, "data.json"), JSON.stringify({
+      columns: [{ name: "country" }, { name: "fuel" }, { name: "capacity_mw" }, { name: "lon" }, { name: "lat" }],
+      rows: [["France", "Nuclear", 5000, 2, 47], ["Norway", "Hydro", 900, 8, 60]],
+    }));
+    writeFileSync(join(dir, "beat.mjs"), `export default { title: "t", lon: "lon", lat: "lat", value: "capacity_mw", name: "country", subject: { column: "fuel", equals: "Nuclear" }, where: {} };`);
+    return dir;
+  };
+
+  it("should list a circle's rank name", () => {
+    expect(beatNames(beatWith())).toContain("site 1");
+  });
+
+  it("should list a group the subject column holds", () => {
+    expect(beatNames(beatWith())).toContain("Nuclear");
+  });
+
+  it("should list a place the name column holds", () => {
+    expect(beatNames(beatWith())).toContain("Norway");
   });
 });

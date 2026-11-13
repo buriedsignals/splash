@@ -68,6 +68,13 @@ const visit = (v, d) => {
   for (const [k, x] of Object.entries(v)) if (k !== "gestures" && typeof x === "object") visit(x, d + 1);
 };
 for (const [k, v] of Object.entries(b ?? {})) if (k !== "gestures" && typeof v === "object") visit(v, 0);
+const fs = await import("node:fs");
+if (fs.existsSync("names.mjs") && fs.existsSync("data.json")) {
+  const { drawnNames } = await import(process.cwd() + "/names.mjs");
+  const kit = drawnNames(b ?? {}, JSON.parse(fs.readFileSync("data.json", "utf8")));
+  const own = [...out]; out.clear();
+  for (const n of [...kit.slice(0, 40), ...own, ...kit.slice(40)]) out.add(String(n));
+}
 console.log(JSON.stringify([...out]));`;
   const res = Bun.spawnSync(["bun", "-e", script], {
     cwd: beatDir,
