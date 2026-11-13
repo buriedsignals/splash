@@ -151,7 +151,8 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
       300,
     );
     o.log.push(`TOOL ${e.toolName}${e.isError ? " ERROR" : ""}: ${out}`);
-    if (!e.isError && /^(record_|materialise|propose_palette|show_candidates)/.test(e.toolName)) {
+    // A written file is progress too: a craft session in web, video or scrolly has no record tool, only its beat.
+    if (!e.isError && /^(record_|materialise|propose_palette|show_candidates|write_file$|edit_file$)/.test(e.toolName)) {
       recorded++;
       everRecorded = true;
       const call = argsOf.get(e.toolCallId) ?? `unseen ${toolCalls}`;

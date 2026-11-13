@@ -191,6 +191,17 @@ describe("converse bounds (Spotlight's watchdog: 16 / 12 / 6)", () => {
     expect(r.stop).toBe("round cap");
   });
 
+  // A craft session in web, video or scrolly has no record tool: its progress is the beat it writes. Counted only as
+  // records, sixteen turns of writing and rendering would end it as "no first record".
+  it("should count a written file as progress", async () => {
+    const r = await go((i) => [
+      { type: "tool_execution_start", toolCallId: `w${i}`, toolName: "edit_file", args: { old_text: `a${i}`, new_text: `b${i}` } } as Ev,
+      { type: "tool_execution_end", toolCallId: `w${i}`, toolName: "edit_file", result: { content: [{ text: "ok" }] } } as Ev,
+      { type: "turn_end" },
+    ]);
+    expect(r.stop).toBe("round cap");
+  });
+
   it("should stop after six tool calls in a row refused, varied or not", async () => {
     const r = await go((i) => [refused(i), { type: "turn_end" }]);
     expect(r.stop).toBe("6 tool calls refused in a row");
