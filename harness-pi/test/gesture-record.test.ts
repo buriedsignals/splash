@@ -190,3 +190,36 @@ describe("a beat that throws while loading", () => {
     await expect(importBeat(beatDir)).rejects.toThrow(/data\.json is not a module to import from/);
   });
 });
+
+// gx-proportional-symbol static (12B, 2026-11-13): the render refused mark "whole" and offered "site 1"; record_gestures
+// accepted "whole" and refused "site 1" (a rank name the kit gives, in neither data.json nor beat.mjs). The two guards
+// sent the model back and forth until the craft stopped. The render's names are the authority.
+describe("record_gestures and the render's names", () => {
+  it("should accept a name the render offered as a value that works", async () => {
+    const { root, storyDir, beatDir } = story("claimShape: none");
+    const { recordGestures, refresh } = gestureTools({ root, storyDir }, {
+      beat: "1", gestures: ["highlight"],
+      render: async () => `REFUSED — gestures[0].mark: "whole" is not a drawn row; the closest is "site 1" — a value that works: "site 1"`,
+    });
+    writeFileSync(join(beatDir, "beat.mjs"), `export default { title: "Un centième des sites", rows: [{ name: "x" }] };`);
+    refresh();
+    await (recordGestures as any).execute("1", { gestures: [{ do: "highlight", mark: "x" }] });
+    await expect((recordGestures as any).execute("1", { gestures: [{ do: "highlight", mark: "site 1" }] })).resolves.toBeDefined();
+  });
+
+  it("should refuse whole as a mark, naming of as its place", async () => {
+    const { root, storyDir, beatDir } = story("claimShape: none");
+    const { recordGestures, refresh } = gestureTools({ root, storyDir }, { beat: "1", gestures: ["highlight"] });
+    writeFileSync(join(beatDir, "beat.mjs"), `export default { rows: [{ name: "Pologne" }] };`);
+    refresh();
+    await expect((recordGestures as any).execute("1", { gestures: [{ do: "highlight", mark: "whole" }] })).rejects.toThrow(/"whole" is not a mark.*of: "whole"/);
+  });
+
+  it("should keep whole as a bracket's of", async () => {
+    const { root, storyDir, beatDir } = story("claimShape: none");
+    const { recordGestures, refresh } = gestureTools({ root, storyDir }, { beat: "1", gestures: ["bracket"] });
+    writeFileSync(join(beatDir, "beat.mjs"), `export default { rows: [{ name: "Pologne" }] };`);
+    refresh();
+    await expect((recordGestures as any).execute("1", { gestures: [{ do: "bracket", mark: "Pologne", of: ["whole"] }] })).resolves.toBeDefined();
+  });
+});

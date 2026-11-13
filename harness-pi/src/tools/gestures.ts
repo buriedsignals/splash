@@ -169,9 +169,16 @@ export function gestureTools(
   const names: string[] = existsSync(dataFile)
     ? dataNames(JSON.parse(readFileSync(dataFile, "utf8")))
     : [];
+  // Names the render itself offered (a kit's rank names, "site 1", are in neither data.json nor beat.mjs): the
+  // render is the authority, so a name it offers is never refused here (gx-proportional-symbol static, 12B, 2026-11-13).
+  const learned = new Set<string>();
+  const learn = (text: string) => {
+    for (const m of text.matchAll(/gestures\[\d+\]\.(?:mark|marks|of)\b[^\n]*?(?:a value that works|the closest is): "([^"]+)"/g))
+      if (m[1] !== "whole" && !names.includes(m[1])) (learned.add(m[1]), names.push(m[1]));
+  };
   const refresh = (): string[] | null => {
     const drawn = beatNames(beatDir);
-    if (drawn) names.splice(0, names.length, ...new Set([...drawn, "whole"]));
+    if (drawn) names.splice(0, names.length, ...new Set([...drawn, ...learned]));
     return drawn;
   };
   // Refusals per gesture (by its position and do): the second for an unknown name drops it.
@@ -208,6 +215,12 @@ export function gestureTools(
           'gestures: give at least one gesture, e.g. [{ do: "highlight", mark: "<a drawn name>" }]',
         );
       const known = new Set(names.map(fold));
+      // "whole" is what a bracket measures against, never a mark: accepted as one, the render refused it.
+      list.forEach((g, i) => {
+        const marks = [...(Array.isArray(g.mark) ? g.mark : g.mark !== undefined ? [g.mark] : []), ...(g.marks ?? [])];
+        if (marks.some((m: string) => fold(String(m)) === "whole"))
+          throw new Error(`gestures[${i}].mark: "whole" is not a mark — a bracket takes it as of: "whole"; name a drawn mark, e.g. ${closest("", names).slice(0, 1).map((c) => JSON.stringify(c)).join("") || "a drawn name"}`);
+      });
       const dropped: string[] = [];
       const filled: string[] = [];
       const kept = list.filter((g, i) => {
@@ -231,7 +244,7 @@ export function gestureTools(
           ...(Array.isArray(g.mark) ? g.mark.map((m: string, k: number) => [`mark[${k}]`, m]) : g.mark !== undefined ? [["mark", g.mark]] : []),
           ...(g.marks ?? []).map((m: string, k: number) => [`marks[${k}]`, m]),
           ...(Array.isArray(g.of)
-            ? g.of.map((m: string, k: number) => [`of[${k}]`, m])
+            ? g.of.filter((m: string) => fold(String(m)) !== "whole").map((m: string, k: number) => [`of[${k}]`, m])
             : []),
         ] as [string, string][];
         // A composed name ("Pologne · 2024": a row at one of its series) is known when each of its parts is.
@@ -265,6 +278,7 @@ export function gestureTools(
       last = signature;
       writeFileSync(join(beatDir, "gestures.json"), `${JSON.stringify({ gestures: kept }, null, 2)}\n`);
       const rendered = render ? `\n${await render()}` : "";
+      learn(rendered);
       return {
         content: [
           {
@@ -276,5 +290,5 @@ export function gestureTools(
       };
     },
   });
-  return { recordGestures: tool, refresh };
+  return { recordGestures: tool, refresh, learn };
 }

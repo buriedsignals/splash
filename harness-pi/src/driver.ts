@@ -448,7 +448,19 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
         refreshing(bt.editFile),
         ...(staging ? [staging.recordGestures] : []),
         lookTool(bases),
-        r.render,
+        // A refusal render_beat returns offers names record_gestures must then accept (the render is the authority).
+        staging
+          ? ({ ...r.render, execute: async (...a: Parameters<typeof r.render.execute>) => {
+              try {
+                const out = (await r.render.execute(...a)) as { content: { text: string }[] };
+                staging.learn(out.content[0]?.text ?? "");
+                return out;
+              } catch (e) {
+                staging.learn(String((e as Error).message));
+                throw e;
+              }
+            } } as typeof r.render)
+          : r.render,
       ],
     );
     // The 12B often says DONE, or stops, while its beat still refuses to render. The harness renders
