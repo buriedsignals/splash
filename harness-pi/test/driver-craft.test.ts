@@ -8,7 +8,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { claimBlock, contractText, craftKit, recordFallback, unwrittenBeat } from "../src/craft-kit.ts";
+import { claimBlock, contractText, craftKit, recordFallback, unwrittenBeat, craftBriefing } from "../src/craft-kit.ts";
 
 let craft: string;
 let beatDir: string;
@@ -125,5 +125,13 @@ describe("an unwritten beat", () => {
     writeFileSync(join(dir, "beat.example.mjs"), "");
     writeFileSync(join(dir, "data.json"), "{}");
     expect(unwrittenBeat(dir, "1")).toMatch(/holds: beat\.example\.mjs, data\.json\. Next: read beats\/1\/beat\.example\.mjs .*write beats\/1\/beat\.mjs with write_file/);
+  });
+});
+
+describe("the craft briefing", () => {
+  it("should carry the worked example and ask for the write first", () => {
+    const dir = mkdtempSync(join(tmpdir(), "beat-"));
+    writeFileSync(join(dir, "beat.example.mjs"), "export default { title: \"x\" };\n");
+    expect(craftBriefing(dir, "1")).toMatch(/```js\nexport default \{ title: "x" \};\n```\nYour first call is write_file of beats\/1\/beat\.mjs/);
   });
 });

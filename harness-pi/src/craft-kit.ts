@@ -145,3 +145,12 @@ export function unwrittenBeat(beatDir: string, beat: string): string {
   const example = held.includes("beat.example.mjs") ? `read beats/${beat}/beat.example.mjs (the worked example), then ` : "";
   return `beat.mjs was never written. beats/${beat}/ holds: ${held.join(", ")}. Next: ${example}write beats/${beat}/beat.mjs with write_file.`;
 }
+
+/** The reads every craft makes, made by the harness: Qwen3.5-9B spent sixteen turns re-reading the worked example and
+ *  the proof's 60k-character geometry, and never wrote (gx-proportional-symbol web, 2026-11-13). The example comes in
+ *  the first message, and the first call it asks for is the write. */
+export function craftBriefing(beatDir: string, beat: string): string {
+  const file = join(beatDir, "beat.example.mjs");
+  if (!existsSync(file)) return "";
+  return `\n\nbeats/${beat}/beat.example.mjs, the worked example, read for you (do not read it again, and do not read proof/: the example is all of it the beat needs):\n\`\`\`js\n${readFileSync(file, "utf8").trimEnd()}\n\`\`\`\nYour first call is write_file of beats/${beat}/beat.mjs, this story's own, written from this example, the takeaway and the data summary above.`;
+}
