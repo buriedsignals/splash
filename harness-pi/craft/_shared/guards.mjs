@@ -18,10 +18,40 @@ const front = (here) => {
  * carried by the standfirst (one replaced them with its own sentences). A map kit names its basemap's
  * attribution, which the journalist's credit replaced on a choropleth's plate.
  */
+/** What a beat function was called with, by its keys: the only things it can read. */
+const shapeOf = (args) =>
+  args.length === 0 ? "nothing" : args.map((a) => (a && typeof a === "object" && !Array.isArray(a) ? `{ ${Object.keys(a).join(", ")} }` : Array.isArray(a) ? "an array" : typeof a)).join(", ");
+
+/**
+ * A beat function that reads what the kit never passes threw a bare engine message: gx-bullet web (Qwen3.5-9B,
+ * 2026-11-13) read r.parts in detail(r), and three renders refused "undefined is not an object (evaluating
+ * 'r.parts.map')" until the session stopped. The fault now names the field, its line in beat.mjs and the keys it
+ * receives. A function's own Error (a check's refusal) passes word for word.
+ */
+function explainFaults(beat) {
+  for (const [key, fn] of Object.entries(beat)) {
+    if (typeof fn !== "function") continue;
+    const explain = (error, args) => {
+      if (!(error instanceof TypeError || error instanceof ReferenceError)) return error;
+      const line = /beat\.mjs:(\d+)/.exec(String(error.stack))?.[1];
+      return new Error(`beat.mjs's ${key}(…) failed${line ? ` at line ${line}` : ""}: ${error.message}. ${key} receives ${shapeOf(args)} and nothing else: read anything more from beat.mjs's own constants, by those keys.`);
+    };
+    beat[key] = function (...args) {
+      try {
+        const out = fn.apply(this, args);
+        return out instanceof Promise ? out.catch((error) => { throw explain(error, args); }) : out;
+      } catch (error) {
+        throw explain(error, args);
+      }
+    };
+  }
+}
+
 export function applyStoryboard(beat, here, { title = "title", standfirst = "limits", source = "source", basemap } = {}) {
   // A 12B beat once exported its fields one by one; the first write below then threw a bare TypeError.
   if (!beat || typeof beat !== "object")
     throw new Error("beat.mjs has no default export: put every field in one object, export default { title: …, limits: …, source: …, check(…) { … } } (see CONTRACT.md)");
+  explainFaults(beat);
   const field = front(here);
   if (!field) return;
   const credit = field("credit");

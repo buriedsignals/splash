@@ -90,6 +90,20 @@ describe("applyStoryboard", () => {
     expect(() => applyStoryboard(undefined, beat)).toThrow(/beat\.mjs has no default export.*export default \{/);
   });
 
+  // gx-bullet web (Qwen3.5-9B, 2026-11-13): detail(r) read r.parts, which the kit never passes; three renders refused
+  // with a bare "undefined is not an object (evaluating 'r.parts.map')" and the session stopped on the same failure.
+  it("should name the field and the keys it receives when a beat function reads one the kit never passes", () => {
+    const b = { detail: (r: { parts: string[] }) => r.parts.map(String).join(", ") };
+    applyStoryboard(b, mkdtempSync(join(tmpdir(), "splash-fn-")));
+    expect(() => b.detail({ name: "Pologne", before: 1, after: 2 } as never)).toThrow(/detail\(…\) failed: .*parts.*detail receives \{ name, before, after \}/);
+  });
+
+  it("should leave a check's own refusal word for word", () => {
+    const b = { check() { throw new Error("the biggest gain is France's, not Poland's"); } };
+    applyStoryboard(b, mkdtempSync(join(tmpdir(), "splash-fn-")));
+    expect(() => b.check()).toThrow(/^the biggest gain is France's, not Poland's$/);
+  });
+
   // stress-p (E4B, 2026-11-12): French gesture notes on an English plate; only the title's shorter forms were held.
   const english = () => {
     const root = mkdtempSync(join(tmpdir(), "splash-lang-"));
