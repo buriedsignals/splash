@@ -18,6 +18,14 @@ const front = (here) => {
  * carried by the standfirst (one replaced them with its own sentences). A map kit names its basemap's
  * attribution, which the journalist's credit replaced on a choropleth's plate.
  */
+/** The credit's as-of date in the story's language: "as of 2025-06-26" closed a French plate (gx-bullet web, 2026-11-13). */
+const asOfIn = (language, date) => {
+  const [y, m, d] = String(date).split("-");
+  const dmy = y && m && d ? `${d}/${m}/${y}` : date;
+  const said = { fr: `données au ${dmy}`, de: `Stand: ${d && m ? `${d}.${m}.${y}` : date}`, es: `datos a ${dmy}`, pt: `dados de ${dmy}`, it: `dati al ${dmy}` };
+  return said[language.toLowerCase().slice(0, 2)] ?? `as of ${date}`;
+};
+
 /** What a beat function was called with, by its keys: the only things it can read. */
 const shapeOf = (args) =>
   args.length === 0 ? "nothing" : args.map((a) => (a && typeof a === "object" && !Array.isArray(a) ? `{ ${Object.keys(a).join(", ")} }` : Array.isArray(a) ? "an array" : typeof a)).join(", ");
@@ -56,7 +64,7 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
   if (!field) return;
   const credit = field("credit");
   const asOf = field("effectiveDate");
-  if (credit) beat[source] = asOf && !/\bas of\b/i.test(credit) ? `${credit} · as of ${asOf}` : credit;
+  if (credit) beat[source] = asOf && !/\bas of\b|\bdonnées au\b|\bStand\b|\bdatos a\b|\bdados de\b|\bdati al\b/i.test(credit) ? `${credit} · ${asOfIn(String(field("language") ?? ""), asOf)}` : credit;
   if (basemap && !String(beat[source] ?? "").includes(basemap)) beat[source] = [beat[source], basemap].filter(Boolean).join(" · ");
   const named = field("limits");
   const first = [beat[standfirst]].flat()[0];

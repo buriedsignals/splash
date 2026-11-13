@@ -104,6 +104,17 @@ describe("applyStoryboard", () => {
     expect(() => b.check()).toThrow(/^the biggest gain is France's, not Poland's$/);
   });
 
+  // gx-bullet web (Qwen3.5-9B, 2026-11-13): the credit line ended "· as of 2025-06-26" on a French plate.
+  it("should date the credit in the story's language", () => {
+    const root = mkdtempSync(join(tmpdir(), "splash-asof-"));
+    const dir = join(root, "beats", "1");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(root, "STORYBOARD.md"), `---\nlanguage: fr\ncredit: "Ember"\neffectiveDate: 2025-06-26\n---\n`);
+    const b: Record<string, unknown> = { source: "x" };
+    applyStoryboard(b, dir);
+    expect(b.source).toBe("Ember · données au 26/06/2025");
+  });
+
   // stress-p (E4B, 2026-11-12): French gesture notes on an English plate; only the title's shorter forms were held.
   const english = () => {
     const root = mkdtempSync(join(tmpdir(), "splash-lang-"));
