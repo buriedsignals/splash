@@ -317,6 +317,17 @@ describe("edit size limits", () => {
     ).rejects.toThrow(/edit too large .*split it into smaller edits/);
   });
 
+  // gx-proportional-symbol web (Qwen3.5-9B, q6, 2026-11-13): edit_file's refusal said "or write the whole file again
+  // with write_file", write_file refused the 7 296-character file and pointed back to edit_file, and the pass spent its
+  // fifteen minutes between the two.
+  it("should give write_file's limit when an edit is too large", async () => {
+    const { writeFile: write, editFile } = fsTools(bases);
+    await call(write, { path: "stories/demo/big-limit.md", content: "x".repeat(2_000) });
+    await expect(
+      call(editFile, { path: "stories/demo/big-limit.md", old_text: "x".repeat(1_600), new_text: "y" }),
+    ).rejects.toThrow(/write_file only for a whole file of at most 6000 characters/);
+  });
+
   it("should refuse to rewrite an existing file with long content, pointing to edit_file", async () => {
     const { writeFile: write } = fsTools(bases);
     await call(write, { path: "stories/demo/component.tsx", content: "short" });

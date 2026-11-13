@@ -142,7 +142,9 @@ function missing(path: string, abs: string): string {
     dir = dirname(dir);
     shown = dirname(shown);
   }
-  const held = readdirSync(dir, { withFileTypes: true }).map((d) => (d.isDirectory() ? `${d.name}/` : d.name)).sort();
+  const held = readdirSync(dir, { withFileTypes: true })
+    .map((d) => (d.isDirectory() ? `${d.name}/` : d.name))
+    .sort();
   return `${path} does not exist; ${shown === "." ? "the root" : `${shown}/`} holds: ${held.slice(0, 40).join(", ")}${held.length > 40 ? ", …" : ""}.`;
 }
 
@@ -179,6 +181,15 @@ export function resolveReadable(bases: Bases, path: string): string {
   // A missing file named bare or at the run root ("data.json") is asked of the story.
   if (!existsSync(abs) && dirname(abs) === realpathSync(bases.root))
     abs = join(realpathSync(bases.storyDir), basename(abs));
+  // The story's own path asked for under the run root ("<run>/beats/1/countries.mjs") is the story's (Qwen3.5-9B,
+  // gx-proportional-symbol web, 2026-11-13: five refusals, three passes with no beat.mjs written).
+  if (!existsSync(abs) && within(abs, realpathSync(bases.root))) {
+    const own = join(
+      realpathSync(bases.storyDir),
+      relative(realpathSync(bases.root), abs),
+    );
+    if (existsSync(own)) abs = realpathSync(own);
+  }
   // A beat file asked for at the story root ("data.json") is the story's only beat's.
   if (!existsSync(abs) && dirname(abs) === realpathSync(bases.storyDir)) {
     const beats = join(bases.storyDir, "beats");
@@ -193,19 +204,23 @@ export function resolveReadable(bases: Bases, path: string): string {
   }
   // A frozen source asked for under another base ("proof/source/article.md") is the story's own (stress-v, 2026-11-13).
   const src = !existsSync(abs) ? /(?:^|\/)source\/(.+)$/.exec(path) : null;
-  if (src && existsSync(join(bases.storyDir, "source", src[1]))) abs = realpathSync(join(bases.storyDir, "source", src[1]));
+  if (src && existsSync(join(bases.storyDir, "source", src[1])))
+    abs = realpathSync(join(bases.storyDir, "source", src[1]));
   // A skill's own reference asked for by its path inside the skill ("references/type-survey.md") is that
   // skill's, when exactly one skill holds it (stress-v, 2026-11-13: twelve turns lost listing shared/).
   if (!existsSync(abs) && !isAbsolute(path)) {
     const skills = join(bases.root, "skills");
     const held = existsSync(skills)
-      ? readdirSync(skills).map((d) => join(skills, d, path)).filter((c) => existsSync(c))
+      ? readdirSync(skills)
+          .map((d) => join(skills, d, path))
+          .filter((c) => existsSync(c))
       : [];
     if (held.length === 1) abs = realpathSync(held[0]);
   }
   // The newsroom profile at the root is what palette and preflight read the house colours from; asked for
   // under shared/ or source/, it is still that one (stress-v, 2026-11-13: three misses stopped the step).
-  if (basename(abs) === "NEWSROOM.md" && !existsSync(abs)) abs = join(realpathSync(bases.root), "NEWSROOM.md");
+  if (basename(abs) === "NEWSROOM.md" && !existsSync(abs))
+    abs = join(realpathSync(bases.root), "NEWSROOM.md");
   if (abs === join(realpathSync(bases.root), "NEWSROOM.md")) return abs;
   const allowed = [
     bases.storyDir,
@@ -230,7 +245,8 @@ const text = (t: string) => ({
  *  Tokens are letters in any script: an ASCII split left an Arabic block matching only its key line, and the model
  *  retyped the same misspelt value three times (stress-x, Qwen3.5-9B, 2026-11-13). */
 function nearestLine(body: string, oldText: string): string {
-  const words = (t: string) => t.split(/[^\p{L}\p{N}_]+/u).filter((w) => w.length > 2);
+  const words = (t: string) =>
+    t.split(/[^\p{L}\p{N}_]+/u).filter((w) => w.length > 2);
   const tokens = new Set(words(oldText));
   const lines = body.split("\n");
   const span = Math.max(1, oldText.replace(/\n+$/, "").split("\n").length);
@@ -239,7 +255,9 @@ function nearestLine(body: string, oldText: string): string {
   for (let i = 0; i < lines.length; i++) {
     const passage = lines.slice(i, i + span).join("\n");
     const said = words(passage);
-    const hits = said.filter((w) => tokens.has(w)).length - 0.1 * said.filter((w) => !tokens.has(w)).length;
+    const hits =
+      said.filter((w) => tokens.has(w)).length -
+      0.1 * said.filter((w) => !tokens.has(w)).length;
     if (hits > score) [best, score] = [passage, hits];
   }
   return best
@@ -260,16 +278,24 @@ export function aggregateNote(body: string): string {
   } catch {
     return "";
   }
-  const rows = Array.isArray(table?.rows) ? table.rows.filter(Array.isArray) : [];
+  const rows = Array.isArray(table?.rows)
+    ? table.rows.filter(Array.isArray)
+    : [];
   const width = Array.isArray(table?.columns) ? table.columns.length : 0;
   if (!rows.length || !width) return "";
   const iso = (v: unknown) => /^([A-Z]{3}|OWID_KOS)$/.test(String(v ?? ""));
   const cols = [...Array(width).keys()];
-  const code = cols.find((c) => rows.filter((r) => iso(r[c])).length >= rows.length * 0.6);
+  const code = cols.find(
+    (c) => rows.filter((r) => iso(r[c])).length >= rows.length * 0.6,
+  );
   if (code === undefined) return "";
-  const name = cols.find((c) => c !== code && rows.every((r) => typeof r[c] === "string"));
+  const name = cols.find(
+    (c) => c !== code && rows.every((r) => typeof r[c] === "string"),
+  );
   if (name === undefined) return "";
-  const totals = [...new Set(rows.filter((r) => !iso(r[code])).map((r) => String(r[name])))].sort();
+  const totals = [
+    ...new Set(rows.filter((r) => !iso(r[code])).map((r) => String(r[name]))),
+  ].sort();
   if (!totals.length) return "";
   return `\n[harness] Rows without a country code are totals of the country rows: ${totals.map((t) => JSON.stringify(t)).join(", ")}. A stack, a sum or a share draws either the countries or one of these totals, never both; the rest of the world is a total's row minus the part shown.`;
 }
@@ -285,34 +311,49 @@ const TABLE_DIGEST_AT = 8_000;
  */
 export function tableDigest(body: string): string | null {
   if (body.length <= TABLE_DIGEST_AT) return null;
-  let table: { columns?: { name?: unknown; type?: unknown }[]; rows?: unknown[][] };
+  let table: {
+    columns?: { name?: unknown; type?: unknown }[];
+    rows?: unknown[][];
+  };
   try {
     table = JSON.parse(body);
   } catch {
     return null;
   }
-  if (!Array.isArray(table?.columns) || !Array.isArray(table?.rows)) return null;
+  if (!Array.isArray(table?.columns) || !Array.isArray(table?.rows))
+    return null;
   const columns = table.columns;
   const rows = table.rows.filter(Array.isArray);
   const row = (r: unknown[]) => JSON.stringify(r);
   const values = columns.map((c, i) => {
-    const seen = [...new Set(rows.map((r) => r[i]).filter((v) => v !== null && v !== ""))];
-    if (seen.length <= 30) return `- ${c.name}: ${seen.map((v) => (typeof v === "string" ? JSON.stringify(v) : String(v))).join(", ")}`;
+    const seen = [
+      ...new Set(rows.map((r) => r[i]).filter((v) => v !== null && v !== "")),
+    ];
+    if (seen.length <= 30)
+      return `- ${c.name}: ${seen.map((v) => (typeof v === "string" ? JSON.stringify(v) : String(v))).join(", ")}`;
     const nums = seen.map(Number).filter(Number.isFinite);
     return nums.length === seen.length
       ? `- ${c.name}: ${seen.length} values from ${Math.min(...nums)} to ${Math.max(...nums)}`
-      : `- ${c.name}: ${seen.length} values, e.g. ${seen.slice(0, 8).map((v) => JSON.stringify(v)).join(", ")}`;
+      : `- ${c.name}: ${seen.length} values, e.g. ${seen
+          .slice(0, 8)
+          .map((v) => JSON.stringify(v))
+          .join(", ")}`;
   });
   const iso = (v: unknown) => /^([A-Z]{3}|OWID_KOS)$/.test(String(v ?? ""));
-  const code = columns.findIndex((_, c) => rows.filter((r) => iso(r[c])).length >= rows.length * 0.6);
+  const code = columns.findIndex(
+    (_, c) => rows.filter((r) => iso(r[c])).length >= rows.length * 0.6,
+  );
   const totals = code < 0 ? [] : rows.filter((r) => !iso(r[code]));
-  const shown = totals.length && totals.length <= 200 ? totals : rows.slice(0, 12);
+  const shown =
+    totals.length && totals.length <= 200 ? totals : rows.slice(0, 12);
   return [
     `[digest: data.json is ${body.length} characters, too long to read whole; the beat reads the file itself, by column name]`,
     `${rows.length} rows; columns in order: ${columns.map((c) => `${c.name} (${c.type})`).join(", ")}. Each row is an array of cells in that order.`,
     "Values by column:",
     ...values,
-    totals.length && totals.length <= 200 ? `Every row of the totals (${totals.length}):` : `The first ${shown.length} rows:`,
+    totals.length && totals.length <= 200
+      ? `Every row of the totals (${totals.length}):`
+      : `The first ${shown.length} rows:`,
     ...shown.map(row),
   ].join("\n");
 }
@@ -323,7 +364,10 @@ function answeredFor(bases: Bases, path: string): string | undefined {
   return bases.answered?.find((a) => a.match.test(path))?.reply;
 }
 
-const insteadOfReread = async (bases: Bases) => (typeof bases.noRereads === "function" ? await bases.noRereads() : bases.noRereads);
+const insteadOfReread = async (bases: Bases) =>
+  typeof bases.noRereads === "function"
+    ? await bases.noRereads()
+    : bases.noRereads;
 
 export function fsTools(bases: Bases) {
   const seen = new Map<string, string>();
@@ -341,7 +385,10 @@ export function fsTools(bases: Bases) {
       if (bases.noRereads) {
         // stress-ad (Qwen3.5-9B, 2026-11-13): eight alternating reads of the same two references and no question, until the cap.
         const stamp = String(statSync(abs).mtimeMs);
-        if (seen.get(abs) === stamp) throw new Error(`you already read ${path} above and it has not changed — do not read it again. ${await insteadOfReread(bases)}`);
+        if (seen.get(abs) === stamp)
+          throw new Error(
+            `you already read ${path} above and it has not changed — do not read it again. ${await insteadOfReread(bases)}`,
+          );
         seen.set(abs, stamp);
       }
       const body = await readFile(abs, "utf8");
@@ -381,7 +428,10 @@ export function fsTools(bases: Bases) {
       const listing = entries.sort().join("\n");
       if (bases.noRereads) {
         // stress-ad (Qwen3.5-9B, 2026-11-13): the same three directories listed in turn for twelve turns, no question asked.
-        if (seen.get(`dir:${abs}`) === listing) throw new Error(`you already listed ${path} above and it has not changed — do not list it again. ${await insteadOfReread(bases)}`);
+        if (seen.get(`dir:${abs}`) === listing)
+          throw new Error(
+            `you already listed ${path} above and it has not changed — do not list it again. ${await insteadOfReread(bases)}`,
+          );
         seen.set(`dir:${abs}`, listing);
       }
       return text(listing);
@@ -427,7 +477,7 @@ export function fsTools(bases: Bases) {
     async execute(_id, { path, old_text, new_text }) {
       if (old_text.length > MAX_EDIT_OLD || new_text.length > MAX_EDIT_NEW) {
         throw new Error(
-          `edit too large (old_text ${old_text.length}/${MAX_EDIT_OLD}, new_text ${new_text.length}/${MAX_EDIT_NEW} characters); split it into smaller edits, or write the whole file again with write_file`,
+          `edit too large (old_text ${old_text.length}/${MAX_EDIT_OLD}, new_text ${new_text.length}/${MAX_EDIT_NEW} characters); split it into smaller edits (each old_text a few lines that start the part to change); write_file only for a whole file of at most ${MAX_WRITE} characters`,
         );
       }
       if (old_text === new_text)
@@ -459,7 +509,8 @@ export function fsTools(bases: Bases) {
 }
 
 // What a write or edit that leaves the file as it was is answered with (12B and Qwen3.5-9B, 2026-11-13: loops of them).
-const NOTHING_CHANGED = "If the beat already renders, call render_beat (it is the last step); otherwise change only the text the last refusal names.";
+const NOTHING_CHANGED =
+  "If the beat already renders, call render_beat (it is the last step); otherwise change only the text the last refusal names.";
 
 /**
  * The craft step's write tools: in a zoned beat the model writes beat.mjs and nothing else, so the
@@ -486,7 +537,9 @@ export function beatTools(bases: Bases, beat: string) {
           `${file}: the call carried no content ("${content.trim()}"). Give the whole module in content, starting with its imports`,
         );
       if (existsSync(target) && readFileSync(target, "utf8") === content)
-        throw new Error(`${file} already holds exactly this content: this write changes nothing. ${NOTHING_CHANGED}`);
+        throw new Error(
+          `${file} already holds exactly this content: this write changes nothing. ${NOTHING_CHANGED}`,
+        );
       if (content.length > MAX_WRITE && existsSync(target))
         throw new Error(
           `${file} exists and the new content is ${content.length} characters; change it with several edit_file calls (old_text up to ${MAX_EDIT_OLD}, new_text up to ${MAX_EDIT_NEW} characters)`,
@@ -506,10 +559,12 @@ export function beatTools(bases: Bases, beat: string) {
     async execute(_id, { old_text, new_text }) {
       if (old_text.length > MAX_EDIT_OLD || new_text.length > MAX_EDIT_NEW)
         throw new Error(
-          `edit too large (old_text ${old_text.length}/${MAX_EDIT_OLD}, new_text ${new_text.length}/${MAX_EDIT_NEW} characters); split it into smaller edits, or write the whole file again with write_file`,
+          `edit too large (old_text ${old_text.length}/${MAX_EDIT_OLD}, new_text ${new_text.length}/${MAX_EDIT_NEW} characters); split it into smaller edits (each old_text a few lines that start the part to change); write_file only for a whole file of at most ${MAX_WRITE} characters`,
         );
       if (old_text === new_text)
-        throw new Error(`new_text is old_text: this edit changes nothing. ${NOTHING_CHANGED}`);
+        throw new Error(
+          `new_text is old_text: this edit changes nothing. ${NOTHING_CHANGED}`,
+        );
       const target = abs();
       if (!existsSync(target))
         throw new Error(`${file} does not exist yet: write it with write_file`);
