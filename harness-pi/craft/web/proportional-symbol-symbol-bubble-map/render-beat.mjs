@@ -73,6 +73,11 @@ await refusing(HERE, async () => {
   const featuresOf = (iso) => geo.features.filter((f) => f.properties.iso === iso);
   if (!Array.isArray(beat.symbols) || beat.symbols.length < 2) throw new Error("symbols must be one { iso, name, value, lon, lat } per place (at least two)");
   assertNumbers(beat.symbols.map((s) => [s.name, s.value]));
+  // Checked before each symbol's code: one symbol per station, named by country, failed the code of the first
+  // station without one three times and never heard that the kit draws one circle per place (Qwen3.5-9B, 2026-11-13).
+  const places = new Set(beat.symbols.map((s) => s.name));
+  if (places.size !== beat.symbols.length)
+    throw new Error(`symbols holds ${beat.symbols.length} entries for ${places.size} distinct names: this kit draws one circle per place — add up the rows of each place into one symbol (one { iso, name, value, lon, lat } per ${[...places].slice(0, 2).join(", ")}, …), as the worked example beat.example.mjs, in this beat's folder, sums its stations per country`);
   beat.symbols.forEach((s, i) => {
     if (!(s.value > 0)) throw new Error(`symbols[${i}] (${s.name}) has value ${s.value}: a circle's area draws a positive quantity — leave out the places with none`);
     if (![s.lon, s.lat].every(Number.isFinite) || Math.abs(s.lon) > 180 || Math.abs(s.lat) > 90) throw new Error(`symbols[${i}] (${s.name}) needs numeric lon and lat read from data.json`);
@@ -80,7 +85,6 @@ await refusing(HERE, async () => {
     if (!/^[A-Z]{3}$/.test(String(s.iso)) || !featuresOf(s.iso).length)
       throw new Error(`symbols[${i}] (${s.name}) has iso ${JSON.stringify(s.iso)}, which matches no country on the map: give the ISO alpha-3 code of the country the place is in (resolve names with countries.mjs) — this kit draws Europe and its neighbours only`);
   });
-  if (new Set(beat.symbols.map((s) => s.name)).size !== beat.symbols.length) throw new Error("two symbols share one name: every circle must be named once");
   const rows = [...beat.symbols].sort((a, b) => b.value - a.value).map((s, i) => ({ ...s, key: `m${i}`, name: plain(s.name) }));
   const total = rows.reduce((t, r) => t + r.value, 0);
   const biggest = rows[0];
