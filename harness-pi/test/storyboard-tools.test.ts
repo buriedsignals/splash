@@ -845,6 +845,22 @@ describe("gaps the harness fills", () => {
 
   // stress-x (Qwen3.5-9B, 2026-11-12): told only that the producer "was never chosen", it re-recorded credit
   // and placement for 24 turns and never asked the journalist.
+  // stress-v (Qwen3.5-9B, 2026-11-13): "format is missing — gate 2b never closed" sent it calling a propose_formats tool
+  // that does not exist and reading scripts until the 20-minute cap.
+  it("should name the question and the tool for each open slot field", async () => {
+    const { gapsForModel } = await import("../src/tools/storyboard.ts");
+    const out = gapsForModel([
+      "slot 1: format is missing — gate 2b never closed",
+      "slot 1: size is missing — gate 2c never closed",
+      "slot 1: no narrow intent was named — step 1 of references/chart-choice.md.",
+      "slot 1: nothing chosen — gate 2 is not closed",
+    ]);
+    expect(out[0]).toMatch(/ask the journalist "Static, interactive web, video or scrollytelling\?".*record_slot 1 format/);
+    expect(out[1]).toMatch(/Landscape, square or portrait\?.*record_slot 1 size/);
+    expect(out[2]).toMatch(/ask the journalist.*record_slot 1 intent/);
+    expect(out[3]).toMatch(/show_candidates.*record_slot 1 chosen/);
+  });
+
   it("should name the question and the tool when no slot is open yet", async () => {
     const { gapsForModel } = await import("../src/tools/storyboard.ts");
     expect(gapsForModel(["no slot: nothing would be produced"])[0]).toMatch(/ask the journalist.*chart, a map or an image.*record_slot 1 medium/i);

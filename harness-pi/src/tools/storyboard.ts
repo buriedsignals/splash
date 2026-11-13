@@ -176,6 +176,16 @@ export function gapsForModel(gaps: string[]): string[] {
         ? `${g.split(":")[0]}: interaction is missing — record_slot chosen records it from the journalist's choice`
         : /proves is missing/.test(g)
           ? `${g.split(":")[0]}: proves is missing — it is filled from the takeaway once that is recorded`
+          : /format is missing/.test(g)
+            ? `${g.split(":")[0]}: format is missing — ask the journalist "Static, interactive web, video or scrollytelling?", then record_slot ${g.split(":")[0].replace("slot ", "")} format`
+          : /never confirmed reachable/.test(g)
+            ? `${g.split(":")[0]}: reachable is filled by record_slot format`
+          : /size is missing/.test(g)
+            ? `${g.split(":")[0]}: size is missing — ask the journalist "Landscape, square or portrait?", then record_slot ${g.split(":")[0].replace("slot ", "")} size`
+          : /no narrow intent was named/.test(g)
+            ? `${g.split(":")[0]}: intent is missing — ask the journalist what the reader should do with it ("compare categories, see change over time, see parts of a whole, see where?"), then record_slot ${g.split(":")[0].replace("slot ", "")} intent`
+          : /nothing chosen/.test(g)
+            ? `${g.split(":")[0]}: no treatment chosen — call show_candidates, show its menu as it returns, then record_slot ${g.split(":")[0].replace("slot ", "")} chosen with the journalist's pick`
           : /^no slot/.test(g)
             ? `no slot yet — survey what this data could show, then ask the journalist "Should this be a chart, a map or an image?" and record their answer with record_slot 1 medium`
           : /custom or Datawrapper was never chosen/.test(g)
