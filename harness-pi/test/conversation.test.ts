@@ -359,3 +359,31 @@ describe("converse when the language is open and the journalist named one", () =
     expect((await lang("العربية."))[4]).toContain('record_language with code "ar"');
   });
 });
+
+describe("converse after the language nudge", () => {
+  it("should keep every tool on the turn after it, so the survey that follows can read its references", async () => {
+    const offered: string[][] = [];
+    let active = ["read_file", "record_language", "record_slot"];
+    const session = {
+      subscribe: () => () => {},
+      prompt: async () => void offered.push([...active]),
+      getLastAssistantText: () => "Should we proceed with French (`fr`)?",
+      abort: async () => {},
+      getActiveToolNames: () => active,
+      setActiveToolsByName: (names: string[]) => void (active = names),
+    };
+    await converse({
+      session: session as never,
+      first: "Start the storyboard.",
+      journalist: { answer: async () => "English." },
+      dialogue: { lastJournalist: "", lastProposal: "" },
+      conversational: true,
+      done: async () => false,
+      gaps: async () => "language is missing — nobody confirmed which language",
+      limits: { rounds: 8 },
+      log: [],
+      recordTools: ["record_language", "record_slot"],
+    });
+    expect(offered[4]).toEqual(["read_file", "record_language", "record_slot"]);
+  });
+});

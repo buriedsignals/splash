@@ -275,7 +275,8 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
         prompt = `[harness] ${silent} turns went to the journalist with nothing recorded, and their answer is ${JSON.stringify(o.dialogue.lastJournalist)}. Call record_language with code "${named}" now: the journalist chooses the delivery's language, and the newsroom's list does not overrule them. Then continue with what is still open.`;
         o.log.push(`HARNESS: ${prompt}`);
         silent = 0;
-        narrow = true;
+        // Not narrowed: the language takes one call, and the survey it opens reads references (stress-p, qc2:
+        // three read_file calls refused as "not found" in the narrowed turn ended the session).
         continue;
       }
       if (CLAIMED_RECORD.test(said) && recorded === 0) {
