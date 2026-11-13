@@ -959,3 +959,65 @@ Journalist classifier kept on the 12B so the instrument matches the 12B batch. s
 counted deliveries, and by it the E4B passes; by the renders it regresses on faithfulness. The 12B stays the student.
 Tune candidates the two rungs share: choosing the measure the takeaway names (12B: TWh for a share in batch 4; E4B:
 absolute beds for a per-resident rank), and the language of what the model writes on the plate.
+
+### Next rung: Qwen3.5-9B on Osaurus, the same four fresh stories (2026-11-12/13) — arm `osaurus-qwen` (`c6a50097a`)
+
+Tom's shipped main model (`qwen3.5-9b-optiq-4bit`, base, not his tuned r3). The journalist classifier and the editor
+stay on the 12B. Run **segmented**, as Rémy asked: storyboard alone first, then craft alone
+(`SPLASH_STOP_AFTER_CRAFT=1`), so a defect shows in ten or twenty minutes rather than at the 45-minute cap. Each
+defect got a failing test, a mutation check and a commit before the next run.
+
+**Storyboard (Gate 2), compared field by field with each story's sheet:**
+
+| Story | Outcome | Fidelity to the sheet |
+|---|---|---|
+| stress-x-tunisian-water | DONE (qsb5) | all fields |
+| stress-v-top-emitters | DONE (qsb6, after resume) | all fields; the credit "unattributed" came from the scripted journalist saying "Yes" to the desk's proposal (instrument, fixed `f385d8122`) |
+| stress-ad-polish-hospital-beds | DONE (qsb6, after resume) | all fields; the subject held the comparison because the classifier misread the subject question (instrument, fixed `64d909796`) |
+| stress-p-transport-ridership | DONE (qsb6, again qc2) | all fields |
+
+**4/4 storyboards close, faithful.** The 12B on the same four: one stopped on a harness defect (stress-v, since
+fixed). Getting there cost twenty-odd harness fixes, below; the runs that hit them stopped in minutes, not at the cap.
+
+**Craft (chart-beat, static):**
+
+| Story | Outcome | The render, looked at |
+|---|---|---|
+| stress-x-tunisian-water | stopped by hand (qc1) | not drawable: Arabic plate, and Splash has no Arabic typeface (Known limits). The second refusal was right: Sfax's value, in Eastern Arabic digits, drawn as 89,000,000 |
+| stress-p-transport-ridership | rendered on attempt 3 (qc2, 2,286 s, 5 refusals, 109 turns) | **near gold on the numbers**: title "Lisboa alone carries 214 of the 394 million trips… more than twice Porto's 96 million", bars 214/96/31/28/14/11, Lisboa accented, bracket at 394. **Not gold on the language**: notes "214 contra 96" and "de 394", eyebrow "TRANSPORTE · PORTUGAL" in Portuguese on an English plate |
+
+The Portuguese plate is Qwen writing in the data's language. Two of the refusals before attempt 3 were on that, one
+string at a time; `3f68ad299` names every foreign string in one refusal (shorter standfirst forms included, never
+checked before), and `6855c1ed9` reads notes too short for `languageOf` against a narrow list of non-English function
+words. That list was scanned over the 238 beats kept so far: one new refusal (this plate), no false one; the broad
+stopword lists would have made 21 ("per cent", "as", "CHE"). The eyebrow "TRANSPORTE" is still not caught (one word,
+no function word).
+
+**Harness fixes from this rung** (Tom's triage: each is routing the model could not do, moved into code):
+
+- Storyboard routing: `f5351dbb5`, `8f8e4073b`, `48d83d5fd`, `b49dee6bf`, `ea49a695b`, `61dfc37cb`, `f28cc9f89`,
+  `b25a229cf`, `4412a125f`, `b41c91ad3`, `0bcde0f32` (record the journalist's own words when the model rewords them),
+  `8bd101fe5`.
+- Reads that went nowhere: `6bbc391c8`, `3d2b1123f`, `1afd7b00b` (proof/ held finished beats of the eval stories),
+  `39cfe3fa1`, `6c213a8c2` and `5314a09ea` (refuse a second read of an unchanged file or directory, naming the
+  question to ask), `1f7e24264` (answer the hunt for the Datawrapper mapping with the producer question).
+- Language: `2c728947f` and `7f650402a` — the journalist said "English." eleven times while Qwen proposed `fr` from
+  the newsroom list; the nudge now names `record_language en` and leaves every tool on.
+- Craft: `46595e9a4` (quote the whole closest passage of a near-miss edit, in any script), `3f68ad299`, `6855c1ed9`.
+- Instrument (the scripted journalist, not the harness): `4e12175de` (a hung classification is asked once more),
+  `f385d8122`, `64d909796`.
+
+**Tune** (the model's, not routing): Qwen ignores a refusal that names the next step and repeats the call (three
+rereads of `article.md` for placement after "do not reread"); it re-asks a question the journalist already answered;
+it writes the plate in the data's language. Resume recovers the first two. These are what a procedure tune would
+target (Tom's 26 examples, masked loss).
+
+| | Storyboards (4) | Craft rendered | Faithful render |
+|---|---|---|---|
+| 12B (fresh batch 1, before the fixes) | 3 | 2 delivered | 2 near gold |
+| E4B | 4 | 3 delivered | 0 |
+| Qwen3.5-9B (after the fixes) | **4, all faithful** | 1 of 1 drawable (x stopped: Arabic) | 1 near gold on numbers, wrong language on 3 strings |
+
+Not like for like: the Qwen arm ran on a harness twenty-odd commits ahead, segmented, with resumes. What it shows:
+the storyboard is no longer the wall for a 9B model. What it does not show yet: a delivered Qwen render that passes
+every guard on the first try. A re-run of stress-p on `6855c1ed9` is the check.
