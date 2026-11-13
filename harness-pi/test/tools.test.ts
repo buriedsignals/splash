@@ -258,6 +258,17 @@ describe("look tool", () => {
     expect(images[0].mimeType).toBe("image/png");
   });
 
+  it("should say a still taken mid-gesture shows its figures still moving, and name the settled one", async () => {
+    // stress-v (Qwen3.5-9B, 2026-11-13): "subject-bracket" is the middle of the bracket, its count still climbing
+    // (8.1 of 11.7 Gt); the model took it for a wrong sum and rewrote a correct gesture three times.
+    const { mkdirSync, copyFileSync } = await import("node:fs");
+    const dir = join(bases.storyDir, "beats/1-top/look");
+    mkdirSync(dir, { recursive: true });
+    copyFileSync(join(bases.storyDir, "beats/1-top/renders/still.png"), join(dir, "creme-336-subject-bracket.png"));
+    const r = await call(lookTool(bases), { path: join(dir, "creme-336-subject-bracket.png") });
+    expect(r.content[0].text).toMatch(/middle of the subject gesture.*still moving.*end-subject/);
+  });
+
   it("should refuse a file that is not a PNG", async () => {
     await expect(
       call(lookTool(bases), { path: "stories/demo/source/data.csv" }),
