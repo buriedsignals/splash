@@ -333,6 +333,21 @@ export function stageGeoPoint({ variant, gestures, marks, claim, format, adapter
   }
 }
 
+/** A set note (a highlight on a group) that counts its circles counts the ones the plate draws: the legibility cut
+ *  leaves the smallest out, and "72 sites nucléaires" stood over 69 drawn (gx-proportional-symbol static, Qwen3.5-9B,
+ *  2026-11-13). `drawn` is the set of marks the plate draws. */
+export function setNotesDrawn(notes, drawn) {
+  for (const n of notes) {
+    if (n.kind !== "set") continue;
+    const shown = n.marks.filter((m) => drawn.has(m)).length;
+    if (shown === n.marks.length) continue;
+    const count = figuresIn(n.text).find((f) => f.value === n.marks.length);
+    if (!count) continue;
+    const fixed = n.text.slice(0, count.index) + String(shown) + n.text.slice(count.index + count.raw.length);
+    throw new GestureRefusal(`gestures[${n.index}].note`, `the note prints ${count.raw}, every circle of the group, but the plate draws ${shown} of them (the rest fall under the legibility cut)`, { set: { index: n.index, field: "note", value: fixed } });
+  }
+}
+
 /** A refusal as the runners print it: the field, what is wrong, and a value that works. */
 export function refusalText(error) {
   const { fix } = error;

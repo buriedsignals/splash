@@ -9,6 +9,8 @@ import {
 import {
   createGeoPoint,
   pointMarks,
+  refusalText,
+  setNotesDrawn,
   stageGeoPoint,
 } from "../craft/_shared/gesture-geo-point-family.mjs";
 import { composeGeoPointStatic } from "../craft/_shared/gesture-geo-point-static.mjs";
@@ -658,5 +660,19 @@ describe("point-map word side", () => {
 
   it("should keep the default side when it is clear", () => {
     expect(wordAnchor(word, box, []).side).toBe("left");
+  });
+});
+
+// gx-proportional-symbol static (Qwen3.5-9B, 2026-11-13): the highlight note printed "72 sites nucléaires", the count of
+// every Nuclear row, while the legibility cut drew 69 of those circles.
+describe("setNotesDrawn", () => {
+  const notes = [{ index: 0, do: "highlight", kind: "set", marks: ["site 1", "site 2", "site 3", "site 4"], text: "4 sites nucléaires" }];
+  it("should refuse a set note counting circles the plate does not draw, with the drawn count as the value that works", () => {
+    let error: unknown;
+    try { setNotesDrawn(notes, new Set(["site 1", "site 2", "site 3"])); } catch (e) { error = e; }
+    expect(refusalText(error)).toMatch(/gestures\[0\]\.note.*prints 4.*draws 3 .*value that works: "3 sites nucléaires"/);
+  });
+  it("should accept a set note when every circle it counts is drawn", () => {
+    expect(() => setNotesDrawn(notes, new Set(["site 1", "site 2", "site 3", "site 4"]))).not.toThrow();
   });
 });
