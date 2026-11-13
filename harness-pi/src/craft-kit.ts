@@ -8,6 +8,7 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
+  statSync,
   writeFileSync,
 } from "node:fs";
 import { basename, join } from "node:path";
@@ -158,14 +159,27 @@ export function craftBriefing(beatDir: string, beat: string): string {
   return `\n\nbeats/${beat}/beat.example.mjs, the worked example, read for you (do not read it again: it is all the reference the beat needs):\n\`\`\`js\n${example}\n\`\`\`\nYour first call is write_file of beats/${beat}/beat.mjs, this story's own, written from this example, the takeaway and the data summary above.`;
 }
 
+/** The beat's render is newer than its beat.mjs: the file on disk is the one that rendered. After a render and a look,
+ *  Qwen3.5-9B read the story's files for twelve turns, each answered "edit where the last refusal points", until the
+ *  craft stopped on no new record (gx-proportional-symbol static, 2026-11-13). */
+function rendersNow(beatDir: string): boolean {
+  const file = join(beatDir, "beat.mjs");
+  const renders = join(beatDir, "renders");
+  if (!existsSync(file) || !existsSync(renders)) return false;
+  const written = statSync(file).mtimeMs;
+  return readdirSync(renders).some((f) => f.endsWith(".png") && statSync(join(renders, f)).mtimeMs > written);
+}
+
 /** What a craft session's reads are answered with in code: proof/ is not the beat's (the example was written from it
  *  and is all of it the beat needs), the worked example was given in the first message, and an unchanged reread is
  *  sent to the step the beat waits for (gx-proportional-symbol video, Qwen3.5-9B, 2026-11-13: never written). */
 export function craftReads(beatDir: string, beat: string) {
   const next = () =>
-    existsSync(join(beatDir, "beat.mjs"))
-      ? `Next: edit beats/${beat}/beat.mjs where the last refusal points, then render_beat (beat "${beat}").`
-      : `Next: write_file of beats/${beat}/beat.mjs, this story's own, from the worked example in your first message.`;
+    rendersNow(beatDir)
+      ? `Next: beats/${beat}/beat.mjs renders as it stands (its render is newer than the file): if the PNG you looked at is right, reply DONE; else edit what is wrong and render_beat again.`
+      : existsSync(join(beatDir, "beat.mjs"))
+        ? `Next: edit beats/${beat}/beat.mjs where the last refusal points, then render_beat (beat "${beat}").`
+        : `Next: write_file of beats/${beat}/beat.mjs, this story's own, from the worked example in your first message.`;
   return {
     answered: [
       { match: /(^|\/)proof(\/|$)/, reply: `proof/ is not part of this beat: the worked example in your first message is all of it the beat needs. ${next().replace("Next: ", "Next: your call is ")}` },

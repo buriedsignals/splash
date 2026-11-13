@@ -4,6 +4,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  utimesSync,
   writeFileSync,
 } from "node:fs";
 import { tmpdir } from "node:os";
@@ -160,5 +161,16 @@ describe("the craft reads", () => {
     const dir = mkdtempSync(join(tmpdir(), "beat-"));
     writeFileSync(join(dir, "beat.mjs"), "export default {};");
     expect(await craftReads(dir, "1").noRereads()).toMatch(/render_beat/);
+  });
+
+  // gx-proportional-symbol static (Qwen3.5-9B, 2026-11-13): the beat rendered and was looked at, then twelve turns of
+  // reads, each answered "edit where the last refusal points", until the craft stopped on no new record.
+  it("should send a reread to DONE once the beat's render is newer than beat.mjs", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "beat-"));
+    writeFileSync(join(dir, "beat.mjs"), "export default {};");
+    mkdirSync(join(dir, "renders"));
+    writeFileSync(join(dir, "renders", "x.png"), "");
+    utimesSync(join(dir, "beat.mjs"), new Date(Date.now() - 60_000), new Date(Date.now() - 60_000));
+    expect(await craftReads(dir, "1").noRereads()).toMatch(/renders .*reply DONE/);
   });
 });
