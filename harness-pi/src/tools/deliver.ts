@@ -23,6 +23,7 @@ import {
 } from "../../../skills/deliver/scripts/other-subjects.mjs";
 import { parseStoryboard } from "../../../skills/splash/scripts/gate-contract.mjs";
 import type { Bases } from "./fs.ts";
+import { datedCredit } from "../../craft/_shared/guards.mjs";
 import { beatDir } from "./run.ts";
 import { assertJournalistOwns, type Dialogue } from "./storyboard.ts";
 
@@ -132,12 +133,7 @@ export function deliverTools(bases: Bases, dialogue: Dialogue) {
         lastJournalist: dialogue.lastJournalist.replace(/-/g, " "),
       });
       const { meta, common } = identity(bases, beat);
-      const credit = [
-        meta.credit,
-        meta.effectiveDate && !/\bas of\b/i.test(String(meta.credit ?? "")) ? `as of ${meta.effectiveDate}` : "",
-      ]
-        .filter(Boolean)
-        .join(" · ");
+      const credit = datedCredit(String(meta.credit ?? ""), meta.effectiveDate ? String(meta.effectiveDate) : "", String(meta.language ?? ""));
       // The beat computes its own alt from the data it drew; the 12B's paraphrase described a line
       // chart about "transport stress" for a bar chart of trips.
       const drawnAlt = renderAlt(join(bases.storyDir, "beats", common.outputId));

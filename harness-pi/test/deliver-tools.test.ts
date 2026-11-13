@@ -88,6 +88,16 @@ describe("delivery tools", () => {
     expect(handover).not.toContain("transport stress");
   });
 
+  // The plate dates a French credit "données au 21/08/2026"; the hand-over said "as of 2026-08-21" (2026-11-13).
+  it("should date the hand-over's credit in the story's language", async () => {
+    const sb = join(bases.storyDir, "STORYBOARD.md");
+    writeFileSync(sb, readFileSync(sb, "utf8").replace('language: "en"', 'language: "fr"'));
+    dialogue.lastJournalist = "owned-file";
+    await call(deliverTools(bases, dialogue).make, { beat: BEAT, form: "owned-file" });
+    const handover = readFileSync(join(bases.storyDir, "export", BEAT, "HANDOVER.md"), "utf8");
+    expect(handover).toContain("données au 21/08/2026");
+  });
+
   it("should refuse to record a decline the journalist never gave", async () => {
     dialogue.lastJournalist = "owned-file";
     await call(deliverTools(bases, dialogue).make, {

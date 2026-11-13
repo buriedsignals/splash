@@ -26,6 +26,12 @@ const asOfIn = (language, date) => {
   return said[language.toLowerCase().slice(0, 2)] ?? `as of ${date}`;
 };
 
+/** The credit with its as-of date in the story's language, unless the credit already carries one. */
+export const datedCredit = (credit, date, language = "") =>
+  credit && date && !/\bas of\b|\bdonnées au\b|\bStand\b|\bdatos a\b|\bdados de\b|\bdati al\b/i.test(credit)
+    ? `${credit} · ${asOfIn(String(language ?? ""), date)}`
+    : credit || (date ? asOfIn(String(language ?? ""), date) : "");
+
 /** What a beat function was called with, by its keys: the only things it can read. */
 const shapeOf = (args) =>
   args.length === 0 ? "nothing" : args.map((a) => (a && typeof a === "object" && !Array.isArray(a) ? `{ ${Object.keys(a).join(", ")} }` : Array.isArray(a) ? "an array" : typeof a)).join(", ");
@@ -65,7 +71,7 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
   if (!field) return;
   const credit = field("credit");
   const asOf = field("effectiveDate");
-  const dated = credit && asOf && !/\bas of\b|\bdonnées au\b|\bStand\b|\bdatos a\b|\bdados de\b|\bdati al\b/i.test(credit) ? `${credit} · ${asOfIn(String(field("language") ?? ""), asOf)}` : credit;
+  const dated = credit && asOf ? datedCredit(credit, asOf, field("language")) : credit;
   // A beat that gives its source as forms (a video's one-line credit) keeps forms: the dated credit, then the credit
   // alone. One dated string ran past the line and every render refused (gx-bullet video, Qwen3.5-9B, 2026-11-13).
   if (credit) beat[source] = Array.isArray(beat[source]) && dated !== credit ? [dated, credit] : dated;
