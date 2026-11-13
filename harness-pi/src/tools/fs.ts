@@ -28,7 +28,8 @@ export interface Bases {
   /** Root directories readable besides the story; skills/, shared/ and proof/ when absent. */
   readBases?: string[];
   /** Refuse a second read of a file unchanged since this session read it, naming what to do instead. */
-  noRereads?: string;
+  /** What a refused reread says to do instead; a function is asked at the refusal, so it names what is open then. */
+  noRereads?: string | (() => string | Promise<string>);
   /** Paths the harness already answered in code: a read or listing that names one gets this reply instead. */
   answered?: { match: RegExp; reply: string }[];
 }
@@ -309,6 +310,8 @@ function answeredFor(bases: Bases, path: string): string | undefined {
   return bases.answered?.find((a) => a.match.test(path))?.reply;
 }
 
+const insteadOfReread = async (bases: Bases) => (typeof bases.noRereads === "function" ? await bases.noRereads() : bases.noRereads);
+
 export function fsTools(bases: Bases) {
   const seen = new Map<string, string>();
   const readFileTool = defineTool({
@@ -324,7 +327,7 @@ export function fsTools(bases: Bases) {
       if (bases.noRereads) {
         // stress-ad (Qwen3.5-9B, 2026-11-13): eight alternating reads of the same two references and no question, until the cap.
         const stamp = String(statSync(abs).mtimeMs);
-        if (seen.get(abs) === stamp) throw new Error(`you already read ${path} above and it has not changed — do not read it again. ${bases.noRereads}`);
+        if (seen.get(abs) === stamp) throw new Error(`you already read ${path} above and it has not changed — do not read it again. ${await insteadOfReread(bases)}`);
         seen.set(abs, stamp);
       }
       const body = await readFile(abs, "utf8");
@@ -363,7 +366,7 @@ export function fsTools(bases: Bases) {
       const listing = entries.sort().join("\n");
       if (bases.noRereads) {
         // stress-ad (Qwen3.5-9B, 2026-11-13): the same three directories listed in turn for twelve turns, no question asked.
-        if (seen.get(`dir:${abs}`) === listing) throw new Error(`you already listed ${path} above and it has not changed — do not list it again. ${bases.noRereads}`);
+        if (seen.get(`dir:${abs}`) === listing) throw new Error(`you already listed ${path} above and it has not changed — do not list it again. ${await insteadOfReread(bases)}`);
         seen.set(`dir:${abs}`, listing);
       }
       return text(listing);

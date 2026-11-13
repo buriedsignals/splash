@@ -287,7 +287,10 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
     const fb = fsTools({
       ...bases,
       readBases: ["skills", "shared"],
-      noRereads: "Ask the journalist the open question now and end your turn, or record their last answer with its record_ tool.",
+      // stress-v (Qwen3.5-9B, 2026-11-13): told only "ask the open question", it read MANIFEST.json three times; the
+      // refusal now hands it the question, which the gaps already word.
+      noRereads: async () =>
+        `${await storyboardGaps()} Ask the journalist the first of these now, in the words it gives, and end your turn — or record their last answer with its record_ tool.`,
       answered: [
         {
           match: /datawrapper/i,

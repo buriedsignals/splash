@@ -130,6 +130,14 @@ describe("file tools", () => {
     await expect(call(read, { path: "proof/source/data.csv" })).rejects.toThrow(/already read .* Ask the journalist\./);
   });
 
+  it("should name the question still open, computed at the refusal, when a reread is refused", async () => {
+    let open = "first";
+    const { readFile: read } = fsTools({ ...bases, noRereads: async () => `Ask "Should this be a chart, a map or an image?" (${open}).` });
+    await call(read, { path: "proof/source/data.csv" });
+    open = "now";
+    await expect(call(read, { path: "proof/source/data.csv" })).rejects.toThrow(/Ask "Should this be a chart, a map or an image\?" \(now\)/);
+  });
+
   it("should refuse a second listing of an unchanged directory and name what to do instead", async () => {
     const { listDir } = fsTools({ ...bases, noRereads: "Ask the journalist." });
     await call(listDir, { path: "skills" });
