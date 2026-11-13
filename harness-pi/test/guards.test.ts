@@ -9,6 +9,7 @@ import {
   assertLegibleLabels,
   assertNoAggregates,
   errorText,
+  figureRefusal,
   importBeat,
   legibleFormat,
   printable,
@@ -927,5 +928,17 @@ describe("assertHeadlineNumbersDrawn at the precision the title writes", () => {
         "/nonexistent",
       ),
     ).not.toThrow();
+  });
+});
+
+// gx-bullet scrolly (Qwen3.5-9B, 2026-11-13): the card called format(r.lastBefore.marker, 0) and printed 14 where the
+// picture shows 13,8; the refusal named 13,8 but not why 14 missed it, and the craft stopped on the same refusal 3x.
+describe("figureRefusal", () => {
+  it("should say the card states the same figure rounded, and the call that prints it as drawn", () => {
+    expect(figureRefusal("card 1 (cards.tracks)", "lastBefore.marker", "13,8", 13.8, "en dernier, à 14 %.")).toMatch(/it states 14, the same figure rounded otherwise — a value that works: "13,8", printed by format\(r\.lastBefore\.marker\) with no decimals argument/);
+  });
+
+  it("should keep the plain refusal when the card states no near figure", () => {
+    expect(figureRefusal("card 1 (cards.tracks)", "lastBefore.marker", "13,8", 13.8, "en dernier.")).not.toMatch(/rounded/);
   });
 });

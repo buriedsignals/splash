@@ -418,6 +418,21 @@ function assertDrawsRatio(drawn, here, ratio) {
   }
 }
 
+/**
+ * A card that does not state the figure its picture shows. When it states the same figure at another rounding
+ * (format(v, 0) printed 14 for the drawn 13,8 — gx-bullet scrolly, Qwen3.5-9B, 2026-11-13, same refusal 3x), the
+ * refusal says so and names the call that prints it as drawn.
+ */
+export function figureRefusal(where, what, wanted, value, text) {
+  const near = [...String(text).matchAll(/(?<![\d.,])\d+(?:[.,]\d+)?/g)]
+    .map((m) => m[0])
+    .find((n) => n !== wanted && Math.abs(Number(n.replace(",", ".")) - value) < 1);
+  const hint = near
+    ? `; it states ${near}, the same figure rounded otherwise — a value that works: "${wanted}", printed by format(r.${what}) with no decimals argument`
+    : ` — a value that works: a sentence that states "${wanted}"`;
+  return `${where} must state ${what} = "${wanted}" — the figure its picture shows${hint}. It says: ${text}`;
+}
+
 export const beatHere = (url) => dirname(new URL(url).pathname);
 
 /**

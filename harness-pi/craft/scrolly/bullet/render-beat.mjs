@@ -24,7 +24,7 @@ import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
 import { webRegisters } from "#shared/design-base/web.mjs";
 import { EYEBROW_TO_DISPLAY, gapOf, registerOf } from "#shared/design-base/register.mjs";
 import { DirectedBulletScrolly } from "./DirectedBulletScrolly.tsx";
-import { applyStoryboard, assertNumbers, assertHeadlineNumbersDrawn, assertDrawsClaimColumn } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, figureRefusal } from "./guards.mjs";
 import { plain, refusing, storyLanguage } from "./web.mjs";
 import { renderBeatScrolly, scrollySkill } from "./scrolly.mjs";
 
@@ -124,16 +124,18 @@ await refusing(HERE, async () => {
   const owns = (text, wanted) => new RegExp(`(?<![\\d.,])${wanted.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\d])`).test(text);
   // What each card is ABOUT, so it must say it: the figure its gesture puts on screen.
   const OWES = {
-    tracks: [["lastBefore.marker", format(reading.lastBefore.marker)]],
+    tracks: [["lastBefore.marker", reading.lastBefore.marker]],
     measure: [],
-    gain: [["subject.marker", format(subject.marker)], ["subject.measure", format(subject.measure)], ["subject.gain", format(subject.gain)]],
-    half: [["subject.measure", format(subject.measure)], ["nextAbove.measure", format(reading.nextAbove.measure)]],
+    gain: [["subject.marker", subject.marker], ["subject.measure", subject.measure], ["subject.gain", subject.gain]],
+    half: [["subject.measure", subject.measure], ["nextAbove.measure", reading.nextAbove.measure]],
     zoom: [],
   };
   CARDS.slice(0, 5).forEach((k, i) => {
     const text = prose[i].join(" ");
-    for (const [what, wanted] of OWES[k])
-      if (!owns(text, wanted)) throw new Error(`card ${i + 1} (cards.${k}) must state ${what} = "${wanted}" — the figure its picture shows; it says: ${text}`);
+    for (const [what, value] of OWES[k]) {
+      const wanted = format(value);
+      if (!owns(text, wanted)) throw new Error(figureRefusal(`card ${i + 1} (cards.${k})`, what, wanted, value, text));
+    }
   });
   const markerLabel = say("labels.marker", beat.labels.marker).join(" ");
   const measureLabel = say("labels.measure", beat.labels.measure).join(" ");
