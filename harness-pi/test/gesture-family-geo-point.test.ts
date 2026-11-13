@@ -613,11 +613,11 @@ describe("point-map reader control words", () => {
 describe("point-map web furniture", () => {
   const box = { x: 0, y: 0, w: 1000, h: 750 };
   it("should start a word at its circle's edge, not its centre", () => {
-    expect(wordAnchor({ x: 200, y: 100, r: 15 }, box)).toEqual({ x: 215, leftward: false });
+    expect(wordAnchor({ x: 200, y: 100, r: 15 }, box)).toMatchObject({ x: 215, leftward: false });
   });
 
   it("should end a leftward word at its circle's edge", () => {
-    expect(wordAnchor({ x: 800, y: 100, r: 15 }, box)).toEqual({ x: 785, leftward: true });
+    expect(wordAnchor({ x: 800, y: 100, r: 15 }, box)).toMatchObject({ x: 785, leftward: true });
   });
 
   it("should seat the size key in the corner with the fewest marks", () => {
@@ -643,5 +643,20 @@ describe("point-map web side layout", () => {
 
   it("should leave a plate as wide as the screen in one column", () => {
     expect(sideLayoutCss(".f", 2.4)).toBe("");
+  });
+});
+
+// gx-proportional-symbol web (Qwen3.5-9B, 2026-11-13): "Ukraine 6 000 MW", read leftward from its circle, lay over
+// the four Ukrainian circles west of it.
+describe("point-map word side", () => {
+  const box = { x: 0, y: 0, w: 1000, h: 750 };
+  const word = { x: 700, y: 500, r: 15, text: "Ukraine 6 000 MW" };
+  it("should move a word off the circles on its default side", () => {
+    const west = [620, 640, 660].map((x) => ({ x, y: 500, r: 12 }));
+    expect(wordAnchor(word, box, west).side).not.toBe("left");
+  });
+
+  it("should keep the default side when it is clear", () => {
+    expect(wordAnchor(word, box, []).side).toBe("left");
   });
 });

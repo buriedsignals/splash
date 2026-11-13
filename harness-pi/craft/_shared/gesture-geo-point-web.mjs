@@ -79,12 +79,25 @@ export function controlLegend(gesture, legend, beat, lang = "en") {
   return legend;
 }
 
-/** Where a word on a mark starts: at its circle's edge (a word written from the centre sat over its own circle), and
- *  leftward in the right part of the picture so it stays inside. */
-export function wordAnchor(w, box) {
-  const leftward = (w.x - box.x) / box.w > 0.6;
+/** Where a word on a mark starts: at its circle's edge (a word written from the centre sat over its own circle), on the
+ *  side whose text box covers the fewest other circles; rightward first, leftward in the right part of the picture so
+ *  it stays inside, above when both sides are crowded. Widths are estimated at about 8px a character. */
+export function wordAnchor(w, box, marks = []) {
   const r = w.r ?? 0;
-  return { x: leftward ? w.x - r : w.x + r, leftward };
+  // A picture's view units are about one CSS pixel per thousandth of its box: a zoomed box draws its words smaller.
+  const unit = box.w / 1000;
+  const wide = String(w.text ?? "").length * 8 * unit;
+  const H = 18 * unit;
+  const sides = {
+    right: { x: w.x + r, y: w.y, box: [w.x + r + 7, w.y - H / 2, wide, H] },
+    left: { x: w.x - r, y: w.y, box: [w.x - r - 7 - wide, w.y - H / 2, wide, H] },
+    above: { x: w.x, y: w.y - r, box: [w.x - wide / 2, w.y - r - 4 - H, wide, H] },
+  };
+  const order = (w.x - box.x) / box.w > 0.6 ? ["left", "above", "right"] : ["right", "above", "left"];
+  const inside = ([x, y, ww]) => x >= box.x && x + ww <= box.x + box.w && y >= box.y;
+  const under = ([x, y, ww, hh]) => marks.filter((m) => !(m.x === w.x && m.y === w.y) && m.x + (m.r ?? 0) > x && m.x - (m.r ?? 0) < x + ww && m.y + (m.r ?? 0) > y && m.y - (m.r ?? 0) < y + hh).length;
+  const side = order.filter((k) => inside(sides[k].box)).reduce((best, k) => (best === null || under(sides[k].box) < under(sides[best].box) ? k : best), null) ?? order[0];
+  return { x: sides[side].x, y: sides[side].y, side, leftward: side === "left" };
 }
 
 /** The corner a size key is seated in: the one whose key-sized box covers the fewest marks, bottom-left first. */

@@ -157,6 +157,8 @@ export function GestureGeoPointWeb({
     const hidden = new Set(p.roles.hidden);
     const asked = G.marks.filter((m) => !hidden.has(m.name) && inBox(m.x, m.y));
     const words = wordsOf(G, p.roles, p.notes, p.named).filter((w) => inBox(w.x, w.y));
+    const seen = G.marks.filter((m) => !hidden.has(m.name) && inBox(m.x, m.y));
+    const anchors = words.map((w) => wordAnchor(w, box, seen));
     // THE SIZE KEY, in the picture's own scale (a zoom draws its circles k times larger, and so does its key): nested
     // circles on one baseline in the clearest corner, their values and the unit as words, so a circle can be read.
     const key = (() => {
@@ -246,9 +248,14 @@ export function GestureGeoPointWeb({
               fontStyle: w.kind === "water" ? "italic" : undefined,
               color: w.accent ? accentInk : labelInk,
               // A word starts at its circle's edge, and in the right part of the picture reads leftward from it.
-              left: pct(wordAnchor({ ...w, r: (w.r ?? 0) }, box).x - box.x, box.w),
-              transform: wordAnchor(w, box).leftward ? "translate(calc(-100% - 7px), -50%)" : undefined,
-              top: pct(w.y - box.y, box.h),
+              left: pct(anchors[i].x - box.x, box.w),
+              transform:
+                anchors[i].side === "left"
+                  ? "translate(calc(-100% - 7px), -50%)"
+                  : anchors[i].side === "above"
+                    ? "translate(-50%, calc(-100% - 4px))"
+                    : undefined,
+              top: pct(anchors[i].y - box.y, box.h),
             }}
           >
             {w.text}
