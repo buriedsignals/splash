@@ -300,8 +300,8 @@ describe.skipIf(!existsSync(join(BENCH, "package.json")))(
       );
       expect([
         output.includes("rendered renders/"),
-        ["214 of 394", "more than twice Porto's 96 million"].filter((note) => texts(svg).includes(note)),
-      ]).toEqual([true, ["214 of 394", "more than twice Porto's 96 million"]]);
+        ["214 of 394", "more than twice Porto’s 96 million"].filter((note) => texts(svg).includes(note)),
+      ]).toEqual([true, ["214 of 394", "more than twice Porto’s 96 million"]]);
     });
 
     it("should print China's bracket with the same words as the per-type kit", () => {

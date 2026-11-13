@@ -103,6 +103,18 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
     beat[title] = Array.isArray(beat[title]) ? [takeaway, ...beat[title].slice(1)] : takeaway;
   else if (takeaway && headline !== undefined && norm(headline) !== norm(takeaway))
     throw new Error(`title's first form must be the journalist's takeaway copied as a literal string, not computed. It renders as: "${norm(headline)}" — it must be: "${takeaway}"`);
+  // The plate's own words print the typographic apostrophe: Qwen3.5-9B typed "dans l'électricité" on a video's axis
+  // (gx-bullet, 2026-11-13). The title and the credit are the journalist's, and a data cell keeps its spelling for joins.
+  {
+    const dataFile = join(here, "data.json");
+    const data = existsSync(dataFile) ? JSON.parse(readFileSync(dataFile, "utf8")) : {};
+    const asData = new Set([...(data.columns ?? []).map((c) => String(c.name)), ...(data.rows ?? []).flat().map(String)]);
+    const curl = (v) => (typeof v === "string" && !asData.has(v) ? v.replace(/(\p{L})'(?=\p{L})/gu, "$1’") : v);
+    const curlAll = (v) => (Array.isArray(v) ? v.map(curl) : curl(v));
+    for (const key of Object.keys(beat)) if (key !== title && key !== source) beat[key] = curlAll(beat[key]);
+    if (Array.isArray(beat.gestures))
+      beat.gestures = beat.gestures.map((g) => (g && typeof g === "object" ? Object.fromEntries(Object.entries(g).map(([k, v]) => [k, ["note", "card", "label"].includes(k) ? curlAll(v) : v])) : g));
+  }
   // The plate may draw a shorter form instead of the takeaway; a 26B wrote those in French under `language: en` (G2).
   const language = String(field("language") ?? "").toLowerCase().slice(0, 2);
   // Every word the plate prints is in that language: the E4B wrote French notes and a Portuguese eyebrow on an English

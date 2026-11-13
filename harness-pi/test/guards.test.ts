@@ -229,7 +229,9 @@ describe("applyStoryboard", () => {
       join(root, "STORYBOARD.md"),
       `---\nlanguage: fr\ncredit: "Ember"\neffectiveDate: 2025-06-26\n---\n`,
     );
-    const b: Record<string, unknown> = { source: ["a long form of the source", "a shorter form"] };
+    const b: Record<string, unknown> = {
+      source: ["a long form of the source", "a shorter form"],
+    };
     applyStoryboard(b, dir);
     expect(b.source).toEqual(["Ember · données au 26/06/2025", "Ember"]);
   });
@@ -237,6 +239,41 @@ describe("applyStoryboard", () => {
   // gx-bullet video (Qwen3.5-9B, 2026-11-13): the journalist's credit was too long for the line with its date, the
   // beat's own shorter forms were dropped, and the plate printed the credit undated; the refusal's advice (add a
   // shorter form to source) could never take effect.
+  // gx-bullet video (Qwen3.5-9B, 2026-11-13): the axis read "part du bas-carbone dans l'électricité" with a typewriter
+  // apostrophe; the plate's own words print the typographic one, and a data cell keeps its spelling for the join.
+  describe("apostrophes", () => {
+    const beatIn = () => {
+      const root = mkdtempSync(join(tmpdir(), "splash-apos-"));
+      const dir = join(root, "beats", "1");
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(root, "STORYBOARD.md"), `---\nlanguage: fr\n---\n`);
+      writeFileSync(
+        join(dir, "data.json"),
+        JSON.stringify({
+          columns: [{ name: "pays" }],
+          rows: [["Côte d'Ivoire"]],
+        }),
+      );
+      return dir;
+    };
+    it("should print the plate's own words with the typographic apostrophe", () => {
+      const b: Record<string, unknown> = {
+        axisName: "part dans l'électricité",
+        gestures: [{ note: "l'écart" }],
+      };
+      applyStoryboard(b, beatIn());
+      expect([b.axisName, (b.gestures as { note: string }[])[0].note]).toEqual([
+        "part dans l’électricité",
+        "l’écart",
+      ]);
+    });
+    it("should leave a data cell's spelling alone", () => {
+      const b: Record<string, unknown> = { accent: "Côte d'Ivoire" };
+      applyStoryboard(b, beatIn());
+      expect(b.accent).toBe("Côte d'Ivoire");
+    });
+  });
+
   it("should keep the beat's own shorter forms, dated, before the undated credit", () => {
     const root = mkdtempSync(join(tmpdir(), "splash-forms-"));
     const dir = join(root, "beats", "1");
@@ -265,7 +302,9 @@ describe("applyStoryboard", () => {
       join(root, "STORYBOARD.md"),
       `---\nlanguage: fr\ncredit: "Ember"\neffectiveDate: 2025-06-26\n---\n`,
     );
-    const b: Record<string, unknown> = { source: ["a long form of the source", "a shorter form"] };
+    const b: Record<string, unknown> = {
+      source: ["a long form of the source", "a shorter form"],
+    };
     applyStoryboard(b, dir, { basemap: "©MapTiler" });
     expect(b.source).toEqual([
       "Ember · données au 26/06/2025 · ©MapTiler",
