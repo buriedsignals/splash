@@ -136,6 +136,12 @@ describe("validateGestures", () => {
     expect(check(LISBOA, LISBOA_GESTURES).gestures).toHaveLength(3);
   });
 
+  it("should refuse a bracket note that prints a nonzero sum as zero, offering the sum", () => {
+    // stress-v (Qwen3.5-9B, 2026-11-13): a format helper divided the Gt values by 1e9 again and printed "0.0 Gt".
+    const r = refusal(() => check(CHINA, [CHINA_GESTURES[0], { do: "bracket", marks: NEXT_FIVE, note: "0.0 Gt" }, CHINA_GESTURES[2]]));
+    expect(`${r.field} ${r.message}`).toMatch(/^gestures\[1\]\.note .*a value that works: 11\.6/);
+  });
+
   it("should refuse a bracket note whose figure is false, naming the field and the computed total", () => {
     const r = refusal(() =>
       check(LISBOA, [

@@ -96,7 +96,10 @@ export function figuresIn(text) {
 // łóżek" passed on a drawn 4.
 const SCALES = [0, -3, -6, -9, -12, 3, 6, 9, 12, -2, 2];
 
-const matches = (n, f) => [f, ...(n.exp ? [f / 10 ** n.exp] : [])].some((x) => Math.abs(n.value - x) <= 0.5 * 10 ** -n.decimals + 1e-9);
+// A stated zero only matches a zero: any nonzero figure rounds to "0.0" at a small enough scale, so "0.0 Gt" passed for
+// the next five's 11.67 Gt (stress-v, Qwen3.5-9B, 2026-11-13: a format helper divided by 1e9 twice).
+const matches = (n, f) =>
+  (n.value !== 0 || f === 0) && [f, ...(n.exp ? [f / 10 ** n.exp] : [])].some((x) => Math.abs(n.value - x) <= 0.5 * 10 ** -n.decimals + 1e-9);
 
 export function formatLike(n, f) {
   const [whole, part] = Math.abs(f).toFixed(n.decimals).split(".");
@@ -441,6 +444,13 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
             `states ${n.raw}, a figure of other rows than this ${g.do} draws: check the rows it acts on (mark, marks, of), or drop the note`,
             { set: { index: i, field: "note", value: undefined } },
           );
+        // A zero for a bracket's total is a unit slip (divided twice), not wrong rows: hand back the total.
+        if (n.value === 0 && g.do === "bracket" && own[0]) {
+          const total = formatLike(n, own[0] * 10 ** scale);
+          throw new GestureRefusal(`gestures[${i}].note`, `prints ${n.raw} for rows that sum to ${total}: the note's figure is already in the plate's unit, do not divide it again — a value that works: ${total}`, {
+            set: { index: i, field: "note", value: g.note.slice(0, n.index) + total + g.note.slice(n.index + n.raw.length) },
+          });
+        }
         // Nothing this gesture draws is near the figure: the nearest would only swap one false number for another (a
         // China bracket on the wrong rows was offered the United States' total as "the next five"), so the note goes.
         if (Math.abs(best - n.value) > Math.abs(n.value) * 0.5)
