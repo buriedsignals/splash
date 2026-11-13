@@ -211,6 +211,8 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
         say(
           `ANALYST slot ${slot.id}: exit ${res.exitCode} ${res.stderr.slice(0, 300)}`,
         );
+        const refused = analystRefusal(String(slot.id), res);
+        if (refused) return { outcome: "blocked", phase: s.phase, reason: refused, steps, transcript };
       }
     } else if (s.phase === "production" && CRAFT_OWNERS.has(owner)) {
       const result = await craftPhase();
@@ -601,6 +603,13 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
     sess.dispose();
     say(`DELIVER stop: ${res.stop}`);
   }
+}
+
+/** An analyst refusal as the run's reason: the analyst names the cause, and a loop on it only ever stalled. */
+export function analystRefusal(slot: string, res: { exitCode: number | null; stderr: string }): string | undefined {
+  if (res.exitCode === 0) return undefined;
+  const said = res.stderr.trim().split("\n").filter(Boolean).at(-1) ?? `exit ${res.exitCode}`;
+  return `analyst slot ${slot}: ${said}`;
 }
 
 /**
