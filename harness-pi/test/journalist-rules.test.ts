@@ -37,6 +37,27 @@ describe("scripted journalist, questions that name their options", () => {
   });
 });
 
+describe("scripted journalist, a credit the desk proposes", () => {
+  // stress-v (Qwen3.5-9B, 2026-11-13): the desk proposed "unattributed", the classifier read a confirmation, and the
+  // sheet's journalist said "Yes." to a credit that was not theirs.
+  const said =
+    "Looking at the article, there's no explicit source attribution line.\n\nI propose: **`unattributed`** — Source: not stated. Do you confirm?";
+
+  it("should answer with the sheet's own credit when the desk proposes another one", async () => {
+    reply = "confirm";
+    const j = scriptedJournalist({ credit: "Global Carbon Budget 2025, as of 2025-11-13.", confirm: "Yes." }, { server: server.url.origin });
+    j.phase = "storyboard";
+    expect(await j.answer(said)).toBe("No. Global Carbon Budget 2025, as of 2025-11-13.");
+  });
+
+  it("should confirm a credit proposal that is the sheet's own", async () => {
+    reply = "confirm";
+    const j = scriptedJournalist({ credit: "Unattributed, as of 2026-08-21.", confirm: "Yes." }, { server: server.url.origin });
+    j.phase = "storyboard";
+    expect(await j.answer(said)).toBe("Yes.");
+  });
+});
+
 describe("scripted journalist, a classifier that never answers", () => {
   it("should answer the sheet's fallback instead of waiting forever", async () => {
     const mute = Bun.serve({ port: 0, fetch: () => new Promise<Response>(() => {}) });

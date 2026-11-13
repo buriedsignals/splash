@@ -158,8 +158,18 @@ export function scriptedJournalist(
         /\btakeaway\b|\bsentence\b|\bframing\b/i.test(said) &&
         sheet.takeaway &&
         !said.includes(sheet.takeaway);
+      // A credit the desk proposes is answered the same way: "Yes." to "unattributed" erased the sheet's source
+      // (stress-v, 2026-11-13). The sheet's credit is its own when its first words appear in the proposal.
+      const creditHead = (sheet.credit ?? "").split(/[,.]/)[0].trim().toLowerCase();
+      const proposesCredit =
+        key === "confirm" &&
+        /\b(credit|source|attribut)/i.test(tail.slice(-400)) &&
+        creditHead.length > 0 &&
+        !tail.toLowerCase().includes(creditHead);
       const answer = proposesTakeaway
         ? `No. My takeaway is: ${sheet.takeaway}`
+        : proposesCredit
+          ? `No. ${sheet.credit}`
         : key === "survey"
           ? (sheet.closing ?? "No, thank you.")
           : (sheet[key as keyof Sheet] ?? sheet.other ?? "I don't know.");
