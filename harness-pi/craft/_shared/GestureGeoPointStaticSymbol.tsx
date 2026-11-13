@@ -50,7 +50,7 @@ import {
 } from "#shared/design-base/register.mjs";
 // The harness copy reads the filed water hue from the trunk (the same value palette.mjs's water
 // convention carries, held in step by the-trunk-stands-alone.test.ts): a story beat has no skills/ beside it.
-import { GeoNotes, placeGeoNotes } from "./GestureGeoPointNotes.tsx";
+import { GeoNotes, placeGeoNotes, visibleBox } from "./GestureGeoPointNotes.tsx";
 import { WATER_HUE } from "#shared/map-beat/tints.mjs";
 
 /** 960 x 540 at scale 2 is the `landscape` this beat pins — 1920 x 1080. */
@@ -819,7 +819,7 @@ export function GestureGeoPointStaticSymbol({
           const lh = (annotBand.ascent + annotBand.descent) * 1.25;
           const placed = placeGeoNotes({
             notes: notes.map((n) => ({ ...n, x: mapX + n.x * mapW, y: mapY + n.y * mapW, r: Math.max(1.2, rOf(n.r)), lines: n.lines.map((l) => set(l, annot)) })),
-            box: { x: mapX, y: mapY, width: mapW, height: mapH },
+            box: visibleBox({ x: mapX, y: mapY, width: mapW, height: mapH }, mapBox),
             widthOf: (t) => widthOf(t, annot),
             lineHeight: lh,
             onLadder,

@@ -14,6 +14,22 @@ export type GeoNote = {
   accent?: boolean;
 };
 
+type Box = { x: number; y: number; width: number; height: number };
+
+/** The part of the map the frame shows: beside the copy a map FILLS its box and crops the far east, and notes placed
+ *  against the whole map wrote "Ukraine 6 000 MW" from 865 to 974 in a 960px frame (gx-proportional-symbol static,
+ *  Qwen3.5-9B, 2026-11-13). */
+export function visibleBox(map: Box, frame: Box): Box {
+  const x = Math.max(map.x, frame.x);
+  const y = Math.max(map.y, frame.y);
+  return {
+    x,
+    y,
+    width: Math.min(map.x + map.width, frame.x + frame.width) - x,
+    height: Math.min(map.y + map.height, frame.y + frame.height) - y,
+  };
+}
+
 export function placeGeoNotes({
   notes,
   box,

@@ -24,6 +24,7 @@ import {
 import { flatStates, scheduleGeoPointScrolly } from "../craft/_shared/gesture-geo-point-scrolly.mjs";
 // @ts-ignore — a .tsx helper read as data (boxOf)
 import { boxOf } from "../craft/_shared/GestureGeoPointMap.tsx";
+import { placeGeoNotes, visibleBox } from "../craft/_shared/GestureGeoPointNotes.tsx";
 // @ts-ignore — the kit's own field (Node: reads shapes.geojson)
 import { measureSeaDistance } from "../craft/static/contour-isoline.gestures/field.mjs";
 
@@ -690,5 +691,21 @@ describe("setGestureNotesDrawn", () => {
     const valid = [{ do: "highlight", marks: ["site 1", "site 2", "site 3", "site 4"], note: "4 sites nucléaires" }];
     setGestureNotesDrawn(valid, new Set(["site 1", "site 2"]));
     expect(valid[0].note).toBe("2 sites nucléaires");
+  });
+});
+
+// gx-proportional-symbol static (Qwen3.5-9B, 2026-11-13): beside the copy the map fills its box and crops the far east,
+// and the notes were placed against the whole map: "Ukraine 6 000 MW" ran from 865 to 974 in a 960px frame.
+describe("visibleBox", () => {
+  const frame = { x: 386, y: 24, width: 550, height: 492 };
+  const map = { x: 386, y: 76, width: 640, height: 436 };
+  it("should hold a note on the part of a cropped map the frame shows", () => {
+    const placed = placeGeoNotes({
+      notes: [{ x: 880, y: 300, r: 6, lines: ["Ukraine 6 000 MW"] }],
+      box: visibleBox(map, frame),
+      widthOf: () => 100,
+      lineHeight: 16,
+    });
+    expect(placed[0].anchor).toBe("end");
   });
 });
