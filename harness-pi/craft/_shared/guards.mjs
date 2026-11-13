@@ -433,6 +433,14 @@ export function errorText(error) {
       const chars = Math.floor(Number(px) / (Number(size) * 0.55));
       return `source: no form of the credit fits ${n} line${n === "1" ? "" : "s"} of ${Math.round(Number(px))}px — a value that works: add a shorter form as the last item of source, about ${chars} characters or fewer, e.g. ["<the full credit>", "<publisher, dataset, date>"]`;
     }
+    // A bare name that is only a field of the beat (gx-bullet scrolly, Qwen3.5-9B, 2026-11-13: format: (v) => … as a
+    // field, then format(…) inside a card) came back as "format is not defined", with no line and no fix.
+    const bare = e instanceof ReferenceError && /^(\w+) is not defined$/.exec(String(e.message));
+    if (bare) {
+      const line = /beat\.mjs:(\d+)/.exec(String(e.stack ?? ""))?.[1];
+      const name = bare[1];
+      return `${name} is not defined${line ? ` (beat.mjs line ${line})` : ""}: a function in beat.mjs calls ${name} by its bare name, but nothing defines it there — a field of the beat is not a variable — a value that works: const ${name} = … above export default, then give the field as ${name}, (shorthand)`;
+    }
     const where = e?.position ? ` (line ${e.position.line}: ${String(e.position.lineText ?? "").trim()})` : "";
     return `${e?.message ?? String(e)}${where}`;
   };

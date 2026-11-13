@@ -497,6 +497,17 @@ describe("assertLegibleLabels", () => {
 });
 
 describe("errorText", () => {
+  // gx-bullet scrolly (Qwen3.5-9B, 2026-11-13): format was written as a field of the beat and called by its bare name
+  // inside the cards; the refusal was only "format is not defined", and the craft stopped on it.
+  it("should name the bare name, its beat.mjs line, and the definition that works", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-ref-"));
+    writeFileSync(join(dir, "beat.mjs"), "export default {\n  format: (v) => String(v),\n  card: () => format(1),\n};\n");
+    const { default: beat } = await import(join(dir, "beat.mjs"));
+    let error;
+    try { beat.card(); } catch (e) { error = e; }
+    expect(errorText(error)).toMatch(/^format is not defined \(beat\.mjs line 3\).*a value that works: const format = .* above export default, then give the field as format,/);
+  });
+
   // gx-bullet video (Qwen3.5-9B, 2026-11-13): three renders refused "no form wraps into 1 lines of 1715.686274509804px
   // in Open Sans 30px", naming neither the field nor a length that fits.
   it("should name source and a length that fits when no credit form fits the video's line", () => {
