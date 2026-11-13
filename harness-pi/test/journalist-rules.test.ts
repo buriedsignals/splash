@@ -21,6 +21,22 @@ const menu =
 const survey =
   "The survey found several other interesting angles in your data. Which of these would you like to include as additional subjects?\n\n- **low-carbon-transition-speed**: How fast countries move.\n- **renewable-vs-nuclear-mix**: The relative shares.";
 
+describe("scripted journalist, questions that name their options", () => {
+  it("should answer the publication format when asked to pick among static, web, video and scrollytelling", async () => {
+    reply = "medium";
+    const j = scriptedJournalist({ medium: "A chart.", publication: "Static." }, { server: server.url.origin });
+    j.phase = "storyboard";
+    expect(await j.answer("What formats would be reachable for a chart?\n\n**Static, interactive web, video or scrollytelling?**")).toBe("Static.");
+  });
+
+  it("should answer the size when asked to pick among landscape, square and portrait", async () => {
+    reply = "other";
+    const j = scriptedJournalist({ size: "Landscape." }, { server: server.url.origin });
+    j.phase = "storyboard";
+    expect(await j.answer("Landscape, square or portrait?")).toBe("Landscape.");
+  });
+});
+
 describe("scripted journalist, a classifier that never answers", () => {
   it("should answer the sheet's fallback instead of waiting forever", async () => {
     const mute = Bun.serve({ port: 0, fetch: () => new Promise<Response>(() => {}) });

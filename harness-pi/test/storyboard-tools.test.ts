@@ -857,7 +857,8 @@ describe("gaps the harness fills", () => {
     ]);
     expect(out[0]).toMatch(/ask the journalist "Static, interactive web, video or scrollytelling\?".*record_slot 1 format/);
     expect(out[1]).toMatch(/Landscape, square or portrait\?.*record_slot 1 size/);
-    expect(out[2]).toMatch(/ask the journalist.*record_slot 1 intent/);
+    // stress-ad (2026-11-13): the hint's "compare categories" was recorded against the answer "Comparison between categories." and refused 3x.
+    expect(out[2]).toMatch(/ask the journalist "Comparison between categories, change over time, part-to-whole or location\?".*record_slot 1 intent/);
     expect(out[3]).toMatch(/show_candidates.*record_slot 1 chosen/);
   });
 

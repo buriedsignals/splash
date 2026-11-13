@@ -128,9 +128,19 @@ export function scriptedJournalist(
         /\bwhich (one|treatment|chart|candidate)\b/i.test(tail.slice(-200));
       const survey =
         /\b(additional|extra|other) (subjects?|angles?)\b/i.test(tail) && !menu;
+      // The format and size questions name their options; the classifier read "Static, interactive web, video or
+      // scrollytelling?" after "for a chart" as the medium question and answered "A chart." (stress-ad, 2026-11-13).
+      const asked = tail.slice(-300);
+      const options = /\bstatic\b[^?]*\bvideo\b[^?]*\bscroll/i.test(asked)
+        ? "publication"
+        : /\blandscape\b[^?]*\bsquare\b[^?]*\bportrait\b/i.test(asked)
+          ? "size"
+          : undefined;
       const key =
         closing && !excluded.includes("closing")
           ? "closing"
+          : options && keys.includes(options)
+            ? options
           : menu && keys.includes("treatment")
             ? "treatment"
             : survey

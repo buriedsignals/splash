@@ -183,7 +183,7 @@ export function gapsForModel(gaps: string[]): string[] {
           : /size is missing/.test(g)
             ? `${g.split(":")[0]}: size is missing — ask the journalist "Landscape, square or portrait?", then record_slot ${g.split(":")[0].replace("slot ", "")} size`
           : /no narrow intent was named/.test(g)
-            ? `${g.split(":")[0]}: intent is missing — ask the journalist what the reader should do with it ("compare categories, see change over time, see parts of a whole, see where?"), then record_slot ${g.split(":")[0].replace("slot ", "")} intent`
+            ? `${g.split(":")[0]}: intent is missing — ask the journalist "Comparison between categories, change over time, part-to-whole or location?", then record_slot ${g.split(":")[0].replace("slot ", "")} intent`
           : /nothing chosen/.test(g)
             ? `${g.split(":")[0]}: no treatment chosen — call show_candidates, show its menu as it returns, then record_slot ${g.split(":")[0].replace("slot ", "")} chosen with the journalist's pick`
           : /^no slot/.test(g)
