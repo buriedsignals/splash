@@ -249,8 +249,18 @@ describe("applyStoryboard", () => {
     const root = mkdtempSync(join(tmpdir(), "splash-limits-"));
     const dir = join(root, "beats", "1");
     mkdirSync(dir, { recursive: true });
-    writeFileSync(join(root, "STORYBOARD.md"), `---\nlimits: "Six pays seulement, 2015 et 2024."\n---\n`);
-    expect(() => applyStoryboard({ limits: "Rangés par niveau, les six retrouvent l'ordre." }, dir)).toThrow(/^limits: .*a value that works: limits: "Six pays seulement, 2015 et 2024\."/);
+    writeFileSync(
+      join(root, "STORYBOARD.md"),
+      `---\nlimits: "Six pays seulement, 2015 et 2024."\n---\n`,
+    );
+    expect(() =>
+      applyStoryboard(
+        { limits: "Rangés par niveau, les six retrouvent l'ordre." },
+        dir,
+      ),
+    ).toThrow(
+      /^limits: .*a value that works: limits: "Six pays seulement, 2015 et 2024\."/,
+    );
   });
 
   describe("apostrophes", () => {
@@ -503,21 +513,58 @@ describe("errorText", () => {
   // "Unterminated string literal (line 125: `)" and the 12B edited a template string elsewhere three times.
   it("should name a lone quote line as stray and say to delete it", async () => {
     const dir = mkdtempSync(join(tmpdir(), "splash-ref-"));
-    writeFileSync(join(dir, "beat.mjs"), "export default {\n  title: \"t\",\n};\n`\n");
+    writeFileSync(
+      join(dir, "beat.mjs"),
+      'export default {\n  title: "t",\n};\n`\n',
+    );
     let error;
-    try { await import(join(dir, "beat.mjs")); } catch (e) { error = e; }
-    expect(errorText(error)).toMatch(/line 4 holds only a stray ` .*a value that works: delete line 4/);
+    try {
+      await import(join(dir, "beat.mjs"));
+    } catch (e) {
+      error = e;
+    }
+    expect(errorText(error)).toMatch(
+      /line 4 holds only a stray ` .*a value that works: delete line 4/,
+    );
   });
 
   // gx-bullet scrolly (Qwen3.5-9B, 2026-11-13): format was written as a field of the beat and called by its bare name
   // inside the cards; the refusal was only "format is not defined", and the craft stopped on it.
   it("should name the bare name, its beat.mjs line, and the definition that works", async () => {
     const dir = mkdtempSync(join(tmpdir(), "splash-ref-"));
-    writeFileSync(join(dir, "beat.mjs"), "export default {\n  format: (v) => String(v),\n  card: () => format(1),\n};\n");
+    writeFileSync(
+      join(dir, "beat.mjs"),
+      "export default {\n  format: (v) => String(v),\n  card: () => format(1),\n};\n",
+    );
     const { default: beat } = await import(join(dir, "beat.mjs"));
     let error;
-    try { beat.card(); } catch (e) { error = e; }
-    expect(errorText(error)).toMatch(/^format is not defined \(beat\.mjs line 3\).*a value that works: const format = .* above export default, then give the field as format,/);
+    try {
+      beat.card();
+    } catch (e) {
+      error = e;
+    }
+    expect(errorText(error)).toMatch(
+      /^format is not defined \(beat\.mjs line 3\).*a value that works: const format = .* above export default, then give the field as format,/,
+    );
+  });
+
+  // gx-proportional-symbol web (Qwen3.5-9B, 2026-11-13): `San Marino: "Saint-Marin"` in a names object; the refusal
+  // read 'Expected "}" but found "Marino"' and the model escaped every accent instead, three times, until it stopped.
+  it("should name an unquoted key with a space and give it quoted", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-ref-"));
+    writeFileSync(
+      join(dir, "beat.mjs"),
+      'const NAMES = {\n  Russia: "Russie", San Marino: "Saint-Marin", Serbia: "Serbie",\n};\nexport default { NAMES };\n',
+    );
+    let error;
+    try {
+      await import(join(dir, "beat.mjs"));
+    } catch (e) {
+      error = e;
+    }
+    expect(errorText(error)).toMatch(
+      /^[^—]*— San Marino: .* a key with a space.*a value that works: "San Marino":/,
+    );
   });
 
   // gx-bullet video (Qwen3.5-9B, 2026-11-13): three renders refused "no form wraps into 1 lines of 1715.686274509804px
@@ -946,19 +993,53 @@ describe("assertHeadlineNumbersDrawn at the precision the title writes", () => {
 // picture shows 13,8; the refusal named 13,8 but not why 14 missed it, and the craft stopped on the same refusal 3x.
 describe("figureRefusal", () => {
   it("should say the card states the same figure rounded, and the call that prints it as drawn", () => {
-    expect(figureRefusal("card 1 (cards.tracks)", "lastBefore.marker", "13,8", 13.8, "en dernier, à 14 %.")).toMatch(/it states 14, the same figure rounded otherwise — a value that works: "13,8", printed by format\(r\.lastBefore\.marker\) with no decimals argument/);
+    expect(
+      figureRefusal(
+        "card 1 (cards.tracks)",
+        "lastBefore.marker",
+        "13,8",
+        13.8,
+        "en dernier, à 14 %.",
+      ),
+    ).toMatch(
+      /it states 14, the same figure rounded otherwise — a value that works: "13,8", printed by format\(r\.lastBefore\.marker\) with no decimals argument/,
+    );
   });
 
   it("should keep the plain refusal when the card states no near figure", () => {
-    expect(figureRefusal("card 1 (cards.tracks)", "lastBefore.marker", "13,8", 13.8, "en dernier.")).not.toMatch(/rounded/);
+    expect(
+      figureRefusal(
+        "card 1 (cards.tracks)",
+        "lastBefore.marker",
+        "13,8",
+        13.8,
+        "en dernier.",
+      ),
+    ).not.toMatch(/rounded/);
   });
 
   it("should not call a different figure at the same precision a rounding", () => {
-    expect(figureRefusal("card 1 (cards.tracks)", "lastBefore.marker", "13,8", 13.8, "en dernier, à 13,1 %.")).not.toMatch(/rounded/);
+    expect(
+      figureRefusal(
+        "card 1 (cards.tracks)",
+        "lastBefore.marker",
+        "13,8",
+        13.8,
+        "en dernier, à 13,1 %.",
+      ),
+    ).not.toMatch(/rounded/);
   });
 
   it("should read the value from the printed figure when the kit only holds the string", () => {
-    expect(figureRefusal("card 2 (cards.cut)", "othersSum", "13,8", undefined, "les autres, 14 %.")).toMatch(/it states 14, the same figure rounded otherwise/);
+    expect(
+      figureRefusal(
+        "card 2 (cards.cut)",
+        "othersSum",
+        "13,8",
+        undefined,
+        "les autres, 14 %.",
+      ),
+    ).toMatch(/it states 14, the same figure rounded otherwise/);
   });
 });
 
@@ -967,19 +1048,46 @@ describe("figureRefusal", () => {
 describe("assertFigureMatchesValue", () => {
   const dir = () => {
     const d = mkdtempSync(join(tmpdir(), "splash-fig-"));
-    writeFileSync(join(d, "data.json"), JSON.stringify({ columns: [{ name: "country", type: "text" }, { name: "capacity_mw", type: "number" }], rows: [] }));
+    writeFileSync(
+      join(d, "data.json"),
+      JSON.stringify({
+        columns: [
+          { name: "country", type: "text" },
+          { name: "capacity_mw", type: "number" },
+        ],
+        rows: [],
+      }),
+    );
     return d;
   };
 
   it("should refuse a figure that divides by a thousand and keeps the column's unit, naming the unit that works", () => {
-    expect(() => assertFigureMatchesValue((v) => `${Math.round(v / 1000)} MW`, [97224.6], dir())).toThrow(/figure\(97224\.6\) prints "97 MW".*a value that works: .*GW/);
+    expect(() =>
+      assertFigureMatchesValue(
+        (v) => `${Math.round(v / 1000)} MW`,
+        [97224.6],
+        dir(),
+      ),
+    ).toThrow(/figure\(97224\.6\) prints "97 MW".*a value that works: .*GW/);
   });
 
   it("should pass a figure that prints the value in the column's unit", () => {
-    expect(() => assertFigureMatchesValue((v) => `${Math.round(v).toLocaleString("fr-FR")} MW`, [97224.6], dir())).not.toThrow();
+    expect(() =>
+      assertFigureMatchesValue(
+        (v) => `${Math.round(v).toLocaleString("fr-FR")} MW`,
+        [97224.6],
+        dir(),
+      ),
+    ).not.toThrow();
   });
 
   it("should pass a figure that scales to the next unit and says so", () => {
-    expect(() => assertFigureMatchesValue((v) => `${Math.round(v / 1000)} GW`, [97224.6], dir())).not.toThrow();
+    expect(() =>
+      assertFigureMatchesValue(
+        (v) => `${Math.round(v / 1000)} GW`,
+        [97224.6],
+        dir(),
+      ),
+    ).not.toThrow();
   });
 });

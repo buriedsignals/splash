@@ -446,6 +446,16 @@ export const beatHere = (url) => dirname(new URL(url).pathname);
  * A refusal's text, with every error of a failed build spelled out: Bun reports a beat.mjs that does not parse as
  * one AggregateError whose message is only "2 errors building <path>", and the 12B retried three times on that.
  */
+/** The whole key of `Two words: value`, when a build error stopped at its second word. */
+function spacedKey(e) {
+  const found = e?.position && /^Expected "\}" but found "([A-Za-z][\w-]*)"$/.exec(String(e.message ?? ""));
+  if (!found) return null;
+  const line = String(e.position.lineText ?? "");
+  const at = e.position.column ? e.position.column - 1 : line.indexOf(found[1]);
+  const before = /([A-Za-z][\w-]*(?: [A-Za-z][\w-]*)*) $/.exec(line.slice(0, at));
+  return before && new RegExp(`^${found[1]}\\s*:`).test(line.slice(at)) ? `${before[1].split(/[,{]\s*/).pop()} ${found[1]}` : null;
+}
+
 export function errorText(error) {
   const one = (e) => {
     // The video credit's only refusal (chart-video shots.mjs sourceCreditFor) names no field: the field is source.
@@ -469,10 +479,17 @@ export function errorText(error) {
     const lone = e?.position && /^\s*([`'"])\s*$/.exec(String(e.position.lineText ?? ""));
     if (lone)
       return `${e.message}${where}: line ${e.position.line} holds only a stray ${lone[1]} that opens a string nothing closes — a value that works: delete line ${e.position.line} (edit_file its "${lone[1]}" line, with the line before it, to that line alone)`;
+    const key = spacedKey(e);
+    if (key)
+      return `${key}: ... (line ${e.position.line}) is a key with a space, written without quotes — a value that works: "${key}": (quote the key)`;
     return `${e?.message ?? String(e)}${where}`;
   };
-  // One build error comes alone, carrying its own position; several come grouped.
-  return error?.errors?.length ? [error.message, ...error.errors.map(one)].join(" — ") : one(error);
+  // One build error comes alone, carrying its own position; several come grouped. An unquoted key with a space
+  // (gx-proportional-symbol web, Qwen3.5-9B, 2026-11-13: `San Marino: "Saint-Marin"`) breaks the parse once and
+  // cascades into "Expected ;" errors that point at nothing: only its own error is named.
+  if (!error?.errors?.length) return one(error);
+  const first = error.errors.find((e) => spacedKey(e));
+  return [error.message, ...(first ? [first] : error.errors).map(one)].join(" — ");
 }
 
 /**
