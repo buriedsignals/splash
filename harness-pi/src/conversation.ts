@@ -53,6 +53,22 @@ const CLAIMED_RECORD =
 /** The storyboard gate's gap while no slot exists (skills/storyboard/scripts/gate-contract.mjs). */
 const NO_SLOT = /no slot: nothing would be produced/;
 const NOTHING_CHOSEN = /slot (\S+): nothing chosen/;
+const LANGUAGE_OPEN = /language is missing/;
+/** A language as a journalist names it, in English or in its own tongue, to its tag. */
+const LANGUAGE_NAMES: [RegExp, string][] = [
+  [/\b(english|anglais|englisch)\b/i, "en"],
+  [/\b(french|fran[cç]ais|franz[oö]sisch)\b/i, "fr"],
+  [/\b(german|deutsch|allemand)\b/i, "de"],
+  [/\b(italian|italiano|italien)\b/i, "it"],
+  [/\b(spanish|espa[nñ]ol|espagnol)\b/i, "es"],
+  [/\b(portuguese|portugu[eê]s)\b/i, "pt"],
+  [/\b(polish|polski|polonais)\b/i, "pl"],
+  [/\barabic\b|العربية|عربي/i, "ar"],
+];
+export function languageCode(answer: string): string | undefined {
+  const tag = answer.trim().match(/^([a-z]{2}(?:-[A-Z]{2})?)\.?$/)?.[1];
+  return tag ?? LANGUAGE_NAMES.find(([re]) => re.test(answer))?.[1];
+}
 const CLAIMED_DONE =
   /\b(complete|completed|finali[sz]ed|closed|ready to move|we are ready|all set)\b/i;
 
@@ -247,6 +263,16 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
       const open = recorded === 0 && silent >= 3 ? (await o.gaps()).match(NOTHING_CHOSEN) : null;
       if (open && o.dialogue.lastJournalist) {
         prompt = `[harness] ${silent} turns went to the journalist with nothing recorded, and slot ${open[1]} has nothing chosen. Their last answer was ${JSON.stringify(o.dialogue.lastJournalist)}. Call record_slot for slot "${open[1]}", field "chosen", value ${JSON.stringify(o.dialogue.lastJournalist)} now: the tool answers whether it is reachable in the slot's format, and shows the menu if none was shown. Do not refuse it yourself.`;
+        o.log.push(`HARNESS: ${prompt}`);
+        silent = 0;
+        narrow = true;
+        continue;
+      }
+      // stress-p on Qwen3.5-9B (2026-11-13): the journalist answered "English." eleven times and the model asked
+      // again each time whether to use French, the newsroom's first language, until the record bound stopped it.
+      const named = recorded === 0 && silent >= 3 && LANGUAGE_OPEN.test(await o.gaps()) ? languageCode(o.dialogue.lastJournalist ?? "") : undefined;
+      if (named) {
+        prompt = `[harness] ${silent} turns went to the journalist with nothing recorded, and their answer is ${JSON.stringify(o.dialogue.lastJournalist)}. Call record_language with code "${named}" now: the journalist chooses the delivery's language, and the newsroom's list does not overrule them. Then continue with what is still open.`;
         o.log.push(`HARNESS: ${prompt}`);
         silent = 0;
         narrow = true;

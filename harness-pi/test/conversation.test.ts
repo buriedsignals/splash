@@ -323,3 +323,39 @@ describe("converse with a turn that ends empty", () => {
     expect(prompts[1]).toStartWith("[harness] Your last turn ended with nothing said and no tool called");
   });
 });
+
+describe("converse when the language is open and the journalist named one", () => {
+  const lang = async (answer: string) => {
+    const prompts: string[] = [];
+    const session = {
+      subscribe: () => () => {},
+      prompt: async (text: string) => void prompts.push(text),
+      getLastAssistantText: () => "The newsroom only publishes in French (`fr`) and German (`de`). Should we proceed with French (`fr`)?",
+      abort: async () => {},
+    };
+    await converse({
+      session: session as never,
+      first: "Start the storyboard.",
+      journalist: { answer: async () => answer },
+      dialogue: { lastJournalist: "", lastProposal: "" },
+      conversational: true,
+      done: async () => false,
+      gaps: async () => "language is missing — nobody confirmed which language this story's own delivery is written in",
+      limits: { rounds: 6 },
+      log: [],
+    });
+    return prompts;
+  };
+
+  it("should ask for record_language with the code of the language the journalist named after three silent turns", async () => {
+    expect((await lang("English."))[4]).toContain('record_language with code "en"');
+  });
+
+  it("should tell the model the journalist's answer outranks the newsroom's list", async () => {
+    expect((await lang("English."))[4]).toContain("the newsroom's list does not overrule them");
+  });
+
+  it("should read a language the journalist names in its own tongue", async () => {
+    expect((await lang("العربية."))[4]).toContain('record_language with code "ar"');
+  });
+});
