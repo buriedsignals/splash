@@ -44,16 +44,16 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
     throw new Error(`title's first form must be the journalist's takeaway copied as a literal string, not computed. It renders as: "${norm(headline)}" — it must be: "${takeaway}"`);
   // The plate may draw a shorter form instead of the takeaway; a 26B wrote those in French under `language: en` (G2).
   const language = String(field("language") ?? "").toLowerCase().slice(0, 2);
-  const foreign = [beat[title]].flat().slice(1).find((form) => {
-    const said = languageOf(form);
-    return said && STOPWORDS[language] && said !== language;
-  });
-  if (foreign !== undefined)
-    throw new Error(`the title's shorter forms must be in the storyboard's language (${language}), like the takeaway: "${foreign}" is not. Write each shorter form as a shortening of "${takeaway}"`);
-  // Every other word the plate prints (eyebrow, unit, gesture notes, labels) is in that language too: the E4B wrote
-  // French notes and a Portuguese eyebrow on an English plate (stress-p, 2026-11-12). The title, standfirst and credit
-  // are held above in the journalist's own words.
+  // Every word the plate prints is in that language: the E4B wrote French notes and a Portuguese eyebrow on an English
+  // plate (stress-p, 2026-11-12), and Qwen3.5-9B Portuguese shorter title and standfirst forms (stress-p, 2026-11-13),
+  // fixed one refusal per render. One refusal names every foreign string, so one edit pass fixes them all.
   if (!STOPWORDS[language]) return;
+  // A row or series name copied from the data is the journalist's data, not the plate's words.
+  const dataPath = join(here, "data.json");
+  const table = existsSync(dataPath) ? JSON.parse(readFileSync(dataPath, "utf8")) : {};
+  const cells = new Set([...(table.columns ?? []).map((c) => String(c.name)), ...(table.rows ?? []).flat().map(String)]);
+  const isForeign = (text) => { const said = !cells.has(text) && languageOf(text); return said && said !== language; };
+  // The title's and standfirst's first forms are held above in the journalist's own words; the credit is the storyboard's.
   const held = new Set([title, standfirst, source, "rows", "check", "format", "alt"]);
   const strays = [];
   const walk = (value, path) => {
@@ -61,14 +61,15 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
     else if (Array.isArray(value)) value.forEach((v, i) => walk(v, `${path}[${i}]`));
     else if (value && typeof value === "object") for (const [k, v] of Object.entries(value)) walk(v, path ? `${path}.${k}` : k);
   };
+  for (const key of [title, standfirst]) [beat[key]].flat().slice(1).forEach((form, i) => typeof form === "string" && strays.push([`${key}[${i + 1}]`, form]));
   for (const [k, v] of Object.entries(beat)) if (!held.has(k)) walk(v, k);
-  // A row or series name copied from the data is the journalist's data, not the plate's words.
-  const dataPath = join(here, "data.json");
-  const table = existsSync(dataPath) ? JSON.parse(readFileSync(dataPath, "utf8")) : {};
-  const cells = new Set([...(table.columns ?? []).map((c) => String(c.name)), ...(table.rows ?? []).flat().map(String)]);
-  const stray = strays.find(([, text]) => { const said = !cells.has(text) && languageOf(text); return said && said !== language; });
-  if (stray)
-    throw new Error(`${stray[0]} is "${stray[1]}", not in the storyboard's language (${language}): write every word on the plate in that language, like the takeaway "${takeaway}"`);
+  const foreign = strays.filter(([, text]) => isForeign(text));
+  if (!foreign.length) return;
+  const titled = foreign.some(([path]) => path.startsWith(`${title}[`));
+  const list = foreign.map(([path, text]) => `${path} is "${text}"`).join("; ");
+  throw new Error(
+    `${titled ? `the title's shorter forms must be in the storyboard's language (${language}), like the takeaway. ` : ""}${list}: not in the storyboard's language (${language}). Rewrite each of them in that language${titled ? ` (each shorter title form as a shortening of "${takeaway}")` : `, like the takeaway "${takeaway}"`}.`,
+  );
 }
 
 /** Function words that tell a headline's language apart (no figures, no names). */

@@ -132,6 +132,20 @@ describe("applyStoryboard on the title's shorter forms", () => {
     expect(() => applyStoryboard(b, storyIn("en"))).toThrow(/title's shorter forms must be in the storyboard's language \(en\)/);
   });
 
+  it("should refuse a shorter standfirst form written in another language, naming where it is", () => {
+    const b = { title: [TAKEAWAY], limits: ["Sixteen countries only, 2015 to 2024.", "As viagens de transporte são mais do que em 2024."] };
+    expect(() => applyStoryboard(b, storyIn("en"))).toThrow(/limits\[1\] is "As viagens de transporte/);
+  });
+
+  it("should name every foreign string of the plate in one refusal, not one per render", () => {
+    const b = {
+      title: [TAKEAWAY, "Lisboa em 2025: mais de duas vezes Porto e um quarto das viagens"],
+      limits: ["Sixteen countries only, 2015 to 2024.", "As viagens de transporte são mais do que em 2024."],
+      eyebrow: "Transporte urbano em Portugal e as suas redes",
+    };
+    expect(() => applyStoryboard(b, storyIn("en"))).toThrow(/title\[1\].*limits\[1\].*eyebrow/s);
+  });
+
   it("should accept shorter forms in the storyboard's language", () => {
     const b = { title: [TAKEAWAY, "All 16 cleaner at home, France lighter in Europe"] };
     expect(() => applyStoryboard(b, storyIn("en"))).not.toThrow();
