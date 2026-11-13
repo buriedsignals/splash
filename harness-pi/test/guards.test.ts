@@ -201,10 +201,30 @@ describe("applyStoryboard", () => {
       `---\ntakeaway: "Un tiers d’Europe, « en bas »"\n---\n`,
     );
     const b: Record<string, unknown> = {
-      title: ['Un tiers d\'Europe, "en bas"', "court"],
+      title: ['Un tiers d\'Europe, "en bas"', "Un tiers d’Europe"],
     };
     applyStoryboard(b, dir);
-    expect(b.title).toEqual(["Un tiers d’Europe, « en bas »", "court"]);
+    expect(b.title).toEqual(["Un tiers d’Europe, « en bas »", "Un tiers d’Europe"]);
+  });
+
+  // gx-proportional-symbol static (Qwen3.5-9B, 2026-11-13): the copy ladder spent the headline first and printed the
+  // beat's third form, "La puissance tient dans peu de sites": the plate no longer said what the takeaway claims.
+  it("should refuse a shorter title form that drops the takeaway's claim", () => {
+    const root = mkdtempSync(join(tmpdir(), "splash-short-"));
+    const dir = join(root, "beats", "1");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(root, "STORYBOARD.md"), `---\ntakeaway: "Un centième des sites porte plus d’un tiers de la puissance bas-carbone d’Europe"\n---\n`);
+    const b = { title: ["Un centième des sites porte plus d’un tiers de la puissance bas-carbone d’Europe", "Un centième des sites, plus d’un tiers de la puissance", "La puissance tient dans peu de sites"] };
+    expect(() => applyStoryboard(b, dir)).toThrow(/title: its form 3, "La puissance tient dans peu de sites", drops the takeaway's claim.*a value that works: title: \[.*"Un centième des sites, plus d’un tiers de la puissance"\]/);
+  });
+
+  it("should refuse a shorter title form that drops a number of the takeaway", () => {
+    const root = mkdtempSync(join(tmpdir(), "splash-short-"));
+    const dir = join(root, "beats", "1");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(root, "STORYBOARD.md"), `---\ntakeaway: "Lisboa carries 214 of the 394 million trips"\n---\n`);
+    const b = { title: ["Lisboa carries 214 of the 394 million trips", "Lisboa carries most million trips"] };
+    expect(() => applyStoryboard(b, dir)).toThrow(/form 2.*drops the takeaway's claim \(214, 394\)/);
   });
 
   // gx-bullet web (Qwen3.5-9B, 2026-11-13): the credit line ended "· as of 2025-06-26" on a French plate.
@@ -468,7 +488,7 @@ describe("applyStoryboard on the title's shorter forms", () => {
 
   it("should accept shorter forms in the storyboard's language", () => {
     const b = {
-      title: [TAKEAWAY, "All 16 cleaner at home, France lighter in Europe"],
+      title: [TAKEAWAY, "All 16 cleaner at home, France lost 11.8 points"],
     };
     expect(() => applyStoryboard(b, storyIn("en"))).not.toThrow();
   });
@@ -477,7 +497,7 @@ describe("applyStoryboard on the title's shorter forms", () => {
     const b = {
       title: [
         "Les seize ont tous progressé",
-        "Tous plus propres chez eux, plus légers en Europe",
+        "Les seize ont progressé",
       ],
     };
     const dir = storyIn("fr");

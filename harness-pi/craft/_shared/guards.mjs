@@ -122,7 +122,31 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
   // Every word the plate prints is in that language: the E4B wrote French notes and a Portuguese eyebrow on an English
   // plate (stress-p, 2026-11-12), and Qwen3.5-9B Portuguese shorter title and standfirst forms (stress-p, 2026-11-13),
   // fixed one refusal per render. One refusal names every foreign string, so one edit pass fixes them all.
-  if (!STOPWORDS[language]) return;
+  // A shorter title form is the takeaway said in fewer words, not another headline: a copy ladder that spends the
+  // headline printed "La puissance tient dans peu de sites" for a claim about a hundredth of the sites
+  // (gx-proportional-symbol static, Qwen3.5-9B, 2026-11-13). Each form keeps the takeaway's numbers and a third of its words
+  // (their first five letters: "cleaned" is "cleaner").
+  // It runs after the language check: a form in another language is that refusal's, not this one's.
+  const claimKept = () => {
+    if (!takeaway || !Array.isArray(beat[title]) || beat[title].length < 2) return;
+    const words = (t) => String(t).toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((w) => w.length > 3 && !/^\d/.test(w));
+    const stem = (w) => w.slice(0, 5);
+    const numbers = (t) => String(t).match(/\d+(?:[.,]\d+)?/g) ?? [];
+    const claim = words(takeaway);
+    const figures = numbers(takeaway);
+    const keeps = (form) => {
+      const said = new Set(words(form).map(stem));
+      const shown = numbers(form);
+      return figures.every((n) => shown.includes(n)) && (!claim.length || claim.filter((w) => said.has(stem(w))).length / claim.length >= 1 / 3);
+    };
+    const forms = beat[title].map((f) => String(f ?? ""));
+    const lost = forms.findIndex((f, i) => i > 0 && !keeps(f));
+    if (lost > 0) {
+      const kept = forms.filter((f, i) => i === 0 || keeps(f));
+      throw new Error(`title: its form ${lost + 1}, "${norm(forms[lost])}", drops the takeaway's claim${figures.length ? ` (${figures.join(", ")})` : ""}: a shorter form says the takeaway in fewer words, keeping its numbers and its key words (${claim.join(", ")}) — a value that works: title: ${JSON.stringify(kept)}`);
+    }
+  };
+  if (!STOPWORDS[language]) return claimKept();
   // A row or series name copied from the data is the journalist's data, not the plate's words.
   const dataPath = join(here, "data.json");
   const table = existsSync(dataPath) ? JSON.parse(readFileSync(dataPath, "utf8")) : {};
@@ -150,7 +174,7 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
   for (const key of [title, standfirst]) [beat[key]].flat().slice(1).forEach((form, i) => typeof form === "string" && strays.push([`${key}[${i + 1}]`, form]));
   for (const [k, v] of Object.entries(beat)) if (!held.has(k)) walk(v, k);
   const foreign = strays.filter(([, text]) => isForeign(text));
-  if (!foreign.length) return;
+  if (!foreign.length) return claimKept();
   const titled = foreign.some(([path]) => path.startsWith(`${title}[`));
   const list = foreign.map(([path, text]) => `${path} is "${text}"`).join("; ");
   throw new Error(
