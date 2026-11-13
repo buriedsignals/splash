@@ -71,3 +71,18 @@ describe("families measured off", () => {
     expect(adapterFor("Sankey", "static")).toMatch(/\.gestures$/);
   });
 });
+
+// The point-map gesture kits' web, scrolly and video renders were looked at on 2026-11-13 (gx-proportional-symbol,
+// Qwen3.5-9B, and each kit's own worked example): a plate baked at 1000×760 leaves grey bands in a 16:9 frame, the
+// key is a bare "MW" with no circles, labels sit on the marks. The per-type kits draw a full-frame live map with its key.
+describe("point maps outside static", () => {
+  const points = ["Proportional symbol (symbol / bubble map)", "Locator", "Contour / isoline", "Flow map (route and origin–destination)"];
+  for (const format of ["web", "scrolly", "video"])
+    it(`should start every point map on its per-type kit in ${format}`, () => {
+      expect(points.map((t) => adapterFor(`${t}`, format)).filter((k) => !k || /\.gestures$/.test(k))).toEqual([]);
+    });
+
+  it("should keep the point maps on their gesture kits in static", () => {
+    expect(adapterFor("Locator", "static")).toMatch(/\.gestures$/);
+  });
+});

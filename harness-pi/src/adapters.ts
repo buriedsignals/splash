@@ -101,6 +101,12 @@ export function gestureKit(
 // craft step starts them on their per-type kits. SPLASH_GESTURES_ALL=1 offers their gesture kits anyway.
 const MEASURED_OFF = new Set(["xy", "multiples", "paired"]);
 
+// Point-map gesture kits outside static (looked at 2026-11-13, eval/RESULTS.md stability matrix): their plate is baked
+// at 1000×760, so a 16:9 frame shows grey bands, the key is a bare unit with no circles, and labels sit on the marks.
+// The per-type kits draw a full-frame live map with its key; these types start there in web, scrolly and video.
+const POINT_MAPS = new Set(["proportional-symbol-symbol-bubble-map", "locator", "contour-isoline", "flow-map-route-and-origin-destination"]);
+const offInFormat = (chosen: string, format: string) => format !== "static" && POINT_MAPS.has(slugOf(chosen));
+
 /** "Bar and column", "video" → the kit the craft step starts on: the gesture kit if offered, else the per-type kit. */
 export function adapterFor(
   chosen: string,
@@ -110,7 +116,7 @@ export function adapterFor(
     staticGestures = process.env.SPLASH_GESTURES_STATIC !== "0",
   }: AdapterOptions = {},
 ): string | null {
-  const off = MEASURED_OFF.has(familyOf(chosen) ?? "") && process.env.SPLASH_GESTURES_ALL !== "1";
+  const off = (MEASURED_OFF.has(familyOf(chosen) ?? "") || offInFormat(chosen, format)) && process.env.SPLASH_GESTURES_ALL !== "1";
   const gestures = off ? null : gestureKit(chosen, format, { craft });
   if (gestures && (format !== "static" || staticGestures)) return gestures;
   return perTypeKit(chosen, format, { craft });
