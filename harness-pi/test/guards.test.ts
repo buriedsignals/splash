@@ -9,6 +9,7 @@ import {
   assertLegibleLabels,
   assertNoAggregates,
   errorText,
+  assertFigureMatchesValue,
   figureRefusal,
   importBeat,
   legibleFormat,
@@ -958,5 +959,27 @@ describe("figureRefusal", () => {
 
   it("should read the value from the printed figure when the kit only holds the string", () => {
     expect(figureRefusal("card 2 (cards.cut)", "othersSum", "13,8", undefined, "les autres, 14 %.")).toMatch(/it states 14, the same figure rounded otherwise/);
+  });
+});
+
+// gx-proportional-symbol web (12B, 2026-11-13): figure = (mw) => `${fr(mw / 1000, 0)} MW` printed France's 97,224.6 MW
+// as "97 MW", and the key's 50,000 MW circle as "50 MW". The render exited 0 and the plate stated a falsehood.
+describe("assertFigureMatchesValue", () => {
+  const dir = () => {
+    const d = mkdtempSync(join(tmpdir(), "splash-fig-"));
+    writeFileSync(join(d, "data.json"), JSON.stringify({ columns: [{ name: "country", type: "text" }, { name: "capacity_mw", type: "number" }], rows: [] }));
+    return d;
+  };
+
+  it("should refuse a figure that divides by a thousand and keeps the column's unit, naming the unit that works", () => {
+    expect(() => assertFigureMatchesValue((v) => `${Math.round(v / 1000)} MW`, [97224.6], dir())).toThrow(/figure\(97224\.6\) prints "97 MW".*a value that works: .*GW/);
+  });
+
+  it("should pass a figure that prints the value in the column's unit", () => {
+    expect(() => assertFigureMatchesValue((v) => `${Math.round(v).toLocaleString("fr-FR")} MW`, [97224.6], dir())).not.toThrow();
+  });
+
+  it("should pass a figure that scales to the next unit and says so", () => {
+    expect(() => assertFigureMatchesValue((v) => `${Math.round(v / 1000)} GW`, [97224.6], dir())).not.toThrow();
   });
 });

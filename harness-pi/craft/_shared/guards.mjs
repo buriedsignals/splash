@@ -655,3 +655,40 @@ export function assertPanelsAccounted(names, here, beat) {
       `If leaving some out is right, keep the ones the takeaway names and add foldNote: (drawn, all) => \`\${drawn} of \${all} …\` in the story's language.`,
   );
 }
+
+const SI = { "": 1, k: 1e3, m: 1e6, g: 1e9, t: 1e12 };
+const unitOf = (token) => {
+  const m = /^([kmgt]?)(wh|w)$/i.exec(String(token ?? "").trim());
+  return m ? { scale: SI[m[1].toLowerCase()], base: m[2].toLowerCase() } : null;
+};
+const spell = (scale, base) => `${Object.keys(SI).find((k) => SI[k] === scale).toUpperCase()}${base === "wh" ? "Wh" : "W"}`;
+
+/**
+ * The figure a plate prints for a value states that value in the unit it names. gx-proportional-symbol web (12B,
+ * 2026-11-13): `${fr(mw / 1000, 0)} MW` printed France's 97,224.6 MW as "97 MW" on the circle and the key, and the
+ * render exited 0. The column's unit is read from its name (capacity_mw); a figure with no unit we can read passes.
+ */
+export function assertFigureMatchesValue(figure, values, here) {
+  const dataPath = join(here, "data.json");
+  if (!existsSync(dataPath)) return;
+  const columns = JSON.parse(readFileSync(dataPath, "utf8")).columns ?? [];
+  const claim = front(here)?.("claimColumn");
+  const units = columns.map((c) => unitOf(String(c.name).split("_").pop())).filter(Boolean);
+  const column = (claim && unitOf(String(claim).split("_").pop())) || (units.length === 1 ? units[0] : null);
+  if (!column) return;
+  for (const v of values.filter((x) => Number.isFinite(x) && x !== 0)) {
+    const printed = String(figure(v));
+    const m = /(-?[\d\s  .,]*\d)\s*([A-Za-z]+)/.exec(printed);
+    const unit = m && unitOf(m[2]);
+    if (!unit || unit.base !== column.base) continue;
+    const raw = m[1].replace(/[\s  ]/g, "");
+    const n = Number(/,\d{1,2}$/.test(raw) || !raw.includes(".") ? raw.replace(/\./g, "").replace(",", ".") : raw.replace(/,/g, ""));
+    if (!Number.isFinite(n)) continue;
+    const factor = unit.scale / column.scale;
+    const dec = (raw.split(/[.,]/)[1] ?? "").length;
+    if (Math.abs(n * factor - v) <= Math.max(0.6 * 10 ** -dec * factor, Math.abs(v) * 0.005)) continue;
+    const up = [1, 1e3, 1e6, 1e9].map((f) => f * column.scale).filter((s) => s >= column.scale && Math.abs(v * column.scale) / s >= 1).pop();
+    const works = `${+(v * column.scale / up).toPrecision(3)} ${spell(up, column.base)}`;
+    throw new Error(`figure(${v}) prints "${printed}", but ${v} is in ${spell(column.scale, column.base)} (data.json's column unit): a figure divided by a thousand names the next unit — a value that works: "${works}"`);
+  }
+}

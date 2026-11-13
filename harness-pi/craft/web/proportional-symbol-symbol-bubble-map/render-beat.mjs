@@ -23,7 +23,7 @@ import { guardColour } from "#shared/design-base/compose.mjs";
 import { assertNotFallback, maptilerGlyphs } from "#shared/map-beat/glyphs.mjs";
 import { frameProjector, markOccupancy, occupancyLine } from "#shared/map-beat/occupancy.mjs";
 import { countryGround, plateGrounds, plateTints } from "#shared/map-beat/tints.mjs";
-import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertNumbers } from "./guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertFigureMatchesValue, assertHeadlineNumbersDrawn, assertNumbers } from "./guards.mjs";
 import { ensurePlate, liveAssets, mapWeb, maptilerKey, renderLiveMapPage, verifyLiveMap } from "./map-web.mjs";
 import { plateWaterField } from "./plate-water.mjs";
 import { chartWeb, pickDirection, plain, plainRegisters, refusing, storyLanguage } from "./web.mjs";
@@ -91,6 +91,7 @@ await refusing(HERE, async () => {
 
   // ── ONE direction, its plate (the camera's record) ─────────────────────────────────────────
   const number = (v, d) => plain(beat.number(v, d));
+  assertFigureMatchesValue(beat.figure, rows.map((r) => r.value), HERE);
   const figure = (v) => plain(beat.figure(v));
   const keyValues = niceReferenceValues(biggest.value, 3).map((value, i) => ({ key: `k${i}`, value }));
   const keySizes = keyValues.map((k) => ({ key: k.key, label: figure(k.value) }));
