@@ -169,7 +169,16 @@ function sameTreatment(a: string, b: string, medium: string): boolean {
 
 /** Splash's gap messages, with the ones the harness computes pointed at the tool that fills them. */
 export function gapsForModel(gaps: string[]): string[] {
-  return gaps.map((g) =>
+  // A gap another record fills is noise while that record is open: stress-p (Qwen3.5-9B, 2026-11-13) read
+  // "interaction is missing" first and re-asked format and intent six times instead of showing the candidates.
+  const derived = (g: string) => {
+    const slot = g.split(":")[0];
+    return (
+      (/interaction is missing/.test(g) && gaps.some((o) => o.startsWith(`${slot}:`) && /nothing chosen/.test(o))) ||
+      (/never confirmed reachable/.test(g) && gaps.some((o) => o.startsWith(`${slot}:`) && /format is missing/.test(o)))
+    );
+  };
+  return gaps.filter((g) => !derived(g)).map((g) =>
     /^grounding is missing/.test(g)
       ? "grounding is missing — record_takeaway computes it when you record the journalist's takeaway"
       : /interaction is missing/.test(g)
@@ -437,7 +446,11 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
       // A repeat of a recorded value changes nothing; the journalist's last answer belongs to a field still open.
       if (!["proves", "interaction"].includes(field) && currentSlot(slot)?.[field] !== undefined && String(currentSlot(slot)![field]).toLowerCase() === String(value).toLowerCase()) {
         const open = gapsForModel(checkStoryboard(parseStoryboard(readFileSync(path, "utf8")).meta)).filter((g) => g.startsWith(`slot ${slot}:`));
-        throw new Error(`slot ${slot} ${field} is already "${value}". The journalist's last answer ${JSON.stringify((dialogue.lastJournalist ?? "").slice(0, 80))} answers a field still open — ${open.slice(0, 3).join(" | ")}: record it there.`);
+        const last = dialogue.lastJournalist ?? "";
+        // The journalist repeating the recorded answer means the question was asked twice (stress-p, 2026-11-13).
+        if (overlap(String(value), last) >= 0.6)
+          throw new Error(`slot ${slot} ${field} is already "${value}" — do not ask it again. Next: ${open[0] ?? "nothing is open on this slot"}`);
+        throw new Error(`slot ${slot} ${field} is already "${value}". The journalist's last answer ${JSON.stringify(last.slice(0, 80))} answers a field still open — ${open.slice(0, 3).join(" | ")}: record it there.`);
       }
       // The medium is the journalist's: refused a format, the 12B once switched a chart slot to a map
       // nobody asked for, and looped on the same refusal.

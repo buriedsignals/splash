@@ -847,6 +847,15 @@ describe("gaps the harness fills", () => {
   // and placement for 24 turns and never asked the journalist.
   // stress-v (Qwen3.5-9B, 2026-11-13): "format is missing — gate 2b never closed" sent it calling a propose_formats tool
   // that does not exist and reading scripts until the 20-minute cap.
+  it("should leave out the gaps another open record fills", async () => {
+    const { gapsForModel } = await import("../src/tools/storyboard.ts");
+    const out = gapsForModel([
+      "slot 1: interaction is missing — record_slot chosen records it from the journalist's choice",
+      "slot 1: nothing chosen — gate 2 is not closed",
+    ]);
+    expect(out).toEqual([expect.stringMatching(/^slot 1: no treatment chosen — call show_candidates/)]);
+  });
+
   it("should name the question and the tool for each open slot field", async () => {
     const { gapsForModel } = await import("../src/tools/storyboard.ts");
     const out = gapsForModel([
@@ -885,6 +894,16 @@ describe("a slot field recorded again", () => {
     dialogue.lastJournalist = "Video.";
     await expect(call(tools.recordSlot, { slot: "1", field: "medium", value: "chart" })).rejects.toThrow(
       /medium is already "chart".*"Video\.".*format/,
+    );
+  });
+
+  // stress-p (Qwen3.5-9B, 2026-11-13): format and intent asked and re-recorded six times, the journalist repeating them.
+  it("should say not to ask again and name the next field when the journalist repeated the recorded answer", async () => {
+    const tools = storyboardTools(bases, dialogue);
+    dialogue.lastJournalist = "A chart.";
+    await call(tools.recordSlot, { slot: "1", field: "medium", value: "chart" });
+    await expect(call(tools.recordSlot, { slot: "1", field: "medium", value: "chart" })).rejects.toThrow(
+      /already "chart" — do not ask it again\. Next: slot 1: /,
     );
   });
 });
