@@ -399,7 +399,7 @@ export function fsTools(bases: Bases) {
       assertNotErasing(abs, content, path);
       if (existsSync(abs) && readFileSync(abs, "utf8") === content)
         throw new Error(
-          `${path} already holds exactly this content: this write changes nothing. If the beat already renders, call render_beat (it is the last step); otherwise change only the text the last refusal names.`,
+          `${path} already holds exactly this content: this write changes nothing. ${NOTHING_CHANGED}`,
         );
       if (content.length > MAX_WRITE && existsSync(abs)) {
         throw new Error(
@@ -432,7 +432,7 @@ export function fsTools(bases: Bases) {
       }
       if (old_text === new_text)
         throw new Error(
-          `new_text is old_text: this edit changes nothing. If the beat already renders, call render_beat (it is the last step); otherwise change only the text the last refusal names.`,
+          `new_text is old_text: this edit changes nothing. ${NOTHING_CHANGED}`,
         );
       const abs = resolveInStory(bases, path);
       assertWritable(bases, abs);
@@ -458,6 +458,9 @@ export function fsTools(bases: Bases) {
   };
 }
 
+// What a write or edit that leaves the file as it was is answered with (12B and Qwen3.5-9B, 2026-11-13: loops of them).
+const NOTHING_CHANGED = "If the beat already renders, call render_beat (it is the last step); otherwise change only the text the last refusal names.";
+
 /**
  * The craft step's write tools: in a zoned beat the model writes beat.mjs and nothing else, so the
  * tools take no path. The 12B writes a long `content` first and then degenerates on the small argument
@@ -482,6 +485,8 @@ export function beatTools(bases: Bases, beat: string) {
         throw new Error(
           `${file}: the call carried no content ("${content.trim()}"). Give the whole module in content, starting with its imports`,
         );
+      if (existsSync(target) && readFileSync(target, "utf8") === content)
+        throw new Error(`${file} already holds exactly this content: this write changes nothing. ${NOTHING_CHANGED}`);
       if (content.length > MAX_WRITE && existsSync(target))
         throw new Error(
           `${file} exists and the new content is ${content.length} characters; change it with several edit_file calls (old_text up to ${MAX_EDIT_OLD}, new_text up to ${MAX_EDIT_NEW} characters)`,
@@ -503,6 +508,8 @@ export function beatTools(bases: Bases, beat: string) {
         throw new Error(
           `edit too large (old_text ${old_text.length}/${MAX_EDIT_OLD}, new_text ${new_text.length}/${MAX_EDIT_NEW} characters); split it into smaller edits, or write the whole file again with write_file`,
         );
+      if (old_text === new_text)
+        throw new Error(`new_text is old_text: this edit changes nothing. ${NOTHING_CHANGED}`);
       const target = abs();
       if (!existsSync(target))
         throw new Error(`${file} does not exist yet: write it with write_file`);

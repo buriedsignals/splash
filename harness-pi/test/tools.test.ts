@@ -346,6 +346,20 @@ describe("beat tools", () => {
     expect(readFileSync(join(bases.storyDir, "beats", "1-top", "beat.mjs"), "utf8")).toBe("const a = 2;\n");
   });
 
+  // The craft's own tools: the no-op guards first landed only in fsTools, and Qwen3.5-9B's map web craft (2026-11-13)
+  // was still answered "edited" for identical edits.
+  it("should refuse a beat edit that changes nothing", async () => {
+    const { writeFile: write, editFile } = beatTools(bases, "1-top");
+    await call(write, { content: "const a = 1;\n" });
+    await expect(call(editFile, { old_text: "a = 1", new_text: "a = 1" })).rejects.toThrow(/this edit changes nothing/);
+  });
+
+  it("should refuse a beat write that changes nothing", async () => {
+    const { writeFile: write } = beatTools(bases, "1-top");
+    await call(write, { content: "const c = 3;\n" });
+    await expect(call(write, { content: "const c = 3;\n" })).rejects.toThrow(/this write changes nothing/);
+  });
+
   it("should ignore a stray path argument and still write beat.mjs", async () => {
     const { writeFile: write } = beatTools(bases, "1-top");
     await call(write, { content: "export default 3;\n", path: { path: { path: {} } } });
