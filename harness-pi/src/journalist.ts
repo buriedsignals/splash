@@ -131,11 +131,18 @@ export function scriptedJournalist(
       // The format and size questions name their options; the classifier read "Static, interactive web, video or
       // scrollytelling?" after "for a chart" as the medium question and answered "A chart." (stress-ad, 2026-11-13).
       const asked = tail.slice(-300);
+      // The subject and comparison questions name themselves too; a note after the subject question naming what is
+      // compared sent the comparison answer into the subject (stress-ad, 2026-11-13). The last of them asked wins.
+      const hand = [...tail.matchAll(/\bwho is the subject\b|\bsubject of (?:your|the) piece\b|\bwhat does the reader compare\b/gi)].pop()?.[0];
       const options = /\bstatic\b[^?]*\bvideo\b[^?]*\bscroll/i.test(asked)
         ? "publication"
         : /\blandscape\b[^?]*\bsquare\b[^?]*\bportrait\b/i.test(asked)
           ? "size"
-          : undefined;
+          : hand
+            ? /compare/i.test(hand)
+              ? "comparison"
+              : "subject"
+            : undefined;
       const key =
         closing && !excluded.includes("closing")
           ? "closing"

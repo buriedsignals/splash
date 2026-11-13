@@ -37,6 +37,28 @@ describe("scripted journalist, questions that name their options", () => {
   });
 });
 
+describe("scripted journalist, hand questions that name themselves", () => {
+  // stress-ad (Qwen3.5-9B, 2026-11-13): the subject question, followed by a note naming the voivodeships compared,
+  // was read as the comparison question, and the comparison answer was recorded as the subject.
+  it("should answer the subject when the desk asks who the subject is, whatever follows", async () => {
+    reply = "comparison";
+    const j = scriptedJournalist({ subject: "Mazowieckie", comparison: "the other seven" }, { server: server.url.origin });
+    j.phase = "storyboard";
+    expect(
+      await j.answer("**First question: In this data, who is the subject of your piece?**\n\nThe takeaway names Mazowieckie as having the most beds but third per resident, compared with Śląskie and Łódzkie."),
+    ).toBe("Mazowieckie");
+  });
+
+  it("should answer the comparison when the desk asks what the reader compares it to", async () => {
+    reply = "subject";
+    const j = scriptedJournalist({ subject: "Mazowieckie", comparison: "the other seven" }, { server: server.url.origin });
+    j.phase = "storyboard";
+    expect(await j.answer("**What does the reader compare it to — last year, the average, or these voivodeships?** The subject is Mazowieckie.")).toBe(
+      "the other seven",
+    );
+  });
+});
+
 describe("scripted journalist, a credit the desk proposes", () => {
   // stress-v (Qwen3.5-9B, 2026-11-13): the desk proposed "unattributed", the classifier read a confirmation, and the
   // sheet's journalist said "Yes." to a credit that was not theirs.
