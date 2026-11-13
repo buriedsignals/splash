@@ -1021,3 +1021,10 @@ target (Tom's 26 examples, masked loss).
 Not like for like: the Qwen arm ran on a harness twenty-odd commits ahead, segmented, with resumes. What it shows:
 the storyboard is no longer the wall for a 9B model. What it does not show yet: a delivered Qwen render that passes
 every guard on the first try. A re-run of stress-p on `6855c1ed9` is the check.
+
+**Re-run qc3 (2026-11-13, on `6855c1ed9`):** storyboard DONE again (1,081 s), craft **287 s** (vs about 1,200 s in qc2),
+1,418 s in all. One render refused, the next passed. The plate is entirely English: eyebrow "Transport · Portugal",
+standfirst "Annual trips, in millions. One year only (2025); six city networks…", bracket "214 of 394", note "more
+than twice Porto's 96", values 214/96/31/28/14/11, Lisboa accented. **Gold** on what the sheet asks; the credit
+"unattributed" is the sheet's own. The compare gesture's copy inside Lisboa's bar is the same design question as in
+the 12B batch.
