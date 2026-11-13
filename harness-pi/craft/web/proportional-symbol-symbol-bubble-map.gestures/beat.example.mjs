@@ -41,7 +41,7 @@ export default {
     { do: "highlight", mark: "Nuclear", note: `${nuclear.length} sites nucléaires` },
     { do: "name", mark: "site 1" },
     // A reader control: only the nuclear circles keep their ink.
-    { do: "filter", mark: "Nuclear", note: `Les ${nuclear.length} sites nucléaires seuls` },
+    { do: "filter", mark: "Nuclear", label: "Nucléaire", note: `Les ${nuclear.length} sites nucléaires seuls` },
   ],
   // The words of the option that shows the map as it lands (each further gesture is one reader control).
   restLabel: "Toutes les centrales",

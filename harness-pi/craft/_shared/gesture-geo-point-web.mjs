@@ -6,6 +6,7 @@
 // note as text. Browser-safe: no Node module.
 import { GestureRefusal, implicitAccent } from "./gesture-core.mjs";
 import { WEB_RESTING } from "./gesture-registry.mjs";
+import { printFactor } from "./gesture-geo-point-family.mjs";
 
 /** Each control gesture as the chart-web atom that names it (skills/chart-web/assets/interaction-plan.ts). */
 export const GEO_POINT_WEB_CONTROLS = {
@@ -53,4 +54,27 @@ export function scheduleGeoPointWeb({ gestures, adapter, controls = GEO_POINT_WE
       return { index: i, do: g.do, ...controls[g.do], state, note: g.note, factor: state.factor };
     });
   return { resting, controls: out };
+}
+
+/** A control's legend and pill, language-neutral: the marks it acts on, and what it prints. A count is grouped the
+ *  story's way ("72 / 8 900" in French, not "72 / 8900"). */
+export function controlWords(c, adapter, format, label, lang = "en") {
+  const names = [...new Set((c.state.kept ?? c.state.focus ?? c.state.named.slice(-2)).map((n) => label(n)))];
+  const short = names.length > 3 ? `${names.slice(0, 2).join(", ")} +${names.length - 2}` : names.join(", ");
+  const count = (n) => new Intl.NumberFormat(lang).format(n).replace(/\u202f/g, "\u00a0");
+  if (c.do === "filter") return { legend: short, chip: `${count(c.state.kept.length)} / ${count(adapter.names.length)}` };
+  if (c.do === "zoom") return { legend: short, chip: `×${printFactor(c.factor)}` };
+  const [a, b] = c.state.named.slice(-2);
+  return { legend: `${label(a)} / ${label(b)}`, chip: `${format(adapter.valueOf(a))} / ${format(adapter.valueOf(b))}` };
+}
+
+/** A reader control's legend. A group is named by its value in the data ("Nuclear"), which is the data's language,
+ *  not the story's: the worked example printed "Nuclear" on a French page, and Qwen3.5-9B copied it
+ *  (gx-proportional-symbol web, 2026-11-13). A legend that would print the subject's raw value needs a label. */
+export function controlLegend(gesture, legend, beat, lang = "en") {
+  if (gesture.label !== undefined) return gesture.label;
+  const raw = beat.subject?.equals;
+  if (raw !== undefined && String(legend) === String(raw))
+    throw new Error(`gestures: the "${gesture.do}" control on "${raw}" would print the data's own word "${raw}" as its legend; add label: the words for "${raw}" in the story's language ("${lang}"), e.g. { do: "${gesture.do}", mark: "${raw}", label: "…", note: … }`);
+  return legend;
 }

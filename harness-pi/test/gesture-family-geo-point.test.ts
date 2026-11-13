@@ -12,7 +12,8 @@ import {
   stageGeoPoint,
 } from "../craft/_shared/gesture-geo-point-family.mjs";
 import { composeGeoPointStatic } from "../craft/_shared/gesture-geo-point-static.mjs";
-import { scheduleGeoPointWeb } from "../craft/_shared/gesture-geo-point-web.mjs";
+import { controlLegend, controlWords, scheduleGeoPointWeb } from "../craft/_shared/gesture-geo-point-web.mjs";
+
 import {
   cameraAt,
   scheduleGeoPointVideo,
@@ -588,5 +589,21 @@ describe("point-map repair", () => {
     const list = [{ do: "highlight", mark: "Germany" }, { do: "compare", marks: ["Germany", "Poland"], note: "1.9 times Poland" }];
     const error = refusal(() => stageGeoPoint({ variant: "flow", gestures: list, marks: FLOW, claim: FLOW_CLAIM, format: "static", schedule: statics }));
     expect((error.fix as any).set.value).toBe(`${(DEU / POL).toFixed(1)} times Poland`);
+  });
+});
+
+// gx-proportional-symbol web (Qwen3.5-9B, 2026-11-13): a French page printed "Nuclear" and "72 / 8900".
+describe("point-map reader control words", () => {
+  it("should refuse a legend that prints the subject's raw data value, naming label", () => {
+    expect(() => controlLegend({ do: "filter", mark: "Nuclear" }, "Nuclear", { subject: { column: "fuel", equals: "Nuclear" } }, "fr")).toThrow(/add label: the words for "Nuclear" in the story's language \("fr"\)/);
+  });
+
+  it("should print the label it is given", () => {
+    expect(controlLegend({ do: "filter", mark: "Nuclear", label: "Nucléaire" }, "Nuclear", { subject: { equals: "Nuclear" } }, "fr")).toBe("Nucléaire");
+  });
+
+  it("should group a filter's counts the story's way", () => {
+    const words = controlWords({ do: "filter", state: { kept: Array(72).fill("a") } }, { names: Array(8900).fill("x") }, String, (n: string) => n, "fr");
+    expect(words.chip).toBe("72 / 8\u00a0900");
   });
 });

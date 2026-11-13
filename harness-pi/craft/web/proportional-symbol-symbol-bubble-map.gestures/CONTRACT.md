@@ -90,6 +90,7 @@ a pointer, a tap or a key with its name and value.
 | Field | What it is |
 |---|---|
 | `restLabel` | The words of the pill that shows the map as it lands, e.g. "Toutes les centrales". |
+| `label` (on a control gesture) | The control's legend in the story's language: a group is named by its word in the data ("Nuclear"), so its control says it in the story's, e.g. `label: "Nucléaire"`. |
 
 - A control's `note` is the sentence the reader gets when they choose it: it must say something the page does not
   already print (a zoom's note says what the close-up shows, e.g. `"×3 : le point le plus continental"`, not only

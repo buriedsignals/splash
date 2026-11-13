@@ -13,7 +13,7 @@ import { GestureGeoPointWeb } from "./GestureGeoPointWeb.tsx";
 import { GestureGeoPointScrolly } from "./GestureGeoPointScrolly.tsx";
 import { boxOf, wordsOf } from "./GestureGeoPointMap.tsx";
 import { printFactor, rolesOf } from "./gesture-geo-point-family.mjs";
-import { scheduleGeoPointWeb } from "./gesture-geo-point-web.mjs";
+import { scheduleGeoPointWeb, controlLegend, controlWords } from "./gesture-geo-point-web.mjs";
 import { APPLY, driveSource, flatStates, scheduleGeoPointScrolly } from "./gesture-geo-point-scrolly.mjs";
 import { chartWeb, plain, renderBeatWeb, storyLanguage } from "./web.mjs";
 import { renderBeatScrolly, scrollySkill } from "./scrolly.mjs";
@@ -29,15 +29,6 @@ const pictureOf = (state, adapter) => ({
   named: state.named,
 });
 
-/** A control's legend and pill, language-neutral: the marks it acts on, and what it prints. */
-function controlWords(c, adapter, format, label) {
-  const names = [...new Set((c.state.kept ?? c.state.focus ?? c.state.named.slice(-2)).map((n) => label(n)))];
-  const short = names.length > 3 ? `${names.slice(0, 2).join(", ")} +${names.length - 2}` : names.join(", ");
-  if (c.do === "filter") return { legend: short, chip: `${c.state.kept.length} / ${adapter.names.length}` };
-  if (c.do === "zoom") return { legend: short, chip: `×${printFactor(c.factor)}` };
-  const [a, b] = c.state.named.slice(-2);
-  return { legend: `${label(a)} / ${label(b)}`, chip: `${format(adapter.valueOf(a))} / ${format(adapter.valueOf(b))}` };
-}
 
 /**
  * @param format    "web" | "scrolly"
@@ -66,8 +57,8 @@ export async function renderGeoPointFormat(formatName, { here, variant, beat, ge
     const restLabel = plain(beat.restLabel ?? "");
     if (!restLabel.trim()) throw new Error('beat.mjs: restLabel is empty: give the words of the option that shows the map as it lands, e.g. "La carte seule"');
     const controls = scheduled.controls.map((c) => {
-      const words = controlWords(c, adapter, valueFormat, label);
-      const legend = plain(valid[c.index].label ?? words.legend);
+      const words = controlWords(c, adapter, valueFormat, label, lang);
+      const legend = plain(controlLegend(valid[c.index], words.legend, beat, lang));
       // A note that only repeats the pill (a zoom's "×3") says where the camera went as well.
       const said = plain(c.note ?? "");
       const note = !said || said.replace(/[,.]/g, "") === plain(words.chip).replace(/[,.]/g, "") ? `${legend} · ${said || plain(words.chip)}` : said;
