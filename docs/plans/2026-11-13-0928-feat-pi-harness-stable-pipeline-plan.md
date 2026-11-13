@@ -29,7 +29,7 @@ extends: docs/plans/2026-11-07-1448-feat-pi-harness-tom-method-plan.md
   - Push only `refs/heads/feat-pi-harness:refs/heads/feat-pi-harness`.
   - No Claude mention.
 - **Stop and report to Rémy:**
-  - when a step needs a product decision (e.g. image beats, multi-beat);
+  - when a step needs a product decision;
   - when a step would need training (T6 of the 11-07 plan);
   - when a fix would touch `skills/` or `shared/`.
 
@@ -46,12 +46,10 @@ extends: docs/plans/2026-11-07-1448-feat-pi-harness-tom-method-plan.md
 | S6 | Designer review | `persona:designer` | yes | almost never |
 | S7 | Delivery (offer the forms, materialise the chosen one) | `skill:deliver` | yes | through full runs |
 
-Out of scope, with a reason given to Rémy:
+In scope as well (Rémy, 2026-11-13), all three are currently missing from the harness:
 - **Image beats:** `image-beat` is not in `CRAFT_OWNERS`.
-- **Datawrapper production:** it needs a credential and is a paid service.
-- **Multi-beat stories:** the harness runs slot 1 only.
-
-Both image beats and multi-beat stories are product decisions.
+- **Datawrapper production:** `dw-beat`. The token is `DATAWRAPPER_API_TOKEN` in `sp1/.env`; it is read, never printed.
+- **Multi-beat stories:** the storyboard prompt says "This run produces slot 1 only", and `firstBeat()` picks a single beat.
 
 ## Key Technical Decisions
 
@@ -141,6 +139,41 @@ Both image beats and multi-beat stories are product decisions.
 - **Approach:** one full run per student on two stories, one chart and one map, with no resume.
 - **Exit:** both runs reach `done` and their output passes the U2/U7 look.
 
+### U10. Image beats (S5, new medium)
+
+- **Goal:** a slot whose medium is "image" goes through craft (`skill:image-beat`), review and delivery on both students.
+- **Files:**
+  - `src/driver.ts` (`CRAFT_OWNERS`, the craft profile for image-beat);
+  - `src/sessions.ts` / profiles;
+  - a stress story with the journalist's own photographs under `eval/`;
+  - tests beside.
+- **Approach:**
+  - Wire `image-beat` the same way as the other craft owners.
+  - Seed an image story.
+  - Check the image discipline in code: alt text and credit are required; the photo is letterboxed, not cropped or stretched; EXIF orientation is detected.
+  - Then add the image cells to the U2 matrix: static, and a scrolly image sequence.
+- **Exit:** image static and image scrolly are green twice per student.
+
+### U11. Datawrapper producer (S5, second producer)
+
+- **Goal:** when the journalist answers "Datawrapper" for an eligible slot, `dw-beat` publishes the chart and takes back an owned PNG and web artifact.
+- **Files:** `src/driver.ts` (owner `skill:dw-beat`), `eval/seeds/` (a seed with `producer: datawrapper`), tests beside.
+- **Approach:**
+  - Use the real API with the token from `sp1/.env`, passed by environment, no mock.
+  - Write one test chart per run and delete it afterwards, unless it is kept as evidence.
+  - Check that the chart ID is persisted in the beat and that delivery reads it.
+- **Exit:** one bar chart and one map (if Datawrapper supports that map type) are green twice per student.
+
+### U12. Multi-beat stories (S2→S7)
+
+- **Goal:** a story with two or more slots goes through every slot.
+- **Files:** `src/driver.ts` (`firstBeat` → per-beat loop over craft/review/delivery), the storyboard prompt, `src/tools/storyboard.ts`, tests beside.
+- **Approach:**
+  - Lift the "slot 1 only" limit. The storyboard records N slots; the craft, review and delivery phases loop over the beats in `whereIs` order.
+  - Seed a two-slot story: a chart then a map, in different formats.
+- **Tests:** `whereIs` advances from beat 1 to beat 2, and a failure on beat 2 does not undo beat 1.
+- **Exit:** the two-slot story reaches `done` twice per student.
+
 ### U9. Report and hand-off
 
 - **Files:** `eval/RESULTS.md` (stability matrix section), `TUNE.md`, `HELPER.md`.
@@ -152,7 +185,7 @@ Both image beats and multi-beat stories are product decisions.
 
 ## Order
 
-Order of work: U2 (running), then U1, then U3, then U4, then U5, then U6, then U7, then U8, then U9. U1 and U5 have no model runs and fit between matrix cells. The next leg starts only after the previous one has been looked at.
+Order of work: U2 (running), then U1, then U3, then U4, then U5, then U6, then U7, then U10, then U11, then U12, then U8, then U9. U1 and U5 have no model runs and fit between matrix cells. The next leg starts only after the previous one has been looked at.
 
 ## Verification Contract
 
@@ -164,6 +197,7 @@ Order of work: U2 (running), then U1, then U3, then U4, then U5, then U6, then U
 
 The matrix in `RESULTS.md` covers:
 - S0–S7 × both students;
-- for S5, chart and map × the four formats.
+- for S5, chart and map × the four formats, plus image (static and scrolly) and Datawrapper;
+- the two-slot story.
 
 Every cell is either green twice or tied to a named Tune or Helper miss with its evidence. U4 has been measured against its baseline. The branch has been pushed and Rémy has had his report.
