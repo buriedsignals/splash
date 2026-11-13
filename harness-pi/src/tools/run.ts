@@ -4,7 +4,7 @@
 // run_script stays the one open door: the skills' JS helpers (resolveGrounding, writeStoryboardAtomic,
 // formatPalette, ...) have no CLI. Its code, like every component a render executes, is model-authored
 // and runs unconfined: the tool layer bounds where files are written, not what that code does.
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { appendFile, mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { defineTool } from "@earendil-works/pi-coding-agent";
@@ -117,6 +117,26 @@ export function refusalHint(output: string): string {
     : "";
 }
 
+/** A line holding only a quote after the closing "};" is never code (gx-bullet web, 12B, 2026-11-13: told to delete
+ *  it, the 12B edited template strings elsewhere through three passes). Removed before rendering; returns what it did. */
+export function trimStrayTail(file: string): string {
+  if (!existsSync(file)) return "";
+  const lines = readFileSync(file, "utf8").split("\n");
+  let end = lines.length;
+  while (end > 0 && lines[end - 1].trim() === "") end--;
+  const removed: number[] = [];
+  while (end > 1 && /^\s*[`'"]\s*$/.test(lines[end - 1])) {
+    let prev = end - 2;
+    while (prev >= 0 && lines[prev].trim() === "") prev--;
+    if (prev < 0 || !/^\s*\};?\s*$/.test(lines[prev])) break;
+    removed.push(end);
+    end = prev + 1;
+  }
+  if (!removed.length) return "";
+  writeFileSync(file, `${lines.slice(0, end).join("\n")}\n`);
+  return `the harness removed line ${removed.reverse().join(", ")} of beat.mjs: a lone quote after the closing "};"\n`;
+}
+
 export function runTools(bases: Bases) {
   const skill = (name: string, script: string) =>
     join(bases.root, "skills", name, "scripts", script);
@@ -202,8 +222,9 @@ export function runTools(bases: Bases) {
         throw new Error(`${beat} has no ${runner}; scaffold the beat first`);
       if (zoned && !existsSync(join(beatDir(bases, beat), "beat.mjs")))
         throw new Error(`beats/${beat}/beat.mjs does not exist yet: write it with write_file, then render`);
+      const trimmed = zoned ? trimStrayTail(join(beatDir(bases, beat), "beat.mjs")) : "";
       const result = await exec(["bun", path]);
-      result.content[0].text += refusalHint(result.content[0].text);
+      result.content[0].text = trimmed + result.content[0].text + refusalHint(result.content[0].text);
       // Name every PNG the render wrote by its full path, so the next call can look at it.
       const renders = join(beatDir(bases, beat), "renders");
       if (existsSync(renders)) {

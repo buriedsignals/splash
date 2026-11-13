@@ -4,7 +4,8 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createRunRoot, stageStory } from "../src/run-root.ts";
 import type { Bases } from "../src/tools/fs.ts";
-import { runTools , refusalHint } from "../src/tools/run.ts";
+import { runTools , refusalHint, trimStrayTail } from "../src/tools/run.ts";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 
 const CHECKOUT = resolve(import.meta.dirname, "../..");
 let bases: Bases;
@@ -108,5 +109,23 @@ describe("report", () => {
     const { report, CHILD_LOG } = await import("../src/tools/run.ts");
     const r = report(["bun", "x"], { exitCode: 1, stdout: "", stderr: "e".repeat(5_000) });
     expect(r.content[0].text).toContain(`[1000 earlier chars dropped; full output in ${CHILD_LOG}]`);
+  });
+});
+
+// gx-bullet web (12B, 2026-11-13): beat.mjs ended "};" then a line holding one backtick. Told to delete it, the 12B
+// edited template strings elsewhere through three passes, and a whole rewrite was refused for an existing file.
+// A lone quote line after the closing "};" is never code: the harness removes it before rendering.
+describe("a stray quote after the end of beat.mjs", () => {
+  it("should be removed, and said", () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-stray-"));
+    writeFileSync(join(dir, "beat.mjs"), "export default {\n  title: `t`,\n};\n`\n");
+    expect(trimStrayTail(join(dir, "beat.mjs"))).toMatch(/removed line 4/);
+    expect(readFileSync(join(dir, "beat.mjs"), "utf8")).toBe("export default {\n  title: `t`,\n};\n");
+  });
+
+  it("should leave a beat whose last line is code", () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-stray-"));
+    writeFileSync(join(dir, "beat.mjs"), "export default {\n  title: `t\n`,\n};\n");
+    expect(trimStrayTail(join(dir, "beat.mjs"))).toBe("");
   });
 });
