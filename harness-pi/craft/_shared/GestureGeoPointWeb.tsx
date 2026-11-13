@@ -30,7 +30,7 @@ import {
   type Geometry,
   type Roles,
 } from "./GestureGeoPointMap.tsx";
-import { sizeKeyCorner, wordAnchor } from "./gesture-geo-point-web.mjs";
+import { sideLayoutCss, sizeKeyCorner, wordAnchor } from "./gesture-geo-point-web.mjs";
 const { controlChromeCss } = await import(
   skillScriptFrom(
     import.meta.dirname,
@@ -127,6 +127,7 @@ export function GestureGeoPointWeb({
     `${SCOPE} .gesture-notes { display: grid; }`,
     `${SCOPE} .gesture-notes > div { grid-area: 1 / 1; align-self: start; }`,
     `${SCOPE} .gw-note { visibility: hidden; }`,
+    sideLayoutCss(SCOPE, G.whole.w / G.whole.h),
     ...controls.flatMap((_, k) => {
       const on = `${SCOPE}:has(#gesture-${k + 1}-on:checked)`;
       return [

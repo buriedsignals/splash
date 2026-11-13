@@ -12,7 +12,7 @@ import {
   stageGeoPoint,
 } from "../craft/_shared/gesture-geo-point-family.mjs";
 import { composeGeoPointStatic } from "../craft/_shared/gesture-geo-point-static.mjs";
-import { controlLegend, controlWords, scheduleGeoPointWeb, sizeKeyCorner, wordAnchor } from "../craft/_shared/gesture-geo-point-web.mjs";
+import { controlLegend, controlWords, scheduleGeoPointWeb, sideLayoutCss, sizeKeyCorner, wordAnchor } from "../craft/_shared/gesture-geo-point-web.mjs";
 
 import {
   cameraAt,
@@ -627,5 +627,21 @@ describe("point-map web furniture", () => {
 
   it("should prefer the bottom-left corner when corners are equally clear", () => {
     expect(sizeKeyCorner([], { w: 120, h: 90 }, box)).toBe("bottom-left");
+  });
+});
+
+// gx-proportional-symbol web (Qwen3.5-9B, 2026-11-13): on a 1870x950 screen the 4:3 map was height-bound to 912px wide
+// and centred, with two empty bands beside it while the controls sat above it.
+describe("point-map web side layout", () => {
+  it("should engage only on a screen wider than the plate and its side column", () => {
+    expect(sideLayoutCss(".f", 4 / 3)).toMatch(/@media \(min-aspect-ratio: 1\.7\d*\)/);
+  });
+
+  it("should give the plot its own column the full height of the screen", () => {
+    expect(sideLayoutCss(".f", 4 / 3)).toMatch(/\.f \.chart-plot \{[^}]*grid-column: 2[^}]*height: 100%/);
+  });
+
+  it("should leave a plate as wide as the screen in one column", () => {
+    expect(sideLayoutCss(".f", 2.4)).toBe("");
   });
 });

@@ -98,3 +98,19 @@ export function sizeKeyCorner(marks, key, whole) {
   const under = ([x, y]) => marks.filter((m) => m.x + (m.r ?? 0) >= x && m.x - (m.r ?? 0) <= x + key.w && m.y + (m.r ?? 0) >= y && m.y - (m.r ?? 0) <= y + key.h).length;
   return Object.entries(corners).reduce((best, [name, at]) => (under(at) < best.n ? { name, n: under(at) } : best), { name: "", n: Infinity }).name;
 }
+
+/** On a screen wider than the plate, the plate is height-bound and centred between two empty bands: there the header,
+ *  controls and notes take a side column and the plate the rest, the full height. A plate as wide as a 16:9 screen
+ *  gains nothing from it. */
+export function sideLayoutCss(scope, plateAspect) {
+  const COLUMN = 0.32; // the side column's share of the screen's height, in widths (about 300px on a 950px screen)
+  const engage = plateAspect + COLUMN + 0.1;
+  if (engage > 16 / 9 + 0.2) return "";
+  return `@media (min-aspect-ratio: ${engage.toFixed(3).replace(/0+$/, "")}) and (min-width: 900px) {
+  ${scope} { display: grid; grid-template-columns: minmax(260px, 340px) 1fr; grid-template-rows: auto auto auto auto 1fr auto; column-gap: 32px; height: 100vh; height: 100dvh; }
+  ${scope} > :not(.chart-plot):not(style) { grid-column: 1; }
+  ${scope} .chart-plot { grid-column: 2; grid-row: 1 / -1; height: 100%; width: auto; max-width: 100%; min-height: 0; justify-self: start; }
+  ${scope} .chart-source { grid-row: -2; align-self: end; }
+  ${scope} .gesture-controls { flex-direction: column; align-items: flex-start; gap: 8px; }
+}`;
+}
