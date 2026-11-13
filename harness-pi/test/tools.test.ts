@@ -224,6 +224,16 @@ describe("file tools", () => {
     );
   });
 
+  // gx-bullet web (12B, 2026-11-13): eight edits whose new_text equalled old_text were each answered "edited", and the
+  // craft looped on them until the same-failure stop.
+  it("should refuse an edit that changes nothing", async () => {
+    const { writeFile: write, editFile } = fsTools(bases);
+    await call(write, { path: "stories/demo/same.mjs", content: "const x = 1;\n" });
+    await expect(
+      call(editFile, { path: "stories/demo/same.mjs", old_text: "const x = 1;", new_text: "const x = 1;" }),
+    ).rejects.toThrow(/new_text is old_text: this edit changes nothing/);
+  });
+
   it("should quote the closest line when old text is not found", async () => {
     const { writeFile: write, editFile } = fsTools(bases);
     await call(write, { path: "stories/demo/near.mjs", content: "const title = `Lisboa leads`;\nconst x = 1;" });

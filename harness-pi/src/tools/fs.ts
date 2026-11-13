@@ -426,6 +426,10 @@ export function fsTools(bases: Bases) {
           `edit too large (old_text ${old_text.length}/${MAX_EDIT_OLD}, new_text ${new_text.length}/${MAX_EDIT_NEW} characters); split it into smaller edits, or write the whole file again with write_file`,
         );
       }
+      if (old_text === new_text)
+        throw new Error(
+          `new_text is old_text: this edit changes nothing. If the beat already renders, call render_beat (it is the last step); otherwise change only the text the last refusal names.`,
+        );
       const abs = resolveInStory(bases, path);
       assertWritable(bases, abs);
       const body = readFileSync(abs, "utf8");
