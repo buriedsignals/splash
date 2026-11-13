@@ -251,6 +251,15 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
   const noted = new Set();
 
   gestures.forEach((g, i) => {
+    // A list nested in marks (marks: [china.name, five.map((r) => r.name)], Qwen3.5-9B, stress-v 2026-11-13) was read
+    // as one row named "United States,India,…". After a comparison's subject it is what the subject is compared with;
+    // anywhere else it is more marks.
+    if (Array.isArray(g?.marks) && g.marks.some(Array.isArray)) {
+      const [first, ...rest] = g.marks;
+      g = g.do === "compare" && g.of === undefined && !Array.isArray(first) && rest.length && rest.every(Array.isArray)
+        ? { ...g, marks: [first], of: rest.flat(Infinity) }
+        : { ...g, marks: g.marks.flat(Infinity) };
+    }
     // vocabulary, family, format
     if (!allowed.includes(g?.do)) {
       const known = g?.do in VOCABULARY;

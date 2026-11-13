@@ -136,6 +136,18 @@ describe("validateGestures", () => {
     expect(check(LISBOA, LISBOA_GESTURES).gestures).toHaveLength(3);
   });
 
+  it("should read a list nested after a comparison's subject as what it is compared with", () => {
+    // stress-v (Qwen3.5-9B, 2026-11-13): marks: [china.name, five.map((r) => r.name)] was read as one row named
+    // "United States,India,Russia,Japan,Indonesia", and the fix offered dropped four of the five.
+    const nested = check(CHINA, [CHINA_GESTURES[0], CHINA_GESTURES[1], { do: "compare", marks: ["China", NEXT_FIVE], note: "12.3 Gt against 11.6 Gt" }]).gestures[2];
+    expect(nested).toEqual(check(CHINA, CHINA_GESTURES).gestures[2]);
+  });
+
+  it("should flatten a list nested inside a bracket's marks", () => {
+    const g = check(CHINA, [CHINA_GESTURES[0], { do: "bracket", marks: [NEXT_FIVE.slice(0, 2), ...NEXT_FIVE.slice(2)], note: "11.6 Gt" }, CHINA_GESTURES[2]]).gestures[1];
+    expect(g.marks).toEqual(NEXT_FIVE);
+  });
+
   it("should refuse a bracket note that prints a nonzero sum as zero, offering the sum", () => {
     // stress-v (Qwen3.5-9B, 2026-11-13): a format helper divided the Gt values by 1e9 again and printed "0.0 Gt".
     const r = refusal(() => check(CHINA, [CHINA_GESTURES[0], { do: "bracket", marks: NEXT_FIVE, note: "0.0 Gt" }, CHINA_GESTURES[2]]));
