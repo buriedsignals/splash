@@ -136,6 +136,14 @@ describe("file tools", () => {
     await expect(call(listDir, { path: "skills" })).rejects.toThrow(/already listed .* Ask the journalist\./);
   });
 
+  it("should answer a read of a path the harness already answered with its reply, even when the path is missing", async () => {
+    const { readFile: read, listDir } = fsTools({ ...bases, answered: [{ match: /datawrapper/i, reply: "Ask Custom or Datawrapper." }] });
+    expect([
+      textOf(await call(read, { path: "shared/chart-beat/references/datawrapper-chart-types.json" })),
+      textOf(await call(listDir, { path: "references/datawrapper" })),
+    ]).toEqual(["Ask Custom or Datawrapper.", "Ask Custom or Datawrapper."]);
+  });
+
   it("should read a file again once it has changed", async () => {
     const { writeFileSync, utimesSync } = await import("node:fs");
     const f = join(bases.storyDir, "NOTE.md");

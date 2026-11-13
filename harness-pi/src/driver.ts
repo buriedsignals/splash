@@ -288,6 +288,13 @@ export async function runStory(o: RunOptions): Promise<RunReport> {
       ...bases,
       readBases: ["skills", "shared"],
       noRereads: "Ask the journalist the open question now and end your turn, or record their last answer with its record_ tool.",
+      answered: [
+        {
+          match: /datawrapper/i,
+          reply:
+            'The harness already checked Datawrapper eligibility for this slot in code; there is nothing to read. Ask the journalist "Custom or Datawrapper?", end your turn, then record their answer with record_slot 1 producer (custom or datawrapper).',
+        },
+      ],
     });
     const sess = await session(
       "skill:storyboard",

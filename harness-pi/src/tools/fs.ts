@@ -29,6 +29,8 @@ export interface Bases {
   readBases?: string[];
   /** Refuse a second read of a file unchanged since this session read it, naming what to do instead. */
   noRereads?: string;
+  /** Paths the harness already answered in code: a read or listing that names one gets this reply instead. */
+  answered?: { match: RegExp; reply: string }[];
 }
 
 const READ_BASES = ["skills", "shared", "proof"];
@@ -295,6 +297,12 @@ export function tableDigest(body: string): string | null {
   ].join("\n");
 }
 
+/** stress-x (Qwen3.5-9B, 2026-11-13): told the producer needed nothing read, the model hunted the Datawrapper
+ *  mapping through five missing paths until the step stopped; the hunt now meets the answer it was looking for. */
+function answeredFor(bases: Bases, path: string): string | undefined {
+  return bases.answered?.find((a) => a.match.test(path))?.reply;
+}
+
 export function fsTools(bases: Bases) {
   const seen = new Map<string, string>();
   const readFileTool = defineTool({
@@ -304,6 +312,8 @@ export function fsTools(bases: Bases) {
       "Read a text file from the story, skills/, shared/ or proof/. Paths are absolute or relative to the Splash root. A CSV returns an excerpt; read source/profile.json for its full profile.",
     parameters: Type.Object({ path: Type.String() }),
     async execute(_id, { path }) {
+      const done = answeredFor(bases, path);
+      if (done) return text(done);
       const abs = resolveReadable(bases, path);
       if (bases.noRereads) {
         // stress-ad (Qwen3.5-9B, 2026-11-13): eight alternating reads of the same two references and no question, until the cap.
@@ -338,6 +348,8 @@ export function fsTools(bases: Bases) {
     description: "List a directory in the story, skills/, shared/ or proof/.",
     parameters: Type.Object({ path: Type.String() }),
     async execute(_id, { path }) {
+      const done = answeredFor(bases, path);
+      if (done) return text(done);
       const abs = resolveReadable(bases, path);
       const entries = readdirSync(abs).map((name) =>
         statSync(join(abs, name)).isDirectory() ? `${name}/` : name,
