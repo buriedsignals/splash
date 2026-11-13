@@ -406,6 +406,13 @@ export const beatHere = (url) => dirname(new URL(url).pathname);
  */
 export function errorText(error) {
   const one = (e) => {
+    // The video credit's only refusal (chart-video shots.mjs sourceCreditFor) names no field: the field is source.
+    const credit = /^no form wraps into (\d+) lines? of ([\d.]+)px in .+? ([\d.]+)px$/.exec(String(e?.message ?? ""));
+    if (credit) {
+      const [, n, px, size] = credit;
+      const chars = Math.floor(Number(px) / (Number(size) * 0.55));
+      return `source: no form of the credit fits ${n} line${n === "1" ? "" : "s"} of ${Math.round(Number(px))}px — a value that works: add a shorter form as the last item of source, about ${chars} characters or fewer, e.g. ["<the full credit>", "<publisher, dataset, date>"]`;
+    }
     const where = e?.position ? ` (line ${e.position.line}: ${String(e.position.lineText ?? "").trim()})` : "";
     return `${e?.message ?? String(e)}${where}`;
   };

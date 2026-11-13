@@ -246,6 +246,12 @@ describe("assertLegibleLabels", () => {
 });
 
 describe("errorText", () => {
+  // gx-bullet video (Qwen3.5-9B, 2026-11-13): three renders refused "no form wraps into 1 lines of 1715.686274509804px
+  // in Open Sans 30px", naming neither the field nor a length that fits.
+  it("should name source and a length that fits when no credit form fits the video's line", () => {
+    expect(errorText(new Error("no form wraps into 1 lines of 1715.686274509804px in Open Sans 30px"))).toMatch(/^source: .*1 line of 1716px.*about 103 characters/);
+  });
+
   it("should spell out each error of a failed build with its line", async () => {
     const dir = mkdtempSync(join(tmpdir(), "splash-build-"));
     writeFileSync(join(dir, "bad.mjs"), "const a = 1;\nconst a = 2;\nexport default {};\n");
