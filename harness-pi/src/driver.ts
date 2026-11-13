@@ -24,7 +24,7 @@ import {
   renderDigest,
   writeOutputReview,
 } from "../../skills/deliver/scripts/output-review.mjs";
-import { craftBriefing, unwrittenBeat, claimBlock, contractText, craftKit, kitGestures, recordFallback } from "./craft-kit.ts";
+import { craftBriefing, craftReads, unwrittenBeat, claimBlock, contractText, craftKit, kitGestures, recordFallback } from "./craft-kit.ts";
 import { converse } from "./conversation.ts";
 import { checkEditorProposals, describeProposals, editorBrief } from "./editor-check.ts";
 import type { Journalist } from "./journalist.ts";
@@ -434,13 +434,14 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
             },
           } as T)
         : t;
+    const cf = fsTools({ ...bases, ...craftReads(beatDir, beat) });
     const sess = await session(
       "skill:chart-beat",
       beat,
       `You are the chart-beat craft step of Splash, running locally. The Splash root is ${o.root}. The story is ${o.storyDir}. You act only through your tools.\n\n${await contractText(adapter, String(slot.format ?? "static"), { typedStaging, beat })}`,
       [
-        f.readFile,
-        f.listDir,
+        cf.readFile,
+        cf.listDir,
         refreshing(bt.writeFile),
         refreshing(bt.editFile),
         ...(staging ? [staging.recordGestures] : []),

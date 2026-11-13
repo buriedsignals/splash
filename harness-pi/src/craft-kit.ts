@@ -152,5 +152,25 @@ export function unwrittenBeat(beatDir: string, beat: string): string {
 export function craftBriefing(beatDir: string, beat: string): string {
   const file = join(beatDir, "beat.example.mjs");
   if (!existsSync(file)) return "";
-  return `\n\nbeats/${beat}/beat.example.mjs, the worked example, read for you (do not read it again, and do not read proof/: the example is all of it the beat needs):\n\`\`\`js\n${readFileSync(file, "utf8").trimEnd()}\n\`\`\`\nYour first call is write_file of beats/${beat}/beat.mjs, this story's own, written from this example, the takeaway and the data summary above.`;
+  // The example's header names the proof/ beat it was written from; that folder is not in the story, and the path
+  // alone sent Qwen3.5-9B listing proof/ for three attempts (gx-proportional-symbol video, 2026-11-13).
+  const example = readFileSync(file, "utf8").trimEnd().replace(/proof\/[\w.-]+/g, "the reference beat");
+  return `\n\nbeats/${beat}/beat.example.mjs, the worked example, read for you (do not read it again: it is all the reference the beat needs):\n\`\`\`js\n${example}\n\`\`\`\nYour first call is write_file of beats/${beat}/beat.mjs, this story's own, written from this example, the takeaway and the data summary above.`;
+}
+
+/** What a craft session's reads are answered with in code: proof/ is not the beat's (the example was written from it
+ *  and is all of it the beat needs), the worked example was given in the first message, and an unchanged reread is
+ *  sent to the step the beat waits for (gx-proportional-symbol video, Qwen3.5-9B, 2026-11-13: never written). */
+export function craftReads(beatDir: string, beat: string) {
+  const next = () =>
+    existsSync(join(beatDir, "beat.mjs"))
+      ? `Next: edit beats/${beat}/beat.mjs where the last refusal points, then render_beat (beat "${beat}").`
+      : `Next: write_file of beats/${beat}/beat.mjs, this story's own, from the worked example in your first message.`;
+  return {
+    answered: [
+      { match: /(^|\/)proof(\/|$)/, reply: `proof/ is not part of this beat: the worked example in your first message is all of it the beat needs. ${next().replace("Next: ", "Next: your call is ")}` },
+      { match: /beat\.example\.mjs$/, reply: `beats/${beat}/beat.example.mjs is in your first message, read for you. ${next()}` },
+    ],
+    noRereads: async () => next(),
+  };
 }

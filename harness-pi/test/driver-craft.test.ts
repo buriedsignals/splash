@@ -8,7 +8,7 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { claimBlock, contractText, craftKit, recordFallback, unwrittenBeat, craftBriefing } from "../src/craft-kit.ts";
+import { claimBlock, contractText, craftKit, recordFallback, unwrittenBeat, craftBriefing, craftReads } from "../src/craft-kit.ts";
 
 let craft: string;
 let beatDir: string;
@@ -133,5 +133,32 @@ describe("the craft briefing", () => {
     const dir = mkdtempSync(join(tmpdir(), "beat-"));
     writeFileSync(join(dir, "beat.example.mjs"), "export default { title: \"x\" };\n");
     expect(craftBriefing(dir, "1")).toMatch(/```js\nexport default \{ title: "x" \};\n```\nYour first call is write_file of beats\/1\/beat\.mjs/);
+  });
+});
+
+// gx-proportional-symbol video (Qwen3.5-9B, 2026-11-13): the example was in the first message, yet it read it again and
+// spent three attempts listing proof/ paths the example's header comment named; beat.mjs was never written.
+describe("the craft reads", () => {
+  it("should name no proof/ path in the briefing", () => {
+    const dir = mkdtempSync(join(tmpdir(), "beat-"));
+    writeFileSync(join(dir, "beat.example.mjs"), "// beat.mjs for the worked example proof/static-x-y — z\nexport default {};\n");
+    expect(craftBriefing(dir, "1")).not.toMatch(/proof\//);
+  });
+
+  it("should answer a read under proof/ with the write it is waiting for", () => {
+    const dir = mkdtempSync(join(tmpdir(), "beat-"));
+    const reply = craftReads(dir, "1").answered.find((a) => a.match.test("stories/s/proof/static-x/beat.mjs"))?.reply;
+    expect(reply).toMatch(/write_file of beats\/1\/beat\.mjs/);
+  });
+
+  it("should answer a read of the worked example it was already given", () => {
+    const dir = mkdtempSync(join(tmpdir(), "beat-"));
+    expect(craftReads(dir, "1").answered.some((a) => a.match.test("beats/1/beat.example.mjs"))).toBe(true);
+  });
+
+  it("should send an unchanged reread to the edit and the render once beat.mjs exists", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "beat-"));
+    writeFileSync(join(dir, "beat.mjs"), "export default {};");
+    expect(await craftReads(dir, "1").noRereads()).toMatch(/render_beat/);
   });
 });
