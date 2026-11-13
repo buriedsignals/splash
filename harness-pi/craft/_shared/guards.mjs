@@ -77,8 +77,14 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
   }
   const takeaway = field("takeaway");
   const norm = (t) => String(t).replace(/\s+/g, " ").trim().replace(/[.。]$/, "");
+  // Apostrophes and quotation marks are typography, not words: Qwen3.5-9B typed "d'un" for "d’un" and three renders
+  // refused a difference it cannot see (gx-proportional-symbol web, 2026-11-13). Equal but for them, the plate prints
+  // the journalist's own.
+  const plain = (t) => norm(t).replace(/[’‘ʼ`´]/g, "'").replace(/[«»“”„]/g, '"').replace(/\s+/g, "");
   const headline = [beat[title]].flat()[0];
-  if (takeaway && headline !== undefined && norm(headline) !== norm(takeaway))
+  if (takeaway && headline !== undefined && norm(headline) !== norm(takeaway) && plain(headline) === plain(takeaway))
+    beat[title] = Array.isArray(beat[title]) ? [takeaway, ...beat[title].slice(1)] : takeaway;
+  else if (takeaway && headline !== undefined && norm(headline) !== norm(takeaway))
     throw new Error(`title's first form must be the journalist's takeaway copied as a literal string, not computed. It renders as: "${norm(headline)}" — it must be: "${takeaway}"`);
   // The plate may draw a shorter form instead of the takeaway; a 26B wrote those in French under `language: en` (G2).
   const language = String(field("language") ?? "").toLowerCase().slice(0, 2);

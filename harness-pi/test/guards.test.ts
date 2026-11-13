@@ -104,6 +104,18 @@ describe("applyStoryboard", () => {
     expect(() => b.check()).toThrow(/^the biggest gain is France's, not Poland's$/);
   });
 
+  // gx-proportional-symbol web (Qwen3.5-9B, 2026-11-13): the takeaway's "d’un" was typed "d'un", three renders
+  // refused a difference the model cannot see, and the session stopped on the same failure.
+  it("should take a title that differs from the takeaway only by its apostrophes, and print the journalist's own", () => {
+    const root = mkdtempSync(join(tmpdir(), "splash-quote-"));
+    const dir = join(root, "beats", "1");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(root, "STORYBOARD.md"), `---\ntakeaway: "Un tiers d’Europe, « en bas »"\n---\n`);
+    const b: Record<string, unknown> = { title: ["Un tiers d'Europe, \"en bas\"", "court"] };
+    applyStoryboard(b, dir);
+    expect(b.title).toEqual(["Un tiers d’Europe, « en bas »", "court"]);
+  });
+
   // gx-bullet web (Qwen3.5-9B, 2026-11-13): the credit line ended "· as of 2025-06-26" on a French plate.
   it("should date the credit in the story's language", () => {
     const root = mkdtempSync(join(tmpdir(), "splash-asof-"));
