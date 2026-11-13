@@ -285,8 +285,13 @@ export function createGeoPoint({ variant, marks, bounds = null, span = { lon: 2.
         const own = ids.map((n) => byName.get(n)?.value).filter(Number.isFinite);
         const ends = [Math.max(...own), Math.min(...own), ids.length, sum(ids)];
         const near = (a, b) => Math.abs(a - b) <= 0.5;
+        // At the note's unit: the group's MW total may be printed in GW.
+        const atScale = (v, n) => [1, 1e-3, 1e-6].some((k) => Math.abs(v * k - n.value) <= 0.5 * 10 ** -n.decimals + 1e-9);
         for (const n of figuresIn(g.note)) {
-          if (n.percent || ends.some((v) => near(v, n.value)) || !own.some((v) => near(v, n.value))) continue;
+          if (n.percent || ends.some((v) => near(v, n.value))) continue;
+          // A highlight's figure that is none of its set's own (8900, every site) was offered the nearest drawn value by
+          // the core — the largest plant's 6000 MW as "6000 sites" (12B, gx-proportional-symbol static, 2026-11-13).
+          if (!own.some((v) => near(v, n.value)) && (g.do !== "highlight" || ends.some((v) => atScale(v, n)))) continue;
           const fixed = g.note.slice(0, n.index) + String(ids.length) + g.note.slice(n.index + n.raw.length);
           throw new GestureRefusal(`gestures[${i}].note`, `states ${n.raw}, the value of one of its ${ids.length} marks, not of the group: a group note states its count (${ids.length}), its total, its largest or its smallest — write "${fixed}"`, {
             set: { index: i, field: "note", value: fixed },

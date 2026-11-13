@@ -230,6 +230,48 @@ describe("proportional symbol gestures", () => {
     expect(error.fix?.set?.value).toBe(`${nuclearSites.length} nuclear sites`);
   });
 
+  // gx-proportional-symbol static (12B, 2026-11-13): "8900 sites nucléaires" (every site) was offered the nearest
+  // drawn value, the largest plant's 6000 MW, as "6000 sites nucléaires"; the 12B wrote it and looped three passes.
+  it("should offer the group's count for a highlight note stating a count the group does not hold", () => {
+    const error = refusal(() =>
+      stage(
+        "symbol",
+        SYMBOL,
+        SYMBOL_CLAIM,
+        "static",
+        [
+          {
+            do: "highlight",
+            mark: "Nuclear",
+            note: `${SYMBOL.length} nuclear sites`,
+          },
+        ],
+        statics,
+      ),
+    );
+    expect(error.fix?.set?.value).toBe(`${nuclearSites.length} nuclear sites`);
+  });
+
+  it("should accept a highlight note stating the group's total in a larger unit", () => {
+    const total = nuclearSites.reduce((t: number, m: any) => t + m.value, 0);
+    const gw = () =>
+      stage(
+        "symbol",
+        SYMBOL,
+        SYMBOL_CLAIM,
+        "static",
+        [
+          {
+            do: "highlight",
+            mark: "Nuclear",
+            note: `${Math.round(total / 1000)} GW`,
+          },
+        ],
+        statics,
+      );
+    expect(gw).not.toThrow();
+  });
+
   it("should give the web page a resting state and a filter control that differ", () => {
     const { scheduled } = stage(
       "symbol",
