@@ -541,6 +541,10 @@ export function errorText(error) {
     const lone = e?.position && /^\s*([`'"])\s*$/.exec(String(e.position.lineText ?? ""));
     if (lone)
       return `${e.message}${where}: line ${e.position.line} holds only a stray ${lone[1]} that opens a string nothing closes — a value that works: delete line ${e.position.line} (edit_file its "${lone[1]}" line, with the line before it, to that line alone)`;
+    // The same stray quote on the closing line itself: "};`," (gx-proportional-symbol web, 12B, 2026-11-14).
+    const tail = e?.position && /^\s*(\}\s*;?)\s*([`'"])[\s,;]*$/.exec(String(e.position.lineText ?? ""));
+    if (tail)
+      return `${e.message}${where}: line ${e.position.line} closes the beat, then a stray ${tail[2]} opens a string nothing closes — a value that works: line ${e.position.line} reads "${tail[1].replace(/\s+/g, "")}" alone (edit_file "${String(e.position.lineText).trim()}" to "${tail[1].replace(/\s+/g, "")}")`;
     // gx-proportional-symbol web (Qwen3.5-9B, q8, 2026-11-13): "…centrales.`," closed a top-level statement, and the
     // refusal quoted only the next declaration's line; six edits there, never on the comma.
     const comma = commaBefore(e);
@@ -866,6 +870,7 @@ export function assertNoCategoryDropped(symbols, here, said = "") {
 // Every way a reader may write a country on the plate: the map's own name, data.json's spelling, and its name in the
 // languages Splash writes in, by ISO-2 through Intl ("Syrie", "Algérie", "Maroc").
 let spoken;
+const twoOf = new Map(); // ISO-3 -> ISO-2, for the name a sentence in the story's language gives
 function spokenNames(features) {
   if (spoken) return spoken;
   spoken = new Map();
@@ -877,6 +882,7 @@ function spokenNames(features) {
       if (!en || en === two) continue;
       const hit = codeFor(en, features);
       if (!hit?.exact) continue;
+      if (!twoOf.has(hit.code)) twoOf.set(hit.code, two);
       const names = spoken.get(hit.code) ?? new Set();
       for (const d of langs) names.add(words(d.of(two)));
       spoken.set(hit.code, names);
@@ -884,7 +890,8 @@ function spokenNames(features) {
   return spoken;
 }
 const words = (s) => ` ${norm(s).replace(/[^a-z]+/g, " ").trim()} `;
-const LEFT_OUT = /\b(hors|sauf|exclu|ecart|laisse|omis|sans|ohne|ausgenommen|excepto|sin|fuera|tranne|escluso|exclud|except|left out|leaves out|omit|outside|not shown|not drawn)/;
+const NOT_DRAWN = { fr: "Hors carte : ", en: "Not on the map: ", de: "Nicht auf der Karte: ", es: "Fuera del mapa: ", it: "Fuori dalla mappa: ", pt: "Fora do mapa: ", nl: "Niet op de kaart: " };
+const LEFT_OUT = /\b(hors|sauf|exclu|ecart|laisse|omis|sans|ohne|ausgenommen|excepto|sin|fuera|fora|tranne|nicht auf|niet op|escluso|exclud|except|left out|leaves out|omit|outside|not shown|not drawn)/;
 
 /**
  * The places data.json holds and the symbols leave out, held to the plate's own words. The 12B's bubble map web
@@ -938,5 +945,9 @@ export function assertPlacesLeftOutStated(symbols, here, said = "") {
   if (!unsaid.length) return;
   const smallest = Math.min(...[...held].filter(([k]) => drawn.has(k)).map(([, h]) => h.total));
   if (m >= 0 && out.every(([, h]) => h.total <= smallest)) return;
-  throw new Error(`the symbols leave out ${unsaid.length} of data.json's ${held.size} places without a word on the plate: ${unsaid.slice(0, 6).map(([, h]) => JSON.stringify(h.name)).join(", ")}${unsaid.length > 6 ? ", …" : ""}. Draw them, or name each one the standfirst leaves out (as data.json writes it, or in the plate's language)`);
+  const lang = String(front(here)?.("language") ?? "en").toLowerCase().slice(0, 2);
+  const label = NOT_DRAWN[lang] ?? NOT_DRAWN.en;
+  const shown = (k, name) => { try { return twoOf.has(k) ? new Intl.DisplayNames([lang], { type: "region" }).of(twoOf.get(k)) : name; } catch { return name; } };
+  const sentence = `${label}${out.map(([k, h]) => shown(k, h.name)).join(", ")}.`;
+  throw new Error(`the symbols leave out ${unsaid.length} of data.json's ${held.size} places without a word on the plate: ${unsaid.slice(0, 6).map(([, h]) => JSON.stringify(h.name)).join(", ")}${unsaid.length > 6 ? ", …" : ""} — a value that works: add to limits "${sentence}" (or draw them)`);
 }

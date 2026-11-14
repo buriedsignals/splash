@@ -92,3 +92,30 @@ describe("assertPlacesLeftOutStated", () => {
     ).not.toThrow();
   });
 });
+
+describe("assertPlacesLeftOutStated's refusal", () => {
+  const frBeat = () => {
+    const here = beat();
+    writeFileSync(join(here, "..", "..", "STORYBOARD.md"), '---\nsubject: "Les centrales"\nlanguage: fr\n---\n');
+    return here;
+  };
+  const refusal = () => {
+    try {
+      assertPlacesLeftOutStated(drawn("France", "Germany", "Spain"), frBeat(), "Les centrales d'Europe.");
+    } catch (e) {
+      return (e as Error).message;
+    }
+    return "";
+  };
+
+  it("should give the sentence to add to limits, in the story's language", () => {
+    expect(refusal()).toMatch(/a value that works: add to limits "Hors carte : Algérie, Syrie, Maroc\."/);
+  });
+
+  it("should pass once that sentence is on the plate", () => {
+    const sentence = /add to limits "([^"]+)"/.exec(refusal())?.[1] ?? "";
+    expect(() =>
+      assertPlacesLeftOutStated(drawn("France", "Germany", "Spain"), frBeat(), `Les centrales d'Europe. ${sentence}`),
+    ).not.toThrow();
+  });
+});
