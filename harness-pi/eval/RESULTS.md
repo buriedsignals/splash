@@ -1084,7 +1084,10 @@ beat.mjs, the second rendered. Figures checked against data.json: the mean by co
 countries (title 65,1 %, pull-back note 65,1 %), Russia 35.9 %, Ukraine shown as not reported. Open: the title's
 second figure, "au kilomètre carré, à 44,9 %", is the seeded takeaway's — data.json has no area column, nothing on the
 plate draws or derives it, and no guard asked; a tile cartogram cannot show it, so it is the storyboard's to drop or
-the data's to carry.
+the data's to carry. Closed by 26f9fb446: on a map whose values are percentages the headline guard now checks the
+title's % figures too (the mean counts as a reading) and offers the title without the clause; replayed on the kept
+beats it refuses 44,9 and passes both true choropleth titles. The bubble web kit's standfirst cut (Mercator sentence)
+is closed by 77d3efae2: the sentence moves to the reading line, which chart-web folds into the readings disclosure.
 
 
 The same pass carried the guards the web and video kits gained to the static (`.gestures`, the default) and scrolly
