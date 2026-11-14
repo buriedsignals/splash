@@ -123,6 +123,14 @@ describe("a stray quote after the end of beat.mjs", () => {
     expect(readFileSync(join(dir, "beat.mjs"), "utf8")).toBe("export default {\n  title: `t`,\n};\n");
   });
 
+  // gx-proportional-symbol web (12B, 2026-11-14): the file ended "};" then "`,"; six refused passes on line 121.
+  it("should remove a stray quote followed by a comma", () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-stray-"));
+    writeFileSync(join(dir, "beat.mjs"), "export default {\n  title: `t`,\n};\n`,\n");
+    expect(trimStrayTail(join(dir, "beat.mjs"))).toMatch(/removed line 4/);
+    expect(readFileSync(join(dir, "beat.mjs"), "utf8")).toBe("export default {\n  title: `t`,\n};\n");
+  });
+
   it("should leave a beat whose last line is code", () => {
     const dir = mkdtempSync(join(tmpdir(), "splash-stray-"));
     writeFileSync(join(dir, "beat.mjs"), "export default {\n  title: `t\n`,\n};\n");

@@ -125,7 +125,7 @@ export function trimStrayTail(file: string): string {
   let end = lines.length;
   while (end > 0 && lines[end - 1].trim() === "") end--;
   const removed: number[] = [];
-  while (end > 1 && /^\s*[`'"]\s*$/.test(lines[end - 1])) {
+  while (end > 1 && /^\s*[`'"]\s*[,;]?\s*$/.test(lines[end - 1])) {
     let prev = end - 2;
     while (prev >= 0 && lines[prev].trim() === "") prev--;
     if (prev < 0 || !/^\s*\};?\s*$/.test(lines[prev])) break;
@@ -134,7 +134,7 @@ export function trimStrayTail(file: string): string {
   }
   if (!removed.length) return "";
   writeFileSync(file, `${lines.slice(0, end).join("\n")}\n`);
-  return `the harness removed line ${removed.reverse().join(", ")} of beat.mjs: a lone quote after the closing "};"\n`;
+  return `the harness removed line ${removed.reverse().join(", ")} of beat.mjs: a lone quote (and its comma) after the closing "};"\n`;
 }
 
 /** An unquoted object key with a space (`Czech Republic: "Tchéquie"`) never parses. Told the quoted key six times,
