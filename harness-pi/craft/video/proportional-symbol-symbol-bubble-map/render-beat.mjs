@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { sizeFor, videoExportSize } from "#shared/chart-video/sizes.mjs";
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
-import { applyStoryboard, assertDrawsClaimColumn, assertFigureMatchesValue, assertHeadlineNumbersDrawn, assertNoCategoryDropped, assertPlacesLeftOutStated, assertSymbolUnitStated, assertNoEmptySplice } from "./guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertFigureMatchesValue, assertHeadlineNumbersDrawn, assertNoCategoryDropped, assertPlacesLeftOutStated, assertSymbolUnitStated, assertNoEmptySplice, assertNoWholeAsPart } from "./guards.mjs";
 import { mapTilerKey, measureMap, renderMapVideo } from "./map-video.mjs";
 import { assertEventFramesReadable, pickDirection, plain, refusing } from "./video.mjs";
 
@@ -45,7 +45,7 @@ await refusing(HERE, async () => {
   const said = [beat.title, beat.limits, beat.limitNote, beat.subjectNote].flat().filter((t) => typeof t === "string").join(" ");
   assertNoCategoryDropped(beat.symbols, HERE, said);
   assertPlacesLeftOutStated(beat.symbols, HERE, said);
-  assertNoEmptySplice({ title: beat.title, limits: beat.limits, limitNote: beat.limitNote, subjectNote: beat.subjectNote });
+  for (const guard of [assertNoEmptySplice, assertNoWholeAsPart]) guard({ title: beat.title, limits: beat.limits, limitNote: beat.limitNote, subjectNote: beat.subjectNote });
   assertSymbolUnitStated(beat.symbols, HERE, said);
   assertFigureMatchesValue(beat.figure, [...subject.keyValues, ...subject.ranked.slice(0, TOP).map((s) => s.mw)], HERE);
   assertHeadlineNumbersDrawn([beat.title].flat()[0], [TOP, subject.total - TOP, r1(subject.shareTop), r1(100 - subject.shareTop), ...subject.ranked.slice(0, TOP).map((s) => s.mw)], "circles");

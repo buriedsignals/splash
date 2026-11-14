@@ -59,3 +59,42 @@ describe.skipIf(!existsSync(join(BENCH, "package.json")) || !existsSync(I17))("t
     expect(`${run.stdout}${run.stderr}`).toMatch(/alt prints "ensuite \."/);
   }, 120_000);
 });
+
+import { assertNoWholeAsPart } from "../craft/_shared/guards.mjs";
+
+// i19 (12B, 2026-11-14): `ranked.slice(0, 100)` over 41 country symbols, and alt printed "Ces 100 premiers sites
+// couvrent 100 % de la capacité" — the whole stated as a part. The 89 largest sites carry 40.8 %.
+describe("assertNoWholeAsPart", () => {
+  it("should refuse a top N stated to make up 100 %", () => {
+    expect(() =>
+      assertNoWholeAsPart({ alt: "Ces 100 premiers sites couvrent 100 % de la capacité du continent ; le reste…" }, { symbols: 41 }),
+    ).toThrow(/alt says the 100 first make up 100 %.*41 symbols/);
+  });
+
+  it("should refuse it in English and with a decimal", () => {
+    expect(() => assertNoWholeAsPart({ reading: "The 10 largest plants hold 100.0 % of the power." }, { symbols: 8 })).toThrow(/reading/);
+  });
+
+  it("should pass a true share and a whole stated as a whole", () => {
+    expect(() =>
+      assertNoWholeAsPart({ alt: "Les 89 premiers sites couvrent 40,8 % ; les 41 pays font 100 % de la capacité." }, { symbols: 41 }),
+    ).not.toThrow();
+  });
+});
+
+const I19 = join(homedir(), ".splash-harness", "kept-runs", "gx-proportional-symbol-symbol-bubble-map-web-seeded-osaurus-1794670487949");
+const story19 = join(BENCH, "stories", `zz-whole-as-part-test-${process.pid}`);
+afterAll(() => rmSync(story19, { recursive: true, force: true }));
+
+describe.skipIf(!existsSync(join(BENCH, "package.json")) || !existsSync(I19))("the bubble-map web kit, on i19", () => {
+  it("should refuse i19's beat, whose alt gives its top 100 the whole capacity", () => {
+    const at = join(story19, "beats", "1");
+    mkdirSync(at, { recursive: true });
+    for (const f of ["PALETTE.md", "DIRECTION.md", "STORYBOARD.md"]) cpSync(join(I19, f), join(story19, f));
+    for (const src of [join(HARNESS, "craft", "_shared"), join(HARNESS, "craft", "web", "proportional-symbol-symbol-bubble-map")])
+      for (const f of readdirSync(src)) cpSync(join(src, f), join(at, f), { recursive: true });
+    for (const f of ["data.json", "beat.mjs"]) cpSync(join(I19, "beats", "1", f), join(at, f));
+    const run = Bun.spawnSync(["bun", join(at, "render-beat.mjs")], { cwd: BENCH, stdout: "pipe", stderr: "pipe" });
+    expect(`${run.stdout}${run.stderr}`).toMatch(/alt says the 100 first make up 100 %/);
+  }, 120_000);
+});

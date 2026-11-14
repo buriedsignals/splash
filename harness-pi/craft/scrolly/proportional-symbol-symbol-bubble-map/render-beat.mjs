@@ -33,7 +33,7 @@ import { validateExpressions } from "#shared/map-beat/mount.mjs";
 import { cameraFields, lonLatOf, mercatorOf, stageViewOf, validateScrollyPlan, zoomShiftFor } from "#shared/map-beat/scrolly.mjs";
 import { plateTints } from "#shared/map-beat/tints.mjs";
 import { arrivalsFor, proportionalPlan } from "./plan.mjs";
-import { applyStoryboard, assertNumbers, assertLegibleLabels, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, assertNoCategoryDropped, assertPlacesLeftOutStated, assertSymbolUnitStated, assertNoEmptySplice } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertLegibleLabels, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, assertNoCategoryDropped, assertPlacesLeftOutStated, assertSymbolUnitStated, assertNoEmptySplice, assertNoWholeAsPart } from "./guards.mjs";
 import { plain, refusing, storyLanguage } from "./web.mjs";
 import { renderBeatScrolly, scrollySkill } from "./scrolly.mjs";
 import { figureCheck, liveGuard, maptilerKey, openCards, owes, renderCardsPage, wordsOf } from "./scrolly-map.mjs";
@@ -219,7 +219,7 @@ await refusing(HERE, async () => {
   const placed = beat.sites.map((s) => ({ name: String(s.region ?? ""), value: s.value }));
   assertNoCategoryDropped(placed, HERE, said);
   assertPlacesLeftOutStated(placed, HERE, said);
-  assertNoEmptySplice({ title: [beat.title].flat().map(plain), limits, cards: cardProse.flat(), alt });
+  for (const guard of [assertNoEmptySplice, assertNoWholeAsPart]) guard({ title: [beat.title].flat().map(plain), limits, cards: cardProse.flat(), alt });
   assertSymbolUnitStated(placed, HERE, said);
   if (!Array.isArray(beat.keySizes) || beat.keySizes.length < 1 || beat.keySizes.length > 4 || beat.keySizes.some((v) => !(v > 0 && v <= first.value)))
     throw new Error(`keySizes must be 1 to 4 round values for the key's circles, each above zero and at most the largest (${first.value}); got ${JSON.stringify(beat.keySizes)}`);

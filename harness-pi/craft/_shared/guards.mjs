@@ -1022,6 +1022,32 @@ export function assertNoEmptySplice(fields) {
 }
 
 /**
+ * "The N largest … make up 100 %" states the whole as a part: the share was summed over a slice that held every row,
+ * most often `ranked.slice(0, N)` over the symbols when the sentence ranks the rows under them (i19, 12B, 2026-11-14:
+ * "Ces 100 premiers sites couvrent 100 %" over 41 country circles; the 89 largest sites carry 40.8 %).
+ */
+export function assertNoWholeAsPart(fields, { symbols } = {}) {
+  const top = /\b(\d[\d\s ]*)\s+(?:premi(?:er|ère)s|plus\s+grand(?:e)?s|largest|biggest|first|top)\b|\b(?:top|premiers?)\s+(\d+)\b/giu;
+  const whole = /(?<![\d,.])100(?:[.,]0+)?\s*%/u;
+  for (const [field, value] of Object.entries(fields)) {
+    for (const text of [value].flat()) {
+      if (typeof text !== "string") continue;
+      for (const sentence of text.split(/(?<=[.;!?])\s+/u)) {
+        top.lastIndex = 0;
+        const m = top.exec(sentence);
+        if (!m || !whole.test(sentence.slice(m.index + m[0].length))) continue;
+        const n = (m[1] ?? m[2]).replace(/\D/g, "");
+        throw new Error(
+          `${field} says the ${n} first make up 100 % ("${sentence.trim().slice(0, 120)}"): a part stated as the whole — the share was summed over a slice that held every row` +
+            (symbols ? ` (slicing ${n} out of the ${symbols} symbols keeps them all)` : "") +
+            ` — a value that works: rank and slice the rows the sentence counts (data.json's own rows), then divide by the same total`,
+        );
+      }
+    }
+  }
+}
+
+/**
  * A circle drawn under the legibility floor reads as no data. The shared area scale refuses it in its own keys and
  * asks for a larger anchor radius, a constant the beat cannot touch (i18, 12B, 2026-11-14): this names the places
  * and the smallest value a circle can be drawn at, in the beat's own terms.
