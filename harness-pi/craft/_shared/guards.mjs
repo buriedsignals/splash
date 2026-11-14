@@ -1015,3 +1015,20 @@ export function assertNoEmptySplice(fields) {
     }
   }
 }
+
+/**
+ * A circle drawn under the legibility floor reads as no data. The shared area scale refuses it in its own keys and
+ * asks for a larger anchor radius, a constant the beat cannot touch (i18, 12B, 2026-11-14): this names the places
+ * and the smallest value a circle can be drawn at, in the beat's own terms.
+ */
+export function assertNoneUnderFloor(rows, { maxRadius, floor, exponent }) {
+  const max = Math.max(...rows.map((r) => r.value));
+  const radius = (v) => maxRadius * (v / max) ** exponent;
+  const under = rows.filter((r) => radius(r.value) < floor);
+  if (!under.length) return;
+  const least = Math.ceil(max * (floor / maxRadius) ** (1 / exponent));
+  const names = under.slice(0, 8).map((r) => r.name).join(", ") + (under.length > 8 ? `, … (${under.length - 8} more)` : "");
+  throw new Error(
+    `symbols: ${under.length} of ${rows.length} places are drawn under the ${floor} px legibility floor (${names}): beside the largest, their circles read as no data — a value that works: keep the symbols with value >= ${least} and leave out the ${under.length} others, then say on the plate which ones are not drawn (the refusal that follows gives the sentence)`,
+  );
+}

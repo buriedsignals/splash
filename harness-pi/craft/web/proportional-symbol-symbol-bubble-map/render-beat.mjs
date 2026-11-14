@@ -23,7 +23,7 @@ import { guardColour } from "#shared/design-base/compose.mjs";
 import { assertNotFallback, maptilerGlyphs } from "#shared/map-beat/glyphs.mjs";
 import { frameProjector, markOccupancy, occupancyLine } from "#shared/map-beat/occupancy.mjs";
 import { countryGround, plateGrounds, plateTints } from "#shared/map-beat/tints.mjs";
-import { applyStoryboard, assertDrawsClaimColumn, assertFigureMatchesValue, assertHeadlineNumbersDrawn, assertNumbers, assertNoCategoryDropped, assertPlacesLeftOutStated, assertSymbolUnitStated, assertNoEmptySplice } from "./guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertFigureMatchesValue, assertHeadlineNumbersDrawn, assertNumbers, assertNoCategoryDropped, assertPlacesLeftOutStated, assertSymbolUnitStated, assertNoEmptySplice, assertNoneUnderFloor } from "./guards.mjs";
 import { ensurePlate, liveAssets, mapWeb, maptilerKey, renderLiveMapPage, verifyLiveMap } from "./map-web.mjs";
 import { plateWaterField } from "./plate-water.mjs";
 import { chartWeb, pickDirection, plain, plainRegisters, refusing, storyLanguage } from "./web.mjs";
@@ -92,6 +92,8 @@ await refusing(HERE, async () => {
 
   beat.check({ ranked: rows.map((r) => ({ name: r.name, iso: r.iso, value: r.value })), total, value: (name) => rows.find((r) => r.name === name)?.value ?? null });
   assertDrawsClaimColumn(rows.map((r) => r.value), HERE);
+  // The default law is the area law: the shared scale would refuse its erased places later, in its own keys.
+  assertNoneUnderFloor(rows, { maxRadius: R_MAX, floor: R_FLOOR, exponent: LAWS[0].exponent });
   const said = [beat.title, beat.limits, beat.reading, beat.hint].flat().filter((t) => typeof t === "string").join(" ");
   assertNoCategoryDropped(beat.symbols, HERE, said);
   assertPlacesLeftOutStated(beat.symbols, HERE, said);
