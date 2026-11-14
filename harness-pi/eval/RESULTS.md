@@ -1079,6 +1079,13 @@ the kept beat: two repairs, the seven drawn, France included.
 Open: the beat's `check()` is replaced by code's `claimCheck`, which decides maximum/minimum/comparison claims only — a
 "seven countries at 94 %" count in the title is held to nothing but the filter's own note.
 
+**Tile cartogram web, 12B (2026-11-14).** Two passes, 20 turns, 1824 s: the first hit the 15-min cap before writing
+beat.mjs, the second rendered. Figures checked against data.json: the mean by country is 65.09 % over the 40 reporting
+countries (title 65,1 %, pull-back note 65,1 %), Russia 35.9 %, Ukraine shown as not reported. Open: the title's
+second figure, "au kilomètre carré, à 44,9 %", is the seeded takeaway's — data.json has no area column, nothing on the
+plate draws or derives it, and no guard asked; a tile cartogram cannot show it, so it is the storyboard's to drop or
+the data's to carry.
+
 
 The same pass carried the guards the web and video kits gained to the static (`.gestures`, the default) and scrolly
 bubble-map kits (`20a46e5b6`), kept a point-map note off the plate's circles (`1489cef26`), and made `iso3Of`'s
