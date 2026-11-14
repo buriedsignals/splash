@@ -519,6 +519,29 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
           );
         }
       }
+      // A compare's note states each mark's own figure once. "+119 TWh contre +119 TWh pour la France" passed
+      // (gx-stacked-bar, the 12B, 2026-11-14): Spain's 119 twice, France's 50 never — each figure was one the compare
+      // draws, and France's name stands after its figure, where the check above does not look.
+      if (g.do === "compare" && marks.length > 1) {
+        const figuresOf = (m) => [valueOf.get(m), ...(claim.facts?.[m] ?? [])].filter(Number.isFinite);
+        const hit = (n, f) => matches(n, f) || matches(n, f * 10 ** scale);
+        const owners = stated
+          .map((n) => ({ n, of: marks.filter((m) => figuresOf(m).some((f) => hit(n, f))) }))
+          .filter((x) => x.of.length > 0);
+        if (owners.length === marks.length && owners.every((x) => x.of.length === 1)) {
+          const missing = marks.filter((m) => !owners.some((x) => x.of[0] === m) && Number.isFinite(valueOf.get(m)));
+          const twice = owners.find((x, j) => owners.slice(0, j).some((y) => y.of[0] === x.of[0]));
+          if (missing.length && twice) {
+            const own = valueOf.get(missing[0]);
+            const fixed = g.note.slice(0, twice.n.index) + formatLike(twice.n, own) + g.note.slice(twice.n.index + twice.n.raw.length);
+            throw new GestureRefusal(
+              `gestures[${i}].note`,
+              `states ${twice.n.raw} twice, ${twice.of[0]}'s figure, and never ${missing[0]}'s ${formatLike(twice.n, own)}: write "${fixed}"`,
+              { set: { index: i, field: "note", value: fixed } },
+            );
+          }
+        }
+      }
       if (marks.length === 1 && ["name", "annotate", "highlight"].includes(g.do))
         for (const [word, holds, said] of RANK_WORDS) {
           // A rank word may speak of another column the row is ranked by ("the most beds", raw, beside a rate).

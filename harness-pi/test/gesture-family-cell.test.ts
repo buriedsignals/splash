@@ -535,3 +535,25 @@ describe("a note's figure belongs to the mark it follows", () => {
     ).not.toThrow();
   });
 });
+
+// gx-stacked-bar static (the 12B, 2026-11-14): "+119 TWh contre +119 TWh pour la France" — Spain's figure twice,
+// France's 50 never. Each figure is one the compare draws, and France's name stands after its figure, not before.
+describe("a compare's note states each mark's own figure", () => {
+  const top = HEAT.rows[0].label;
+  const hydro = cellOf(HEAT, top, "Hydro");
+  const france = cellOf(HEAT, "France", "Nuclear");
+  const compare = (note: string) => [{ do: "compare", marks: [hydro.name, france.name], note }];
+
+  it("should refuse a note that states one mark's figure for both", () => {
+    const error = refusal(() =>
+      stage(HEAT, HEAT_CLAIM, "static", compare(`${one(hydro.value)} % contre ${one(hydro.value)} % pour la France`)),
+    );
+    expect(error.fix.set.value).toBe(`${one(hydro.value)} % contre ${one(france.value)} % pour la France`);
+  });
+
+  it("should accept a note that states each mark's figure once", () => {
+    expect(() =>
+      stage(HEAT, HEAT_CLAIM, "static", compare(`${one(hydro.value)} % contre ${one(france.value)} % pour la France`)),
+    ).not.toThrow();
+  });
+});
