@@ -351,7 +351,7 @@ export function createGeo({ variant, rows, breaks, cameras = {}, seats = {}, gro
       .map((n) => {
         const step = 10 ** -n.decimals;
         const works = Math.floor(low / step + 1e-9) * step;
-        return { n, low, high, holds: low >= n.value && high < n.value, works: works > high ? works : null };
+        return { n, low, high, holds: low >= n.value && high < n.value, works: works > high ? works : null, reach: marks.filter((m) => !keys.has(m.key) && m.value >= n.value).map((m) => m.key) };
       });
   };
 
@@ -405,6 +405,11 @@ export function createGeo({ variant, rows, breaks, cameras = {}, seats = {}, gro
       // 98.8 % (rounded) with France kept at 94.9 % (gx-choropleth, 12B, 2026-11-14).
       for (const t of thresholdsOf(g, names)) {
         if (t.holds) continue;
+        // Every kept place reaches it and some left out do too: the filter dropped them, not the note overstated.
+        if (t.low >= t.n.value && t.reach.length)
+          throw new GestureRefusal(`gestures[${i}].marks`, `the note states ${t.n.raw} % as a threshold, and ${t.reach.join(", ")} reach it but the filter leaves them out: add them to marks`, {
+            set: { index: i, field: "marks", value: [...g.marks, ...t.reach] },
+          });
         if (t.works === null)
           throw new GestureRefusal(`gestures[${i}].note`, `states ${t.n.raw} % as a threshold, but no ${t.n.raw}-like figure has every kept place at or above it and every other below: drop the threshold from the note, or keep the places at or above a class limit`, {
             set: { index: i, field: "note", value: undefined },

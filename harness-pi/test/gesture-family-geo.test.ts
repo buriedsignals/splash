@@ -229,6 +229,22 @@ describe("choropleth", () => {
     );
     expect(e.fix).toEqual({ set: { index: 0, field: "note", value: `${keys.length} countries at 94 % or more` } });
   });
+  // Qwen (2026-11-14, re-run): marks listed by hand left France (94.9 %) out under "6 pays à 94 % ou plus"; the note
+  // was then repaired to "95", and the plate greyed France under a title of seven at 94. The filter is the error.
+  it("should add the places left out that reach a stated threshold, keeping the threshold", () => {
+    const geo = choropleth();
+    const keys = above(geo, 94);
+    const fewer = keys.filter((k) => k !== "FRA");
+    const e = refusalOf(() =>
+      stageGeo({
+        gestures: [{ do: "filter", marks: fewer, note: `${fewer.length} countries at 94 % or more` }],
+        geo,
+        format: "static",
+        claim: LOWCARBON,
+      }),
+    );
+    expect(e.fix).toEqual({ set: { index: 0, field: "marks", value: [...fewer, "FRA"] } });
+  });
   it("should accept a true threshold that is not a class limit", () => {
     const geo = createGeo({ variant: "choropleth", rows: lowCarbon(), breaks: [40, 55, 70, 85, 95] });
     const keys = above(geo, 94);

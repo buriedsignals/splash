@@ -1070,6 +1070,12 @@ Re-run after both fixes (12B, 2026-11-14): exit 0, 27 turns, 556 s, one pass. **
 (94 % and over) holds exactly the seven of data.json — Iceland, Norway, Sweden, Finland, France, Switzerland, Albania —
 the note reads "Albanie, 100,0 %" with the French decimal mark, and the breaks keep the model's own 94.
 
+Qwen re-run (2026-11-14): exit 0, 13 turns, 795 s. Its filter listed six by hand, leaving out France (94.9 %), under
+"6 pays à 94 % ou plus"; the threshold rule repaired the NOTE to "95" — true of the six, but the plate greyed France
+under a title of seven at 94. `the next commit`: when every kept place reaches the stated threshold and some left out
+do too, the filter is the error — the fix adds them to `marks`, and the count rule then writes "7 pays". Replayed on
+the kept beat: two repairs, the seven drawn, France included.
+
 Open: the beat's `check()` is replaced by code's `claimCheck`, which decides maximum/minimum/comparison claims only — a
 "seven countries at 94 %" count in the title is held to nothing but the filter's own note.
 
