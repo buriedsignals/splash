@@ -951,3 +951,44 @@ export function assertPlacesLeftOutStated(symbols, here, said = "") {
   const sentence = `${label}${out.map(([k, h]) => shown(k, h.name)).join(", ")}.`;
   throw new Error(`the symbols leave out ${unsaid.length} of data.json's ${held.size} places without a word on the plate: ${unsaid.slice(0, 6).map(([, h]) => JSON.stringify(h.name)).join(", ")}${unsaid.length > 6 ? ", …" : ""} — a value that works: add to limits "${sentence}" (or draw them)`);
 }
+
+const MARK = "(?:cercles?|disques?|bulles?|symboles?|circles?|bubbles?|discs?|kreis(?:e)?|c[ií]rculos?|cerchi[oa]?|cirkels?)";
+const EACH = "(?:par|pour chaque|per|for each|for every|pro|je|por|para cada|ogni|por cada)";
+const PER_COUNTRY = { fr: "un cercle par pays", en: "one circle per country", de: "ein Kreis pro Land", es: "un círculo por país", it: "un cerchio per paese", pt: "um círculo por país", nl: "één cirkel per land" };
+const COUNTRY_WORDS = /^(pays|country|countries|nation|nations|land|lander|pais|paises|paese|paesi|landen|etat|etats|state|states)$/;
+
+/**
+ * What one circle stands for, held to the plate's words. Qwen3.5-9B's bubble map web (2026-11-13) summed data.json's
+ * plants into one circle per country, and limits and alt still said "Un cercle par centrale", copied from the
+ * storyboard. When the symbols sum several rows of data.json, "one circle per X" must name what they sum to.
+ * @param {{ name: string, value: number }[]} symbols
+ * @param {string} here the beat folder
+ * @param {string} said the plate's own words, alt included
+ */
+export function assertSymbolUnitStated(symbols, here, said = "") {
+  const dataPath = join(here, "data.json");
+  if (!existsSync(dataPath) || symbols.length < 3) return;
+  const table = JSON.parse(readFileSync(dataPath, "utf8"));
+  const rows = table.rows ?? [];
+  if (rows.length < symbols.length * 1.5) return;
+  const shapes = join(here, "shapes.geojson");
+  const features = existsSync(shapes) ? JSON.parse(readFileSync(shapes, "utf8")).features ?? [] : [];
+  const keyOf = (name, iso) => iso ?? (codeFor(name, features)?.exact ? codeFor(name, features).code : norm(name));
+  const names = new Set(symbols.map((s) => keyOf(String(s.name ?? ""), s.iso && String(s.iso))));
+  const place = (table.columns ?? [])
+    .map((c, i) => ({ c, i }))
+    .filter(({ c }) => c.type === "text")
+    .map(({ c, i }) => ({ c, hits: new Set(rows.map((r) => keyOf(String(r[i]))).filter((v) => names.has(v))).size }))
+    .reduce((a, b) => (b.hits > a.hits ? b : a), { c: null, hits: 0 });
+  if (!place.c || place.hits < Math.max(3, symbols.length / 2)) return;
+  const country = /countr|pays|nation|land|iso/i.test(place.c.name);
+  const unit = country ? null : norm(place.c.name);
+  const lang = String(front(here)?.("language") ?? "en").toLowerCase().slice(0, 2);
+  const works = country ? (PER_COUNTRY[lang] ?? PER_COUNTRY.en) : `one circle per ${place.c.name}`;
+  const per = new RegExp(`\\b(${MARK}\\s+${EACH}\\s+([\\p{L}-]+))`, "giu");
+  for (const [, phrase, noun] of String(said).matchAll(per)) {
+    const n = norm(noun).replace(/[^a-z]/g, "");
+    if (country ? COUNTRY_WORDS.test(n) : n.startsWith(unit.slice(0, 4))) continue;
+    throw new Error(`the plate says "${phrase}", but the symbols draw one circle per ${place.c.name}: ${symbols.length} circles summing data.json's ${rows.length} rows — a value that works: "${works}" (in limits and alt alike), or draw one circle per row`);
+  }
+}

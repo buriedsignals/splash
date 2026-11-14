@@ -23,7 +23,7 @@ import { guardColour } from "#shared/design-base/compose.mjs";
 import { assertNotFallback, maptilerGlyphs } from "#shared/map-beat/glyphs.mjs";
 import { frameProjector, markOccupancy, occupancyLine } from "#shared/map-beat/occupancy.mjs";
 import { countryGround, plateGrounds, plateTints } from "#shared/map-beat/tints.mjs";
-import { applyStoryboard, assertDrawsClaimColumn, assertFigureMatchesValue, assertHeadlineNumbersDrawn, assertNumbers, assertNoCategoryDropped, assertPlacesLeftOutStated } from "./guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertFigureMatchesValue, assertHeadlineNumbersDrawn, assertNumbers, assertNoCategoryDropped, assertPlacesLeftOutStated, assertSymbolUnitStated } from "./guards.mjs";
 import { ensurePlate, liveAssets, mapWeb, maptilerKey, renderLiveMapPage, verifyLiveMap } from "./map-web.mjs";
 import { plateWaterField } from "./plate-water.mjs";
 import { chartWeb, pickDirection, plain, plainRegisters, refusing, storyLanguage } from "./web.mjs";
@@ -320,6 +320,7 @@ await refusing(HERE, async () => {
   const tableCaption = plain(typeof beat.tableCaption === "function" ? beat.tableCaption({ places: rows.length, rowScale: ROW_SCALE * 100 }) : beat.tableCaption);
   const caveat = `${caveatHead} ${mercator}`;
   const alt = plain(typeof beat.alt === "function" ? beat.alt({ ranked: rows.map((r) => ({ name: r.name, value: r.value })), total }) : beat.alt);
+  assertSymbolUnitStated(beat.symbols, HERE, `${said} ${alt}`);
   // Metadata for the format's interaction plan (English is fine; it is not printed).
   const interaction = {
     earns: `A symbol map hides the exponent of its own scale; this page hands the reader three laws over the same ${rows.length} circles and prints what each makes the same map say.`,
