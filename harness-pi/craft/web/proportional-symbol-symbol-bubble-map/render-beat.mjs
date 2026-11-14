@@ -23,7 +23,7 @@ import { guardColour } from "#shared/design-base/compose.mjs";
 import { assertNotFallback, maptilerGlyphs } from "#shared/map-beat/glyphs.mjs";
 import { frameProjector, markOccupancy, occupancyLine } from "#shared/map-beat/occupancy.mjs";
 import { countryGround, plateGrounds, plateTints } from "#shared/map-beat/tints.mjs";
-import { applyStoryboard, assertDrawsClaimColumn, assertFigureMatchesValue, assertHeadlineNumbersDrawn, assertNumbers, assertNoCategoryDropped, assertPlacesLeftOutStated, assertSymbolUnitStated, assertNoEmptySplice, assertNoWholeAsPart, assertNoneUnderFloor } from "./guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertFigureMatchesValue, assertHeadlineNumbersDrawn, assertNumbers, assertNoCategoryDropped, assertPlacesLeftOutStated, assertSymbolUnitStated, assertNoEmptySplice, assertNoWholeAsPart } from "./guards.mjs";
 import { ensurePlate, liveAssets, mapWeb, maptilerKey, renderLiveMapPage, verifyLiveMap } from "./map-web.mjs";
 import { plateWaterField } from "./plate-water.mjs";
 import { chartWeb, pickDirection, plain, plainRegisters, refusing, storyLanguage } from "./web.mjs";
@@ -35,6 +35,8 @@ const REVIEW_BOX = { width: 1464, height: 520 };
 const R_MAX = 40;
 /** The legibility floor, in review pixels: under it a circle reads as no data. */
 const R_FLOOR = 1;
+/** The most circles the page draws: past it the table, the tooltips and the probe outweigh the map. */
+const MAX_DRAWN = 1000;
 /** A labelled circle must hold two lines of 13 px text under the area law. */
 const LABEL_MIN_RADIUS = 22;
 const PLATE_SIZE = "1824x1216";
@@ -73,11 +75,6 @@ await refusing(HERE, async () => {
   const featuresOf = (iso) => geo.features.filter((f) => f.properties.iso === iso);
   if (!Array.isArray(beat.symbols) || beat.symbols.length < 2) throw new Error("symbols must be one { iso, name, value, lon, lat } per place (at least two)");
   assertNumbers(beat.symbols.map((s) => [s.name, s.value]));
-  // Checked before each symbol's code: one symbol per station, named by country, failed the code of the first
-  // station without one three times and never heard that the kit draws one circle per place (Qwen3.5-9B, 2026-11-13).
-  const places = new Set(beat.symbols.map((s) => s.name));
-  if (places.size !== beat.symbols.length)
-    throw new Error(`symbols holds ${beat.symbols.length} entries for ${places.size} distinct names: this kit draws one circle per place — add up the rows of each place into one symbol (one { iso, name, value, lon, lat } per ${[...places].slice(0, 2).join(", ")}, …), as the worked example beat.example.mjs, in this beat's folder, sums its stations per country`);
   beat.symbols.forEach((s, i) => {
     if (!(s.value > 0)) throw new Error(`symbols[${i}] (${s.name}) has value ${s.value}: a circle's area draws a positive quantity — leave out the places with none`);
     if (![s.lon, s.lat].every(Number.isFinite) || Math.abs(s.lon) > 180 || Math.abs(s.lat) > 90) throw new Error(`symbols[${i}] (${s.name}) needs numeric lon and lat read from data.json`);
@@ -85,37 +82,57 @@ await refusing(HERE, async () => {
     if (!/^[A-Z]{3}$/.test(String(s.iso)) || !featuresOf(s.iso).length)
       throw new Error(`symbols[${i}] (${s.name}) has iso ${JSON.stringify(s.iso)}, which matches no country on the map: give the ISO alpha-3 code of the country the place is in (resolve names with countries.mjs) — this kit draws Europe and its neighbours only`);
   });
-  const rows = [...beat.symbols].sort((a, b) => b.value - a.value).map((s, i) => ({ ...s, key: `m${i}`, name: plain(s.name) }));
-  const total = rows.reduce((t, r) => t + r.value, 0);
+  // A symbol is a place or a single row (a station): names may repeat, a circle is keyed by its rank.
+  const ranked = [...beat.symbols].sort((a, b) => b.value - a.value).map((s, i) => ({ ...s, key: `m${i}`, name: plain(s.name) }));
+  const total = ranked.reduce((t, r) => t + r.value, 0);
+  // THE LEGIBILITY CUT is the kit's, never a refusal (gx-proportional-symbol web, 2026-11-14: 8900 stations, the
+  // takeaway about sites, and a kit that refused anything but one circle per country). The page draws the symbols
+  // whose area-law circle clears the floor, at most MAX_DRAWN of them, and limits(cut) states the threshold.
+  let threshold = 0;
+  const floorValue = Math.ceil(ranked[0].value * (R_FLOOR / R_MAX) ** (1 / LAWS[0].exponent));
+  if (ranked.length > MAX_DRAWN || ranked.at(-1).value < floorValue) {
+    threshold = Math.max(floorValue, ranked.length > MAX_DRAWN ? ranked[MAX_DRAWN - 1].value : 0);
+    while (ranked.filter((r) => r.value >= threshold).length > MAX_DRAWN) threshold = Math.min(...ranked.filter((r) => r.value > threshold).map((r) => r.value));
+  }
+  const rows = ranked.filter((r) => r.value >= threshold);
+  const cut = { threshold, drawn: rows.length, total: ranked.length, drawnShare: (rows.reduce((t, r) => t + r.value, 0) / total) * 100 };
+  if (threshold > 0) console.log(`cut: ${cut.drawn} of ${cut.total} symbols drawn (value >= ${threshold}), carrying ${cut.drawnShare.toFixed(1)} % of the total`);
+  const limitsText = plain([typeof beat.limits === "function" ? beat.limits(cut) : beat.limits].flat()[0] ?? "");
+  // limits(cut) is held to the journalist's named limits now that it has its words.
+  if (typeof beat.limits === "function") applyStoryboard({ ...beat, limits: limitsText }, HERE);
   const biggest = rows[0];
   const median = rows[Math.floor(rows.length / 2)];
 
-  beat.check({ ranked: rows.map((r) => ({ name: r.name, iso: r.iso, value: r.value })), total, value: (name) => rows.find((r) => r.name === name)?.value ?? null });
-  assertDrawsClaimColumn(rows.map((r) => r.value), HERE);
-  // The default law is the area law: the shared scale would refuse its erased places later, in its own keys.
-  assertNoneUnderFloor(rows, { maxRadius: R_MAX, floor: R_FLOOR, exponent: LAWS[0].exponent });
-  const said = [beat.title, beat.limits, beat.reading, beat.hint].flat().filter((t) => typeof t === "string").join(" ");
+  beat.check({ ranked: ranked.map((r) => ({ name: r.name, iso: r.iso, value: r.value })), total, value: (name) => ranked.find((r) => r.name === name)?.value ?? null });
+  assertDrawsClaimColumn(ranked.map((r) => r.value), HERE);
+  const said = [beat.title, limitsText, beat.reading, beat.hint].flat().filter((t) => typeof t === "string").join(" ");
   assertNoCategoryDropped(beat.symbols, HERE, said);
   assertPlacesLeftOutStated(beat.symbols, HERE, said);
   // Before the bake: a sentence printing an empty splice is refused without a key or a plate.
-  for (const guard of [assertNoEmptySplice, assertNoWholeAsPart]) guard({ title: beat.title, limits: beat.limits, reading: beat.reading, hint: beat.hint, alt: typeof beat.alt === "function" ? beat.alt({ ranked: rows.map((r) => ({ name: r.name, value: r.value })), total }) : beat.alt });
+  for (const guard of [assertNoEmptySplice, assertNoWholeAsPart]) guard({ title: beat.title, limits: limitsText, reading: beat.reading, hint: beat.hint, alt: typeof beat.alt === "function" ? beat.alt({ ranked: ranked.map((r) => ({ name: r.name, value: r.value })), total }) : beat.alt });
 
   // ── ONE direction, its plate (the camera's record) ─────────────────────────────────────────
   const number = (v, d) => plain(beat.number(v, d));
   assertFigureMatchesValue(beat.figure, rows.map((r) => r.value), HERE);
   const figure = (v) => plain(beat.figure(v));
+  if (threshold > 0) {
+    if (!/[1-9]/.test(figure(threshold)))
+      throw new Error(`figure() prints the cut's threshold ${threshold} as "${figure(threshold)}": print small values in a unit that shows them (a value that works: figure: (v) => \`\${Math.round(v).toLocaleString("fr-FR")} MW\`)`);
+    if (!limitsText.includes(figure(threshold)))
+      throw new Error(`the map draws the ${cut.drawn} largest of ${cut.total} symbols, those at or above ${figure(threshold)}; limits must say so and print figure(cut.threshold) ("${figure(threshold)}") — a value that works: limits: (cut) => \`… Sous \${figure(cut.threshold)}, non dessiné : \${cut.total - cut.drawn} sur \${cut.total}.\``);
+  }
   const keyValues = niceReferenceValues(biggest.value, 3).map((value, i) => ({ key: `k${i}`, value }));
   const keySizes = keyValues.map((k) => ({ key: k.key, label: figure(k.value) }));
   const lawWords = Object.fromEntries(LAWS.map((l) => [l.key, { label: plain(beat.laws[l.key].label), announce: plain(beat.laws[l.key].announce) }]));
   const titles = [beat.title].flat();
   const title = plain(titles[0]);
-  const caveatHead = plain([beat.limits].flat()[0]);
+  const caveatHead = limitsText;
   const reading = plain([beat.reading].flat()[0]);
   const source = plain(beat.source);
   const hint = plain(beat.hint);
   const eyebrow = plain(beat.eyebrow);
   const columns = beat.columns.map(plain);
-  const callout = plain(beat.callout({ ranked: rows.map((r) => ({ name: r.name, value: r.value })), total }));
+  const callout = plain(beat.callout({ ranked: ranked.map((r) => ({ name: r.name, value: r.value })), total }));
   const registersOf = (caveat, notes, tableCaption, symbols) => ({
     display: title,
     eyebrow,
@@ -163,7 +180,7 @@ await refusing(HERE, async () => {
   const REVIEW_FRAME = { west: (STUDY.west + STUDY.east) / 2 - REVIEW_LON_SHOWN / 2, east: (STUDY.west + STUDY.east) / 2 + REVIEW_LON_SHOWN / 2, south: STUDY.south, north: STUDY.north };
   // What the review camera really draws: a circle outside it is a circle nobody sees.
   const outside = rows.filter((r) => r.lon < REVIEW_FRAME.west || r.lon > REVIEW_FRAME.east || r.lat < REVIEW_FRAME.south || r.lat > REVIEW_FRAME.north);
-  if (outside.length) throw new Error(`${outside.map((r) => r.name).join(", ")} sit outside the Europe camera (${REVIEW_FRAME.west.toFixed(1)}..${REVIEW_FRAME.east.toFixed(1)}°E, ${STUDY.south}..${STUDY.north}°N): leave them out of symbols`);
+  if (outside.length) throw new Error(`${[...new Set(outside.map((r) => r.name))].join(", ")} sit outside the Europe camera (${REVIEW_FRAME.west.toFixed(1)}..${REVIEW_FRAME.east.toFixed(1)}°E, ${STUDY.south}..${STUDY.north}°N): leave them out of symbols`);
   const inFrame = ([lon, lat]) => lon >= REVIEW_FRAME.west && lon <= REVIEW_FRAME.east && lat >= REVIEW_FRAME.south && lat <= REVIEW_FRAME.north;
   // A country reaching far outside the frame (Russia) is most of the land the frame can draw and only
   // a slice of it is inside: every share computed with it in would be a share of it. Set aside.
@@ -255,20 +272,20 @@ await refusing(HERE, async () => {
   if (!Array.isArray(beat.labelled) || beat.labelled.length > 6) throw new Error("labelled must list at most 6 symbol names — the places the title is about");
   const unknown = beat.labelled.filter((n) => !rows.some((r) => r.name === plain(n)));
   if (unknown.length) throw new Error(`labelled names ${unknown.join(", ")}, which no symbol carries (use the symbols' names exactly)`);
-  const LABELLED = new Set(rows.filter((r) => beat.labelled.map(plain).includes(r.name)).map((r) => r.key));
+  const LABELLED = new Set(beat.labelled.map((n) => rows.find((r) => r.name === plain(n)).key));
   for (const r of rows)
     if (LABELLED.has(r.key) && radiusFor(r.key, areaScaleSlugOf("area")) < LABEL_MIN_RADIUS)
       throw new Error(`${r.name} is labelled and its circle is ${radiusFor(r.key, areaScaleSlugOf("area")).toFixed(1)} px of radius, under the ${LABEL_MIN_RADIUS} px two lines of text need: leave it out of labelled`);
 
   const symbols = rows.map((r, index) => {
-    const detail = plain(beat.detail({ ...r, rank: index + 1, of: rows.length, share: (r.value / total) * 100, total }));
+    const detail = plain(beat.detail({ ...r, rank: index + 1, of: ranked.length, share: (r.value / total) * 100, total }));
     if (!detail.includes(r.name)) throw new Error(`detail() must name the place it answers for: ${r.name} → "${detail}"`);
     return { key: r.key, name: r.name, figure: figure(r.value), rank: index + 1, lon: r.lon, lat: r.lat, label: LABELLED.has(r.key) ? `${r.name}\n${figure(r.value)}` : null, detail };
   });
   const dupes = symbols.filter((s, i) => symbols.findIndex((o) => o.detail === s.detail) !== i);
   if (dupes.length) throw new Error(`detail() answers ${dupes[0].name} with the same sentence as another place`);
   // Every figure the legend, the labels and the table print is drawn.
-  assertHeadlineNumbersDrawn(title, [...rows.map((r) => r.value), ...keyValues.map((k) => k.value)], "circles");
+  assertHeadlineNumbersDrawn(title, [...ranked.map((r) => r.value), ...keyValues.map((k) => k.value)], "circles");
 
   // ── where the circles sit on the plate, at the largest radius any law gives them ─────────────
   const toFrame = frameProjector(plateFacts);
@@ -321,12 +338,12 @@ await refusing(HERE, async () => {
   const { maplibreJs, maplibreCss, styleModule } = liveAssets(HERE);
   const liveScript = liveSymbolsScript(live, { scope: ".chart-figure", styleModule, lawName: "chart-stack" });
 
-  const tableCaption = plain(typeof beat.tableCaption === "function" ? beat.tableCaption({ places: rows.length, rowScale: ROW_SCALE * 100 }) : beat.tableCaption);
+  const tableCaption = plain(typeof beat.tableCaption === "function" ? beat.tableCaption({ places: rows.length, of: ranked.length, rowScale: ROW_SCALE * 100 }) : beat.tableCaption);
   // chart-web clamps the standfirst to one line above 1100 px: limits alone fit it, limits + the Mercator sentence
   // were cut mid-sentence at every desktop width. The Mercator sentence goes to the reading line, never clamped.
   const caveat = caveatHead;
   const readingLine = `${reading} ${mercator}`;
-  const alt = plain(typeof beat.alt === "function" ? beat.alt({ ranked: rows.map((r) => ({ name: r.name, value: r.value })), total }) : beat.alt);
+  const alt = plain(typeof beat.alt === "function" ? beat.alt({ ranked: ranked.map((r) => ({ name: r.name, value: r.value })), total }) : beat.alt);
   assertSymbolUnitStated(beat.symbols, HERE, `${said} ${alt}`);
   // Metadata for the format's interaction plan (English is fine; it is not printed).
   const interaction = {
@@ -403,6 +420,10 @@ await refusing(HERE, async () => {
   assertSymbolLawsReachTheLayers(written, live, radiusFor, plateFacts.style, { where: `renders/${label}.html` });
   console.log(`rendered renders/${label}.html (keyed copy for review: shots/${label}.local.html)`);
 
+  // One circle per station: in a dense region a circle can be wholly tiled by smaller ones, which answer the
+  // pointer first, and the zoom (circles keep their screen size) is what separates them. Those may be missed at
+  // 1600x800; every one FOUND must answer its own reading, and nine in ten must be found (held below).
+  let notFound = 0;
   await verifyLiveMap({
     here: HERE,
     label,
@@ -424,6 +445,13 @@ await refusing(HERE, async () => {
       anchors: Object.fromEntries(symbols.map((s) => [s.key, [s.lon, s.lat]])),
       // The page answers with the SMALLEST circle under the pointer (the one whose edge is seen).
       order: Object.fromEntries(rows.map((r) => [r.key, r.value])),
+      mayMiss: (k) => {
+        if (k === biggest.key) return false;
+        notFound += 1;
+        return true;
+      },
     },
   });
+  if (notFound > symbols.length * 0.1)
+    throw new Error(`the live-mark probe found only ${symbols.length - notFound} of ${symbols.length} circles on screen at 1600x800: more than one in ten is hidden under smaller ones — raise the cut (fewer, larger circles) or check the join`);
 });

@@ -5,7 +5,8 @@ import { join, resolve } from "node:path";
 
 // gx-proportional-symbol web (Qwen3.5-9B, 2026-11-13): 7981 symbols, one per station, named by country. The kit
 // refused the first station without a code three times; the craft never learned the kit draws one circle per
-// country, which the duplicate names already said.
+// country, which the duplicate names already said. Since 2026-11-14 the kit draws one circle per row (the sites
+// takeaway needs them): a row is no longer refused for sharing its country's name, only for a missing code.
 
 const HARNESS = resolve(import.meta.dirname, "..");
 const KIT = join(HARNESS, "craft", "web", "proportional-symbol-symbol-bubble-map");
@@ -28,7 +29,9 @@ function render() {
 }
 
 describe.skipIf(!existsSync(join(BENCH, "package.json")))("a symbol map given one symbol per row", () => {
-  it("should be told to add the rows up into one circle per place", () => {
-    expect(render()).toMatch(/one circle per place.*add up/i);
+  it("should be refused for the missing code, not told to add the rows up", () => {
+    const out = render();
+    expect(out).toMatch(/symbols\[3\] \(Austria\) has iso undefined.*countries\.mjs/);
+    expect(out).not.toMatch(/add up/i);
   }, 120_000);
 });

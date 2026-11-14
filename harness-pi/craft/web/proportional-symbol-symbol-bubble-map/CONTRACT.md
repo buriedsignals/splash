@@ -3,7 +3,7 @@
 The page is already designed: it comes from the worked example
 `proof/web-proportional-symbol-europe-capacity` and the story's PALETTE.md and DIRECTION.md. It is a
 LIVE MapTiler map the reader can zoom and drag — the countries drawn as neutral ground, one
-translucent circle per place, its AREA the value, held at the same screen size at every zoom (one
+translucent circle per row of `symbols` (a station, a site, or a country when the claim is about countries), its AREA the value, held at the same screen size at every zoom (one
 value never means two sizes), with a size legend — over a frozen picture of that map that stands with
 JavaScript off. The INTERACTION is done: ONE control lets the reader pick the LAW that turns a value
 into a circle (area proportional — the honest one, the default; radius proportional — the one that
@@ -29,7 +29,7 @@ in longitude on a wide screen). Each place names the country it is in by ISO alp
 | Field | What it is |
 |---|---|
 | `eyebrow` | The rubric above the title, two to four words, in the story's language. |
-| `symbols` | One circle per place: `{ iso, name, value, lon, lat, … }`. `iso` = the ISO alpha-3 code of the country the place is in; `name` = what the map, the table and the tooltip print (unique); `value` = the positive quantity the circle's AREA draws; `lon`/`lat` = where the circle sits, from data.json (for a country, the value-weighted centre of its own sites is better than its centroid). Extra fields ride along to `detail()`. |
+| `symbols` | One circle per row: `{ iso, name, value, lon, lat, … }`. `iso` = the ISO alpha-3 code of the country the row is in; `name` = what the map, the table and the tooltip print (names may repeat — several stations in one country; the kit keys each circle by its rank, so `detail()` must still answer differently, e.g. with its rank); `value` = the positive quantity the circle's AREA draws; `lon`/`lat` = where the circle sits, from data.json (for a country, the value-weighted centre of its own sites is better than its centroid). Extra fields ride along to `detail()`. |
 | `labelled` | The names (as in `symbols`) of at most 6 places the title is about — labelled on the map. Each must be large enough to hold its label (the render refuses a small one). |
 | `figure(v)` | How a value is printed short, on labels, the legend and the table ("96 GW"). |
 | `number(v, d)` | How a number is printed with `d` decimals in the story's language (`v.toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d })`). The notes' ratios are checked in this format. |
@@ -42,24 +42,25 @@ in longitude on a wide screen). Each place names the country it is in by ISO alp
 | `countryNames` | Optional: `{ ISO3: "name in the story's language" }` for the countries `mercator` names (default: English). |
 | `hint` | One sentence about moving the map: drag, zoom, keyboard; circles keep their size. |
 | `title` | The headline: the journalist's takeaway from STORYBOARD.md, copied word for word as a literal string (the render checks it). |
-| `limits` | The standfirst: what a circle is, the scope, the limits the journalist named. |
+| `limits` | The standfirst: what a circle is, the scope, the limits the journalist named — a string, or `(cut) => string`. `cut` = `{ threshold, drawn, total, drawnShare }`: the map draws at most 1000 circles and none under 1 px, so with many rows it draws the largest only, and `limits` must then print `figure(cut.threshold)` and what is left out: `` (cut) => `… Sous ${figure(cut.threshold)}, non dessiné : ${cut.total - cut.drawn} sur ${cut.total}.` ``. Every row still counts in `check()`, the callout, the alt and the tooltips. |
 | `reading` | The reading line: the exponent is the one setting a symbol map hides; with no script the table follows the law. |
 | `source` | The credit line, exactly as the storyboard records it; keep "MapTiler" in it. |
 | `alt` | The alt text — a string, or `(a) => string` with `a = { ranked, total }`. |
-| `tableCaption` | The table's caption — a string, or `(t) => string` with `t = { places, rowScale }` (`rowScale` = the percent of the map's scale the table's swatches are drawn at). |
+| `tableCaption` | The table's caption — a string, or `(t) => string` with `t = { places, of, rowScale }` (`places` = the circles drawn, `of` = all rows; `rowScale` = the percent of the map's scale the table's swatches are drawn at). |
 | `columns` | The table's three headings: place, value, rank. |
 | `lang` | Optional: the page's language tag. Default: STORYBOARD.md's `language`. |
 | `check(map)` | Throws if the data no longer supports the title. `map.ranked` = `[{ name, iso, value }]` largest first, `map.total`, `map.value(name)`. |
 
 ## Reading the data
 
-Read data.json by column name; aggregate to one row per place when the table holds sites:
+Read data.json by column name. Draw one row per site when the claim is about sites; add the rows up per place only when the claim is about places:
 
 ```js
 const table = JSON.parse(readFileSync(join(import.meta.dirname, "data.json"), "utf8"));
 const col = (name) => table.columns.findIndex((c) => c.name === name);
 const [PLACE, AMOUNT, LON, LAT] = ["country", "amount", "lon", "lat"].map(col);
-// sum AMOUNT per PLACE; seat each circle at the amount-weighted mean of its sites' LON/LAT
+// a claim about sites: one symbol per row. A claim about countries: sum AMOUNT per PLACE, seated at the
+// amount-weighted mean of its sites' LON/LAT
 ```
 
 Country names to ISO codes: `import { iso3Of } from "./countries.mjs"` and

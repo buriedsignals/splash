@@ -86,7 +86,8 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
   if (basemap) beat[source] = Array.isArray(beat[source]) ? beat[source].map(withBasemap) : withBasemap(beat[source]);
   const named = field("limits");
   const first = [beat[standfirst]].flat()[0];
-  if (named && !/^none$/i.test(named) && first !== undefined) {
+  // A standfirst written as a function of the render's reading is checked by the kit once it has called it.
+  if (named && !/^none$/i.test(named) && first !== undefined && typeof first !== "function") {
     const words = (t) => String(t).toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((w) => w.length > 3);
     const said = new Set(words(first));
     const theirs = words(named);
