@@ -63,3 +63,23 @@ describe("write_file of a beat with no default export", () => {
     expect(readFileSync(file, "utf8")).toBe(long);
   });
 });
+
+// gx-proportional-symbol web (12B, i14, 2026-11-14): every whole rewrite of a 6 786-character beat was refused as
+// "exists, too long"; the 12B cannot split a file into edits and spent two 15 min caps re-sending it. 48 of the 320
+// kit examples were longer than the limit, so a beat that followed its example could never be rewritten.
+describe("write_file of a beat as long as its kit's example", () => {
+  const dir = join(storyDir, "beats", "4");
+  mkdirSync(dir, { recursive: true });
+  const write4 = beatTools({ root, storyDir }, "4").writeFile as any;
+  const craft = join(import.meta.dirname, "..", "craft");
+  const longest = Math.max(
+    ...[...new Bun.Glob("*/*/beat.example.mjs").scanSync(craft)].map((f) => readFileSync(join(craft, f), "utf8").length),
+  );
+
+  it("should let a whole rewrite replace an existing beat.mjs as long as the longest kit example", async () => {
+    writeFileSync(join(dir, "beat.mjs"), "export default { title: 'first' };\n");
+    const body = `export default { title: "${"x".repeat(longest)}" };\n`;
+    await write4.execute("1", { content: body });
+    expect(readFileSync(join(dir, "beat.mjs"), "utf8")).toBe(body);
+  });
+});

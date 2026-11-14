@@ -40,10 +40,12 @@ const MAX_READ_BYTES = 60_000;
 // A small model that re-emits a whole file in one tool call spends minutes generating it and then
 // hits the output limit (measured on the 12B: 16k tokens, about 20 minutes, truncated). The limits
 // make the cheap behaviour the only one available: small edits, and whole-file writes only for new
-// short files.
+// short files. A whole file stays allowed up to a little past the longest kit example (10 528 characters, about
+// 3 000 tokens, far from the 16k cut-off): at 6 000, 48 of 320 examples were too long to rewrite, and the 12B, which
+// cannot split a file into edits, spent two 15 min caps re-sending a 6 786-character beat (2026-11-14).
 export const MAX_EDIT_OLD = 1_500;
 export const MAX_EDIT_NEW = 3_000;
-export const MAX_WRITE = 6_000;
+export const MAX_WRITE = 12_000;
 
 function realOrParent(path: string): string {
   // A file about to be written does not exist yet; its nearest existing ancestor decides.
