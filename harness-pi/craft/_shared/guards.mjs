@@ -992,3 +992,26 @@ export function assertSymbolUnitStated(symbols, here, said = "") {
     throw new Error(`the plate says "${phrase}", but the symbols draw one circle per ${place.c.name}: ${symbols.length} circles summing data.json's ${rows.length} rows — a value that works: "${works}" (in limits and alt alike), or draw one circle per row`);
   }
 }
+
+/**
+ * A value spliced into a sentence that came out empty. The 12B's bubble map web (2026-11-14, i17) emptied its own
+ * `labelled` after a label refusal, and alt read "viennent ensuite . Ces cercles…": the template's list was empty
+ * and no guard read the words. A word followed by a space and "." or ",", an empty list item (", ,"), or a literal
+ * undefined/NaN/null is a splice the plate cannot print.
+ * @param {Record<string, unknown>} fields the plate's printed words by field name
+ */
+export function assertNoEmptySplice(fields) {
+  const bad = /(\S+\s+[.,](?=\s|$))|(,\s*,)|\b(undefined|NaN|null)\b|\[object Object\]/u;
+  for (const [field, value] of Object.entries(fields)) {
+    for (const text of [value].flat()) {
+      if (typeof text !== "string") continue;
+      const m = bad.exec(text);
+      if (!m) continue;
+      const at = text.slice(Math.max(0, m.index - 30), m.index + m[0].length);
+      throw new Error(
+        `${field} prints "${m[0].trim()}" ("…${at.trim()}"): a value spliced into the sentence came out empty — a value that works: ` +
+          `when the list or value can be empty, write the sentence without it (e.g. \`list.length ? \`… \${list.join(", ")}.\` : ""\`), or fix what emptied it`,
+      );
+    }
+  }
+}

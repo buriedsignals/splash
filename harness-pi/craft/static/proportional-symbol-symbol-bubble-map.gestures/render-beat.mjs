@@ -31,7 +31,7 @@ import { GestureGeoPointStatic } from "./GestureGeoPointStatic.tsx";
 import { GestureRefusal } from "./gesture-core.mjs";
 import { pointMarks, refusalText, setNotesDrawn, stageGeoPoint } from "./gesture-geo-point-family.mjs";
 import { composeGeoPointStatic } from "./gesture-geo-point-static.mjs";
-import { applyStoryboard, assertNumbers, assertDrawsClaimColumn, assertNoCategoryDropped, assertPlacesLeftOutStated, assertSymbolUnitStated, errorText, importBeat, rowFacts } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertDrawsClaimColumn, assertNoCategoryDropped, assertPlacesLeftOutStated, assertSymbolUnitStated, assertNoEmptySplice, errorText, importBeat, rowFacts } from "./guards.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 /** The format this copy of the runner renders: the web, scrolly and video kits carry the same runner with FORMAT set. */
@@ -94,6 +94,7 @@ assertDrawsClaimColumn(stations.map((s) => s.value), HERE);
 const said = [beat.title, beat.limits, beat.reading, beat.dotIs, beat.source, typeof beat.alt === "string" ? beat.alt : ""].flat().filter((t) => typeof t === "string").join(" ");
 assertNoCategoryDropped(stations, HERE, said);
 assertPlacesLeftOutStated(stations, HERE, said);
+assertNoEmptySplice({ title: beat.title, limits: beat.limits, reading: beat.reading, dotIs: beat.dotIs, source: beat.source, alt: beat.alt });
 assertSymbolUnitStated(stations, HERE, said);
 
 const total = stations.length;

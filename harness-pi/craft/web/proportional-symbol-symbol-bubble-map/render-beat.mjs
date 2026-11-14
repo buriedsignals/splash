@@ -23,7 +23,7 @@ import { guardColour } from "#shared/design-base/compose.mjs";
 import { assertNotFallback, maptilerGlyphs } from "#shared/map-beat/glyphs.mjs";
 import { frameProjector, markOccupancy, occupancyLine } from "#shared/map-beat/occupancy.mjs";
 import { countryGround, plateGrounds, plateTints } from "#shared/map-beat/tints.mjs";
-import { applyStoryboard, assertDrawsClaimColumn, assertFigureMatchesValue, assertHeadlineNumbersDrawn, assertNumbers, assertNoCategoryDropped, assertPlacesLeftOutStated, assertSymbolUnitStated } from "./guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertFigureMatchesValue, assertHeadlineNumbersDrawn, assertNumbers, assertNoCategoryDropped, assertPlacesLeftOutStated, assertSymbolUnitStated, assertNoEmptySplice } from "./guards.mjs";
 import { ensurePlate, liveAssets, mapWeb, maptilerKey, renderLiveMapPage, verifyLiveMap } from "./map-web.mjs";
 import { plateWaterField } from "./plate-water.mjs";
 import { chartWeb, pickDirection, plain, plainRegisters, refusing, storyLanguage } from "./web.mjs";
@@ -95,6 +95,8 @@ await refusing(HERE, async () => {
   const said = [beat.title, beat.limits, beat.reading, beat.hint].flat().filter((t) => typeof t === "string").join(" ");
   assertNoCategoryDropped(beat.symbols, HERE, said);
   assertPlacesLeftOutStated(beat.symbols, HERE, said);
+  // Before the bake: a sentence printing an empty splice is refused without a key or a plate.
+  assertNoEmptySplice({ title: beat.title, limits: beat.limits, reading: beat.reading, hint: beat.hint, alt: typeof beat.alt === "function" ? beat.alt({ ranked: rows.map((r) => ({ name: r.name, value: r.value })), total }) : beat.alt });
 
   // ── ONE direction, its plate (the camera's record) ─────────────────────────────────────────
   const number = (v, d) => plain(beat.number(v, d));
