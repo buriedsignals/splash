@@ -214,6 +214,32 @@ describe("choropleth", () => {
     });
     expect(out.valid[0].note).toBe(`${keys.length} countries at 94 % or more`);
   });
+  // gx-choropleth static (2026-11-14): the 12B's "7 pays à 99 % ou plus" passed on Sweden's 98.8 % (rounded) though
+  // France, kept, is at 94.9 %; Qwen's true "94 % ou plus" was refused for "95" — the kept rows' minimum, rounded up.
+  it("should refuse a threshold the kept places do not all reach, offering one that is true", () => {
+    const geo = choropleth();
+    const keys = above(geo, 94);
+    const e = refusalOf(() =>
+      stageGeo({
+        gestures: [{ do: "filter", marks: keys, note: `${keys.length} countries at 99 % or more` }],
+        geo,
+        format: "static",
+        claim: LOWCARBON,
+      }),
+    );
+    expect(e.fix).toEqual({ set: { index: 0, field: "note", value: `${keys.length} countries at 94 % or more` } });
+  });
+  it("should accept a true threshold that is not a class limit", () => {
+    const geo = createGeo({ variant: "choropleth", rows: lowCarbon(), breaks: [40, 55, 70, 85, 95] });
+    const keys = above(geo, 94);
+    const out = stageGeo({
+      gestures: [{ do: "filter", marks: keys, note: `${keys.length} countries at 94 % or more` }],
+      geo,
+      format: "static",
+      claim: LOWCARBON,
+    });
+    expect(out.valid[0].note).toBe(`${keys.length} countries at 94 % or more`);
+  });
   it("should refuse a filter's count that is not the number of places it keeps", () => {
     const geo = choropleth();
     const keys = above(geo, 94);

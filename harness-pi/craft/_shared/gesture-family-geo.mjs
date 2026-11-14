@@ -1,8 +1,8 @@
-// The Geo family adapter (craft/gestures/GRAMMAR.md §4 F8, §4.2; research/families.md §4). Shared by every map type:
+// The Geo family adapter (craft/gestures/GRAMMAR.md Â§4 F8, Â§4.2; research/families.md Â§4). Shared by every map type:
 // the AREA maps (choropleth, tile cartogram, hex cartogram, dot density) and the POINT/LINE maps (proportional
 // symbol, flow, locator, contour) each register their variant here and keep their own schedulers and components.
 //
-// A map gesture compiles to a DECLARATION — plan layers, state fields, cameras — never to a draw call: every executor
+// A map gesture compiles to a DECLARATION â plan layers, state fields, cameras â never to a draw call: every executor
 // (a baked static plate, live MapLibre layers on a web page, a per-frame video plan, a scrolly drive) realises the
 // same declared state its own way. Bound paint must be data-constant, so `filter`, `highlight` and `reveal` are
 // expressed as one layer per group whose membership is known at plan time (classLayer), never a runtime predicate.
@@ -18,10 +18,10 @@
 // family's figures hook supplies.
 //
 // Browser-safe: no Node module (the video bundle and the scrolly drive import it).
-import { figuresIn, GestureRefusal } from "./gesture-core.mjs";
+import { figuresIn, formatLike, GestureRefusal } from "./gesture-core.mjs";
 import { FAMILIES } from "./gesture-registry.mjs";
 
-// ── the family ────────────────────────────────────────────────────────────────────────────────────
+// ââ the family ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 /**
  * Every gesture some map variant draws. A variant draws a subset (registerGeoVariant); a gesture outside its own
@@ -32,12 +32,12 @@ export const GEO_GESTURES = ["highlight", "name", "annotate", "compare", "filter
 FAMILIES.geo ??= { gestures: GEO_GESTURES, additive: false };
 for (const d of GEO_GESTURES) if (!FAMILIES.geo.gestures.includes(d)) FAMILIES.geo.gestures.push(d);
 
-/** variant slug → { gestures, basemap, seatKind } */
+/** variant slug â { gestures, basemap, seatKind } */
 const VARIANTS = new Map();
 
 /**
  * Registers one map type of the family.
- * @param slug      the type's kit slug ("choropleth", "flow-map-route-and-origin-destination"…)
+ * @param slug      the type's kit slug ("choropleth", "flow-map-route-and-origin-destination"â¦)
  * @param gestures  the gestures this variant draws in every format (a subset of GEO_GESTURES)
  * @param basemap   "plate" (a baked MapTiler plate), "live" (MapLibre), "none" (a designed grid: tiles, hexes)
  * @param seat      how a word attaches: "pole" | "centroid" | "point" | "cell" (documentation; the format measures it)
@@ -64,7 +64,7 @@ registerGeoVariant("hex-grid-spatial-binning-and-hex-cartogram", { gestures: ARE
 // A dot map's marks are the groups its dots belong to; a reference (a class floor) has no class to sit on.
 registerGeoVariant("dot-density", { gestures: AREA.filter((d) => d !== "reference"), basemap: "plate", seat: "point" });
 
-// ── marks ─────────────────────────────────────────────────────────────────────────────────────────
+// ââ marks âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 /**
  * The core's marks from a map's rows. rows: [{ key, name, value }] (key = ISO3 or code). Rows with no value are left
@@ -83,7 +83,7 @@ export function geoMarks(rows) {
   return marks;
 }
 
-// ── classes ───────────────────────────────────────────────────────────────────────────────────────
+// ââ classes âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 /** Round breaks for values with none given: 4 rising steps at a 1-2-5 round step (5 classes). */
 export function roundBreaks(values, classes = 5) {
@@ -103,7 +103,7 @@ export function roundBreaks(values, classes = 5) {
 /** Class index of a value: 0 below breaks[0], breaks.length at or above the last break. */
 export const classIndex = (value, breaks) => breaks.filter((b) => value >= b).length;
 
-// ── cameras ───────────────────────────────────────────────────────────────────────────────────────
+// ââ cameras âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 /** Web-Mercator 0..1 of a lon/lat (y grows south), the camera model every live executor interpolates in. */
 export function mercator(lon, lat) {
@@ -127,17 +127,21 @@ export function fitCamera(points, { width, height, pad = 0.15, tile = 512, maxZo
 /** How much closer one camera stands than another (the factor a zoom prints). */
 export const zoomFactor = (from, to) => 2 ** (to.camZoom - from.camZoom);
 
-// ── the adapter ───────────────────────────────────────────────────────────────────────────────────
+// ââ the adapter âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 /**
  * @param variant   a registered slug
- * @param rows      [{ key, name, value }] — the drawn places (null values = no data)
- * @param breaks    the class limits, rising (fixed for the beat: no-let-colour-scale); omitted → roundBreaks
- * @param cameras   { whole, … } named cameras { camX, camY, camZoom } (optional for a plate or a grid: "whole" only)
- * @param seats     { [camera]: { [key]: { x, y } } } — word anchors MEASURED at each camera (frame px)
- * @param groups    optional { [key]: groupName } — a group every member of which moves together (a region, a dot's
+ * @param rows      [{ key, name, value }] â the drawn places (null values = no data)
+ * @param breaks    the class limits, rising (fixed for the beat: no-let-colour-scale); omitted â roundBreaks
+ * @param cameras   { whole, â¦ } named cameras { camX, camY, camZoom } (optional for a plate or a grid: "whole" only)
+ * @param seats     { [camera]: { [key]: { x, y } } } â word anchors MEASURED at each camera (frame px)
+ * @param groups    optional { [key]: groupName } â a group every member of which moves together (a region, a dot's
  *                  kind); classLayer ids are always available, groups add their own layers
  */
+// The words that make a stated percentage a threshold, after the figure or before it.
+const THRESHOLD_AFTER = /^\s*%?\s*(?:ou plus|et plus|or more|or above|or higher|and above|and over)\b/i;
+const THRESHOLD_BEFORE = /(?:plus de|au moins|at least|more than|over|above|dépass\p{L}*|exceed\p{L}*|au-dessus de|≥|>)\s*$/iu;
+
 export function createGeo({ variant, rows, breaks, cameras = {}, seats = {}, groups = {} }) {
   if (!VARIANTS.has(variant)) throw new Error(`"${variant}" is not a registered geo variant (${[...VARIANTS.keys()].join(", ")})`);
   const marks = geoMarks(rows);
@@ -201,7 +205,7 @@ export function createGeo({ variant, rows, breaks, cameras = {}, seats = {}, gro
   //   notes      [{ key | keys, text, kind: "note" | "compare" | "filter" | "reference" }]
   //   kept       keys that keep their ink (a filter), or null (all keep it)
   //   floor      a class index whose classes at or above it are outlined (a reference), or null
-  //   classesShown  how many classes have arrived, lowest first (a reveal moves it 0 → all)
+  //   classesShown  how many classes have arrived, lowest first (a reveal moves it 0 â all)
   const rest = () => ({
     camera: "whole",
     focus: null,
@@ -288,7 +292,7 @@ export function createGeo({ variant, rows, breaks, cameras = {}, seats = {}, gro
   const equal = (a, b) => normal(a) === normal(b);
 
   /**
-   * The family's locks over a sequence of states: the colour domain is fixed (no-let-colour-scale — breaks never
+   * The family's locks over a sequence of states: the colour domain is fixed (no-let-colour-scale â breaks never
    * move, so a state carries no domain at all); a closeUp prints its factor (no-let-camera-magnification); one accent.
    */
   function invariants(states) {
@@ -329,7 +333,29 @@ export function createGeo({ variant, rows, breaks, cameras = {}, seats = {}, gro
     return null;
   };
 
-  // ── the core's hooks ──
+  /**
+   * A filter's note that states a threshold ("7 pays Ã  94 % ou plus", "dÃ©passent 94 %") holds when every kept place
+   * reaches it and no other place does. Each such figure, with whether it holds and the largest round value that
+   * would (null when none at the note's precision separates the two sets).
+   */
+  const thresholdsOf = (g, names) => {
+    if (g.do !== "filter" || typeof g.note !== "string") return [];
+    const keys = new Set((names ?? []).map((n) => resolve(n)).filter((k) => byKey.has(k)));
+    const kept = marks.filter((m) => keys.has(m.key)).map((m) => m.value);
+    const rest = marks.filter((m) => !keys.has(m.key)).map((m) => m.value);
+    if (!kept.length) return [];
+    const low = Math.min(...kept);
+    const high = rest.length ? Math.max(...rest) : -Infinity;
+    return figuresIn(g.note)
+      .filter((n) => n.percent && (THRESHOLD_AFTER.test(g.note.slice(n.index + n.raw.length)) || THRESHOLD_BEFORE.test(g.note.slice(Math.max(0, n.index - 30), n.index))))
+      .map((n) => {
+        const step = 10 ** -n.decimals;
+        const works = Math.floor(low / step + 1e-9) * step;
+        return { n, low, high, holds: low >= n.value && high < n.value, works: works > high ? works : null };
+      });
+  };
+
+  // ââ the core's hooks ââ
   const nearestBreak = (v) => BREAKS.reduce((p, b) => (Math.abs(b - v) < Math.abs(p - v) ? b : p), BREAKS[0]);
   const hooks = {
     /** The figures a geo gesture draws beyond its marks' values: a filter's count and floor, a reference's counts. */
@@ -346,14 +372,16 @@ export function createGeo({ variant, rows, breaks, cameras = {}, seats = {}, gro
         const vs = keys.map((k) => byKey.get(k).value);
         // The count it keeps, against all the places, and (for a map whose marks are counts, a dot map's groups)
         // the whole they add up to: "72 sites of 8,900 stations".
-        return [keys.length, marks.length, marks.reduce((t, m) => t + m.value, 0), ...(floor !== null ? [floor] : []), Math.min(...vs), Math.max(...vs)];
+        // A threshold that holds is a figure the filter draws: "94 % ou plus" over places from 94.9 % up, none above 90.7 % left out.
+        const held = thresholdsOf(g, names).filter((t) => t.holds).map((t) => t.n.value);
+        return [keys.length, marks.length, marks.reduce((t, m) => t + m.value, 0), ...(floor !== null ? [floor] : []), Math.min(...vs), Math.max(...vs), ...held];
       }
       if (g.do === "reference") {
         const v = Number(g.value);
         return [v, marks.filter((m) => m.value >= v).length, marks.filter((m) => m.value < v).length, marks.length];
       }
       // The whole map's own readings: how many places, how many classes, and the mean of the places (each place
-      // counted once — the tile cartogram's reading, not a territory-weighted one).
+      // counted once â the tile cartogram's reading, not a territory-weighted one).
       const mean = marks.reduce((t, m) => t + m.value, 0) / (marks.length || 1);
       if (g.do === "reveal") return [classes.length, ...BREAKS, marks.length, mean];
       if (g.do === "pull-back") return [marks.length, mean];
@@ -372,6 +400,20 @@ export function createGeo({ variant, rows, breaks, cameras = {}, seats = {}, gro
           throw new GestureRefusal(`gestures[${i}].value`, `on a map a reference is a class floor, and ${g.value} is not one of the class limits (${BREAKS.join(", ")}): give value ${nearestBreak(v)}, or set breaks to include ${g.value}`, {
             set: { index: i, field: "value", value: nearestBreak(v) },
           });
+      }
+      // A filter's threshold is true of every kept place and of no other: "7 pays à 99 % ou plus" passed on Sweden's
+      // 98.8 % (rounded) with France kept at 94.9 % (gx-choropleth, 12B, 2026-11-14).
+      for (const t of thresholdsOf(g, names)) {
+        if (t.holds) continue;
+        if (t.works === null)
+          throw new GestureRefusal(`gestures[${i}].note`, `states ${t.n.raw} % as a threshold, but no ${t.n.raw}-like figure has every kept place at or above it and every other below: drop the threshold from the note, or keep the places at or above a class limit`, {
+            set: { index: i, field: "note", value: undefined },
+          });
+        const fixed = g.note.slice(0, t.n.index) + formatLike(t.n, t.works) + g.note.slice(t.n.index + t.n.raw.length);
+        const why = t.low < t.n.value ? `a kept place sits at ${t.low.toFixed(t.n.decimals + 1)} %, under it` : `a place left out reaches ${t.high.toFixed(t.n.decimals + 1)} %`;
+        throw new GestureRefusal(`gestures[${i}].note`, `states ${t.n.raw} % as a threshold, but ${why}: write "${fixed}"`, {
+          set: { index: i, field: "note", value: fixed },
+        });
       }
       // A filter's count is the number of places it keeps: the core would also accept a kept place's RANK, and "7
       // countries above 94 %" passed on a filter keeping ten.
