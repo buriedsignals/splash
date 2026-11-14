@@ -45,3 +45,15 @@ describe("a note that calls a reading a peak", () => {
     expect(compare(["2024 · Africa", "2016 · Africa"], "down 31% since peak")).not.toThrow();
   });
 });
+
+// gx-line static (the 12B, 2026-11-14): "pic de 1963 : 29,1 Mt" was handed back as "1963 de 1963 : 29,1 Mt" — the
+// note already named its year, so swapping the word for it doubled the year and kept the "de".
+describe("a peak word written beside the reading's own time", () => {
+  it("should offer the note without the word and its connector", () => {
+    expect(name("2015 · Africa", "pic de 2015 : 689 651")).toThrow(/"2015 : 689 651"/);
+  });
+
+  it("should do the same in English", () => {
+    expect(name("2015 · Africa", "peak in 2015: 689,651")).toThrow(/"2015: 689,651"/);
+  });
+});

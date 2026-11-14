@@ -558,7 +558,13 @@ export function timeHooks(model) {
       const stated = figuresIn(g.note).some((n) => [1, 1e3, 1e6, 1e9].some((k) => Math.abs(n.value * k - total) <= total * 0.005));
       if (stated && model.times.every((t) => totalAt(t) <= total)) return;
     }
-    const value = g.note.slice(0, word.index) + m.key + g.note.slice(word.index + word[0].length);
+    // The note may already name the reading's time ("pic de 1963 : 29,1 Mt"): the word and its connector go, or the
+    // swap writes the year twice (gx-line, the 12B, 2026-11-14).
+    const rest = g.note.slice(word.index + word[0].length);
+    const beside = rest.match(/^\s*(?:de|du|d['’]|en|in|of|at|à)?\s*/i)[0];
+    const value = rest.slice(beside.length).startsWith(String(m.key))
+      ? g.note.slice(0, word.index) + rest.slice(beside.length)
+      : g.note.slice(0, word.index) + m.key + rest;
     throw new GestureRefusal(`gestures[${i}].note`, `says "${word[0]}" on ${m.name}, but ${m.series} is highest at ${top.key} (${top.value.toLocaleString("en-US")}), not ${m.key}: write "${value}", or name "${top.name}"`, { set: { index: i, field: "note", value } });
   }
 
