@@ -1,5 +1,5 @@
 // beat.mjs for the worked example proof/web-proportional-symbol-europe-capacity — "Cinq pays portent
-// 55 % de la capacité bas-carbone européenne". data.json holds one row per power station; this file
+// 54 % de la capacité bas-carbone européenne". data.json holds one row per power station; this file
 // sums them per country and seats each circle at the capacity-weighted centre of its own stations.
 // Every number on the page is COMPUTED from data.json or taken from the reading the render hands a
 // word function.
@@ -15,12 +15,12 @@ const col = (name) => {
 };
 const [COUNTRY, FUEL, MW, LON, LAT] = ["country", "fuel", "capacity_mw", "lon", "lat"].map(col);
 const OLD = ["Hydro", "Nuclear"];
-const NEW = ["Wind", "Solar"];
-// Outside the continent the claim is about.
+// Outside the map's Europe frame: the plate says they are left out (limits). Every fuel is summed — a
+// low-carbon total that leaves one out is a different number.
 const OUTSIDE = new Set(["Algeria", "Iraq", "Morocco", "Syrian Arab Republic", "Tunisia"]);
 const stations = table.rows
   .map((r) => ({ country: r[COUNTRY], fuel: r[FUEL], mw: Number(r[MW]), lon: Number(r[LON]), lat: Number(r[LAT]) }))
-  .filter((s) => [...OLD, ...NEW].includes(s.fuel) && s.mw > 0 && Number.isFinite(s.lon) && Number.isFinite(s.lat) && !OUTSIDE.has(s.country));
+  .filter((s) => s.mw > 0 && Number.isFinite(s.lon) && Number.isFinite(s.lat) && !OUTSIDE.has(s.country));
 
 // The page's language is French: the names the map, the table and the tooltips print.
 const NAMES = {
@@ -107,10 +107,10 @@ export default {
   hint:
     "Carte interactive : glissez-la pour la déplacer, pincez ou utilisez les boutons plus et moins pour zoomer, les flèches du clavier la déplacent " +
     "une fois qu'elle a le focus. Les cercles et la légende gardent leur taille à l'écran : la carte s'approche, l'échelle des aires ne change pas.",
-  title: "Cinq pays portent 55 % de la capacité bas-carbone européenne",
+  title: "Cinq pays portent 54 % de la capacité bas-carbone européenne",
   limits:
     "Un cercle par pays, sa SURFACE proportionnelle à la capacité bas-carbone installée, posé au centre pondéré de ses propres centrales et " +
-    "translucide, pour qu'un recouvrement se voie.",
+    "translucide, pour qu'un recouvrement se voie. L'Algérie, l'Irak, le Maroc, la Syrie et la Tunisie, hors du cadre, sont laissés de côté.",
   reading:
     "Lecture : l'exposant qui fait la taille des cercles est le seul réglage qu'une carte à symboles ne montre jamais — il est ci-dessus, et aucun " +
     `pays ne bouge quand on en change. Sans JavaScript le geste ne quitte pas la page : il passe dans le tableau, dont les ${symbols.length} pastilles ` +
@@ -124,9 +124,9 @@ export default {
     `${fr(topShare, 0)} % de la capacité du continent ; le reste de la carte est un semis de petits cercles. Une commande au-dessus de la carte change la ` +
     "loi qui transforme une capacité en taille de cercle, sans déplacer aucun pays. La carte elle-même est vivante : elle se déplace et se zoome avec " +
     "les contrôles de MapTiler, sans que la taille des cercles change.",
-  // The claim checked against the drawn data: the five largest hold 55 % of the total.
+  // The claim checked against the drawn data: the five largest hold 54 % of the total.
   check({ ranked: drawn, total: sum }) {
     const share = (drawn.slice(0, 5).reduce((s, r) => s + r.value, 0) / sum) * 100;
-    if (Math.round(share) !== 55) throw new Error(`the title says five countries hold 55 %; they hold ${share.toFixed(1)} %`);
+    if (Math.round(share) !== 54) throw new Error(`the title says five countries hold 54 %; they hold ${share.toFixed(1)} %`);
   },
 };

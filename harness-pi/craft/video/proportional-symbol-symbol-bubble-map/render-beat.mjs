@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { sizeFor, videoExportSize } from "#shared/chart-video/sizes.mjs";
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
-import { applyStoryboard, assertDrawsClaimColumn, assertFigureMatchesValue, assertHeadlineNumbersDrawn } from "./guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertFigureMatchesValue, assertHeadlineNumbersDrawn, assertNoCategoryDropped } from "./guards.mjs";
 import { mapTilerKey, measureMap, renderMapVideo } from "./map-video.mjs";
 import { assertEventFramesReadable, pickDirection, plain, refusing } from "./video.mjs";
 
@@ -42,6 +42,7 @@ await refusing(HERE, async () => {
   const subject = subjectOf(reading, beat);
   const TOP = subject.TOP;
   assertDrawsClaimColumn(subject.stations.map((s) => s.mw), HERE);
+  assertNoCategoryDropped(beat.symbols, HERE, [beat.title, beat.limits, beat.limitNote, beat.subjectNote].flat().filter((t) => typeof t === "string").join(" "));
   assertFigureMatchesValue(beat.figure, [...subject.keyValues, ...subject.ranked.slice(0, TOP).map((s) => s.mw)], HERE);
   assertHeadlineNumbersDrawn([beat.title].flat()[0], [TOP, subject.total - TOP, r1(subject.shareTop), r1(100 - subject.shareTop), ...subject.ranked.slice(0, TOP).map((s) => s.mw)], "circles");
 

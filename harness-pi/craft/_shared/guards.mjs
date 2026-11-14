@@ -3,6 +3,7 @@
 // what to change in beat.mjs — the model's only file.
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
+import { codeFor, norm } from "./country-names.mjs";
 
 const front = (here) => {
   const storyboard = join(here, "..", "..", "STORYBOARD.md");
@@ -775,5 +776,89 @@ export function assertFigureMatchesValue(figure, values, here) {
     const up = [1, 1e3, 1e6, 1e9].map((f) => f * column.scale).filter((s) => s >= column.scale && Math.abs(v * column.scale) / s >= 1).pop();
     const works = `${+(v * column.scale / up).toPrecision(3)} ${spell(up, column.base)}`;
     throw new Error(`figure(${v}) prints "${printed}", but ${v} is in ${spell(column.scale, column.base)} (data.json's column unit): a figure divided by a thousand names the next unit — a value that works: "${works}"`);
+  }
+}
+
+const stem = (s) => norm(s).replace(/[^a-z]/g, "").slice(0, 4);
+
+/**
+ * Symbols that sum data.json's rows per place, with every row of one category left out. The 12B's bubble map web
+ * (2026-11-14) listed six low-carbon fuels and not Nuclear, under a subject naming the nuclear plants: France drew
+ * 34 GW where data.json holds 97, and every guard passed. A category the plate states it leaves out passes, unless
+ * the storyboard's subject or takeaway names it.
+ * @param {{ name: string, iso?: string, value: number }[]} symbols one per place, or one per row named by its place
+ * @param {string} here the beat folder
+ * @param {string} said the plate's own words (title, standfirst, limits, notes)
+ */
+export function assertNoCategoryDropped(symbols, here, said = "") {
+  const dataPath = join(here, "data.json");
+  if (!existsSync(dataPath) || symbols.length < 3) return;
+  const table = JSON.parse(readFileSync(dataPath, "utf8"));
+  const columns = table.columns ?? [];
+  const field = front(here);
+  // The claim's column, or else every quantity data.json holds (coordinates and years are not summed).
+  const claim = columns.findIndex((c) => c.name === field?.("claimColumn") && c.type === "number");
+  const measures = claim >= 0 ? [claim] : columns.map((c, i) => (c.type === "number" && !/^(lon|lng|long|longitude|lat|latitude|x|y|year|annee|année)$/i.test(c.name) ? i : -1)).filter((i) => i >= 0);
+  for (const measure of measures) dropsAt(measure);
+  function dropsAt(measure) {
+  const texts = columns.map((c, i) => (c.type === "text" ? i : -1)).filter((i) => i >= 0);
+  const shapes = join(here, "shapes.geojson");
+  const features = existsSync(shapes) ? JSON.parse(readFileSync(shapes, "utf8")).features ?? [] : [];
+  const keyOf = (name, iso) => iso ?? (codeFor(name, features)?.exact ? codeFor(name, features).code : norm(name));
+  // Symbols drawn one per row (a video's stations) add up per place like one per place.
+  const drawn = new Map();
+  for (const s of symbols) {
+    const key = keyOf(s.name, s.iso && String(s.iso));
+    const had = drawn.get(key);
+    drawn.set(key, { name: s.name, value: (had?.value ?? 0) + Number(s.value) });
+  }
+  // The place column: the text column most of whose values key to a drawn symbol.
+  const placeAt = texts
+    .map((i) => ({ i, hits: new Set(table.rows.map((r) => keyOf(String(r[i]))).filter((k) => drawn.has(k))).size }))
+    .reduce((a, b) => (b.hits > a.hits ? b : a), { i: -1, hits: 0 });
+  // Symbols with no place name are held to the total of every row.
+  const byPlace = placeAt.hits >= Math.max(3, drawn.size / 2);
+  if (!byPlace) {
+    if (symbols.some((s) => s.name || s.iso)) return;
+    drawn.clear();
+    drawn.set("*", { name: "the map", value: symbols.reduce((a, s) => a + Number(s.value), 0) });
+  }
+  const totals = new Map();
+  const byCategory = new Map(); // `${column}\u0000${value}` -> Map(place -> sum)
+  for (const r of table.rows) {
+    const key = byPlace ? keyOf(String(r[placeAt.i])) : "*";
+    const v = cell(r[measure]);
+    if (!drawn.has(key) || !Number.isFinite(v)) continue;
+    totals.set(key, (totals.get(key) ?? 0) + v);
+    for (const i of texts) {
+      if (byPlace && i === placeAt.i) continue;
+      const cat = `${columns[i].name}\u0000${r[i]}`;
+      const m = byCategory.get(cat) ?? new Map();
+      m.set(key, (m.get(key) ?? 0) + v);
+      byCategory.set(cat, m);
+    }
+  }
+  const places = [...totals.keys()];
+  // One power-of-ten scale for every symbol (MW drawn as GW), the one that brings most places closest to their total.
+  const scale = [...Array(13)].map((_, k) => 10 ** (k - 6)).reduce((a, b) => {
+    const off = (s) => places.reduce((acc, p) => acc + Math.abs(Math.log((drawn.get(p).value * s) / totals.get(p) || 1e-12)), 0);
+    return off(b) < off(a) ? b : a;
+  });
+  const near = (v, h) => Math.abs(v - h) <= Math.max(0.015 * h, 0.5 / scale);
+  for (const [cat, sums] of byCategory) {
+    const hit = places.filter((p) => (sums.get(p) ?? 0) > 0.02 * totals.get(p));
+    if (hit.length < Math.min(2, places.length)) continue;
+    const without = hit.filter((p) => near(drawn.get(p).value * scale, totals.get(p) - sums.get(p)));
+    if (without.length < 0.8 * hit.length) continue;
+    const [column, value] = cat.split("\u0000");
+    const named = [field?.("subject"), field?.("takeaway")].some((t) => t && stem(value) && norm(t).replace(/[^a-z ]/g, "").includes(stem(value)));
+    const stated = stem(value) && norm(said).replace(/[^a-z ]/g, "").includes(stem(value));
+    if (stated && !named) continue;
+    const p = hit.reduce((a, b) => (sums.get(b) > sums.get(a) ? b : a));
+    const rowsOf = table.rows.filter((r) => String(r[columns.findIndex((c) => c.name === column)]) === value).length;
+    throw new Error(
+      `the symbols leave out every ${column} "${value}" row (${rowsOf} rows of data.json): ${drawn.get(p).name} draws ${+(drawn.get(p).value).toPrecision(6)} where data.json holds ${+(totals.get(p) / scale).toPrecision(6)} with them${named ? ` — and the storyboard's subject names it` : ""}. Sum every row of each place, ${value} included${named ? "" : `, or say on the plate that ${value} is left out`}`,
+    );
+  }
   }
 }
