@@ -1066,6 +1066,10 @@ Luxembourg at 90.7 and Ukraine has no data. The title is true.
 | Qwen3.5-9B | exit 0, 33 turns, 1051 s (three passes on a title-shortening refusal and a 15-min cap) | classes right, but the old guard forced its true "94 %" to "95" (the kept minimum rounded up): the filter keeps six, the legend's top limit reads 95 and the title says seven at 94 | `868c9866f` (same rule: 94 holds, 95 is no longer offered) |
 | both | | "Albanie, 100.0 %" — an English decimal on a French plate | `2a051521e`: the plate's own words take a comma-decimal story's decimal mark |
 
+Re-run after both fixes (12B, 2026-11-14): exit 0, 27 turns, 556 s, one pass. **The plate is true**: the top class
+(94 % and over) holds exactly the seven of data.json — Iceland, Norway, Sweden, Finland, France, Switzerland, Albania —
+the note reads "Albanie, 100,0 %" with the French decimal mark, and the breaks keep the model's own 94.
+
 Open: the beat's `check()` is replaced by code's `claimCheck`, which decides maximum/minimum/comparison claims only — a
 "seven countries at 94 %" count in the title is held to nothing but the filter's own note.
 
