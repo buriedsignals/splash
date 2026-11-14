@@ -322,7 +322,10 @@ await refusing(HERE, async () => {
   const liveScript = liveSymbolsScript(live, { scope: ".chart-figure", styleModule, lawName: "chart-stack" });
 
   const tableCaption = plain(typeof beat.tableCaption === "function" ? beat.tableCaption({ places: rows.length, rowScale: ROW_SCALE * 100 }) : beat.tableCaption);
-  const caveat = `${caveatHead} ${mercator}`;
+  // chart-web clamps the standfirst to one line above 1100 px: limits alone fit it, limits + the Mercator sentence
+  // were cut mid-sentence at every desktop width. The Mercator sentence goes to the reading line, never clamped.
+  const caveat = caveatHead;
+  const readingLine = `${reading} ${mercator}`;
   const alt = plain(typeof beat.alt === "function" ? beat.alt({ ranked: rows.map((r) => ({ name: r.name, value: r.value })), total }) : beat.alt);
   assertSymbolUnitStated(beat.symbols, HERE, `${said} ${alt}`);
   // Metadata for the format's interaction plan (English is fine; it is not printed).
@@ -375,7 +378,7 @@ await refusing(HERE, async () => {
       props: {
         plate, symbols, keySizes, scale, reviewBox: REVIEW_BOX, livePlan, liveScript, liveHint: hint, maplibreCss, maplibreJs,
         tableCaption, columns, aspect: box.width / box.height, size: box.width,
-        title, eyebrow, caveat, source, reading, claimNote: callout, alt,
+        title, eyebrow, caveat, source, reading: readingLine, claimNote: callout, alt,
         interaction, direction, ground: direction.ground, accent: direction.accent,
       },
       outDir: join(HERE, "renders"),
