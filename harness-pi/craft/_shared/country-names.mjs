@@ -7,6 +7,13 @@ export const ALIASES = {
   "bosnia and herzegovina": "BIH", bosnia: "BIH", moldova: "MDA", "republic of moldova": "MDA", russia: "RUS",
   "russian federation": "RUS", turkey: "TUR", turkiye: "TUR", "türkiye": "TUR", kosovo: "XKX", slovakia: "SVK",
   "slovak republic": "SVK", ireland: "IRL", "republic of ireland": "IRL", belarus: "BLR", ukraine: "UKR",
+  // UN official names, as WRI and UN datasets write them.
+  "syrian arab republic": "SYR", "iran (islamic republic of)": "IRN", "islamic republic of iran": "IRN",
+  "republic of korea": "KOR", "korea, republic of": "KOR", "democratic people's republic of korea": "PRK",
+  "viet nam": "VNM", "lao people's democratic republic": "LAO", "united republic of tanzania": "TZA",
+  "bolivia (plurinational state of)": "BOL", "venezuela (bolivarian republic of)": "VEN",
+  "democratic republic of the congo": "COD", "libyan arab jamahiriya": "LBY", "state of palestine": "PSE",
+  "united states of america": "USA", "republic of north macedonia": "MKD",
 };
 
 export const norm = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/\s+/g, " ").trim();
