@@ -33,7 +33,7 @@ import { validateExpressions } from "#shared/map-beat/mount.mjs";
 import { cameraFields, lonLatOf, mercatorOf, stageViewOf, validateScrollyPlan, zoomShiftFor } from "#shared/map-beat/scrolly.mjs";
 import { plateTints } from "#shared/map-beat/tints.mjs";
 import { arrivalsFor, proportionalPlan } from "./plan.mjs";
-import { applyStoryboard, assertNumbers, assertLegibleLabels, assertHeadlineNumbersDrawn, assertDrawsClaimColumn } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertLegibleLabels, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, assertNoCategoryDropped, assertPlacesLeftOutStated, assertSymbolUnitStated } from "./guards.mjs";
 import { plain, refusing, storyLanguage } from "./web.mjs";
 import { renderBeatScrolly, scrollySkill } from "./scrolly.mjs";
 import { figureCheck, liveGuard, maptilerKey, openCards, owes, renderCardsPage, wordsOf } from "./scrolly-map.mjs";
@@ -214,6 +214,12 @@ await refusing(HERE, async () => {
   if (!owes(largestLabel, reading.largest.name) || !owes(largestLabel, format(first.value))) throw new Error(`largestLabel must state r.largest.name and format(r.largest.value) = "${format(first.value)}"; it says: ${largestLabel}`);
   const alt = plain(typeof beat.alt === "function" ? beat.alt(reading) : beat.alt);
   check("alt", alt);
+  // A fuel, a country or a unit the sites leave out must be said in the cards, notes, limits or alt, as on web and video.
+  const said = [[beat.title].flat().map(plain), limits, cardProse.flat(), words.unit, words.subjectNote, words.cutNote, words.circleIs, words.cut, alt].flat().filter((t) => typeof t === "string").join(" ");
+  const placed = beat.sites.map((s) => ({ name: String(s.region ?? ""), value: s.value }));
+  assertNoCategoryDropped(placed, HERE, said);
+  assertPlacesLeftOutStated(placed, HERE, said);
+  assertSymbolUnitStated(placed, HERE, said);
   if (!Array.isArray(beat.keySizes) || beat.keySizes.length < 1 || beat.keySizes.length > 4 || beat.keySizes.some((v) => !(v > 0 && v <= first.value)))
     throw new Error(`keySizes must be 1 to 4 round values for the key's circles, each above zero and at most the largest (${first.value}); got ${JSON.stringify(beat.keySizes)}`);
   const sizes = beat.keySizes.map((v) => ({ mw: v, label: format(v) }));

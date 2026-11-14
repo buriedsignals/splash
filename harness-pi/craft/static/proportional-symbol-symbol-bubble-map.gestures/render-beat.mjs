@@ -31,7 +31,7 @@ import { GestureGeoPointStatic } from "./GestureGeoPointStatic.tsx";
 import { GestureRefusal } from "./gesture-core.mjs";
 import { pointMarks, refusalText, setNotesDrawn, stageGeoPoint } from "./gesture-geo-point-family.mjs";
 import { composeGeoPointStatic } from "./gesture-geo-point-static.mjs";
-import { applyStoryboard, assertNumbers, assertDrawsClaimColumn, errorText, importBeat, rowFacts } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertDrawsClaimColumn, assertNoCategoryDropped, assertPlacesLeftOutStated, assertSymbolUnitStated, errorText, importBeat, rowFacts } from "./guards.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 /** The format this copy of the runner renders: the web, scrolly and video kits carry the same runner with FORMAT set. */
@@ -90,6 +90,11 @@ if (negative.length)
 if (!stations.some((s) => s.subject))
   throw new Error(`no row has ${subjectRule.column} = ${JSON.stringify(subjectRule.equals)}: the subject matches nothing in data.json`);
 assertDrawsClaimColumn(stations.map((s) => s.value), HERE);
+// The plate's fixed words: a fuel, a country or a unit the rows leave out must be said here (limits), as on web and video.
+const said = [beat.title, beat.limits, beat.reading, beat.dotIs, beat.source, typeof beat.alt === "string" ? beat.alt : ""].flat().filter((t) => typeof t === "string").join(" ");
+assertNoCategoryDropped(stations, HERE, said);
+assertPlacesLeftOutStated(stations, HERE, said);
+assertSymbolUnitStated(stations, HERE, said);
 
 const total = stations.length;
 const valueAll = stations.reduce((a, s) => a + s.value, 0);
