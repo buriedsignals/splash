@@ -31,6 +31,7 @@ import {
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
 import { balanceLast } from "./wrap-balance.mjs";
+import { dotUnderLabel } from "./geo-label-clear.mjs";
 import { mix } from "#shared/chart-beat/colour.mjs";
 import { applyCase } from "#shared/chart-beat/registers.mjs";
 import {
@@ -429,6 +430,7 @@ export function GestureGeoPointStaticLocator({
   };
   const placed: Placed[] = [];
   const notPlaced: string[] = [];
+  const underSubject: string[] = [];
 
   /** A SETTLEMENT'S DOT IS A MARK, AND NO NAME OF THE SAME CLASS MAY SIT BESIDE ONE IT DOES NOT
    *  NAME. The arbiter kept label boxes and nothing else, so a dot whose own name had gone to its
@@ -538,7 +540,9 @@ export function GestureGeoPointStaticLocator({
      *  and the area names are placed after the subject: it cost the country the story is in, at two
      *  directions out of three, at both sizes. SCMP's own rule for this family is that the plate
      *  names the country the story is in. A crowded dot is the cheaper of the two losses, and it is
-     *  recorded here rather than left to be rediscovered. */
+     *  recorded here rather than left to be rediscovered.
+     *  The settlement gives way instead: since 2026-11-15 a settlement whose dot lands on this label
+     *  is left off the plate (dotUnderLabel, below), so neither the dot nor the country is lost to it. */
     const boxesFor = (c: (typeof corners)[number]) =>
       subject.lines.map((l, i) =>
         boxAt(l, annot, c.x, c.lastBaseline - (subject.lines.length - 1 - i) * annotLead, c.anchor),
@@ -592,7 +596,15 @@ export function GestureGeoPointStaticLocator({
     if (!sh?.seat) continue;
     put(sh.name, areaReg, sh.seat.x, sh.seat.y, "area", 0);
   }
-  for (const p of places) put(p.name, placeReg, p.x, p.y, "place", 2.4);
+  // A settlement whose dot lands on the subject's label is left off: the reader gives the subject the dot nearest
+  // its name (gx-locator, the 12B, 2026-11-15: Dnipro's ring on the « Z » of « Zaporizhzhia » at 1920x1080).
+  for (const p of places) {
+    if (dotUnderLabel(subjectBlock.boxes, mapX + p.x * mapW, mapY + p.y * mapW, PLACE_DOT)) {
+      underSubject.push(p.name);
+      continue;
+    }
+    put(p.name, placeReg, p.x, p.y, "place", 2.4);
+  }
   for (const w of waters) {
     let done = false;
     for (const form of w.forms)
@@ -614,7 +626,8 @@ export function GestureGeoPointStaticLocator({
       `${placed.filter((p) => p.kind === "water").length} waters placed` +
       (notPlaced.length
         ? ` · no room for: ${notPlaced.join(", ")}`
-        : " · none dropped"),
+        : " · none dropped") +
+      (underSubject.length ? ` · left off under the subject's label: ${underSubject.join(", ")}` : ""),
   );
 
   /** The subject's sentence, built once and drawn on one side or the other of the camera's clip. */
