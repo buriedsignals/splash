@@ -72,6 +72,23 @@ export function languageCode(answer: string): string | undefined {
 const CLAIMED_DONE =
   /\b(complete|completed|finali[sz]ed|closed|ready to move|we are ready|all set)\b/i;
 
+const LOOP_WINDOW = 1200;
+const LOOP_REPEATS = 25;
+/** True when the text ends in one unit of 1 to 40 characters repeated LOOP_REPEATS times or more, over at least
+ * 200 characters: a markdown rule of 25 dashes is not a loop. */
+export function isTokenLoop(text: string): boolean {
+  for (let n = 1; n <= 40; n++) {
+    const need = Math.max(LOOP_REPEATS, Math.ceil(200 / n));
+    if (text.length < n * need) continue;
+    const unit = text.slice(-n);
+    if (!unit.trim()) continue;
+    let k = 1;
+    while (k < need && text.slice(-(k + 1) * n, -k * n) === unit) k++;
+    if (k >= need) return true;
+  }
+  return false;
+}
+
 export async function converse(o: ConverseOptions): Promise<ConverseResult> {
   const limits = {
     rounds: 30,
@@ -93,6 +110,12 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
   // The hidden-reasoning cut only arms on that first thought token; this one arms when the request goes out.
   let mute: ReturnType<typeof setTimeout> | undefined;
   let cutSilent = false;
+  // gx-dot-strip (the 12B, 2026-11-14): a craft turn streamed "<|channel>thought\n" over and over, 9 196 characters in
+  // 454 s, and only the silence cut ended it. The tail of the stream is checked as it grows: a unit of at most 40
+  // characters repeated LOOP_REPEATS times in a row is a token loop, cut at once.
+  let tail = "";
+  let checkedAt = 0;
+  let cutLoop = false;
   const hush = () => {
     clearTimeout(mute);
     mute = undefined;
@@ -119,6 +142,20 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
   let lastRecord = "";
   const off = o.session.subscribe((e) => {
     if (e.type === "message_update" && /^(text_start|toolcall_start)$/.test(e.assistantMessageEvent?.type ?? "")) hush();
+    if (e.type === "message_update" && /^(thinking|text)_delta$/.test(e.assistantMessageEvent?.type ?? "")) {
+      tail = (tail + String((e.assistantMessageEvent as { delta?: string } | undefined)?.delta ?? "")).slice(-LOOP_WINDOW);
+      if (tail.length - checkedAt >= 200 || tail.length === LOOP_WINDOW) {
+        checkedAt = tail.length === LOOP_WINDOW ? LOOP_WINDOW - 200 : tail.length;
+        if (isTokenLoop(tail)) {
+          cut = cutLoop = true;
+          void o.session.abort();
+        }
+      }
+    }
+    if (e.type === "message_end") {
+      tail = "";
+      checkedAt = 0;
+    }
     if (e.type === "message_update" && reasoningOff) {
       const t = e.assistantMessageEvent?.type;
       if (t === "thinking_start" && !hidden)
@@ -218,15 +255,17 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
       hush();
       if (cut) {
         cut = false;
-        const why = cutSilent
+        const why = cutLoop
+          ? "repeated the same few characters over and over, a token loop, and was cut"
+          : cutSilent
           ? `sent nothing for ${limits.silentTurnSeconds} s, no word and no tool call, and was cut`
           : `stayed in hidden reasoning for ${limits.hiddenReasoningSeconds} s with nothing said and no tool called, and was cut`;
-        cutSilent = false;
+        cutSilent = cutLoop = false;
         if (++cuts >= limits.sameFailure) {
           stop = `hidden reasoning cut ${cuts}x`;
           break;
         }
-        prompt = `[harness] Your last turn ${why}. Thinking is off: do not reason first. Answer the last message directly, or call the tool it needs. ${await o.gaps()}`.trimEnd();
+        prompt = `[harness] Your last turn ${why}. ${reasoningOff ? "Thinking is off: do not reason first. " : ""}Answer the last message directly, or call the tool it needs. ${await o.gaps()}`.trimEnd();
         o.log.push(`HARNESS: ${prompt}`);
         continue;
       }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { converse } from "../src/conversation.ts";
+import { converse, isTokenLoop } from "../src/conversation.ts";
 
 /** A session that never calls a tool and asks the journalist something every turn, as the 12B did on China. */
 function silentSession() {
@@ -422,5 +422,60 @@ describe("converse after the language nudge", () => {
       recordTools: ["record_language", "record_slot"],
     });
     expect(offered[4]).toEqual(["read_file", "record_language", "record_slot"]);
+  });
+});
+
+// gx-dot-strip static (the 12B, 2026-11-14): one craft turn streamed "<|channel>thought\n" over and over, 9 196
+// characters in 454 s, and only the silence cut ended it. A short unit repeated that many times is no reasoning.
+describe("converse cutting a token loop", () => {
+  const looping = async (unit: (k: number) => string) => {
+    const prompts: string[] = [];
+    let listener: (e: unknown) => void = () => {};
+    let release: () => void = () => {};
+    let turn = 0;
+    const session = {
+      subscribe: (f: (e: unknown) => void) => ((listener = f), () => {}),
+      prompt: async (text: string) => {
+        prompts.push(text);
+        if (turn++ > 0) return;
+        listener({ type: "message_update", assistantMessageEvent: { type: "thinking_start" } });
+        for (let k = 0; k < 200; k++)
+          listener({ type: "message_update", assistantMessageEvent: { type: "thinking_delta", delta: unit(k) } });
+        await Promise.race([new Promise<void>((r) => (release = r)), new Promise((r) => setTimeout(r, 300))]);
+      },
+      getLastAssistantText: () => "",
+      abort: async () => release(),
+    };
+    await converse({
+      session: session as never,
+      first: "Write the beat.",
+      journalist: { answer: async () => "Yes." },
+      dialogue: { lastJournalist: "", lastProposal: "" },
+      conversational: false,
+      done: async () => false,
+      gaps: async () => "",
+      limits: { rounds: 3 },
+      log: [],
+    });
+    return prompts;
+  };
+
+  it("should cut a turn that repeats one short unit and ask it again", async () => {
+    expect((await looping(() => "<|channel>thought\n"))[1]).toStartWith("[harness] Your last turn repeated");
+  });
+
+  it("should let varied reasoning run", async () => {
+    const prompts = await looping((k) => `step ${k}: Poland rose ${(k * 0.37).toFixed(2)} points; `);
+    expect(prompts.length).toBe(1);
+  });
+});
+
+describe("isTokenLoop", () => {
+  it("should not take a markdown rule for a loop", () => {
+    expect(isTokenLoop(`Le plancher est monté.\n${"-".repeat(40)}`)).toBe(false);
+  });
+
+  it("should take the 12B's thought-channel repeat for a loop", () => {
+    expect(isTokenLoop("<|channel>thought\n".repeat(30))).toBe(true);
   });
 });
