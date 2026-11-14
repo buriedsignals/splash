@@ -493,6 +493,32 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
           { set: { index: i, field: "note", value: fixed } },
         );
       }
+      // A figure written right after a mark's name is that mark's figure. "Albanie : 99,9 % de nucléaire ; Islande :
+      // 99,9 % d'hydraulique" passed (gx-heatmap-matrix, Qwen3.5-9B, 2026-11-14): 99,9 is Iceland's hydro, a figure the
+      // compare draws, on a row that draws 0. A cell mark ("Albanie · Nucléaire") is named by its row.
+      if (marks.length > 1) {
+        const labelOf = (m) => String(m).split(" · ")[0];
+        const labels = marks.map(labelOf);
+        const at = marks
+          .map((m, k) => ({ m, k, i: labels.filter((l) => l === labels[k]).length === 1 ? read.indexOf(labels[k]) : -1 }))
+          .filter((x) => x.i >= 0)
+          .sort((a, b) => a.i - b.i);
+        const figuresOf = (m) => [valueOf.get(m), ...(claim.facts?.[m] ?? [])].filter(Number.isFinite);
+        const hit = (n, f) => matches(n, f) || matches(n, f * 10 ** scale);
+        for (const [j, x] of at.entries()) {
+          const end = at[j + 1]?.i ?? read.length;
+          const first = stated.find((n) => n.index > x.i + labels[x.k].length - 1 && n.index < end);
+          if (!first || figuresOf(x.m).some((f) => hit(first, f))) continue;
+          if (!marks.some((o) => o !== x.m && figuresOf(o).some((f) => hit(first, f)))) continue;
+          const own = valueOf.get(x.m);
+          const fixed = g.note.slice(0, first.index) + formatLike(first, own) + g.note.slice(first.index + first.raw.length);
+          throw new GestureRefusal(
+            `gestures[${i}].note`,
+            `writes ${first.raw} after ${labels[x.k]}, but ${x.m} draws ${formatLike(first, own)} — ${first.raw} is another mark's figure: write "${fixed}"`,
+            { set: { index: i, field: "note", value: fixed } },
+          );
+        }
+      }
       if (marks.length === 1 && ["name", "annotate", "highlight"].includes(g.do))
         for (const [word, holds, said] of RANK_WORDS) {
           // A rank word may speak of another column the row is ranked by ("the most beds", raw, beside a rate).

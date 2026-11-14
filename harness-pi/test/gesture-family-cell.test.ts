@@ -513,3 +513,25 @@ describe("the data's shape never refuses", () => {
     expect([grid.rows.length, grid.rows[0].label, scope[0]]).toEqual([12, beat.rows[0].label, "12 / 24"]);
   });
 });
+
+// gx-heatmap-matrix static (Qwen3.5-9B, 2026-11-14): the compare's note read "Albanie : 99,9 % de nucléaire ;
+// Islande : 99,9 % d'hydraulique". Albania draws no nuclear at all; 99,9 is Iceland's hydro. The figure was one the
+// gesture draws, so it passed — on the wrong row. A figure written after a mark's name is that mark's figure.
+describe("a note's figure belongs to the mark it follows", () => {
+  const top = HEAT.rows[0].label;
+  const hydro = cellOf(HEAT, top, "Hydro");
+  const france = cellOf(HEAT, "France", "Nuclear");
+  const swapped = `France : ${one(hydro.value)} % ; ${top} : ${one(hydro.value)} %`;
+  const compare = (note: string) => [{ do: "compare", marks: [france.name, hydro.name], note }];
+
+  it("should refuse a figure written after a row that is another mark's figure", () => {
+    const error = refusal(() => stage(HEAT, HEAT_CLAIM, "static", compare(swapped)));
+    expect(error.message).toContain(`France · Nuclear draws ${one(france.value)}`);
+  });
+
+  it("should accept each figure written after its own row", () => {
+    expect(() =>
+      stage(HEAT, HEAT_CLAIM, "static", compare(`France : ${one(france.value)} % ; ${top} : ${one(hydro.value)} %`)),
+    ).not.toThrow();
+  });
+});
