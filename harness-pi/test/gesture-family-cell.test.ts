@@ -557,3 +557,25 @@ describe("a compare's note states each mark's own figure", () => {
     ).not.toThrow();
   });
 });
+
+// gx-heatmap-matrix static (the 12B, 2026-11-15): "Islande : 13,5 % d'hydraulique" — 13.46 is Iceland's hydro in TWh,
+// a row fact, so the core let it pass as a percent; the cell is drawn at 70.7 %.
+describe("a note's percent on a cell is the cell's drawn share", () => {
+  const top = HEAT.rows[0].label;
+  const hydro = cellOf(HEAT, top, "Hydro");
+  const france = cellOf(HEAT, "France", "Nuclear");
+  const raw = 13.46;
+  const claim = { ...HEAT_CLAIM, facts: factsFor(HEAT, { [top]: [raw] }) };
+  const compare = (note: string) => [{ do: "compare", marks: [hydro.name, france.name], note }];
+
+  it("should refuse a row's raw figure written as the cell's percent, and offer the drawn share", () => {
+    const error = refusal(() => stage(HEAT, claim, "static", compare(`${top} : 13,5 % ; France : ${one(france.value).replace(".", ",")} %`)));
+    expect(error.fix.set.value).toBe(`${top} : ${one(hydro.value).replace(".", ",")} % ; France : ${one(france.value).replace(".", ",")} %`);
+  });
+
+  it("should accept the drawn shares", () => {
+    expect(() =>
+      stage(HEAT, claim, "static", compare(`${top} : ${one(hydro.value)} % ; France : ${one(france.value)} %`)),
+    ).not.toThrow();
+  });
+});

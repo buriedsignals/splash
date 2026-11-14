@@ -13,7 +13,7 @@
 // The family's locks (GRAMMAR.md §8): the colour domain is fixed (no-let-colour-scale) — no gesture moves a break, and no
 // rescale exists here; a reorder moves only the rows the claim names (no-reorder-rows-claim), every other row keeps its
 // relative order; a calendar's order is the calendar's and never moves.
-import { figuresIn, GestureRefusal } from "./gesture-core.mjs";
+import { figuresIn, formatLike, GestureRefusal } from "./gesture-core.mjs";
 import { FAMILIES } from "./gesture-registry.mjs";
 
 export const FAMILY = "cell";
@@ -309,6 +309,21 @@ export function cellHooks(grid) {
     },
     refuse(g, ctx) {
       const i = ctx.index;
+      // A percent the note states on named cells is a share the grid draws: one of theirs, their rows' measure, or a
+      // figure the group gives. A row's raw data figure written with "%" is not one (gx-heatmap-matrix, the 12B,
+      // 2026-11-15: "Islande : 13,5 % d'hydraulique", 13.46 TWh, on a cell drawn at 70.7 %).
+      const named = (ctx.marks ?? []).map((m) => byName.get(m)).filter(Boolean);
+      if (named.length && typeof g.note === "string") {
+        const drawn = [...named.map((c) => c.value), ...named.map((c) => grid.rows[c.r].value), ...groupFigures(grid, named)].filter(Number.isFinite);
+        const near = (n, f) => Math.abs(n.value - f) <= 0.5 * 10 ** -n.decimals + 1e-9;
+        const stated = figuresIn(g.note).filter((n) => n.percent);
+        const wrong = stated.find((n) => !drawn.some((f) => near(n, f)));
+        if (wrong) {
+          const target = named.find((c) => !stated.some((n) => near(n, c.value))) ?? named[0];
+          const fixed = g.note.slice(0, wrong.index) + formatLike(wrong, target.value) + g.note.slice(wrong.index + wrong.raw.length);
+          throw new GestureRefusal(`gestures[${i}].note`, `states ${wrong.raw} %, but ${target.name} is drawn at ${formatLike(wrong, target.value)} %: write "${fixed}"`, { set: { index: i, field: "note", value: fixed } });
+        }
+      }
       if (g.do === "reorder") {
         if (grid.variant === "calendar-heatmap")
           throw new GestureRefusal(`gestures[${i}]`, `a calendar's rows are its months, in the calendar's order: they never move — drop the reorder, or highlight the month instead`, { remove: i });
