@@ -1054,6 +1054,20 @@ after each fix, failed a different way each time, every one a false plate that p
 | i16 | **figures right** (France 97 GW, 41 drawn + 5 named off the map = 46), standfirst still "Un cercle par centrale" | `34aeecdd7` holds "one circle per X" to what the symbols sum |
 | i17 | **figures right, standfirst right** ("Un cercle par pays", 41 drawn + 5 named = 46); after a "Suède 19.9 px under 22 px" refusal its own filter emptied `labelled`: no name on the map, and the prose reads "viennent ensuite ." | `0e1851bde` refuses a plate sentence whose spliced list or value came out empty |
 | i18 | no render (45 turns, 2256 s): a first kit pass hit the 15-min cap on a legibility-floor refusal, then three passes stuck on "Unterminated string literal (line 162: `,)" — a stray backtick and comma after the closing "};", a shape the stray-quote refusal did not name | `e61250138` names that line and says to delete it |
+**Choropleth static, both students (2026-11-14).** Story: « Sept pays européens dépassent 94 % d'électricité
+bas-carbone — six au nord-ouest, et l'Albanie ». Checked against data.json (low-carbon ÷ total generation): Albania 100,
+Iceland 100, Sweden 98.8, Norway 98.6, Switzerland 98.1, Finland 95.3, France 94.9 — seven at 94 % or more; next is
+Luxembourg at 90.7 and Ukraine has no data. The title is true.
+
+| Student | Run | What the plate drew | Fix |
+|---|---|---|---|
+| 12B | exit 0, 22 turns, 544 s | kept beat filters the seven ≥ 94 under the note "13 pays à 99 % ou plus"; the final repair offered "7 pays à 99 % ou plus" (99 passed on Sweden's 98.8 rounded, France kept at 94.9). The kept PNG shows only Albania in colour; replaying the kept beat with a true note draws the seven, so that PNG is not reproducible from the kept beat | `868c9866f`: a threshold on a filter must be reached by every kept place and by no other; the repair now gives "7 pays à 94 % ou plus" |
+| Qwen3.5-9B | exit 0, 33 turns, 1051 s (three passes on a title-shortening refusal and a 15-min cap) | classes right, but the old guard forced its true "94 %" to "95" (the kept minimum rounded up): the filter keeps six, the legend's top limit reads 95 and the title says seven at 94 | `868c9866f` (same rule: 94 holds, 95 is no longer offered) |
+| both | | "Albanie, 100.0 %" — an English decimal on a French plate | `2a051521e`: the plate's own words take a comma-decimal story's decimal mark |
+
+Open: the beat's `check()` is replaced by code's `claimCheck`, which decides maximum/minimum/comparison claims only — a
+"seven countries at 94 %" count in the title is held to nothing but the filter's own note.
+
 
 The same pass carried the guards the web and video kits gained to the static (`.gestures`, the default) and scrolly
 bubble-map kits (`20a46e5b6`), kept a point-map note off the plate's circles (`1489cef26`), and made `iso3Of`'s
