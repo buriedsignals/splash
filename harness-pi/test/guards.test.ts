@@ -307,6 +307,31 @@ describe("applyStoryboard", () => {
     );
   });
 
+  // gx-choropleth static (12B and Qwen3.5-9B, 2026-11-14): "Albanie, 100.0 % : la seule hors du nord-ouest" printed an
+  // English decimal point on a French plate.
+  describe("decimal mark", () => {
+    const beatIn = (language: string) => {
+      const root = mkdtempSync(join(tmpdir(), "splash-decimal-"));
+      const dir = join(root, "beats", "1");
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(root, "STORYBOARD.md"), `---\nlanguage: ${language}\n---\n`);
+      writeFileSync(join(dir, "data.json"), JSON.stringify({ columns: [{ name: "v" }], rows: [["2.5"]] }));
+      return dir;
+    };
+    it("should print a French plate's decimals with a comma", () => {
+      const b: Record<string, unknown> = { gestures: [{ note: "Albanie, 100.0 % : la seule" }], alt: "Suède 98.8 %." };
+      applyStoryboard(b, beatIn("fr"));
+      expect([(b.gestures as any)[0].note, b.alt]).toEqual(["Albanie, 100,0 % : la seule", "Suède 98,8 %."]);
+    });
+    it("should leave an English plate's decimals, a version and a data cell alone", () => {
+      const fr: Record<string, unknown> = { label: "2.5", limits: "v1.2.3, 14.11.2026" };
+      applyStoryboard(fr, beatIn("fr"));
+      const en: Record<string, unknown> = { alt: "Sweden 98.8 %." };
+      applyStoryboard(en, beatIn("en"));
+      expect([fr.label, fr.limits, en.alt]).toEqual(["2.5", "v1.2.3, 14.11.2026", "Sweden 98.8 %."]);
+    });
+  });
+
   describe("apostrophes", () => {
     const beatIn = () => {
       const root = mkdtempSync(join(tmpdir(), "splash-apos-"));

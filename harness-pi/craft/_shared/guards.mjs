@@ -112,7 +112,12 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
     const dataFile = join(here, "data.json");
     const data = existsSync(dataFile) ? JSON.parse(readFileSync(dataFile, "utf8")) : {};
     const asData = new Set([...(data.columns ?? []).map((c) => String(c.name)), ...(data.rows ?? []).flat().map(String)]);
-    const curl = (v) => (typeof v === "string" && !asData.has(v) ? v.replace(/(\p{L})'(?=\p{L})/gu, "$1’") : v);
+    // A language that writes its decimals with a comma prints them so: "Albanie, 100.0 %" closed a French plate
+    // (gx-choropleth, 12B and Qwen3.5-9B, 2026-11-14). One or two decimals only, never a run of dotted numbers (a date,
+    // a version), so a thousands group is never read as a decimal.
+    const comma = /^(fr|de|es|it|pt|pl|nl|cs|sk|sl|hr|ro|ru|uk|tr|sv|fi|da|nb|no|el|hu)/i.test(String(field("language") ?? ""));
+    const mark = (t) => (comma ? t.replace(/(?<![\d.,]|\p{L})(\d+)\.(\d{1,2})(?![\d.])/gu, "$1,$2") : t);
+    const curl = (v) => (typeof v === "string" && !asData.has(v) ? mark(v.replace(/(\p{L})'(?=\p{L})/gu, "$1’")) : v);
     const curlAll = (v) => (Array.isArray(v) ? v.map(curl) : curl(v));
     for (const key of Object.keys(beat)) if (key !== title && key !== source) beat[key] = curlAll(beat[key]);
     if (Array.isArray(beat.gestures))
