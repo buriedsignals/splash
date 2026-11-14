@@ -40,3 +40,26 @@ describe("write_file with no content", () => {
     expect(existsSync(fresh)).toBe(false);
   });
 });
+
+// h12 map web (12B, 2026-11-14): the first write was 14,196 characters, 184 lines of reasoning in comments and no
+// export default; every whole rewrite was then refused as "exists, too long", and the craft ran out its 15 min cap.
+describe("write_file of a beat with no default export", () => {
+  const dir = join(storyDir, "beats", "3");
+  mkdirSync(dir, { recursive: true });
+  const file = join(dir, "beat.mjs");
+  const write3 = beatTools({ root, storyDir }, "3").writeFile as any;
+
+  it("should refuse it and write nothing", async () => {
+    await expect(write3.execute("1", { content: "const a = 1;\n// export default { title }\n" })).rejects.toThrow(
+      /no export default.*Nothing was written/,
+    );
+    expect(existsSync(file)).toBe(false);
+  });
+
+  it("should let a whole rewrite replace a beat.mjs that has no default export, however long", async () => {
+    writeFileSync(file, "const a = 1;\n");
+    const long = `export default { title: "${"x".repeat(7_000)}" };\n`;
+    await write3.execute("1", { content: long });
+    expect(readFileSync(file, "utf8")).toBe(long);
+  });
+});

@@ -518,6 +518,16 @@ const NOTHING_CHANGED =
  * after it — a map beat's path came out as `{"path":{"path":{…` nested until the token cap, and the
  * craft step never wrote its file.
  */
+/** Whether a module's code (comments set aside) has a default export: the render reads nothing else. */
+export function hasDefaultExport(src: string): boolean {
+  const code = src
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n")
+    .filter((l) => !l.trim().startsWith("//"))
+    .join("\n");
+  return /\bexport\s+default\b|\bas\s+default\b/.test(code);
+}
+
 export function beatTools(bases: Bases, beat: string) {
   const file = `beats/${beat}/beat.mjs`;
   const abs = () => resolveInStory(bases, join(bases.storyDir, file));
@@ -540,7 +550,16 @@ export function beatTools(bases: Bases, beat: string) {
         throw new Error(
           `${file} already holds exactly this content: this write changes nothing. ${NOTHING_CHANGED}`,
         );
-      if (content.length > MAX_WRITE && existsSync(target))
+      // A beat with no default export renders nothing, and once on disk every whole rewrite of it was refused as too
+      // long: the 12B's map web craft spent its 15 min cap there (2026-11-14).
+      if (!hasDefaultExport(content)) {
+        const lines = content.split("\n");
+        const comments = lines.filter((l) => l.trim().startsWith("//")).length;
+        throw new Error(
+          `${file}: this content has no export default, so nothing would render (the render reads only the default export). Nothing was written. Write the whole module again, ending with export default { title: …, … } (see CONTRACT.md)${comments * 2 > lines.length ? ` — and keep your reasoning out of the file: ${comments} of its ${lines.length} lines are comments` : ""}`,
+        );
+      }
+      if (content.length > MAX_WRITE && existsSync(target) && hasDefaultExport(readFileSync(target, "utf8")))
         throw new Error(
           `${file} exists and the new content is ${content.length} characters; change it with several edit_file calls (old_text up to ${MAX_EDIT_OLD}, new_text up to ${MAX_EDIT_NEW} characters)`,
         );
