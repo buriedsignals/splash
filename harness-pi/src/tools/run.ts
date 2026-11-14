@@ -137,6 +137,39 @@ export function trimStrayTail(file: string): string {
   return `the harness removed line ${removed.reverse().join(", ")} of beat.mjs: a lone quote after the closing "};"\n`;
 }
 
+/** An unquoted object key with a space (`Czech Republic: "Tchéquie"`) never parses. Told the quoted key six times,
+ *  Qwen3.5-9B rewrote the file with the same line (gx-proportional-symbol web, 2026-11-14). Quoting a key changes no
+ *  meaning: the harness quotes each one the parser stops at, before rendering; returns what it did. */
+export function quoteSpacedKeys(file: string): string {
+  if (!existsSync(file)) return "";
+  const transpiler = new Bun.Transpiler({ loader: "js" });
+  let text = readFileSync(file, "utf8");
+  const quoted: string[] = [];
+  for (let pass = 0; pass < 50; pass++) {
+    let errors: { message?: string; position?: { line?: number } }[] = [];
+    try {
+      transpiler.transformSync(text);
+      break;
+    } catch (error) {
+      errors = (error as { errors?: typeof errors })?.errors ?? [];
+    }
+    const first = errors[0];
+    const word = /^Expected "\}" but found "([A-Za-z][\w-]*)"$/.exec(String(first?.message ?? ""))?.[1];
+    const at = (first?.position?.line ?? 0) - 1;
+    const lines = text.split("\n");
+    if (!word || at < 0 || at >= lines.length) break;
+    const key = new RegExp(`(^\\s*|[{,]\\s*)((?:[A-Za-z][\\w-]* )+${word})(\\s*:)`);
+    const found = key.exec(lines[at]);
+    if (!found) break;
+    lines[at] = lines[at].replace(key, `$1"$2"$3`);
+    quoted.push(found[2]);
+    text = lines.join("\n");
+  }
+  if (!quoted.length) return "";
+  writeFileSync(file, text);
+  return `the harness quoted the keys ${quoted.map((k) => `"${k}"`).join(", ")} in beat.mjs: a key with a space needs quotes\n`;
+}
+
 export function runTools(bases: Bases) {
   const skill = (name: string, script: string) =>
     join(bases.root, "skills", name, "scripts", script);
@@ -222,7 +255,7 @@ export function runTools(bases: Bases) {
         throw new Error(`${beat} has no ${runner}; scaffold the beat first`);
       if (zoned && !existsSync(join(beatDir(bases, beat), "beat.mjs")))
         throw new Error(`beats/${beat}/beat.mjs does not exist yet: write it with write_file, then render`);
-      const trimmed = zoned ? trimStrayTail(join(beatDir(bases, beat), "beat.mjs")) : "";
+      const trimmed = zoned ? trimStrayTail(join(beatDir(bases, beat), "beat.mjs")) + quoteSpacedKeys(join(beatDir(bases, beat), "beat.mjs")) : "";
       const result = await exec(["bun", path]);
       result.content[0].text = trimmed + result.content[0].text + refusalHint(result.content[0].text);
       // Name every PNG the render wrote by its full path, so the next call can look at it.

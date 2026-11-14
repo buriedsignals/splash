@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createRunRoot, stageStory } from "../src/run-root.ts";
 import type { Bases } from "../src/tools/fs.ts";
-import { runTools , refusalHint, trimStrayTail } from "../src/tools/run.ts";
+import { quoteSpacedKeys, runTools , refusalHint, trimStrayTail } from "../src/tools/run.ts";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 
 const CHECKOUT = resolve(import.meta.dirname, "../..");
@@ -127,5 +127,24 @@ describe("a stray quote after the end of beat.mjs", () => {
     const dir = mkdtempSync(join(tmpdir(), "splash-stray-"));
     writeFileSync(join(dir, "beat.mjs"), "export default {\n  title: `t\n`,\n};\n");
     expect(trimStrayTail(join(dir, "beat.mjs"))).toBe("");
+  });
+});
+
+// gx-proportional-symbol web (Qwen3.5-9B, 2026-11-14): `Czech Republic: "Tchéquie"` in a names map. Told the exact
+// quoted key six times, Qwen rewrote the whole file with the same line each time and the cell never rendered.
+// Quoting a key is meaning-preserving: the harness does it before rendering, and says so.
+describe("an unquoted key with a space in beat.mjs", () => {
+  const src = 'const NAMES = {\n  Cyprus: "Chypre", Czech Republic: "Tchéquie",\n  North Macedonia: "Macédoine",\n};\nexport default { title: "Czech Republic: a, b", NAMES };\n';
+  it("should be quoted, every one, and said", () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-key-"));
+    writeFileSync(join(dir, "beat.mjs"), src);
+    expect(quoteSpacedKeys(join(dir, "beat.mjs"))).toMatch(/quoted the keys "Czech Republic", "North Macedonia"/);
+    expect(readFileSync(join(dir, "beat.mjs"), "utf8")).toBe(src.replace("Czech Republic:", '"Czech Republic":').replace("North Macedonia:", '"North Macedonia":'));
+  });
+
+  it("should leave a beat that parses", () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-key-"));
+    writeFileSync(join(dir, "beat.mjs"), 'export default { title: "Czech Republic: a, b" };\n');
+    expect(quoteSpacedKeys(join(dir, "beat.mjs"))).toBe("");
   });
 });
