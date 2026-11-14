@@ -1118,3 +1118,32 @@ must be found (906/985 at 1600x800).
 data.json can carry (see above) — the eval's headline check still wants the whole takeaway. Caveat: the two bubble
 beats stay within 14 lines of the worked example, which tells the same story; the cells measure that a student
 follows the kit, not that it composes a different site story.
+
+### Step 2: one type per family, static, Qwen3.5-9B then the 12B (2026-11-14/15)
+
+Seeded runs, `SPLASH_STOP_AFTER_CRAFT=1`, one at a time on Osaurus. Every render was looked at and its figures
+checked against the run's own `data.json`. Each batch ran the code of its start; the fixes below landed between or
+during them.
+
+| Cell (family) | Qwen3.5-9B turns · time · headline | 12B turns · time · headline | 12B render vs data.json |
+|---|---|---|---|
+| lollipop (length) | 44 · 880 s · yes | 14 · 281 s · yes | clean: China 2.87 → 8.56 (+198 %), USA 21.4 → 14.3 |
+| stacked-bar (stack) | 14 · 333 s · no | 24 · 340 s · yes | compare note "+119 TWh contre +119 TWh pour la France" (France +50.1) → `071b748f0` |
+| dot-strip (position) | 29 · 623 s · yes | 34 · 904 s · yes | clean figures (Poland 1.6 → 31.1); one turn spent 454 s in a `<\|channel>thought` token loop → `3905d43f9` |
+| line (time) | 9 · 229 s · yes | 18 · 284 s · yes | clean (peak 46.2 Mt in 1973, 32.1 Mt in 2024); a refusal offered "1963 de 1963 : 29,1 Mt" → `3df346029` |
+| pictogram-isotype (units) | 5 · 117 s · yes | 9 · 182 s · yes | clean: 16 + 6 + 18 = 40 countries |
+| pie-and-donut (part) | 13 · 169 s · yes | 15 · 307 s · yes | clean: China 32.9 %, USA 13.3 %, ratio 2.5 |
+| heatmap-matrix (cell) | 6 · 141 s · yes | 10 · 351 s · yes | "Islande : 13,5 % d'hydraulique": 13.46 is TWh, the cell is drawn at 70.7 % → `6bcc2dfb1` |
+| locator (geo) | 53 · 935 s · no | 10 · 267 s · yes | clean (6 000 MW, the largest); Dnipro's dot sat on the subject's label → `3b87a6529` |
+
+Qwen also ran the bubble map (19 · 252 s · headline no). Fixes from the Qwen pass, in order: `579634157`,
+`18a14932a`, `eb59ea145`, `53b89b999`, `421fa0774`, `f25fef26f`, `4fd6c05a5`, `7e6942c2e`, `2a5637e2b`.
+
+Triage of the 12B pass: five Harness fixes (guards and kits, each with a test that fails when the fix is removed),
+nothing for Helper. Tune candidates: the 12B re-sent an identical successful `record_gestures` 16 times after a
+refusal on the dot-strip; English place names (Kyiv, Bucharest) on a French locator; "NPP" left untranslated.
+Still open, minor: a stray "533" label on the stacked bar after its note was dropped.
+
+Reading: on static, both students now produce a figure-true plate in all eight families. The 12B is slower per turn
+but needs fewer turns than Qwen on lollipop and locator; Qwen is faster where it gets it first time. The defects
+left are not wrong figures but wording (Tune) and placement (minor).
