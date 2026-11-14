@@ -560,16 +560,19 @@ export function GesturePartStatic({
         : 0) +
       14 +
       annotBand.ascent;
-  const placedItems = items.map((it, k) => {
+  // Beside the plot, notes stand in the order of the marks they point at, so no two leaders cross (gx-pie-and-donut,
+  // Qwen3.5-9B, 2026-11-14: the United States' note written first, its arc below China's, the leaders crossed). A note
+  // with no mark keeps its place after them; under the plot, the written order stands.
+  const targets = items.map((it) => (it.kind === "count" ? null : anchorOfSet(it.on)));
+  const order = items.map((_, k) => k);
+  if (beside) order.sort((a, b) => (targets[a]?.y ?? Infinity) - (targets[b]?.y ?? Infinity) || a - b);
+  const at: any[] = [];
+  for (const k of order) {
     const lines = noteLines(notesW)[k];
-    const at = { x: notesX, y: notesY, lines };
+    at[k] = { x: notesX, y: notesY, lines };
     notesY += lines.length * annotLead + 8;
-    return {
-      ...it,
-      ...at,
-      target: it.kind === "count" ? null : anchorOfSet(it.on),
-    };
-  });
+  }
+  const placedItems = items.map((it, k) => ({ ...it, ...at[k], target: targets[k] }));
 
   const ring = (s: Shape, key: string) =>
     s.kind === "arc" ? (
