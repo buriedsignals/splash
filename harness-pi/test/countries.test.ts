@@ -40,3 +40,31 @@ describe("iso3Of", () => {
     ]).toEqual(["SYR", "IRN"]);
   });
 });
+
+// The seeded misspellings ("Gerany", "Belgiumm") were refused 22 times across runs with a rename template and "or
+// leave the row out" — a row left out silently is then refused by assertPlacesLeftOutStated. The refusal now writes
+// the rename that works, once per name.
+describe("iso3Of's refusal", () => {
+  const refusal = (names: string[]) => {
+    try {
+      iso3Of(names, kit);
+    } catch (e) {
+      return (e as Error).message;
+    }
+    return "";
+  };
+
+  it("should give the rename that works, in the map's own spelling", () => {
+    expect(refusal(["France", "Gerany", "Belgiumm"])).toContain(
+      'a value that works: rename { "Gerany": "Germany", "Belgiumm": "Belgium" }',
+    );
+  });
+
+  it("should name each unresolved value once", () => {
+    expect(refusal(["Gerany", "Gerany", "Gerany"]).match(/"Gerany" \(closest/g)?.length).toBe(1);
+  });
+
+  it("should resolve every name once that rename is passed", () => {
+    expect([...iso3Of(["France", "Gerany"], kit, { Gerany: "Germany" })]).toEqual(["FRA", "DEU"]);
+  });
+});

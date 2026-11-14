@@ -34,13 +34,15 @@ export function countryIndex(dir) {
   const path = join(dir, "shapes.geojson");
   const names = new Map(Object.entries(ALIASES));
   const codes = new Set(Object.values(ALIASES));
+  const spelled = new Map();
   if (existsSync(path))
     for (const f of JSON.parse(readFileSync(path, "utf8")).features ?? []) {
       const { iso, name } = f.properties ?? {};
       if (iso) codes.add(iso);
       if (iso && name) names.set(norm(name), iso);
+      if (iso && name) spelled.set(iso, name);
     }
-  return { names, codes };
+  return { names, codes, spelled };
 }
 
 /**
@@ -52,8 +54,9 @@ export function iso3Of(names, dir, rename = {}) {
   // One name gives one code: a beat called iso3Of(country, HERE) per row in a try/catch, names.map threw on the string,
   // and every row was skipped (Qwen3.5-9B, gx-proportional-symbol web, 2026-11-13).
   if (!Array.isArray(names)) return iso3Of([names], dir, rename)[0];
-  const { names: index, codes } = countryIndex(dir);
+  const { names: index, codes, spelled } = countryIndex(dir);
   const unresolved = [];
+  const fix = {};
   const out = names.map((raw) => {
     const given = rename[raw] ?? raw;
     const upper = String(given).trim().toUpperCase();
@@ -61,7 +64,10 @@ export function iso3Of(names, dir, rename = {}) {
     const hit = index.get(norm(given)) ?? index.get(ENGLISH().get(norm(given)) ?? "");
     if (hit) return hit;
     const closest = [...index.keys()].sort((a, b) => distance(norm(given), a) - distance(norm(given), b))[0];
-    unresolved.push(`${JSON.stringify(raw)} (closest: ${closest})`);
+    if (!(String(raw) in fix)) {
+      fix[String(raw)] = spelled.get(index.get(closest)) ?? closest;
+      unresolved.push(`${JSON.stringify(raw)} (closest: ${closest})`);
+    }
     return null;
   });
   // A beat copied the contract example's [CODE, NAME, VALUE] onto data with no code column, and passed the
@@ -70,7 +76,7 @@ export function iso3Of(names, dir, rename = {}) {
   if (numeric.length)
     throw new Error(`these "country names" are numbers (${numeric.slice(0, 3).join(", ")}): beat.mjs reads the value column as the names. Read the names from the column whose cells are country names (find it by name in data.json's columns), and the value from the number column`);
   if (unresolved.length)
-    throw new Error(`these country names match no country on the map: ${unresolved.join(", ")}. If one is a misspelling, map it in beat.mjs with rename { "<as written>": "<country>" } — say so in the standfirst — or leave the row out`);
+    throw new Error(`these country names match no country on the map: ${unresolved.join(", ")} — a value that works: rename ${JSON.stringify(fix).replace(/":"/g, '": "').replace(/","/g, '", "').replace(/^\{/, "{ ").replace(/\}$/, " }")} as iso3Of's third argument in beat.mjs, said in the standfirst; a name that is no misspelling is a row to leave out AND name in limits`);
   // The codes in the order of the names, and also keyed by each name as written: a 12B beat read codes["Germany"]
   // off the array and refused its own countries.
   names.forEach((name, i) => { if (!(String(name) in out)) out[String(name)] = out[i]; });
