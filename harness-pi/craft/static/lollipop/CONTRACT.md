@@ -32,7 +32,7 @@ the heads, so there is no value axis.
 | `source` | The credit line, exactly as the storyboard records it. |
 | `alt` | The alt text (a string, or a function of `{ pairs, subject }`). |
 | `evidenceLevels` | 4. |
-| `check({ pairs, subject })` | Throws if the data no longer supports the title. render-beat.mjs passes the pairs with their computed `change` (per cent). |
+| `check({ pairs, subject })` | Throws if the data no longer supports the title. render-beat.mjs passes the pairs with their computed `change` (per cent), each under its `key` (also as `code`). |
 
 ## Reading the data
 

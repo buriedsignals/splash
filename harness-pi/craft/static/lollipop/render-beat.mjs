@@ -50,7 +50,7 @@ if (fromZero.length)
   throw new Error(`${fromZero.map((p) => p.key).join(", ")} start at 0, so their change in per cent is undefined: leave them out and say so in limits`);
 if (String(beat.from) === String(beat.to)) throw new Error(`from and to are both ${beat.from}: the two states must differ`);
 
-const pairs = beat.pairs.map((p) => ({ code: p.key, name: p.name, before: p.before, after: p.after, change: ((p.after - p.before) / p.before) * 100 }));
+const pairs = beat.pairs.map((p) => ({ key: p.key, code: p.key, name: p.name, before: p.before, after: p.after, change: ((p.after - p.before) / p.before) * 100 }));
 const subject = pairs.find((p) => p.code === beat.subject);
 
 beat.check({ pairs, subject });
