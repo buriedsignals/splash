@@ -1088,3 +1088,17 @@ function droppedFigureClauses(takeaway, headline) {
   }
   return at === kept.length && dropped.every((c) => /\d/.test(c));
 }
+
+/**
+ * The key's accent line counts the subject group. When the cut leaves some of the group's circles undrawn, the drawn
+ * count is not the group's: Qwen3.5-9B's plate said "69 sites nucléaires" of 72 (gx-proportional-symbol static,
+ * 2026-11-14), the worked example's own line. The drawn count may stand beside the whole, never alone.
+ */
+export function assertSubjectCountWhole(note, { drawnSubject, totalSubject } = {}) {
+  if (typeof note !== "string" || drawnSubject === totalSubject || drawnSubject == null || totalSubject == null) return;
+  const counts = (note.match(/\d{1,3}(?:[\s  ]\d{3})+|\d+/gu) ?? []).map((n) => Number(n.replace(/\D/g, "")));
+  if (counts.includes(drawnSubject) && !counts.includes(totalSubject))
+    throw new Error(
+      `subjectNote(cut) prints ${drawnSubject} ("${note}"), the subject circles the cut leaves drawn, as if it were the group: ${totalSubject} rows are subject rows, ${totalSubject - drawnSubject} of them under the cut — a value that works: print cut.totalSubject (\`\${cut.totalSubject} …\`), or both (\`\${cut.totalSubject} …, \${cut.drawnSubject} drawn\`)`,
+    );
+}

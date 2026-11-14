@@ -40,7 +40,7 @@ export default {
   dotIs: "MW · un cercle = une centrale",
   // `cut` is what the runner chose to draw: { threshold, drawn, total, drawnSubject, totalSubject,
   // drawnShare, drawnValueShare }. Every form of limitNote must print cut.threshold when it is above 0.
-  subjectNote: (cut) => `${cut.drawnSubject} sites nucléaires`,
+  subjectNote: (cut) => `${cut.totalSubject} sites nucléaires`,
   limitNote: (cut) =>
     cut.threshold > 0
       ? [
@@ -51,7 +51,6 @@ export default {
   title: [
     `Un centième des sites porte plus d’un tiers de la puissance bas-carbone d’Europe`,
     `Un centième des sites, plus d’un tiers de la puissance`,
-    `La puissance tient dans peu de sites`,
   ],
   limits: [
     `Un cercle par centrale, à ses propres coordonnées ; l’aire du cercle est sa puissance installée. ` +

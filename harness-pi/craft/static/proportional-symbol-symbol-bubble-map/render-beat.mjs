@@ -24,7 +24,7 @@ import { assertBeatMayEnter, directedFrame, exportSizeFromArgv, nameAtSize } fro
 import { plateWaterField } from "./plate-water.mjs";
 import { DirectedProportionalSymbol, minMapShare, worstCellInk } from "./DirectedProportionalSymbol.tsx";
 import beat from "./beat.mjs";
-import { applyStoryboard, assertNumbers, assertDrawsClaimColumn, errorText } from "./guards.mjs";
+import { applyStoryboard, assertSubjectCountWhole, assertNumbers, assertDrawsClaimColumn, errorText } from "./guards.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 applyStoryboard(beat, HERE, { basemap: "©MapTiler ©OpenStreetMap contributors" });
@@ -236,6 +236,7 @@ for (const { label: id, direction: picked } of chosen) {
       drawnShare: (shownStations.length / total) * 100,
       drawnValueShare: (valueShown / valueAll) * 100,
     };
+    assertSubjectCountWhole(String(beat.subjectNote(cut)), cut);
     const limitNote = forms(beat.limitNote(cut));
     if (threshold > 0 && !limitNote.every((f) => plain(f).includes(plain(beat.format(threshold)))))
       throw new Error(`the plate does not draw the points under ${beat.format(threshold)} ${beat.unit}, and every form of limitNote(cut) must say so with cut.threshold printed by format(): ${JSON.stringify(limitNote[0])}`);

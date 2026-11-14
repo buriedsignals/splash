@@ -57,7 +57,6 @@ export default {
   title: [
     "Un centième des sites porte plus d’un tiers de la puissance bas-carbone d’Europe",
     "Un centième des sites, plus d’un tiers de la puissance",
-    "La puissance tient dans peu de sites",
   ],
   // Closes card 6: how to read a circle.
   limits: "Lecture : l’aire du cercle est la puissance ; les cercles sont creux, un gros n’efface pas les petits.",

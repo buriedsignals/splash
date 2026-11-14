@@ -30,7 +30,7 @@ column (zero or more). A column that marks the subject rows (a category, a flag,
 | `unit` | The unit of the value ("MW", "people"). |
 | `format(v)` | How a value is printed (the key's circles, the threshold), in the story's language. |
 | `dotIs` | The key's line: the unit and what one circle is ("MW · one circle = one station"). |
-| `subjectNote(cut)` | The line in the accent under the key, e.g. how many subject circles the plate draws: `${cut.drawnSubject} nuclear sites`. |
+| `subjectNote(cut)` | The line in the accent under the key, e.g. how many subject rows there are: `${cut.totalSubject} nuclear sites`. When the cut leaves some undrawn, `cut.drawnSubject` alone is refused: it is not the group's count. |
 | `limitNote(cut)` | Forms, longest first, saying what is NOT drawn. When `cut.threshold > 0`, EVERY form must print `format(cut.threshold)` (the render checks it). |
 | `title` | The headline in forms, longest first: the FIRST form is the journalist's takeaway from STORYBOARD.md, copied word for word as a literal string (the render checks it); shorter forms may follow. |
 | `limits` | The standfirst, in forms, longest first: what a circle is, scope, the limits the journalist named. |
