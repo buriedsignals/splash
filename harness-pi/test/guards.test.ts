@@ -210,6 +210,48 @@ describe("applyStoryboard", () => {
     ]);
   });
 
+  // gx-cartogram web (12B, 2026-11-14): the headline guard refused the takeaway's "44,9 %", which data.json cannot
+  // derive, and offered the title without that clause; this guard then demanded the clause back, and the session
+  // spent its passes between the two.
+  const twoClauses = (root: string) =>
+    writeFileSync(
+      join(root, "STORYBOARD.md"),
+      `---\ntakeaway: "Compté par pays, le bas-carbone européen est à 65,1 % ; compté au kilomètre carré, à 44,9 %"\n---\n`,
+    );
+  it("should take a title that keeps the takeaway's clauses but drops one stating a figure", () => {
+    const root = mkdtempSync(join(tmpdir(), "splash-clause-"));
+    const dir = join(root, "beats", "1");
+    mkdirSync(dir, { recursive: true });
+    twoClauses(root);
+    const b = {
+      title: "Compté par pays, le bas-carbone européen est à 65,1 %",
+    };
+    expect(() => applyStoryboard(b, dir)).not.toThrow();
+  });
+
+  it("should still refuse a title that drops a clause stating no figure", () => {
+    const root = mkdtempSync(join(tmpdir(), "splash-clause-"));
+    const dir = join(root, "beats", "1");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(root, "STORYBOARD.md"),
+      `---\ntakeaway: "Le bas-carbone est à 65,1 % ; l'Est reste au charbon"\n---\n`,
+    );
+    expect(() =>
+      applyStoryboard({ title: "Le bas-carbone est à 65,1 %" }, dir),
+    ).toThrow(/copied as a literal string/);
+  });
+
+  it("should still refuse a title that rewrites a kept clause", () => {
+    const root = mkdtempSync(join(tmpdir(), "splash-clause-"));
+    const dir = join(root, "beats", "1");
+    mkdirSync(dir, { recursive: true });
+    twoClauses(root);
+    expect(() =>
+      applyStoryboard({ title: "Par pays, le bas-carbone est à 65,1 %" }, dir),
+    ).toThrow(/copied as a literal string/);
+  });
+
   // gx-proportional-symbol static (Qwen3.5-9B, 2026-11-13): the copy ladder spent the headline first and printed the
   // beat's third form, "La puissance tient dans peu de sites": the plate no longer said what the takeaway claims.
   it("should refuse a shorter title form that drops the takeaway's claim", () => {
@@ -314,21 +356,40 @@ describe("applyStoryboard", () => {
       const root = mkdtempSync(join(tmpdir(), "splash-decimal-"));
       const dir = join(root, "beats", "1");
       mkdirSync(dir, { recursive: true });
-      writeFileSync(join(root, "STORYBOARD.md"), `---\nlanguage: ${language}\n---\n`);
-      writeFileSync(join(dir, "data.json"), JSON.stringify({ columns: [{ name: "v" }], rows: [["2.5"]] }));
+      writeFileSync(
+        join(root, "STORYBOARD.md"),
+        `---\nlanguage: ${language}\n---\n`,
+      );
+      writeFileSync(
+        join(dir, "data.json"),
+        JSON.stringify({ columns: [{ name: "v" }], rows: [["2.5"]] }),
+      );
       return dir;
     };
     it("should print a French plate's decimals with a comma", () => {
-      const b: Record<string, unknown> = { gestures: [{ note: "Albanie, 100.0 % : la seule" }], alt: "Suède 98.8 %." };
+      const b: Record<string, unknown> = {
+        gestures: [{ note: "Albanie, 100.0 % : la seule" }],
+        alt: "Suède 98.8 %.",
+      };
       applyStoryboard(b, beatIn("fr"));
-      expect([(b.gestures as any)[0].note, b.alt]).toEqual(["Albanie, 100,0 % : la seule", "Suède 98,8 %."]);
+      expect([(b.gestures as any)[0].note, b.alt]).toEqual([
+        "Albanie, 100,0 % : la seule",
+        "Suède 98,8 %.",
+      ]);
     });
     it("should leave an English plate's decimals, a version and a data cell alone", () => {
-      const fr: Record<string, unknown> = { label: "2.5", limits: "v1.2.3, 14.11.2026" };
+      const fr: Record<string, unknown> = {
+        label: "2.5",
+        limits: "v1.2.3, 14.11.2026",
+      };
       applyStoryboard(fr, beatIn("fr"));
       const en: Record<string, unknown> = { alt: "Sweden 98.8 %." };
       applyStoryboard(en, beatIn("en"));
-      expect([fr.label, fr.limits, en.alt]).toEqual(["2.5", "v1.2.3, 14.11.2026", "Sweden 98.8 %."]);
+      expect([fr.label, fr.limits, en.alt]).toEqual([
+        "2.5",
+        "v1.2.3, 14.11.2026",
+        "Sweden 98.8 %.",
+      ]);
     });
   });
 
@@ -599,14 +660,19 @@ describe("errorText", () => {
   // i18 (12B, 2026-11-14): the stray line was "`," after "};" — three passes stuck on "Unterminated string literal (line 162: `,)".
   it("should name a stray quote line ending in a comma and say to delete it", async () => {
     const dir = mkdtempSync(join(tmpdir(), "splash-ref-"));
-    writeFileSync(join(dir, "beat.mjs"), 'export default {\n  title: "t",\n};\n`,\n');
+    writeFileSync(
+      join(dir, "beat.mjs"),
+      'export default {\n  title: "t",\n};\n`,\n',
+    );
     let error;
     try {
       await import(join(dir, "beat.mjs"));
     } catch (e) {
       error = e;
     }
-    expect(errorText(error)).toMatch(/line 4 holds only a stray ` .*a value that works: delete line 4/);
+    expect(errorText(error)).toMatch(
+      /line 4 holds only a stray ` .*a value that works: delete line 4/,
+    );
   });
 
   it("should name a stray quote after the closing brace and give the line that works", async () => {
@@ -1234,16 +1300,35 @@ describe("assertFigureMatchesValue", () => {
 // (data.json has no area column) and the guard skipped every % figure.
 describe("assertHeadlineNumbersDrawn on a map of percentages", () => {
   const values = [97.2, 35.9, 61.4, 66.0];
-  const title = "Compté par pays, le bas-carbone européen est à 65,1 % ; compté au kilomètre carré, à 44,9 %";
+  const title =
+    "Compté par pays, le bas-carbone européen est à 65,1 % ; compté au kilomètre carré, à 44,9 %";
   it("should refuse a % figure no reading holds, offering the title without its clause", () => {
-    expect(() => assertHeadlineNumbersDrawn(title, [...values, 65.1], "places", undefined, { percent: true })).toThrow(
+    expect(() =>
+      assertHeadlineNumbersDrawn(
+        title,
+        [...values, 65.1],
+        "places",
+        undefined,
+        { percent: true },
+      ),
+    ).toThrow(
       /title states 44\.9.*"Compté par pays, le bas-carbone européen est à 65,1 %"/,
     );
   });
   it("should pass a % figure that is the map's mean", () => {
-    expect(() => assertHeadlineNumbersDrawn("Le bas-carbone européen est à 65,1 %", [...values, 65.1], "places", undefined, { percent: true })).not.toThrow();
+    expect(() =>
+      assertHeadlineNumbersDrawn(
+        "Le bas-carbone européen est à 65,1 %",
+        [...values, 65.1],
+        "places",
+        undefined,
+        { percent: true },
+      ),
+    ).not.toThrow();
   });
   it("should leave % figures unchecked when the values are not percentages", () => {
-    expect(() => assertHeadlineNumbersDrawn(title, [...values, 65.1], "places")).not.toThrow();
+    expect(() =>
+      assertHeadlineNumbersDrawn(title, [...values, 65.1], "places"),
+    ).not.toThrow();
   });
 });

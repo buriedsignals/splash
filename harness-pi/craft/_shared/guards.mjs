@@ -104,7 +104,10 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
   const headline = [beat[title]].flat()[0];
   if (takeaway && headline !== undefined && norm(headline) !== norm(takeaway) && plain(headline) === plain(takeaway))
     beat[title] = Array.isArray(beat[title]) ? [takeaway, ...beat[title].slice(1)] : takeaway;
-  else if (takeaway && headline !== undefined && norm(headline) !== norm(takeaway))
+  // A title may drop whole clauses of the takeaway that state a figure: the headline guard offers that form when the
+  // figure is not one the plate draws, and demanding the clause back here left no title that passes both (gx-cartogram
+  // web, 12B, 2026-11-14). Kept clauses stay the journalist's words, in order.
+  else if (takeaway && headline !== undefined && norm(headline) !== norm(takeaway) && !droppedFigureClauses(norm(takeaway), norm(headline)))
     throw new Error(`title's first form must be the journalist's takeaway copied as a literal string, not computed. It renders as: "${norm(headline)}" — it must be: "${takeaway}"`);
   // The plate's own words print the typographic apostrophe: Qwen3.5-9B typed "dans l'électricité" on a video's axis
   // (gx-bullet, 2026-11-13). The title and the credit are the journalist's, and a data cell keeps its spelling for joins.
@@ -1069,4 +1072,18 @@ export function assertNoneUnderFloor(rows, { maxRadius, floor, exponent }) {
   throw new Error(
     `symbols: ${under.length} of ${rows.length} places are drawn under the ${floor} px legibility floor (${names}): beside the largest, their circles read as no data — a value that works: keep the symbols with value >= ${least} and leave out the ${under.length} others, then say on the plate which ones are not drawn (the refusal that follows gives the sentence)`,
   );
+}
+
+/** True when `headline` is `takeaway` with whole "; " clauses removed, every removed clause stating a figure. */
+function droppedFigureClauses(takeaway, headline) {
+  const clauses = takeaway.split(/\s*;\s*/u);
+  const kept = headline.split(/\s*;\s*/u);
+  if (clauses.length < 2 || kept.length >= clauses.length) return false;
+  let at = 0;
+  const dropped = [];
+  for (const c of clauses) {
+    if (at < kept.length && c === kept[at]) at++;
+    else dropped.push(c);
+  }
+  return at === kept.length && dropped.every((c) => /\d/.test(c));
 }
