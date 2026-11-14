@@ -538,9 +538,9 @@ export function errorText(error) {
     const where = e?.position ? ` (line ${e.position.line}: ${String(e.position.lineText ?? "").trim()})` : "";
     // A line holding only a quote opens a string nothing closes (gx-bullet web, 12B, 2026-11-13: a lone backtick after
     // the closing "};"); "Unterminated string literal (line 125: `)" sent the 12B editing template strings elsewhere.
-    const lone = e?.position && /^\s*([`'"])\s*$/.exec(String(e.position.lineText ?? ""));
+    const lone = e?.position && /^\s*([`'"])[\s,;]*$/.exec(String(e.position.lineText ?? ""));
     if (lone)
-      return `${e.message}${where}: line ${e.position.line} holds only a stray ${lone[1]} that opens a string nothing closes — a value that works: delete line ${e.position.line} (edit_file its "${lone[1]}" line, with the line before it, to that line alone)`;
+      return `${e.message}${where}: line ${e.position.line} holds only a stray ${lone[1]} that opens a string nothing closes — a value that works: delete line ${e.position.line} (edit_file its "${String(e.position.lineText).trim()}" line, with the line before it, to that line alone)`;
     // The same stray quote on the closing line itself: "};`," (gx-proportional-symbol web, 12B, 2026-11-14).
     const tail = e?.position && /^\s*(\}\s*;?)\s*([`'"])[\s,;]*$/.exec(String(e.position.lineText ?? ""));
     if (tail)

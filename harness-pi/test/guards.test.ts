@@ -571,6 +571,19 @@ describe("errorText", () => {
 
   // gx-proportional-symbol web (12B, i15, 2026-11-14): the closing line read "};`," and the 12B edited check(…) above
   // it four times, then re-sent the whole file with the same tail.
+  // i18 (12B, 2026-11-14): the stray line was "`," after "};" — three passes stuck on "Unterminated string literal (line 162: `,)".
+  it("should name a stray quote line ending in a comma and say to delete it", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-ref-"));
+    writeFileSync(join(dir, "beat.mjs"), 'export default {\n  title: "t",\n};\n`,\n');
+    let error;
+    try {
+      await import(join(dir, "beat.mjs"));
+    } catch (e) {
+      error = e;
+    }
+    expect(errorText(error)).toMatch(/line 4 holds only a stray ` .*a value that works: delete line 4/);
+  });
+
   it("should name a stray quote after the closing brace and give the line that works", async () => {
     const dir = mkdtempSync(join(tmpdir(), "splash-ref-"));
     writeFileSync(
