@@ -33,6 +33,7 @@ import {
   adjustToContrast,
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
+import { balanceLast } from "./wrap-balance.mjs";
 import { mix } from "#shared/chart-beat/colour.mjs";
 import { applyCase, DERIVED_SIZE_RATIO } from "#shared/chart-beat/registers.mjs";
 import { frameInsetFor, viewedAtCssPx } from "#shared/chart-beat/sizes.mjs";
@@ -173,6 +174,7 @@ export function GestureGeoPointStaticFlow({
       } else current = trial;
     }
     if (current) out.push(current);
+    balanceLast(out, maxWidth, (s: string) => widthOf(s, r));
     return out;
   }
 

@@ -23,6 +23,7 @@ import {
   deriveFurniture,
   measureText,
 } from "#shared/chart-beat/render-still.mjs";
+import { balanceLast } from "./wrap-balance.mjs";
 import { applyCase } from "#shared/chart-beat/registers.mjs";
 import {
   EYEBROW_TO_DISPLAY,
@@ -125,6 +126,7 @@ export function GestureUnitsStatic({
       } else current = trial;
     }
     if (current) lines.push(current);
+    balanceLast(lines, max, (s: string) => widthOf(s, r));
     return lines;
   };
   const line = (r: Reg, fill?: string) => ({

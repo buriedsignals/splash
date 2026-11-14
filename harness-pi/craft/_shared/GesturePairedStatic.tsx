@@ -27,6 +27,7 @@ import {
   measureTextBand,
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
+import { balanceLast } from "./wrap-balance.mjs";
 import { mix } from "#shared/chart-beat/colour.mjs";
 import { applyCase } from "#shared/chart-beat/registers.mjs";
 import {
@@ -144,6 +145,7 @@ export function GesturePairedStatic({
       } else cur = t;
     }
     if (cur) lines.push(cur);
+    balanceLast(lines, max, (s: string) => widthOf(s, r));
     return lines;
   };
   const line = (r: any) => ({

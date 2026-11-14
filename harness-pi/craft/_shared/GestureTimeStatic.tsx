@@ -16,6 +16,7 @@
  * register's lead, and every note is nudged clear of the others before it is drawn.
  */
 
+import { balanceLast } from "./wrap-balance.mjs";
 import { adjustToContrast, deriveFurniture, measureText, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from "#shared/chart-beat/render-still.mjs";
 import { mix } from "#shared/chart-beat/colour.mjs";
 import { applyCase } from "#shared/chart-beat/registers.mjs";
@@ -148,6 +149,7 @@ export function GestureTimeStatic({
       } else line = next;
     }
     if (line) lines.push(line);
+    balanceLast(lines, max, (s: string) => widthOf(s, r));
     return lines;
   };
   const pickForm = (forms: string[], r: any, max: number, most: number) => {

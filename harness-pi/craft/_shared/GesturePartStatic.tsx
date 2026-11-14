@@ -23,6 +23,7 @@ import {
   adjustToContrast,
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
+import { balanceLast } from "./wrap-balance.mjs";
 import { mix, contrast } from "#shared/chart-beat/colour.mjs";
 import { applyCase } from "#shared/chart-beat/registers.mjs";
 import {
@@ -156,6 +157,7 @@ export function GesturePartStatic({
       } else current = trial;
     }
     if (current) out.push(current);
+    balanceLast(out, maxWidth, (s: string) => widthOf(s, r));
     return out;
   }
   const accentInk = adjustToContrast(

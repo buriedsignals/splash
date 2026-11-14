@@ -10,6 +10,7 @@
  * joined by a rule, and every note on a caption line above the grid.
  */
 
+import { balanceLast } from "./wrap-balance.mjs";
 import { scaleLinear } from "d3-scale";
 import {
   deriveFurniture,
@@ -210,6 +211,7 @@ function MatrixPlate({
       } else current = trial;
     }
     if (current) lines.push(current);
+    balanceLast(lines, maxWidth, (s: string) => widthOf(s, r));
     return lines;
   }
 
@@ -882,6 +884,7 @@ function CalendarPlate({
       } else current = trial;
     }
     if (current) lines.push(current);
+    balanceLast(lines, maxWidth, (s: string) => widthOf(s, r));
     return lines;
   }
 

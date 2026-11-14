@@ -17,6 +17,7 @@
  * Rows that do not fit are dropped from the bottom of the drawn order, never the ones a gesture acts on, and the
  * plate says how many are drawn (R8).
  */
+import { balanceLast } from "./wrap-balance.mjs";
 import { scaleLinear } from "d3-scale";
 import {
   deriveFurniture,
@@ -133,6 +134,7 @@ export function GestureStackStatic(props: Props) {
       } else current = trial;
     }
     if (current) out.push(current);
+    balanceLast(out, maxWidth, (s: string) => widthOf(s, r));
     return out;
   }
   const accentInk = adjustToContrast(

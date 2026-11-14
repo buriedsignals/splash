@@ -25,6 +25,7 @@ import {
   adjustToContrast,
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
+import { balanceLast } from "./wrap-balance.mjs";
 import { applyCase } from "#shared/chart-beat/registers.mjs";
 import {
   EYEBROW_TO_DISPLAY,
@@ -126,6 +127,7 @@ export function GestureXYStatic({
       } else current = trial;
     }
     if (current) lines.push(current);
+    balanceLast(lines, maxWidth, (s: string) => widthOf(s, r));
     return lines;
   };
   const line = (r: any) => ({

@@ -13,6 +13,7 @@
 // its figures (hooks) and how a gesture's emphasis spreads (`unitOf`: a radar's entity is all its spokes).
 //
 // Browser-safe: no Node module. The drive (`applyKeyedState`) is one self-contained function, inlined by toString().
+import { balanceLast } from "./wrap-balance.mjs";
 import { applyFix, figuresIn, GestureRefusal, validateGestures } from "./gesture-core.mjs";
 import { WEB_RESTING } from "./gesture-registry.mjs";
 import { checkCards } from "./gesture-scrolly.mjs";
@@ -557,6 +558,7 @@ export function wrapText(text, max, measure, reg) {
     } else line = next;
   }
   if (line) lines.push(line);
+  balanceLast(lines, max, (s) => measure(s, reg));
   return lines.length ? lines : [""];
 }
 

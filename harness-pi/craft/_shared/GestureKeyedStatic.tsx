@@ -5,6 +5,7 @@
  * furniture is derived from its ground; one accent. The family component hands `sceneOf(box, measure, lead)`.
  */
 
+import { balanceLast } from "./wrap-balance.mjs";
 import {
   adjustToContrast,
   deriveFurniture,
@@ -83,6 +84,7 @@ function wrap(text: string, max: number, width: (t: string) => number) {
     } else line = next;
   }
   if (line) lines.push(line);
+  balanceLast(lines, max, width);
   return lines;
 }
 

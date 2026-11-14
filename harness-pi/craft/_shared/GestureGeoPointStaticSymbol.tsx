@@ -40,6 +40,7 @@ import {
   contrast,
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/render-still.mjs";
+import { balanceLast } from "./wrap-balance.mjs";
 import { mix } from "#shared/chart-beat/colour.mjs";
 import { applyCase } from "#shared/chart-beat/registers.mjs";
 import {
@@ -218,6 +219,7 @@ export function GestureGeoPointStaticSymbol({
       } else current = trial;
     }
     if (current) out.push(current);
+    balanceLast(out, maxWidth, (s: string) => widthOf(s, r));
     wrapCache.set(key, out);
     return out;
   }
