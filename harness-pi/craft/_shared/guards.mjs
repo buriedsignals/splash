@@ -291,7 +291,7 @@ export function assertOnePerX(points, x = "year") {
  * beat once drew the inside-built-up-areas series (17 to 119) under a takeaway that says 36 to 214. A
  * takeaway may state a figure the plate does not draw, so only a majority missing refuses.
  */
-export function assertHeadlineNumbersDrawn(headline, drawn, label = "marks", dataPath = join(import.meta.dirname, "data.json")) {
+export function assertHeadlineNumbersDrawn(headline, drawn, label = "marks", dataPath = join(import.meta.dirname, "data.json"), { percent = false } = {}) {
   // Magnitudes: a title states a loss as "fell 12" against a drawn -12; signed bounds left negatives unchecked.
   const signed = drawn.filter((v) => Number.isFinite(v));
   if (!signed.length) return;
@@ -307,7 +307,10 @@ export function assertHeadlineNumbersDrawn(headline, drawn, label = "marks", dat
   // A digit glued to letters is part of a name (CO2, PM2.5, H2O), not a figure the title states.
   const places = new Map();
   const stated = [...String(headline).matchAll(/(?<![\p{L}\d])(\d{1,3}(?:[ ,  ]\d{3})+|\d+(?:[.,]\d+)?)(?![\p{L}\d])(\s*%)?/gu)]
-    .filter((m) => !m[2])
+    // A "%" figure is usually a share of some total no mark draws, so it is left to the callers whose values ARE
+    // percentages (a choropleth of shares): there it is one of the map's readings, and the cartogram's "au kilomètre
+    // carré, à 44,9 %" — a figure data.json cannot give — went through unchecked (12B, 2026-11-14).
+    .filter((m) => percent || !m[2])
     .map((m) => {
       const text = m[1].replace(/[ ,  ](?=\d{3}\b)/g, "").replace(",", ".");
       const n = Number(text);
@@ -334,8 +337,12 @@ export function assertHeadlineNumbersDrawn(headline, drawn, label = "marks", dat
   const pairsMean = pool.length <= 200 && probes.filter(pairs).length <= 250;
   const derivable = (n) => allowed.some((v) => near(v, n)) || (pairsMean && pairs(n));
   const missing = stated.filter((n) => !derivable(n));
+  // The value that works: the title without the clauses that state the missing figures, when any clause is left.
+  const clauses = String(headline).split(/\s*;\s*/u);
+  const kept = clauses.filter((c) => !missing.some((n) => [...c.matchAll(/\d+(?:[.,]\d+)?/g)].some((m) => Number(m[0].replace(",", ".")) === n)));
+  const shorter = kept.length && kept.length < clauses.length ? ` — or drop the claim; a title that works: "${kept.join(" ; ")}"` : "";
   if (missing.length)
-    throw new Error(`the title states ${missing.join(", ")}, which the drawn ${label} do not contain: ${locateStated(missing, stated, dataPath) ?? computedHint(missing, dataPath) ?? "the rows selected from data.json are probably not the takeaway's series — read its other columns and filter to the one the takeaway is about"}`);
+    throw new Error(`the title states ${missing.join(", ")}, which the drawn ${label} do not contain${shorter}: ${locateStated(missing, stated, dataPath) ?? computedHint(missing, dataPath) ?? "the rows selected from data.json are probably not the takeaway's series — read its other columns and filter to the one the takeaway is about"}`);
 }
 
 /**

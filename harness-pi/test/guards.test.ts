@@ -1228,3 +1228,22 @@ describe("assertFigureMatchesValue", () => {
     ).not.toThrow();
   });
 });
+
+// gx-cartogram web (12B, 2026-11-14): "Compté par pays, le bas-carbone européen est à 65,1 % ; compté au kilomètre
+// carré, à 44,9 %" — the map's values are shares in %, so a % figure is one of its readings; 44,9 is none of them
+// (data.json has no area column) and the guard skipped every % figure.
+describe("assertHeadlineNumbersDrawn on a map of percentages", () => {
+  const values = [97.2, 35.9, 61.4, 66.0];
+  const title = "Compté par pays, le bas-carbone européen est à 65,1 % ; compté au kilomètre carré, à 44,9 %";
+  it("should refuse a % figure no reading holds, offering the title without its clause", () => {
+    expect(() => assertHeadlineNumbersDrawn(title, [...values, 65.1], "places", undefined, { percent: true })).toThrow(
+      /title states 44\.9.*"Compté par pays, le bas-carbone européen est à 65,1 %"/,
+    );
+  });
+  it("should pass a % figure that is the map's mean", () => {
+    expect(() => assertHeadlineNumbersDrawn("Le bas-carbone européen est à 65,1 %", [...values, 65.1], "places", undefined, { percent: true })).not.toThrow();
+  });
+  it("should leave % figures unchecked when the values are not percentages", () => {
+    expect(() => assertHeadlineNumbersDrawn(title, [...values, 65.1], "places")).not.toThrow();
+  });
+});
