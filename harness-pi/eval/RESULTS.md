@@ -1052,7 +1052,8 @@ after each fix, failed a different way each time, every one a false plate that p
 | i14 | every fuel but Nuclear, under a subject that names the nuclear plants: France 34 GW for 97 | `c1184ed3f` refuses symbols that leave out every row of one category |
 | i15 | stuck on two refusals that named the problem and no value | `64d4a465a`, `5ee4d261e` (the sentence to add: « Hors carte : Algérie, Irak, Maroc, Syrie, Tunisie. »), `f9a1d41e9` |
 | i16 | **figures right** (France 97 GW, 41 drawn + 5 named off the map = 46), standfirst still "Un cercle par centrale" | `34aeecdd7` holds "one circle per X" to what the symbols sum |
-| i17 | **figures right, standfirst right** ("Un cercle par pays", 41 drawn + 5 named = 46); after a "Suède 19.9 px under 22 px" refusal its own filter emptied `labelled`: no name on the map, and the prose reads "viennent ensuite ." | open: an empty list spliced into a sentence |
+| i17 | **figures right, standfirst right** ("Un cercle par pays", 41 drawn + 5 named = 46); after a "Suède 19.9 px under 22 px" refusal its own filter emptied `labelled`: no name on the map, and the prose reads "viennent ensuite ." | `0e1851bde` refuses a plate sentence whose spliced list or value came out empty |
+| i18 | no render (45 turns, 2256 s): a first kit pass hit the 15-min cap on a legibility-floor refusal, then three passes stuck on "Unterminated string literal (line 162: `,)" — a stray backtick and comma after the closing "};", a shape the stray-quote refusal did not name | `e61250138` names that line and says to delete it |
 
 The same pass carried the guards the web and video kits gained to the static (`.gestures`, the default) and scrolly
 bubble-map kits (`20a46e5b6`), kept a point-map note off the plate's circles (`1489cef26`), and made `iso3Of`'s
