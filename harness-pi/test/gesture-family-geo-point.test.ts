@@ -945,3 +945,54 @@ describe("visibleBox", () => {
     expect(placed[0].anchor).toBe("end");
   });
 });
+
+// gx-proportional-symbol static (2026-11-14): "Ukraine 6 000 MW" sat across Belarus's and Poland's circles — the
+// notes kept off each other's words, never off the circles they name.
+describe("point-map notes and the circles", () => {
+  const box = { x: 0, y: 0, width: 600, height: 400 };
+  const note = { x: 300, y: 200, r: 6, lines: ["Ukraine 6 000 MW"] };
+  it("should move a note off a neighbouring circle on its first side", () => {
+    const placed = placeGeoNotes({
+      notes: [note],
+      marks: [{ x: 360, y: 200, r: 20 }],
+      box,
+      widthOf: () => 100,
+      lineHeight: 16,
+    });
+    expect(placed[0].anchor).toBe("end");
+  });
+
+  it("should keep a note on the side crossing fewest circles when every side crosses one", () => {
+    const placed = placeGeoNotes({
+      notes: [note],
+      marks: [
+        { x: 380, y: 200, r: 10 },
+        { x: 400, y: 200, r: 8 },
+        { x: 220, y: 200, r: 10 },
+        { x: 200, y: 200, r: 8 },
+        { x: 300, y: 175, r: 8 },
+        { x: 300, y: 225, r: 8 },
+      ],
+      box,
+      widthOf: () => 100,
+      lineHeight: 16,
+    });
+    expect(placed[0].y).toBe(200 - 10 - 16);
+  });
+
+  it("should take a clear corner when every side crosses a circle", () => {
+    const placed = placeGeoNotes({
+      notes: [note],
+      marks: [
+        { x: 360, y: 200, r: 5 },
+        { x: 240, y: 200, r: 5 },
+        { x: 300, y: 182, r: 4 },
+        { x: 300, y: 218, r: 4 },
+      ],
+      box,
+      widthOf: () => 100,
+      lineHeight: 16,
+    });
+    expect([Math.round(placed[0].x), Math.round(placed[0].y)]).toEqual([307, 177]);
+  });
+});

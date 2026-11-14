@@ -815,13 +815,14 @@ export function GestureGeoPointStaticSymbol({
               />
             ))}
         {(() => {
-          // THE GESTURES' WORDS, each beside its own circle, never on another word or off the map.
+          // THE GESTURES' WORDS, each beside its own circle, never on another word or off the map, off the other circles when a side allows.
           const lh = (annotBand.ascent + annotBand.descent) * 1.25;
           const placed = placeGeoNotes({
             notes: notes.map((n) => ({ ...n, x: mapX + n.x * mapW, y: mapY + n.y * mapW, r: Math.max(1.2, rOf(n.r)), lines: n.lines.map((l) => set(l, annot)) })),
             box: visibleBox({ x: mapX, y: mapY, width: mapW, height: mapH }, mapBox),
             widthOf: (t) => widthOf(t, annot),
             lineHeight: lh,
+            marks: symbols.map((d) => ({ x: mapX + d.x * mapW, y: mapY + d.y * mapW, r: Math.max(1.2, rOf(d.r)) })),
             onLadder,
           });
           return <GeoNotes placed={placed} lineHeight={lh} style={line(annot)} ink={ink} accentInk={accentInk} halo={land} />;
