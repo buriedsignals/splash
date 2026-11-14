@@ -862,3 +862,81 @@ export function assertNoCategoryDropped(symbols, here, said = "") {
   }
   }
 }
+
+// Every way a reader may write a country on the plate: the map's own name, data.json's spelling, and its name in the
+// languages Splash writes in, by ISO-2 through Intl ("Syrie", "Algérie", "Maroc").
+let spoken;
+function spokenNames(features) {
+  if (spoken) return spoken;
+  spoken = new Map();
+  const langs = ["en", "fr", "de", "es", "it", "pt", "nl"].map((l) => new Intl.DisplayNames([l], { type: "region" }));
+  for (let i = 0; i < 26; i++)
+    for (let j = 0; j < 26; j++) {
+      const two = String.fromCharCode(65 + i, 65 + j);
+      const en = langs[0].of(two);
+      if (!en || en === two) continue;
+      const hit = codeFor(en, features);
+      if (!hit?.exact) continue;
+      const names = spoken.get(hit.code) ?? new Set();
+      for (const d of langs) names.add(words(d.of(two)));
+      spoken.set(hit.code, names);
+    }
+  return spoken;
+}
+const words = (s) => ` ${norm(s).replace(/[^a-z]+/g, " ").trim()} `;
+const LEFT_OUT = /\b(hors|sauf|exclu|ecart|laisse|omis|sans|ohne|ausgenommen|excepto|sin|fuera|tranne|escluso|exclud|except|left out|leaves out|omit|outside|not shown|not drawn)/;
+
+/**
+ * The places data.json holds and the symbols leave out, held to the plate's own words. The 12B's bubble map web
+ * (2026-11-14) filtered "Syrian Republic" where data.json writes "Syrian Arab Republic": its standfirst left Syria out,
+ * the map drew it, and every guard passed. A place left out must be named on the plate, unless the symbols are the
+ * largest places (a top-N cut); a place a sentence leaves out must not be drawn.
+ * @param {{ name: string, iso?: string, value: number }[]} symbols
+ * @param {string} here the beat folder
+ * @param {string} said the plate's own words
+ */
+export function assertPlacesLeftOutStated(symbols, here, said = "") {
+  const dataPath = join(here, "data.json");
+  if (!existsSync(dataPath) || symbols.length < 3) return;
+  const table = JSON.parse(readFileSync(dataPath, "utf8"));
+  const columns = table.columns ?? [];
+  const shapes = join(here, "shapes.geojson");
+  const features = existsSync(shapes) ? JSON.parse(readFileSync(shapes, "utf8")).features ?? [] : [];
+  const keyOf = (name, iso) => iso ?? (codeFor(name, features)?.exact ? codeFor(name, features).code : norm(name));
+  const drawn = new Set(symbols.filter((s) => s.name || s.iso).map((s) => keyOf(s.name, s.iso && String(s.iso))));
+  const place = columns
+    .map((c, i) => (c.type === "text" ? i : -1))
+    .filter((i) => i >= 0)
+    .map((i) => ({ i, hits: new Set(table.rows.map((r) => keyOf(String(r[i]))).filter((k) => drawn.has(k))).size }))
+    .reduce((a, b) => (b.hits > a.hits ? b : a), { i: -1, hits: 0 });
+  if (place.hits < Math.max(3, drawn.size / 2)) return;
+  const measure = columns.findIndex((c) => c.name === front(here)?.("claimColumn") && c.type === "number");
+  const m = measure >= 0 ? measure : columns.findIndex((c) => c.type === "number" && !/^(lon|lng|long|longitude|lat|latitude|x|y|year)$/i.test(c.name));
+  const held = new Map(); // key -> { name, total }
+  for (const r of table.rows) {
+    const name = String(r[place.i]);
+    const k = keyOf(name);
+    const had = held.get(k) ?? { name, total: 0 };
+    const v = m >= 0 ? cell(r[m]) : 0;
+    had.total += Number.isFinite(v) ? v : 0;
+    held.set(k, had);
+  }
+  const known = spokenNames(features);
+  const namesOf = (k, name) => new Set([words(name), ...(known.get(k) ?? []), ...features.filter((f) => f.properties?.iso === k).map((f) => words(f.properties.name))]);
+  const named = (text, k, name) => [...namesOf(k, name)].some((n) => n.trim() && text.includes(n));
+  const text = words(said);
+  const out = [...held].filter(([k]) => !drawn.has(k));
+  // A sentence that leaves places out names no drawn place.
+  for (const sentence of String(said).split(/[.;:!?\n]+/)) {
+    const s = words(sentence);
+    if (!LEFT_OUT.test(s) || !out.some(([k, h]) => named(s, k, h.name))) continue;
+    const both = [...held].filter(([k, h]) => drawn.has(k) && named(s, k, h.name));
+    if (both.length)
+      throw new Error(`the plate leaves out ${both.map(([, h]) => h.name).join(", ")} ("${sentence.trim()}"), but the symbols draw ${both.length > 1 ? "them" : "it"}: data.json writes ${both.map(([, h]) => JSON.stringify(h.name)).join(", ")} — filter that exact spelling, or drop ${both.length > 1 ? "them" : "it"} from the sentence`);
+  }
+  const unsaid = out.filter(([k, h]) => !named(text, k, h.name));
+  if (!unsaid.length) return;
+  const smallest = Math.min(...[...held].filter(([k]) => drawn.has(k)).map(([, h]) => h.total));
+  if (m >= 0 && out.every(([, h]) => h.total <= smallest)) return;
+  throw new Error(`the symbols leave out ${unsaid.length} of data.json's ${held.size} places without a word on the plate: ${unsaid.slice(0, 6).map(([, h]) => JSON.stringify(h.name)).join(", ")}${unsaid.length > 6 ? ", …" : ""}. Draw them, or name each one the standfirst leaves out (as data.json writes it, or in the plate's language)`);
+}
