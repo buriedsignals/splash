@@ -1072,7 +1072,7 @@ the note reads "Albanie, 100,0 %" with the French decimal mark, and the breaks k
 
 Qwen re-run (2026-11-14): exit 0, 13 turns, 795 s. Its filter listed six by hand, leaving out France (94.9 %), under
 "6 pays à 94 % ou plus"; the threshold rule repaired the NOTE to "95" — true of the six, but the plate greyed France
-under a title of seven at 94. `the next commit`: when every kept place reaches the stated threshold and some left out
+under a title of seven at 94. `f8f0c9e98`: when every kept place reaches the stated threshold and some left out
 do too, the filter is the error — the fix adds them to `marks`, and the count rule then writes "7 pays". Replayed on
 the kept beat: two repairs, the seven drawn, France included.
 
