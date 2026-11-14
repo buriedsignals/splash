@@ -50,7 +50,12 @@ export function applySymbolState(root, state) {
   // EACH CIRCLE'S BOX IS AS WIDE AS ITS WIDEST CAMERA ON THIS STAGE and keeps the height it was rendered with, so a
   // circle that grows never moves a label nor the stage the map's zoom is read from; it overflows its row upward
   // and downward instead.
-  const widest = Math.max(...c.plan.cameras.map((camera) => radiusAt(stageViewOf(c.plan, camera, width, height).zoom)));
+  // A frozen card image draws its circles at the card's zoom times its `cover` scale: the box holds those too.
+  const frozen = Object.values(c.plan.fallback).flatMap((shape) => {
+    const s = Math.max(width / shape.size.width, height / shape.size.height);
+    return shape.cards.map((card) => radiusAt(card.zoom) * s);
+  });
+  const widest = Math.max(largestPx, ...frozen, ...c.plan.cameras.map((camera) => radiusAt(stageViewOf(c.plan, camera, width, height).zoom)));
   for (const swatch of c.sizeSwatches) {
     const share = Math.sqrt(Number(swatch.dataset.mw) / c.maxMw);
     const d = `${2 * largestPx * share + 1.5}px`;
