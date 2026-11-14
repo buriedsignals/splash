@@ -585,6 +585,18 @@ export function sceneOf({ model, state, frame, text }) {
       const area = (plot.width * plot.height * 0.07) / Math.max(1, sizes.reduce((s, v) => s + v, 0) / maxSize);
       const rMax = Math.min(plot.height * 0.13, Math.max(4, Math.sqrt(area / Math.PI)));
       const radius = (row) => (model.sized ? Math.max(1.6, rMax * Math.sqrt((row.size ?? 0) / maxSize)) : Math.max(2.5, Math.min(7, (plot.width / Math.max(1, n)) * 1.6)));
+      // A circle at either end of the domain is drawn whole: the page clips at the frame, so the scale is inset by what
+      // the end circles overhang (the x stays data, on one scale with the ticks).
+      for (let pass = 0, x0 = plot.x, w = plot.width; pass < 4; pass++) {
+        const at = model.rows.map((row) => ({ x: pos(row.value), r: radius(row) }));
+        const padL = Math.max(0, ...at.map((e) => e.r - (e.x - plot.x)));
+        const padR = Math.max(0, ...at.map((e) => e.x + e.r - (plot.x + plot.width)));
+        if (padL < 0.25 && padR < 0.25) break;
+        x0 += padL;
+        w -= padL + padR;
+        const [a, b] = [x0, w];
+        pos = (v) => a + ((v - lo) / (hi - lo)) * b;
+      }
       const placed = [];
       const order = [...model.rows].sort((a, b) => (b.size ?? 1) - (a.size ?? 1) || a.value - b.value);
       for (const row of order) {
