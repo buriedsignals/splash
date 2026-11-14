@@ -422,6 +422,24 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
     // every integer up to thirty a "rank", and a sum of ranks at a power of ten passed for "rank 2".
     const context = [...(additive ? [whole] : []), ...(marks.length <= 3 ? marks.map((m) => rankOf.get(m)) : []), ...marks.flatMap((m) => claim.facts?.[m] ?? [])];
 
+    // A note with a hole where its figure was: a sign or a unit with no number. Each hole takes its mark's value, in
+    // order (gx-stacked-bar static, Qwen3.5-9B, 2026-11-14: "+TWh contre + pour la France").
+    if (g.note !== undefined && g.do !== "zoom") {
+      const holes = noteHoles(String(g.note));
+      if (holes.length) {
+        const comma = /[àâçéèêëîïôûùüœ’]/i.test(`${claim.takeaway ?? ""}${g.note}`);
+        const say = (v) => { const s = Math.abs(v) >= 10 ? String(Math.round(Math.abs(v))) : Math.abs(v).toFixed(1); return comma ? s.replace(".", ",") : s; };
+        const values = marks.map((m) => valueOf.get(m)).filter(Number.isFinite);
+        if (values.length < holes.length)
+          throw new GestureRefusal(`gestures[${i}].note`, `"${g.note}" has no figure where its sign or unit stands: write the number there, or drop the note`, { set: { index: i, field: "note", value: undefined } });
+        let fixed = String(g.note);
+        holes.forEach((h, k) => { const at = h.at + fixed.length - String(g.note).length; fixed = fixed.slice(0, at) + say(values[k]) + h.pad + fixed.slice(at); });
+        throw new GestureRefusal(`gestures[${i}].note`, `"${g.note}" has no figure where its sign or unit stands (a note is literal text: no \${…} is evaluated in it): write "${fixed}"`, {
+          set: { index: i, field: "note", value: fixed },
+        });
+      }
+    }
+
     // notes: every number is one of the gesture's figures, at the note's precision
     if (g.note !== undefined && g.do !== "zoom") {
       // The digits of a name the note writes ("60-64", "2023") are the name, not a figure: blanked at their place.
@@ -613,4 +631,20 @@ export function implicitAccent(gestures) {
   if (subject !== undefined) return gestures.some((g) => g.do === "highlight" && g.marks.includes(subject)) ? undefined : subject;
   if (gestures.some((g) => g.do === "highlight")) return undefined;
   return gestures.find((g) => g.marks?.length)?.marks[0];
+}
+
+/**
+ * Where a note's figure is missing: a sign followed by no number ("+ pour", "+TWh"), or a unit no number precedes
+ * ("part de TWh"). A unit named as a unit ("en TWh", "in %") is no hole. Positions are in insertion order, left first.
+ */
+export function noteHoles(text) {
+  const holes = [];
+  for (const m of text.matchAll(/(?<![\p{L}\p{N}])[+−](?!\s*\d)/gu)) holes.push({ at: m.index + 1, pad: /^[+−]\s/u.test(text.slice(m.index)) ? "" : " " });
+  const UNIT = /(?<=^|[\s(])(TWh|GWh|MWh|kWh|GW|MW|kW|Gt|Mt|km²|%)(?=$|[\s.,;:)])/gu;
+  for (const m of text.matchAll(UNIT)) {
+    const before = text.slice(0, m.index).trimEnd();
+    if (/[\d+−]$/u.test(before) || /(^|\s)(en|in|par|per|des|of|the|la|le|l’|l')$/iu.test(before)) continue;
+    holes.push({ at: m.index, pad: " " });
+  }
+  return holes.sort((a, b) => a.at - b.at);
 }
