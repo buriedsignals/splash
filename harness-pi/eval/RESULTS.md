@@ -1099,3 +1099,22 @@ times). Each has a test that fails with the fix removed.
 place by hand-written filter lists, and Qwen spends passes before writing a first file — both a procedure tune's
 targets. Open: the long craft turns (12B writes of 16k characters in 5–6 min, Qwen thinking past 30k characters) are legitimate work
 the watchdogs cannot tell from a runaway.
+
+**Step 1 — the two maps re-run after the fixes (2026-11-14).** First pass 0/3: the 12B looped on a stray `` `, ``
+after the closing `};` (closed by 33777a91a, `trimStrayTail`), a spaced key broke a beat (d86f73513,
+`quoteSpacedKeys`), the cartogram's two guards asked for opposite titles (2b33684ab), and the bubble web kit drew one
+circle per country under a takeaway about sites, so both students stated site figures from country circles. That
+last one is closed by d26fcd535: the web kit draws one circle per row (at most 1000, none under 1 px), `limits(cut)`
+must print the threshold, and a circle wholly tiled by smaller ones may be missed by the pointer probe, nine in ten
+must be found (906/985 at 1600x800).
+
+| cell | arm | result | turns | wall | checked against data.json |
+|---|---|---|---|---|---|
+| bubble map web | 12B | rendered, 0 refusals | 7 | 645 s | 88 largest of 8 813 sites carry 41,3 %; cut at 61 MW, 7 828 left out; largest 6 000 MW (Ukraine), France's 5 460 MW |
+| bubble map web | Qwen3.5-9B | rendered, 0 refusals | 12 | 624 s | the same figures |
+| tile cartogram web | 12B | rendered, 0 refusals | 15 | 425 s | 40 reporting countries, mean 65,1 %; Russia 35,9 %; Ukraine not reported |
+
+3/3. The cartogram counts `headline=false`: its title drops "au kilomètre carré, à 44,9 %", the clause no column of
+data.json can carry (see above) — the eval's headline check still wants the whole takeaway. Caveat: the two bubble
+beats stay within 14 lines of the worked example, which tells the same story; the cells measure that a student
+follows the kit, not that it composes a different site story.
