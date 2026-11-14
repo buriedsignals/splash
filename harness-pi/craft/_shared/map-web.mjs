@@ -232,6 +232,58 @@ export const LIVE_MAP_WAIVERS = [
   },
 ];
 
+/** The live camera as `center@zoom`, the form the page writes into `data-live-view`. */
+const cameraOf = (page) =>
+  page.evaluate(() => {
+    const m = window.__mwMap;
+    return `${m.getCenter().lng.toFixed(4)},${m.getCenter().lat.toFixed(4)}@${m.getZoom().toFixed(3)}`;
+  });
+
+/**
+ * Photographs `page` (a live map, `mw-live` set) as it stands, after making it re-fit for the box it has.
+ *
+ * The page re-fits on a ResizeObserver and on MapLibre's "resize", but both return early until `mw-live`
+ * is set in `map.on("load")`, while the first fit runs earlier, in "style.load". A box that changes size
+ * in between (verify-web walking one page from 3440x900 to 1920x950 having waited for "load" only, the
+ * header settling as its faces arrive) keeps a camera fitted for a box that no longer exists:
+ * gx-proportional-symbol web (12B, 2026-11-14) showed the whole world, Europe a third of the width, on a
+ * page that framed Europe when replayed. A one-pixel nudge of the box now reaches the page's own fit; `stale` says
+ * whether the camera moved, which is that page defect seen from outside.
+ */
+export async function shootFitted(page, out) {
+  await settled(page);
+  const before = await cameraOf(page);
+  // MapLibre 5 hears its container through a ResizeObserver, not the window's "resize": the box itself
+  // has to change for the page's own fit to run, so it is nudged a pixel and put back.
+  const vp = page.viewport();
+  for (const height of [vp.height + 1, vp.height]) {
+    await page.setViewport({ ...vp, height });
+    await new Promise((r) => setTimeout(r, 300));
+    await settled(page);
+  }
+  const view = await cameraOf(page);
+  await page.screenshot({ path: out });
+  return { view, stale: before !== view ? before : null };
+}
+
+/** verify-web's fit-1920x950 picture of a live map, re-taken on a fresh page through `shootFitted`. */
+export async function photographFittedDesktop({ keyedPath, out }) {
+  const browser = await puppeteer.launch({
+    headless: "new",
+    executablePath: resolveChrome(),
+    args: ["--no-sandbox", "--use-gl=swiftshader", "--enable-unsafe-swiftshader"],
+  });
+  try {
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1920, height: 950, deviceScaleFactor: 1 });
+    await page.goto(`file://${keyedPath}`, { waitUntil: "networkidle0", timeout: 120000 });
+    await page.waitForFunction(() => document.documentElement.classList.contains("mw-live"), { timeout: 120000 });
+    return await shootFitted(page, out);
+  } finally {
+    await browser.close();
+  }
+}
+
 /**
  * Finds one pixel inside every feature of `layers` (keyed by `keyProp`) on the keyed page's live map,
  * moves a real pointer there and holds `#tooltip` to `expected[key]`. Leaves
@@ -406,5 +458,8 @@ async function verifyLiveMapKeyed({ here, label, keyedPath, waivers, probe }) {
       `the live map does not answer every mark with its own reading (${p.wrong.length} wrong, ${missing.length} not on screen: ${missing.join(", ")}) — check the join in beat.mjs (codes) and that every detail is distinct`,
     );
   }
+  const shot = await photographFittedDesktop({ keyedPath, out: desktop });
+  if (shot.stale)
+    console.log(`the live map kept a stale camera (${shot.stale}) until its box changed again; the review picture shows its own fit (${shot.view})`);
   lookAt({ here, label, shots, desktop });
 }
