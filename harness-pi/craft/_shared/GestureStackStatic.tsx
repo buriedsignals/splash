@@ -300,13 +300,12 @@ export function GestureStackStatic(props: Props) {
     rowsLayout
       ? Math.floor((L.bottom - L.top) / rowOwe)
       : Math.floor((L.bottom - L.top) / 60) * 1000;
-  let chosen = layoutFor(rungs[0].t, rungs[0].l);
-  for (const r of rungs) {
-    const L = layoutFor(r.t, r.l);
-    chosen = L;
-    if (room(L) >= all.length) break;
-  }
-  const layout = chosen;
+  // A shorter title or a dropped limits line is paid only for a plate that then holds every row. When none does,
+  // rows leave anyway (R8), and the plate keeps its full title and limits: gx-stacked-bar, Qwen3.5-9B, 2026-11-14,
+  // traded "…d’électricité bas-carbone…" and the TWh line for two of three missing rows.
+  const layout =
+    rungs.map((r) => layoutFor(r.t, r.l)).find((L) => room(L) >= all.length) ??
+    layoutFor(rungs[0].t, rungs[0].l);
   // R8: the rows that do not fit leave from the bottom of the drawn order; a row a gesture acts on stays.
   const capacity = Math.max(1, room(layout));
   let drawn = all;
