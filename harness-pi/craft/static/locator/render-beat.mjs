@@ -224,7 +224,28 @@ for (const { label: id, direction: picked } of chosen) {
     if (deepAtSea(subject) && beat.atSea !== true)
       throw new Error(`the subject sits in the water on the plate: its coordinates are wrong or lon/lat are swapped. If it really is at sea, set atSea: true`);
     const dry = waters.filter(deepInland);
-    if (dry.length) throw new Error(`waters ${dry.map((w) => w.forms[0]).join(", ")} sit on land on the plate: put each water's lon/lat on the water it names`);
+    if (dry.length) {
+      // A refusal hands a value that works: the nearest pixel the plate paints as water, back in lon/lat.
+      const unMerc = (m) => ((2 * Math.atan(Math.exp(m)) - Math.PI / 2) * 180) / Math.PI;
+      const lonLatOf = (x, y) => [
+        CORNERS.west + (x / VIEW) * (CORNERS.east - CORNERS.west),
+        unMerc(Y_NORTH + (((y / VIEW) * FRAME.width) / FRAME.height) * (Y_SOUTH - Y_NORTH)),
+      ];
+      const nearestWet = (w) => {
+        const [x0, y0] = [w.x * VIEW, w.y * VIEW];
+        for (let r = 1; r <= VIEW / 3; r += 1)
+          for (let a = 0; a < 360; a += Math.max(1, 60 / r)) {
+            const [x, y] = [x0 + r * Math.cos((a * Math.PI) / 180), y0 + r * Math.sin((a * Math.PI) / 180)];
+            if (inFrameView([x, y]) && field.landDepthAt(x, y) === 0) return lonLatOf(x, y);
+          }
+        return null;
+      };
+      const offers = dry.map((w) => {
+        const seat = nearestWet(w);
+        return seat ? `${w.forms[0]} → lon ${seat[0].toFixed(2)}, lat ${seat[1].toFixed(2)}` : `${w.forms[0]} → no water near it: drop it`;
+      });
+      throw new Error(`waters ${dry.map((w) => w.forms[0]).join(", ")} sit on land on the plate: put each water's lon/lat on the water it names — the nearest water the plate paints: ${offers.join("; ")} — or drop the water if the plate does not paint it`);
+    }
 
     const OCCUPANCY = markOccupancy(
       [{ kind: "disc", name: subject.name, x: subject.x * VIEW, y: subject.y * VIEW, r: (5 / NARROWEST_MAP) * VIEW }],
