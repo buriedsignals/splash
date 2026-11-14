@@ -1028,3 +1028,38 @@ standfirst "Annual trips, in millions. One year only (2025); six city networks�
 than twice Porto's 96", values 214/96/31/28/14/11, Lisboa accented. **Gold** on what the sheet asks; the credit
 "unattributed" is the sheet's own. The compare gesture's copy inside Lisboa's bar is the same design question as in
 the 12B batch.
+
+### Stability matrix: bullet and bubble map × four formats, Qwen3.5-9B and the 12B (2026-11-13/14)
+
+Rémy's goal for this rung: static, web, video and scrolly stable for charts **and** maps. One chart type
+(`gx-bullet`) and one map type (`gx-proportional-symbol-symbol-bubble-map`), each in the four formats, both students,
+seeded, `SPLASH_STOP_AFTER_CRAFT=1`, one cell at a time. Every final render was looked at and its figures checked
+against data.json (Poland 13.8 → 31.1, +17.3 pts; the 100 largest plants 43.0 % of the capacity, 65 of them
+nuclear; France 97 GW, UK 49, Spain 39, Germany 35, Russia 32, Norway 31; 72 nuclear sites, 69 at 500 MW or more).
+
+| | Bullet static | web | video | scrolly | Map static | Map web | Map video | Map scrolly |
+|---|---|---|---|---|---|---|---|---|
+| **Qwen3.5-9B** | ✅ | ✅ | ✅ | ✅ | ⚠️ "880 sites nucléaires" (one plant's MW as the group's count) | ⚠️ "un cercle par centrale" under one circle per country | ✅ | ✅ after 3 empty passes |
+| **12B** | ✅ | ✅ | ✅ (15-min cap, final render passed) | ✅ | ✅ after `bca6a130a` | ✅ after `e8388c532`, then unstable (below) | ✅ | ✅ |
+
+**15 of 16 cells are stable on a first full pass; the bubble map web is not.** The 12B's web cell, re-run on its own
+after each fix, failed a different way each time, every one a false plate that passed every guard of the day:
+
+| Run | What the plate drew | Fix |
+|---|---|---|
+| matrix | two copies of the beat in beat.mjs | `e8388c532` names the second copy and the lines to delete |
+| i13 | 41 of 46 countries, Syria filtered under a name data.json does not write; the review PNG showed the whole world | `14d1b2d2d` (UN official names), `2f1ffe2f1` (re-take the desktop picture after the page re-fits) |
+| i14 | every fuel but Nuclear, under a subject that names the nuclear plants: France 34 GW for 97 | `c1184ed3f` refuses symbols that leave out every row of one category |
+| i15 | stuck on two refusals that named the problem and no value | `64d4a465a`, `5ee4d261e` (the sentence to add: « Hors carte : Algérie, Irak, Maroc, Syrie, Tunisie. »), `f9a1d41e9` |
+| i16 | **figures right** (France 97 GW, 41 drawn + 5 named off the map = 46), standfirst still "Un cercle par centrale" | `34aeecdd7` holds "one circle per X" to what the symbols sum |
+| i17 | **figures right, standfirst right** ("Un cercle par pays", 41 drawn + 5 named = 46); after a "Suède 19.9 px under 22 px" refusal its own filter emptied `labelled`: no name on the map, and the prose reads "viennent ensuite ." | open: an empty list spliced into a sentence |
+
+The same pass carried the guards the web and video kits gained to the static (`.gestures`, the default) and scrolly
+bubble-map kits (`20a46e5b6`), kept a point-map note off the plate's circles (`1489cef26`), and made `iso3Of`'s
+refusal give the rename that works, once per name (`80a5a5a27`: the 12B had retried "Gerany"/"Belgiumm" eleven
+times). Each has a test that fails with the fix removed.
+
+**Triage.** Harness: the five rows above, all routing or guards moved into code. Tune: the 12B drops a category or a
+place by hand-written filter lists, and Qwen spends passes before writing a first file — both a procedure tune's
+targets. Open: the long craft turns (12B writes of 16k characters in 5–6 min, Qwen thinking past 30k characters) are legitimate work
+the watchdogs cannot tell from a runaway.
