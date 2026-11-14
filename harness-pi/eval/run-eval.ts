@@ -38,7 +38,8 @@ export function layIn(seed: string, storyDir: string, from: string) {
   for (const beat of existsSync(beats) ? readdirSync(beats) : []) {
     const to = join(storyDir, "beats", beat);
     mkdirSync(to, { recursive: true });
-    const files = from === "deliver" ? ["beat.mjs", "data.json", "OUTPUT-REVIEW.json"] : ["beat.mjs", "data.json"];
+    // gestures.json (record_gestures) is drawn over beat.mjs's own gestures: without it the beat is not the one rendered.
+    const files = from === "deliver" ? ["beat.mjs", "data.json", "gestures.json", "OUTPUT-REVIEW.json"] : ["beat.mjs", "data.json", "gestures.json"];
     for (const f of files) {
       if (existsSync(join(beats, beat, f))) cpSync(join(beats, beat, f), join(to, f));
       else if (f === "OUTPUT-REVIEW.json")
@@ -100,8 +101,9 @@ export async function evaluate(story: string, arm: string, out: string, variant 
         cpSync(join(beats, beat, "renders"), join(keep, "renders", beat), {
           recursive: true,
         });
-      // What the model wrote and what it read, so a craft can be replayed against a changed kit.
-      for (const f of ["beat.mjs", "data.json", "OUTPUT-REVIEW.json"])
+      // What the model wrote and what it read, so a craft can be replayed against a changed kit; gestures.json is
+      // what record_gestures wrote, drawn over beat.mjs's own gestures.
+      for (const f of ["beat.mjs", "data.json", "gestures.json", "OUTPUT-REVIEW.json"])
         if (existsSync(join(beats, beat, f))) {
           mkdirSync(join(keep, "beats", beat), { recursive: true });
           cpSync(join(beats, beat, f), join(keep, "beats", beat, f));

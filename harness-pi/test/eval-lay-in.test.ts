@@ -49,3 +49,14 @@ describe("layIn", () => {
     expect(() => layIn(seed, story, "palette")).toThrow(/craft, designer, deliver/);
   });
 });
+
+// gx-dot-strip static (Qwen3.5-9B, 2026-11-14): record_gestures wrote beats/1/gestures.json, which the kit reads over
+// beat.mjs's own gestures; the kept run dropped it, so the kept beat no longer drew what its own render showed.
+describe("layIn, with recorded gestures", () => {
+  it("should lay in gestures.json with the crafted beat", () => {
+    const { seed, story } = keptRun();
+    writeFileSync(join(seed, "beats", "1", "gestures.json"), "[]");
+    layIn(seed, story, "designer");
+    expect(existsSync(join(story, "beats", "1", "gestures.json"))).toBe(true);
+  });
+});
