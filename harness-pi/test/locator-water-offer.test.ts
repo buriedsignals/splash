@@ -25,6 +25,8 @@ describe.skipIf(!existsSync(join(BENCH, "package.json")) || !existsSync(join(RUN
   for (const src of [join(HARNESS, "craft", "_shared"), join(HARNESS, "craft", "static", "locator.gestures")])
     for (const f of readdirSync(src)) cpSync(join(src, f), join(at, f), { recursive: true });
   for (const f of ["data.json", "beat.mjs", "plate"]) cpSync(join(RUN, "beats", "1", f), join(at, f), { recursive: true });
+  // This test is about waters: its places (some left in English on a French page) are refused by another guard.
+  writeFileSync(join(at, "beat.mjs"), readFileSync(join(at, "beat.mjs"), "utf8").replace(/^  places: .*$/m, "  places: [],"));
   writeFileSync(join(at, "gestures.json"), JSON.stringify({ gestures: [{ do: "highlight", mark: "Zaporizhzhia NPP" }] }));
 
   let offer: RegExpMatchArray | null = null;

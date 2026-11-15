@@ -11,11 +11,22 @@ describe("sourceSpelling — a locator place left in the source's spelling on a 
   it("should hand the French name as a value that works", () => {
     expect(() => sourceSpelling(["Bucharest"], [{ name: "Bucharest", ...BUCHAREST }], "fr")).toThrow('{ name: "Bucharest", label: "Bucarest" }');
   });
-  it("should offer the source spelling as the other value that works", () => {
-    expect(() => sourceSpelling(["Kyiv"], [{ name: "Kyiv", ...KYIV }], "fr")).toThrow('{ name: "Kyiv", label: "Kyiv" }');
+  // gx-locator static, 12B and Qwen3.5-9B, 2026-11-16: both wrote places: cities.map((c) => ({ name: c.name, label: c.name })),
+  // the example's shape with its table dropped, and the French page printed "Bucharest".
+  it("should refuse a label that copies the source spelling", () => {
+    expect(() => sourceSpelling([{ name: "Bucharest", label: "Bucharest" }], [{ name: "Bucharest", ...BUCHAREST }], "fr")).toThrow('{ name: "Bucharest", label: "Bucarest" }');
   });
-  it("should accept a label the beat chose, even the source spelling", () => {
-    expect(sourceSpelling([{ name: "Kyiv", label: "Kyiv" }], [{ name: "Kyiv", ...KYIV }], "fr")).toBeUndefined();
+  it("should not offer the source spelling as a value that works", () => {
+    let message = "";
+    try {
+      sourceSpelling(["Kyiv"], [{ name: "Kyiv", ...KYIV }], "fr");
+    } catch (e) {
+      message = (e as Error).message;
+    }
+    expect(message).not.toContain('label: "Kyiv"');
+  });
+  it("should accept a label that is not the source spelling", () => {
+    expect(sourceSpelling([{ name: "Kyiv", label: "Kiev" }], [{ name: "Kyiv", ...KYIV }], "fr")).toBeUndefined();
   });
   it("should accept the same place on an English page", () => {
     expect(sourceSpelling(["Bucharest"], [{ name: "Bucharest", ...BUCHAREST }], "en")).toBeUndefined();

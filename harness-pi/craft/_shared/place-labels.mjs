@@ -14,15 +14,18 @@ export function sourceSpelling(places, rows, lang) {
   if (!code || code === "en") return undefined;
   table ??= JSON.parse(readFileSync(join(import.meta.dirname, "place-names.json"), "utf8")).places;
   [places].flat().forEach((p, i) => {
-    if (typeof p === "object" && p !== null && p.label !== undefined) return;
     const name = typeof p === "object" && p !== null ? p.name : p;
+    const printed = typeof p === "object" && p !== null && p.label !== undefined ? p.label : name;
+    // A label is the beat's choice unless it copies the source's spelling: label: c.name is the example's shape with
+    // its table dropped (gx-locator static, 12B and Qwen3.5-9B, 2026-11-16).
+    if (fold(printed) !== fold(name)) return;
     const row = rows[i];
     const known = row && table.find((t) => near(row, t) && fold(t[0]) === fold(name));
     const local = known?.[3][code];
     if (!local || fold(local) === fold(name)) return;
     const q = JSON.stringify;
     throw new Error(
-      `places[${i}]: ${q(name)} is data.json's spelling; a ${code} page usually prints it ${q(local)} (Natural Earth) — a value that works: { name: ${q(name)}, label: ${q(local)} }, or { name: ${q(name)}, label: ${q(name)} } to keep the source's spelling`,
+      `places[${i}]: ${q(name)} is data.json's spelling, printed as is; a ${code} page usually prints it ${q(local)} (Natural Earth) — a value that works: { name: ${q(name)}, label: ${q(local)} }; a label copied from the name (label: c.name) prints the source's spelling`,
     );
   });
   return undefined;
