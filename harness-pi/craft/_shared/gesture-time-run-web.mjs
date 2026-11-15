@@ -62,13 +62,13 @@ export async function runTimeWeb(here, variant) {
     const restNotes = scheduled.resting.captions.map((c) => plain(c.text));
 
     // ── axes: a line fitted, an area from zero (value ticks); a stream has none; a bump writes its ranks
-    const tickLabel = (v) => tickLabel(format, v);
+    const yLabel = (v) => tickLabel(format, v);
     const [lo, hi] = model.domain;
     const yTicks = bump
       ? Array.from({ length: model.slots }, (_, i) => ({ value: i + 1, label: String(i + 1) }))
       : variant === "streamgraph"
         ? []
-        : niceTicks(Math.min(lo, hi), Math.max(lo, hi), 5).map((v) => ({ value: v, label: tickLabel(v) }));
+        : niceTicks(Math.min(lo, hi), Math.max(lo, hi), 5).map((v) => ({ value: v, label: yLabel(v) }));
     const keyAt = (t) => model.keyOf.get(t) ?? String(Math.round(t * 10) / 10);
     const ticksFor = ([a, b]) => {
       let ts = niceTicks(a, b, 6).filter((t) => Number.isInteger(t) || b - a < 6);
