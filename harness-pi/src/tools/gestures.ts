@@ -194,6 +194,8 @@ export function gestureTools(
   const refusedOnce = new Set<string>();
   let last = "";
   let lastRendered = "";
+  // The last record_gestures refusal, until a list is recorded: a reread in between is sent back to it.
+  let refused: string | undefined;
 
   const tool = defineTool({
     name: "record_gestures",
@@ -219,7 +221,18 @@ export function gestureTools(
       ),
     }),
     prepareArguments: prepareGestureArguments as (args: unknown) => never,
-    async execute(_id, { gestures: list }) {
+    async execute(_id, args) {
+      try {
+        const out = await record(args);
+        refused = undefined;
+        return out;
+      } catch (e) {
+        refused = (e as Error).message;
+        throw e;
+      }
+    },
+  });
+  async function record({ gestures: list }: { gestures: any[] }) {
       if (!Array.isArray(list) || !list.length)
         throw new Error(
           'gestures: give at least one gesture, e.g. [{ do: "highlight", mark: "<a drawn name>" }]',
@@ -305,7 +318,6 @@ export function gestureTools(
         ],
         details: {},
       };
-    },
-  });
-  return { recordGestures: tool, refresh, learn };
+  }
+  return { recordGestures: tool, refresh, learn, pending: () => refused };
 }

@@ -436,7 +436,7 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
             },
           } as T)
         : t;
-    const cf = fsTools({ ...bases, ...craftReads(beatDir, beat) });
+    const cf = fsTools({ ...bases, ...craftReads(beatDir, beat, staging?.pending) });
     const sess = await session(
       "skill:chart-beat",
       beat,
