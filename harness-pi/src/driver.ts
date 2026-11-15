@@ -39,7 +39,7 @@ import {
   paletteTools,
 } from "./tools/palette.ts";
 import { reviewTools } from "./tools/review.ts";
-import { refusalHint, runCommand, runTools } from "./tools/run.ts";
+import { hungRender, refusalHint, runCommand, runTools } from "./tools/run.ts";
 import { type Dialogue, dropUnsizedSizes, gapsForModel, storyboardTools } from "./tools/storyboard.ts";
 export { adapterFor } from "./adapters.ts";
 import { deliverTools } from "./tools/deliver.ts";
@@ -467,7 +467,9 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
     // the beat itself and hands the exact refusal back in the SAME session (its context intact), up to
     // three times, instead of opening a new session that starts from nothing.
     let prompt = `${dataSummary(join(beatDir, "data.json"))}${choice.gestures ? claimBlock(meta as unknown as Record<string, unknown>) : ""}Slot ${beat} of ${o.storyDir} is a ${slot.format ?? "static"} "${slot.chosen}" ${slot.medium ?? "chart"} beat, prepared at beats/${beat}/. The confirmed takeaway is the title, word for word${meta.takeaway ? `: "${meta.takeaway}"` : " (in STORYBOARD.md)"}. Write every word on the plate (eyebrow, labels, unit, standfirst, alt) in the story's language, "${meta.language ?? "en"}", whatever language the data's column names are in. Draw the measure the takeaway is about: a takeaway about a rate, share or ranking per resident draws that computed measure, not the raw column. Write beats/${beat}/beat.mjs as CONTRACT.md says${typedStaging ? ` — its readings and words only: no gestures and no check() (the kit computes the check from the recorded claim); then declare the staging with record_gestures, naming marks only from the names it offers` : choice.gestures ? ` with its gestures list and no check() (the kit computes the check from the recorded claim)` : ""}, render it with render_beat (beat "${beat}", format "${slot.format ?? "static"}"), look at the PNG, fix what is wrong, and reply DONE when the render is right.${craftBriefing(beatDir, beat)}`;
-    let final: { exitCode: number; stdout: string; stderr: string } = { exitCode: 1, stdout: "", stderr: unwrittenBeat(beatDir, beat) };
+    let final: { exitCode: number; stdout: string; stderr: string; timedOut?: boolean } = { exitCode: 1, stdout: "", stderr: unwrittenBeat(beatDir, beat) };
+    // A still, a page or a scrolly renders in about a minute; only a video (a map video up to 7.5) needs the 12.
+    const renderMinutes = String(slot?.format ?? "static") === "video" ? 12 : 6;
     const craftStart = Date.now();
     for (let attempt = 0; attempt < 3 && Date.now() - craftStart < 20 * 60_000; attempt++) {
       const res = await converse({
@@ -485,7 +487,14 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
       // The delivered render is the render of the beat.mjs on disk: the 12B once fixed beat.mjs after
       // its last render and shipped the stale, wrong picture.
       if (existsSync(join(beatDir, "beat.mjs")))
-        final = await runCommand(["bun", join(beatDir, "render-beat.mjs")], bases);
+        final = await runCommand(["bun", join(beatDir, "render-beat.mjs")], bases, {}, renderMinutes * 60_000);
+      const hung = hungRender(final, beat, renderMinutes);
+      if (hung) {
+        say(`CRAFT final render: ${hung}`);
+        sess.dispose();
+        rmSync(join(beatDir, "renders"), { recursive: true, force: true });
+        return hung;
+      }
       say(`CRAFT final render: exit ${final.exitCode}${final.exitCode ? ` ${(final.stdout.match(/REFUSED.*/)?.[0] ?? final.stderr).slice(-300)}` : ""}`);
       if (final.exitCode === 0 || res.stop.endsWith("min cap")) break;
       // A kit refuses on stdout ("REFUSED — …") or throws on stderr ("error: …").

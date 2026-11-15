@@ -30,6 +30,8 @@ export interface RunResult {
   exitCode: number;
   stdout: string;
   stderr: string;
+  /** Killed by its time limit: a render that never finished, not one that refused. */
+  timedOut?: boolean;
 }
 
 function killTree(pid: number) {
@@ -44,6 +46,7 @@ export async function runCommand(
   argv: string[],
   bases: Bases,
   env: Record<string, string> = {},
+  timeoutMs = TIMEOUT_MS,
 ): Promise<RunResult> {
   const proc = Bun.spawn(argv, {
     cwd: bases.root,
@@ -52,14 +55,27 @@ export async function runCommand(
     stderr: "pipe",
   });
   // The whole tree: killing bun alone left a render's Remotion and Chrome children running.
-  const timer = setTimeout(() => killTree(proc.pid), TIMEOUT_MS);
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    killTree(proc.pid);
+  }, timeoutMs);
   const [stdout, stderr, exitCode] = await Promise.all([
     new Response(proc.stdout).text(),
     new Response(proc.stderr).text(),
     proc.exited,
   ]);
   clearTimeout(timer);
-  return { exitCode, stdout, stderr };
+  return timedOut
+    ? { exitCode, stdout, stderr: `${stderr}\nkilled after ${Math.round(timeoutMs / 60_000)} min: the command never finished`, timedOut }
+    : { exitCode, stdout, stderr };
+}
+
+/** The reason a run stops when its final render hung: another craft session on the same kit would hang again. */
+export function hungRender(r: RunResult, beat: string, minutes: number): string | null {
+  return r.timedOut
+    ? `the render of beats/${beat} never finished (killed after ${minutes} min): a hang in the kit, not a refusal beat.mjs can fix`
+    : null;
 }
 
 export function report(argv: string[], r: RunResult) {
