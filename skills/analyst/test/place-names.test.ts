@@ -149,3 +149,14 @@ describe("place names with no code column", () => {
     expect(localizePlaces(columns, rows, "fr")).toBeNull();
   });
 });
+
+describe("the press's own name where the region table differs", () => {
+  // Measured 2026-11-15 (beeswarm, Qwen): Bun's ICU names CN "Chine continentale" in French, and the page
+  // printed it; the French press writes « Chine ».
+  it("should name China « Chine » on a French page", () => {
+    const columns = [{ name: "entity", type: "text" }, { name: "code", type: "text" }];
+    const rows = [["China", "CHN"], ["India", "IND"]];
+    localizePlaces(columns, rows, "fr");
+    expect(rows[0][2]).toBe("Chine");
+  });
+});

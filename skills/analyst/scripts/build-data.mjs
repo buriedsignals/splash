@@ -322,6 +322,10 @@ function recordTyped(cell, type) {
  * story's language (Intl region names); a code that is no country (an aggregate such as OWID_KOS) keeps the
  * source's name. The source columns are untouched. Mutates `columns` and `rows`; returns what it added.
  */
+// Where the runtime's region table differs from the press's name (Bun's ICU, measured 2026-11-15: CN is
+// "Chine continentale" in French). Keyed by language, then ISO alpha-2.
+const PRESS_NAMES = { fr: { CN: "Chine" } };
+
 export function localizePlaces(columns, rows, language) {
   const lang = String(language ?? "").trim();
   if (!lang || /^en(?:-|$)/i.test(lang)) return null;
@@ -346,7 +350,7 @@ export function localizePlaces(columns, rows, language) {
   let kept = 0;
   for (const row of rows) {
     const iso2 = ISO3_TO_ISO2[row[codeAt]];
-    const local = iso2 ? display.of(iso2) : undefined;
+    const local = iso2 ? (PRESS_NAMES[suffix]?.[iso2] ?? display.of(iso2)) : undefined;
     if (!local) kept++;
     row.push(local ?? row[nameAt]);
   }
