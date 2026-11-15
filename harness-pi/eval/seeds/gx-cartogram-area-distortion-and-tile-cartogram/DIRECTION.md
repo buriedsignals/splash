@@ -1,7 +1,7 @@
 # creme/creme/the newsroom
 
 - name: creme/creme/the newsroom
-- origin: NEWSROOM.md + Compté par pays, le bas-carbone européen est à 65,1 % ; compté au kilomètre carré, à 44,9 % (palette origin: newsroom)
+- origin: NEWSROOM.md + Compté par pays, le bas-carbone européen est à 65,1 % (palette origin: newsroom)
 - measuredFrom: creme, measured on abc-net-au-news-2024-05-23-afl-mullet-count-data-analysis-103850072
 - ground: #FFFFFF
 - accent: #0B7A75

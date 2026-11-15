@@ -19,10 +19,10 @@ offered to the harness; what is left is what code could not take.
 | T1 | Re-sends an identical call after a refusal or a success (record lists, no-op edits) | **Tune** — both students, steps 1–2b; the repeat refusal stops the loop but costs turns | Gold examples: refusal → a different call |
 | T2 | Prose claims a record no tool made | **Tune** — 12B and 26B; the nudge never recovered it | Gold examples: say it only after the tool returns |
 | T3 | A generation that does not end on the first long write | **Tune** — three runs (gantt video, real-gwis static, marimekko video 849 s) | Gold examples of a complete first `beat.mjs` |
-| T4 | Keeps a figure the guard asked it to drop | **Seed first** — the cartogram's 44,9 % cannot be computed from its data | Fix the seed (Rémy's call), then re-judge on Qwen |
+| T4 | Keeps a figure the guard asked it to drop | **Seed fixed** — the cartogram's 44,9 % could not be computed from its data; the takeaway now keeps the 65,1 % (mean of 40 countries' low-carbon shares, recomputed) | Re-judge on Qwen |
 | T5 | Superlative without its scope ("11 août : 25,5 °C") | Watch — one occurrence | — |
 | T6 | Names a mark the beat does not draw; repeats its own failing `check()`; declares a name twice | Watch — the refusals recover most | — |
-| H1 | Place names in English on a French page | **Helper** — Intl region names already resolve them (`countries.mjs`); needs one label hook per runner | Awaits Rémy: printing the data's names translated is a doctrine call |
+| H1 | Place names in English on a French page | **Skill (analyst)** — Rémy, 2026-11-15: translate. Measured: the kits compose and measure label text in ~40 places (13 runners × formats), and every name guard matches marks against data.json, so a kit-side rename weakens those guards. The one owner that keeps them whole is the analyst step that writes `beats/<id>/data.json` (`skills/analyst`): a localized display column there, written down in DATA-NOTES.md | Analyst skill change (outside the harness) |
 | H2 | Limits card placed last in a scrolly | **Harness** if the doctrine fixes its place | Awaits the doctrine rule |
 
 Harness fixes since the list began are not repeated here: they are in `eval/RESULTS.md` under each step.

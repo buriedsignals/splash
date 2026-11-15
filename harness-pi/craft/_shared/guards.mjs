@@ -345,7 +345,10 @@ export function assertHeadlineNumbersDrawn(headline, drawn, label = "marks", dat
   const top = Math.max(...values);
   const probes = Array.from({ length: 1001 }, (_, k) => (top * k) / 1000);
   const pairsMean = pool.length <= 200 && probes.filter(pairs).length <= 250;
-  const derivable = (n) => allowed.some((v) => near(v, n)) || (pairsMean && pairs(n));
+  // The marks' mean is one figure the plate carries: Qwen3.5-9B's tile cartogram drew forty country shares under
+  // "compté par pays, … 65,1 %", their mean, and was refused as drawing nothing that held it (2026-11-15).
+  const mean = signed.length > 1 ? Math.abs(signed.reduce((a, b) => a + b, 0) / signed.length) : NaN;
+  const derivable = (n) => allowed.some((v) => near(v, n)) || near(mean, n) || (pairsMean && pairs(n));
   const missing = stated.filter((n) => !derivable(n));
   // The value that works: the title without the clauses that state the missing figures, when any clause is left.
   const clauses = String(headline).split(/\s*;\s*/u);

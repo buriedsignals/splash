@@ -1,5 +1,5 @@
 ---
-takeaway: "Compté par pays, le bas-carbone européen est à 65,1 % ; compté au kilomètre carré, à 44,9 %"
+takeaway: "Compté par pays, le bas-carbone européen est à 65,1 %"
 grounding: supported
 claimShape: none
 subject: "la Russie, le plus grand territoire"
@@ -11,7 +11,7 @@ effectiveDate: 2026-10-27
 limits: "Une tuile par pays ; électricité bas-carbone en 2024 ; seuls les pays dont la production est rapportée."
 slots:
   - id: 1
-    proves: "Compté par pays, le bas-carbone européen est à 65,1 % ; compté au kilomètre carré, à 44,9 %"
+    proves: "Compté par pays, le bas-carbone européen est à 65,1 %"
     medium: chart
     format: static
     reachable: yes

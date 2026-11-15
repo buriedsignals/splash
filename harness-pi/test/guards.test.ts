@@ -1352,3 +1352,15 @@ describe("assertHeadlineNumbersDrawn on a map of percentages", () => {
     ).not.toThrow();
   });
 });
+
+describe("assertHeadlineNumbersDrawn on the marks' mean", () => {
+  // Qwen3.5-9B's tile cartogram (2026-11-15): forty country shares drawn, a title stating their mean, 65,1 %.
+  const shares = [0, 100, 40, 85, 62, 71, 93, 30, 55, 115].map((v) => v * 0.6 + 26.1 - 26.1 * 0.6 + 0.0);
+  const mean = shares.reduce((a, b) => a + b, 0) / shares.length;
+  it("should accept a percentage title that states the mean of the drawn marks", () => {
+    expect(() => assertHeadlineNumbersDrawn(`Compté par pays, la part est à ${mean.toFixed(1).replace(".", ",")} %`, shares, "places", "/nonexistent/data.json", { percent: true })).not.toThrow();
+  });
+  it("should still refuse a percentage the marks neither hold nor average to", () => {
+    expect(() => assertHeadlineNumbersDrawn("Compté par pays, la part est à 44,9 %", shares, "places", "/nonexistent/data.json", { percent: true })).toThrow(/44\.9/);
+  });
+});
