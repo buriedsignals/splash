@@ -80,10 +80,15 @@ export function renderAlt(beatDir: string): string | null {
     .filter((f) => f.endsWith(".svg") || f.endsWith(".html"))
     .sort((a, b) => statSync(join(renders, b)).mtimeMs - statSync(join(renders, a)).mtimeMs);
   if (!svgs.length) return null;
-  // The alt is the root <svg>'s label (static) or the chart's <desc> (web, whose page labels marks and gesture steps
-  // first); any other aria-label names one part of the chart, never the finding.
+  // The beat's own alt is the chart's <desc> (web, whose page labels marks and gesture steps first) or the label of
+  // the figure drawn as role="img" (the static <svg>, the scrolly <div>); a video's frames sheet carries only its
+  // titled <svg>. Any other aria-label names one part of the chart, never the finding.
   const markup = readFileSync(join(renders, svgs[0]), "utf8");
-  const label = markup.match(/<svg\b[^>]*\baria-label="([^"]+)"/)?.[1] ?? markup.match(/<desc>([^<]+)<\/desc>/)?.[1];
+  const figure = markup.match(/<(?:svg|div|figure)\b[^>]*\brole="img"[^>]*>/)?.[0];
+  const label =
+    markup.match(/<desc>([^<]+)<\/desc>/)?.[1] ??
+    figure?.match(/\baria-label="([^"]+)"/)?.[1] ??
+    markup.match(/<svg\b[^>]*\baria-label="([^"]+)"/)?.[1];
   return label
     ? label.replace(/&#x27;|&#39;|&apos;/g, "'").replace(/&quot;/g, '"').replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&")
     : null;
