@@ -23,6 +23,10 @@ describe("a kept run's craft leg as a gold candidate", () => {
   it("should reject a leg whose headline is not drawn", () => {
     expect(craftVerdict(ok, false).rejected).toContain("headline");
   });
+  it("should reject a leg run with thinking on", () => {
+    // gx-beeswarm Qwen 1794762737021 (2026-11-15): the thinking measurement typed the wrong six countries by hand.
+    expect(craftVerdict(ok, true, ["off", "medium"]).rejected).toContain("thinking");
+  });
   it("should reject a run that never reached craft", () => {
     expect(craftVerdict(["STATE storyboard/blocked"], true).rejected).toContain("render");
   });

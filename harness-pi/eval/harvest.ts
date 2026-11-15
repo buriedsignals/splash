@@ -22,16 +22,26 @@ export function formatOf(transcript: string[]): string {
   return kit?.match(/^CRAFT kit: (\w+)\//)?.[1] ?? "none";
 }
 
-export function craftVerdict(transcript: string[], headline: boolean) {
+export function craftVerdict(transcript: string[], headline: boolean, thinking: string[] = []) {
   const renders = transcript.filter((l) => l.startsWith("CRAFT final render:"));
   const gates: [string, boolean][] = [
     ["render", renders.length > 0 && /exit 0\b/.test(renders.at(-1) ?? "")],
     ["headline", headline],
     ["repair", !transcript.some((l) => l.startsWith("CRAFT repaired"))],
     ["fallback", !transcript.some((l) => l.startsWith("CRAFT fallback"))],
+    // Thinking stays off on both students (RESULTS 2026-11-15); a run measuring it is not a gold example.
+    ["thinking", thinking.every((l) => l === "off")],
   ];
   const rejected = gates.filter(([, ok]) => !ok).map(([g]) => g);
   return { gold: rejected.length === 0, rejected };
+}
+
+/** The thinking levels the run's sessions recorded. */
+function thinkingLevels(run: string): string[] {
+  const sessions = join(run, "sessions");
+  if (!existsSync(sessions)) return [];
+  const files = (readdirSync(sessions, { recursive: true }) as string[]).filter((f) => f.endsWith(".jsonl"));
+  return [...new Set(files.flatMap((f) => [...readFileSync(join(sessions, f), "utf8").matchAll(/"thinkingLevel":"(\w+)"/g)].map((m) => m[1])))];
 }
 
 /** The kept layout: STORYBOARD.md at the root, renders/<beat>/ beside beats/<beat>/. */
@@ -65,7 +75,7 @@ if (import.meta.main) {
     const format = formatOf(transcript);
     if (format === "none") continue;
     const story = dir.replace(/-\d{13}$/, "").replace(/-seeded-.*$|-(osaurus-qwen|osaurus|local26|stock|e4b)$/, "");
-    const v = craftVerdict(transcript, headlineDrawn(run));
+    const v = craftVerdict(transcript, headlineDrawn(run), thinkingLevels(run));
     rows.push({ dir, story, arm: armOf(dir), format, heldout: heldout.some((h) => story.startsWith(h)), ...v });
   }
   const gold = rows.filter((r) => r.gold && !r.heldout);
