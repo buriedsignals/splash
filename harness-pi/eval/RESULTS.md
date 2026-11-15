@@ -1147,3 +1147,36 @@ Still open, minor: a stray "533" label on the stacked bar after its note was dro
 Reading: on static, both students now produce a figure-true plate in all eight families. The 12B is slower per turn
 but needs fewer turns than Qwen on lollipop and locator; Qwen is faster where it gets it first time. The defects
 left are not wrong figures but wording (Tune) and placement (minor).
+
+### Step 2b: one representative per family in web, video and scrolly, the 12B then Qwen3.5-9B (2026-11-15)
+
+Seeded runs, `SPLASH_STOP_AFTER_CRAFT=1`, one at a time on Osaurus, 18 cells per student. Every render was looked at
+and its figures checked against the run's own `data.json`.
+
+| Family (story) | 12B web · video · scrolly | Qwen web · video · scrolly | Figures vs data.json |
+|---|---|---|---|
+| likert (diverging stacked) | rendered ×3 | 10 · 37 · 21 turns, rendered ×3 | exact (France nuclear 67.7, fossil 5.1, renewable 27.2) |
+| beeswarm | rendered ×3 | 5 · 56 · 9 turns, rendered ×3 | exact (6 countries above 20 t, 0.55 % shown "0,6 %") |
+| area | rendered ×3 (web on rerun) | 14 · 35 · 13 turns, rendered ×3 | exact (3 158; 1 575.1; peak 46.2 in 1973; 32.1 in 2024) |
+| marimekko | rendered ×3 | 32 · 20 · 16 turns, rendered ×3 | exact (1 637.5 TWh; coal 200.9 = 12.3 %; DE+PL 99.5 %) |
+| calendar heatmap | rendered ×3 | 26 · 14 · 35 turns, rendered ×3 | exact (31 days above 20 °C, 18 Jul–17 Aug; August 22.2) |
+| tile cartogram | rendered ×3 (web, video on rerun) | 74 · 72 · 96 turns, **none** | 12B exact (65.1 by country; Russia 35.9) |
+
+The cartogram takeaway's second clause ("44,9 % au kilomètre carré") needs each country's area, which `data.json`
+does not hold: the 12B dropped the clause, as the headline guard offers (`guards.mjs` `droppedFigureClauses`); Qwen
+kept restating 44.9 in video, crashed its own beat on a null mean in web (`sum()` called on the mapped row objects),
+and lost the scrolly to gesture refusals.
+
+Fixes from the pass: `be8b16b7f`, `6b806ffe4`, `a823ae0e1`, `1cdc03c5d`, `cc754442d`, `a91fc0be1`, `0d5f0ae99`.
+
+Open, by triage:
+- Tune: English country names on French pages (both students); the limits card placed last in a scrolly (12B);
+  re-sending an identical call after a refusal (12B); one empty 16 384-token generation (12B, 849 s); Qwen keeps a
+  figure the guard asked it to drop; "11 août : 25,5 °C" stated without "the warmest day of August" (Qwen video).
+- Harness: a beat that throws while loading is answered with `data.json`'s shape even when the throw is a null in
+  the model's own arithmetic — the refusal should name the beat's line instead; the calendar key breaks at 19 while
+  the claim's threshold is 20.
+- Seed: the cartogram story claims a figure its data cannot produce.
+
+Reading: the 12B renders all six families in all three moving formats with exact figures; Qwen renders five of six,
+in fewer seconds per cell where it succeeds, and fails only where it must drop a clause of the journalist's own words.
