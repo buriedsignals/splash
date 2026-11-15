@@ -479,3 +479,35 @@ describe("isTokenLoop", () => {
     expect(isTokenLoop("<|channel>thought\n".repeat(30))).toBe(true);
   });
 });
+
+// gx-area scrolly delivery (Qwen3.5-9B, 2026-11-15): offer_forms listed four forms, the turn then ended with no word;
+// the journalist was sent "" and answered "I don't know.", and delivery stopped at "no first record in 16 model turns".
+describe("converse with offered forms and nothing said", () => {
+  const offered = async () => {
+    const heard: string[] = [];
+    let listener: (e: unknown) => void = () => {};
+    const session = {
+      subscribe: (l: (e: unknown) => void) => ((listener = l), () => {}),
+      prompt: async () =>
+        listener({ type: "tool_execution_end", toolName: "offer_forms", result: { content: [{ text: "- owned-file — The file itself\n- source-bundle — Runnable source" }] } }),
+      getLastAssistantText: () => "",
+      abort: async () => {},
+    };
+    await converse({
+      session: session as never,
+      first: "Deliver.",
+      journalist: { answer: async (said: string) => (heard.push(said), "owned-file") },
+      dialogue: { lastJournalist: "", lastProposal: "" },
+      conversational: true,
+      done: async () => false,
+      gaps: async () => "",
+      limits: { rounds: 2 },
+      log: [],
+    });
+    return heard;
+  };
+
+  it("should show the journalist the forms the tool listed", async () => {
+    expect((await offered())[0]).toContain("- owned-file — The file itself");
+  });
+});

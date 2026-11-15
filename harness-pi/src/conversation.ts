@@ -132,6 +132,7 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
   let sameFailure = 0;
   let stop = "";
   let menu = "";
+  let offered = "";
   let everRecorded = false;
   let sinceRecord = 0;
   let refusalStreak = 0;
@@ -207,6 +208,9 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
     // The menu the code recorded is the one the journalist sees, whatever the model's prose says.
     if (!e.isError && e.toolName === "show_candidates")
       menu = String(e.result?.content?.[0]?.text ?? "").split("ask which one:\n")[1] ?? "";
+    // gx-area scrolly delivery (Qwen3.5-9B, 2026-11-15): the forms were listed, the turn ended with no word, and the
+    // journalist was sent "" — the list the tool returned is what they are asked to choose from.
+    if (!e.isError && /^offer_(forms|closing)$/.test(e.toolName ?? "")) offered = String(e.result?.content?.[0]?.text ?? "");
     if (e.isError && e.toolName === "record_slot" && /harness recorded this menu/.test(String(e.result?.content?.[0]?.text ?? "")))
       menu = String(e.result?.content?.[0]?.text ?? "").split("end your turn:\n")[1] ?? "";
     // Counted per signature, not only back to back: a model that interleaves a successful call
@@ -338,8 +342,10 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
       }
       silent = recorded === 0 ? silent + 1 : 0;
       recorded = 0;
-      const shown = menu ? `The candidates, as recorded:\n${menu}\n\n${said}` : said;
+      const spoken = said.trim() || !offered ? said : `${offered}\n\nWhich one?`;
+      const shown = menu ? `The candidates, as recorded:\n${menu}\n\n${spoken}` : spoken;
       menu = "";
+      offered = "";
       const answer = await o.journalist.answer(shown);
       o.log.push(`JOURNALIST: ${answer}`);
       if (o.dialogue.lastJournalist)
