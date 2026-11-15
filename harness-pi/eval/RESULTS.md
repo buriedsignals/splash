@@ -1324,3 +1324,15 @@ the file cache macOS gives back). Apps left open, Qwen3.5-9B 4-bit, 8 layers, 8k
 validation pass every time (val loss 2,992, 17 s); the first training step never completes. A guard at "warn"
 stops at once, a guard on swap growth stops at +1,3 GB, and with only "critical" as the guard the step ran 654 s
 before pressure turned critical (swap +0,9 GB). Training on this machine needs the apps closed, or a rented GPU.
+
+Same smoke, apps still open, per model (mlx-lm 0.32.2, 4-bit, 8 LoRA layers, batch 1, grad checkpointing):
+
+| Model | 1k tokens | 4k tokens | 8k tokens |
+|---|---|---|---|
+| Qwen3.5-9B | critical in 35 s, no step | — | critical, no step (563–654 s) |
+| Gemma 4 12B | 3 steps in 39 s, pressure normal, ~140 tok/s | 3 steps in 150 s, pressure warn, ~120 tok/s | critical in 66 s, no step |
+
+Qwen fails even at 1k, so its block is mlx-lm's training path for Qwen3.5, not memory headroom. Gemma trains, but
+only up to about 4k tokens, and the gold rows are longer: median 9,264 tokens (max 49,835), with the system prompt,
+tool schemas and first user turn alone at 3,250 (max 5,748). A 4k cap keeps almost nothing past the first answer,
+so local training as-is would not teach the multi-turn behaviours T1/T3/T8 target.
