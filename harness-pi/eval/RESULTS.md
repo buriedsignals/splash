@@ -1180,3 +1180,45 @@ Open, by triage:
 
 Reading: the 12B renders all six families in all three moving formats with exact figures; Qwen renders five of six,
 in fewer seconds per cell where it succeeds, and fails only where it must drop a clause of the journalist's own words.
+
+### Step 3: delivery measured, area story × four formats × both students (2026-11-15)
+
+The journalist's sheets for this leg (`approval`, `delivery: owned-file`, `closing`) were missing from `eval/sheets/`:
+a first batch ran ~5 h with every run looping on "I don't know." at the approval gate. Measured instead one cell at a
+time, sheets read from `SPLASH_SHEET_DIR` (`4019dd02b`), seeded from the designer leg where a kept run existed and
+watched at each gate. Every export was opened and its figures checked against the run's `data.json`.
+
+| Cell | Result | Turns · seconds | Export |
+|---|---|---|---|
+| 12B static | delivered | 163 s | svg + png + HANDOVER |
+| 12B web | delivered | 165 s | html + png + HANDOVER |
+| 12B video | delivered | 164 s | mp4 + final frame + frames.svg + props.json |
+| 12B scrolly | delivered | 167 s | html + 4 card PNGs |
+| Qwen static | delivered (designer leg) | 22 · 432 s | svg + png |
+| Qwen web | delivered (designer leg) | 18 · 388 s | html + png |
+| Qwen video | delivered (full cell, craft → deliver) | 56 · 846 s | mp4 21.2 s + final frame |
+| Qwen scrolly | delivered (full cell), on the second deliver session | 55 · 616 s | html + 4 cards |
+
+Figures, every export: 49.9 % after 1986 over 38 years, 3 158 Mt stock, peak 46.2 in 1973, 32.1 in 2024 — exact.
+
+Fixes from the pass:
+- `11dd8d0d7` — a seeded designer or delivery leg had no `BRIEF.md`, so `completionState` refused every approval
+  (`currentBriefBinding` needs its `planVersion`/`findingIds`).
+- `a269df13b` — a kept run now keeps `export/`.
+- `5cc5c2fcf`, `51b39754a` — the handover alt was the first `aria-label` in the render ("Le stock entier", a gesture's
+  label); now `<desc>`, then the `role="img"` figure, then the root svg. Replayed on four real renders.
+- `86b23e303` — `read_file` on a PNG returned its bytes as text (Qwen's static designer leg: 308 s against the 12B's
+  59 s); it now refuses and names `look` with the same path.
+- `57988e71b` — Qwen called `offer_forms`, then ended its turn with no word; the journalist was sent "" and the
+  session stopped at "no first record in 16 model turns". The forms the tool listed are now what the journalist sees.
+
+Open, by triage:
+- Skill (`skills/deliver/scripts/format-handover.mjs:140-155`, not ours to edit): files are described by extension
+  only — a video's `frames.svg` is called the vector file "à donner au CMS", `props.json` "livré avec ce visuel",
+  and each scrolly card PNG "une copie matricielle"; the cards are listed 2, 3, 1, 4.
+- Tune: Qwen reads paths without the leading "/" (relative `read_file` errors in every designer leg); the video alt
+  is the title, not the alt sentence the static carries (the video render has no `<desc>`).
+- Harness: none open from this leg.
+
+Reading: delivery completes in all four formats for both students once the journalist's answers exist; the
+remaining defects are in the handover text the skill writes, not in either model's choices.
