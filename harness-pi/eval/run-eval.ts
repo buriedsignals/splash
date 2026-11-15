@@ -118,6 +118,9 @@ export async function evaluate(story: string, arm: string, out: string, variant 
   for (const f of ["STORYBOARD.md", "PALETTE.md", "DIRECTION.md", "SUBJECTS.md"])
     if (existsSync(join(root, "stories", story, f)))
       cpSync(join(root, "stories", story, f), join(keep, f));
+  // What delivery materialised, so step 3 can inspect the delivered form against data.json after the run root is gone.
+  if (existsSync(join(root, "stories", story, "export")))
+    cpSync(join(root, "stories", story, "export"), join(keep, "export"), { recursive: true });
   rmSync(root, { recursive: true, force: true });
   const line = {
     arm,
