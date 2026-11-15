@@ -57,7 +57,8 @@ export function layIn(seed: string, storyDir: string, from: string) {
 export async function evaluate(story: string, arm: string, out: string, variant = "", seed = "") {
   const tag = `${story}${variant ? `-${variant}` : ""}${seed ? "-seeded" : ""}-${arm}-${Date.now()}`;
   const root = join(homedir(), ".splash-harness", "runs", tag);
-  const sheet = join(CHECKOUT, "harness-pi", "eval", "sheets", `${story}${variant ? `.${variant}` : ""}.json`);
+  // SPLASH_SHEET_DIR: sheets kept outside the tree, e.g. a craft-only sheet completed with the delivery answers.
+  const sheet = join(process.env.SPLASH_SHEET_DIR ?? join(CHECKOUT, "harness-pi", "eval", "sheets"), `${story}${variant ? `.${variant}` : ""}.json`);
   const t0 = Date.now();
   if (seed) {
     await createRunRoot({ checkout: CHECKOUT, dir: root });
