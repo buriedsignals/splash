@@ -108,6 +108,26 @@ def segments(branch: list[dict]) -> list[list[dict]]:
     return out
 
 
+def without_stalls(messages: list[dict]) -> list[dict]:
+    """Drop the empty turns the harness cut (a silent stall, a token loop) and the notice that answered each.
+
+    Gold runs recover from these, so the run is worth keeping, but the empty turn would teach silence and
+    the notice only makes sense after it (validate.py refuses an empty assistant turn).
+    """
+    out: list[dict] = []
+    skip_notice = False
+    for m in messages:
+        if m["role"] == "assistant" and not (m.get("content") or "").strip() and not m.get("tool_calls"):
+            skip_notice = True
+            continue
+        if skip_notice and m["role"] == "user" and isinstance(m.get("content"), str) and m["content"].startswith("[harness] Your last turn"):
+            skip_notice = False
+            continue
+        skip_notice = False
+        out.append(m)
+    return out
+
+
 def rows_from_session(path: Path, meta: dict, images: Path, roots: list[str]) -> list[dict]:
     branch = active_branch(load(path))
     system, tools, rows = None, [], []
@@ -124,6 +144,7 @@ def rows_from_session(path: Path, meta: dict, images: Path, roots: list[str]) ->
                     system, tools = system_text(m), tools_of(m)
                 else:
                     messages.extend(convert(m, images, roots))
+        messages = without_stalls(messages)
         if any(m["role"] == "assistant" for m in messages):
             rows.append({"meta": {**meta, "session": path.name}, "tools": tools, "messages": [{"role": "system", "content": neutral(system or "", roots)}] + messages})
     return rows

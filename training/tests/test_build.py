@@ -68,6 +68,19 @@ class BuildTest(unittest.TestCase):
         self.assertEqual(second[1]["content"], f"{SUMMARY_NOTE}\nRendered once.")
         self.assertEqual([m["content"] for m in second[2:]], ["DONE", "Again.", "DONE again"])
 
+    def test_should_drop_a_cut_stall_and_the_harness_notice_that_answers_it(self):
+        # gx-area scrolly (Qwen, 2026-11-15): an empty turn the harness cut, then its notice; neither is worth learning.
+        stall = entry(6, "e5", message={"role": "assistant", "content": []})
+        notice = entry(7, "e6", message={"role": "user", "content": [{"type": "text", "text": "[harness] Your last turn stayed in hidden reasoning for 90 s with nothing said and no tool called, and was cut."}]})
+        reply = entry(8, "e7", message={"role": "assistant", "content": [{"type": "text", "text": "DONE again"}]})
+        rows, _ = self.build(session([stall, notice, reply]))
+        left = [m for m in rows[0]["messages"] if (m["role"] == "assistant" and not m["content"] and not m.get("tool_calls")) or str(m["content"]).startswith("[harness] Your last turn")]
+        self.assertEqual(left, [])
+
+    def test_should_drop_a_trailing_empty_turn(self):
+        rows, _ = self.build(session([entry(6, "e5", message={"role": "assistant", "content": []})]))
+        self.assertEqual(rows[0]["messages"][-1]["content"], "DONE")
+
 
 if __name__ == "__main__":
     unittest.main()
