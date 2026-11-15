@@ -608,6 +608,7 @@ export function assertNoAggregates(names, here) {
   if (!existsSync(dataPath)) return;
   const table = JSON.parse(readFileSync(dataPath, "utf8"));
   const columns = table.columns ?? [];
+  assertPageLanguageNames(names, table, front(here)?.("language"));
   // OWID codes Kosovo OWID_KOS: a country with no ISO code, not an aggregate.
   const iso = (v) => /^([A-Z]{3}|OWID_KOS)$/.test(String(v ?? ""));
   const code = columns.findIndex((_, c) => table.rows.filter((r) => iso(r[c])).length >= table.rows.length * 0.6);
@@ -633,6 +634,29 @@ export function assertNoAggregates(names, here) {
     throw new Error(
       `${aggregates.map((a) => `"${a}"`).join(", ")} ${aggregates.length > 1 ? "are aggregates" : "is an aggregate"} in data.json (its ${columns[code].name} is not a country code): build rows only from rows whose ${columns[code].name} is three capital letters, like "${table.rows.find((r) => iso(r[code]))[code]}"${namedHint}`,
     );
+}
+
+/**
+ * A drawn name is in the page's language when data.json carries it: the analyst adds `<column>_<lang>` on a
+ * non-English story (H1), and a beat that read the source column printed "Saudi Arabia" on a French page
+ * (gx-beeswarm static, Qwen3.5-9B, 2026-11-16). Called from assertNoAggregates, where every family checks its names.
+ */
+function assertPageLanguageNames(names, table, language) {
+  const lang = String(language ?? "").toLowerCase().slice(0, 2);
+  if (!lang || lang === "en") return;
+  const columns = table.columns ?? [];
+  const fold = (v) => String(v).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  for (const [t, column] of columns.entries()) {
+    const s = columns.findIndex((c) => c.name === `${column.name}_${lang}`);
+    if (s < 0) continue;
+    const local = new Map(table.rows.filter((r) => r[t] != null && r[s] && fold(r[t]) !== fold(r[s])).map((r) => [r[t], r[s]]));
+    const english = [...new Set(names)].filter((n) => local.has(n));
+    if (!english.length) continue;
+    const q = JSON.stringify;
+    throw new Error(
+      `${english.slice(0, 3).map(q).join(", ")}${english.length > 3 ? ` and ${english.length - 3} more` : ""} ${english.length > 1 ? "are" : "is"} data.json's ${column.name}, the source's spelling; this ${lang} page prints its ${columns[s].name} — a value that works: read names from col(${q(columns[s].name)}), which gives ${q(english[0])} → ${q(local.get(english[0]))}`,
+    );
+  }
 }
 
 /** How data.json is laid out and how to read it, in this beat's own column names. */
