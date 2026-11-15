@@ -301,7 +301,7 @@ export function assertOnePerX(points, x = "year") {
  * beat once drew the inside-built-up-areas series (17 to 119) under a takeaway that says 36 to 214. A
  * takeaway may state a figure the plate does not draw, so only a majority missing refuses.
  */
-export function assertHeadlineNumbersDrawn(headline, drawn, label = "marks", dataPath = join(import.meta.dirname, "data.json"), { percent = false, field = "title" } = {}) {
+export function assertHeadlineNumbersDrawn(headline, drawn, label = "marks", dataPath = join(import.meta.dirname, "data.json"), { percent = false, field = "title", counts = false } = {}) {
   // Magnitudes: a title states a loss as "fell 12" against a drawn -12; signed bounds left negatives unchecked.
   const signed = drawn.filter((v) => Number.isFinite(v));
   if (!signed.length) return;
@@ -348,7 +348,10 @@ export function assertHeadlineNumbersDrawn(headline, drawn, label = "marks", dat
   // The marks' mean is one figure the plate carries: Qwen3.5-9B's tile cartogram drew forty country shares under
   // "compté par pays, … 65,1 %", their mean, and was refused as drawing nothing that held it (2026-11-15).
   const mean = signed.length > 1 ? Math.abs(signed.reduce((a, b) => a + b, 0) / signed.length) : NaN;
-  const derivable = (n) => allowed.some((v) => near(v, n)) || near(mean, n) || (pairsMean && pairs(n));
+  // An alt counts the places past a threshold ("7 atteignent 94 % ou plus", gx-choropleth, 2026-11-14): a whole number
+  // no larger than the marks drawn is a count of some of them.
+  const counted = (n) => counts && Number.isInteger(n) && n <= signed.length;
+  const derivable = (n) => allowed.some((v) => near(v, n)) || near(mean, n) || (pairsMean && pairs(n)) || counted(n);
   const missing = stated.filter((n) => !derivable(n));
   // The value that works: the title without the clauses that state the missing figures, when any clause is left.
   const clauses = String(headline).split(/\s*;\s*/u);

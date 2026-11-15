@@ -87,7 +87,7 @@ export async function readGeoBeat(here, variant) {
   const what = variant === "dot-density" ? "groups" : "places";
   assertHeadlineNumbersDrawn(titles[0], readings, what, undefined, { percent });
   // The alt is read aloud in the title's place: it may not state a figure the title could not (TUNE.md H3).
-  for (const alt of [beat.alt].flat().filter((a) => typeof a === "string")) assertHeadlineNumbersDrawn(alt, readings, what, undefined, { percent, field: "alt" });
+  for (const alt of [beat.alt].flat().filter((a) => typeof a === "string")) assertHeadlineNumbersDrawn(alt, readings, what, undefined, { percent, field: "alt", counts: true });
 
   const front = storyFront(here);
   const claim = {
