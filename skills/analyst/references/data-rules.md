@@ -39,10 +39,11 @@ decided.
   region, broken sensor year), DATA-NOTES.md's exclusions section says which and why. An
   exclusion nobody can see is indistinguishable from cherry-picking.
 - **Place names follow the story's language.** When STORYBOARD.md's `language` is not English and
-  a column holds ISO 3166-1 alpha-3 codes, `build-data.mjs` adds one text column `<name>_<lang>`
-  beside the source's names (Intl region names: `Russia` → `Russie`). A code that is no country
+  a column holds ISO 3166-1 alpha-3 codes (or, with no code column, the countries' English names),
+  `build-data.mjs` adds one text column `<name>_<lang>` beside the source's names (Intl region names: `Russia` → `Russie`). A code that is no country
   (an aggregate such as `OWID_KOS`) keeps the source's name and is counted. The source columns are
-  untouched, and DATA-NOTES.md's derivations name the added column. Draw the localized names.
+  untouched, and DATA-NOTES.md's derivations name the added column. Draw the localized names. City and site names are not translated: their exonym (Kiev or Kyiv) is
+  an editorial choice, the journalist's, not a lookup.
 
 ## Unit normalization
 

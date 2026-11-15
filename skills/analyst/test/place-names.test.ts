@@ -13,7 +13,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createStory } from "../../splash/scripts/new-story.mjs";
 import { freezeSource } from "../../intake/scripts/freeze.mjs";
-import { buildData } from "../scripts/build-data.mjs";
+import { buildData, localizePlaces } from "../scripts/build-data.mjs";
 
 const TEMPLATE = join(
   import.meta.dirname,
@@ -137,5 +137,14 @@ describe("place names in the story's language", () => {
     await buildData({ storyDir, slotId: "share" });
     const contract = JSON.parse(await readFile(beatFile("data.json"), "utf8"));
     expect(contract.columns.map((c: { name: string }) => c.name)).toEqual(["entity", "code", "share"]);
+  });
+});
+
+describe("place names with no code column", () => {
+  it("should translate a column of English country names when no ISO code sits beside it", () => {
+    const columns = [{ name: "name", type: "text" }, { name: "country", type: "text" }, { name: "mw", type: "number" }];
+    const rows = [["Kursk NPP", "Russia", 4000], ["Kyiv", "Ukraine", null], ["Bucharest", "Romania", null]];
+    localizePlaces(columns, rows, "fr");
+    expect(rows.map((r) => r[3])).toEqual(["Russie", "Ukraine", "Roumanie"]);
   });
 });
