@@ -629,11 +629,18 @@ export function sceneOf({ model, state, frame, text }) {
       }
       for (const p of placed) out.anchors.set(p.name, { x: p.x, y: p.y, top: Math.min(...placed.filter((q) => Math.abs(q.x - p.x) < p.r + 30).map((q) => q.y - q.r)) - 4, side: "above", rowY: p.y, r: p.r });
       const named = shownRows.filter((nme) => accent.has(nme) || rings.has(nme));
-      const anchorOf = (x) => (x > plot.x + plot.width * 0.85 ? "end" : x < plot.x + plot.width * 0.15 ? "start" : "middle");
+      // A centred name that would straddle a reference rule turns away from it, so the rule is never struck through.
+      const rules = state.references.map((r) => r.value).filter((v) => v >= lo && v <= hi).map((v) => pos(v));
+      const anchorOf = (x, w = 0) => {
+        if (x > plot.x + plot.width * 0.85) return "end";
+        if (x < plot.x + plot.width * 0.15) return "start";
+        const rx = rules.find((r) => r > x - w / 2 - 3 && r < x + w / 2 + 3);
+        return rx === undefined ? "middle" : x >= rx ? "start" : "end";
+      };
       const spanOf = (nme) => {
         const p = byPlaced.get(nme);
         const w = W(byName.get(nme).code ?? nme, "annot");
-        const a = anchorOf(p.x);
+        const a = anchorOf(p.x, w);
         const x0 = a === "start" ? p.x : a === "end" ? p.x - w : p.x - w / 2;
         return { name: nme, x0, x1: x0 + w, at: p.x };
       };
@@ -643,7 +650,7 @@ export function sceneOf({ model, state, frame, text }) {
         const label = byName.get(nme).code ?? nme;
         const ly = plot.y + lead("annot") * (0.6 + level.get(nme));
         add({ id: `leader-${nme}`, kind: "line", x1: p.x, y1: ly + lead("annot") * 0.45, x2: p.x, y2: p.y - p.r - 1, o: opacityOf(nme), role: "ink", w: 0.8 });
-        add({ id: `name-${nme}`, kind: "text", x: p.x, y: ly, text: label, anchor: anchorOf(p.x), reg: "annot", role: accent.has(nme) ? "accent" : "ink", bold: true, o: opacityOf(nme) });
+        add({ id: `name-${nme}`, kind: "text", x: p.x, y: ly, text: label, anchor: anchorOf(p.x, W(label, "annot")), reg: "annot", role: accent.has(nme) ? "accent" : "ink", bold: true, o: opacityOf(nme) });
       }
     }
     // The value axis along the bottom.
