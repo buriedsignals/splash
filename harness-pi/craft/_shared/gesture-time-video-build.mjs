@@ -15,7 +15,7 @@ import { frameInsetFor, sizeFor } from "#shared/chart-video/sizes.mjs";
 import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs";
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
-import { bracketText, niceTicks, pictureOf, tickLabel } from "./gesture-family-time.mjs";
+import { bracketNoteFits, bracketText, niceTicks, pictureOf, tickLabel } from "./gesture-family-time.mjs";
 import { EVENTS, scheduleTimeVideo } from "./gesture-time-video.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -114,26 +114,6 @@ export function buildTimeVideo({ id, chosen, model, valid, subject, copy, size, 
   const { accent, items } = pictureOf(model, valid, { format: copy.format, subject });
   const F = copy.format;
 
-  // ── captions: the notes no reading carries (a reveal's, a filter's, a zoom's factor), above the plot
-  const captions = [];
-  let y = vInset + band(annot).ascent;
-  const captionOf = new Map();
-  items.forEach((it) => {
-    const anchored = it.at || it.a || (it.kind === "crossing" && it.crossings?.length) || it.do === "reference" || it.do === "bracket";
-    if (!it.note || anchored) return;
-    const lines = wrap(applyCase(it.note, annot.transform), annot, content.width / (1 + DRAWN_WIDER));
-    const placed = lines.map((l, j) => ({ text: l.text, width: l.width, y: y + j * annot.lead }));
-    captionOf.set(it.k, placed);
-    captions.push(...placed);
-    y += lines.length * annot.lead;
-  });
-  // The unit, above the value axis.
-  const unit = copy.unit ? word(copy.unit, axis) : null;
-  const unitY = y + (captions.length ? gap : 0);
-  const plotTop = unitY + (unit ? axis.lead : 0) + gap;
-  const xAxisH = axis.lead * 1.4;
-  const plotBottom = creditAt.y - gap - xAxisH;
-
   // ── the value axis: fitted ticks (line), from zero (area), ranks (bump), none (stream)
   const [lo, hi] = model.domain;
   const tickText = (v) => tickLabel(F, v);
@@ -150,6 +130,30 @@ export function buildTimeVideo({ id, chosen, model, valid, subject, copy, size, 
     return { s, p, shown, ...word(text.replace(/ NaN$/, ""), annot) };
   });
   const rightGutter = Math.min(content.width * 0.32, Math.max(0, ...ends.filter((e) => e.shown).map((e) => wide(e.width))) + gap);
+  // A bracket's words wider than its run go up with the captions: centred under it, they covered the readings beside it.
+  const plotWidth = content.width - leftGutter - rightGutter - gap;
+  const bracketFits = (it) => bracketNoteFits({ width: wide(word(it.note ?? bracketText(F, it), annot).width), from: it.from, to: it.to, t0: model.t0, t1: model.t1, plotWidth });
+  // ── captions: the notes no reading carries (a reveal's, a filter's, a zoom's factor), above the plot
+  const captions = [];
+  let y = vInset + band(annot).ascent;
+  const captionOf = new Map();
+  items.forEach((it) => {
+    const anchored = it.at || it.a || (it.kind === "crossing" && it.crossings?.length) || it.do === "reference" || (it.do === "bracket" && bracketFits(it));
+    const note = it.note ?? (it.do === "bracket" ? bracketText(F, it) : null);
+    if (!note || anchored) return;
+    const lines = wrap(applyCase(note, annot.transform), annot, content.width / (1 + DRAWN_WIDER));
+    const placed = lines.map((l, j) => ({ text: l.text, width: l.width, y: y + j * annot.lead }));
+    captionOf.set(it.k, placed);
+    captions.push(...placed);
+    y += lines.length * annot.lead;
+  });
+  // The unit, above the value axis.
+  const unit = copy.unit ? word(copy.unit, axis) : null;
+  const unitY = y + (captions.length ? gap : 0);
+  const plotTop = unitY + (unit ? axis.lead : 0) + gap;
+  const xAxisH = axis.lead * 1.4;
+  const plotBottom = creditAt.y - gap - xAxisH;
+
   const plot = { left: content.left + leftGutter, right: content.right - rightGutter - gap, top: plotTop, bottom: plotBottom };
   const Y = (v) => plot.bottom - ((v - lo) / (hi - lo || 1)) * (plot.bottom - plot.top);
   const Xfull = (t) => plot.left + ((t - model.t0) / (model.t1 - model.t0 || 1)) * (plot.right - plot.left);

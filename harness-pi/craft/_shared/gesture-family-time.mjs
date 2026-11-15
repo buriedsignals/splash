@@ -732,3 +732,8 @@ export function pictureOf(model, valid, { format = String, subject } = {}) {
   });
   return { accent, items };
 }
+
+/** Whether a bracket's words fit under its run of time; words wider than the run spill over the readings beside it. */
+export function bracketNoteFits({ width, from, to, t0, t1, plotWidth }) {
+  return width <= (Math.abs(to - from) / (t1 - t0 || 1)) * plotWidth;
+}
