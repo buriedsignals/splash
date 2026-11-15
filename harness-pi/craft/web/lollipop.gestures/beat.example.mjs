@@ -5,7 +5,13 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const data = JSON.parse(readFileSync(join(import.meta.dirname, "data.json"), "utf8"));
-const col = (name) => data.columns.findIndex((c) => c.name === name);
+// A column by its name; an index already looked up passes through ([col("a"), col("b")].map(col) is harmless).
+const col = (name) => {
+  if (Number.isInteger(name)) return name;
+  const i = data.columns.findIndex((c) => c.name === name);
+  if (i < 0) throw new Error(`data.json has no column ${JSON.stringify(name)}; its columns are ${data.columns.map((c) => c.name).join(", ")}`);
+  return i;
+};
 const [NAME, CODE, BEFORE, AFTER, PEOPLE] = [col("entity"), col("code"), col("t_per_person_2000"), col("t_per_person_2023"), col("population_2023")];
 
 // The six are a computed rule: the largest TOTAL emitters in 2023 (per person × population), sorted by 2023.

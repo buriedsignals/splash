@@ -5,7 +5,13 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const table = JSON.parse(readFileSync(join(import.meta.dirname, "data.json"), "utf8"));
-const col = (name) => table.columns.findIndex((c) => c.name === name);
+// A column by its name; an index already looked up passes through ([col("a"), col("b")].map(col) is harmless).
+const col = (name) => {
+  if (Number.isInteger(name)) return name;
+  const i = table.columns.findIndex((c) => c.name === name);
+  if (i < 0) throw new Error(`data.json has no column ${JSON.stringify(name)}; its columns are ${table.columns.map((c) => c.name).join(", ")}`);
+  return i;
+};
 const [ENTITY, CODE, YEAR, VALUE] = [col("entity"), col("code"), col("year"), col("co2_tonnes")];
 
 // Names are printed as given: the countries that reach the top ten, in French.

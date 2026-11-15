@@ -6,7 +6,13 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const data = JSON.parse(readFileSync(join(import.meta.dirname, "data.json"), "utf8"));
-const col = (name) => data.columns.findIndex((c) => c.name === name);
+// A column by its name; an index already looked up passes through ([col("a"), col("b")].map(col) is harmless).
+const col = (name) => {
+  if (Number.isInteger(name)) return name;
+  const i = data.columns.findIndex((c) => c.name === name);
+  if (i < 0) throw new Error(`data.json has no column ${JSON.stringify(name)}; its columns are ${data.columns.map((c) => c.name).join(", ")}`);
+  return i;
+};
 const [NAME, PER, POP] = [col("entity"), col("t_per_person_2023"), col("population_2023")];
 
 // Each country's 2023 emissions, in billions of tonnes: per person times population. The whole is every country.

@@ -8,9 +8,11 @@ import { join } from "node:path";
 import { measureSeaDistance } from "./field.mjs";
 
 const table = JSON.parse(readFileSync(join(import.meta.dirname, "data.json"), "utf8"));
+// A column by its name; an index already looked up passes through ([col("a"), col("b")].map(col) is harmless).
 const col = (name) => {
+  if (Number.isInteger(name)) return name;
   const i = table.columns.findIndex((c) => c.name === name);
-  if (i < 0) throw new Error(`data.json has no column ${name}`);
+  if (i < 0) throw new Error(`data.json has no column ${JSON.stringify(name)}; its columns are ${table.columns.map((c) => c.name).join(", ")}`);
   return i;
 };
 const [NAME, CODE] = [col("entity"), col("code")];
