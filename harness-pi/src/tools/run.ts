@@ -119,7 +119,12 @@ export function shotsDir(bases: Bases, beat: string): string {
  * shorter ones go after the takeaway, not in its place. A standfirst with one form then left the headline as
  * the only thing the plate could shorten, and the delivered map lost the takeaway.
  */
-export function refusalHint(output: string): string {
+export function refusalHint(output: string, record?: string): string {
+  // A recorded staging is the one the kit reads: Qwen3.5-9B fixed beat.mjs's gestures three times against a refusal of
+  // gestures.json's note (tile cartogram, 2026-11-15) and the craft step stopped on the same refusal.
+  const gesture = output.match(/REFUSED — (gestures(?:\[\d+\])?(?:\.\w+)?)/);
+  if (gesture && record)
+    return `\nhint: the staging the kit reads is ${record}, written by record_gestures; beat.mjs's gestures are not read. Fix ${gesture[1]} by calling record_gestures again with the whole list.`;
   // Twice the 12B's small edits added a declaration without removing the old one ("rows", then "whole"),
   // and it went on editing around the error.
   const twice = output.match(/"([^"]+)" has already been declared/);
@@ -273,7 +278,8 @@ export function runTools(bases: Bases) {
         throw new Error(`beats/${beat}/beat.mjs does not exist yet: write it with write_file, then render`);
       const trimmed = zoned ? trimStrayTail(join(beatDir(bases, beat), "beat.mjs")) + quoteSpacedKeys(join(beatDir(bases, beat), "beat.mjs")) : "";
       const result = await exec(["bun", path]);
-      result.content[0].text = trimmed + result.content[0].text + refusalHint(result.content[0].text);
+      const record = zoned && existsSync(join(beatDir(bases, beat), "gestures.json")) ? `beats/${beat}/gestures.json` : undefined;
+      result.content[0].text = trimmed + result.content[0].text + refusalHint(result.content[0].text, record);
       // Name every PNG the render wrote by its full path, so the next call can look at it.
       const renders = join(beatDir(bases, beat), "renders");
       if (existsSync(renders)) {

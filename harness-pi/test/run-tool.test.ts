@@ -156,3 +156,15 @@ describe("an unquoted key with a space in beat.mjs", () => {
     expect(quoteSpacedKeys(join(dir, "beat.mjs"))).toBe("");
   });
 });
+
+describe("refusalHint on a recorded staging", () => {
+  // Qwen3.5-9B's tile cartogram (2026-11-15): gestures.json held "Russie, 12 %"; it fixed beat.mjs's gestures three
+  // times, which the kit never reads once a record exists, and the craft step stopped on the same refusal.
+  const refused = "REFUSED — gestures[0].note: states 12, which nothing this name draws comes near (36): drop the note";
+  it("should point a gesture refusal at record_gestures when the staging is recorded", () => {
+    expect(refusalHint(refused, "beats/1/gestures.json")).toMatch(/beats\/1\/gestures\.json.*record_gestures/);
+  });
+  it("should say nothing of a record when there is none", () => {
+    expect(refusalHint(refused)).not.toMatch(/record_gestures/);
+  });
+});
