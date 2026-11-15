@@ -168,3 +168,17 @@ describe("refusalHint on a recorded staging", () => {
     expect(refusalHint(refused)).not.toMatch(/record_gestures/);
   });
 });
+
+describe("beatDir on a file path", () => {
+  // Qwen3.5-9B called render_beat with "beats/1/beat.mjs" (tile cartogram, 2026-11-15), was refused with a folder
+  // name it did not have, and spent seven turns listing and re-reading before rendering beat "1".
+  const bases = { storyDir: "/story" } as unknown as Bases;
+  it("should name the beat folder when given a file inside it", async () => {
+    const { beatDir } = await import("../src/tools/run.ts");
+    expect(beatDir(bases, "beats/1/beat.mjs")).toBe(join("/story", "beats", "1"));
+  });
+  it("should still refuse a path outside beats/", async () => {
+    const { beatDir } = await import("../src/tools/run.ts");
+    expect(() => beatDir(bases, "source/data.csv")).toThrow(/not under this story's beats/);
+  });
+});

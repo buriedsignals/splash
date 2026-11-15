@@ -100,6 +100,9 @@ export function report(argv: string[], r: RunResult) {
 
 /** A beat is named by its folder under the story's beats/; a path ending in that folder is accepted. */
 export function beatDir(bases: Bases, beat: string): string {
+  // A file inside the beat names its folder: Qwen3.5-9B rendered "beats/1/beat.mjs" (tile cartogram, 2026-11-15).
+  const inside = beat.match(/(?:^|\/)beats\/([^/]+)\/[^/]+\.[a-z]+$/i);
+  if (inside) beat = inside[1];
   const name = beat.replace(/\/+$/, "").split("/").pop() ?? "";
   if (beat.includes("/") && !/(^|\/)beats\/[^/]+\/?$/.test(beat)) {
     throw new Error(
