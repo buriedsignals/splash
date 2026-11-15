@@ -83,7 +83,11 @@ export async function readGeoBeat(here, variant) {
   // Shares in % are the map's own readings, and so is their mean (what pull-back states).
   const percent = typeof beat.format === "function" && /%/.test(String(beat.format(50)));
   const mean = values.reduce((t, v) => t + v, 0) / (values.length || 1);
-  assertHeadlineNumbersDrawn(titles[0], [...values, ...geo.breaks, rows.length, values.length, mean], variant === "dot-density" ? "groups" : "places", undefined, { percent });
+  const readings = [...values, ...geo.breaks, rows.length, values.length, mean];
+  const what = variant === "dot-density" ? "groups" : "places";
+  assertHeadlineNumbersDrawn(titles[0], readings, what, undefined, { percent });
+  // The alt is read aloud in the title's place: it may not state a figure the title could not (TUNE.md H3).
+  for (const alt of [beat.alt].flat().filter((a) => typeof a === "string")) assertHeadlineNumbersDrawn(alt, readings, what, undefined, { percent, field: "alt" });
 
   const front = storyFront(here);
   const claim = {
