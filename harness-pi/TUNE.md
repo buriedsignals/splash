@@ -26,6 +26,7 @@ offered to the harness; what is left is what code could not take.
 | H2 | Limits card placed last in a scrolly | **By design, not a model defect** — the scrolly kits close on the limits card (`gesture-cell-scrolly.mjs:2`, `gesture-geo-area-scrolly.mjs:2`, `gesture-cell-run.mjs:420`) and the doctrine sets no place for limits | Closed 2026-11-15 on the recommendation Rémy follows; reopen only if Rémy or Tom want the limits up front |
 | T7 | A place name in another language left in the source's spelling (locator: Kyiv, Bucharest in English on a French page) | **Tune** — the locator contract already takes `places: { name, label }`; the 12B never fills `label`. Exonyms are editorial (Kiev / Kyiv), so no table in code | Gold examples: `label` filled in the story's language |
 | H3 | Alt text states a figure no other line states (cartogram, thinking on: « 63,5 % en moyenne » beside a 65,1 % title) | **Harness** — the headline guard holds the title to the drawn marks; the alt is free text no guard reads | Open: hold the alt's figures to the same check as the title's |
+| T8 | Types a list of marks by hand where the beat already computed it (12B filter lists; Qwen thinking on: six big emitters typed in place of the six over 20 t) | **Tune** — the guards accept any drawn name; a hand list that disagrees with the beat's own set reads as a choice | Gold examples: pass the computed set (`above.map(...)`) to the gesture |
 
 Harness fixes since the list began are not repeated here: they are in `eval/RESULTS.md` under each step.
 
