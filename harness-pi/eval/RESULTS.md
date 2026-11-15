@@ -1318,3 +1318,9 @@ run (now excluded), two checked against data.json (the six over 20 t in the bees
 footprint 10,4 GB while loading), and again at 8k tokens and 4 layers (guard stopped it at 7,3 GB free). With
 the apps already open the machine leaves about 10 GB to the job; the 12B is larger. Gold examples can be made
 locally; training them needs either memory freed for the run or a rented GPU.
+
+Re-measured with the guard on macOS's own pressure level instead of free pages (the first guard did not count
+the file cache macOS gives back). Apps left open, Qwen3.5-9B 4-bit, 8 layers, 8k tokens: loading and the initial
+validation pass every time (val loss 2,992, 17 s); the first training step never completes. A guard at "warn"
+stops at once, a guard on swap growth stops at +1,3 GB, and with only "critical" as the guard the step ran 654 s
+before pressure turned critical (swap +0,9 GB). Training on this machine needs the apps closed, or a rented GPU.
