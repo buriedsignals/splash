@@ -359,6 +359,26 @@ describe("calendar-heatmap", () => {
     },
   ];
 
+  // gx-calendar-heatmap web (12B, 2026-11-15): the beat found "August" as the first date holding "08", 2024-01-08, and
+  // the page closed on "Janvier, mois le plus chaud": January is 11th of 12 by its mean. A month is ranked by its days.
+  it("should refuse a month called the warmest when another month is", () => {
+    const wrong = [GESTURES[0], { do: "highlight", mark: "January", note: "January, the warmest month" }];
+    let e: any;
+    try { stage(CAL, CAL_CLAIM, "static", wrong); } catch (x) { e = x; }
+    expect(e?.message).toMatch(/January ranks 11 of 12 and August is the highest/);
+  });
+  it("should refuse a French month called le plus chaud when another is", () => {
+    const FR = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+    const grid = gridOf("calendar-heatmap", { ...calendarBeat(), months: FR });
+    const claim = { takeaway: CAL_CLAIM.takeaway, facts: factsFor(grid) };
+    let e: any;
+    try { stage(grid, claim, "web", [GESTURES[0], { do: "highlight", mark: "Janvier", note: "Janvier, mois le plus chaud" }]); } catch (x) { e = x; }
+    expect(e?.field).toBe("gestures[1].note");
+  });
+  it("should let the warmest month be called the warmest", () => {
+    expect(() => stage(CAL, CAL_CLAIM, "static", [GESTURES[0], { do: "highlight", mark: "August", note: "August, the warmest month" }])).not.toThrow();
+  });
+
   it("should outline the longest run of days at or above the threshold", () => {
     const { plan } = stage(CAL, CAL_CLAIM, "static", GESTURES);
     expect(plan[0].cells.length).toBe(RUN.length);

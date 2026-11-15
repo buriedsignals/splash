@@ -145,8 +145,8 @@ const RATIO_WORDS = [
 // łóżek" sat on a per-resident value where its row is third.
 const word = (alternatives) => new RegExp(`(?<![\\p{L}])(${alternatives})(?![\\p{L}])`, "iu");
 const RANK_WORDS = [
-  [word("highest|largest|biggest|greatest|most|top|first|najwięcej|największ\\p{L}*|najwyższ\\p{L}*|pierwsz\\p{L}*|le plus (?:élevé|grand|haut|gros|fort)|la plus (?:élevée|grande|haute|grosse|forte)|premier|première|o maior|a maior|primeir\\p{L}*|höchst\\p{L}*|größt\\p{L}*|meisten|el mayor|la mayor|primer\\p{L}*"), (rank, n) => rank === 1, "the highest"],
-  [word("lowest|smallest|least|fewest|bottom|last|najmniej|najmniejsz\\p{L}*|najniższ\\p{L}*|ostatni\\p{L}*|le moins|la moins|le plus (?:faible|bas|petit)|la plus (?:faible|basse|petite)|dernier|dernière|o menor|a menor|últim\\p{L}*|niedrigst\\p{L}*|kleinst\\p{L}*|wenigsten|letzt\\p{L}*|el menor|la menor"), (rank, n) => rank === n, "the lowest"],
+  [word("highest|largest|biggest|greatest|warmest|hottest|most|najcieplejsz\\p{L}*|najgorętsz\\p{L}*|le plus chaud|la plus chaude|wärmst\\p{L}*|heißest\\p{L}*|más caluros\\p{L}*|mais quente|top|first|najwięcej|największ\\p{L}*|najwyższ\\p{L}*|pierwsz\\p{L}*|le plus (?:élevé|grand|haut|gros|fort)|la plus (?:élevée|grande|haute|grosse|forte)|premier|première|o maior|a maior|primeir\\p{L}*|höchst\\p{L}*|größt\\p{L}*|meisten|el mayor|la mayor|primer\\p{L}*"), (rank, n) => rank === 1, "the highest"],
+  [word("lowest|smallest|least|fewest|coldest|coolest|najzimniejsz\\p{L}*|le plus froid|la plus froide|kältest\\p{L}*|más frí\\p{L}*|mais fri\\p{L}*|bottom|last|najmniej|najmniejsz\\p{L}*|najniższ\\p{L}*|ostatni\\p{L}*|le moins|la moins|le plus (?:faible|bas|petit)|la plus (?:faible|basse|petite)|dernier|dernière|o menor|a menor|últim\\p{L}*|niedrigst\\p{L}*|kleinst\\p{L}*|wenigsten|letzt\\p{L}*|el menor|la menor"), (rank, n) => rank === n, "the lowest"],
   [word("second|drug\\p{L}*|deuxième|segund\\p{L}*|zweit\\p{L}*"), (rank) => rank === 2, "second"],
   [word("third|trzeci\\p{L}*|troisième|terceir\\p{L}*|tercer\\p{L}*|dritt\\p{L}*"), (rank) => rank === 3, "third"],
   [word("fourth|czwart\\p{L}*|quatrième|quart\\p{L}*|viert\\p{L}*"), (rank) => rank === 4, "fourth"],
@@ -555,6 +555,25 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
             { set: { index: i, field: "note", value: g.note.replace(word, "").replace(/\s{2,}/g, " ").trim() } },
           );
         }
+      // A rank word on a named holder ("Janvier", a month of days) ranks the holder among its siblings: by their sum
+      // when the marks add up, by their mean when they do not. "Janvier, mois le plus chaud" passed on a month 11th of 12.
+      const holderKey = typeof g.mark === "string" && marks.length > 1 ? ["series", "key", "group"].find((k) => marks.every((m) => rows.find((r) => r.name === m)?.[k] === g.mark)) : undefined;
+      if (holderKey && ["name", "annotate", "highlight"].includes(g.do)) {
+        const groups = new Map();
+        for (const r of rows) if (r[holderKey] !== undefined && Number.isFinite(r.value)) groups.set(String(r[holderKey]), [...(groups.get(String(r[holderKey])) ?? []), r.value]);
+        const score = (vs) => vs.reduce((s, v) => s + v, 0) / (additive ? 1 : vs.length);
+        const order = [...groups].map(([k, vs]) => [k, score(vs)]).sort((a, b) => b[1] - a[1]).map(([k]) => k);
+        const rank = order.indexOf(g.mark) + 1;
+        for (const [word, holds, said] of RANK_WORDS) {
+          if (groups.size < 2 || rank < 1 || !word.test(g.note) || holds(rank, order.length)) continue;
+          const actual = said === "the highest" ? order[0] : said === "the lowest" ? order.at(-1) : order[["second", "third", "fourth"].indexOf(said) + 1];
+          throw new GestureRefusal(
+            `gestures[${i}].note`,
+            `calls ${g.mark} ${said}, but ${g.mark} ranks ${rank} of ${order.length}${actual ? ` and ${actual} is ${said}` : ""}: drop the word, or write the note on ${actual ?? "that one"}`,
+            actual ? { set: { index: i, field: "mark", value: actual } } : { set: { index: i, field: "note", value: g.note.replace(word, "").replace(/\s{2,}/g, " ").trim() } },
+          );
+        }
+      }
       if (ratio !== undefined)
         for (const [word, x] of RATIO_WORDS) {
           if (!word.test(g.note)) continue;
