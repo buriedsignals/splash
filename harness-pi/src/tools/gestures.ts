@@ -185,12 +185,15 @@ export function gestureTools(
   };
   const refresh = (): string[] | null => {
     const drawn = beatNames(beatDir);
+    // beat.mjs changed: the same list may now render differently.
+    last = "";
     if (drawn) names.splice(0, names.length, ...new Set([...drawn, ...learned]));
     return drawn;
   };
   // Refusals per gesture (by its position and do): the second for an unknown name drops it.
   const refusedOnce = new Set<string>();
   let last = "";
+  let lastRendered = "";
 
   const tool = defineTool({
     name: "record_gestures",
@@ -282,10 +285,17 @@ export function gestureTools(
       // The same list again changes nothing: a 12B recorded one list twenty times and never rendered.
       const signature = JSON.stringify(kept);
       if (signature === last && !render) throw new Error("this is the list already recorded: render it with render_beat, or change it");
+      // T1: the same list with nothing written since re-rendered the same still; answer it from that render.
+      if (signature === last)
+        return {
+          content: [{ type: "text" as const, text: `identical to your previous call, and neither the list nor beat.mjs changed since — not rendered again. That call rendered:\n${lastRendered}\nChange the list or the beat, or reply DONE if that render is right.` }],
+          details: {},
+        };
       last = signature;
       writeFileSync(join(beatDir, "gestures.json"), `${JSON.stringify({ gestures: kept }, null, 2)}\n`);
       const rendered = render ? `\n${await render()}` : "";
       learn(rendered);
+      lastRendered = rendered.trimStart();
       return {
         content: [
           {

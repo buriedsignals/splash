@@ -1336,3 +1336,19 @@ Qwen fails even at 1k, so its block is mlx-lm's training path for Qwen3.5, not m
 only up to about 4k tokens, and the gold rows are longer: median 9,264 tokens (max 49,835), with the system prompt,
 tool schemas and first user turn alone at 3,250 (max 5,748). A 4k cap keeps almost nothing past the first answer,
 so local training as-is would not teach the multi-turn behaviours T1/T3/T8 target.
+
+### 2026-11-15 — T8 and T1 moved from Tune to Harness
+
+Re-triaged by asking whether code can take the decision away from the model.
+
+- **T8 (hand-typed set).** The thinking beeswarm drew a reference line at 20 t and highlighted six countries typed
+  by hand, five of them under the line. `validateGestures` now reads a highlight or filter of several rows beside a
+  reference line as one side of it: a set the size of a side (above, at or above, below, at or below) that is not
+  that side is refused on `gestures[i].marks`, with the side's rows as the value that works. Test
+  `test/gesture-set-threshold.test.ts` (4 cases, from the kept run's figures); mutation (guard disabled) → 2 fail.
+  Limit: a hand list of another size still passes; the semantic check is size-anchored to avoid refusing a
+  deliberate sub-set.
+- **T1 (identical call).** Since the step-1 refusal, repeats fell to 1.7 % of calls, mostly an identical
+  record_gestures right after a render, which re-rendered an unchanged still. The tool now returns the previous
+  render with "identical to your previous call … not rendered again"; any beat.mjs write (refresh) clears it.
+  Test `test/gesture-record-repeat.test.ts` (3 cases); mutations (short-circuit off → 2 fail; reset off → 1 fail).

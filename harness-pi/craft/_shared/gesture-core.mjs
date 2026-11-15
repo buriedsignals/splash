@@ -605,6 +605,27 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
         { remove: i },
       );
 
+    // A set beside a reference line is read as one side of it. A set the size of one side that is not that side was
+    // typed by hand (T8: the thinking beeswarm's six over 20 t, five of them under the line, passed every other gate).
+    const line = gestures.find((h) => h?.do === "reference" && h.axis !== "x" && Number.isFinite(Number(h.value)));
+    if (line && ["highlight", "filter"].includes(g.do) && marks.length > 1 && !of.length) {
+      const v = Number(line.value);
+      const named = (keep) => rows.filter((r) => Number.isFinite(r.value) && keep(r.value)).map((r) => r.name);
+      const sides = [["above", named((x) => x > v)], ["at or above", named((x) => x >= v)], ["below", named((x) => x < v)], ["at or below", named((x) => x <= v)]];
+      const set = new Set(marks);
+      const same = (side) => side.length === set.size && side.every((m) => set.has(m));
+      const sized = sides.find(([, side]) => side.length === set.size && side.length < rows.length);
+      if (sized && !sides.some(([, side]) => same(side))) {
+        const [where, side] = sized;
+        const stray = marks.filter((m) => !side.includes(m));
+        throw new GestureRefusal(
+          `gestures[${i}].marks`,
+          `holds ${set.size} rows beside the reference line at ${v}, but ${stray.join(", ")} ${stray.length > 1 ? "are" : "is"} not ${where} ${v}: the ${side.length} rows ${where} ${v} are ${JSON.stringify(side)} — pass the set the beat computes, not a list typed by hand`,
+          { set: { index: i, field: "marks", value: side } },
+        );
+      }
+    }
+
     // change and conflicts
     const signature = JSON.stringify([g.do, [...marks].sort(), g.of === "whole" ? "whole" : [...of].sort(), g.value ?? null]);
     if (seen.has(signature))
