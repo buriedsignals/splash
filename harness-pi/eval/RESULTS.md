@@ -1217,7 +1217,7 @@ Open, by triage:
   only — a video's `frames.svg` is called the vector file "à donner au CMS", `props.json` "livré avec ce visuel",
   and each scrolly card PNG "une copie matricielle"; the cards are listed 2, 3, 1, 4.
 - Tune: the video alt is the title, not the alt sentence the static carries (the video render has no `<desc>`).
-- Harness, fixed after the pass (see below): Qwen guessed paths in every designer and delivery leg —
+- Harness, fixed after the pass (`0df72df32`): Qwen guessed paths in every designer and delivery leg —
   `beats/beat-1/` for `beats/1/`, and `skills/…/references/` under the story folder.
 
 Reading: delivery completes in all four formats for both students once the journalist's answers exist; the

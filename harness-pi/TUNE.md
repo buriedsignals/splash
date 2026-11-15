@@ -7,6 +7,26 @@ file holds such misses (plan K9); nothing below is proved untunable yet.
 Source: `bun eval/replay-scan.ts --since 2026-10-28` (92 sessions, 58 kept runs, local 12B, route
 `llama-server`), 2026-11-07. "Next call succeeds" = the refusal's feedback worked, through any tool.
 
+## For Tom: the tune list as of 2026-11-15 (after stability steps 1–3)
+
+Measured on Osaurus (MLX OptiQ 4-bit), both students: Gemma 4 12B and Qwen3.5-9B. Step 1–2b: every family renders in
+all four formats with exact figures on the 12B, five of six on Qwen (`eval/RESULTS.md`, steps 2 and 2b). Step 3:
+delivery completes in all four formats for both students (`eval/RESULTS.md`, step 3). Every miss below was first
+offered to the harness; what is left is what code could not take.
+
+| # | Miss | Owner now | Next |
+|---|---|---|---|
+| T1 | Re-sends an identical call after a refusal or a success (record lists, no-op edits) | **Tune** — both students, steps 1–2b; the repeat refusal stops the loop but costs turns | Gold examples: refusal → a different call |
+| T2 | Prose claims a record no tool made | **Tune** — 12B and 26B; the nudge never recovered it | Gold examples: say it only after the tool returns |
+| T3 | A generation that does not end on the first long write | **Tune** — three runs (gantt video, real-gwis static, marimekko video 849 s) | Gold examples of a complete first `beat.mjs` |
+| T4 | Keeps a figure the guard asked it to drop | **Seed first** — the cartogram's 44,9 % cannot be computed from its data | Fix the seed (Rémy's call), then re-judge on Qwen |
+| T5 | Superlative without its scope ("11 août : 25,5 °C") | Watch — one occurrence | — |
+| T6 | Names a mark the beat does not draw; repeats its own failing `check()`; declares a name twice | Watch — the refusals recover most | — |
+| H1 | Place names in English on a French page | **Helper** — Intl region names already resolve them (`countries.mjs`); needs one label hook per runner | Awaits Rémy: printing the data's names translated is a doctrine call |
+| H2 | Limits card placed last in a scrolly | **Harness** if the doctrine fixes its place | Awaits the doctrine rule |
+
+Harness fixes since the list began are not repeated here: they are in `eval/RESULTS.md` under each step.
+
 ## Candidates (watch, not yet owned by Tune)
 
 | Miss | Evidence | Why not Harness yet |
