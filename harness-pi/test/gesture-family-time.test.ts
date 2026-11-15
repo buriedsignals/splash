@@ -577,3 +577,14 @@ describe("the time axis", () => {
     expect(timeModel({ variant: "line", points }).t0).toBe(2014);
   });
 });
+
+describe("the web bracket's control", () => {
+  // gx-area-and-stacked-area web, Qwen (2026-11-15): the chip "= 1 575,1" sat beside the resting option "Le stock
+  // entier" and read as "the whole stock = 1 575,1" (the whole is 3 158); the model spent ten minutes on it.
+  it("should print the run's sum with its share of the whole, never an equation beside the resting option", () => {
+    const gestures = [{ do: "bracket", marks: AREA.model.marks.filter((m: any) => m.t > 1986).map((m: any) => m.key), of: "whole" }];
+    const v = validateTime({ gestures, model: AREA.model, format: "web", claim: AREA.claim });
+    const s = scheduleTimeWeb({ model: AREA.model, valid: v.gestures, format: fmt, subject: v.subject });
+    expect(s.controls.find((c: any) => c.kind === "bracket" || c.do === "bracket").chip).toMatch(/^[^=]+ · [\d,.]+ %$/);
+  });
+});

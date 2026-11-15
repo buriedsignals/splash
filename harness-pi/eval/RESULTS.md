@@ -1252,3 +1252,22 @@ the analyst wrote `entity_fr`, the beat read it and its RUS note says « Russie 
 ISO codes on the tiles (the kit's choice) and no English name. The pull-back tautology from run 4
 (« moyenne par pays : 65,1 % ; moyenne par tuile : 65,1 % ») did not recur: the note is now
 « Moyenne par pays : 65,1 % ».
+
+**Three more cells, one at a time (Qwen3.5-9B, thinking off).** Beeswarm static (run 1794761561698, 13 turns,
+196 s): the six countries over 20 t drawn « Arabie saoudite », « Trinité-et-Tobago », « Bahreïn », « Koweït »,
+« Brunei », « Qatar »; 6 countries and 0,55 % of people recomputed from data.json (printed 0,6 %). Area web (run
+1794761776846, 26 turns, 927 s, stopped by the 15-min cap): `Entity_fr` read, eyebrow « Climat · Suisse », no
+English name on the page (the one "Switzerland" in the HTML is a comment in the kit's runtime); 1 575,1 of 3 158 Mt
+after 1986 (49,9 %) and the 1973 peak of 46,2 Mt recomputed.
+
+**One regression caught and narrowed (86c693c2e).** A first widening (ca79a090e) also translated a column of country
+names with no code. On the locator, 12B (run 1794761306248), the model then wrote
+`places: cities.map((c) => ({ name: c.name, label: c.country_fr }))` and printed « Ukraine » for Kyiv, Kharkiv and
+Odessa. Reverted to code-keyed only; a test holds it. The cities left in English (Kyiv, Bucharest) are **Tune** (T7):
+the locator contract already takes `places: { name, label }` and the model never fills `label`; exonyms are editorial.
+
+**Two follow-ups found by the same cells.** Bun's region table names CN « Chine continentale » in French; the press
+writes « Chine » (0054c4a20, a per-language table of press names ahead of Intl, test fails without it). The area web
+page printed the bracket's chip "= 1 575,1" beside the resting option « Le stock entier », which reads as "the whole
+stock = 1 575,1"; Qwen spent its last ten minutes on that line. The chip now reads « 1 575,1 · 49,9 % »
+(`gesture-time-web.mjs`, test fails without it).

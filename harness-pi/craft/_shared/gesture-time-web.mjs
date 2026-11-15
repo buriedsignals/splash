@@ -116,7 +116,8 @@ export function scheduleTimeWeb({ model, valid, format = String, subject }) {
           share: it.share,
           ofWhole: it.ofWhole,
           legend: `${model.keyOf.get(it.from)}–${model.keyOf.get(it.to)}`,
-          chip: `= ${format(it.sum)}`,
+          // "= sum" beside the resting option read as an equation with it ("Le stock entier = 1 575,1").
+          chip: it.ofWhole ? `${format(it.sum)} · ${fx(it.share)} %` : format(it.sum),
           pieces: [`${format(it.sum)} / ${format(it.whole)} = ${fx(it.share)} %`],
           question: `What do the readings from ${model.keyOf.get(it.from)} to ${model.keyOf.get(it.to)} add up to?`,
           changes: `The run of time is tinted and bracketed, and its sum and share of the whole are printed above it.`,
