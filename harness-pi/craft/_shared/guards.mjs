@@ -354,6 +354,11 @@ export function assertHeadlineNumbersDrawn(headline, drawn, label = "marks", dat
   const clauses = String(headline).split(/\s*;\s*/u);
   const kept = clauses.filter((c) => !missing.some((n) => [...c.matchAll(/\d+(?:[.,]\d+)?/g)].some((m) => Number(m[0].replace(",", ".")) === n)));
   const shorter = kept.length && kept.length < clauses.length ? ` — or drop the claim; a title that works: "${kept.join(" ; ")}"` : "";
+  // A mean just off the stated figure is the takeaway's measure computed differently: Qwen3.5-9B summed five of six
+  // low-carbon columns and averaged 65,0 under a title of 65,1 (tile cartogram, 2026-11-15).
+  const close = missing.find((n) => Number.isFinite(mean) && Math.abs(mean - n) <= Math.abs(n) * 0.02);
+  if (close !== undefined)
+    throw new Error(`the title states ${close}; the drawn ${label} average ${mean.toFixed(2)}, close to it but not it: each mark's measure differs from the one the takeaway counts. Check the columns each mark sums or divides by (one left out, or one too many) until the ${label} average ${close}. The title stays word for word`);
   if (missing.length)
     throw new Error(`the title states ${missing.join(", ")}, which the drawn ${label} do not contain${shorter}: ${locateStated(missing, stated, dataPath) ?? computedHint(missing, dataPath) ?? "the rows selected from data.json are probably not the takeaway's series — read its other columns and filter to the one the takeaway is about"}`);
 }

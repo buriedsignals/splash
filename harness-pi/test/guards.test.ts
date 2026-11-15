@@ -1364,3 +1364,12 @@ describe("assertHeadlineNumbersDrawn on the marks' mean", () => {
     expect(() => assertHeadlineNumbersDrawn("Compté par pays, la part est à 44,9 %", shares, "places", "/nonexistent/data.json", { percent: true })).toThrow(/44\.9/);
   });
 });
+
+describe("assertHeadlineNumbersDrawn on a near-miss mean", () => {
+  // Qwen3.5-9B's tile cartogram (2026-11-15) summed five of six low-carbon columns: its marks averaged 65,0 under a
+  // title of 65,1, and the refusal told it to compute the measure it was already computing.
+  const shares = [50, 60, 70, 80, 65.04];
+  it("should name the marks' average and point at the measure's columns", () => {
+    expect(() => assertHeadlineNumbersDrawn("Compté par pays, la part est à 65,1 %", shares, "places", "/nonexistent/data.json", { percent: true })).toThrow(/average 65\.0\d.*columns/);
+  });
+});
