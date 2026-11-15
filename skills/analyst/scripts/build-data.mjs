@@ -35,6 +35,7 @@ import { join } from "node:path";
 import { parseCsv } from "./csv.mjs";
 import { profileTable } from "./profile.mjs";
 import { parseStoryboard, checkStoryboard } from "./gate-contract.mjs";
+import { ISO3_TO_ISO2 } from "./iso-codes.mjs";
 
 const SCHEMA_VERSION = 1;
 
@@ -278,6 +279,7 @@ export async function buildData({
   );
 
   const population = applyPopulation(slot, columns, rows, String(slotId));
+  const places = localizePlaces(columns, population.rows, parsed.language);
 
   const artifact = {
     schemaVersion: SCHEMA_VERSION,
@@ -293,7 +295,7 @@ export async function buildData({
     },
   };
 
-  const notes = renderNotes({ slotId: String(slotId), columns, rows: population.rows, hashes, population, frozenRowCount: rows.length });
+  const notes = renderNotes({ slotId: String(slotId), columns, rows: population.rows, hashes, population, frozenRowCount: rows.length, places });
 
   await fs.mkdir(beatDir, { recursive: true });
   const dataPath = join(beatDir, "data.json");
@@ -312,7 +314,47 @@ function recordTyped(cell, type) {
   return type === "number" ? Number(cell) : cell;
 }
 
-function renderNotes({ slotId, columns, rows, hashes, population, frozenRowCount }) {
+/**
+ * THE PLACE NAMES IN THE STORY'S LANGUAGE (owner, 2026-11-15). A French story drew "Russia" and "Czechia":
+ * data.json held only the source's English names, and the craft guards match every drawn name against
+ * data.json, so no beat could write "Russie". When the story is not in English and a column holds ISO 3166-1
+ * alpha-3 codes, the text column beside it gains a sibling `<name>_<lang>` with each country's name in the
+ * story's language (Intl region names); a code that is no country (an aggregate such as OWID_KOS) keeps the
+ * source's name. The source columns are untouched. Mutates `columns` and `rows`; returns what it added.
+ */
+export function localizePlaces(columns, rows, language) {
+  const lang = String(language ?? "").trim();
+  if (!lang || /^en(?:-|$)/i.test(lang)) return null;
+  let display;
+  try {
+    display = new Intl.DisplayNames([lang], { type: "region", fallback: "none" });
+  } catch {
+    return null;
+  }
+  const values = (i) => rows.map((r) => r[i]).filter((v) => v !== null);
+  const codeAt = columns.findIndex((_, i) => {
+    const v = values(i);
+    // A majority, not all: Our World in Data mixes aggregates (OWID_KOS, OWID_WRL) into its code column.
+    return v.length > 0 && v.filter((x) => typeof x === "string" && ISO3_TO_ISO2[x]).length * 2 > v.length;
+  });
+  if (codeAt < 0) return null;
+  const nameAt = columns.findIndex((c, i) => i !== codeAt && c.type === "text" && values(i).some((x) => !ISO3_TO_ISO2[x]));
+  if (nameAt < 0) return null;
+  const suffix = lang.split("-")[0].toLowerCase();
+  const name = `${columns[nameAt].name}_${suffix}`;
+  if (columns.some((c) => c.name === name)) return null;
+  let kept = 0;
+  for (const row of rows) {
+    const iso2 = ISO3_TO_ISO2[row[codeAt]];
+    const local = iso2 ? display.of(iso2) : undefined;
+    if (!local) kept++;
+    row.push(local ?? row[nameAt]);
+  }
+  columns.push({ name, type: "text" });
+  return { name, from: columns[nameAt].name, code: columns[codeAt].name, lang, kept };
+}
+
+function renderNotes({ slotId, columns, rows, hashes, population, frozenRowCount, places }) {
   const lines = [];
   lines.push(`# Data notes — beat ${slotId}`);
   lines.push("");
@@ -327,9 +369,13 @@ function renderNotes({ slotId, columns, rows, hashes, population, frozenRowCount
   lines.push("");
   lines.push("## Derivations");
   lines.push("");
-  lines.push("- None. Every value passes through as frozen — no imputation, no aggregation,");
+  lines.push(`- ${places ? "One added column, below; otherwise none." : "None."} Every value passes through as frozen — no imputation, no aggregation,`);
   lines.push("  no unit conversion, no rounding. Display rounding is the craft skill's decision,");
   lines.push("  taken per `references/data-rules.md`.");
+  if (places)
+    lines.push(
+      `- \`${places.name}\`: the names of \`${places.from}\` in the story's language (${places.lang}), from the ISO code in \`${places.code}\` (Intl region names); ${places.kept} kept as in the source (no country code). Draw these names on the page.`,
+    );
   const nulled = columns.map((c, i) => ({ c, n: rows.filter((r) => r[i] === null).length }));
   const withNulls = nulled.filter(({ n }) => n > 0);
   if (withNulls.length > 0) {
@@ -365,6 +411,7 @@ function renderNotes({ slotId, columns, rows, hashes, population, frozenRowCount
   lines.push("## Profile citations");
   lines.push("");
   for (const { name, type } of columns) {
+    if (name === places?.name) continue;
     lines.push(`- \`${name}\` typed \`${type}\` from \`source/profile.json\`.`);
   }
   lines.push("");

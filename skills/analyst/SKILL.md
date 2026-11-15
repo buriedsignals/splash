@@ -115,9 +115,10 @@ A slot that records no population is a complete and ordinary state: every frozen
 4. **Transform.** Columns carry their names and their types **from the frozen profile** (the
    analyst never re-types); rows pass through compactly, blank cells as `null`, numbers as
    numbers, everything else as text. No rounding, no imputation, no aggregation, no unit
-   conversion — see `references/data-rules.md`.
+   conversion — see `references/data-rules.md`. One addition: on a non-English story, a column of
+   ISO alpha-3 codes gives the place names a sibling column in the story's language (`entity_fr`).
 5. **Write both files.** `data.json` is machine-read and compact;
-   `DATA-NOTES.md` records the input hashes, derivations (none, by construction), null counts per
+   `DATA-NOTES.md` records the input hashes, derivations (none, by construction, beyond the localized place names), null counts per
    column, exclusions (none — all frozen rows carried), and the profile citation for every
    column's type. It is the document a journalist reads to see what their chart is standing on.
 
