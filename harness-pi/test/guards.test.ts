@@ -293,6 +293,26 @@ describe("applyStoryboard", () => {
     );
   });
 
+  // gx-marimekko scrolly (12B, 2026-11-15): the refusal listed all eight key words as if each were required and never
+  // said the form had only lost "99.5"; the 12B grew its short form back to the full takeaway, and the phone header
+  // then took 31 % of the frame.
+  it("should name the number a shorter form lost and how many key words it needs", () => {
+    const root = mkdtempSync(join(tmpdir(), "splash-short-"));
+    const dir = join(root, "beats", "1");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(root, "STORYBOARD.md"),
+      `---\ntakeaway: "Coal is 12 % of these six countries' electricity, and almost all of it — 99.5 % — is generated in Germany and Poland."\n---\n`,
+    );
+    const b = {
+      title: [
+        "Coal is 12 % of these six countries' electricity, and almost all of it — 99.5 % — is generated in Germany and Poland.",
+        "Coal: 12 % of the six, nearly all of it in Germany and Poland",
+      ],
+    };
+    expect(() => applyStoryboard(b, dir)).toThrow(/it leaves out 99\.5.*at least 3 of/);
+  });
+
   // gx-bullet web (Qwen3.5-9B, 2026-11-13): the credit line ended "· as of 2025-06-26" on a French plate.
   it("should date the credit in the story's language", () => {
     const root = mkdtempSync(join(tmpdir(), "splash-asof-"));

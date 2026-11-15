@@ -153,7 +153,13 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
     const lost = forms.findIndex((f, i) => i > 0 && !keeps(f));
     if (lost > 0) {
       const kept = forms.filter((f, i) => i === 0 || keeps(f));
-      throw new Error(`title: its form ${lost + 1}, "${norm(forms[lost])}", drops the takeaway's claim${figures.length ? ` (${figures.join(", ")})` : ""}: a shorter form says the takeaway in fewer words, keeping its numbers and its key words (${claim.join(", ")}) — a value that works: title: ${JSON.stringify(kept)}`);
+      const need = Math.ceil(claim.length / 3);
+      const shown = numbers(forms[lost]);
+      const missing = figures.filter((n) => !shown.includes(n));
+      const said = new Set(words(forms[lost]).map(stem));
+      const has = claim.filter((w) => said.has(stem(w))).length;
+      const why = missing.length ? `it leaves out ${missing.join(", ")}` : `it keeps ${has} of the ${need} key words it needs`;
+      throw new Error(`title: its form ${lost + 1}, "${norm(forms[lost])}", drops the takeaway's claim${figures.length ? ` (${figures.join(", ")})` : ""}: ${why}. A shorter form says the takeaway in fewer words: every number${figures.length ? ` (${figures.join(", ")})` : ""} and at least ${need} of these words: ${claim.join(", ")} — a value that works: title: ${JSON.stringify(kept)}`);
     }
   };
   if (!STOPWORDS[language]) return claimKept();
