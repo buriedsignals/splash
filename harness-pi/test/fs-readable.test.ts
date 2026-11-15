@@ -68,3 +68,19 @@ describe("read_file, on an image", () => {
     await expect(read.execute("x", { path: join(storyDir, "beats", "1", "a.png") }, undefined, undefined, undefined as never)).rejects.toThrow(/look.*a\.png/);
   });
 });
+
+// gx-area designer and delivery legs (Qwen3.5-9B, 2026-11-15): a skill's reference asked for under the story, and the
+// beat folder named "beat-1" for "1" — each a refused read and a turn lost, in every Qwen leg of step 3.
+describe("resolveReadable, with Qwen's guessed paths", () => {
+  mkdirSync(join(root, "skills", "doctrine", "references"), { recursive: true });
+  writeFileSync(join(root, "skills", "doctrine", "references", "design-rubric.md"), "# rubric");
+  writeFileSync(join(storyDir, "beats", "1", "OUTPUT-REVIEW.json"), "{}");
+
+  it("should read a skill's reference asked for under the story folder", () => {
+    expect(resolveReadable(bases, join(storyDir, "skills", "doctrine", "references", "design-rubric.md"))).toBe(join(root, "skills", "doctrine", "references", "design-rubric.md"));
+  });
+
+  it("should read beats/beat-1/ as beats/1/", () => {
+    expect(resolveReadable(bases, join(storyDir, "beats", "beat-1", "OUTPUT-REVIEW.json"))).toBe(join(storyDir, "beats", "1", "OUTPUT-REVIEW.json"));
+  });
+});

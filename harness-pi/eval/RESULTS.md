@@ -1216,9 +1216,9 @@ Open, by triage:
 - Skill (`skills/deliver/scripts/format-handover.mjs:140-155`, not ours to edit): files are described by extension
   only — a video's `frames.svg` is called the vector file "à donner au CMS", `props.json` "livré avec ce visuel",
   and each scrolly card PNG "une copie matricielle"; the cards are listed 2, 3, 1, 4.
-- Tune: Qwen reads paths without the leading "/" (relative `read_file` errors in every designer leg); the video alt
-  is the title, not the alt sentence the static carries (the video render has no `<desc>`).
-- Harness: none open from this leg.
+- Tune: the video alt is the title, not the alt sentence the static carries (the video render has no `<desc>`).
+- Harness, fixed after the pass (see below): Qwen guessed paths in every designer and delivery leg —
+  `beats/beat-1/` for `beats/1/`, and `skills/…/references/` under the story folder.
 
 Reading: delivery completes in all four formats for both students once the journalist's answers exist; the
 remaining defects are in the handover text the skill writes, not in either model's choices.

@@ -180,6 +180,15 @@ export function resolveReadable(bases: Bases, path: string): string {
     if (fold(folder) === fold(basename(story)))
       abs = realOrParent(join(story, ...rest));
   }
+  // gx-area designer and delivery legs (Qwen3.5-9B, 2026-11-15): "beats/beat-1/" for the beat "1", and a skill's
+  // reference asked for under the story ("<story>/skills/doctrine/references/…").
+  if (!existsSync(abs) && within(abs, story)) {
+    const inside = relative(story, abs).split(sep);
+    const named = inside[0] === "beats" && inside[1] ? /^beat[-_]?(.+)$/.exec(inside[1]) : null;
+    const beat = named ? join(story, "beats", named[1], ...inside.slice(2)) : "";
+    const skill = inside[0] === "skills" ? join(realpathSync(bases.root), ...inside) : "";
+    for (const candidate of [beat, skill]) if (candidate && existsSync(candidate)) abs = realpathSync(candidate);
+  }
   // A missing file named bare or at the run root ("data.json") is asked of the story.
   if (!existsSync(abs) && dirname(abs) === realpathSync(bases.root))
     abs = join(realpathSync(bases.storyDir), basename(abs));
