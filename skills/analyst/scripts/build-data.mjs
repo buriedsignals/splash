@@ -332,40 +332,26 @@ export function localizePlaces(columns, rows, language) {
     return null;
   }
   const values = (i) => rows.map((r) => r[i]).filter((v) => v !== null);
-  // A majority, not all: Our World in Data mixes aggregates (OWID_KOS, OWID_WRL) into its code column.
-  const mostly = (i, test) => {
+  const codeAt = columns.findIndex((_, i) => {
     const v = values(i);
-    return v.length > 0 && v.filter((x) => typeof x === "string" && test(x)).length * 2 > v.length;
-  };
-  let iso2Of;
-  let nameAt;
-  let codeName;
-  const codeAt = columns.findIndex((_, i) => mostly(i, (x) => ISO3_TO_ISO2[x]));
-  if (codeAt >= 0) {
-    nameAt = columns.findIndex((c, i) => i !== codeAt && c.type === "text" && values(i).some((x) => !ISO3_TO_ISO2[x]));
-    iso2Of = (row) => ISO3_TO_ISO2[row[codeAt]];
-    codeName = columns[codeAt].name;
-  } else {
-    // No code column: a column of the countries' English names is its own key (Russia → RU).
-    const english = new Intl.DisplayNames(["en"], { type: "region", fallback: "none" });
-    const byName = new Map(Object.values(ISO3_TO_ISO2).map((iso2) => [english.of(iso2), iso2]));
-    nameAt = columns.findIndex((c, i) => c.type === "text" && mostly(i, (x) => byName.has(x)));
-    iso2Of = (row) => byName.get(row[nameAt]);
-    codeName = `${columns[nameAt]?.name} (English country names)`;
-  }
+    // A majority, not all: Our World in Data mixes aggregates (OWID_KOS, OWID_WRL) into its code column.
+    return v.length > 0 && v.filter((x) => typeof x === "string" && ISO3_TO_ISO2[x]).length * 2 > v.length;
+  });
+  if (codeAt < 0) return null;
+  const nameAt = columns.findIndex((c, i) => i !== codeAt && c.type === "text" && values(i).some((x) => !ISO3_TO_ISO2[x]));
   if (nameAt < 0) return null;
   const suffix = lang.split("-")[0].toLowerCase();
   const name = `${columns[nameAt].name}_${suffix}`;
   if (columns.some((c) => c.name === name)) return null;
   let kept = 0;
   for (const row of rows) {
-    const iso2 = iso2Of(row);
+    const iso2 = ISO3_TO_ISO2[row[codeAt]];
     const local = iso2 ? display.of(iso2) : undefined;
     if (!local) kept++;
     row.push(local ?? row[nameAt]);
   }
   columns.push({ name, type: "text" });
-  return { name, from: columns[nameAt].name, code: codeName, lang, kept };
+  return { name, from: columns[nameAt].name, code: columns[codeAt].name, lang, kept };
 }
 
 function renderNotes({ slotId, columns, rows, hashes, population, frozenRowCount, places }) {
@@ -388,7 +374,7 @@ function renderNotes({ slotId, columns, rows, hashes, population, frozenRowCount
   lines.push("  taken per `references/data-rules.md`.");
   if (places)
     lines.push(
-      `- \`${places.name}\`: the names of \`${places.from}\` in the story's language (${places.lang}), keyed on \`${places.code}\` (Intl region names); ${places.kept} kept as in the source (no country code). Draw these names on the page.`,
+      `- \`${places.name}\`: the names of \`${places.from}\` in the story's language (${places.lang}), from the ISO code in \`${places.code}\` (Intl region names); ${places.kept} kept as in the source (no country code). Draw these names on the page.`,
     );
   const nulled = columns.map((c, i) => ({ c, n: rows.filter((r) => r[i] === null).length }));
   const withNulls = nulled.filter(({ n }) => n > 0);

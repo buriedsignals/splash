@@ -141,10 +141,11 @@ describe("place names in the story's language", () => {
 });
 
 describe("place names with no code column", () => {
-  it("should translate a column of English country names when no ISO code sits beside it", () => {
-    const columns = [{ name: "name", type: "text" }, { name: "country", type: "text" }, { name: "mw", type: "number" }];
-    const rows = [["Kursk NPP", "Russia", 4000], ["Kyiv", "Ukraine", null], ["Bucharest", "Romania", null]];
-    localizePlaces(columns, rows, "fr");
-    expect(rows.map((r) => r[3])).toEqual(["Russie", "Ukraine", "Roumanie"]);
+  // Measured 2026-11-15 (locator, 12B): a country_fr column beside city names became every city's label,
+  // so Kyiv, Kharkiv and Odessa were all printed "Ukraine". Without a code the analyst adds nothing.
+  it("should add nothing when English country names carry no ISO code", () => {
+    const columns = [{ name: "name", type: "text" }, { name: "country", type: "text" }];
+    const rows = [["Kyiv", "Ukraine"], ["Bucharest", "Romania"]];
+    expect(localizePlaces(columns, rows, "fr")).toBeNull();
   });
 });
