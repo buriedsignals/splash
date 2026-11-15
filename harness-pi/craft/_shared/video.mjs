@@ -20,6 +20,7 @@ import { directionReachable, readRunDirection } from "#shared/design-base/run-di
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
 import { splashRoot } from "#shared/design-base/splash-root.mjs";
 import { errorText } from "./guards.mjs";
+import { remotionFailure } from "./remotion-failure.mjs";
 
 /** A Remotion process that runs longer than this is killed and the beat refused (the target Mac pays every second). */
 export const RENDER_TIMEOUT_MS = 10 * 60_000;
@@ -131,7 +132,7 @@ function remotion(root, args, what) {
   const seconds = Math.round((Date.now() - started) / 1000);
   if (run.error?.code === "ETIMEDOUT" || run.signal === "SIGKILL") throw new Error(`remotion ${what} ran past ${RENDER_TIMEOUT_MS / 60000} minutes and was stopped`);
   if (run.status !== 0) {
-    const tail = `${run.stdout ?? ""}${run.stderr ?? ""}`.trim().split("\n").slice(-12).join("\n");
+    const tail = remotionFailure(`${run.stdout ?? ""}${run.stderr ?? ""}`);
     throw new Error(`remotion ${what} exited with ${run.status}:\n${tail}`);
   }
   return seconds;

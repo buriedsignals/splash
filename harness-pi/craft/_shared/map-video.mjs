@@ -27,6 +27,7 @@ import { assertDeliveredSize, readPngSize } from "#shared/chart-video/sizes.mjs"
 import { EVENT_ORDER, endOf } from "#shared/chart-video/timing.ts";
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
 import { splashEnvPath, splashRoot } from "#shared/design-base/splash-root.mjs";
+import { remotionFailure } from "./remotion-failure.mjs";
 
 /** A Remotion process that runs longer than this is killed and the beat refused. */
 export const MAP_RENDER_TIMEOUT_MS = 8 * 60_000;
@@ -127,7 +128,7 @@ async function spawnRemotion(root, args, what) {
   const seconds = Math.round((Date.now() - started) / 1000);
   if (killed) throw new Error(`remotion ${what} ran past ${MAP_RENDER_TIMEOUT_MS / 60000} minutes and was stopped`);
   if (status !== 0) {
-    const tail = `${out}${err}`.trim().split("\n").slice(-12).join("\n");
+    const tail = remotionFailure(`${out}${err}`);
     throw new Error(`remotion ${what} exited with ${status}:\n${tail}`);
   }
   return seconds;
