@@ -81,16 +81,18 @@ export function schedulePartWeb({ variant, gestures, marks, format = (v) => Stri
       throw new GestureRefusal(`gestures[${i}].do`, `"${g.do}" has no web control on this page: stage it with ${Object.keys(PART_WEB_CONTROLS).join(", ")} (a control) or ${[...WEB_RESTING].join(", ")} (resting)`, { remove: i });
     const picture = foldPart({ variant, gestures: masked((x, k) => isResting(x) || k === i), marks, format });
     const { own, of } = splitMarks(g);
+    // A bracket on a named holder ("Coal", a segment of six cells) is titled by that name, not by its first cell.
+    const ownText = typeof g.mark === "string" && own.length > 1 ? g.mark : short(own);
     const note = g.note === undefined || !String(g.note).trim() ? undefined : String(g.note);
     const c = { index: i, do: g.do, ...control, picture, groups: g.do === "bracket" ? [own] : [], note, label: g.label === undefined ? undefined : String(g.label) };
     if (g.do === "bracket") {
       const b = picture.brackets.at(-1);
       const against = b.of === "whole" ? whole : b.sum / (b.share || 1);
       Object.assign(c, {
-        legend: short(own),
+        legend: ownText,
         chip: `${F(b.sum)} · ${shareText(format, b.share)}`,
         pieces: [...(own.length <= 3 ? [`${own.map((m) => F(valueOf.get(m))).join(" + ")} = ${F(b.sum)}`] : []), `${F(b.sum)} / ${F(against)} = ${shareText(format, b.share)}`],
-        question: b.of === "whole" ? `How much of the ${F(whole)} in all do ${short(own)} hold together?` : `How much of ${short([...own, ...of])} do ${short(own)} hold?`,
+        question: b.of === "whole" ? `How much of the ${F(whole)} in all do ${ownText} hold together?` : `How much of ${short([...own, ...of])} do ${ownText} hold?`,
         changes:
           variant === "treemap"
             ? `The bracketed tiles gather into one block of their summed area, outlined; every tile keeps its area.`

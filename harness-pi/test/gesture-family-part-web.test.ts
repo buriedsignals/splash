@@ -204,6 +204,10 @@ describe("marimekko on the web", () => {
   it("should measure the two-country bracket against the coal, not the whole", () => {
     expect(staged.scheduled.controls[1].pieces.join(" ")).toContain("99.5 %");
   });
+  // The 12B named the segment "Coal"; the control read "France · Coal + 5", the first of its six cells.
+  it("should title a bracket on a named segment by that segment", () => {
+    expect(staged.scheduled.controls[0].legend).toBe("Coal");
+  });
   it("should accent every coal cell at rest", () => {
     expect(staged.scheduled.resting.accent.sort()).toEqual([...coal].sort());
   });

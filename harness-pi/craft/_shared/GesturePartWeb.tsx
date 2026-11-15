@@ -25,6 +25,7 @@ import {
   NON_TEXT_CONTRAST_MIN,
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/colour.mjs";
+import { placeColumnLabels } from "./part-axis-labels.mjs";
 import { figureVars, webRegisters } from "#shared/design-base/web.mjs";
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
 import {
@@ -299,20 +300,13 @@ export function GesturePartWeb({
       const k = byName.get(n)?.key;
       if (k !== undefined) mentionCount.set(k, (mentionCount.get(k) ?? 0) + 1);
     }
-  const axisPlaced = new Map<string, { row: number; need: number; lw: number }>();
-  {
-    const rows: { cx: number; lw: number }[][] = [[], []];
-    const order = [...columns].sort((a, b) => (mentionCount.get(b.k) ?? 0) - (mentionCount.get(a.k) ?? 0) || b.w - a.w);
-    for (const c of order) {
-      const lw = Math.ceil(Math.max(measure(c.name, axisFont), measure(format(c.total), axisFont)) * 1.1) + 4;
-      const cx = c.x + c.w / 2;
-      const edge = Math.max((lw / 2) * W / Math.max(cx, 1), (lw / 2) * W / Math.max(W - cx, 1));
-      const needIn = (row: { cx: number; lw: number }[]) => Math.max(edge, ...row.map((q) => (((q.lw + lw) / 2 + 6) * W) / Math.max(Math.abs(q.cx - cx), 0.5)));
-      const row = needIn(rows[0]) <= needIn(rows[1]) ? 0 : 1;
-      rows[row].push({ cx, lw });
-      axisPlaced.set(c.k, { row, need: Math.ceil(needIn(rows[row].slice(0, -1)) / TIER) * TIER, lw });
-    }
-  }
+  const axisOrder = [...columns].sort((a, b) => (mentionCount.get(b.k) ?? 0) - (mentionCount.get(a.k) ?? 0) || b.w - a.w).map((c) => c.k);
+  const axisPlaced: Map<string, { row: number; need: number }> = placeColumnLabels(
+    columns.map((c) => ({ k: c.k, cx: c.x + c.w / 2, lw: Math.ceil(Math.max(measure(c.name, axisFont), measure(format(c.total), axisFont)) * 1.1) + 4 })),
+    W,
+    axisOrder,
+    TIER,
+  );
   const axisNeeds = [...new Set([...axisPlaced.values()].map((v) => v.need))];
 
   // ── the stylesheet ─────────────────────────────────────────────────────────────────────────────
@@ -368,7 +362,7 @@ export function GesturePartWeb({
     ...(mosaic
       ? [
           `${SCOPE} .chart-plot .x-axis { pointer-events: none; container-type: inline-size; }`,
-          `${SCOPE} .x-axis .axis-label.x { white-space: nowrap; text-align: center; transform: translateX(-50%); left: calc(var(--cx) / ${W / 100} * 1%); }`,
+          `${SCOPE} .x-axis .axis-label.x { white-space: nowrap; text-align: center; transform: translateX(-50%); left: clamp(calc(var(--lw) * 0.5px), calc(var(--cx) / ${W / 100} * 1%), calc(100% - var(--lw) * 0.5px)); }`,
           ...axisNeeds.map((t) => `@container (max-width: ${t - 0.01}px) { ${SCOPE} .x-axis .axis-label.x[data-need="${t}"] { opacity: 0; } }`),
           `${SCOPE} .x-axis .axis-label.x[data-row="1"] { top: ${Math.round(2 * axisLead) + 8}px; }`,
         ]
