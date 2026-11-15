@@ -1239,3 +1239,16 @@ first gate and fixed before the next run.
 Run 4 checked against data.json: 40 tiles drawn and Ukraine as no-data, Russia 35,9 % (noted 36 %), mean 65,09 %
 (title 65,1 %), legend breaks 40/60/75/94. One editorial weakness is left to tuning: the pull-back note gives the same mean twice
 ("moyenne par pays : 65,1 % ; moyenne par tuile : 65,1 %").
+
+## H1: place names in the story's language (2026-11-15)
+
+Owner: `skills/analyst` (865252336). On a story whose `language` is not English, `build-data.mjs` gives
+the column of names a sibling `<name>_<lang>` derived from the ISO alpha-3 column (`Intl.DisplayNames`),
+keeps the source's name for any code that is no country, and records the column in DATA-NOTES.md.
+Tests: `skills/analyst/test/place-names.test.ts` (3; the two French ones fail with the call removed).
+
+Measured on one cell, cartogram static, Qwen3.5-9B (run 1794759842107, 9 turns, 322 s, 0 refusals):
+the analyst wrote `entity_fr`, the beat read it and its RUS note says « Russie ». The plate draws
+ISO codes on the tiles (the kit's choice) and no English name. The pull-back tautology from run 4
+(« moyenne par pays : 65,1 % ; moyenne par tuile : 65,1 % ») did not recur: the note is now
+« Moyenne par pays : 65,1 % ».
