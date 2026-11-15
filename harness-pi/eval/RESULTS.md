@@ -1288,3 +1288,33 @@ reading the beat already did. **Verdict: thinking stays off on both students** (
 lost a fact they kept with it off; the time saved on one was spent on the other. Triage: Tune (hand-typed lists
 over the beat's own computation, same class as the 12B's filter lists); the alt's mean is a guard gap (alt is not
 held to the headline figures), noted as H3.
+
+## Local gold from kept runs (2026-11-15)
+
+No model call. `eval/harvest.ts` reads the kept runs since 2026-11-14 and keeps a craft leg when its last render
+passed, the takeaway is drawn, no repair or fallback carried it, and thinking was off (78698b54a: the thinking
+measurement's beeswarm, 1794762737021, typed the wrong six countries and had passed every other gate). Held-out
+stories are excluded. Each candidate is then re-rendered under today's kits and guards (MapTiler key sourced):
+
+| | Runs |
+|---|---|
+| craft legs since 2026-11-14 | 91 |
+| harvest candidates | 67 |
+| re-rendered OK, all four formats | 54 (static + web 32, video + scrolly 23, less the thinking run) |
+| refused by a newer guard | 13 (Nuclear rows left out, "100 % of the whole", Syria cropped but drawn, a threshold note at 99 % with a place at 94,9 %, a scrolly baked for another stage size…) |
+
+Two harness fixes came out of the re-render. H3 (d3d06f8ef) holds the geo-area alt to the title's figure check;
+its first version refused "7 atteignent 94 % ou plus" on three choropleths, a count of places, not a measure
+(7aab21f2d lets the alt count marks). The build step dropped 27 of 77 rows for an empty assistant turn: each was a
+stall or token loop the harness cut and answered with a notice. `build_from_pi.py` now drops the cut turn and its
+notice, keeping the recovered run (e61969800). Result: 71 sessions, 75 rows under a 32k cap (p50 ≈ 11k tokens by
+the 3-chars estimate), 12B and Qwen about even, all four formats.
+
+Hand-typed mark lists (T8) were scanned in `beat.mjs` and `gestures.json`: three literal lists, one the thinking
+run (now excluded), two checked against data.json (the six over 20 t in the beeswarm, a year sequence in the area).
+
+**Local training does not fit.** mlx-lm 0.32.2 has `gemma4` and `qwen3_5`. A LoRA smoke on Qwen3.5-9B 4-bit
+(batch 1, grad checkpointing) crossed the 8 GB-free floor before its first step at 16k tokens and 8 layers (peak
+footprint 10,4 GB while loading), and again at 8k tokens and 4 layers (guard stopped it at 7,3 GB free). With
+the apps already open the machine leaves about 10 GB to the job; the 12B is larger. Gold examples can be made
+locally; training them needs either memory freed for the run or a rented GPU.
