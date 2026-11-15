@@ -1271,3 +1271,20 @@ writes « Chine » (0054c4a20, a per-language table of press names ahead of Intl
 page printed the bracket's chip "= 1 575,1" beside the resting option « Le stock entier », which reads as "the whole
 stock = 1 575,1"; Qwen spent its last ten minutes on that line. The chip now reads « 1 575,1 · 49,9 % »
 (`gesture-time-web.mjs`, test fails without it).
+
+## Thinking on Qwen3.5-9B (2026-11-15)
+
+Tom's order is thinking before training. On the 12B it was measured on 2026-10-28 (7/7 → 0/7 with thinking on;
+KTD4 keeps it off). Qwen had not been measured. Two static cells, one at a time, `SPLASH_THINKING=on`, compared with
+the same cells run with thinking off the same day:
+
+| Cell | Thinking off | Thinking on |
+|---|---|---|
+| beeswarm static | 13 turns, 196 s; the six countries over 20 t named and tinted | 4 turns, 103 s; `record_gestures` names six countries typed by hand (China, India, the United States, Russia, Saudi Arabia, Canada) where the beat's own `above` held the six over 20 t — five of them sit under the line the title draws |
+| cartogram static | 7 turns, 162 s (run 4) | 10 turns, 388 s; title right (65,1 %), but `entity_fr` ignored for a hand-written name table, the alt says « 63,5 % en moyenne » (Ukraine's empty tile counted as 0 over 41) and the standfirst « 41 pays dont la production est rapportée » (40 are) |
+
+The thinking itself was short (103, 79 and 663 characters in the beeswarm turns): it did not plan, it skipped the
+reading the beat already did. **Verdict: thinking stays off on both students** (KTD4 holds). Two of two cells
+lost a fact they kept with it off; the time saved on one was spent on the other. Triage: Tune (hand-typed lists
+over the beat's own computation, same class as the 12B's filter lists); the alt's mean is a guard gap (alt is not
+held to the headline figures), noted as H3.
