@@ -29,6 +29,8 @@ import { GestureRefusal } from "./gesture-core.mjs";
 import { pointMarks, refusalText, stageGeoPoint } from "./gesture-geo-point-family.mjs";
 import { composeGeoPointStatic } from "./gesture-geo-point-static.mjs";
 import { importBeat, rowFacts, applyStoryboard, assertNumbers, errorText } from "./guards.mjs";
+import { sourceSpelling } from "./place-labels.mjs";
+import { storyLanguage } from "./web.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 /** The format this copy of the runner renders: the web, scrolly and video kits carry the same runner with FORMAT set. */
@@ -87,6 +89,7 @@ const settlementRows = forms(beat.places).map((p) => {
   const label = typeof p === "object" && p !== null ? (p.label ?? p.name) : p;
   return { name: plain(label), ...rowNamed(beat.placeName, name, `place ${JSON.stringify(name)}`) };
 });
+sourceSpelling(beat.places, settlementRows, beat.lang ?? storyLanguage(HERE));
 if (!Array.isArray(beat.waters)) throw new Error("beat.mjs's waters must be an array (possibly empty) of { forms, lon, lat }");
 assertNumbers(
   [

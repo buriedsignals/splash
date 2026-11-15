@@ -1352,3 +1352,27 @@ Re-triaged by asking whether code can take the decision away from the model.
   record_gestures right after a render, which re-rendered an unchanged still. The tool now returns the previous
   render with "identical to your previous call … not rendered again"; any beat.mjs write (refresh) clears it.
   Test `test/gesture-record-repeat.test.ts` (3 cases); mutations (short-circuit off → 2 fail; reset off → 1 fail).
+
+### 2026-11-15 — triage T2–T7: what code can take
+
+Question per item: can code remove the decision from the model? Measured on kept runs since 2026-11-01.
+
+- **T2 (claimed record).** 12B: 65 claim nudges, half recovered; Qwen: 1. Forcing the call was tested on Osaurus:
+  `tool_choice: "required"` and a named function are enforced by validation (HTTP 422 "The model completed without
+  the required tool call"), not by constrained decoding. Stays Tune.
+- **T3 (stall before the first beat.mjs).** 21 of 341 craft sessions were cut before a first write; 18 of those had
+  streamed no word and no tool call (17 cut by the hidden-reasoning or silence limits, 1 at the 16 384-token cap),
+  2 stock 12B runs were cut mid-`write_file`, and 11 sessions recovered. The premise "a long write that does not end" does not hold. Pre-seeding beat.mjs from the example was
+  dropped: about 5 sessions in 341 would move, and every gold row teaches a first `write_file`. Stays Tune.
+- **T6 (undrawn name).** 92 "is not a drawn row" refusals in 18 runs; 1 is a containment typo, 91 name another row
+  ("2026 · Africa" vs "2016 · Africa", "2015 · World" vs "2015 · Africa"). No automatic repair is safe. Watch.
+- **T7 (locator labels) → Harness.** `craft/_shared/place-labels.mjs` refuses a bare place on a non-English page when
+  Natural Earth 10m populated places (5.1.2, public domain; 2 932 places whose name differs in fr/de/es/it/pt/nl/pl/sv,
+  `craft/_shared/place-names.json`, built by `scripts/place-names.ts`) prints it otherwise, matched by data.json's
+  coordinates (±0.25°) and spelling. The refusal gives both values that work (`label: "Kiev"` or `label: "Kyiv"`).
+  Wired in the four gesture locator kits. Test `test/place-labels.test.ts` (8 cases); mutation (refusal off) → 3 fail.
+  Replayed on the Qwen locator beat (`gx-locator-seeded-osaurus-qwen-1794693722817`) with bare places: refused on
+  "Kyiv" → "Kiev"; with the example's labels kept: passes this guard.
+- **T4 residue (tautological pull-back note).** A guard on a note repeating the title's figure was dropped: a
+  reference line's note states the mean the title cites by design. Stays Tune.
+- **H3** row in TUNE.md was stale: closed by d3d06f8ef.
