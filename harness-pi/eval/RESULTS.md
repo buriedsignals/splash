@@ -1222,3 +1222,20 @@ Open, by triage:
 
 Reading: delivery completes in all four formats for both students once the journalist's answers exist; the
 remaining defects are in the handover text the skill writes, not in either model's choices.
+
+### Step 4b: the cartogram re-judged on Qwen3.5-9B after the seed decision (2026-11-15)
+
+Rémy kept only the 65,1 % in the takeaway (the 44,9 % "au kilomètre carré" clause could not be computed from the data).
+Four static runs of `gx-cartogram-area-distortion-and-tile-cartogram` on `osaurus-qwen`; each failure was read at its
+first gate and fixed before the next run.
+
+| Run | Outcome | Cause | Fix |
+|---|---|---|---|
+| 1 | refused | the title's 65,1 is the marks' mean; the guard accepted only a mark or a pair | `02ec1174e` the marks' mean is a figure the plate carries |
+| 2 | same failure 3x | the recorded `gestures.json` said "Russie, 12 %"; Qwen edited beat.mjs, which the kit no longer reads | `3ac35ffca` a gesture refusal on a recorded staging names `record_gestures` |
+| 3 | no new record in 12 turns, then refused | `render_beat("beats/1/beat.mjs")` refused (7 turns lost); its measure left `other_renewables` out (mean 65,01) and the refusal said to compute a measure it was already computing | `c3c77998f` a file path names its beat; `3d38112bf` a near-miss mean names the average and the columns |
+| 4 | **crafted**, 7 turns, 162 s | — | — |
+
+Run 4 checked against data.json: 40 tiles drawn and Ukraine as no-data, Russia 35,9 % (noted 36 %), mean 65,09 %
+(title 65,1 %), legend breaks 40/60/75/94. One editorial weakness is left to tuning: the pull-back note gives the same mean twice
+("moyenne par pays : 65,1 % ; moyenne par tuile : 65,1 %").
