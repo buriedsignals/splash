@@ -67,3 +67,17 @@ export function geoFrameState(events, index, t) {
   if (to.travel) for (const k of Object.keys(out)) if (k.startsWith("n:")) out[k] = t >= 1 ? to[k] : 0;
   return out;
 }
+
+/**
+ * The register a tile's own words are drawn in: the axis register, made smaller until the widest word (a code or
+ * a value) fits the narrowest tile, and never under the frame's type floor. Forty 81px tiles at 1920x1080 took the
+ * code at the axis size (78px) and the value at the annotation size ("99 %", 88px), and both spilled onto their
+ * neighbours (gx-cartogram video, 12B, 2026-11-15).
+ */
+export function tileRegister(axis, { sizes, words, floor, width }) {
+  const room = Math.min(...sizes) * 0.86;
+  const widest = Math.max(...words.map((w) => width(w, axis)));
+  const fontSize = widest <= room ? axis.fontSize : Math.max(floor, Math.floor((axis.fontSize * room) / widest));
+  const k = fontSize / axis.fontSize;
+  return { ...axis, fontSize, lead: axis.lead * k, letterSpacing: (axis.letterSpacing ?? 0) * k };
+}

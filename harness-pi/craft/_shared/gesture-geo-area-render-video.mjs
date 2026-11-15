@@ -11,7 +11,7 @@ import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
 import { stageGeo } from "./gesture-geo-area-static.mjs";
-import { scheduleGeoVideo } from "./gesture-geo-area-video.mjs";
+import { scheduleGeoVideo, tileRegister } from "./gesture-geo-area-video.mjs";
 import { layoutCells, seatsBox } from "./gesture-geo-area-shapes.mjs";
 import { assertZoomFactors, readGeoBeat, readShapes, REPAIR } from "./gesture-geo-area-run.mjs";
 import { classIndex } from "./gesture-family-geo.mjs";
@@ -140,17 +140,25 @@ export async function renderGeoAreaVideo(here, variant, { composition, timing })
       },
     };
     const grids = variant !== "choropleth" && variant !== "dot-density";
+    const tile = grids
+      ? tileRegister(axis, {
+          sizes: layout.cells.map((c) => c.size),
+          words: layout.cells.flatMap((c) => [c.key, ...(c.value === null ? [] : [format(c.value)])]).map((w) => applyCase(w, axis.transform)),
+          floor: stage.minTypePx ?? 0,
+          width: widthOf,
+        })
+      : null;
     const cells = layout.cells.map((c) => {
       const i = c.value === null ? null : classIndex(c.value, geo.breaks);
-      const named = c.value === null ? null : measured(grids ? format(c.value) : `${c.name} ${format(c.value)}`, annot);
-      const code = grids ? measured(c.key, axis) : null;
+      const named = c.value === null ? null : grids ? measured(format(c.value), tile) : measured(`${c.name} ${format(c.value)}`, annot);
+      const code = grids ? measured(c.key, tile) : null;
       return { key: c.key, d: c.d, seat: c.seat, size: c.size, klass: i, codeInk: i === null ? labelInk : legibleOn(classFill[i]), backInk: i === null ? labelInk : legibleOn(mix(classFill[i], direction.ground, 0.72)), code, named };
     });
 
     const props = {
       variant,
       frame: { width: stage.width, height: stage.height },
-      registers: { display: titleCard.register, eyebrow: registers.eyebrow, value, axis, annot, source: sourceRegister },
+      registers: { display: titleCard.register, eyebrow: registers.eyebrow, value, axis, annot, source: sourceRegister, tile: tile ?? axis },
       titleCard,
       credit: { ...credit, at: creditAt },
       colours,

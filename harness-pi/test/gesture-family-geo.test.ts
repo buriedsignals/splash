@@ -18,7 +18,7 @@ const { FAMILIES } = registry as any;
 const { createGeo, fitCamera, geoGesturesOf, registerGeoVariant, roundBreaks, zoomFactor } = family as any;
 const { calloutForms, composeGeoStatic, stageGeo } = staticGeo as any;
 const { scheduleGeoWeb } = webGeo as any;
-const { geoFrameState, scheduleGeoVideo } = videoGeo as any;
+const { geoFrameState, scheduleGeoVideo, tileRegister } = videoGeo as any;
 const { applyGeoAreaState, scheduleGeoScrolly } = scrollyGeo as any;
 const { gridCodes, layoutCells } = shapesGeo as any;
 
@@ -411,6 +411,24 @@ describe("tile cartogram", () => {
         box: { x: 0, y: 0, width: 600, height: 400 },
       }).cells,
     ).toHaveLength(rows.length);
+  });
+});
+
+// gx-cartogram video (12B, 2026-11-15): forty 81px tiles at 1920x1080; the code at the axis size (78px) and the value
+// at the annotation size ("99 %", 88px) spilled onto their neighbours.
+describe("tile words in a video", () => {
+  // A measure that grows with the size: 0.6 em a character.
+  const width = (t: string, r: { fontSize: number }) => t.length * r.fontSize * 0.6;
+  const axis = { fontSize: 33, lead: 40, letterSpacing: 0 };
+  it("should shrink the tile register until the widest word fits the narrowest tile", () => {
+    const r = tileRegister(axis, { sizes: [81, 90], words: ["MDA", "99 %"], floor: 20, width });
+    expect(width("99 %", r)).toBeLessThanOrEqual(81 * 0.86);
+  });
+  it("should keep the axis size when every word fits", () => {
+    expect(tileRegister(axis, { sizes: [200], words: ["MDA"], floor: 20, width }).fontSize).toBe(33);
+  });
+  it("should never go under the type floor", () => {
+    expect(tileRegister(axis, { sizes: [20], words: ["MDA"], floor: 30, width }).fontSize).toBe(30);
   });
 });
 

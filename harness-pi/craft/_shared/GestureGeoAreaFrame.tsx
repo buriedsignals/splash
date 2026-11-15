@@ -29,7 +29,7 @@ export type GestureGeoAreaFrameProps = {
   variant: string;
   frame: { width: number; height: number };
   registers: Record<
-    "display" | "eyebrow" | "value" | "axis" | "annot" | "source",
+    "display" | "eyebrow" | "value" | "axis" | "annot" | "source" | "tile",
     Register
   >;
   titleCard: { register: Register; eyebrow: Line; title: Line[] };
@@ -320,16 +320,16 @@ export function GestureGeoAreaFrame(
               const named =
                 c.named && f(`n:${c.key}`) > 0.01 ? f(`n:${c.key}`) : 0;
               const ink = f(`b:${c.key}`) > 0.5 ? c.backInk : c.codeInk;
-              const lift = named ? r.axis.fontSize * 0.55 * named : 0;
+              const lift = named ? r.tile.fontSize * 0.55 * named : 0;
               return (
                 <g key={`w${c.key}`}>
                   <Text
                     line={{
                       ...c.code,
                       x: p.x,
-                      y: p.y + r.axis.fontSize * 0.35 - lift,
+                      y: p.y + r.tile.fontSize * 0.35 - lift,
                     }}
-                    register={r.axis}
+                    register={r.tile}
                     fill={ink}
                     anchor="middle"
                   />
@@ -339,9 +339,9 @@ export function GestureGeoAreaFrame(
                         ...c.named!,
                         x: p.x,
                         y:
-                          p.y + r.axis.fontSize * 0.35 + r.annot.fontSize * 0.6,
+                          p.y + r.tile.fontSize * 0.85,
                       }}
-                      register={r.annot}
+                      register={r.tile}
                       fill={ink}
                       opacity={named}
                       anchor="middle"
