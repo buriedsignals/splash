@@ -57,3 +57,14 @@ describe("resolveReadable", () => {
     expect(resolveReadable(bases, join(root.replace(/-/g, "_"), "stories", "stress_q_safety_incidents") + "/")).toBe(storyDir);
   });
 });
+
+// gx-area static designer leg (Qwen3.5-9B, 2026-11-15): read_file on renders/*.png returned the PNG's bytes as text;
+// the designer leg took 308 s against the 12B's 59 s.
+describe("read_file, on an image", () => {
+  it("should refuse an image and name look with that path", async () => {
+    const { fsTools } = await import("../src/tools/fs.ts");
+    writeFileSync(join(storyDir, "beats", "1", "a.png"), "\x89PNG\r\n");
+    const read = fsTools(bases).readFile;
+    await expect(read.execute("x", { path: join(storyDir, "beats", "1", "a.png") }, undefined, undefined, undefined as never)).rejects.toThrow(/look.*a\.png/);
+  });
+});
