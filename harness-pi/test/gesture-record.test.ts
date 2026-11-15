@@ -189,6 +189,14 @@ describe("a beat that throws while loading", () => {
     writeFileSync(join(beatDir, "beat.mjs"), `import { data } from "./data.json";\nexport default { title: "t", rows: data };`);
     await expect(importBeat(beatDir)).rejects.toThrow(/data\.json is not a module to import from/);
   });
+
+  // gx-cartogram web (Qwen, 2026-11-15): fr(null) on its own mean threw "null is not an object"; the refusal showed
+  // data.json's shape, which the beat already read right, and three crafts stopped on the same failure.
+  it("should be shown the beat line that threw", async () => {
+    const { beatDir } = story("claimShape: none");
+    writeFileSync(join(beatDir, "beat.mjs"), `const mean = [1].find((v) => v > 1) ?? null;\nconst label = mean.toFixed(1);\nexport default { title: label, rows: [] };`);
+    await expect(importBeat(beatDir)).rejects.toThrow(/beat\.mjs line 2: const label = mean\.toFixed\(1\);/);
+  });
 });
 
 // gx-proportional-symbol static (12B, 2026-11-13): the render refused mark "whole" and offered "site 1"; record_gestures

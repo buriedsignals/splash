@@ -685,6 +685,13 @@ export function claimCheck(here) {
   };
 }
 
+/** Where in beat.mjs a load error was thrown, as "line N: <source>", read from the error's stack. */
+function throwingLine(file, error) {
+  const at = new RegExp(`${file.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}:(\\d+)`).exec(String(error?.stack ?? ""));
+  const line = at && readFileSync(file, "utf8").split("\n")[Number(at[1]) - 1]?.trim();
+  return line ? ` (beat.mjs line ${at[1]}: ${line.slice(0, 200)})` : "";
+}
+
 export async function importBeat(here) {
   const file = join(here, "beat.mjs");
   let beat;
@@ -692,7 +699,7 @@ export async function importBeat(here) {
     ({ default: beat } = await import(file));
   } catch (error) {
     if (error instanceof TypeError || error instanceof ReferenceError || error instanceof SyntaxError && !error?.errors)
-      throw new Error(`beat.mjs throws while loading: ${errorText(error)} — ${/data\.json/.test(errorText(error)) ? "data.json is not a module to import from: read it as a file. " : ""}${readingHint(here)}`);
+      throw new Error(`beat.mjs throws while loading: ${errorText(error)}${throwingLine(file, error)} — ${/data\.json/.test(errorText(error)) ? "data.json is not a module to import from: read it as a file. " : ""}${readingHint(here)}`);
     throw error;
   }
   if (existsSync(join(here, "data.json")) && !/data\.json/.test(readFileSync(file, "utf8")))
