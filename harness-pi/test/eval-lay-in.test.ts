@@ -1,5 +1,5 @@
 import { describe, expect, it } from "bun:test";
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { layIn } from "../eval/run-eval.ts";
@@ -58,5 +58,22 @@ describe("layIn, with recorded gestures", () => {
     writeFileSync(join(seed, "beats", "1", "gestures.json"), "[]");
     layIn(seed, story, "designer");
     expect(existsSync(join(story, "beats", "1", "gestures.json"))).toBe(true);
+  });
+});
+
+// gx-area static designer leg (12B, 2026-11-15): the kept run had no BRIEF.md, so where.mjs found no plan binding and
+// refused every approval ("rendered but not currently approved") — the leg looped on approval and never delivered.
+describe("layIn, with the beat's brief", () => {
+  it("should lay in the kept BRIEF.md for a designer leg", () => {
+    const { seed, story } = keptRun();
+    writeFileSync(join(seed, "beats", "1", "BRIEF.md"), "---\nplanVersion: 2\nfindingIds: [slot-1]\n---\n");
+    layIn(seed, story, "designer");
+    expect(readFileSync(join(story, "beats", "1", "BRIEF.md"), "utf8")).toContain("planVersion: 2");
+  });
+
+  it("should write the plan binding when the kept run never kept a BRIEF.md", () => {
+    const { seed, story } = keptRun();
+    layIn(seed, story, "designer");
+    expect(readFileSync(join(story, "beats", "1", "BRIEF.md"), "utf8")).toMatch(/planVersion: 1\nfindingIds: \[slot-1\]/);
   });
 });

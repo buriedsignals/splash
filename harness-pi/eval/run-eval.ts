@@ -10,6 +10,7 @@ import {
   mkdirSync,
   readdirSync,
   rmSync,
+  writeFileSync,
 } from "node:fs";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
@@ -46,6 +47,10 @@ export function layIn(seed: string, storyDir: string, from: string) {
         throw new Error(`SPLASH_SEED_FROM: deliver needs beats/${beat}/OUTPUT-REVIEW.json in ${seed}; seed from a run the designer approved, or from designer`);
     }
     if (existsSync(join(seed, "renders", beat))) cpSync(join(seed, "renders", beat), join(to, "renders"), { recursive: true });
+    // Without BRIEF.md where.mjs has no plan binding and refuses every approval; kept runs before 2026-11-15 never kept it,
+    // so lay in the binding the driver's craft step writes.
+    if (existsSync(join(beats, beat, "BRIEF.md"))) cpSync(join(beats, beat, "BRIEF.md"), join(to, "BRIEF.md"));
+    else writeFileSync(join(to, "BRIEF.md"), `---\nplanVersion: 1\nfindingIds: [slot-${beat}]\n---\n\n# Beat ${beat}\n`);
   }
 }
 
@@ -104,7 +109,7 @@ export async function evaluate(story: string, arm: string, out: string, variant 
         });
       // What the model wrote and what it read, so a craft can be replayed against a changed kit; gestures.json is
       // what record_gestures wrote, drawn over beat.mjs's own gestures.
-      for (const f of ["beat.mjs", "data.json", "gestures.json", "OUTPUT-REVIEW.json"])
+      for (const f of ["beat.mjs", "data.json", "gestures.json", "BRIEF.md", "OUTPUT-REVIEW.json"])
         if (existsSync(join(beats, beat, f))) {
           mkdirSync(join(keep, "beats", beat), { recursive: true });
           cpSync(join(beats, beat, f), join(keep, "beats", beat, f));
