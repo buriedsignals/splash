@@ -220,8 +220,13 @@ await refusing(HERE, async () => {
   checkFigures("subjectCounts", subjectCounts);
 
   const titleForms = [beat.title].flat().map(plain);
-  // The title may state the counts the gestures draw (who rose, who moved left) beside the values.
-  assertHeadlineNumbersDrawn(titleForms[0], [...all.flatMap((r) => [r.from.x, r.to.x, r.from.y, r.to.y]), all.length, up.length, left.length], "entities");
+  // The title may state the counts the gestures draw (who rose, who moved left) beside the values, and the subject's two
+  // moves, which subjectCounts() writes at its arc in card 4.
+  assertHeadlineNumbersDrawn(
+    titleForms[0],
+    [...all.flatMap((r) => [r.from.x, r.to.x, r.from.y, r.to.y]), all.length, up.length, left.length, Math.abs(reading.subject.dx), Math.abs(reading.subject.dy)],
+    "entities",
+  );
 
   const eyebrow = plain(beat.eyebrow);
   const source = plain(beat.source);
