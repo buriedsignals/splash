@@ -13,15 +13,14 @@ const col = (name) => {
   if (i < 0) throw new Error(`data.json has no column ${JSON.stringify(name)}; its columns are ${data.columns.map((c) => c.name).join(", ")}`);
   return i;
 };
-const [CODE, BEFORE, AFTER, PEOPLE] = [col("code"), col("t_per_person_2000"), col("t_per_person_2023"), col("population_2023")];
+const [CODE, BEFORE, AFTER, PEOPLE, NAME] = [col("code"), col("t_per_person_2000"), col("t_per_person_2023"), col("population_2023"), col("entity_fr")];
 const FROM = 2000;
 const TO = 2023;
 const HOW_MANY = 6;
-const NAMES = {
-  CHN: ["Chine", "la Chine"], USA: ["États-Unis", "les États-Unis"], IND: ["Inde", "l’Inde"], RUS: ["Russie", "la Russie"], JPN: ["Japon", "le Japon"],
-  IRN: ["Iran", "l’Iran"], IDN: ["Indonésie", "l’Indonésie"], SAU: ["Arabie saoudite", "l’Arabie saoudite"], DEU: ["Allemagne", "l’Allemagne"],
-  KOR: ["Corée du Sud", "la Corée du Sud"], BRA: ["Brésil", "le Brésil"],
-};
+// A row is a list: a column is read by its index, r[NAME], never r["entity_fr"] (undefined).
+const nameOf = new Map(data.rows.map((r) => [r[CODE], r[NAME]]));
+// Only the article is the beat's own, grammar a column does not carry: "la Chine", "les États-Unis".
+const ARTICLES = { CHN: "la", USA: "les", IND: "l’", RUS: "la", JPN: "le", IRN: "l’", IDN: "l’", SAU: "l’", DEU: "l’", KOR: "la", BRA: "le" };
 
 // Every country's total (per person × population); the six largest are drawn, and their share of the
 // sum over every country is stated on the last card.
@@ -30,12 +29,15 @@ for (const c of all) if (!c.code || !Number.isFinite(c.before) || !Number.isFini
 const withTotals = all.map((c) => ({ ...c, total: (c.after * c.people) / 1e9 }));
 const worldTotal = withTotals.reduce((s, c) => s + c.total, 0);
 const chosen = [...withTotals].sort((a, b) => b.total - a.total).slice(0, HOW_MANY);
-for (const c of chosen) if (!NAMES[c.code]) throw new Error(`${c.code} has no French name filed in this beat`);
+for (const c of chosen) if (!nameOf.get(c.code)) throw new Error(`${c.code} has no entity_fr in data.json`);
 const share = (chosen.reduce((s, c) => s + c.total, 0) / worldTotal) * 100;
-const pairs = chosen.map((c) => ({ key: c.code, name: NAMES[c.code][0], before: c.before, after: c.after }));
+const pairs = chosen.map((c) => ({ key: c.code, name: nameOf.get(c.code), before: c.before, after: c.after }));
 
 const one = (v) => v.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-const the = (p) => NAMES[p.key][1];
+const the = (p) => {
+  const a = ARTICLES[p.key];
+  return a ? `${a}${a.endsWith("’") ? "" : " "}${nameOf.get(p.key)}` : nameOf.get(p.key);
+};
 const listOf = (xs) => (xs.length === 1 ? xs[0] : `${xs.slice(0, -1).join(", ")} et ${xs[xs.length - 1]}`);
 
 export default {
@@ -68,8 +70,7 @@ export default {
   afterRatio: (r) => `× ${one(r.ratioAfter)}`,
   title: [
     "La Chine a triplé son CO₂ par personne depuis 2000 ; l’Américain moyen n’en émet plus que 1,7 fois plus",
-    "Le rapport entre l’Américain et le Chinois moyens est passé de 7,5 à 1,7",
-    "Le CO₂ par personne des six plus gros émetteurs",
+    "Depuis 2000, l’Américain moyen n’émet plus que 1,7 fois le CO₂ d’un Chinois, contre 7,5",
   ],
   // The last card: how to read the stems, and what the six weigh.
   limits: `Lecture : chaque tige part de zéro, donc la hauteur est le niveau et l’écart entre les deux têtes est le changement. Ces six pays émettent ${one(share)} % du CO₂ mondial.`,
