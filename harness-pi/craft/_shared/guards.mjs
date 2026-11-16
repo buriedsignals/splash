@@ -48,7 +48,7 @@ function explainFaults(beat) {
     if (typeof fn !== "function") continue;
     const explain = (error, args) => {
       if (!(error instanceof TypeError || error instanceof ReferenceError)) return error;
-      const line = /beat\.mjs:(\d+)/.exec(String(error.stack))?.[1];
+      const line = /\/beat\.mjs:(\d+)/.exec(String(error.stack))?.[1];
       return new Error(`beat.mjs's ${key}(…) failed${line ? ` at line ${line}` : ""}: ${error.message}. ${key} receives ${shapeOf(args)} and nothing else: read anything more from beat.mjs's own constants, by those keys.`);
     };
     beat[key] = function (...args) {
@@ -571,7 +571,7 @@ function secondCopy(e) {
 
 /** " (beat.mjs line N: "<its text>")" from a runtime error's stack, or "". */
 function beatLine(e) {
-  const at = /(\/[^\s()]*beat\.mjs):(\d+)/.exec(String(e?.stack ?? ""));
+  const at = /(\/[^\s()]*\/beat\.mjs):(\d+)/.exec(String(e?.stack ?? ""));
   if (!at) return "";
   let text = "";
   try {
@@ -601,7 +601,7 @@ function emptyRead(e) {
 function tableMiss(e) {
   if (!(e instanceof TypeError)) return null;
   const m = /^undefined is not an object \(evaluating '([A-Za-z_$][\w$]*)(?:\[[^\]]+\]|\.[\w$]+)\./.exec(String(e.message));
-  const at = /(\/[^\s()]*beat\.mjs):(\d+)/.exec(String(e.stack ?? ""));
+  const at = /(\/[^\s()]*\/beat\.mjs):(\d+)/.exec(String(e.stack ?? ""));
   if (!m || !at) return null;
   const [, file, line] = at;
   const name = m[1];
@@ -642,7 +642,7 @@ export function errorText(error) {
     // field, then format(…) inside a card) came back as "format is not defined", with no line and no fix.
     const bare = e instanceof ReferenceError && /^(\w+) is not defined$/.exec(String(e.message));
     if (bare) {
-      const line = /beat\.mjs:(\d+)/.exec(String(e.stack ?? ""))?.[1];
+      const line = /\/beat\.mjs:(\d+)/.exec(String(e.stack ?? ""))?.[1];
       const name = bare[1];
       return `${name} is not defined${line ? ` (beat.mjs line ${line})` : ""}: a function in beat.mjs calls ${name} by its bare name, but nothing defines it there — a field of the beat is not a variable — a value that works: const ${name} = … above export default, then give the field as ${name}, (shorthand)`;
     }

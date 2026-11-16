@@ -2,27 +2,27 @@
 // solar share by 40 and stays the flattest of the six", as an interactive page. Every number on the
 // page is COMPUTED from data.json; the crossings the carry control reveals (who crosses whom, the
 // longest run, each panel's verdict) are computed by render-beat.mjs and only WORDED here.
-import { readTable, series } from "./series.mjs";
+import { members, readTable, series } from "./series.mjs";
 
 const table = readTable(import.meta.dirname);
-const ENTITY = table.columns.findIndex((c) => c.name === "Code");
 
-/** Each country's French name, and the forms the sentences need: with its determiner, lowercase for
- *  a list and capitalised to open a sentence. Written out, because "l'Espagne" and "la Pologne" are
- *  not a function of anything. */
-const NAMES = {
-  FRA: { name: "France", det: "la France", Det: "La France" },
-  DEU: { name: "Allemagne", det: "l'Allemagne", Det: "L'Allemagne" },
-  ITA: { name: "Italie", det: "l'Italie", Det: "L'Italie" },
-  POL: { name: "Pologne", det: "la Pologne", Det: "La Pologne" },
-  ROU: { name: "Roumanie", det: "la Roumanie", Det: "La Roumanie" },
-  ESP: { name: "Espagne", det: "l'Espagne", Det: "L'Espagne" },
+// One panel per country: members() gives each entity once, already named in the page's language (data.json's
+// entity_fr when the story is French) with the where that selects its rows — no names table, no code-or-entity
+// choice. y is the column the takeaway measures; for a measure data.json does not hold as one column, y is a
+// function of the row read by column name, e.g. y: (r) => r.solar / (r.solar + r.gas + r.coal).
+const panels = members(table).map((m) => ({ name: m.name, series: series(table, { x: "year", y: "solar_share", where: m.where }) }));
+
+/** The forms the sentences need, keyed by the name the panel shows: with its determiner, lowercase for a list and
+ *  capitalised to open a sentence. Written out, because "l'Espagne" and "la Pologne" are not a function of anything;
+ *  a name missing here is printed bare. */
+const ARTICLE = {
+  France: ["la France", "La France"],
+  Allemagne: ["l'Allemagne", "L'Allemagne"],
+  Italie: ["l'Italie", "L'Italie"],
+  Pologne: ["la Pologne", "La Pologne"],
+  Roumanie: ["la Roumanie", "La Roumanie"],
+  Espagne: ["l'Espagne", "L'Espagne"],
 };
-const byName = Object.fromEntries(Object.values(NAMES).map((n) => [n.name, n]));
-
-const codes = [...new Set(table.rows.map((r) => r[ENTITY]))];
-// One panel per country: its whole series, the solar share of its own electricity, in %.
-const panels = codes.map((code) => ({ name: NAMES[code].name, series: series(table, { x: "Year", y: "Solar", where: { Code: code } }) }));
 
 const first = (p) => p.series[0].value;
 const last = (p) => p.series[p.series.length - 1].value;
@@ -44,7 +44,8 @@ const deuTurns = deu.series.filter((s, i) => i > 0 && (s.value > highest.series[
 const fr = (v, d = 1) => v.toLocaleString("fr-FR", { minimumFractionDigits: d, maximumFractionDigits: d });
 /** 1re, 2e — never the superscript forms, which no house face carries. */
 const rank = (n) => (n === 1 ? "1re" : `${n}e`);
-const det = (name) => byName[name].det;
+const det = (name) => ARTICLE[name]?.[0] ?? name;
+const Det = (name) => ARTICLE[name]?.[1] ?? name;
 
 export default {
   lang: "fr",
@@ -76,7 +77,7 @@ export default {
     `Poser ${det(g.name)} dans les six cadres : ${g.crossers.length} des ${g.others} autres pays ` +
     `changent de côté face à elle au moins une fois entre ${g.firstYear} et ${g.lastYear}`,
   note: (g) =>
-    `${byName[g.name].Det} : ${fr(g.value)} % en ${g.lastYear}, ${rank(g.rank)} des six · ` +
+    `${Det(g.name)} : ${fr(g.value)} % en ${g.lastYear}, ${rank(g.rank)} des six · ` +
     `${g.crossers.length} des ${g.others} autres la croisent (${g.crossers.map(det).join(", ")}), ` +
     `${g.always.length} restent devant, ${g.never.length} jamais · ${det(g.longest.name)} a tenu ` +
     `${g.longest.length} ans d'affilée, de ${g.longest.from} à ${g.longest.to}.`,

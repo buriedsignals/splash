@@ -35,3 +35,17 @@ describe("any other TypeError thrown by beat.mjs", () => {
     expect(await loadError("const n = panels[0].missing.length;")).toContain("beat.mjs line 3");
   });
 });
+
+describe("an error thrown in render-beat.mjs", () => {
+  it("should not be attributed to beat.mjs", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-render-"));
+    writeFileSync(join(dir, "render-beat.mjs"), "\nconst a = undefined;\nexport const n = a.b;\n");
+    let text = "";
+    try {
+      await import(join(dir, "render-beat.mjs"));
+    } catch (e) {
+      text = errorText(e);
+    }
+    expect(text).not.toContain("beat.mjs line");
+  });
+});
