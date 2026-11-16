@@ -485,10 +485,13 @@ export function fsTools(bases: Bases) {
       "Replace one exact, unique occurrence of old_text with new_text in a file inside the story.",
     parameters: Type.Object({
       path: Type.String(),
-      old_text: Type.String(),
-      new_text: Type.String(),
+      old_text: Type.Optional(Type.String()),
+      new_text: Type.Optional(Type.String()),
+      content: Type.Optional(Type.String()),
     }),
-    async execute(_id, { path, old_text, new_text }) {
+    async execute(_id, args) {
+      const { path } = args;
+      const { old_text, new_text } = editPair(args, "write_file with { path, content }");
       if (old_text.length > MAX_EDIT_OLD || new_text.length > MAX_EDIT_NEW) {
         throw new Error(
           `edit too large (old_text ${old_text.length}/${MAX_EDIT_OLD}, new_text ${new_text.length}/${MAX_EDIT_NEW} characters); split it into smaller edits (each old_text a few lines that start the part to change); write_file only for a whole file of at most ${MAX_WRITE} characters`,
@@ -520,6 +523,23 @@ export function fsTools(bases: Bases) {
     writeFile: writeFileTool,
     editFile,
   };
+}
+
+/**
+ * edit_file's two strings, or a refusal that names the call the arguments belong to: the 26B-A4B sent write_file's
+ * { content } to edit_file twelve times, and Pi's schema error never said write_file (gx-beeswarm static, 2026-11-16).
+ */
+function editPair(args: { old_text?: string; new_text?: string; content?: string }, write: string) {
+  const { old_text, new_text, content } = args;
+  if (typeof content === "string" && old_text === undefined && new_text === undefined)
+    throw new Error(
+      `edit_file takes old_text and new_text, not content: nothing was written. To replace the whole file, call ${write}; to change part of it, call edit_file with { old_text: <a few exact lines from the file>, new_text: <what replaces them> }`,
+    );
+  if (typeof old_text !== "string" || typeof new_text !== "string")
+    throw new Error(
+      `edit_file needs both old_text and new_text (missing: ${[old_text === undefined && "old_text", new_text === undefined && "new_text"].filter(Boolean).join(", ")}): nothing was written`,
+    );
+  return { old_text, new_text };
 }
 
 // What a write or edit that leaves the file as it was is answered with (12B and Qwen3.5-9B, 2026-11-13: loops of them).
@@ -586,10 +606,12 @@ export function beatTools(bases: Bases, beat: string) {
     label: "Edit beat.mjs",
     description: `Replace one exact, unique occurrence of old_text with new_text in ${file}.`,
     parameters: Type.Object({
-      old_text: Type.String(),
-      new_text: Type.String(),
+      old_text: Type.Optional(Type.String()),
+      new_text: Type.Optional(Type.String()),
+      content: Type.Optional(Type.String()),
     }),
-    async execute(_id, { old_text, new_text }) {
+    async execute(_id, args) {
+      const { old_text, new_text } = editPair(args, "write_file with { content }");
       if (old_text.length > MAX_EDIT_OLD || new_text.length > MAX_EDIT_NEW)
         throw new Error(
           `edit too large (old_text ${old_text.length}/${MAX_EDIT_OLD}, new_text ${new_text.length}/${MAX_EDIT_NEW} characters); split it into smaller edits (each old_text a few lines that start the part to change); write_file only for a whole file of at most ${MAX_WRITE} characters`,
