@@ -32,7 +32,9 @@ await refusing(HERE, async () => {
 
   // ── the panels: every member on the same years, one value per year ───────────────────────────
   if (!Array.isArray(beat.panels) || beat.panels.length < 2) throw new Error(`panels holds ${beat.panels?.length ?? 0} members; a grid needs at least two`);
-  if (beat.panels.length > 12) throw new Error(`panels holds ${beat.panels.length} members; draw at most 12 (keep the ones the takeaway is about, and say how many of how many in limits)`);
+  // 24, as the scrolly kit: a cap of 12 refused a takeaway about all sixteen countries while assertPanelsAccounted
+  // refused twelve of sixteen (gx-small-multiples web, Qwen3.5-9B, 2026-11-16). Both refusals now name foldNote.
+  if (beat.panels.length > 24) throw new Error(`panels holds ${beat.panels.length} members; draw at most 24 (keep the ones the takeaway is about, and add foldNote: (drawn, all) => \`\${drawn} of \${all} …\` to the default export)`);
   const names = beat.panels.map((p) => String(p.name));
   if (new Set(names).size !== names.length) throw new Error(`two panels have the same name: give each member ONE panel`);
   assertPanelsAccounted(names, HERE, beat);
