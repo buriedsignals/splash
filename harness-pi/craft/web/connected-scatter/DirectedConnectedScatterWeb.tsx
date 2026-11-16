@@ -258,7 +258,6 @@ export function DirectedConnectedScatterWeb({
     return { l: x - w / 2, r: x + w / 2, t, b: t + h };
   };
   const nameBoxes = names.map((n) => ({ n, box: labelBoxPx(n.text, regs.value, measure) }));
-  const yTitleText = annotWidth(yTitle);
   const xTitleBox = labelBoxPx(xTitle, regs.axis, measure, { chip: false });
   const tickBoxes = xTicks.map((t) => ({ t, box: labelBoxPx(t.text, regs.axis, measure, { chip: false }) }));
   const headsOf = new Map<string, { x: number; y: number }[]>([
@@ -282,10 +281,6 @@ export function DirectedConnectedScatterWeb({
     const words: Rect[] = nameBoxes.map(({ n, box }) =>
       anchored(pct(n.x, FRAME.width), Math.min(box.w, maxW), n.y * s, box.h, n.below ? 0.35 : -1.35, cellW),
     );
-    {
-      const w = wrap(yTitle, Math.min(0.44 * cellW, 22 * annotPx));
-      words.push({ l: 0, t: 0, r: Math.min(yTitleText, w.widest), b: w.lines * annotLine });
-    }
     // The x-axis row sits under the cell: its graduations at `top: 6px`, its title at `top: 24px`.
     for (const { t, box } of tickBoxes)
       words.push({ l: t.at * s - box.w / 2, r: t.at * s + box.w / 2, t: cellH + 6, b: cellH + 6 + box.h });
@@ -426,9 +421,19 @@ export function DirectedConnectedScatterWeb({
           ["--y-gutter" as string]: `${GUTTER_PX}px`,
           ["--x-axis-h" as string]: `${FRAME.xAxisRowPx}px`,
           aspectRatio: `${FRAME.width + GUTTER_PX} / ${FRAME.height + FRAME.xAxisRowPx}`,
+          marginTop: `${Math.ceil(annotLine) + 6}px`,
         }}
       >
         <div className="y-axis" style={{ pointerEvents: "none" }}>
+          {/* THE VERTICAL AXIS TITLE, WHICH THIS TYPE FILES AS ITS ACCESSIBILITY FAILURE: "a chart with two unlabelled
+              continuous axes and a path drawn through them communicates nothing, screen reader or not." It rides the
+              line the plot's top margin keeps for it, over the y graduations, travelling with them. It used to sit in
+              the plot's top-left, "the corner the data leaves empty" — for the worked example's data only:
+              gx-connected-scatter web (Qwen3.5-9B) put Germany there, and at 375 px the title, held to 44 % of a 257 px
+              cell, wrapped over its name. The horizontal title rides the x-axis row, under its own graduations. */}
+          <p className="y-title" style={{ ...regs.annot, color: labelInk, position: "absolute", left: 0, bottom: "calc(100% + 4px)", margin: 0, whiteSpace: "nowrap" }}>
+            {yTitle}
+          </p>
           {yTicks.map((t) => (
             <span key={t.text} className="axis-label y" style={{ ...regs.axis, top: `${pct(t.at, FRAME.height)}%` }}>
               {t.text}
@@ -542,17 +547,6 @@ export function DirectedConnectedScatterWeb({
         </svg>
 
         <div className="overlay" aria-hidden="true">
-          {/* BOTH AXIS TITLES, WHICH THIS TYPE FILES AS ITS ACCESSIBILITY FAILURE: "a chart with two
-              unlabelled continuous axes and a path drawn through them communicates nothing, screen
-              reader or not." They are drawn in the plot rather than in the gutters because a gutter
-              44 px wide cannot hold a phrase, and they sit in the two corners the data leaves empty
-              — for the vertical title that is the plot's top-left, which no arrow reaches in any of
-              the four states. The horizontal title is NOT here: the bottom-right corner it would
-              take is where eleven of the sixteen arrows live, so it sat on top of them in every
-              state. It rides the x-axis row instead, under its own graduations. */}
-          <span className="note" style={{ ...regs.annot, color: labelInk, left: "0%", top: "0%", background: "transparent", padding: 0, whiteSpace: "normal", maxWidth: "min(44%, 22em)" }}>
-            {yTitle}
-          </span>
           {/* THE NAMES, AT THE TAILS NO OPTION TOUCHES. Above its ring by default and below it where
               the runner's own de-collision says so — the two countries whose 2000 weights differ by
               0,46 of a point would otherwise print one name over another at every width. */}
