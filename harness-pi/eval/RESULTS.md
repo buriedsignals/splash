@@ -1483,3 +1483,96 @@ Fixes:
   note/card/label) that holds the word NaN or undefined, naming the field and index and the usual cause.
 
 12B summary: 6 cells, 5 pass (two only after the repair loop), locator web failed on edits that never landed (fixed).
+
+## 2026-11-16 — coverage before tuning: the harness's own difficulties, then the chart-type choice
+
+Rémy (2026-11-16): cover the moving formats for every remaining family on both students before tuning, and read
+each miss for what could be redesigned, not as pass/fail. Also: study whether choosing the chart type belongs in
+code or in a narrow small model.
+
+### Error classes across the kept moving-format runs, and the four redesigns they led to
+
+Read across the kept web/video/scrolly sessions (scratchpad `errclass.py`), the largest repeated costs were not
+craft at all but the student fighting the harness:
+
+- **497005e45** — a reread was refused even after compaction had dropped the first read, so the model could no
+  longer see the file it was told it had already read. Now refused only while that first read is still in context.
+- **cda960ded** — the read tools' description named folders the session cannot read; Qwen tried them. The
+  description now names only the session's own roots.
+- **9e0ffed4b** — 48 of 227 old_text misses were edits the model had already applied (it retried the same edit
+  after a refusal elsewhere). An edit whose new_text is already in the file, as whole lines, now answers as done.
+- **13b68b083** — 33 repeat looks across 25 cells at a render whose bytes had not changed (Qwen histogram scrolly
+  passed on its first render, then spent 12 turns looking again). A second look at an unchanged render, while the
+  first is still in context, answers in text: judge from that look, stop if it reads right.
+
+Each with a test that fails without the fix (mutation-checked). Remaining classes, to be read the same way:
+true old_text misses (12B 66, Qwen 113), title/copy and gesture refusals, Qwen reads of paths that do not exist
+(doubled story path).
+
+### Qwen3.5-9B, mvq3 (histogram, gantt, sankey; after the four fixes)
+
+| Cell | Run | Turns | Time | Exit |
+|---|---|---|---|---|
+| histogram web | gx-histogram-web-seeded-osaurus-qwen-1794841343251 | 26 | 258 s | 0 |
+| histogram video | gx-histogram-video-seeded-osaurus-qwen-1794842084526 | 14 | 327 s | 0 |
+| histogram scrolly | gx-histogram-scrolly-seeded-osaurus-qwen-1794842413307 | 18 | 502 s | 0 (12 of the turns were repeat looks: now 13b68b083) |
+| gantt web | gx-gantt-web-seeded-osaurus-qwen-1794842917581 | 9 | 150 s | 0 |
+| gantt video | gx-gantt-video-seeded-osaurus-qwen-1794843069604 | 4 | 139 s | 0 |
+| gantt scrolly | gx-gantt-scrolly-seeded-osaurus-qwen-1794843210952 | 7 | 143 s | 0 |
+| sankey web | gx-sankey-web-seeded-osaurus-qwen-1794843355913 | 14 | 177 s | 0 (one read of a non-existent beat.mjs, one reread refused) |
+
+### Chart-type choice: code or a narrow model?
+
+Today `show_candidates` takes two free candidates from the student; code canonicalises them, refuses
+near-duplicates and checks `drawable`. In non-seeded storyboards the students' proposals were often generic or
+near-duplicates (12B 31 ok / 9 refused calls, Qwen 22 / 1). The question is which part of the choice a small model
+should make at all.
+
+Probe (`eval/choice/`, both students on Osaurus, 39 gx seeds × 3 repetitions = 117 answers each). Gold = the type
+the seed was written for — a harsh target, since a story usually admits more than one right type; 10 seed types
+(radar, pictogram, beeswarm, marimekko, gantt, contour, population pyramid, cartogram, parallel coordinates,
+streamgraph) are never in the top 2 of any table, by design of the sheet.
+
+**Flat** (`flat-probe.ts`): free pick from the 40 catalogue names, or one intent from the 20 of `chart-choice.md`.
+
+| | Qwen | 12B |
+|---|---|---|
+| free: gold in the two named types | 29 | 35 |
+| one of 20 intents, story only | 15 | 26 |
+| one of 20 intents, plus the seed author's intent line | 46 | 37 |
+
+Both collapse onto attractor intents (Qwen: "compare composition" 34–40 times of 117; 12B: "before and after",
+"composition", "rank"). The 9-column energy dataset alone pulls Qwen to composition, whatever the takeaway says.
+A 20-way choice is too wide for either student; data shape cannot decide either — five datasets carry the 39
+stories, so the takeaway is the only signal.
+
+**Hierarchical** (`hier-probe.ts`): the coarse family comes from the journalist (simulated as the family of the
+gold type's best intent; 7 families: compare categories, change over time, distribution, relationship,
+part-to-whole, sequence or flow, location). The student then picks one intent among that family's 2–5, and —
+measured on its own — one type among that intent's table rows given their use-when / not-when text.
+
+| | Qwen | 12B | Code alone |
+|---|---|---|---|
+| intent inside the family (2–5 options) | **82** | **90** | 18/39 seeds = 54 of 117 (first option) |
+| type: gold first | 50 | 63 | 57 (table rank 1) |
+| type: gold in the two proposed | 83 | 91 | 87 (table ranks 1–2) |
+
+Reading:
+- The intent step is where a narrow model earns its place: 70–77 % against 46 % for code's default, and against
+  13–39 % for the same model facing all 20 intents. Misses sit almost all in "compare categories" (5 options:
+  rank vs several series vs gap vs deviation vs survey balance) and in location (locate vs regions vs field).
+  Survey balance and deviation from a reference are partly detectable in the data and the comparison field — a
+  later code narrowing.
+- The type step adds nothing reliable over the sheet's own ranking (12B +4, Qwen −4 on the top two, out of 117).
+  Code keeps it: deterministic, free, and the "why" is the table's use-when text, not prose the student invents.
+
+Proposed design (Tom's "code > model for routing; the 2B makes the narrow decision"):
+1. Journalist answers the coarse family (today's 4-way question widened to the 7 families, or code proposes
+   location / time from the data's columns and the journalist confirms).
+2. One narrow model decision: the intent inside that family, closed list, JSON `{pick}`. The student can make it
+   now (12B 77 %); it is also the cleanest Tune row in the pipeline (story → intent number) and the natural slot
+   for a 2B decision model later.
+3. Code: drawable filter on the data profile, table ranking, two distinct candidates, use-when as the reason.
+4. The journalist chooses between the two — the editorial decision stays theirs.
+
+Not yet built: it changes `show_candidates` and the storyboard question; to be done after the coverage batches.

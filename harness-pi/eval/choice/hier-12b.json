@@ -1,0 +1,1991 @@
+[
+ {
+  "seed": "gx-area-and-stacked-area",
+  "gold": "area",
+  "family": "part-to-whole",
+  "options": 2,
+  "best": 15,
+  "intent": 15,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 2,
+  "picks": [
+   "area",
+   "stacked-bar"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-area-and-stacked-area",
+  "gold": "area",
+  "family": "part-to-whole",
+  "options": 2,
+  "best": 15,
+  "intent": 15,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 2,
+  "picks": [
+   "area",
+   "stacked-bar"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-area-and-stacked-area",
+  "gold": "area",
+  "family": "part-to-whole",
+  "options": 2,
+  "best": 15,
+  "intent": 15,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 2,
+  "picks": [
+   "area",
+   "stacked-bar"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-dumbbell-range-plot",
+  "gold": "dumbbell",
+  "family": "compare categories",
+  "options": 5,
+  "best": 3,
+  "intent": 1,
+  "intentHit": false,
+  "tableSize": 4,
+  "goldRank": 1,
+  "picks": [
+   "dumbbell",
+   "slope"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-dumbbell-range-plot",
+  "gold": "dumbbell",
+  "family": "compare categories",
+  "options": 5,
+  "best": 3,
+  "intent": 1,
+  "intentHit": false,
+  "tableSize": 4,
+  "goldRank": 1,
+  "picks": [
+   "dumbbell",
+   "slope"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-dumbbell-range-plot",
+  "gold": "dumbbell",
+  "family": "compare categories",
+  "options": 5,
+  "best": 3,
+  "intent": 1,
+  "intentHit": false,
+  "tableSize": 4,
+  "goldRank": 1,
+  "picks": [
+   "dumbbell",
+   "slope"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-grouped-bar",
+  "gold": "grouped-bar",
+  "family": "compare categories",
+  "options": 5,
+  "best": 2,
+  "intent": 2,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 1,
+  "picks": [
+   "grouped-bar",
+   "small-multiples"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-grouped-bar",
+  "gold": "grouped-bar",
+  "family": "compare categories",
+  "options": 5,
+  "best": 2,
+  "intent": 2,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 1,
+  "picks": [
+   "grouped-bar",
+   "small-multiples"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-grouped-bar",
+  "gold": "grouped-bar",
+  "family": "compare categories",
+  "options": 5,
+  "best": 2,
+  "intent": 2,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 1,
+  "picks": [
+   "grouped-bar",
+   "small-multiples"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-radar-spider",
+  "gold": "radar",
+  "family": "relationship",
+  "options": 2,
+  "best": 11,
+  "intent": 11,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 4,
+  "picks": [
+   "parallel-coordinates",
+   "radar"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-radar-spider",
+  "gold": "radar",
+  "family": "relationship",
+  "options": 2,
+  "best": 11,
+  "intent": 11,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 4,
+  "picks": [
+   "parallel-coordinates",
+   "radar"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-radar-spider",
+  "gold": "radar",
+  "family": "relationship",
+  "options": 2,
+  "best": 11,
+  "intent": 11,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 4,
+  "picks": [
+   "parallel-coordinates",
+   "radar"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-hex-grid-spatial-binning-and-hex-cartogram",
+  "gold": "hex-grid",
+  "family": "location",
+  "options": 4,
+  "best": 19,
+  "intent": 18,
+  "intentHit": false,
+  "tableSize": 4,
+  "goldRank": 1,
+  "picks": [
+   "choropleth",
+   "hex-grid"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-hex-grid-spatial-binning-and-hex-cartogram",
+  "gold": "hex-grid",
+  "family": "location",
+  "options": 4,
+  "best": 19,
+  "intent": 18,
+  "intentHit": false,
+  "tableSize": 4,
+  "goldRank": 1,
+  "picks": [
+   "choropleth",
+   "hex-grid"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-hex-grid-spatial-binning-and-hex-cartogram",
+  "gold": "hex-grid",
+  "family": "location",
+  "options": 4,
+  "best": 19,
+  "intent": 18,
+  "intentHit": false,
+  "tableSize": 4,
+  "goldRank": 1,
+  "picks": [
+   "choropleth",
+   "hex-grid"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-small-multiples",
+  "gold": "small-multiples",
+  "family": "compare categories",
+  "options": 5,
+  "best": 2,
+  "intent": 1,
+  "intentHit": false,
+  "tableSize": 5,
+  "goldRank": 2,
+  "picks": [
+   "small-multiples",
+   "heatmap"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-small-multiples",
+  "gold": "small-multiples",
+  "family": "compare categories",
+  "options": 5,
+  "best": 2,
+  "intent": 2,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 2,
+  "picks": [
+   "small-multiples",
+   "heatmap"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-small-multiples",
+  "gold": "small-multiples",
+  "family": "compare categories",
+  "options": 5,
+  "best": 2,
+  "intent": 2,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 2,
+  "picks": [
+   "small-multiples",
+   "heatmap"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-histogram",
+  "gold": "histogram",
+  "family": "distribution",
+  "options": 2,
+  "best": 9,
+  "intent": 9,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 1,
+  "picks": [
+   "histogram",
+   "beeswarm"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-histogram",
+  "gold": "histogram",
+  "family": "distribution",
+  "options": 2,
+  "best": 9,
+  "intent": 9,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 1,
+  "picks": [
+   "histogram",
+   "beeswarm"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-histogram",
+  "gold": "histogram",
+  "family": "distribution",
+  "options": 2,
+  "best": 9,
+  "intent": 9,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 1,
+  "picks": [
+   "histogram",
+   "beeswarm"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-connected-scatter",
+  "gold": "connected-scatter",
+  "family": "change over time",
+  "options": 5,
+  "best": 7,
+  "intent": 4,
+  "intentHit": false,
+  "tableSize": 3,
+  "goldRank": 1,
+  "picks": [
+   "line",
+   "connected-scatter"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-connected-scatter",
+  "gold": "connected-scatter",
+  "family": "change over time",
+  "options": 5,
+  "best": 7,
+  "intent": 4,
+  "intentHit": false,
+  "tableSize": 3,
+  "goldRank": 1,
+  "picks": [
+   "line",
+   "connected-scatter"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-connected-scatter",
+  "gold": "connected-scatter",
+  "family": "change over time",
+  "options": 5,
+  "best": 7,
+  "intent": 4,
+  "intentHit": false,
+  "tableSize": 3,
+  "goldRank": 1,
+  "picks": [
+   "line",
+   "connected-scatter"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-bump-ranking-over-time",
+  "gold": "bump",
+  "family": "change over time",
+  "options": 5,
+  "best": 6,
+  "intent": 6,
+  "intentHit": true,
+  "tableSize": 3,
+  "goldRank": 1,
+  "picks": [
+   "bump",
+   "line"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-bump-ranking-over-time",
+  "gold": "bump",
+  "family": "change over time",
+  "options": 5,
+  "best": 6,
+  "intent": 6,
+  "intentHit": true,
+  "tableSize": 3,
+  "goldRank": 1,
+  "picks": [
+   "bump",
+   "small-multiples"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-bump-ranking-over-time",
+  "gold": "bump",
+  "family": "change over time",
+  "options": 5,
+  "best": 6,
+  "intent": 6,
+  "intentHit": true,
+  "tableSize": 3,
+  "goldRank": 1,
+  "picks": [
+   "bump",
+   "small-multiples"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-sankey",
+  "gold": "sankey",
+  "family": "sequence or flow",
+  "options": 2,
+  "best": 16,
+  "intent": 16,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 2,
+  "picks": [
+   "waterfall",
+   "sankey"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-sankey",
+  "gold": "sankey",
+  "family": "sequence or flow",
+  "options": 2,
+  "best": 16,
+  "intent": 16,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 2,
+  "picks": [
+   "waterfall",
+   "sankey"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-sankey",
+  "gold": "sankey",
+  "family": "sequence or flow",
+  "options": 2,
+  "best": 16,
+  "intent": 16,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 2,
+  "picks": [
+   "waterfall",
+   "sankey"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-dot-density",
+  "gold": "dot-density",
+  "family": "location",
+  "options": 4,
+  "best": 19,
+  "intent": 17,
+  "intentHit": false,
+  "tableSize": 4,
+  "goldRank": 2,
+  "picks": [
+   "dot-density",
+   "hex-grid"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-dot-density",
+  "gold": "dot-density",
+  "family": "location",
+  "options": 4,
+  "best": 19,
+  "intent": 19,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 2,
+  "picks": [
+   "dot-density",
+   "hex-grid"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-dot-density",
+  "gold": "dot-density",
+  "family": "location",
+  "options": 4,
+  "best": 19,
+  "intent": 19,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 2,
+  "picks": [
+   "hex-grid",
+   "dot-density"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-proportional-symbol-symbol-bubble-map",
+  "gold": "proportional-symbol",
+  "family": "location",
+  "options": 4,
+  "best": 17,
+  "intent": 19,
+  "intentHit": false,
+  "tableSize": 3,
+  "goldRank": 2,
+  "picks": [
+   "proportional-symbol",
+   "locator"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-proportional-symbol-symbol-bubble-map",
+  "gold": "proportional-symbol",
+  "family": "location",
+  "options": 4,
+  "best": 17,
+  "intent": 19,
+  "intentHit": false,
+  "tableSize": 3,
+  "goldRank": 2,
+  "picks": [
+   "proportional-symbol",
+   "locator"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-proportional-symbol-symbol-bubble-map",
+  "gold": "proportional-symbol",
+  "family": "location",
+  "options": 4,
+  "best": 17,
+  "intent": 19,
+  "intentHit": false,
+  "tableSize": 3,
+  "goldRank": 2,
+  "picks": [
+   "proportional-symbol",
+   "locator"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-dot-strip",
+  "gold": "dot-strip",
+  "family": "distribution",
+  "options": 2,
+  "best": 9,
+  "intent": 10,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 2,
+  "picks": [
+   "dot-strip",
+   "beeswarm"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-dot-strip",
+  "gold": "dot-strip",
+  "family": "distribution",
+  "options": 2,
+  "best": 9,
+  "intent": 10,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 2,
+  "picks": [
+   "dot-strip",
+   "beeswarm"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-dot-strip",
+  "gold": "dot-strip",
+  "family": "distribution",
+  "options": 2,
+  "best": 9,
+  "intent": 10,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 2,
+  "picks": [
+   "dot-strip",
+   "beeswarm"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-pictogram-isotype",
+  "gold": "pictogram",
+  "family": "compare categories",
+  "options": 5,
+  "best": 1,
+  "intent": 1,
+  "intentHit": true,
+  "tableSize": 3,
+  "goldRank": 3,
+  "picks": [
+   "bar-and-column",
+   "lollipop"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-pictogram-isotype",
+  "gold": "pictogram",
+  "family": "compare categories",
+  "options": 5,
+  "best": 1,
+  "intent": 1,
+  "intentHit": true,
+  "tableSize": 3,
+  "goldRank": 3,
+  "picks": [
+   "bar-and-column",
+   "lollipop"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-pictogram-isotype",
+  "gold": "pictogram",
+  "family": "compare categories",
+  "options": 5,
+  "best": 1,
+  "intent": 1,
+  "intentHit": true,
+  "tableSize": 3,
+  "goldRank": 3,
+  "picks": [
+   "bar-and-column",
+   "lollipop"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-beeswarm",
+  "gold": "beeswarm",
+  "family": "distribution",
+  "options": 2,
+  "best": 9,
+  "intent": 10,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 3,
+  "picks": [
+   "histogram",
+   "dot-strip"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-beeswarm",
+  "gold": "beeswarm",
+  "family": "distribution",
+  "options": 2,
+  "best": 9,
+  "intent": 10,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 3,
+  "picks": [
+   "dot-strip",
+   "beeswarm"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-beeswarm",
+  "gold": "beeswarm",
+  "family": "distribution",
+  "options": 2,
+  "best": 9,
+  "intent": 10,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 3,
+  "picks": [
+   "histogram",
+   "dot-strip"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-flow-map-route-and-origin-destination",
+  "gold": "flow-map",
+  "family": "sequence or flow",
+  "options": 2,
+  "best": 20,
+  "intent": 16,
+  "intentHit": true,
+  "tableSize": 3,
+  "goldRank": 1,
+  "picks": [
+   "flow-map",
+   "locator"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-flow-map-route-and-origin-destination",
+  "gold": "flow-map",
+  "family": "sequence or flow",
+  "options": 2,
+  "best": 20,
+  "intent": 16,
+  "intentHit": true,
+  "tableSize": 3,
+  "goldRank": 1,
+  "picks": [
+   "flow-map",
+   "locator"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-flow-map-route-and-origin-destination",
+  "gold": "flow-map",
+  "family": "sequence or flow",
+  "options": 2,
+  "best": 20,
+  "intent": 16,
+  "intentHit": true,
+  "tableSize": 3,
+  "goldRank": 1,
+  "picks": [
+   "flow-map",
+   "locator"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-marimekko-mosaic-plot",
+  "gold": "marimekko",
+  "family": "part-to-whole",
+  "options": 2,
+  "best": 15,
+  "intent": 15,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 3,
+  "picks": [
+   "marimekko",
+   "stacked-bar"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-marimekko-mosaic-plot",
+  "gold": "marimekko",
+  "family": "part-to-whole",
+  "options": 2,
+  "best": 15,
+  "intent": 15,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 3,
+  "picks": [
+   "marimekko",
+   "stacked-bar"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-marimekko-mosaic-plot",
+  "gold": "marimekko",
+  "family": "part-to-whole",
+  "options": 2,
+  "best": 15,
+  "intent": 15,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 3,
+  "picks": [
+   "stacked-bar",
+   "marimekko"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-locator",
+  "gold": "locator",
+  "family": "location",
+  "options": 4,
+  "best": 17,
+  "intent": 17,
+  "intentHit": true,
+  "tableSize": 3,
+  "goldRank": 1,
+  "picks": [
+   "locator",
+   "proportional-symbol"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-locator",
+  "gold": "locator",
+  "family": "location",
+  "options": 4,
+  "best": 17,
+  "intent": 17,
+  "intentHit": true,
+  "tableSize": 3,
+  "goldRank": 1,
+  "picks": [
+   "locator",
+   "proportional-symbol"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-locator",
+  "gold": "locator",
+  "family": "location",
+  "options": 4,
+  "best": 17,
+  "intent": 17,
+  "intentHit": true,
+  "tableSize": 3,
+  "goldRank": 1,
+  "picks": [
+   "locator",
+   "proportional-symbol"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-box-plot",
+  "gold": "boxplot",
+  "family": "distribution",
+  "options": 2,
+  "best": 10,
+  "intent": 10,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 1,
+  "picks": [
+   "small-multiples",
+   "boxplot"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-box-plot",
+  "gold": "boxplot",
+  "family": "distribution",
+  "options": 2,
+  "best": 10,
+  "intent": 10,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 1,
+  "picks": [
+   "boxplot",
+   "small-multiples"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-box-plot",
+  "gold": "boxplot",
+  "family": "distribution",
+  "options": 2,
+  "best": 10,
+  "intent": 10,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 1,
+  "picks": [
+   "small-multiples",
+   "boxplot"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-diverging-stacked-bar-likert",
+  "gold": "diverging-stacked-bar",
+  "family": "compare categories",
+  "options": 5,
+  "best": 13,
+  "intent": 2,
+  "intentHit": false,
+  "tableSize": 3,
+  "goldRank": 1,
+  "picks": [
+   "stacked-bar",
+   "grouped-bar"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-diverging-stacked-bar-likert",
+  "gold": "diverging-stacked-bar",
+  "family": "compare categories",
+  "options": 5,
+  "best": 13,
+  "intent": 2,
+  "intentHit": false,
+  "tableSize": 3,
+  "goldRank": 1,
+  "picks": [
+   "stacked-bar",
+   "grouped-bar"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-diverging-stacked-bar-likert",
+  "gold": "diverging-stacked-bar",
+  "family": "compare categories",
+  "options": 5,
+  "best": 13,
+  "intent": 1,
+  "intentHit": false,
+  "tableSize": 3,
+  "goldRank": 1,
+  "picks": [
+   "stacked-bar",
+   "grouped-bar"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-treemap",
+  "gold": "treemap",
+  "family": "part-to-whole",
+  "options": 2,
+  "best": 14,
+  "intent": 15,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 2,
+  "picks": [
+   "stacked-bar",
+   "bar-and-column"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-treemap",
+  "gold": "treemap",
+  "family": "part-to-whole",
+  "options": 2,
+  "best": 14,
+  "intent": 15,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 2,
+  "picks": [
+   "stacked-bar",
+   "bar-and-column"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-treemap",
+  "gold": "treemap",
+  "family": "part-to-whole",
+  "options": 2,
+  "best": 14,
+  "intent": 15,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 2,
+  "picks": [
+   "stacked-bar",
+   "bar-and-column"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-stacked-bar",
+  "gold": "stacked-bar",
+  "family": "part-to-whole",
+  "options": 2,
+  "best": 15,
+  "intent": 15,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 1,
+  "picks": [
+   "stacked-bar",
+   "area"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-stacked-bar",
+  "gold": "stacked-bar",
+  "family": "part-to-whole",
+  "options": 2,
+  "best": 15,
+  "intent": 15,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 1,
+  "picks": [
+   "area",
+   "stacked-bar"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-stacked-bar",
+  "gold": "stacked-bar",
+  "family": "part-to-whole",
+  "options": 2,
+  "best": 15,
+  "intent": 15,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 1,
+  "picks": [
+   "area",
+   "stacked-bar"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-heatmap-matrix",
+  "gold": "heatmap",
+  "family": "relationship",
+  "options": 2,
+  "best": 11,
+  "intent": 11,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 2,
+  "picks": [
+   "parallel-coordinates",
+   "scatter"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-heatmap-matrix",
+  "gold": "heatmap",
+  "family": "relationship",
+  "options": 2,
+  "best": 11,
+  "intent": 11,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 2,
+  "picks": [
+   "parallel-coordinates",
+   "scatter"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-heatmap-matrix",
+  "gold": "heatmap",
+  "family": "relationship",
+  "options": 2,
+  "best": 11,
+  "intent": 11,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 2,
+  "picks": [
+   "parallel-coordinates",
+   "scatter"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-gantt",
+  "gold": "gantt",
+  "family": "sequence or flow",
+  "options": 2,
+  "best": 16,
+  "intent": 16,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 3,
+  "picks": [
+   "gantt",
+   "waterfall"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-gantt",
+  "gold": "gantt",
+  "family": "sequence or flow",
+  "options": 2,
+  "best": 16,
+  "intent": 16,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 3,
+  "picks": [
+   "gantt",
+   "sankey"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-gantt",
+  "gold": "gantt",
+  "family": "sequence or flow",
+  "options": 2,
+  "best": 16,
+  "intent": 16,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 3,
+  "picks": [
+   "gantt",
+   "waterfall"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-calendar-heatmap",
+  "gold": "calendar-heatmap",
+  "family": "change over time",
+  "options": 5,
+  "best": 8,
+  "intent": 4,
+  "intentHit": false,
+  "tableSize": 3,
+  "goldRank": 1,
+  "picks": [
+   "line",
+   "calendar-heatmap"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-calendar-heatmap",
+  "gold": "calendar-heatmap",
+  "family": "change over time",
+  "options": 5,
+  "best": 8,
+  "intent": 8,
+  "intentHit": true,
+  "tableSize": 3,
+  "goldRank": 1,
+  "picks": [
+   "line",
+   "calendar-heatmap"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-calendar-heatmap",
+  "gold": "calendar-heatmap",
+  "family": "change over time",
+  "options": 5,
+  "best": 8,
+  "intent": 4,
+  "intentHit": false,
+  "tableSize": 3,
+  "goldRank": 1,
+  "picks": [
+   "line",
+   "calendar-heatmap"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-line",
+  "gold": "line",
+  "family": "change over time",
+  "options": 5,
+  "best": 4,
+  "intent": 4,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 1,
+  "picks": [
+   "line",
+   "bar-and-column"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-line",
+  "gold": "line",
+  "family": "change over time",
+  "options": 5,
+  "best": 4,
+  "intent": 4,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 1,
+  "picks": [
+   "line",
+   "bar-and-column"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-line",
+  "gold": "line",
+  "family": "change over time",
+  "options": 5,
+  "best": 4,
+  "intent": 4,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 1,
+  "picks": [
+   "line",
+   "bar-and-column"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-contour-isoline",
+  "gold": "contour-isoline",
+  "family": "location",
+  "options": 4,
+  "best": 19,
+  "intent": 19,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 3,
+  "picks": [
+   "contour-isoline",
+   "hex-grid"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-contour-isoline",
+  "gold": "contour-isoline",
+  "family": "location",
+  "options": 4,
+  "best": 19,
+  "intent": 19,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 3,
+  "picks": [
+   "contour-isoline",
+   "hex-grid"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-contour-isoline",
+  "gold": "contour-isoline",
+  "family": "location",
+  "options": 4,
+  "best": 19,
+  "intent": 19,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 3,
+  "picks": [
+   "contour-isoline",
+   "hex-grid"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-choropleth",
+  "gold": "choropleth",
+  "family": "location",
+  "options": 4,
+  "best": 18,
+  "intent": 18,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 1,
+  "picks": [
+   "choropleth",
+   "bar-and-column"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-choropleth",
+  "gold": "choropleth",
+  "family": "location",
+  "options": 4,
+  "best": 18,
+  "intent": 18,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 1,
+  "picks": [
+   "choropleth",
+   "bar-and-column"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-choropleth",
+  "gold": "choropleth",
+  "family": "location",
+  "options": 4,
+  "best": 18,
+  "intent": 18,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 1,
+  "picks": [
+   "choropleth",
+   "bar-and-column"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-population-pyramid",
+  "gold": "population-pyramid",
+  "family": "distribution",
+  "options": 2,
+  "best": 10,
+  "intent": 10,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 5,
+  "picks": [
+   "population-pyramid",
+   "small-multiples"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-population-pyramid",
+  "gold": "population-pyramid",
+  "family": "distribution",
+  "options": 2,
+  "best": 10,
+  "intent": 10,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 5,
+  "picks": [
+   "population-pyramid",
+   "small-multiples"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-population-pyramid",
+  "gold": "population-pyramid",
+  "family": "distribution",
+  "options": 2,
+  "best": 10,
+  "intent": 10,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 5,
+  "picks": [
+   "population-pyramid",
+   "small-multiples"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-bullet",
+  "gold": "bullet",
+  "family": "compare categories",
+  "options": 5,
+  "best": 12,
+  "intent": 2,
+  "intentHit": false,
+  "tableSize": 5,
+  "goldRank": 2,
+  "picks": [
+   "slope",
+   "dumbbell"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-bullet",
+  "gold": "bullet",
+  "family": "compare categories",
+  "options": 5,
+  "best": 12,
+  "intent": 2,
+  "intentHit": false,
+  "tableSize": 5,
+  "goldRank": 2,
+  "picks": [
+   "slope",
+   "dumbbell"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-bullet",
+  "gold": "bullet",
+  "family": "compare categories",
+  "options": 5,
+  "best": 12,
+  "intent": 2,
+  "intentHit": false,
+  "tableSize": 5,
+  "goldRank": 2,
+  "picks": [
+   "slope",
+   "dumbbell"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-cartogram-area-distortion-and-tile-cartogram",
+  "gold": "cartogram",
+  "family": "location",
+  "options": 4,
+  "best": 18,
+  "intent": 18,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 3,
+  "picks": [
+   "choropleth",
+   "bar-and-column"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-cartogram-area-distortion-and-tile-cartogram",
+  "gold": "cartogram",
+  "family": "location",
+  "options": 4,
+  "best": 18,
+  "intent": 18,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 3,
+  "picks": [
+   "choropleth",
+   "bar-and-column"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-cartogram-area-distortion-and-tile-cartogram",
+  "gold": "cartogram",
+  "family": "location",
+  "options": 4,
+  "best": 18,
+  "intent": 18,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 3,
+  "picks": [
+   "choropleth",
+   "bar-and-column"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-parallel-coordinates",
+  "gold": "parallel-coordinates",
+  "family": "relationship",
+  "options": 2,
+  "best": 11,
+  "intent": 11,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 3,
+  "picks": [
+   "parallel-coordinates",
+   "scatter"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-parallel-coordinates",
+  "gold": "parallel-coordinates",
+  "family": "relationship",
+  "options": 2,
+  "best": 11,
+  "intent": 11,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 3,
+  "picks": [
+   "parallel-coordinates",
+   "scatter"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-parallel-coordinates",
+  "gold": "parallel-coordinates",
+  "family": "relationship",
+  "options": 2,
+  "best": 11,
+  "intent": 11,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 3,
+  "picks": [
+   "parallel-coordinates",
+   "scatter"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-slope-slopegraph",
+  "gold": "slope",
+  "family": "change over time",
+  "options": 5,
+  "best": 5,
+  "intent": 5,
+  "intentHit": true,
+  "tableSize": 3,
+  "goldRank": 1,
+  "picks": [
+   "slope",
+   "dumbbell"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-slope-slopegraph",
+  "gold": "slope",
+  "family": "change over time",
+  "options": 5,
+  "best": 5,
+  "intent": 4,
+  "intentHit": false,
+  "tableSize": 3,
+  "goldRank": 1,
+  "picks": [
+   "slope",
+   "dumbbell"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-slope-slopegraph",
+  "gold": "slope",
+  "family": "change over time",
+  "options": 5,
+  "best": 5,
+  "intent": 5,
+  "intentHit": true,
+  "tableSize": 3,
+  "goldRank": 1,
+  "picks": [
+   "slope",
+   "dumbbell"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-streamgraph",
+  "gold": "streamgraph",
+  "family": "part-to-whole",
+  "options": 2,
+  "best": 15,
+  "intent": 15,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 5,
+  "picks": [
+   "stacked-bar",
+   "area"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-streamgraph",
+  "gold": "streamgraph",
+  "family": "part-to-whole",
+  "options": 2,
+  "best": 15,
+  "intent": 15,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 5,
+  "picks": [
+   "area",
+   "stacked-bar"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-streamgraph",
+  "gold": "streamgraph",
+  "family": "part-to-whole",
+  "options": 2,
+  "best": 15,
+  "intent": 15,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 5,
+  "picks": [
+   "area",
+   "stacked-bar"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-diverging-bar",
+  "gold": "diverging-bar",
+  "family": "compare categories",
+  "options": 5,
+  "best": 12,
+  "intent": 1,
+  "intentHit": false,
+  "tableSize": 5,
+  "goldRank": 1,
+  "picks": [
+   "dumbbell",
+   "slope"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-diverging-bar",
+  "gold": "diverging-bar",
+  "family": "compare categories",
+  "options": 5,
+  "best": 12,
+  "intent": 2,
+  "intentHit": false,
+  "tableSize": 5,
+  "goldRank": 1,
+  "picks": [
+   "dumbbell",
+   "diverging-bar"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-diverging-bar",
+  "gold": "diverging-bar",
+  "family": "compare categories",
+  "options": 5,
+  "best": 12,
+  "intent": 1,
+  "intentHit": false,
+  "tableSize": 5,
+  "goldRank": 1,
+  "picks": [
+   "dumbbell",
+   "diverging-bar"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-waterfall-bridge",
+  "gold": "waterfall",
+  "family": "sequence or flow",
+  "options": 2,
+  "best": 16,
+  "intent": 16,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 1,
+  "picks": [
+   "waterfall",
+   "sankey"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-waterfall-bridge",
+  "gold": "waterfall",
+  "family": "sequence or flow",
+  "options": 2,
+  "best": 16,
+  "intent": 16,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 1,
+  "picks": [
+   "waterfall",
+   "sankey"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-waterfall-bridge",
+  "gold": "waterfall",
+  "family": "sequence or flow",
+  "options": 2,
+  "best": 16,
+  "intent": 16,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 1,
+  "picks": [
+   "waterfall",
+   "sankey"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-scatter-and-bubble",
+  "gold": "scatter",
+  "family": "relationship",
+  "options": 2,
+  "best": 11,
+  "intent": 11,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 1,
+  "picks": [
+   "scatter",
+   "parallel-coordinates"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-scatter-and-bubble",
+  "gold": "scatter",
+  "family": "relationship",
+  "options": 2,
+  "best": 11,
+  "intent": 11,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 1,
+  "picks": [
+   "scatter",
+   "parallel-coordinates"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-scatter-and-bubble",
+  "gold": "scatter",
+  "family": "relationship",
+  "options": 2,
+  "best": 11,
+  "intent": 11,
+  "intentHit": true,
+  "tableSize": 5,
+  "goldRank": 1,
+  "picks": [
+   "scatter",
+   "parallel-coordinates"
+  ],
+  "typeTop1": true,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-lollipop",
+  "gold": "lollipop",
+  "family": "compare categories",
+  "options": 5,
+  "best": 1,
+  "intent": 1,
+  "intentHit": true,
+  "tableSize": 3,
+  "goldRank": 2,
+  "picks": [
+   "bar-and-column",
+   "lollipop"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-lollipop",
+  "gold": "lollipop",
+  "family": "compare categories",
+  "options": 5,
+  "best": 1,
+  "intent": 1,
+  "intentHit": true,
+  "tableSize": 3,
+  "goldRank": 2,
+  "picks": [
+   "bar-and-column",
+   "lollipop"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-lollipop",
+  "gold": "lollipop",
+  "family": "compare categories",
+  "options": 5,
+  "best": 1,
+  "intent": 3,
+  "intentHit": false,
+  "tableSize": 3,
+  "goldRank": 2,
+  "picks": [
+   "bar-and-column",
+   "lollipop"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-pie-and-donut",
+  "gold": "pie-and-donut",
+  "family": "part-to-whole",
+  "options": 2,
+  "best": 14,
+  "intent": 14,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 1,
+  "picks": [
+   "bar-and-column",
+   "pie-and-donut"
+  ],
+  "typeTop1": false,
+  "typeTop2": true
+ },
+ {
+  "seed": "gx-pie-and-donut",
+  "gold": "pie-and-donut",
+  "family": "part-to-whole",
+  "options": 2,
+  "best": 14,
+  "intent": 14,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 1,
+  "picks": [
+   "bar-and-column",
+   "stacked-bar"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ },
+ {
+  "seed": "gx-pie-and-donut",
+  "gold": "pie-and-donut",
+  "family": "part-to-whole",
+  "options": 2,
+  "best": 14,
+  "intent": 14,
+  "intentHit": true,
+  "tableSize": 4,
+  "goldRank": 1,
+  "picks": [
+   "bar-and-column",
+   "stacked-bar"
+  ],
+  "typeTop1": false,
+  "typeTop2": false
+ }
+]

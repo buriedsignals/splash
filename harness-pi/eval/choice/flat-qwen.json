@@ -1,0 +1,2561 @@
+[
+ {
+  "seed": "gx-area-and-stacked-area",
+  "gold": "area",
+  "rep": 0,
+  "free": [
+   "stacked-bar",
+   "area"
+  ],
+  "freeHit": true,
+  "freeTop": false,
+  "intent": 5,
+  "goldIntents": [
+   4,
+   15
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 5,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-area-and-stacked-area",
+  "gold": "area",
+  "rep": 1,
+  "free": [
+   "stacked-bar",
+   "area"
+  ],
+  "freeHit": true,
+  "freeTop": false,
+  "intent": 5,
+  "goldIntents": [
+   4,
+   15
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 5,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-area-and-stacked-area",
+  "gold": "area",
+  "rep": 2,
+  "free": [
+   "line",
+   "stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 5,
+  "goldIntents": [
+   4,
+   15
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 5,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-dumbbell-range-plot",
+  "gold": "dumbbell",
+  "rep": 0,
+  "free": [
+   "slope",
+   "dumbbell"
+  ],
+  "freeHit": true,
+  "freeTop": false,
+  "intent": 5,
+  "goldIntents": [
+   3,
+   5,
+   12
+  ],
+  "intentHit": true,
+  "narrowTop2": true,
+  "narrowTop1": false,
+  "narrowAny": true,
+  "intentJ": 5,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-dumbbell-range-plot",
+  "gold": "dumbbell",
+  "rep": 1,
+  "free": [
+   "dumbbell",
+   "slope"
+  ],
+  "freeHit": true,
+  "freeTop": true,
+  "intent": 5,
+  "goldIntents": [
+   3,
+   5,
+   12
+  ],
+  "intentHit": true,
+  "narrowTop2": true,
+  "narrowTop1": false,
+  "narrowAny": true,
+  "intentJ": 5,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-dumbbell-range-plot",
+  "gold": "dumbbell",
+  "rep": 2,
+  "free": [
+   "dumbbell",
+   "slope"
+  ],
+  "freeHit": true,
+  "freeTop": true,
+  "intent": 5,
+  "goldIntents": [
+   3,
+   5,
+   12
+  ],
+  "intentHit": true,
+  "narrowTop2": true,
+  "narrowTop1": false,
+  "narrowAny": true,
+  "intentJ": 5,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-grouped-bar",
+  "gold": "grouped-bar",
+  "rep": 0,
+  "free": [
+   "stacked-bar",
+   "diverging-stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   2,
+   3,
+   5,
+   13
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-grouped-bar",
+  "gold": "grouped-bar",
+  "rep": 1,
+  "free": [
+   "diverging-bar",
+   "stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   2,
+   3,
+   5,
+   13
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-grouped-bar",
+  "gold": "grouped-bar",
+  "rep": 2,
+  "free": [
+   "stacked-bar",
+   "diverging-stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   2,
+   3,
+   5,
+   13
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-radar-spider",
+  "gold": "radar",
+  "rep": 0,
+  "free": [
+   "stacked-bar",
+   "diverging-stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   2,
+   11
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-radar-spider",
+  "gold": "radar",
+  "rep": 1,
+  "free": [
+   "stacked-bar",
+   "diverging-stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   2,
+   11
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-radar-spider",
+  "gold": "radar",
+  "rep": 2,
+  "free": [
+   "stacked-bar",
+   "diverging-stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   2,
+   11
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-hex-grid-spatial-binning-and-hex-cartogram",
+  "gold": "hex-grid",
+  "rep": 0,
+  "free": [
+   "hex-grid",
+   "diverging-bar"
+  ],
+  "freeHit": true,
+  "freeTop": true,
+  "intent": 1,
+  "goldIntents": [
+   17,
+   19
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 1,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-hex-grid-spatial-binning-and-hex-cartogram",
+  "gold": "hex-grid",
+  "rep": 1,
+  "free": [
+   "hex-grid",
+   "dot-density"
+  ],
+  "freeHit": true,
+  "freeTop": true,
+  "intent": 1,
+  "goldIntents": [
+   17,
+   19
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 1,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-hex-grid-spatial-binning-and-hex-cartogram",
+  "gold": "hex-grid",
+  "rep": 2,
+  "free": [
+   "hex-grid",
+   "diverging-bar"
+  ],
+  "freeHit": true,
+  "freeTop": true,
+  "intent": 1,
+  "goldIntents": [
+   17,
+   19
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 1,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-small-multiples",
+  "gold": "small-multiples",
+  "rep": 0,
+  "free": [
+   "dumbbell",
+   "slope"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 6,
+  "goldIntents": [
+   2,
+   4,
+   6,
+   10
+  ],
+  "intentHit": true,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": true,
+  "intentJ": 6,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-small-multiples",
+  "gold": "small-multiples",
+  "rep": 1,
+  "free": [
+   "dumbbell",
+   "slope"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 6,
+  "goldIntents": [
+   2,
+   4,
+   6,
+   10
+  ],
+  "intentHit": true,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": true,
+  "intentJ": 6,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-small-multiples",
+  "gold": "small-multiples",
+  "rep": 2,
+  "free": [
+   "slope",
+   "dumbbell"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 6,
+  "goldIntents": [
+   2,
+   4,
+   6,
+   10
+  ],
+  "intentHit": true,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": true,
+  "intentJ": 6,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-histogram",
+  "gold": "histogram",
+  "rep": 0,
+  "free": [
+   "bar-and-column",
+   "diverging-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 12,
+  "goldIntents": [
+   9
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 10,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-histogram",
+  "gold": "histogram",
+  "rep": 1,
+  "free": [
+   "bar-and-column",
+   "diverging-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 10,
+  "goldIntents": [
+   9
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 10,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-histogram",
+  "gold": "histogram",
+  "rep": 2,
+  "free": [
+   "bar-and-column",
+   "diverging-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 10,
+  "goldIntents": [
+   9
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 10,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-connected-scatter",
+  "gold": "connected-scatter",
+  "rep": 0,
+  "free": [
+   "stacked-bar",
+   "line"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   7,
+   11
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-connected-scatter",
+  "gold": "connected-scatter",
+  "rep": 1,
+  "free": [
+   "diverging-stacked-bar",
+   "waterfall"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   7,
+   11
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-connected-scatter",
+  "gold": "connected-scatter",
+  "rep": 2,
+  "free": [
+   "diverging-bar",
+   "stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   7,
+   11
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-bump-ranking-over-time",
+  "gold": "bump",
+  "rep": 0,
+  "free": [
+   "line",
+   "bar-and-column"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 6,
+  "goldIntents": [
+   6
+  ],
+  "intentHit": true,
+  "narrowTop2": true,
+  "narrowTop1": true,
+  "narrowAny": true,
+  "intentJ": 6,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-bump-ranking-over-time",
+  "gold": "bump",
+  "rep": 1,
+  "free": [
+   "line",
+   "bar-and-column"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 6,
+  "goldIntents": [
+   6
+  ],
+  "intentHit": true,
+  "narrowTop2": true,
+  "narrowTop1": true,
+  "narrowAny": true,
+  "intentJ": 6,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-bump-ranking-over-time",
+  "gold": "bump",
+  "rep": 2,
+  "free": [
+   "line",
+   "dumbbell"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 6,
+  "goldIntents": [
+   6
+  ],
+  "intentHit": true,
+  "narrowTop2": true,
+  "narrowTop1": true,
+  "narrowAny": true,
+  "intentJ": 6,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-sankey",
+  "gold": "sankey",
+  "rep": 0,
+  "free": [
+   "stacked-bar",
+   "diverging-stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   16,
+   20
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-sankey",
+  "gold": "sankey",
+  "rep": 1,
+  "free": [
+   "stacked-bar",
+   "diverging-stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   16,
+   20
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-sankey",
+  "gold": "sankey",
+  "rep": 2,
+  "free": [
+   "stacked-bar",
+   "pie-and-donut"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   16,
+   20
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-dot-density",
+  "gold": "dot-density",
+  "rep": 0,
+  "free": [
+   "choropleth",
+   "stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   19
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 19,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-dot-density",
+  "gold": "dot-density",
+  "rep": 1,
+  "free": [
+   "bar-and-column",
+   "diverging-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   19
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 17,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-dot-density",
+  "gold": "dot-density",
+  "rep": 2,
+  "free": [
+   "bar-and-column",
+   "choropleth"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   19
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 17,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-proportional-symbol-symbol-bubble-map",
+  "gold": "proportional-symbol",
+  "rep": 0,
+  "free": [
+   "treemap",
+   "choropleth"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 19,
+  "goldIntents": [
+   17,
+   18
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 19,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-proportional-symbol-symbol-bubble-map",
+  "gold": "proportional-symbol",
+  "rep": 1,
+  "free": [
+   "treemap",
+   "choropleth"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 19,
+  "goldIntents": [
+   17,
+   18
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 19,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-proportional-symbol-symbol-bubble-map",
+  "gold": "proportional-symbol",
+  "rep": 2,
+  "free": [
+   "treemap",
+   "choropleth"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 19,
+  "goldIntents": [
+   17,
+   18
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 19,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-dot-strip",
+  "gold": "dot-strip",
+  "rep": 0,
+  "free": [
+   "diverging-bar",
+   "bullet"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 4,
+  "goldIntents": [
+   9,
+   10
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 4,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-dot-strip",
+  "gold": "dot-strip",
+  "rep": 1,
+  "free": [
+   "diverging-bar",
+   "slope"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 4,
+  "goldIntents": [
+   9,
+   10
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 4,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-dot-strip",
+  "gold": "dot-strip",
+  "rep": 2,
+  "free": [
+   "diverging-bar",
+   "bullet"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 4,
+  "goldIntents": [
+   9,
+   10
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 6,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-pictogram-isotype",
+  "gold": "pictogram",
+  "rep": 0,
+  "free": [
+   "stacked-bar",
+   "diverging-stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 10,
+  "goldIntents": [
+   1
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 10,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-pictogram-isotype",
+  "gold": "pictogram",
+  "rep": 1,
+  "free": [
+   "stacked-bar",
+   "diverging-stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 10,
+  "goldIntents": [
+   1
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 10,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-pictogram-isotype",
+  "gold": "pictogram",
+  "rep": 2,
+  "free": [
+   "diverging-bar",
+   "choropleth"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 10,
+  "goldIntents": [
+   1
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 10,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-beeswarm",
+  "gold": "beeswarm",
+  "rep": 0,
+  "free": [
+   "treemap",
+   "choropleth"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 10,
+  "goldIntents": [
+   9,
+   10
+  ],
+  "intentHit": true,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": true,
+  "intentJ": 10,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-beeswarm",
+  "gold": "beeswarm",
+  "rep": 1,
+  "free": [
+   "treemap",
+   "choropleth"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   9,
+   10
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 10,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-beeswarm",
+  "gold": "beeswarm",
+  "rep": 2,
+  "free": [
+   "treemap",
+   "marimekko"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   9,
+   10
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 10,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-flow-map-route-and-origin-destination",
+  "gold": "flow-map",
+  "rep": 0,
+  "free": [
+   "sankey",
+   "stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 18,
+  "goldIntents": [
+   16,
+   20
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 16,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-flow-map-route-and-origin-destination",
+  "gold": "flow-map",
+  "rep": 1,
+  "free": [
+   "sankey",
+   "streamgraph"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 18,
+  "goldIntents": [
+   16,
+   20
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 16,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-flow-map-route-and-origin-destination",
+  "gold": "flow-map",
+  "rep": 2,
+  "free": [
+   "sankey",
+   "choropleth"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 18,
+  "goldIntents": [
+   16,
+   20
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 16,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-marimekko-mosaic-plot",
+  "gold": "marimekko",
+  "rep": 0,
+  "free": [
+   "stacked-bar",
+   "pie-and-donut"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 19,
+  "goldIntents": [
+   15
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-marimekko-mosaic-plot",
+  "gold": "marimekko",
+  "rep": 1,
+  "free": [
+   "stacked-bar",
+   "diverging-stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 19,
+  "goldIntents": [
+   15
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-marimekko-mosaic-plot",
+  "gold": "marimekko",
+  "rep": 2,
+  "free": [
+   "stacked-bar",
+   "pie-and-donut"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 19,
+  "goldIntents": [
+   15
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-locator",
+  "gold": "locator",
+  "rep": 0,
+  "free": [
+   "bar-and-column",
+   "bar-and-column"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 1,
+  "goldIntents": [
+   17,
+   20
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 17,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-locator",
+  "gold": "locator",
+  "rep": 1,
+  "free": [
+   "bar-and-column",
+   "bar-and-column"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 1,
+  "goldIntents": [
+   17,
+   20
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 17,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-locator",
+  "gold": "locator",
+  "rep": 2,
+  "free": [
+   "bar-and-column",
+   "bar-and-column"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 1,
+  "goldIntents": [
+   17,
+   20
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 17,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-box-plot",
+  "gold": "boxplot",
+  "rep": 0,
+  "free": [
+   "line",
+   "bar-and-column"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 4,
+  "goldIntents": [
+   9,
+   10
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 4,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-box-plot",
+  "gold": "boxplot",
+  "rep": 1,
+  "free": [
+   "line",
+   "area"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 4,
+  "goldIntents": [
+   9,
+   10
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 4,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-box-plot",
+  "gold": "boxplot",
+  "rep": 2,
+  "free": [
+   "line",
+   "area"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 4,
+  "goldIntents": [
+   9,
+   10
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 4,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-diverging-stacked-bar-likert",
+  "gold": "diverging-stacked-bar",
+  "rep": 0,
+  "free": [
+   "diverging-stacked-bar",
+   "stacked-bar"
+  ],
+  "freeHit": true,
+  "freeTop": true,
+  "intent": 15,
+  "goldIntents": [
+   13
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-diverging-stacked-bar-likert",
+  "gold": "diverging-stacked-bar",
+  "rep": 1,
+  "free": [
+   "diverging-stacked-bar",
+   "stacked-bar"
+  ],
+  "freeHit": true,
+  "freeTop": true,
+  "intent": 15,
+  "goldIntents": [
+   13
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-diverging-stacked-bar-likert",
+  "gold": "diverging-stacked-bar",
+  "rep": 2,
+  "free": [
+   "stacked-bar",
+   "diverging-stacked-bar"
+  ],
+  "freeHit": true,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   13
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-treemap",
+  "gold": "treemap",
+  "rep": 0,
+  "free": [
+   "stacked-bar",
+   "diverging-stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   14,
+   15
+  ],
+  "intentHit": true,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": true,
+  "intentJ": 15,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-treemap",
+  "gold": "treemap",
+  "rep": 1,
+  "free": [
+   "choropleth",
+   "diverging-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   14,
+   15
+  ],
+  "intentHit": true,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": true,
+  "intentJ": 15,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-treemap",
+  "gold": "treemap",
+  "rep": 2,
+  "free": [
+   "stacked-bar",
+   "diverging-stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   14,
+   15
+  ],
+  "intentHit": true,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": true,
+  "intentJ": 15,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-stacked-bar",
+  "gold": "stacked-bar",
+  "rep": 0,
+  "free": [
+   "diverging-stacked-bar",
+   "slope"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 5,
+  "goldIntents": [
+   13,
+   14,
+   15
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 5,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-stacked-bar",
+  "gold": "stacked-bar",
+  "rep": 1,
+  "free": [
+   "diverging-bar",
+   "slope"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 5,
+  "goldIntents": [
+   13,
+   14,
+   15
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 5,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-stacked-bar",
+  "gold": "stacked-bar",
+  "rep": 2,
+  "free": [
+   "diverging-bar",
+   "line"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 4,
+  "goldIntents": [
+   13,
+   14,
+   15
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 5,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-heatmap-matrix",
+  "gold": "heatmap",
+  "rep": 0,
+  "free": [
+   "stacked-bar",
+   "diverging-stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   2,
+   8,
+   11
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-heatmap-matrix",
+  "gold": "heatmap",
+  "rep": 1,
+  "free": [
+   "stacked-bar",
+   "diverging-stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   2,
+   8,
+   11
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-heatmap-matrix",
+  "gold": "heatmap",
+  "rep": 2,
+  "free": [
+   "stacked-bar",
+   "diverging-stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   2,
+   8,
+   11
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-gantt",
+  "gold": "gantt",
+  "rep": 0,
+  "free": [
+   "line",
+   "bar-and-column"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   16
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 16,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-gantt",
+  "gold": "gantt",
+  "rep": 1,
+  "free": [
+   "line",
+   "area"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   16
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 16,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-gantt",
+  "gold": "gantt",
+  "rep": 2,
+  "free": [
+   "line",
+   "area"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   16
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 16,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-calendar-heatmap",
+  "gold": "calendar-heatmap",
+  "rep": 0,
+  "free": [
+   "line",
+   "calendar-heatmap"
+  ],
+  "freeHit": true,
+  "freeTop": false,
+  "intent": 16,
+  "goldIntents": [
+   8
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 8,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-calendar-heatmap",
+  "gold": "calendar-heatmap",
+  "rep": 1,
+  "free": [
+   "line",
+   "calendar-heatmap"
+  ],
+  "freeHit": true,
+  "freeTop": false,
+  "intent": 16,
+  "goldIntents": [
+   8
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 8,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-calendar-heatmap",
+  "gold": "calendar-heatmap",
+  "rep": 2,
+  "free": [
+   "line",
+   "calendar-heatmap"
+  ],
+  "freeHit": true,
+  "freeTop": false,
+  "intent": 16,
+  "goldIntents": [
+   8
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 8,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-line",
+  "gold": "line",
+  "rep": 0,
+  "free": [
+   "line",
+   "area"
+  ],
+  "freeHit": true,
+  "freeTop": true,
+  "intent": 5,
+  "goldIntents": [
+   4,
+   6,
+   7,
+   8
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 4,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-line",
+  "gold": "line",
+  "rep": 1,
+  "free": [
+   "line",
+   "bar-and-column"
+  ],
+  "freeHit": true,
+  "freeTop": true,
+  "intent": 5,
+  "goldIntents": [
+   4,
+   6,
+   7,
+   8
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 4,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-line",
+  "gold": "line",
+  "rep": 2,
+  "free": [
+   "line",
+   "area"
+  ],
+  "freeHit": true,
+  "freeTop": true,
+  "intent": 5,
+  "goldIntents": [
+   4,
+   6,
+   7,
+   8
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 4,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-contour-isoline",
+  "gold": "contour-isoline",
+  "rep": 0,
+  "free": [
+   "contour-isoline",
+   "locator"
+  ],
+  "freeHit": true,
+  "freeTop": true,
+  "intent": 9,
+  "goldIntents": [
+   19
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 19,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-contour-isoline",
+  "gold": "contour-isoline",
+  "rep": 1,
+  "free": [
+   "contour-isoline",
+   "locator"
+  ],
+  "freeHit": true,
+  "freeTop": true,
+  "intent": 3,
+  "goldIntents": [
+   19
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 19,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-contour-isoline",
+  "gold": "contour-isoline",
+  "rep": 2,
+  "free": [
+   "locator",
+   "contour-isoline"
+  ],
+  "freeHit": true,
+  "freeTop": false,
+  "intent": 14,
+  "goldIntents": [
+   19
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 19,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-choropleth",
+  "gold": "choropleth",
+  "rep": 0,
+  "free": [
+   "choropleth",
+   "diverging-stacked-bar"
+  ],
+  "freeHit": true,
+  "freeTop": true,
+  "intent": 18,
+  "goldIntents": [
+   18,
+   19
+  ],
+  "intentHit": true,
+  "narrowTop2": true,
+  "narrowTop1": true,
+  "narrowAny": true,
+  "intentJ": 10,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-choropleth",
+  "gold": "choropleth",
+  "rep": 1,
+  "free": [
+   "stacked-bar",
+   "choropleth"
+  ],
+  "freeHit": true,
+  "freeTop": false,
+  "intent": 10,
+  "goldIntents": [
+   18,
+   19
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 18,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-choropleth",
+  "gold": "choropleth",
+  "rep": 2,
+  "free": [
+   "choropleth",
+   "diverging-stacked-bar"
+  ],
+  "freeHit": true,
+  "freeTop": true,
+  "intent": 12,
+  "goldIntents": [
+   18,
+   19
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 19,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-population-pyramid",
+  "gold": "population-pyramid",
+  "rep": 0,
+  "free": [
+   "population-pyramid",
+   "diverging-bar"
+  ],
+  "freeHit": true,
+  "freeTop": true,
+  "intent": 1,
+  "goldIntents": [
+   10
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 10,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-population-pyramid",
+  "gold": "population-pyramid",
+  "rep": 1,
+  "free": [
+   "population-pyramid",
+   "diverging-bar"
+  ],
+  "freeHit": true,
+  "freeTop": true,
+  "intent": 1,
+  "goldIntents": [
+   10
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 1,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-population-pyramid",
+  "gold": "population-pyramid",
+  "rep": 2,
+  "free": [
+   "population-pyramid",
+   "diverging-bar"
+  ],
+  "freeHit": true,
+  "freeTop": true,
+  "intent": 10,
+  "goldIntents": [
+   10
+  ],
+  "intentHit": true,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": true,
+  "intentJ": 10,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-bullet",
+  "gold": "bullet",
+  "rep": 0,
+  "free": [
+   "stacked-bar",
+   "diverging-stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 4,
+  "goldIntents": [
+   3,
+   12
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 4,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-bullet",
+  "gold": "bullet",
+  "rep": 1,
+  "free": [
+   "diverging-bar",
+   "bullet"
+  ],
+  "freeHit": true,
+  "freeTop": false,
+  "intent": 4,
+  "goldIntents": [
+   3,
+   12
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 4,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-bullet",
+  "gold": "bullet",
+  "rep": 2,
+  "free": [
+   "diverging-bar",
+   "line"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   3,
+   12
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 5,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-cartogram-area-distortion-and-tile-cartogram",
+  "gold": "cartogram",
+  "rep": 0,
+  "free": [
+   "stacked-bar",
+   "choropleth"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   18
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 10,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-cartogram-area-distortion-and-tile-cartogram",
+  "gold": "cartogram",
+  "rep": 1,
+  "free": [
+   "stacked-bar",
+   "treemap"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   18
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 10,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-cartogram-area-distortion-and-tile-cartogram",
+  "gold": "cartogram",
+  "rep": 2,
+  "free": [
+   "diverging-bar",
+   "choropleth"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   18
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-parallel-coordinates",
+  "gold": "parallel-coordinates",
+  "rep": 0,
+  "free": [
+   "stacked-bar",
+   "diverging-stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   2,
+   11
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-parallel-coordinates",
+  "gold": "parallel-coordinates",
+  "rep": 1,
+  "free": [
+   "stacked-bar",
+   "diverging-stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   2,
+   11
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-parallel-coordinates",
+  "gold": "parallel-coordinates",
+  "rep": 2,
+  "free": [
+   "stacked-bar",
+   "diverging-stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   2,
+   11
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-slope-slopegraph",
+  "gold": "slope",
+  "rep": 0,
+  "free": [
+   "diverging-bar",
+   "slope"
+  ],
+  "freeHit": true,
+  "freeTop": false,
+  "intent": 6,
+  "goldIntents": [
+   3,
+   5,
+   12
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 4,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-slope-slopegraph",
+  "gold": "slope",
+  "rep": 1,
+  "free": [
+   "dumbbell",
+   "slope"
+  ],
+  "freeHit": true,
+  "freeTop": false,
+  "intent": 6,
+  "goldIntents": [
+   3,
+   5,
+   12
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 6,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-slope-slopegraph",
+  "gold": "slope",
+  "rep": 2,
+  "free": [
+   "line",
+   "dumbbell"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 6,
+  "goldIntents": [
+   3,
+   5,
+   12
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 6,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-streamgraph",
+  "gold": "streamgraph",
+  "rep": 0,
+  "free": [
+   "line",
+   "area"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 6,
+  "goldIntents": [
+   15
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-streamgraph",
+  "gold": "streamgraph",
+  "rep": 1,
+  "free": [
+   "stacked-bar",
+   "line"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 6,
+  "goldIntents": [
+   15
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-streamgraph",
+  "gold": "streamgraph",
+  "rep": 2,
+  "free": [
+   "stacked-bar",
+   "line"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 6,
+  "goldIntents": [
+   15
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-diverging-bar",
+  "gold": "diverging-bar",
+  "rep": 0,
+  "free": [
+   "dumbbell",
+   "slope"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 5,
+  "goldIntents": [
+   12
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 5,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-diverging-bar",
+  "gold": "diverging-bar",
+  "rep": 1,
+  "free": [
+   "slope",
+   "dumbbell"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 5,
+  "goldIntents": [
+   12
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 5,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-diverging-bar",
+  "gold": "diverging-bar",
+  "rep": 2,
+  "free": [
+   "dumbbell",
+   "line"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 5,
+  "goldIntents": [
+   12
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 5,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-waterfall-bridge",
+  "gold": "waterfall",
+  "rep": 0,
+  "free": [
+   "stacked-bar",
+   "line"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   12,
+   16
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 5,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-waterfall-bridge",
+  "gold": "waterfall",
+  "rep": 1,
+  "free": [
+   "stacked-bar",
+   "line"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 5,
+  "goldIntents": [
+   12,
+   16
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 5,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-waterfall-bridge",
+  "gold": "waterfall",
+  "rep": 2,
+  "free": [
+   "stacked-bar",
+   "diverging-stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 5,
+  "goldIntents": [
+   12,
+   16
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 16,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-scatter-and-bubble",
+  "gold": "scatter",
+  "rep": 0,
+  "free": [
+   "boxplot",
+   "dumbbell"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 10,
+  "goldIntents": [
+   7,
+   11
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 10,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-scatter-and-bubble",
+  "gold": "scatter",
+  "rep": 1,
+  "free": [
+   "boxplot",
+   "dumbbell"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 10,
+  "goldIntents": [
+   7,
+   11
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 10,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-scatter-and-bubble",
+  "gold": "scatter",
+  "rep": 2,
+  "free": [
+   "connected-scatter",
+   "boxplot"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 10,
+  "goldIntents": [
+   7,
+   11
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 11,
+  "intentJHit": true
+ },
+ {
+  "seed": "gx-lollipop",
+  "gold": "lollipop",
+  "rep": 0,
+  "free": [
+   "dumbbell",
+   "slope"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 4,
+  "goldIntents": [
+   1
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 5,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-lollipop",
+  "gold": "lollipop",
+  "rep": 1,
+  "free": [
+   "bar-and-column",
+   "line"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 5,
+  "goldIntents": [
+   1
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 5,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-lollipop",
+  "gold": "lollipop",
+  "rep": 2,
+  "free": [
+   "dumbbell",
+   "slope"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 5,
+  "goldIntents": [
+   1
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 5,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-pie-and-donut",
+  "gold": "pie-and-donut",
+  "rep": 0,
+  "free": [
+   "bar-and-column",
+   "choropleth"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   14
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-pie-and-donut",
+  "gold": "pie-and-donut",
+  "rep": 1,
+  "free": [
+   "diverging-bar",
+   "stacked-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   14
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ },
+ {
+  "seed": "gx-pie-and-donut",
+  "gold": "pie-and-donut",
+  "rep": 2,
+  "free": [
+   "bar-and-column",
+   "diverging-bar"
+  ],
+  "freeHit": false,
+  "freeTop": false,
+  "intent": 15,
+  "goldIntents": [
+   14
+  ],
+  "intentHit": false,
+  "narrowTop2": false,
+  "narrowTop1": false,
+  "narrowAny": false,
+  "intentJ": 15,
+  "intentJHit": false
+ }
+]
