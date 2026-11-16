@@ -1421,3 +1421,65 @@ not content: nothing was written. To replace the whole file, call write_file …
 
 Harvest since 2026-11-16: 7 gold candidates (local26 3, 12B 2, Qwen 2), all static, 2 stories. The first 26B beeswarm
 passes the craft gates but its session holds the twelve-call loop: not a gold row to train on as is.
+
+## 2026-11-16 — moving formats (web, video, scrolly) on beeswarm and locator
+
+Seeded, craft only, fallback off, osaurus, $0. Kits: beeswarm on gesture kits, locator on per-type kits (POINT_MAPS).
+
+### Qwen3.5-9B, first pass
+
+| Cell | Turns | Time | Exit | Notes |
+|---|---|---|---|---|
+| beeswarm web | 12 | 149 s | 0 | |
+| beeswarm video | 30 | 379 s | 0 | edit_file loop on curly quotes (fixed 22e2bc781); a width disagreement Bun 206.29 px vs Chrome 210.98 px (`shared/chart-video/embedded-faces.ts:230`, out of scope) |
+| beeswarm scrolly | 12 | 196 s | 0 | |
+| locator web | 73 | 1790 s | 0 | own FRENCH_PLACE table; 5 vantage + 4 site-frame refusals; "La région" shows nearly all of Europe |
+| locator video | 14 | 449 s | 0 | the film printed Bucharest / Kyiv: T7 guarded only the gesture kits (fixed 4e77e17ca) |
+| locator scrolly | 98 | 1922 s | 1 | live guard "canvas undrawn" on every card — a kit defect, below |
+
+Fixes:
+- **22e2bc781** — `edit_file` / `edit_beat` match old_text with curly and straight quotes folded.
+- **4e77e17ca** — T7 (`sourceSpelling`) in the per-type web and video locator kits (`printed: "name"` for the web kit, whose places print their name).
+- **3256805b1** — locator scrolly drive: `scrolly-live` hands the reader its warm map once the warm is done
+  (`handle.map = warmMap`); the drive confirmed its MapTiler label filter once, as a flag, on the FIRST map, so the
+  reader got the style's 43 default country labels, in English, with white halos — counted as undrawn on a white
+  ground. The confirmation now belongs to one map. The worked example failed the same guard on the seed's white
+  ground; Qwen's beat re-rendered with the fixed drive: live guard 0 failures.
+- **1efcb516e** — video locator: the kit's subject reading runs before the beat's own check; a point equal to the
+  positions of data.json's lon/lat columns is named ("read Number(r[LON]), not Number(LON)"). Qwen's re-run wrote
+  `lon: Number(LON)`, its check said "it stands in null" three times and the first session stopped.
+
+### Qwen re-run after the fixes
+
+| Cell | Run | Turns | Time | Exit | Notes |
+|---|---|---|---|---|---|
+| locator video | gx-locator-video-seeded-osaurus-qwen-1794833603575 | 69 | 1324 s | 0 | first session stopped on the column-index read (now 1efcb516e); second: T7 named Kiev, Bucarest, Rostov-sur-le-Don in one refusal, one edit, passed |
+| locator scrolly | gx-locator-scrolly-seeded-osaurus-qwen-1794834929798 | 26 (was 98) | 459 s (was 1922) | 0 (was 1) | live guard green; five refusals, each taken (title form, river shape, empty card, empty note) |
+
+Open, not harness-pi's to fix:
+- The committed proof page `proof/scrolly-locator-zaporizhzhia` carries the same drive (identical copy): its reader
+  gets MapTiler's default labels after the warm. The skill-side copy should be checked too (skills/ off-limits here).
+- Width agreement Bun vs Chrome in `shared/chart-video/embedded-faces.ts`.
+- Locator web: vantage refusals cost Qwen ~30 turns; "La région" frames nearly all of Europe.
+
+### 12B (Gemma 12B, mv12, after the Qwen fixes)
+
+| Cell | Run | Turns | Time | Exit | Notes |
+|---|---|---|---|---|---|
+| beeswarm web | gx-beeswarm-web-seeded-osaurus-1794835397961 | 28 | 392 s | 0 (repair loop) | gesture refusals taken; then 16 no-op edits after a verify refusal that said "fix the words" for a motion failure (now a9c3054e0) |
+| beeswarm video | gx-beeswarm-video-seeded-osaurus-1794835791923 | 22 | 431 s | 0 (repair loop) | Remotion width agreement: "20 t : 6 pays" 206.29 px in Bun, 210.98 px in Chrome (2.3 % > 2 %), three times; same family as Qwen's |
+| beeswarm scrolly | gx-beeswarm-scrolly-seeded-osaurus-1794836225101 | 11 | 484 s | 0 | clean |
+| locator web | gx-locator-web-seeded-osaurus-1794836711472 | 32 | 1671 s | 1 | T7 refused "Rostov" correctly; the model's fix never landed: 10 of 11 edits had four leading spaces before `const FRENCH_PLACE` (now fad649df4); 15-min cap |
+| locator video | gx-locator-video-seeded-osaurus-1794838384419 | 12 | 501 s | 0 | one T7 refusal naming five places, taken |
+| locator scrolly | gx-locator-scrolly-seeded-osaurus-1794838887331 | 18 | 1399 s | 0 (second session) | first session: card 2 claimed a fact the file does not hold (refused, Tune), and title form 3 printed "Zaporizhzhia, NaN MW" (`biggest.mw` on objects carrying `value`), refused as "drops the takeaway's claim" without naming the NaN |
+
+Fixes:
+- **a9c3054e0** — web verify: when every failure is about motion (idle frames differ, rest does not restore), verify
+  once more; a persistent motion failure now names the gesture, not the words. Measured residuals across kept runs:
+  true reds ≥ 220 ‰ of pixels, flakes 0.07–2.1 ‰ — no clean threshold, so a second look rather than a wider one.
+- **fad649df4** — `edit_file` / `edit_beat`: an old_text that only adds indentation before its first line, and that
+  the file holds exactly once without it, is applied (new_text loses the same prefix).
+- **f0f8ab29b** — `applyStoryboard` refuses any printed string (top-level fields, their forms, gesture
+  note/card/label) that holds the word NaN or undefined, naming the field and index and the usual cause.
+
+12B summary: 6 cells, 5 pass (two only after the repair loop), locator web failed on edits that never landed (fixed).
