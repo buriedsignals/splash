@@ -19,7 +19,7 @@ import { composeDirections, filedDirections, report as composeReport } from "#sh
 import { directionReachable, readRunDirection } from "#shared/design-base/run-direction.mjs";
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
 import { splashRoot } from "#shared/design-base/splash-root.mjs";
-import { errorText } from "./guards.mjs";
+import { assertPercentScale, errorText } from "./guards.mjs";
 import { remotionFailure } from "./remotion-failure.mjs";
 
 /** A Remotion process that runs longer than this is killed and the beat refused (the target Mac pays every second). */
@@ -87,6 +87,7 @@ export async function refusing(here, body) {
   rmSync(join(here, "look"), { recursive: true, force: true });
   try {
     await body();
+    assertPercentScale();
   } catch (error) {
     refuse(here, errorText(error));
   }

@@ -11,7 +11,7 @@ import { composeDirections, filedDirections, report as composeReport, resolveDir
 import { directionReachable, readRunDirection } from "#shared/design-base/run-direction.mjs";
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
-import { errorText } from "./guards.mjs";
+import { assertPercentScale, errorText } from "./guards.mjs";
 import { failuresBlock, motionOnly } from "./verify-failures.mjs";
 
 /** The viewport whose verify-web screenshot is the one to look at (`fit-<w>x<h>.png`). */
@@ -71,6 +71,7 @@ export async function refusing(here, body) {
   rmSync(join(here, "shots"), { recursive: true, force: true });
   try {
     await body();
+    assertPercentScale();
   } catch (error) {
     refuse(here, errorText(error));
   }

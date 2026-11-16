@@ -62,6 +62,37 @@ function explainFaults(beat) {
   }
 }
 
+// What beat.format printed, held for assertPercentScale. gx-small-multiples web, Qwen3.5-9B (2026-11-16): y returned
+// low-carbon / total and format printed it with "%" — Sweden 1,0 %, Poland 0,3 % — and every guard passed, since the
+// takeaway ("all sixteen rose") holds on fractions too.
+let printed = null;
+
+/** Wraps beat.format so that what it prints can be checked once the render is done. */
+export function recordPrinted(beat) {
+  printed = [];
+  if (typeof beat?.format !== "function") return;
+  const format = beat.format;
+  const log = printed;
+  beat.format = function (v, ...rest) {
+    const out = format.call(this, v, ...rest);
+    if (typeof v === "number" && Number.isFinite(v) && typeof out === "string") log.push([v, out]);
+    return out;
+  };
+}
+
+/** A fraction of one printed as a percentage: at least three values, all within ±1 and one of them at least 0.5. */
+export function assertPercentScale() {
+  // The number the text shows, compared with the value: `${Math.round(v * 100)} %` over fractions is right.
+  const number = (out) => Number((/-?\d+(?:[.,]\d+)?/.exec(out.replace(/[\s\u00a0\u202f]/g, "")) ?? [NaN])[0].replace(",", "."));
+  const shown = (printed ?? []).filter(([v, out]) => /\d[\s\u00a0\u202f]*%\s*$/.test(out) && Math.abs(number(out) - v) < 0.5);
+  const values = [...new Set(shown.map(([v]) => v))];
+  if (values.length < 3 || values.some((v) => Math.abs(v) > 1) || Math.max(...values.map(Math.abs)) < 0.5) return;
+  const [v, out] = shown.find(([x]) => Math.abs(x) >= 0.5);
+  throw new Error(
+    `format prints ${v} as "${out}": every value it printed is between 0 and 1, so they are fractions, not percentages — a value that works: multiply the measure by 100 where it is computed (y: (r) => 100 * part / total), and keep format as it is`,
+  );
+}
+
 /** @param {any} beat @param {string} here @param {{ title?: string, standfirst?: string, source?: string, basemap?: string }} [options] */
 // A printed NaN or undefined is a number or a word built from nothing. gx-locator scrolly, 12B (2026-11-16): a title form
 // read biggest.mw on objects that carry value; the claim guard said the form dropped the takeaway, never the NaN.
@@ -86,6 +117,7 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
     throw new Error("beat.mjs has no default export: put every field in one object, export default { title: …, limits: …, source: …, check(…) { … } } (see CONTRACT.md)");
   explainFaults(beat);
   refusePrintedNothing(beat);
+  recordPrinted(beat);
   const field = front(here);
   if (!field) return;
   const credit = field("credit");

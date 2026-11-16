@@ -9,7 +9,7 @@ const table = readTable(import.meta.dirname);
 // One panel per country: members() gives each entity once, already named in the page's language (data.json's
 // entity_fr when the story is French) with the where that selects its rows — no names table, no code-or-entity
 // choice. y is the column the takeaway measures; for a measure data.json does not hold as one column, y is a
-// function of the row read by column name, e.g. y: (r) => r.solar / (r.solar + r.gas + r.coal).
+// function of the row read by column name, e.g. y: (r) => 100 * r.solar / (r.solar + r.gas + r.coal) — times 100, as format prints "%".
 const panels = members(table).map((m) => ({ name: m.name, series: series(table, { x: "year", y: "solar_share", where: m.where }) }));
 
 /** The forms the sentences need, keyed by the name the panel shows: with its determiner, lowercase for a list and
