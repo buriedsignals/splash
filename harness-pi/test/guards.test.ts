@@ -178,6 +178,17 @@ describe("applyStoryboard", () => {
     );
   });
 
+  // gx-small-multiples web (Qwen3.5-9B, gx-small-multiples-web-seeded-osaurus-qwen-1794854958407): detail called the
+  // example's rank(p.rank) helper without copying its const rank = …; the refusal listed rank among the keys detail
+  // receives, and the same refusal came back twice.
+  it("should say a bare name that is also a received key is a function beat.mjs must define", () => {
+    const b = {
+      detail: (p: { rank: number }) => `${(globalThis as any).eval("rank")(p.rank)}`,
+    };
+    applyStoryboard(b, mkdtempSync(join(tmpdir(), "splash-fn-")));
+    expect(() => b.detail({ name: "Suède", rank: 1 } as never)).toThrow(/p\.rank is the number[\s\S]*const rank = /);
+  });
+
   it("should leave a check's own refusal word for word", () => {
     const b = {
       check() {

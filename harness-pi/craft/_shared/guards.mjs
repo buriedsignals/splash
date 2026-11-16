@@ -49,6 +49,15 @@ function explainFaults(beat) {
     const explain = (error, args) => {
       if (!(error instanceof TypeError || error instanceof ReferenceError)) return error;
       const line = /\/beat\.mjs:(\d+)/.exec(String(error.stack))?.[1];
+      // A helper of the example called by its bare name, which is also a key the function receives (rank(p.rank)):
+      // listing that key among what it receives read as "you already have it" (Qwen3.5-9B, twice in a row).
+      const bare = error instanceof ReferenceError && /^(\w+) is not defined$/.exec(String(error.message))?.[1];
+      if (bare && args.some((a) => a && typeof a === "object" && Object.hasOwn(a, bare))) {
+        const param = /^\s*(?:async\s*)?(?:function\s*\w*\s*)?\(?\s*(\w+)/.exec(String(fn))?.[1] ?? "p";
+        return new Error(
+          `beat.mjs's ${key}(…) failed${line ? ` at line ${line}` : ""}: ${bare}(…) is called as a function, but nothing in beat.mjs defines it — ${param}.${bare} is the number ${key} receives, not a function. A value that works: define it at the top of beat.mjs, e.g. ${bare === "rank" ? 'const rank = (n) => (n === 1 ? "1re" : `${n}e`);' : `const ${bare} = (v) => String(v);`} (the example defines its helpers there), or print ${param}.${bare} directly.`,
+        );
+      }
       return new Error(`beat.mjs's ${key}(…) failed${line ? ` at line ${line}` : ""}: ${error.message}. ${key} receives ${shapeOf(args)} and nothing else: read anything more from beat.mjs's own constants, by those keys.`);
     };
     beat[key] = function (...args) {
