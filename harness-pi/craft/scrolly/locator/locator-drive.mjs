@@ -31,12 +31,19 @@ export function applyLocatorState(root, state) {
   if (shownLive) paintNativeLabels(c, state);
   // A READER WHO HAS NOT YET SCROLLED must still get the confirmed filter, not only one who moves: retried off
   // the animation frame, bounded, so an idle page still converges without costing anything once it has.
-  if (shownLive && !c.nativeConfirmed && !c.nativeRetryQueued && (c.nativeRetries || 0) < 240) {
+  // THE CONFIRMATION BELONGS TO ONE MAP: `scrolly-live` hands the reader its warm map once the warm is done
+  // (`handle.map = warmMap`), a second map whose label layers this drive has never touched. A confirmation held
+  // as a flag outlived that handover and left the reader the style's own labels (gx-locator scrolly, 2026-11-16).
+  if (shownLive && c.retriesFor !== c.handle.map) {
+    c.retriesFor = c.handle.map;
+    c.nativeRetries = 0;
+  }
+  if (shownLive && c.nativeConfirmedOn !== c.handle.map && !c.nativeRetryQueued && (c.nativeRetries || 0) < 240) {
     c.nativeRetryQueued = true;
     c.nativeRetries = (c.nativeRetries || 0) + 1;
     requestAnimationFrame(() => {
       c.nativeRetryQueued = false;
-      if (c.handle && c.handle.ready && !c.nativeConfirmed) paintNativeLabels(c, JSON.parse(c.rootRef.dataset.state || "{}"));
+      if (c.handle && c.handle.ready && c.nativeConfirmedOn !== c.handle.map) paintNativeLabels(c, JSON.parse(c.rootRef.dataset.state || "{}"));
     });
   }
 
@@ -57,7 +64,7 @@ export function applyLocatorState(root, state) {
 function paintNativeLabels(c, state) {
   const clamp = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
   const map = c.handle.map;
-  if (!c.nativeConfirmed) {
+  if (c.nativeConfirmedOn !== map) {
     // `isStyleLoaded()` waits on every resource the style names, glyphs included, and can stay false for a
     // while after the layers this beat filters already exist — gating on it left the filter set-up racing the
     // page's first paint. THE SET-UP ITSELF WAS ALSO FOUND TO RACE SOMETHING ELSE (found live, 2026-09-15: even
@@ -66,10 +73,11 @@ function paintNativeLabels(c, state) {
     // frame until the filter it produced is confirmed in place, not run once and trusted.
     if (!map.getLayer("Country labels")) return;
     setUpNativeLabels(map, c.native);
-    c.nativePaint = c.nativePaint || {};
+    if (c.nativeOn !== map) c.nativePaint = {};
+    c.nativeOn = map;
     const applied = JSON.stringify(map.getFilter("Country labels"));
     if (applied === JSON.stringify(["all", ["==", ["get", "class"], "country"], ["has", "iso_a2"], ["in", ["get", "iso_a2"], ["literal", c.native.countryCodes]]]))
-      c.nativeConfirmed = true;
+      c.nativeConfirmedOn = map;
   }
   const set = (id, property, value) => {
     const key = `${id}.${property}`;
