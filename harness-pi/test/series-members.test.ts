@@ -40,3 +40,11 @@ describe("series with a row function for y", () => {
     expect(() => series(table, { x: "year", y: (r) => r.wind, where: { code: "AUT" } })).toThrow(/no column "wind"/);
   });
 });
+
+// gx-small-multiples web, Qwen3.5-9B (gx-small-multiples-web-seeded-osaurus-qwen-1794854473914): members().map without
+// where: m.where; the refusal said "add a where filter on the column that splits them" and named neither.
+describe("series over several entities' rows", () => {
+  it("should name the column that splits them and m.where", () => {
+    expect(() => series(table, { x: "year", y: "solar" })).toThrow(/where: \{ entity: [\s\S]*m\.where/);
+  });
+});

@@ -32,6 +32,7 @@ export function series(table, { x, y, where = {}, from = -Infinity, to = Infinit
   const rows = table.rows.filter((r) => filters.every(([i, v]) => String(r[i]) === v));
   if (!rows.length) throw new Error(`no row of data.json matches ${JSON.stringify(where)}`);
   const points = new Map();
+  const byYear = new Map();
   for (const r of rows) {
     const year = Number(r[xi]);
     if (!Number.isFinite(year) || year < from || year > to) continue;
@@ -39,8 +40,19 @@ export function series(table, { x, y, where = {}, from = -Infinity, to = Infinit
     if (raw === "-" || raw === null || raw === "") continue;
     const value = Number(String(raw).replace(/\s/g, "").replace(",", "."));
     if (!Number.isFinite(value)) throw new Error(`${yi < 0 ? "y" : y} for ${year} is ${JSON.stringify(raw)}, not a number`);
-    if (points.has(year)) throw new Error(`two rows give ${yi < 0 ? "y" : y} for ${year}: add a where filter on the column that splits them`);
+    if (points.has(year)) {
+      // The first text column on which the two rows differ is the one to filter on (Qwen3.5-9B forgot where: m.where).
+      const other = byYear.get(year);
+      const split = table.columns.findIndex((c, i) => c.type === "text" && String(other[i]) !== String(r[i]));
+      const name = split >= 0 ? table.columns[split].name : null;
+      throw new Error(
+        name
+          ? `two rows give ${yi < 0 ? "y" : y} for ${year} (${name} ${JSON.stringify(other[split])} and ${JSON.stringify(r[split])}): one series is one ${name} — a value that works: where: { ${name}: ${JSON.stringify(other[split])} }; inside members(table).map((m) => …), that is where: m.where`
+          : `two rows give ${yi < 0 ? "y" : y} for ${year}: add a where filter on the column that splits them`,
+      );
+    }
     points.set(year, value);
+    byYear.set(year, r);
   }
   return [...points].sort((a, b) => a[0] - b[0]).map(([year, value]) => ({ year, value }));
 }
