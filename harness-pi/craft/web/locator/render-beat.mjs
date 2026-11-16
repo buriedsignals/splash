@@ -23,6 +23,7 @@ import { countryGround, plateGrounds, plateTints } from "#shared/map-beat/tints.
 import { applyStoryboard, assertHeadlineNumbersDrawn } from "./guards.mjs";
 import { ensurePlate, liveAssets, mapWeb, maptilerKey, renderLiveMapPage, verifyLiveMap } from "./map-web.mjs";
 import { plateWaterField } from "./plate-water.mjs";
+import { sourceSpelling } from "./place-labels.mjs";
 import { chartWeb, pickDirection, plain, plainRegisters, refusing, storyLanguage } from "./web.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -87,6 +88,7 @@ await refusing(HERE, async () => {
     where(`places[${i}]`, p);
     if (typeof p.priority !== "number" || !Number.isFinite(p.priority)) throw new Error(`places[${i}].priority must be a number (e.g. the population)`);
   });
+  sourceSpelling(beat.places, beat.places, beat.lang ?? storyLanguage(HERE), { printed: "name" });
 
   // ── THE LADDER OF REMOVES, DERIVED ──────────────────────────────────────────────────────────
   if (!Array.isArray(beat.removes) || beat.removes.length < 2 || beat.removes.length > 5)

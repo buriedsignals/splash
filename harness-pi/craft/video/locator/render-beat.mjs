@@ -17,7 +17,8 @@ import { sizeFor, videoExportSize } from "#shared/chart-video/sizes.mjs";
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
 import { applyStoryboard, assertHeadlineNumbersDrawn } from "./guards.mjs";
 import { mapTilerKey, measureMap, renderMapVideo } from "./map-video.mjs";
-import { assertEventFramesReadable, pickDirection, plain, refusing } from "./video.mjs";
+import { sourceSpelling } from "./place-labels.mjs";
+import { assertEventFramesReadable, pickDirection, plain, refusing, storyLanguage } from "./video.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const NB = " ";
@@ -33,6 +34,8 @@ await refusing(HERE, async () => {
   if (missing.length) throw new Error(`beat.mjs is missing ${missing.join(", ")}: give each as a field of the default export (export default { …, ${missing[0]}: … }), not as a separate export (see CONTRACT.md)`);
   for (const field of ["valueText", "check"]) if (typeof beat[field] !== "function") throw new Error(`beat.mjs: ${field} must be a function (see CONTRACT.md)`);
   for (const field of ["eyebrow", "country"]) if (typeof beat[field] !== "string") throw new Error(`beat.mjs: ${field} must be a string (see CONTRACT.md)`);
+  if (!Array.isArray(beat.places)) throw new Error("beat.mjs: places must be an array of { lon, lat, name, label?, priority } (see CONTRACT.md)");
+  sourceSpelling(beat.places, beat.places, beat.lang ?? storyLanguage(HERE));
 
   // ── the claim first, on the map's own shapes; then what the gesture can show (./subject.mjs)
   const { mapOf, subjectOf } = await import("./subject.mjs");

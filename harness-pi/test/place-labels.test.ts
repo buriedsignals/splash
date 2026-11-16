@@ -47,4 +47,11 @@ describe("sourceSpelling — a locator place left in the source's spelling on a 
   it("should accept a page with no language", () => {
     expect(sourceSpelling(["Bucharest"], [{ name: "Bucharest", ...BUCHAREST }], null)).toBeUndefined();
   });
+  // gx-locator web (the per-type kit, Qwen3.5-9B, 2026-11-16): its places print their name; no label field exists.
+  it("should refuse a printed name in the source's spelling when the kit prints names", () => {
+    expect(() => sourceSpelling(["Bucharest"], [{ name: "Bucharest", ...BUCHAREST }], "fr", { printed: "name" })).toThrow('{ name: "Bucarest" }');
+  });
+  it("should accept a translated name when the kit prints names", () => {
+    expect(sourceSpelling([{ name: "Bucarest", ...BUCHAREST }], [{ name: "Bucarest", ...BUCHAREST }], "fr", { printed: "name" })).toBeUndefined();
+  });
 });
