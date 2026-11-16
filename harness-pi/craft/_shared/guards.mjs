@@ -532,6 +532,16 @@ function spacedKey(e) {
   return before && new RegExp(`^${found[1]}\\s*:`).test(line.slice(at)) ? `${before[1].split(/[,{]\s*/).pop()} ${found[1]}` : null;
 }
 
+/** The whole key of `Pays-Bas: value`, when a build error stopped at its hyphen (gx-small-multiples web, Qwen3.5-9B). */
+function hyphenKey(e) {
+  if (!e?.position || !/^Expected "\}" but found "-"$/.test(String(e.message ?? ""))) return null;
+  const line = String(e.position.lineText ?? "");
+  const word = /[\p{L}_$][\p{L}\d_$]*(?:-[\p{L}\d_$]+)+(?=\s*:)/gu;
+  const at = e.position.column ? e.position.column - 1 : -1;
+  for (const m of line.matchAll(word)) if (at < 0 || (m.index <= at && at <= m.index + m[0].length)) return m[0];
+  return null;
+}
+
 /** The line before a declaration the parser stopped at, when it ends with "," (a statement closed like a field). */
 function commaBefore(e) {
   if (!e?.position?.file || !/^Expected identifier but found "(const|let|var|function)"$/.test(String(e.message ?? ""))) return null;
@@ -667,6 +677,9 @@ export function errorText(error) {
       return `${e.message}${where}: line ${comma} ends with "," but closes a statement, not a field — a value that works: end line ${comma} with ";"`;
     const copy = secondCopy(e);
     if (copy) return copy;
+    const hyphen = hyphenKey(e);
+    if (hyphen)
+      return `${hyphen}: ... (line ${e.position.line}) is a key with a hyphen, written without quotes — a value that works: "${hyphen}": (quote the key; quote every hyphenated key of that object)`;
     const key = spacedKey(e);
     if (key)
       return `${key}: ... (line ${e.position.line}) is a key with a space, written without quotes — a value that works: "${key}": (quote the key)`;

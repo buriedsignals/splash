@@ -44,3 +44,12 @@ describe("edit_file given a whole file's content", () => {
     expect(await send({ old_text: "a = 1" })).toContain("new_text");
   });
 });
+
+// gx-small-multiples web, Qwen3.5-9B (gx-small-multiples-web-seeded-osaurus-qwen-1794851937653): { old_text, content }
+// three times, content being the replacement; each refusal said only "missing: new_text".
+describe("edit_file given old_text and content", () => {
+  it("should apply content as the text that replaces old_text", async () => {
+    await send({ old_text: "a = 1", content: "a = 2" });
+    expect(readFileSync(join(bases.storyDir, "beats", "1", "beat.mjs"), "utf8")).toBe("const a = 2;\nexport default a;\n");
+  });
+});

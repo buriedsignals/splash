@@ -135,6 +135,25 @@ export function resolveInStory(bases: Bases, raw: string): string {
   return abs;
 }
 
+/** The story's own copies of a file named like `path` (a kit file such as series.mjs lives in beats/<id>/): Qwen3.5-9B
+ *  spent ~25 turns guessing craft/_shared/series.mjs and its neighbours (gx-small-multiples web, 2026-11-16). */
+function kitCopies(bases: Bases, path: string): string[] {
+  const name = basename(path);
+  const beats = join(bases.storyDir, "beats");
+  if (!name.includes(".") || !existsSync(beats)) return [];
+  return readdirSync(beats)
+    .map((b) => `beats/${b}/${name}`)
+    .filter((rel) => existsSync(join(bases.storyDir, rel)));
+}
+
+function absentKitFile(bases: Bases, path: string, abs: string | null): Error | null {
+  if (abs && existsSync(abs)) return null;
+  const copies = kitCopies(bases, path);
+  return copies.length
+    ? new Error(`${path} does not exist; the beat's own copy is ${copies.join(", ")} — read that (it is the file "./${basename(path)}" imports)`)
+    : null;
+}
+
 /** A missing path, answered with what its nearest existing folder holds, in the path as the model wrote it
  *  (Qwen3.5-9B guessed file and folder names in a worked example, gx static cells, 2026-11-13). */
 function missing(path: string, abs: string): string {
@@ -450,8 +469,13 @@ export function fsTools(bases: Bases) {
     async execute(id, { path }, _signal, _onUpdate, ctx) {
       const done = answeredFor(bases, path);
       if (done) return text(done);
-      const abs = resolveReadable(bases, path);
-      if (!existsSync(abs)) throw new Error(missing(path, abs));
+      let abs: string;
+      try {
+        abs = resolveReadable(bases, path);
+      } catch (e) {
+        throw absentKitFile(bases, path, null) ?? e;
+      }
+      if (!existsSync(abs)) throw absentKitFile(bases, path, abs) ?? new Error(missing(path, abs));
       // gx-area static (Qwen3.5-9B, 2026-11-15): a PNG read as text is bytes that cost tokens and show nothing.
       if (/\.(png|jpe?g|webp|gif|mp4)$/i.test(abs))
         throw new Error(`${path} is an image; read_file returns text only — call look with path "${path}" to see it`);
@@ -599,6 +623,8 @@ function editPair(args: { old_text?: string; new_text?: string; content?: string
     throw new Error(
       `edit_file takes old_text and new_text, not content: nothing was written. To replace the whole file, call ${write}; to change part of it, call edit_file with { old_text: <a few exact lines from the file>, new_text: <what replaces them> }`,
     );
+  // { old_text, content }: content can only be the replacement (Qwen3.5-9B, gx-small-multiples web, 3 refusals in a row).
+  if (typeof old_text === "string" && new_text === undefined && typeof content === "string") return { old_text, new_text: content };
   if (typeof old_text !== "string" || typeof new_text !== "string")
     throw new Error(
       `edit_file needs both old_text and new_text (missing: ${[old_text === undefined && "old_text", new_text === undefined && "new_text"].filter(Boolean).join(", ")}): nothing was written`,

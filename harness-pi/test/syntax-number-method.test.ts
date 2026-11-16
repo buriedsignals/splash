@@ -31,3 +31,12 @@ describe("a syntax error in beat.mjs", () => {
     expect(text).not.toContain("toFixed");
   });
 });
+
+// gx-small-multiples web, Qwen3.5-9B (gx-small-multiples-web-seeded-osaurus-qwen-1794851937653): an article table with
+// Pays-Bas: and Royaume-Uni: unquoted; the refusal said only 'Expected "}" but found "-"'.
+describe("a hyphenated key written without quotes", () => {
+  it("should name the whole key and quoting it as the value that works", async () => {
+    const text = await loadError('const a = {\n  France: "la",\n  Pays-Bas: "les",\n};\nexport default { a };\n');
+    expect(text).toMatch(/Pays-Bas[\s\S]*value that works: "Pays-Bas":/);
+  });
+});
