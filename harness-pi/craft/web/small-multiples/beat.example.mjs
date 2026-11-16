@@ -15,13 +15,14 @@ const panels = members(table).map((m) => ({ name: m.name, series: series(table, 
 /** The forms the sentences need, keyed by the name the panel shows: with its determiner, lowercase for a list and
  *  capitalised to open a sentence. Written out, because "l'Espagne" and "la Pologne" are not a function of anything;
  *  a name missing here is printed bare. */
+// Keys in quotes: "Pays-Bas" and "Royaume-Uni" are not identifiers.
 const ARTICLE = {
-  France: ["la France", "La France"],
-  Allemagne: ["l'Allemagne", "L'Allemagne"],
-  Italie: ["l'Italie", "L'Italie"],
-  Pologne: ["la Pologne", "La Pologne"],
-  Roumanie: ["la Roumanie", "La Roumanie"],
-  Espagne: ["l'Espagne", "L'Espagne"],
+  "France": ["la France", "La France"],
+  "Allemagne": ["l'Allemagne", "L'Allemagne"],
+  "Italie": ["l'Italie", "L'Italie"],
+  "Pologne": ["la Pologne", "La Pologne"],
+  "Roumanie": ["la Roumanie", "La Roumanie"],
+  "Espagne": ["l'Espagne", "L'Espagne"],
 };
 
 const first = (p) => p.series[0].value;
