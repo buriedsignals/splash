@@ -888,7 +888,12 @@ export function assertPanelsAccounted(names, here, beat) {
   if (at < 0) at = columns.findIndex((c) => c.type === "text");
   if (at < 0) return;
   const all = [...new Set((table.rows ?? []).map((r) => r[at]).filter((v) => typeof v === "string" && v.trim()))];
-  const dropped = all.filter((e) => !names.includes(e));
+  // A panel may carry the entity's localized name (entity_fr, written by the analyst for a non-English page) or its
+  // code: gx-small-multiples web (Qwen3.5-9B, 2026-11-16) drew sixteen French names and was told "2 of 16".
+  const base = columns[at].name;
+  const aliases = columns.map((c, i) => (c.name.startsWith(`${base}_`) || /^code$/i.test(c.name) ? i : -1)).filter((i) => i >= 0);
+  const drawn = (e) => names.includes(e) || (table.rows ?? []).some((r) => r[at] === e && aliases.some((i) => names.includes(r[i])));
+  const dropped = all.filter((e) => !drawn(e));
   if (!dropped.length) return;
   const said = typeof beat.foldNote === "function" ||
     [beat.limits].flat().some((l) => typeof l === "string" && l.includes(String(all.length)) && l.includes(String(all.length - dropped.length)));
