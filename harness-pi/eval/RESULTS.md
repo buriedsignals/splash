@@ -1404,3 +1404,20 @@ Open: T1 not exercised in any of the 8 cells. T7 refuses one place per render (1
 | Cell | Model | Run | Turns | Outcome |
 |---|---|---|---|---|
 | locator | 12B | gx-locator-seeded-osaurus-1794825030802 | 9 (was 15) | One refusal named Kyiv, Bucharest and Rostov; one edit fixed all three. Exit 0, 217 s (was 284 s). |
+
+## 2026-11-16 — teacher runs on the local 26B-A4B (T7/T8 cells)
+
+Route llama-server, 26B-A4B Q4_0 + mmproj Q8_0, seeded, craft only, fallback off, 30 min cap, $0.
+
+| Cell | Run | Turns | Outcome |
+|---|---|---|---|
+| locator | gx-locator-seeded-local26-1794825282159 | 7, 62 s | Wrote a FRENCH table without Rostov; T7 named it once; one edit; exit 0. |
+| beeswarm | gx-beeswarm-seeded-local26-1794825350813 | 31, 657 s | Page-language guard refused `col("entity")`; then edit_file was sent write_file's `{ content }` twelve times, Pi's schema error never named write_file, the beat stayed unchanged under the same refusal; stop "same failure 3x"; recovered with write_file; exit 0. |
+| beeswarm | gx-beeswarm-seeded-local26-1794826333766 (after ee9eca9f5) | 13, 116 s | Read `col("entity_fr")` first time; two note refusals (gap 38,2 → 38,0) taken; exit 0. Did not call edit_file, so ee9eca9f5 is not exercised live here. |
+
+Fix **ee9eca9f5** — edit_file accepts `content` in its schema only to refuse it: "edit_file takes old_text and new_text,
+not content: nothing was written. To replace the whole file, call write_file …". Tested through Pi's own
+`validateToolArguments`; mutation (branch off) → 1 fail.
+
+Harvest since 2026-11-16: 7 gold candidates (local26 3, 12B 2, Qwen 2), all static, 2 stories. The first 26B beeswarm
+passes the craft gates but its session holds the twelve-call loop: not a gold row to train on as is.
