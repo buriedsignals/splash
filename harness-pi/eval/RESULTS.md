@@ -1376,3 +1376,25 @@ Question per item: can code remove the decision from the model? Measured on kept
 - **T4 residue (tautological pull-back note).** A guard on a note repeating the title's figure was dropped: a
   reference line's note states the mean the title cites by design. Stays Tune.
 - **H3** row in TUNE.md was stale: closed by d3d06f8ef.
+
+## 2026-11-16 — live re-measure of T1/T7/T8
+
+Seeded static cells, thinking off, one model at a time.
+
+| Cell | Model | Run | Turns | Outcome |
+|---|---|---|---|---|
+| beeswarm | 12B | before d0e8f2882 | — | "Kuwait" refused by record_gestures; the reread then said "edit beat.mjs", 3 rereads, stop "same failure 3x". |
+| beeswarm | 12B | after d0e8f2882 | 7 | T8 fired: Allemagne, Canada, Norvège, Turkménistan refused; computed set taken; French render. |
+| locator | 12B | before 48261b7a2 | 10 | Render exit 0, but `label: c.name` bypassed T7: page printed "Bucharest". |
+| locator | Qwen | before 48261b7a2 | 25 | Same `label: c.name` bypass. |
+| beeswarm | Qwen | before 2f168824d | 7 | Set computed (T8 not needed), but drew `col("entity")`: "Saudi Arabia", "Kuwait" on a French page. |
+| locator | 12B | gx-locator-seeded-osaurus-1794786931537 | 15 | T7 refused "Kyiv", then "Rostov"; final labels Kiev, Bucarest, Rostov-sur-le-Don. Exit 0. |
+| locator | Qwen | gx-locator-seeded-osaurus-qwen-1794787218362 | 9 | Wrote `places: []` first: T7 not exercised. Exit 0. |
+| beeswarm | Qwen | gx-beeswarm-seeded-osaurus-qwen-1794787363682 | 16 | Page-language guard refused 138 English names → `col("entity_fr")`; then T8 refused Chine/États-Unis/Russie/Australie beside the 20 t line → computed six. Exit 0, French. |
+
+Fixes:
+- **d0e8f2882** — a reread after a record_gestures refusal points back at record_gestures with the refusal, not at beat.mjs.
+- **48261b7a2** — T7: a label equal (folded) to the source spelling is refused like a bare name; the refusal no longer offers the source spelling as a value.
+- **2f168824d** — new: a drawn name read from column X when data.json carries `X_<lang>` with a different value, on a non-English page, is refused with `col("X_<lang>")` as the value that works. Lives in assertNoAggregates (all gesture families). Mutation: guard call removed → 2 fail.
+
+Open: T1 not exercised in any of the 8 cells. T7 refuses one place per render (12B needed two rounds); could list all at once.
