@@ -261,6 +261,17 @@ const foldQuotes = (t: string) =>
  * "de l'humanité" for the file's "de l’humanité" ten times, each refused with the exact line quoted back
  * (gx-beeswarm video, 2026-11-16); a model that cannot type ’ cannot copy it either.
  */
+/** old_text and new_text with the indentation old_text adds before its first line dropped, when the file holds the
+ *  passage only without it. gx-locator web, 12B (gx-locator-web-seeded-osaurus-1794836711472): the beat held
+ *  `const FRENCH_PLACE = {` at column 0, the model typed four spaces before it eleven times, and every edit was refused. */
+function dropAddedIndent(body: string, oldText: string, newText: string): [string, string] {
+  const lead = /^[ \t]+/.exec(oldText)?.[0];
+  if (!lead || body.includes(oldText)) return [oldText, newText];
+  const bare = oldText.slice(lead.length);
+  if (body.split(bare).length - 1 !== 1) return [oldText, newText];
+  return [bare, newText.startsWith(lead) ? newText.slice(lead.length) : newText];
+}
+
 function locate(body: string, oldText: string): { at: number; length: number } | { count: number } {
   const count = body.split(oldText).length - 1;
   if (count === 1) return { at: body.indexOf(oldText), length: oldText.length };
@@ -508,7 +519,7 @@ export function fsTools(bases: Bases) {
     }),
     async execute(_id, args) {
       const { path } = args;
-      const { old_text, new_text } = editPair(args, "write_file with { path, content }");
+      let { old_text, new_text } = editPair(args, "write_file with { path, content }");
       if (old_text.length > MAX_EDIT_OLD || new_text.length > MAX_EDIT_NEW) {
         throw new Error(
           `edit too large (old_text ${old_text.length}/${MAX_EDIT_OLD}, new_text ${new_text.length}/${MAX_EDIT_NEW} characters); split it into smaller edits (each old_text a few lines that start the part to change); write_file only for a whole file of at most ${MAX_WRITE} characters`,
@@ -521,6 +532,7 @@ export function fsTools(bases: Bases) {
       const abs = resolveInStory(bases, path);
       assertWritable(bases, abs);
       const body = readFileSync(abs, "utf8");
+      [old_text, new_text] = dropAddedIndent(body, old_text, new_text);
       const found = locate(body, old_text);
       if ("count" in found)
         throw new Error(
@@ -628,7 +640,7 @@ export function beatTools(bases: Bases, beat: string) {
       content: Type.Optional(Type.String()),
     }),
     async execute(_id, args) {
-      const { old_text, new_text } = editPair(args, "write_file with { content }");
+      let { old_text, new_text } = editPair(args, "write_file with { content }");
       if (old_text.length > MAX_EDIT_OLD || new_text.length > MAX_EDIT_NEW)
         throw new Error(
           `edit too large (old_text ${old_text.length}/${MAX_EDIT_OLD}, new_text ${new_text.length}/${MAX_EDIT_NEW} characters); split it into smaller edits (each old_text a few lines that start the part to change); write_file only for a whole file of at most ${MAX_WRITE} characters`,
@@ -641,6 +653,7 @@ export function beatTools(bases: Bases, beat: string) {
       if (!existsSync(target))
         throw new Error(`${file} does not exist yet: write it with write_file`);
       const body = readFileSync(target, "utf8");
+      [old_text, new_text] = dropAddedIndent(body, old_text, new_text);
       const found = locate(body, old_text);
       if ("count" in found)
         throw new Error(
