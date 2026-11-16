@@ -2,35 +2,24 @@
 // progressé, les plus bas le plus vite », told in time. Every number the video draws is COMPUTED from data.json; the
 // correlation, the two orders and the two ringed panels are derived by render-beat.mjs, and check() tests the claim on
 // the same data.
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { members, readTable, series } from "./series.mjs";
 
-const data = JSON.parse(readFileSync(join(import.meta.dirname, "data.json"), "utf8"));
-// A column by its name; an index already looked up passes through ([col("a"), col("b")].map(col) is harmless).
-const col = (name) => {
-  if (Number.isInteger(name)) return name;
-  const i = data.columns.findIndex((c) => c.name === name);
-  if (i < 0) throw new Error(`data.json has no column ${JSON.stringify(name)}; its columns are ${data.columns.map((c) => c.name).join(", ")}`);
-  return i;
-};
+const table = readTable(import.meta.dirname);
 const FROM = 2000;
 const TO = 2024;
 const CLEAN = ["hydro_generation__twh", "wind_generation__twh", "solar_generation__twh", "bioenergy_stacked_generation__twh", "other_renewables_generation__twh", "nuclear_generation__twh"];
 const FOSSIL = ["gas_generation__twh", "coal_generation__twh", "oil_generation__twh"];
-const FRENCH = {
-  Austria: "Autriche", Belgium: "Belgique", Czechia: "Tchéquie", Denmark: "Danemark", Finland: "Finlande", France: "France", Germany: "Allemagne",
-  Greece: "Grèce", Ireland: "Irlande", Italy: "Italie", Netherlands: "Pays-Bas", Poland: "Pologne", Portugal: "Portugal", Spain: "Espagne", Sweden: "Suède",
-  "United Kingdom": "Royaume-Uni",
-};
-const ENTITY = col("entity");
-const YEAR = col("year");
-// The low-carbon share of a country's generation in one year, in percent.
-const shareOf = (entity, year) => {
-  const r = data.rows.find((z) => z[ENTITY] === entity && Number(z[YEAR]) === year);
-  const sum = (keys) => keys.reduce((s, k) => s + Number(r[col(k)] || 0), 0);
-  return (sum(CLEAN) / (sum(CLEAN) + sum(FOSSIL))) * 100;
-};
-const panels = [...new Set(data.rows.map((r) => r[ENTITY]))].map((entity) => ({ name: FRENCH[entity] ?? entity, from: shareOf(entity, FROM), to: shareOf(entity, TO) }));
+// The low-carbon share of one row's generation, in percent (times 100, as the unit prints "%"): y is a function of the
+// row read by column name, summing only the generation columns the measure names — never every column.
+const sum = (r, keys) => keys.reduce((s, k) => s + (Number(r[k]) || 0), 0);
+const share = (r) => (100 * sum(r, CLEAN)) / (sum(r, CLEAN) + sum(r, FOSSIL));
+// One panel per country: members() gives each entity once, already named in the page's language (data.json's
+// entity_fr when the story is French) with the where that selects its rows — no names table to write.
+const panels = members(table).map((m) => {
+  const points = series(table, { x: "year", y: share, where: m.where, from: FROM, to: TO });
+  const at = (year) => points.find((p) => p.year === year).value;
+  return { name: m.name, from: at(FROM), to: at(TO) };
+});
 const largest = Math.max(...panels.flatMap((p) => [p.from, p.to]));
 const ceiling = Math.ceil(largest / 25) * 25;
 
