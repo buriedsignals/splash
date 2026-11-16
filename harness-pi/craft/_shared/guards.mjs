@@ -606,7 +606,15 @@ export function errorText(error) {
     const key = spacedKey(e);
     if (key)
       return `${key}: ... (line ${e.position.line}) is a key with a space, written without quotes — a value that works: "${key}": (quote the key)`;
-    return `${e?.message ?? String(e)}${where}`;
+    // gx-sankey scrolly (Qwen3.5-9B, 2026-11-16): `${share * 100.toFixed(1)}` — a number literal's dot is its decimal
+    // point, so ".toFixed" cannot follow it. "Syntax Error (line 90: …)" alone sent Qwen to line 9 for two no-op edits.
+    const text = String(e?.position?.lineText ?? "");
+    const column = e?.position?.column;
+    const at = column ? `, at column ${column}: "${text.slice(Math.max(0, column - 1), column + 29).trim()}"` : "";
+    const numberMethod = /(\d+)\.([A-Za-z_$]\w*)\(/.exec(text);
+    if (numberMethod)
+      return `${e.message}${where}${at}: "${numberMethod[1]}.${numberMethod[2]}" reads the dot as ${numberMethod[1]}'s decimal point — a value that works: wrap the whole expression in parentheses, e.g. (… * ${numberMethod[1]}).${numberMethod[2]}(1) or (${numberMethod[1]}).${numberMethod[2]}(…)`;
+    return `${e?.message ?? String(e)}${where}${at}`;
   };
   // One build error comes alone, carrying its own position; several come grouped. An unquoted key with a space
   // (gx-proportional-symbol web, Qwen3.5-9B, 2026-11-13: `San Marino: "Saint-Marin"`) breaks the parse once and
