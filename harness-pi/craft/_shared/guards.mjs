@@ -795,6 +795,7 @@ export function assertNoAggregates(names, here) {
   const iso = (v) => /^([A-Z]{3}|OWID_KOS)$/.test(String(v ?? ""));
   const code = columns.findIndex((_, c) => table.rows.filter((r) => iso(r[c])).length >= table.rows.length * 0.6);
   if (code < 0) return;
+  assertNamesNotCodes(names, table, code, front(here)?.("language"));
   // An aggregate the storyboard names is the story's subject, not a stray region (real-gwis: "Africa accounts for two
   // thirds of the world's wildfires" — refused, the 12B rebuilt the continents from a country list it made up).
   const field = front(here);
@@ -816,6 +817,33 @@ export function assertNoAggregates(names, here) {
     throw new Error(
       `${aggregates.map((a) => `"${a}"`).join(", ")} ${aggregates.length > 1 ? "are aggregates" : "is an aggregate"} in data.json (its ${columns[code].name} is not a country code): build rows only from rows whose ${columns[code].name} is three capital letters, like "${table.rows.find((r) => iso(r[code]))[code]}"${namedHint}`,
     );
+}
+
+/**
+ * A printed name is the one a reader knows, never the code beside it: a beat built { name: code } and the page printed
+ * FRA, SWE, DEU over the plot and "FRA stands alone" in a card (gx-connected-scatter scrolly, Qwen3.5-9B,
+ * 2026-11-17). Refused only when data.json holds a name for that row; a table of codes alone prints its codes.
+ */
+function assertNamesNotCodes(names, table, code, language) {
+  const columns = table.columns ?? [];
+  const isCode = (v) => /^([A-Z]{3}|OWID_[A-Z]+)$/.test(String(v ?? ""));
+  const source = columns.findIndex(
+    (c, i) => i !== code && !/_[a-z]{2}$/.test(c.name) && table.rows.filter((r) => typeof r[i] === "string" && r[i] && !isCode(r[i])).length >= table.rows.length * 0.6,
+  );
+  if (source < 0) return;
+  const lang = String(language ?? "").toLowerCase().slice(0, 2);
+  const local = lang && lang !== "en" ? columns.findIndex((c) => c.name === `${columns[source].name}_${lang}`) : -1;
+  const shown = local >= 0 ? local : source;
+  const nameOf = new Map(table.rows.filter((r) => r[code] && r[shown]).map((r) => [r[code], r[shown]]));
+  const coded = [...new Set(names)].filter((n) => nameOf.has(n) && nameOf.get(n) !== n);
+  if (!coded.length) return;
+  const q = JSON.stringify;
+  throw new Error(
+    `${coded.slice(0, 3).map(q).join(", ")}${coded.length > 3 ? ` and ${coded.length - 3} more` : ""} ${coded.length > 1 ? "are" : "is"} data.json's ${columns[code].name} column, a code no reader knows: print the name data.json holds in ${columns[shown].name} — a value that works: ${coded
+      .slice(0, 3)
+      .map((n) => `${q(n)} → ${q(nameOf.get(n))}`)
+      .join(", ")} (read it from data.json: the row's ${columns[shown].name}, never a table typed in beat.mjs)`,
+  );
 }
 
 /**

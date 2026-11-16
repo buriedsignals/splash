@@ -21,7 +21,7 @@ import { registerOf, leadOf } from "#shared/design-base/register.mjs";
 import { filedDirections, resolveDirectionFamilies } from "#shared/design-base/index.mjs";
 import { fitY } from "#shared/design-base/web.mjs";
 import { DirectedConnectedScatterWeb, FRAME } from "./DirectedConnectedScatterWeb.tsx";
-import { applyStoryboard, assertNumbers, assertHeadlineNumbersDrawn, assertDrawsClaimColumn } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, assertNoAggregates } from "./guards.mjs";
 import { chartWeb, plain, refusing, renderBeatWeb, storyLanguage } from "./web.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -48,6 +48,8 @@ await refusing(HERE, async () => {
   if (withWhatIf.length && withWhatIf.length !== beat.entities.length)
     throw new Error(`${withWhatIf.length} of ${beat.entities.length} entities carry a whatIf point: give every entity one, or none`);
   const hasWhatIf = withWhatIf.length > 0;
+  // A printed name is the one data.json holds for the row, never its code (FRA over the plot).
+  assertNoAggregates((Array.isArray(beat.entities) ? beat.entities : []).map((e) => String(e.label ?? e.name)), HERE);
   assertNumbers(
     beat.entities.flatMap((e) => [
       [`${e.name} from.x`, e.from.x], [`${e.name} from.y`, e.from.y], [`${e.name} to.x`, e.to.x], [`${e.name} to.y`, e.to.y],

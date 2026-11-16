@@ -27,7 +27,7 @@ import { deriveFurniture } from "#shared/chart-beat/render-still.mjs";
 import { webRegisters } from "#shared/design-base/web.mjs";
 import { EYEBROW_TO_DISPLAY, gapOf, registerOf } from "#shared/design-base/register.mjs";
 import { DirectedScatterScrolly } from "./DirectedScatterScrolly.tsx";
-import { applyStoryboard, assertNumbers, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, figureRefusal } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, figureRefusal, assertNoAggregates } from "./guards.mjs";
 import { plain, refusing, storyLanguage } from "./web.mjs";
 import { renderBeatScrolly, scrollySkill } from "./scrolly.mjs";
 
@@ -65,6 +65,8 @@ await refusing(HERE, async () => {
   // ── the entities: two states each, on two shares ─────────────────────────────────────────────
   if (!Array.isArray(beat.entities)) throw new Error(`entities must be an array of { name, label, code, from: { x, y }, to: { x, y } }`);
   if (beat.entities.length < 3 || beat.entities.length > 20) throw new Error(`entities holds ${beat.entities.length}: a connected scatter draws 3 to 20 entities`);
+  // A printed name is the one data.json holds for the row, never its code (FRA over the plot).
+  assertNoAggregates((Array.isArray(beat.entities) ? beat.entities : []).map((e) => String(e.label ?? e.name)), HERE);
   assertNumbers(beat.entities.flatMap((e) => [[`${e.name} from.x`, e.from?.x], [`${e.name} from.y`, e.from?.y], [`${e.name} to.x`, e.to?.x], [`${e.name} to.y`, e.to?.y]]));
   const entities = beat.entities.map((e) => ({
     name: String(e.name),

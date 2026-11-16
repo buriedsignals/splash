@@ -18,7 +18,7 @@ import { directionReachable, readRunDirection } from "#shared/design-base/run-di
 import { assertBeatMayEnter, directedFrame, exportSizeFromArgv, nameAtSize } from "#shared/chart-beat/directed-size.mjs";
 import { DirectedConnectedScatter } from "./DirectedConnectedScatter.tsx";
 import beat from "./beat.mjs";
-import { applyStoryboard, assertNumbers, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, errorText } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, errorText, assertNoAggregates } from "./guards.mjs";
 applyStoryboard(beat, dirname(fileURLToPath(import.meta.url)));
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -37,6 +37,8 @@ if (!Array.isArray(beat.entities) || beat.entities.length < 3 || beat.entities.l
 for (const e of beat.entities)
   for (const state of ["from", "to"])
     if (!e[state] || typeof e[state] !== "object") throw new Error(`${e.name} has no ${state} state: every entity is { name, label, from: { x, y }, to: { x, y } }`);
+// A printed name is the one data.json holds for the row, never its code (FRA over the plot).
+assertNoAggregates((Array.isArray(beat.entities) ? beat.entities : []).map((e) => String(e.name)), HERE);
 assertNumbers(beat.entities.flatMap((e) => [[`${e.name} from.x`, e.from.x], [`${e.name} from.y`, e.from.y], [`${e.name} to.x`, e.to.x], [`${e.name} to.y`, e.to.y]]), "states");
 // Both axes start at zero (the worked example's are shares): a negative value has no seat.
 const negative = beat.entities.filter((e) => [e.from.x, e.from.y, e.to.x, e.to.y].some((v) => v < 0));

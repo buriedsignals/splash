@@ -13,7 +13,7 @@
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { videoExportSize } from "#shared/chart-video/sizes.mjs";
-import { applyStoryboard, assertNumbers, assertHeadlineNumbersDrawn, assertDrawsClaimColumn } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, assertNoAggregates } from "./guards.mjs";
 import { assertEventFramesReadable, numberFormat, pickDirection, plain, refusing, renderBeatVideo, storyLanguage } from "./video.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -57,6 +57,8 @@ await refusing(HERE, async () => {
   if (!Array.isArray(beat.entities)) throw new Error("beat.mjs: entities must be an array of { name, label, code, from: { x, y }, to: { x, y } }");
 
   // ── the entities and their moves (./subject.mjs: the proof's derivation, its asserts as refusals)
+  // A printed name is the one data.json holds for the row, never its code (FRA over the plot).
+  assertNoAggregates((Array.isArray(beat.entities) ? beat.entities : []).map((e) => String(e.name)), HERE);
   for (const at of ["from", "to"]) for (const axis of ["x", "y"]) assertNumbers(beat.entities.map((e) => [`${e.name} ${at}.${axis}`, e[at]?.[axis]]));
   // The claim first: a title the data no longer supports is the refusal to read, before any the gesture raises.
   beat.check();
