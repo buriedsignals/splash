@@ -2,41 +2,34 @@
 // les plus bas le plus vite", as a scrolly. Every number in a card is COMPUTED: the first state's ends,
 // the correlation and the extremes of the gain come from render-beat.mjs as `r` and are only WORDED
 // here; the shares themselves are computed below from the generation columns.
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
+import { members, readTable, series } from "./series.mjs";
 
-const data = JSON.parse(readFileSync(join(import.meta.dirname, "data.json"), "utf8"));
-// A column by its name; an index already looked up passes through ([col("a"), col("b")].map(col) is harmless).
-const col = (name) => {
-  if (Number.isInteger(name)) return name;
-  const i = data.columns.findIndex((c) => c.name === name);
-  if (i < 0) throw new Error(`data.json has no column ${JSON.stringify(name)}; its columns are ${data.columns.map((c) => c.name).join(", ")}`);
-  return i;
-};
+const table = readTable(import.meta.dirname);
 const FROM = 2000;
 const TO = 2024;
-const CLEAN = ["hydro_generation__twh", "wind_generation__twh", "solar_generation__twh", "bioenergy_stacked_generation__twh", "other_renewables_generation__twh", "nuclear_generation__twh"].map(col);
-const FOSSIL = ["gas_generation__twh", "coal_generation__twh", "oil_generation__twh"].map(col);
-const [ENTITY, YEAR] = [col("entity"), col("year")];
-const FRENCH = {
-  Austria: ["Autriche", "l’Autriche"], Belgium: ["Belgique", "la Belgique"], Czechia: ["Tchéquie", "la Tchéquie"], Denmark: ["Danemark", "le Danemark"],
-  Finland: ["Finlande", "la Finlande"], France: ["France", "la France"], Germany: ["Allemagne", "l’Allemagne"], Greece: ["Grèce", "la Grèce"],
-  Ireland: ["Irlande", "l’Irlande"], Italy: ["Italie", "l’Italie"], Netherlands: ["Pays-Bas", "les Pays-Bas"], Poland: ["Pologne", "la Pologne"],
-  Portugal: ["Portugal", "le Portugal"], Spain: ["Espagne", "l’Espagne"], Sweden: ["Suède", "la Suède"], "United Kingdom": ["Royaume-Uni", "le Royaume-Uni"],
-};
-const sum = (row, cols) => cols.reduce((s, i) => s + Number(row[i] || 0), 0);
-/** The low-carbon share (renewables + nuclear) of all generation, in percent. */
-const share = (row) => (sum(row, CLEAN) / (sum(row, CLEAN) + sum(row, FOSSIL))) * 100;
-
-const entities = [...new Set(data.rows.map((r) => r[ENTITY]))];
-const panels = entities.map((entity) => {
-  if (!FRENCH[entity]) throw new Error(`no French name recorded for ${entity}`);
-  const a = data.rows.find((r) => r[ENTITY] === entity && Number(r[YEAR]) === FROM);
-  const b = data.rows.find((r) => r[ENTITY] === entity && Number(r[YEAR]) === TO);
-  if (!a || !b) throw new Error(`${entity} is missing ${FROM} or ${TO}`);
-  return { name: FRENCH[entity][0], from: share(a), to: share(b) };
+const CLEAN = ["hydro_generation__twh", "wind_generation__twh", "solar_generation__twh", "bioenergy_stacked_generation__twh", "other_renewables_generation__twh", "nuclear_generation__twh"];
+const FOSSIL = ["gas_generation__twh", "coal_generation__twh", "oil_generation__twh"];
+// The low-carbon share (renewables + nuclear) of one row's generation, in percent (times 100, as the cards print "%"):
+// y is a function of the row read by column name, summing only the generation columns the measure names.
+const sum = (r, keys) => keys.reduce((s, k) => s + (Number(r[k]) || 0), 0);
+const share = (r) => (100 * sum(r, CLEAN)) / (sum(r, CLEAN) + sum(r, FOSSIL));
+// One panel per country: members() gives each entity once, already named in the page's language (data.json's
+// entity_fr when the story is French) with the where that selects its rows — no names table to write.
+const panels = members(table).map((m) => {
+  const points = series(table, { x: "year", y: share, where: m.where, from: FROM, to: TO });
+  const at = (year) => points.find((p) => p.year === year)?.value;
+  if (at(FROM) === undefined || at(TO) === undefined) throw new Error(`${m.name} is missing ${FROM} or ${TO}`);
+  return { name: m.name, from: at(FROM), to: at(TO) };
 });
-const ARTICLE = Object.fromEntries(Object.values(FRENCH).map(([name, withArticle]) => [name, withArticle]));
+// The name with its determiner, keyed by the name the panel shows; keys in quotes ("Pays-Bas" is not an identifier).
+// A name missing here is printed bare.
+const DETERMINED = {
+  "Autriche": "l’Autriche", "Belgique": "la Belgique", "Tchéquie": "la Tchéquie", "Danemark": "le Danemark",
+  "Finlande": "la Finlande", "France": "la France", "Allemagne": "l’Allemagne", "Grèce": "la Grèce",
+  "Irlande": "l’Irlande", "Italie": "l’Italie", "Pays-Bas": "les Pays-Bas", "Pologne": "la Pologne",
+  "Portugal": "le Portugal", "Espagne": "l’Espagne", "Suède": "la Suède", "Royaume-Uni": "le Royaume-Uni",
+};
+const det = (name) => DETERMINED[name] ?? name;
 
 const one = (v) => v.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const signedR = (v) => `−${Math.abs(v).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -57,7 +50,7 @@ export default {
     rise: () => `La barre foncée, ${TO}. Toutes montent : seize sur seize.`,
     byFrom: () => `Rangeons les panneaux du plus bas au plus haut en ${FROM}. Les gains diminuent le long de la grille.`,
     scatter: (r) => `Chaque panneau devient un point : son niveau de ${FROM} en largeur, son gain en hauteur. Plus un pays partait bas, plus il a gagné : corrélation de ${signedR(r.correlation)}.`,
-    byGain: (r) => `Rangés par gain : ${cap(ARTICLE[r.biggest.name])}, +${Math.round(r.biggest.delta)} points, en tête ; ${ARTICLE[r.smallest.name]}, qui partait de ${one(r.smallest.from)} %, +${Math.round(r.smallest.delta)}.`,
+    byGain: (r) => `Rangés par gain : ${cap(det(r.biggest.name))}, +${Math.round(r.biggest.delta)} points, en tête ; ${det(r.smallest.name)}, qui partait de ${one(r.smallest.from)} %, +${Math.round(r.smallest.delta)}.`,
   },
   // The short accent note in the header while each card is read.
   notes: {
