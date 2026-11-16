@@ -71,8 +71,10 @@ export default {
     "Plus propres chez eux, plus légers en Europe",
   ],
   // The last card: how to read the two axes.
-  limits:
+  limits: [
     "Lecture : monter, c’est se nettoyer chez soi ; aller à droite, c’est peser plus lourd dans le groupe. Les deux sont indépendants, et c’est tout l’intérêt de tracer les deux.",
+    "Lecture : monter, c’est se nettoyer chez soi ; aller à droite, peser plus lourd dans le groupe.",
+  ],
   source: "Source : Ember, Energy Institute – Statistical Review of World Energy (2025), via Our World in Data",
   alt: (r) =>
     `Nuage connecté de ${r.count} pays européens entre ${r.from} et ${r.to}. Chaque pays est un cercle vide ` +

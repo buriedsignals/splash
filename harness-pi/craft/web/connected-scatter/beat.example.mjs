@@ -119,9 +119,11 @@ export default {
     `${TO} : ${fr(r.to.x)} %, ${fr(r.to.y, 2)} %, ${fr(r.low1)} TWh · production ${signed(r.growth, 0)} % contre ${signed(euGrowth)} % pour les ${word(entities.length)} · ` +
     `à total européen figé elle pèserait ${fr(r.whatIf.y, 2)} %`,
   title: "Tous plus propres chez eux, cinq plus légers en Europe",
-  limits:
-    `Part bas-carbone du mix national contre part du bas-carbone des ${word(entities.length)}, ${FROM} et ${TO}. ` +
+  // A list of forms, longest first: the journalist's limits, then shorter forms the phone can draw.
+  limits: [
+    `Part bas-carbone du mix national contre part du bas-carbone des ${word(entities.length)}, ${FROM} et ${TO}. L'anneau est ${FROM}, la pointe ${TO} : le fichier ne tient que ces deux dates.`,
     `L'anneau est ${FROM}, la pointe ${TO} : le fichier ne tient que ces deux dates.`,
+  ],
   reading: "Lecture : survolez ou tabulez un pays pour ses deux dates et ses TWh.",
   source: "Source : Ember, Energy Institute — Statistical Review of World Energy (2025), via Our World in Data",
   alt: (s) =>
