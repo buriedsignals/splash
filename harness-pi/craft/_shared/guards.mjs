@@ -202,7 +202,10 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
     const stem = (w) => w.slice(0, 5);
     const numbers = (t) => String(t).match(/\d+(?:[.,]\d+)?/g) ?? [];
     const claim = words(takeaway);
-    const figures = numbers(takeaway);
+    // Two years joined by a short word or a dash ("between 2000 and 2024", "1990–2023") frame the claim: the full form
+    // carries that period and a shorter one may drop it. A lone year ("more than in 1990") is what the claim measures against.
+    const period = new Set([...String(takeaway).matchAll(/(?<![\d.,])((?:19|20)\d{2})(?=([^\d]{1,8})((?:19|20)\d{2})(?!\d|[.,]\d))/g)].flatMap((m) => [m[1], m[3]]));
+    const figures = numbers(takeaway).filter((n) => !period.has(n));
     const keeps = (form) => {
       const said = new Set(words(form).map(stem));
       const shown = numbers(form);
