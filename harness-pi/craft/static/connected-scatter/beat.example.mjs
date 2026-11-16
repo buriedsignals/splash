@@ -17,10 +17,10 @@ const FOSSIL = ["gas_generation__twh", "oil_generation__twh", "coal_generation__
 const [CODE, YEAR] = [col("code"), col("year")];
 const FROM = 2000;
 const TO = 2024;
-const NAMES = {
-  FRA: "France", DEU: "Allemagne", ESP: "Espagne", GBR: "Royaume-Uni", SWE: "Suède", ITA: "Italie", FIN: "Finlande", AUT: "Autriche",
-  NLD: "Pays-Bas", BEL: "Belgique", POL: "Pologne", CZE: "Tchéquie", PRT: "Portugal", DNK: "Danemark", GRC: "Grèce", IRL: "Irlande",
-};
+// The name a reader knows, read from data.json — never typed here: the page language's own column when the analyst
+// wrote one (entity_fr on a French page), the source's entity otherwise. A typed table goes stale on any other story.
+const NAME = table.columns.find((c) => /^entity_[a-z]{2}$/.test(c.name))?.name ?? "entity";
+const nameOf = (code) => table.rows.find((r) => r[col("code")] === code)[col(NAME)];
 
 const sum = (r, cols) => cols.reduce((s, c) => s + Number(r[col(c)]), 0);
 const reading = (code, year) => {
@@ -37,7 +37,7 @@ const stateOf = (code, year, group) => {
   const r = reading(code, year);
   return { x: (r.lc / group) * 100, y: (r.lc / r.total) * 100 };
 };
-const entities = codes.map((code) => ({ name: code, label: NAMES[code] ?? code, code, from: stateOf(code, FROM, groupFrom), to: stateOf(code, TO, groupTo) }));
+const entities = codes.map((code) => ({ name: code, label: nameOf(code), code, from: stateOf(code, FROM, groupFrom), to: stateOf(code, TO, groupTo) }));
 
 const cleaner = entities.filter((e) => e.to.y > e.from.y);
 const lighter = entities.filter((e) => e.to.x < e.from.x);

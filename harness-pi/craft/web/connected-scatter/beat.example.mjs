@@ -18,10 +18,10 @@ const FOSSIL = ["gas_generation__twh", "oil_generation__twh", "coal_generation__
 const [CODE, YEAR] = [col("code"), col("year")];
 const FROM = 2000;
 const TO = 2024;
-const NAMES = {
-  AUT: "Autriche", BEL: "Belgique", CZE: "Tchéquie", DNK: "Danemark", FIN: "Finlande", FRA: "France", DEU: "Allemagne", GRC: "Grèce",
-  IRL: "Irlande", ITA: "Italie", NLD: "Pays-Bas", POL: "Pologne", PRT: "Portugal", ESP: "Espagne", SWE: "Suède", GBR: "Royaume-Uni",
-};
+// The name a reader knows, read from data.json — never typed here: the page language's own column when the analyst
+// wrote one (entity_fr on a French page), the source's entity otherwise. A typed table goes stale on any other story.
+const NAME = table.columns.find((c) => /^entity_[a-z]{2}$/.test(c.name))?.name ?? "entity";
+const nameOf = (code) => table.rows.find((r) => r[col("code")] === code)[col(NAME)];
 
 const sum = (r, cols) => cols.reduce((s, c) => s + Number(r[col(c)]), 0);
 const rowOf = (code, year) => {
@@ -43,7 +43,7 @@ const entities = codes.map((code) => {
   const b = rowOf(code, TO);
   return {
     name: code,
-    label: NAMES[code] ?? code,
+    label: nameOf(code),
     from: { x: (a.low / a.all) * 100, y: (a.low / total0) * 100 },
     to: { x: (b.low / b.all) * 100, y: (b.low / total1) * 100 },
     whatIf: { x: (b.low / b.all) * 100, y: (b.low / total0) * 100 },

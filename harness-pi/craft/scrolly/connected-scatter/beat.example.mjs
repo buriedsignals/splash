@@ -18,11 +18,10 @@ const LOW_CARBON = ["other_renewables_generation__twh", "bioenergy_stacked_gener
 const FOSSIL = ["gas_generation__twh", "oil_generation__twh", "coal_generation__twh"].map(col);
 const FROM = 2000;
 const TO = 2024;
-const NAMES = {
-  FRA: "France", DEU: "Allemagne", ESP: "Espagne", GBR: "Royaume-Uni", SWE: "Suède",
-  ITA: "Italie", FIN: "Finlande", AUT: "Autriche", NLD: "Pays-Bas", BEL: "Belgique",
-  POL: "Pologne", CZE: "Tchéquie", PRT: "Portugal", DNK: "Danemark", GRC: "Grèce", IRL: "Irlande",
-};
+// The name a reader knows, read from data.json — never typed here: the page language's own column when the analyst
+// wrote one (entity_fr on a French page), the source's entity otherwise. A typed table goes stale on any other story.
+const NAME = table.columns.find((c) => /^entity_[a-z]{2}$/.test(c.name))?.name ?? "entity";
+const nameOf = (code) => table.rows.find((r) => r[col("code")] === code)[col(NAME)];
 
 // Low-carbon and total generation, per country and year.
 const sum = (row, cols) => cols.reduce((s, i) => s + Number(row[i]), 0);
@@ -35,7 +34,7 @@ const codes = [...new Set(table.rows.map((r) => r[CODE]))];
 const groupLc = (year) => codes.reduce((s, c) => s + gen(c, year).lc, 0);
 // x: the country's share of the group's low-carbon generation; y: low-carbon's share of its own mix.
 const state = (code, year) => ({ x: (gen(code, year).lc / groupLc(year)) * 100, y: (gen(code, year).lc / gen(code, year).total) * 100 });
-const entities = codes.map((code) => ({ name: NAMES[code], code, from: state(code, FROM), to: state(code, TO) }));
+const entities = codes.map((code) => ({ name: nameOf(code), code, from: state(code, FROM), to: state(code, TO) }));
 const subjectProducedMore = gen("FRA", TO).lc > gen("FRA", FROM).lc;
 
 const one = (v) => v.toLocaleString("fr-FR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -45,7 +44,7 @@ export default {
   lang: "fr",
   eyebrow: "Énergie · Europe",
   entities,
-  subject: "France",
+  subject: nameOf("FRA"),
   from: FROM,
   to: TO,
   xName: (r) => `part du bas-carbone des ${r.count} pays, en %`,
@@ -86,7 +85,7 @@ export default {
   check(r) {
     if (r.up.length !== r.count) throw new Error(`the title says every country got cleaner at home; ${r.count - r.up.length} did not`);
     if (r.left.length !== 5) throw new Error(`the title says 5 weigh less in the group; ${r.left.length} do`);
-    if (r.heaviest.name !== "France") throw new Error(`card 1 says France stands alone on the right in ${r.from}; ${r.heaviest.name} does`);
+    if (r.heaviest.name !== nameOf("FRA")) throw new Error(`card 1 says France stands alone on the right in ${r.from}; ${r.heaviest.name} does`);
     if (!(r.subject.dx < -5 && r.subject.dy > 0)) throw new Error(`card 4 says France got cleaner at home and lighter in the group`);
     if (!subjectProducedMore) throw new Error("card 4 says France produced more; it produced less");
   },

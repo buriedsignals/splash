@@ -14,10 +14,10 @@ const col = (name) => {
 };
 const LOW_CARBON = ["other_renewables_generation__twh", "bioenergy_stacked_generation__twh", "solar_generation__twh", "wind_generation__twh", "hydro_generation__twh", "nuclear_generation__twh"];
 const FOSSIL = ["gas_generation__twh", "oil_generation__twh", "coal_generation__twh"];
-const FRENCH = {
-  FRA: "France", DEU: "Allemagne", ESP: "Espagne", GBR: "Royaume-Uni", SWE: "Suède", ITA: "Italie", FIN: "Finlande", AUT: "Autriche",
-  NLD: "Pays-Bas", BEL: "Belgique", POL: "Pologne", CZE: "Tchéquie", PRT: "Portugal", DNK: "Danemark", GRC: "Grèce", IRL: "Irlande",
-};
+// The name a reader knows, read from data.json — never typed here: the page language's own column when the analyst
+// wrote one (entity_fr on a French page), the source's entity otherwise. A typed table goes stale on any other story.
+const NAME = table.columns.find((c) => /^entity_[a-z]{2}$/.test(c.name))?.name ?? "entity";
+const nameOf = (code) => table.rows.find((r) => r[col("code")] === code)[col(NAME)];
 
 // Each country's low-carbon and total generation, by year.
 const reading = (code, year) => {
@@ -29,7 +29,7 @@ const codes = [...new Set(table.rows.map((r) => r[col("code")]))];
 const group = (year) => codes.reduce((s, c) => s + reading(c, year).lc, 0);
 // x: the country's weight in the group's low-carbon electricity, in %; y: the low-carbon share of its own, in %.
 const state = (code, year) => ({ x: (reading(code, year).lc / group(year)) * 100, y: (reading(code, year).lc / reading(code, year).total) * 100 });
-const entities = codes.map((code) => ({ name: code, label: FRENCH[code] ?? code, code, from: state(code, "2000"), to: state(code, "2024") }));
+const entities = codes.map((code) => ({ name: code, label: nameOf(code), code, from: state(code, "2000"), to: state(code, "2024") }));
 
 // The claim: every country cleaner at home, and five weigh less in the group.
 const cleaner = entities.filter((e) => e.to.y > e.from.y);
