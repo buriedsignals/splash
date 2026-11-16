@@ -1,11 +1,12 @@
 // The model has to SEE what it rendered before it may call a beat done (R8). The image travels as a
 // tool-result image block; Pi forwards it to a model that declares image input.
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { relative } from "node:path";
 import { defineTool } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import { type Bases, resolveInStory } from "./fs.ts";
+import { type Bases, resolveInStory, stillInContext } from "./fs.ts";
 
 // A video kit's look list holds the middle of each gesture ("reveal-<do>", "subject-<do>", "conclusion-<do>", "mid-…").
 // There a count is still climbing: Qwen3.5-9B read a bracket's 8.1 of 11.7 Gt as a wrong sum (stress-v, 2026-11-13).
@@ -16,18 +17,35 @@ function midGesture(abs: string): string {
 }
 
 export function lookTool(bases: Bases) {
+  // What each render looked like at the last look: a second look at the same bytes, still in the model's context, adds
+  // nothing (gx-histogram scrolly, Qwen: 12 turns of re-looks after a passing first render).
+  const seen = new Map<string, { stamp: string; id: string }>();
   return defineTool({
     name: "look",
     label: "Look at image",
     description:
       "Look at a PNG inside the story (a render or a verification screenshot). Use it after every render, before saying the beat is done.",
     parameters: Type.Object({ path: Type.String() }),
-    async execute(_id, { path }) {
+    async execute(id, { path }, _signal, _onUpdate, ctx) {
       let abs = resolveInStory(bases, path);
       // Renders come as an SVG and its PNG twin; the model often names the SVG.
       if (abs.endsWith(".svg") && existsSync(abs.replace(/\.svg$/, ".png"))) abs = abs.replace(/\.svg$/, ".png");
       if (!abs.endsWith(".png")) throw new Error(`${path} is not a PNG`);
-      const data = (await readFile(abs)).toString("base64");
+      const bytes = await readFile(abs);
+      const stamp = createHash("sha1").update(bytes).digest("hex");
+      const prior = seen.get(abs);
+      if (prior?.stamp === stamp && stillInContext(ctx, prior.id))
+        return {
+          content: [
+            {
+              type: "text" as const,
+              text: `you looked at ${relative(bases.storyDir, abs)} above and it has not changed since: judge from that look. If every render reads right, the beat is done — stop. Otherwise change only what is wrong and render again.`,
+            },
+          ],
+          details: { path: relative(bases.storyDir, abs) },
+        };
+      seen.set(abs, { stamp, id });
+      const data = bytes.toString("base64");
       return {
         content: [
           {

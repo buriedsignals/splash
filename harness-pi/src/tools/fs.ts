@@ -428,7 +428,7 @@ const insteadOfReread = async (bases: Bases) =>
  * 100 of 275 refused rereads came after compaction had dropped the first read, so the refusal hid the file itself.
  * Without a session context (a direct call), the first read counts as still there.
  */
-function stillInContext(ctx: { sessionManager?: { buildContextEntries(): unknown[] } } | undefined, id: string): boolean {
+export function stillInContext(ctx: { sessionManager?: { buildContextEntries(): unknown[] } } | undefined, id: string): boolean {
   if (!ctx?.sessionManager) return true;
   return ctx.sessionManager
     .buildContextEntries()
