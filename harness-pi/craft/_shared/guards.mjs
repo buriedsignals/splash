@@ -569,6 +569,43 @@ function secondCopy(e) {
   return null;
 }
 
+/**
+ * A lookup into a table beat.mjs writes out by hand that finds no entry: "undefined is not an object (evaluating
+ * 'NAMES[code].name')". gx-small-multiples web (Qwen3.5-9B, 2026-11-16) keyed NAMES by code and read the "entity"
+ * column; the bare TypeError, with no line and no key, came back twice unchanged. Names the line, the column the
+ * table's keys come from, the values it leaves out, and a localized name column when data.json has one.
+ */
+function tableMiss(e) {
+  if (!(e instanceof TypeError)) return null;
+  const m = /^undefined is not an object \(evaluating '([A-Za-z_$][\w$]*)(?:\[[^\]]+\]|\.[\w$]+)\./.exec(String(e.message));
+  const at = /(\/[^\s()]*beat\.mjs):(\d+)/.exec(String(e.stack ?? ""));
+  if (!m || !at) return null;
+  const [, file, line] = at;
+  const name = m[1];
+  let source, data;
+  try {
+    source = readFileSync(file, "utf8");
+    data = JSON.parse(readFileSync(join(dirname(file), "data.json"), "utf8"));
+  } catch {
+    return null;
+  }
+  const block = new RegExp(`(?:const|let|var)\\s+${name.replace(/\$/g, "\\$")}\\s*=\\s*\\{([\\s\\S]*?)\\n\\s*\\};`).exec(source);
+  if (!block) return null;
+  const keys = [...block[1].matchAll(/^\s*(?:"([^"]+)"|'([^']+)'|([A-Za-z_$][\w$]*))\s*:/gm)].map((k) => k[1] ?? k[2] ?? k[3]);
+  if (!keys.length) return null;
+  const columns = (data.columns ?? []).map((c, i) => ({ name: c.name, values: [...new Set((data.rows ?? []).map((r) => String(r[i])))] }));
+  const scored = columns.map((c) => ({ ...c, hit: keys.filter((k) => c.values.includes(k)).length })).sort((a, b) => b.hit - a.hit);
+  const head = `${m[0].slice("undefined is not an object (evaluating '".length, -1)} finds no entry in ${name} (beat.mjs line ${line})`;
+  const local = columns.find((c) => /_[a-z]{2}$/.test(c.name))?.name;
+  const named = local ? `; or drop the table for the names: data.json already holds them in column "${local}"` : "";
+  const key = scored[0];
+  if (!key?.hit) return `${head}: none of ${name}'s keys (${keys.slice(0, 4).join(", ")}…) is a value of any data.json column — a value that works: key ${name} by the values of the column the line reads${named}`;
+  const missing = key.values.filter((v) => !keys.includes(v));
+  if (missing.length)
+    return `${head}: ${name} is keyed by the values of column "${key.name}" and has no entry for ${missing.slice(0, 6).map((v) => `"${v}"`).join(", ")}${missing.length > 6 ? ` and ${missing.length - 6} more` : ""} — a value that works: add those entries${named}`;
+  return `${head}: ${name} is keyed by the values of column "${key.name}" (${keys.slice(0, 3).join(", ")}…), and every one of them has an entry, so line ${line} looks it up with a value of another column — a value that works: look it up with the row's "${key.name}" value, e.g. r[table.columns.findIndex((c) => c.name === "${key.name}")]${named}`;
+}
+
 export function errorText(error) {
   const one = (e) => {
     // The video credit's only refusal (chart-video shots.mjs sourceCreditFor) names no field: the field is source.
@@ -586,6 +623,8 @@ export function errorText(error) {
       const name = bare[1];
       return `${name} is not defined${line ? ` (beat.mjs line ${line})` : ""}: a function in beat.mjs calls ${name} by its bare name, but nothing defines it there — a field of the beat is not a variable — a value that works: const ${name} = … above export default, then give the field as ${name}, (shorthand)`;
     }
+    const miss = tableMiss(e);
+    if (miss) return miss;
     const where = e?.position ? ` (line ${e.position.line}: ${String(e.position.lineText ?? "").trim()})` : "";
     // A line holding only a quote opens a string nothing closes (gx-bullet web, 12B, 2026-11-13: a lone backtick after
     // the closing "};"); "Unterminated string literal (line 125: `)" sent the 12B editing template strings elsewhere.
