@@ -12,7 +12,7 @@ import { directionReachable, readRunDirection } from "#shared/design-base/run-di
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
 import { assertPercentScale, errorText } from "./guards.mjs";
-import { failuresBlock, motionOnly } from "./verify-failures.mjs";
+import { failuresBlock, motionOnly, wordsRefusal } from "./verify-failures.mjs";
 
 /** The viewport whose verify-web screenshot is the one to look at (`fit-<w>x<h>.png`). */
 export const DESKTOP_SHOT = "fit-1920x950.png";
@@ -166,7 +166,9 @@ export async function renderBeatWeb({ here, render, textPerRegister, evidenceLev
       here,
       motionOnly(listed)
         ? `the page rendered but the chart-web verification failed twice on motion (${listed.length}): the picture does not settle, or "rest" does not bring the landing picture back — the gesture the failure names changes the picture in a way that does not end; change or drop that gesture, then render again`
-        : `the page rendered but the chart-web verification failed (${fails.length || "see above"}): fix the words in beat.mjs that the failures name (a label too long, two marks answering the same), then render again`,
+        : listed.length
+          ? wordsRefusal(listed, falseReds)
+          : `the page rendered but the chart-web verification failed (${fails.length || "see above"}): fix the words in beat.mjs that the failures name, then render again`,
     );
   }
   if (!existsSync(desktop)) refuse(here, `verify-web passed but wrote no ${DESKTOP_SHOT} into ${shots}`);
