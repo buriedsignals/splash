@@ -408,15 +408,27 @@ const insteadOfReread = async (bases: Bases) =>
     ? await bases.noRereads()
     : bases.noRereads;
 
+/**
+ * Whether a tool call's result is still in the context the model sees. Moving formats, both students, 2026-11-16:
+ * 100 of 275 refused rereads came after compaction had dropped the first read, so the refusal hid the file itself.
+ * Without a session context (a direct call), the first read counts as still there.
+ */
+function stillInContext(ctx: { sessionManager?: { buildContextEntries(): unknown[] } } | undefined, id: string): boolean {
+  if (!ctx?.sessionManager) return true;
+  return ctx.sessionManager
+    .buildContextEntries()
+    .some((e) => (e as { message?: { toolCallId?: string } }).message?.toolCallId === id);
+}
+
 export function fsTools(bases: Bases) {
-  const seen = new Map<string, string>();
+  const seen = new Map<string, { stamp: string; id: string }>();
   const readFileTool = defineTool({
     name: "read_file",
     label: "Read file",
     description:
       "Read a text file from the story, skills/, shared/ or proof/. Paths are absolute or relative to the Splash root. A CSV returns an excerpt; read source/profile.json for its full profile.",
     parameters: Type.Object({ path: Type.String() }),
-    async execute(_id, { path }) {
+    async execute(id, { path }, _signal, _onUpdate, ctx) {
       const done = answeredFor(bases, path);
       if (done) return text(done);
       const abs = resolveReadable(bases, path);
@@ -427,11 +439,12 @@ export function fsTools(bases: Bases) {
       if (bases.noRereads) {
         // stress-ad (Qwen3.5-9B, 2026-11-13): eight alternating reads of the same two references and no question, until the cap.
         const stamp = String(statSync(abs).mtimeMs);
-        if (seen.get(abs) === stamp)
+        const prior = seen.get(abs);
+        if (prior?.stamp === stamp && stillInContext(ctx, prior.id))
           throw new Error(
             `you already read ${path} above and it has not changed — do not read it again. ${await insteadOfReread(bases)}`,
           );
-        seen.set(abs, stamp);
+        seen.set(abs, { stamp, id });
       }
       const body = await readFile(abs, "utf8");
       const note = abs.endsWith(".json") ? aggregateNote(body) : "";
@@ -459,7 +472,7 @@ export function fsTools(bases: Bases) {
     label: "List directory",
     description: "List a directory in the story, skills/, shared/ or proof/.",
     parameters: Type.Object({ path: Type.String() }),
-    async execute(_id, { path }) {
+    async execute(id, { path }, _signal, _onUpdate, ctx) {
       const done = answeredFor(bases, path);
       if (done) return text(done);
       const abs = resolveReadable(bases, path);
@@ -470,11 +483,12 @@ export function fsTools(bases: Bases) {
       const listing = entries.sort().join("\n");
       if (bases.noRereads) {
         // stress-ad (Qwen3.5-9B, 2026-11-13): the same three directories listed in turn for twelve turns, no question asked.
-        if (seen.get(`dir:${abs}`) === listing)
+        const prior = seen.get(`dir:${abs}`);
+        if (prior?.stamp === listing && stillInContext(ctx, prior.id))
           throw new Error(
             `you already listed ${path} above and it has not changed — do not list it again. ${await insteadOfReread(bases)}`,
           );
-        seen.set(`dir:${abs}`, listing);
+        seen.set(`dir:${abs}`, { stamp: listing, id });
       }
       return text(listing);
     },
