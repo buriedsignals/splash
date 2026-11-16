@@ -569,6 +569,29 @@ function secondCopy(e) {
   return null;
 }
 
+/** " (beat.mjs line N: "<its text>")" from a runtime error's stack, or "". */
+function beatLine(e) {
+  const at = /(\/[^\s()]*beat\.mjs):(\d+)/.exec(String(e?.stack ?? ""));
+  if (!at) return "";
+  let text = "";
+  try {
+    text = readFileSync(at[1], "utf8").split("\n")[Number(at[2]) - 1]?.trim() ?? "";
+  } catch {}
+  return ` (beat.mjs line ${at[2]}${text ? `: "${text.slice(0, 100)}"` : ""})`;
+}
+
+/**
+ * gx-small-multiples web (Qwen3.5-9B, 2026-11-16): codes from "code", rows filtered on "entity", every series empty;
+ * "undefined is not an object (evaluating 'p.series[p.series.length - 1].value')" named neither the line nor that the
+ * array was empty.
+ */
+function emptyRead(e) {
+  if (!(e instanceof TypeError)) return null;
+  const m = /^undefined is not an object \(evaluating '([\w$.]+)\[(?:0|([\w$.]+)\.length - 1)\]/.exec(String(e.message));
+  if (!m || (m[2] && m[2] !== m[1])) return null;
+  return `${m[1]} is empty for at least one item${beatLine(e)}: the rows that fill it matched nothing — a value that works: build it with series(table, { x, y, where: { <column>: value } }) from ./series.mjs, which names the value no row matches, or make the filter compare a column with values of that same column`;
+}
+
 /**
  * A lookup into a table beat.mjs writes out by hand that finds no entry: "undefined is not an object (evaluating
  * 'NAMES[code].name')". gx-small-multiples web (Qwen3.5-9B, 2026-11-16) keyed NAMES by code and read the "entity"
@@ -625,6 +648,8 @@ export function errorText(error) {
     }
     const miss = tableMiss(e);
     if (miss) return miss;
+    const empty = emptyRead(e);
+    if (empty) return empty;
     const where = e?.position ? ` (line ${e.position.line}: ${String(e.position.lineText ?? "").trim()})` : "";
     // A line holding only a quote opens a string nothing closes (gx-bullet web, 12B, 2026-11-13: a lone backtick after
     // the closing "};"); "Unterminated string literal (line 125: `)" sent the 12B editing template strings elsewhere.
@@ -653,7 +678,7 @@ export function errorText(error) {
     const numberMethod = /(\d+)\.([A-Za-z_$]\w*)\(/.exec(text);
     if (numberMethod)
       return `${e.message}${where}${at}: "${numberMethod[1]}.${numberMethod[2]}" reads the dot as ${numberMethod[1]}'s decimal point — a value that works: wrap the whole expression in parentheses, e.g. (… * ${numberMethod[1]}).${numberMethod[2]}(1) or (${numberMethod[1]}).${numberMethod[2]}(…)`;
-    return `${e?.message ?? String(e)}${where}${at}`;
+    return `${e?.message ?? String(e)}${where}${at}${where || at ? "" : beatLine(e)}`;
   };
   // One build error comes alone, carrying its own position; several come grouped. An unquoted key with a space
   // (gx-proportional-symbol web, Qwen3.5-9B, 2026-11-13: `San Marino: "Saint-Marin"`) breaks the parse once and
