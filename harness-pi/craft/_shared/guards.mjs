@@ -63,11 +63,29 @@ function explainFaults(beat) {
 }
 
 /** @param {any} beat @param {string} here @param {{ title?: string, standfirst?: string, source?: string, basemap?: string }} [options] */
+// A printed NaN or undefined is a number or a word built from nothing. gx-locator scrolly, 12B (2026-11-16): a title form
+// read biggest.mw on objects that carry value; the claim guard said the form dropped the takeaway, never the NaN.
+function refusePrintedNothing(beat) {
+  const found = [];
+  const look = (where, v) => {
+    if (typeof v === "string") {
+      const hit = /(?<![\p{L}\p{N}_])(NaN|undefined)(?![\p{L}\p{N}_])/u.exec(v);
+      if (hit) found.push(`${where}: "${v}" prints ${hit[1]}`);
+    } else if (Array.isArray(v)) v.forEach((x, i) => typeof x === "string" && look(`${where}[${i}]`, x));
+  };
+  for (const [key, v] of Object.entries(beat)) look(key, v);
+  if (Array.isArray(beat.gestures))
+    beat.gestures.forEach((g, i) => g && typeof g === "object" && ["note", "card", "label"].forEach((k) => look(`gestures[${i}].${k}`, g[k])));
+  if (found.length)
+    throw new Error(`${found.join("; ")} — it is built from a key its object does not carry, or from an empty cell: read the expression that builds it, and use a key the object has`);
+}
+
 export function applyStoryboard(beat, here, { title = "title", standfirst = "limits", source = "source", basemap } = {}) {
   // A 12B beat once exported its fields one by one; the first write below then threw a bare TypeError.
   if (!beat || typeof beat !== "object")
     throw new Error("beat.mjs has no default export: put every field in one object, export default { title: …, limits: …, source: …, check(…) { … } } (see CONTRACT.md)");
   explainFaults(beat);
+  refusePrintedNothing(beat);
   const field = front(here);
   if (!field) return;
   const credit = field("credit");
