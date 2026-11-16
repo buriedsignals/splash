@@ -620,6 +620,39 @@ function secondCopy(e) {
   return null;
 }
 
+/**
+ * beat.mjs's own `if (…) throw` comparing to a number the takeaway never states. gx-connected-scatter web (Qwen3.5-9B,
+ * mvq17 and mvq18): the example's check() tests its own title's count (lost.length !== 5); copied under a takeaway that
+ * states no count, the model's own error passed word for word and it guessed 1, 15, then 1 again.
+ */
+const NUMBER_WORDS = Object.fromEntries(
+  [
+    "one two three four five six seven eight nine ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen twenty",
+    "un deux trois quatre cinq six sept huit neuf dix onze douze treize quatorze quinze seize dix-sept dix-huit dix-neuf vingt",
+  ].flatMap((list) => list.split(" ").map((w, i) => [w, i + 1])),
+);
+function numberNotInTakeaway(e) {
+  const at = /(\/[^\s()]*\/beat\.mjs):(\d+)/.exec(String(e?.stack ?? ""));
+  if (!at) return null;
+  let text = "";
+  try {
+    text = readFileSync(at[1], "utf8").split("\n")[Number(at[2]) - 1] ?? "";
+  } catch {
+    return null;
+  }
+  const condition = /\bif\s*\((.*)\)\s*throw\b/.exec(text)?.[1];
+  if (!condition) return null;
+  const takeaway = front(dirname(at[1]))?.("takeaway");
+  if (!takeaway) return null;
+  const said = new Set((takeaway.match(/\d+(?:[.,]\d+)?/g) ?? []).map((d) => Number(d.replace(",", "."))));
+  for (const w of takeaway.toLowerCase().match(/[a-zà-ÿ]+/g) ?? []) if (NUMBER_WORDS[w]) said.add(NUMBER_WORDS[w]);
+  // Literals the condition compares to; 0 and tolerances under 1 test no figure of the takeaway.
+  const literals = (condition.replace(/(["'`]).*?\1/g, "").match(/(?<![\w.])\d+(?:\.\d+)?(?![\w.])/g) ?? []).map(Number).filter((n) => n >= 1);
+  const untold = literals.filter((n) => !said.has(n));
+  if (!literals.length || untold.length !== literals.length) return null;
+  return `check() threw: ${e.message}${beatLine(e)} — this test compares to ${untold.join(", ")}, and the takeaway never states ${untold.join(" or ")} (it says: "${takeaway}"). check() tests only what the takeaway says — delete this test from check(); the data's own figure is the first one in the message`;
+}
+
 /** " (beat.mjs line N: "<its text>")" from a runtime error's stack, or "". */
 function beatLine(e) {
   const at = /(\/[^\s()]*\/beat\.mjs):(\d+)/.exec(String(e?.stack ?? ""));
@@ -701,6 +734,8 @@ export function errorText(error) {
     if (miss) return miss;
     const empty = emptyRead(e);
     if (empty) return empty;
+    const untold = numberNotInTakeaway(e);
+    if (untold) return untold;
     const where = e?.position ? ` (line ${e.position.line}: ${String(e.position.lineText ?? "").trim()})` : "";
     // A line holding only a quote opens a string nothing closes (gx-bullet web, 12B, 2026-11-13: a lone backtick after
     // the closing "};"); "Unterminated string literal (line 125: `)" sent the 12B editing template strings elsewhere.
