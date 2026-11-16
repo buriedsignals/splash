@@ -216,8 +216,12 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
     if (valueOf.has(name)) return name;
     const folded = rows.find((r) => fold(r.name) === fold(name));
     if (folded) return folded.name;
-    const best = closest(name, rows);
-    throw new GestureRefusal(`gestures[${i}].${field}`, `"${name}" is not a drawn row; the closest is "${best}"`, {
+    // A family may know why a name has no mark (a sankey's zero flow) and which drawn marks stand nearest in meaning.
+    const why = typeof name === "string" ? hooks.undrawn?.(name) : null;
+    const pool = why?.pool?.length ? rows.filter((r) => why.pool.includes(r.name)) : [];
+    const best = closest(name, pool.length ? pool : rows);
+    const said = why ? `"${name}" is not a drawn row: ${why.reason} — a drawn row that works: "${best}"` : `"${name}" is not a drawn row; the closest is "${best}"`;
+    throw new GestureRefusal(`gestures[${i}].${field}`, said, {
       set: { index: i, field: field.replace(/\[\d+\]$/, ""), value: field.endsWith("]") ? undefined : best },
     });
   };

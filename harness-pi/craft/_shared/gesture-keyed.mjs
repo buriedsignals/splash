@@ -72,8 +72,9 @@ const split = (g) => {
  * The family's own refusals every keyed family shares: a compare needs two distinct readings on one scale.
  * `sameScale(a, b)` says whether two marks are drawn on one value scale (a parallel coordinate's axes are not).
  */
-export function keyedHooks({ figures, refuse, sameScale } = {}) {
+export function keyedHooks({ figures, refuse, sameScale, undrawn } = {}) {
   return {
+    undrawn,
     figures: (g, ctx) => [...(figures?.(g, ctx) ?? [])],
     refuse(g, ctx) {
       if (g.do === "compare" && sameScale) {

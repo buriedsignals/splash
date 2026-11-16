@@ -10,6 +10,26 @@ const stage = (format: string, gestures: any[], repair = false) => stageKeyedFor
 const nuclear = model.links.filter((l: any) => l.from === "Nuclear").reduce((s: number, l: any) => s + l.value, 0);
 
 describe("flow family (sankey)", () => {
+  // gx-sankey scrolly (Qwen3.5-9B, 2026-11-16): a highlight on "Nucléaire – Allemagne", a flow of 0, was told "the closest
+  // is Solaire – Allemagne" — nearest by spelling, another fact entirely. The refusal says why it is not drawn, and
+  // offers a drawn ribbon from the same source.
+  const refusalOf = (gestures: any[]) => {
+    try {
+      stage("static", gestures);
+    } catch (e) {
+      return String((e as Error).message);
+    }
+    return "";
+  };
+  it("should say a zero flow has no ribbon when a gesture names it", () => {
+    expect(refusalOf([{ do: "highlight", mark: "Nuclear – Germany" }])).toContain("flow of 0");
+  });
+  it("should offer a drawn ribbon from the same source for a zero flow, not the nearest spelling", () => {
+    expect(refusalOf([{ do: "highlight", mark: "Nuclear – Germany" }])).toMatch(/"Nuclear – (?!Germany)[^"]+"/);
+  });
+  it("should keep the nearest spelling for a misspelt drawn ribbon", () => {
+    expect(refusalOf([{ do: "highlight", mark: "Nuclear – Frence" }])).toContain('"Nuclear – France"');
+  });
   it("should leave out zero flows rather than refuse them", () => {
     expect(model.dropped > 0 && model.links.every((l: any) => l.value > 0)).toBe(true);
   });

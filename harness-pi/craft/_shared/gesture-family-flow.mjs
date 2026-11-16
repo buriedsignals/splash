@@ -23,6 +23,7 @@ export function flowModel({ flows, sources = undefined, targets = undefined }) {
   if (!Array.isArray(flows) || !flows.length) throw new Error("flows must be a non-empty array of { from, to, value }");
   const pairs = new Map();
   let dropped = 0;
+  const zeros = new Set();
   for (const f of flows) {
     const from = String(f.from ?? "");
     const to = String(f.to ?? "");
@@ -30,6 +31,7 @@ export function flowModel({ flows, sources = undefined, targets = undefined }) {
     if (!from.trim() || !to.trim()) throw new Error(`every flow names its from and to; got ${JSON.stringify(f).slice(0, 80)}`);
     if (!(value > 0)) {
       dropped++;
+      zeros.add(`${from}${ARROW}${to}`);
       continue;
     }
     const key = `${from}${ARROW}${to}`;
@@ -45,7 +47,7 @@ export function flowModel({ flows, sources = undefined, targets = undefined }) {
   const right = order("to", targets);
   // Ribbons drawn source by source, in rail order: a source's ribbons sit together.
   links.sort((a, b) => left.indexOf(a.from) - left.indexOf(b.from) || right.indexOf(a.to) - right.indexOf(b.to));
-  return { links, left, right, dropped };
+  return { links, left, right, dropped, zeros: [...zeros] };
 }
 
 export const flowMarks = ({ links }) => links.map((l) => ({ name: `${l.from}${ARROW}${l.to}`, value: l.value, key: l.from, series: l.to }));
@@ -64,9 +66,20 @@ export const flowDerived = ({ links }) => {
   };
 };
 
-export function flowHooks({ links }) {
+export function flowHooks({ links, zeros = [] }) {
   const grand = links.reduce((s, l) => s + l.value, 0);
+  const fold = (s) => String(s).normalize("NFKD").replace(/\p{M}/gu, "").toLowerCase().trim();
+  const zero = new Set(zeros.map(fold));
   return keyedHooks({
+    // A ribbon of 0 is left out of the plate: a gesture naming it is told so, and offered its source's drawn ribbons
+    // (gx-sankey scrolly, Qwen3.5-9B: "Nucléaire – Allemagne" was offered "Solaire – Allemagne", the nearest spelling).
+    undrawn(name) {
+      if (!zero.has(fold(name))) return null;
+      const [from, to] = String(name).split(ARROW);
+      const same = (side, v) => links.filter((l) => fold(l[side]) === fold(v)).map((l) => `${l.from}${ARROW}${l.to}`);
+      const pool = same("from", from);
+      return { reason: `it is a flow of 0 in the beat's flows, so no ribbon draws it`, pool: pool.length ? pool : same("to", to) };
+    },
     // A gesture over a set of ribbons states their sum, its share of the whole, or how many ribbons it holds.
     figures(g, ctx) {
       if (!["highlight", "filter", "bracket"].includes(g.do)) return [];
