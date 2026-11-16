@@ -17,6 +17,7 @@ import { sizeFor, videoExportSize } from "#shared/chart-video/sizes.mjs";
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
 import { applyStoryboard, assertHeadlineNumbersDrawn } from "./guards.mjs";
 import { mapTilerKey, measureMap, renderMapVideo } from "./map-video.mjs";
+import { columnIndexHint } from "./column-index.mjs";
 import { sourceSpelling } from "./place-labels.mjs";
 import { assertEventFramesReadable, pickDirection, plain, refusing, storyLanguage } from "./video.mjs";
 
@@ -40,8 +41,15 @@ await refusing(HERE, async () => {
   // ── the claim first, on the map's own shapes; then what the gesture can show (./subject.mjs)
   const { mapOf, subjectOf } = await import("./subject.mjs");
   const map = mapOf(HERE);
+  // The kit's own reading of the subject's point runs BEFORE the beat's check: a check that reads the same wrong point
+  // only says "it stands in null" (gx-locator video, Qwen3.5-9B, 2026-11-16: three times, then the session stopped).
+  let subject;
+  try {
+    subject = subjectOf(beat, map);
+  } catch (error) {
+    throw new Error(`${error.message}${columnIndexHint(beat.subject?.lon, beat.subject?.lat, HERE)}`);
+  }
   beat.check({ countryOf: map.countryOf, km: map.km, subject: beat.subject });
-  const subject = subjectOf(beat, map);
   assertHeadlineNumbersDrawn([beat.title].flat()[0], [subject.biggest.mw], "subject's number");
 
   // ── the words, in the shape the proof's copyOf returned
