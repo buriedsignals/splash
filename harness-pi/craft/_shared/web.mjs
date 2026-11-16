@@ -12,6 +12,7 @@ import { directionReachable, readRunDirection } from "#shared/design-base/run-di
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
 import { plainSpaces } from "#shared/design-base/web.mjs";
 import { errorText } from "./guards.mjs";
+import { failuresBlock, motionOnly } from "./verify-failures.mjs";
 
 /** The viewport whose verify-web screenshot is the one to look at (`fit-<w>x<h>.png`). */
 export const DESKTOP_SHOT = "fit-1920x950.png";
@@ -133,19 +134,26 @@ export async function renderBeatWeb({ here, render, textPerRegister, evidenceLev
   // The skill's own evidence: fit at seven viewports, real pointer hover over every mark, every
   // control clicked with scripting on and off, keyboard reach, annotation clearance.
   mkdirSync(shots, { recursive: true });
-  const verify = Bun.spawnSync(["bun", chartWeb(here, "scripts", "verify-web.mjs"), "--file", outPath, "--shots", "--out", shots], { stdout: "pipe", stderr: "pipe" });
-  const log = `${verify.stdout.toString()}${verify.stderr.toString()}`;
-  const lines = log.split("\n");
+  const verifyOnce = () => {
+    const run = Bun.spawnSync(["bun", chartWeb(here, "scripts", "verify-web.mjs"), "--file", outPath, "--shots", "--out", shots], { stdout: "pipe", stderr: "pipe" });
+    const text = `${run.stdout.toString()}${run.stderr.toString()}`;
+    return { verify: run, lines: text.split("\n") };
+  };
+  let { verify, lines } = verifyOnce();
+  // A failure about MOTION alone (two idle frames differ, "rest" does not restore the landing picture) is verified
+  // once more before it is refused: in gx-beeswarm web (12B, 2026-11-16) the same beat failed one such check, then a
+  // different one, and the refusal sent the model to "fix the words" — 16 edits that changed nothing.
+  if (verify.exitCode !== 0 && motionOnly(failuresBlock(lines))) {
+    console.log(`verify-web: ${failuresBlock(lines).length} failure(s), all about motion — verifying once more`);
+    ({ verify, lines } = verifyOnce());
+  }
   const fails = lines.filter((l) => l.startsWith("  FAIL"));
   const at = lines.findIndex((l) => /^\d+ checks passed/.test(l));
   const summary = at >= 0 ? lines.slice(at).join("\n").trim() : lines.slice(-15).join("\n").trim();
   console.log(`\nverify-web (chart-web): ${summary}`);
   const desktop = join(shots, DESKTOP_SHOT);
 
-  // The failures block only: the skipped block lists its items the same way.
-  const from = lines.findIndex((l) => /^failures:/.test(l));
-  const listed = [];
-  if (from >= 0) for (const l of lines.slice(from + 1)) { if (!/^\s+- /.test(l)) break; listed.push(l); }
+  const listed = failuresBlock(lines);
   const falseReds = listed.length ? [...embeddedFaceFalseReds(listed, readFileSync(outPath, "utf8")), ...restoreAntialiasFalseReds(listed)] : [];
   if (verify.exitCode !== 0 && falseReds.length === listed.length && listed.length)
     console.log(`taken as passed: every failure is a known false red — the typeface probe on a face the page embeds, or the restore check's anti-aliasing (${falseReds.length})`);
@@ -153,7 +161,12 @@ export async function renderBeatWeb({ here, render, textPerRegister, evidenceLev
     // The summary above lists every failure. Keep the shots so the failure can be looked at;
     // renders/ is emptied — the page is not done.
     if (existsSync(desktop)) console.log(`the refused page, for diagnosis —\nlook at: ${desktop}`);
-    refuse(here, `the page rendered but the chart-web verification failed (${fails.length || "see above"}): fix the words in beat.mjs that the failures name (a label too long, two marks answering the same), then render again`);
+    refuse(
+      here,
+      motionOnly(listed)
+        ? `the page rendered but the chart-web verification failed twice on motion (${listed.length}): the picture does not settle, or "rest" does not bring the landing picture back — the gesture the failure names changes the picture in a way that does not end; change or drop that gesture, then render again`
+        : `the page rendered but the chart-web verification failed (${fails.length || "see above"}): fix the words in beat.mjs that the failures name (a label too long, two marks answering the same), then render again`,
+    );
   }
   if (!existsSync(desktop)) refuse(here, `verify-web passed but wrote no ${DESKTOP_SHOT} into ${shots}`);
   const png = join(out, `${label}.png`);
