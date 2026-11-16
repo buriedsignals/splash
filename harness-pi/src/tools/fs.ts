@@ -272,6 +272,21 @@ function dropAddedIndent(body: string, oldText: string, newText: string): [strin
   return [bare, newText.startsWith(lead) ? newText.slice(lead.length) : newText];
 }
 
+/**
+ * An edit an earlier call already made: old_text is gone and new_text is there, once. Moving formats, 2026-11-16: 48
+ * of 227 "occurs 0 times" refusals were this, and the 12B then looped on edits that changed nothing.
+ */
+function appliedAlready(body: string, newText: string): boolean {
+  if (!newText.trim()) return false;
+  const found = locate(body, newText);
+  if (!("at" in found)) return false;
+  // Whole lines only: a fragment such as "x" is found inside some other word of any file.
+  const lineStart = body.lastIndexOf("\n", found.at - 1) + 1;
+  const end = found.at + found.length;
+  const lineEnd = body.indexOf("\n", end) === -1 ? body.length : body.indexOf("\n", end);
+  return !body.slice(lineStart, found.at).trim() && !body.slice(end, lineEnd).trim();
+}
+
 function locate(body: string, oldText: string): { at: number; length: number } | { count: number } {
   const count = body.split(oldText).length - 1;
   if (count === 1) return { at: body.indexOf(oldText), length: oldText.length };
@@ -552,6 +567,8 @@ export function fsTools(bases: Bases) {
       const body = readFileSync(abs, "utf8");
       [old_text, new_text] = dropAddedIndent(body, old_text, new_text);
       const found = locate(body, old_text);
+      if ("count" in found && found.count === 0 && appliedAlready(body, new_text))
+        return text(`${path} already holds this edit's new_text: an earlier edit applied it, and nothing changed. ${NOTHING_CHANGED}`);
       if ("count" in found)
         throw new Error(
           `old_text occurs ${found.count} times in ${path}; it must occur exactly once.${found.count === 0 ? nearestLine(body, old_text) : " Include more surrounding text."}`,
@@ -673,6 +690,8 @@ export function beatTools(bases: Bases, beat: string) {
       const body = readFileSync(target, "utf8");
       [old_text, new_text] = dropAddedIndent(body, old_text, new_text);
       const found = locate(body, old_text);
+      if ("count" in found && found.count === 0 && appliedAlready(body, new_text))
+        return text(`${file} already holds this edit's new_text: an earlier edit applied it, and nothing changed. ${NOTHING_CHANGED}`);
       if ("count" in found)
         throw new Error(
           `old_text occurs ${found.count} times in ${file}; it must occur exactly once.${found.count === 0 ? nearestLine(body, old_text) : " Include more surrounding text."}`,
