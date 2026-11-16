@@ -8,11 +8,13 @@ let table;
 const near = (a, b) => Math.abs(a.lat - b[1]) < 0.25 && Math.abs(a.lon - b[2]) < 0.25;
 const fold = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 
-/** Throws when a bare place (no label) prints a source spelling the page's language writes otherwise. */
+/** Throws, naming every one, when a place prints a source spelling the page's language writes otherwise. */
 export function sourceSpelling(places, rows, lang) {
   const code = String(lang ?? "").toLowerCase().slice(0, 2);
   if (!code || code === "en") return undefined;
   table ??= JSON.parse(readFileSync(join(import.meta.dirname, "place-names.json"), "utf8")).places;
+  const q = JSON.stringify;
+  const wrong = [];
   [places].flat().forEach((p, i) => {
     const name = typeof p === "object" && p !== null ? p.name : p;
     const printed = typeof p === "object" && p !== null && p.label !== undefined ? p.label : name;
@@ -23,10 +25,12 @@ export function sourceSpelling(places, rows, lang) {
     const known = row && table.find((t) => near(row, t) && fold(t[0]) === fold(name));
     const local = known?.[3][code];
     if (!local || fold(local) === fold(name)) return;
-    const q = JSON.stringify;
-    throw new Error(
-      `places[${i}]: ${q(name)} is data.json's spelling, printed as is; a ${code} page usually prints it ${q(local)} (Natural Earth) — a value that works: { name: ${q(name)}, label: ${q(local)} }; a label copied from the name (label: c.name) prints the source's spelling`,
-    );
+    wrong.push({ i, name, local });
   });
-  return undefined;
+  if (!wrong.length) return undefined;
+  // Every place at once: one per render cost the 12B a round per city (gx-locator static, 2026-11-16).
+  const head = wrong.map(({ i, name, local }) => `places[${i}]: ${q(name)} → ${q(local)}`).join("; ");
+  throw new Error(
+    `${head} — ${wrong.length > 1 ? "these are" : "this is"} data.json's spelling, printed as is; a ${code} page usually prints the Natural Earth name — values that work: ${wrong.map(({ name, local }) => `{ name: ${q(name)}, label: ${q(local)} }`).join(", ")}; a label copied from the name (label: c.name) prints the source's spelling`,
+  );
 }

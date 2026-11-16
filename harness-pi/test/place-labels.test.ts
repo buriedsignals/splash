@@ -25,6 +25,13 @@ describe("sourceSpelling — a locator place left in the source's spelling on a 
     }
     expect(message).not.toContain('label: "Kyiv"');
   });
+  // gx-locator static, 12B, 2026-11-16 (gx-locator-seeded-osaurus-1794786931537): "Kyiv" refused, fixed, rendered, then
+  // "Rostov" refused — two rounds for one table.
+  it("should name every place the page prints in the source's spelling in one refusal", () => {
+    expect(() =>
+      sourceSpelling(["Kyiv", "Bucharest"], [{ name: "Kyiv", ...KYIV }, { name: "Bucharest", ...BUCHAREST }], "fr"),
+    ).toThrow(/places\[0\][\s\S]*places\[1\][\s\S]*label: "Bucarest"/);
+  });
   it("should accept a label that is not the source spelling", () => {
     expect(sourceSpelling([{ name: "Kyiv", label: "Kiev" }], [{ name: "Kyiv", ...KYIV }], "fr")).toBeUndefined();
   });
