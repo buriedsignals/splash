@@ -21,7 +21,12 @@ export const DESKTOP_SHOT = "fit-1920x950.png";
 export const chartWeb = (here, ...parts) => skillScriptFrom(here, "chart-web", ...parts);
 
 /** U+202F / U+00A0 (what toLocaleString("fr-FR") emits) refuse every face; every word goes through this. */
-export const plain = (text) => plainSpaces(String(text));
+export const plain = (text) => {
+  // String() of a list glues its items with a comma ("…le ratio.,Choisissez…"): a field printed as one text takes one.
+  if (Array.isArray(text))
+    throw new Error(`${JSON.stringify(text).slice(0, 160)} is a list where the page prints one text, not a list of forms — write one string; a value that works: ${JSON.stringify(String(text[0] ?? ""))}`);
+  return plainSpaces(String(text));
+};
 
 /** STORYBOARD.md's `language:` (the page's <html lang>), or null when the storyboard is absent. */
 export function storyLanguage(here) {
