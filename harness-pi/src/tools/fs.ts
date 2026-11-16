@@ -252,6 +252,23 @@ const text = (t: string) => ({
   details: {},
 });
 
+/** Typographic quotes and spaces folded one character for one, so offsets in the folded text are offsets in the file. */
+const foldQuotes = (t: string) =>
+  t.replace(/[\u2018\u2019\u02bc]/g, "'").replace(/[\u201c\u201d]/g, '"').replace(/[\u00a0\u202f]/g, " ");
+
+/**
+ * Where old_text sits in body: exactly, or else once the typographic quotes are folded on both sides. Qwen3.5-9B typed
+ * "de l'humanité" for the file's "de l’humanité" ten times, each refused with the exact line quoted back
+ * (gx-beeswarm video, 2026-11-16); a model that cannot type ’ cannot copy it either.
+ */
+function locate(body: string, oldText: string): { at: number; length: number } | { count: number } {
+  const count = body.split(oldText).length - 1;
+  if (count === 1) return { at: body.indexOf(oldText), length: oldText.length };
+  if (count > 1) return { count };
+  const [folded, wanted] = [foldQuotes(body), foldQuotes(oldText)];
+  return folded.split(wanted).length - 1 === 1 ? { at: folded.indexOf(wanted), length: oldText.length } : { count: 0 };
+}
+
 /** The file's passage closest to old_text, as many lines long, quoted, so a near-miss edit can be retried exactly.
  *  Tokens are letters in any script: an ASCII split left an Arabic block matching only its key line, and the model
  *  retyped the same misspelt value three times (stress-x, Qwen3.5-9B, 2026-11-13). */
@@ -504,14 +521,14 @@ export function fsTools(bases: Bases) {
       const abs = resolveInStory(bases, path);
       assertWritable(bases, abs);
       const body = readFileSync(abs, "utf8");
-      const count = body.split(old_text).length - 1;
-      if (count !== 1)
+      const found = locate(body, old_text);
+      if ("count" in found)
         throw new Error(
-          `old_text occurs ${count} times in ${path}; it must occur exactly once.${count === 0 ? nearestLine(body, old_text) : " Include more surrounding text."}`,
+          `old_text occurs ${found.count} times in ${path}; it must occur exactly once.${found.count === 0 ? nearestLine(body, old_text) : " Include more surrounding text."}`,
         );
       await writeFile(
         abs,
-        body.replace(old_text, () => new_text),
+        body.slice(0, found.at) + new_text + body.slice(found.at + found.length),
       );
       return text(`edited ${relative(bases.storyDir, abs)}`);
     },
@@ -624,14 +641,14 @@ export function beatTools(bases: Bases, beat: string) {
       if (!existsSync(target))
         throw new Error(`${file} does not exist yet: write it with write_file`);
       const body = readFileSync(target, "utf8");
-      const count = body.split(old_text).length - 1;
-      if (count !== 1)
+      const found = locate(body, old_text);
+      if ("count" in found)
         throw new Error(
-          `old_text occurs ${count} times in ${file}; it must occur exactly once.${count === 0 ? nearestLine(body, old_text) : " Include more surrounding text."}`,
+          `old_text occurs ${found.count} times in ${file}; it must occur exactly once.${found.count === 0 ? nearestLine(body, old_text) : " Include more surrounding text."}`,
         );
       await writeFile(
         target,
-        body.replace(old_text, () => new_text),
+        body.slice(0, found.at) + new_text + body.slice(found.at + found.length),
       );
       return text(`edited ${file}`);
     },
