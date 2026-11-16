@@ -224,10 +224,11 @@ export function craftReads(beatDir: string, beat: string, pending?: () => string
         ? `Next: edit beats/${beat}/beat.mjs where the last refusal points, then render_beat (beat "${beat}").`
         : `Next: write_file of beats/${beat}/beat.mjs, this story's own, from the worked example in your first message.`;
   return {
+    readBases: ["skills", "shared"],
     answered: [
       {
         match: /(^|\/)proof(\/|$)/,
-        reply: `proof/ is not part of this beat: the worked example in your first message is all of it the beat needs. ${next().replace("Next: ", "Next: your call is ")}`,
+        reply: `proof/ is not part of this beat: the worked example in your first message is all of it the beat needs, and the beat's own data is beats/${beat}/data.json. ${next().replace("Next: ", "Next: your call is ")}`,
       },
       {
         match: /(^|\/)CONTRACT\.md$/,

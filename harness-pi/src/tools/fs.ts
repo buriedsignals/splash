@@ -422,11 +422,15 @@ function stillInContext(ctx: { sessionManager?: { buildContextEntries(): unknown
 
 export function fsTools(bases: Bases) {
   const seen = new Map<string, { stamp: string; id: string }>();
+  // gx-histogram web (Qwen3.5-9B, 2026-11-16): a description naming a folder the session may not read sent the
+  // model there fourteen times; the tools name only what this session can read.
+  const dirs = (bases.readBases ?? READ_BASES).map((b) => `${b}/`);
+  const where = `the story${dirs.length ? `, ${dirs.slice(0, -1).join(", ")}${dirs.length > 1 ? " or " : ""}${dirs.at(-1)}` : ""}`;
   const readFileTool = defineTool({
     name: "read_file",
     label: "Read file",
     description:
-      "Read a text file from the story, skills/, shared/ or proof/. Paths are absolute or relative to the Splash root. A CSV returns an excerpt; read source/profile.json for its full profile.",
+      `Read a text file from ${where}. Paths are absolute or relative to the Splash root. A CSV returns an excerpt; read source/profile.json for its full profile.`,
     parameters: Type.Object({ path: Type.String() }),
     async execute(id, { path }, _signal, _onUpdate, ctx) {
       const done = answeredFor(bases, path);
@@ -470,7 +474,7 @@ export function fsTools(bases: Bases) {
   const listDir = defineTool({
     name: "list_dir",
     label: "List directory",
-    description: "List a directory in the story, skills/, shared/ or proof/.",
+    description: `List a directory in ${where}.`,
     parameters: Type.Object({ path: Type.String() }),
     async execute(id, { path }, _signal, _onUpdate, ctx) {
       const done = answeredFor(bases, path);
