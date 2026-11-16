@@ -1398,3 +1398,9 @@ Fixes:
 - **2f168824d** — new: a drawn name read from column X when data.json carries `X_<lang>` with a different value, on a non-English page, is refused with `col("X_<lang>")` as the value that works. Lives in assertNoAggregates (all gesture families). Mutation: guard call removed → 2 fail.
 
 Open: T1 not exercised in any of the 8 cells. T7 refuses one place per render (12B needed two rounds); could list all at once.
+
+### T7 in one refusal (3f72c94e6), re-measured
+
+| Cell | Model | Run | Turns | Outcome |
+|---|---|---|---|---|
+| locator | 12B | gx-locator-seeded-osaurus-1794825030802 | 9 (was 15) | One refusal named Kyiv, Bucharest and Rostov; one edit fixed all three. Exit 0, 217 s (was 284 s). |
