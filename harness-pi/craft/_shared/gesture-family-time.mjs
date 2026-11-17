@@ -474,6 +474,15 @@ export function timeHooks(model) {
     for (const m of ms) pool.push(m.value, model.measureOf.get(m.name));
     if (g.do === "compare" && ms.length === 2) pool.push(...pair(ms[0].value, ms[1].value), ...pair(model.measureOf.get(ms[0].name), model.measureOf.get(ms[1].name)));
     if (g.do === "bracket") {
+      // "après 1986" excludes 1986: a run that holds it sums one time more than its words say (gx-area video, mvq91).
+      const after = String(g.note).match(/\b(?:après|after)\s+(?:l['’]an\s+)?(\d{3,4})\b/i)?.[1];
+      if (after && ms.some((m) => String(m.t) === after)) {
+        const raw = Array.isArray(g.marks) && g.marks.length === marks.length ? g.marks : marks;
+        const value = raw.filter((_, k) => String(model.markOf.get(marks[k])?.t) !== after);
+        throw new GestureRefusal(`gestures[${i}].marks`, `the note says "après ${after}", but the run holds ${after} itself, so its sum counts one time more than the words: drop "${after}" from the marks`, {
+          set: { index: i, field: "marks", value },
+        });
+      }
       const sum = ms.reduce((t, m) => t + m.value, 0);
       const whole = model.marks.reduce((t, m) => t + m.value, 0);
       pool.push(sum, whole, (sum / whole) * 100, sum / whole, whole - sum);

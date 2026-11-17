@@ -300,6 +300,25 @@ describe("area-and-stacked-area (proof/static-area-swiss-co2)", () => {
     ]).toEqual([cut + 1, 2024, Number(share.toFixed(1))]);
   });
 
+  // gx-area video (Qwen3.5-9B, mvq91): marks ["1986", …years after], noted "38 ans après 1986 : 49,9 %"; the share
+  // check offered 51,2 %, the share WITH 1986, under words that exclude it.
+  it("should refuse a bracket that holds the year its note says it comes after, dropping that year", () => {
+    const e = refusalOf(() =>
+      staticPlate(AREA, [
+        {
+          do: "bracket",
+          marks: [String(cut), ...after.map((m: any) => m.key)],
+          of: "whole",
+          note: `${after.length} ans après ${cut} : ${share.toFixed(1).replace(".", ",")} % du total`,
+        },
+      ]),
+    );
+    expect([e?.field, e?.fix]).toEqual([
+      "gestures[0].marks",
+      { set: { index: 0, field: "marks", value: after.map((m: any) => m.key) } },
+    ]);
+  });
+
   it("should refuse a bracket share the surface does not give", () => {
     expect(
       refusalOf(() =>
