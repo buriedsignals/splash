@@ -1732,6 +1732,15 @@ Reading:
   différence de 2,4 fois ». The guards did their work in the loop: a short title form without the figures, a
   « double » for a 2.44 ratio (refused, rewritten 2,4), a pull-back note restating the subject's figure. No new
   defect; the grid sits small in the frame (the map-frame backlog item).
+- mvq75-77 cartogram video (Qwen3.5-9B): PASS at mvq77, 21 turns, 562 s. Two guard defects stopped the first runs.
+  mvq75: the storyboard kept one clause of the article's sentence and the model titled with both; the refusal called
+  the literal title "computed" (the model was already through it when I stopped the cell, too early). The plate now
+  prints the takeaway when the title is the takeaway with a clause run on after « ; : — , ». mvq76: the takeaway's verb
+  « est » named the row coded EST, so a name on Russia (the storyboard's own subject) was refused as not serving a
+  takeaway "about Estonia", twice; a 2-3 letter code is now read only in capitals. The render: « Moyenne par pays :
+  65,1 % », Russia ringed « Russie, 35,9 % », the whole grid. Kit defect (backlog, first of the geo frame items): the
+  tile grid is drawn ~580 px wide at 1920, its tiles ~52 px, so the type floor binds and the codes spill onto their
+  neighbours (« NOBSWEFIN »), and Russia's value sits across its tile's edge.
 - Model-side residue (Tune, not Harness): mvq36's title names the ceiling's +2 that the three-gesture video never
   shows; "l'Chine" elision (mvq28).
 
