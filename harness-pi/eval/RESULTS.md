@@ -1605,6 +1605,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | box-plot (position) | pass (mvq108, 12 t) | pass (mvq109, 9 t) | pass (mvq110, 12 t) |
 | bump-ranking-over-time (position) | pass (mvq111, 35 t) | pass (mvq112, 19 t) | pass (mvq113, 22 t) |
 | diverging-stacked-bar-likert (stack) | pass (mvq114, 7 t) | pass (mvq115, 19 t) | pass (mvq116, 14 t) |
+| marimekko-mosaic-plot (part-to-whole) | pass (mvq117, 4 t) | — | — |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1953,3 +1954,7 @@ Harness fixes, in order (each with a test that fails without it):
   France's 67,7 % nuclear, "le fossile et le renouvelable réunis n'en font que 32,3 %", Poland/Norway leaning either
   way, the limits — figures match data.json. Backlog: the compare's "32,3" and its bar sit on the start of France's
   nuclear segment, so the number reads as nuclear's own; the prose card covers Suisse's label row edge.
+- **gx-marimekko-mosaic-plot web (Qwen3.5-9B, mvq117).** Pass (4 turns, 128 s, refusals=0; English page): six
+  2024 columns sized by generation, coal lit in Germany and Poland, "200.9 TWh · 12.3 %" of the whole and
+  "199.8 TWh · 99.5 %" of the coal — both recomputed from data.json. Backlog: both toggles offer "The whole" though
+  the second compares against the other countries' coal; "12 %" keeps the French space on an English page.
