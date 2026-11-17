@@ -1831,3 +1831,9 @@ Harness fixes, in order (each with a test that fails without it):
 - mvq87 hex scrolly (Qwen3.5-9B): PASS first try, 7 turns, 143 s, refusals=0. Czechia 36,1 per 1 000 against
   Germany 14,8, then the two side by side. Backlog: card 4 prints the raw "2026-06"; at card 2's capture the card
   sits over DEU, the hexagon it names.
+- mvq88/89 cartogram scrolly (Qwen3.5-9B): mvq88 looped on its own refusal. A filter with no marks, noted "40 sur
+  41" for the places with data, was read as keeping 0 places, and the value that works was "40 sur 0". A filter
+  with no marks is now refused at its marks, with the fix to drop it (ad1c85f62); mvq88 was saved and killed. The
+  rerun mvq89 passed: 17 turns, 479 s, refusals=0. Three cards: one tile per country, Russia at 36 %, and Norway at
+  99 % against it. Backlog: card 3 folds the limits text into a long card, and the title falls back to its short
+  form. All 8 maps now pass in scrolly on Qwen3.5-9B.
