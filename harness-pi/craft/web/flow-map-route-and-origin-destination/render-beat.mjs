@@ -45,7 +45,6 @@ const AIR_DEG = 1;
 /** The worked example's own raster width for the drawn-plate width conversion. */
 const SIZE = 900;
 const RIBBON_OPACITY = 0.55;
-const MEASURE_KEYS = ["count", "perCapita", "perArea"];
 
 await refusing(HERE, async () => {
   const { default: beat } = await import("./beat.mjs");
@@ -55,7 +54,10 @@ await refusing(HERE, async () => {
   const { CHANGE_MS, DirectedFlowMapWeb, MEASURE_ID_PREFIX, flowInks } = await import("./DirectedFlowMapWeb.tsx");
 
   // ── the fields ────────────────────────────────────────────────────────────────────────────────
-  const REQUIRED = ["eyebrow", "key", "value", "population", "origin", "names", "measures", "controlLabel", "note", "rank", "detail", "countedLabel", "tableCaption", "columns", "claimNote", "mercator", "reading", "hint", "title", "limits", "source", "alt", "check"];
+  // Without a population column the page divides by what the data supports: count and per area.
+  const PER_CAPITA = beat.population != null;
+  const MEASURE_KEYS = PER_CAPITA ? ["count", "perCapita", "perArea"] : ["count", "perArea"];
+  const REQUIRED = ["eyebrow", "key", "value", "origin", "names", "measures", "controlLabel", "note", "rank", "detail", "countedLabel", "tableCaption", "columns", "claimNote", "mercator", "reading", "hint", "title", "limits", "source", "alt", "check"];
   const missingFields = REQUIRED.filter((k) => beat[k] === undefined);
   if (missingFields.length) throw new Error(`beat.mjs is missing ${missingFields.join(", ")}: give each as a field of the default export (export default { …, ${missingFields[0]}: … }), not as a separate export (see CONTRACT.md)`);
   for (const fn of ["note", "rank", "detail", "tableCaption", "claimNote", "mercator", "reading", "alt", "check"])
@@ -66,7 +68,8 @@ await refusing(HERE, async () => {
       throw new Error(`beat.mjs: measures.${k} must be { label, unit, announce, format(v) } (see CONTRACT.md)`);
     if (!m.announce.includes(m.label)) throw new Error(`measures.${k}.announce must CONTAIN its label "${m.label}" (a screen reader hears the name it can see)`);
   }
-  if (!Array.isArray(beat.columns) || beat.columns.length !== 6) throw new Error("columns must be the table's six headings: destination, count, per inhabitants, per area, rank, width (see CONTRACT.md)");
+  const HEADINGS = ["destination", "count", ...(PER_CAPITA ? ["per inhabitants"] : []), "per area", "rank", "width"];
+  if (!Array.isArray(beat.columns) || beat.columns.length !== HEADINGS.length) throw new Error(`columns must be the table's ${HEADINGS.length} headings: ${HEADINGS.join(", ")} (see CONTRACT.md)`);
 
   // ── THE ROWS, AND THE JOIN ────────────────────────────────────────────────────────────────────
   const table = JSON.parse(readFileSync(join(HERE, "data.json"), "utf8"));
@@ -75,7 +78,10 @@ await refusing(HERE, async () => {
     if (i < 0) throw new Error(`data.json has no column ${JSON.stringify(name)}; its columns are ${table.columns.map((c) => c.name).join(", ")}`);
     return i;
   };
-  const [CI, VI, PI] = [at(beat.key), at(beat.value), at(beat.population)];
+  if (PER_CAPITA && !table.columns.some((c) => c.name === beat.population))
+    throw new Error(`data.json has no column ${JSON.stringify(beat.population)} for the per-inhabitant measure; its columns are ${table.columns.map((c) => c.name).join(", ")}: set population: null — the page then divides by count and per area only (drop measures.perCapita, give five columns: destination, count, per area, rank, width; leaders and ranks are [count, perArea])`);
+  const [CI, VI] = [at(beat.key), at(beat.value)];
+  const PI = PER_CAPITA ? at(beat.population) : -1;
   const filters = Object.entries(beat.where ?? {}).map(([c, v]) => [at(c), String(v)]);
   const num = (raw) => Number(String(raw).replace(/\s/g, "").replace(",", "."));
   const ORIGIN = String(beat.origin);
@@ -87,8 +93,8 @@ await refusing(HERE, async () => {
     if (!/^[A-Z]{3}$/.test(code)) throw new Error(`${beat.key} holds ${JSON.stringify(r[CI])}: it must be an ISO 3166 alpha-3 code (resolve names with countries.mjs)`);
     if (code === ORIGIN) throw new Error(`${code} is the origin and also a destination row: leave the origin out of the rows (or filter it with where)`);
     if (!Number.isFinite(people) || people <= 0) throw new Error(`${code}: ${beat.value} = ${JSON.stringify(r[VI])} — a band's width is a positive quantity; leave out rows with none (say so)`);
-    const inhabitants = num(r[PI]);
-    if (!(inhabitants > 0)) throw new Error(`${code}: ${beat.population} = ${JSON.stringify(r[PI])} — the per-inhabitant measure needs every destination's population`);
+    const inhabitants = PER_CAPITA ? num(r[PI]) : undefined;
+    if (PER_CAPITA && !(inhabitants > 0)) throw new Error(`${code}: ${beat.population} = ${JSON.stringify(r[PI])} — the per-inhabitant measure needs every destination's population`);
     if (flows.some((f) => f.code === code)) throw new Error(`two rows for ${code}: keep ONE row per destination (filter to one month or category with where)`);
     flows.push({ code, people, inhabitants });
   }
@@ -222,12 +228,12 @@ await refusing(HERE, async () => {
   const WINDOW = [[r2(STUDY.west - AIR_DEG), r2(STUDY.south - AIR_DEG)], [r2(STUDY.east + AIR_DEG), r2(STUDY.north + AIR_DEG)]];
   if (WINDOW[1][1] > 80 || WINDOW[0][1] < 20 || WINDOW[1][0] - WINDOW[0][0] > 120) throw new Error(`the fan spans ${JSON.stringify(STUDY)}: this kit's camera holds a European fan, not one that wide`);
 
-  // ── THE THREE MEASURES, all derived ───────────────────────────────────────────────────────────
+  // ── THE MEASURES (three, or two without population), all derived ───────────────────────────────────────────────────────────
   const MEASURES = [
     { key: "count", of: (f) => f.people },
     { key: "perCapita", of: (f) => (f.people / f.inhabitants) * 1000 },
     { key: "perArea", of: (f) => (f.people / areaKm2[f.code]) * 1000 },
-  ].map((m) => ({ ...m, ...beat.measures[m.key], label: plain(beat.measures[m.key].label), unit: plain(beat.measures[m.key].unit), announce: plain(beat.measures[m.key].announce) }));
+  ].filter((m) => MEASURE_KEYS.includes(m.key)).map((m) => ({ ...m, ...beat.measures[m.key], label: plain(beat.measures[m.key].label), unit: plain(beat.measures[m.key].unit), announce: plain(beat.measures[m.key].announce) }));
   const fmtValue = (i, v) => plain(MEASURES[i].format(v));
   const READINGS = flows.map((f) => ({ code: f.code, values: MEASURES.map((m) => m.of(f)) }));
   const TOPS = MEASURES.map((_, i) => Math.max(...READINGS.map((r) => r.values[i])));
@@ -235,7 +241,7 @@ await refusing(HERE, async () => {
   const RANKS = MEASURES.map((_, i) => Object.fromEntries([...READINGS].sort((a, b) => b.values[i] - a.values[i]).map((r, k) => [r.code, k + 1])));
   const LEADERS = MEASURES.map((_, i) => [...READINGS].sort((a, b) => b.values[i] - a.values[i])[0].code);
   if (new Set(LEADERS).size !== MEASURES.length)
-    throw new Error(`the three measures crown ${LEADERS.map(NAME).join(", ")}: this page exists so the reader can watch the lead change hands with the denominator, and on this data it does not — this kit is not the right map for it (tell the journalist)`);
+    throw new Error(`the ${MEASURES.length} measures crown ${LEADERS.map(NAME).join(", ")}: this page exists so the reader can watch the lead change hands with the denominator, and on this data it does not — this kit is not the right map for it (tell the journalist)`);
   const REMAINDERS = MEASURES.map((_, i) => {
     const under = flows.filter((f) => widthOf(f.code, i) < MIN_W).map((f) => f.code);
     const people = under.reduce((s, c) => s + flows.find((f) => f.code === c).people, 0);
@@ -295,8 +301,8 @@ await refusing(HERE, async () => {
     return text;
   };
   const readingNumbers = (r) => [r.top, r.destinations, r.remainder.count, r.remainder.people, r.remainder.share, ...r.podium.flatMap((p) => [p.value, p.people, p.rank]), r.countLeader.value, r.countLeader.rank, r.countLeader.people, 1000];
-  const notes = [null, 1, 2].map((i) =>
-    i === null ? null : holdWords(`note(r) for ${MEASURE_KEYS[i]}`, plain(beat.note({ ...READ[i], label: MEASURES[i].label, unit: MEASURES[i].unit, format: (v) => fmtValue(i, v) })), readingNumbers(READ[i]), [["r.remainder.count", READ[i].remainder.count]]),
+  const notes = MEASURE_KEYS.map((_, i) =>
+    i === 0 ? null : holdWords(`note(r) for ${MEASURE_KEYS[i]}`, plain(beat.note({ ...READ[i], label: MEASURES[i].label, unit: MEASURES[i].unit, format: (v) => fmtValue(i, v) })), readingNumbers(READ[i]), [["r.remainder.count", READ[i].remainder.count]]),
   );
   const measureDeclaration = {
     label: plain(beat.controlLabel),
@@ -319,7 +325,7 @@ await refusing(HERE, async () => {
     const r = { code: f.code, name: f.name, people: f.people, sharePc: (f.people / total) * 100, ranks: MEASURES.map((_, i) => RANKS[i][f.code]), inhabitants: f.inhabitants, areaKm2: areaKm2[f.code], values };
     const detail = plain(beat.detail(r));
     if (!detail.includes(f.name)) throw new Error(`detail() must name the destination it answers for: ${f.name} → "${detail}"`);
-    holdWords(`detail() for ${f.name}`, detail, [r.people, r.sharePc, ...r.ranks, r.inhabitants, r.areaKm2, ...values, 1000], [["r.people", r.people]]);
+    holdWords(`detail() for ${f.name}`, detail, [r.people, r.sharePc, ...r.ranks, ...(PER_CAPITA ? [r.inhabitants] : []), r.areaKm2, ...values, 1000], [["r.people", r.people]]);
     return { code: f.code, name: f.name, cells: MEASURES.map((_, i) => fmtValue(i, values[i])), ranks: MEASURES.map((_, i) => rankWord(RANKS[i][f.code])), detail };
   });
   const dupes = tableRows.filter((r, i) => tableRows.findIndex((o) => o.detail === r.detail) !== i);
@@ -416,7 +422,7 @@ await refusing(HERE, async () => {
   const liveScript = liveFlowScript(live, { scope: ".chart-figure", styleModule, measureName: MEASURE_ID_PREFIX });
 
   const interaction = {
-    earns: `A still can only SAY that a band's width is a count rather than a count per inhabitant; this page lets the reader change the denominator and watch the lead pass from ${LEADERS.map(NAME).join(" to ")} while the two ends of every band stay where they are, and the set of bands too thin to draw go from ${REMAINDERS.map((r) => r.count).join(" to ")}.`,
+    earns: `A still can only SAY that a band's width is a count rather than ${PER_CAPITA ? "a count per inhabitant" : "a count per km²"}; this page lets the reader change the denominator and watch the lead pass from ${LEADERS.map(NAME).join(" to ")} while the two ends of every band stay where they are, and the set of bands too thin to draw go from ${REMAINDERS.map((r) => r.count).join(" to ")}.`,
     controls: [
       {
         question: `${NAME(LEADERS[0])} is the widest. Wide with what — people, or room?`,
@@ -428,9 +434,9 @@ await refusing(HERE, async () => {
         heldStill: [".chart-header", ".chart-source"],
       },
       {
-        question: "How much is this band exactly, and where does it stand in the three rankings?",
+        question: `How much is this band exactly, and where does it stand in the ${MEASURES.length} rankings?`,
         gesture: "ask-a-mark",
-        changes: "The pointed-at band redraws in its own ink at full strength above the bands it crosses, and answers with its destination, its count, its share of the total, its three ranks and the population and area that divide it.",
+        changes: `The pointed-at band redraws in its own ink at full strength above the bands it crosses, and answers with its destination, its count, its share of the total, its ${MEASURES.length} ranks and the ${PER_CAPITA ? "population and area" : "area"} that divide it.`,
         parameter: "which band is in question",
         authorPicked: flows[0].name,
         readerPicks: "every mark",
@@ -439,7 +445,7 @@ await refusing(HERE, async () => {
       {
         question: `And all ${flows.length}, without the map — or without JavaScript?`,
         gesture: "open-the-full-table",
-        changes: `The ${flows.length} rows open under the map, by count, each with its three measures; its width sample and its rank follow the chosen measure in pure CSS.`,
+        changes: `The ${flows.length} rows open under the map, by count, each with its ${MEASURES.length} measures; its width sample and its rank follow the chosen measure in pure CSS.`,
         parameter: "the form the readings are read in",
         authorPicked: "the map",
         readerPicks: ["the map", "the table"],

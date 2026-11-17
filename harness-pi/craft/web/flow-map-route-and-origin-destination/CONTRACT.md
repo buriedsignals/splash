@@ -12,9 +12,13 @@ sentence under the control, the table's ranks and width samples follow the measu
 redraws it at full strength and answers its own reading. The camera is the fan's own box. You do not
 change any of that.
 
-This kit draws ONE origin and MANY destinations. It is not a route map. **The three measures must
-crown three different leaders** — that is what the page shows; if they do not, the render refuses and
+This kit draws ONE origin and MANY destinations. It is not a route map. **The measures must
+crown different leaders** — that is what the page shows; if they do not, the render refuses and
 this is not the kit for the story.
+
+**No population column in the data? Set `population: null`.** The page then divides by count and per
+area only: drop `measures.perCapita`, give FIVE columns (destination, count, per area, rank, width),
+and every list indexed by measure (`c.leaders`, `r.ranks`, `r.values`) holds two: [count, perArea].
 
 You write ONE file, `beat.mjs`, in the beat folder. It names the columns of `data.json` and exports the
 WORDS of this story's page. `render-beat.mjs` (already in the folder) reads the destinations, computes
@@ -26,8 +30,8 @@ this story's from scratch with `write_file`.
 
 ## What data.json must hold
 
-One row per destination country: an ISO 3166 alpha-3 code column, the quantity (a positive number) and
-the destination's population. The origin is not a row. Several rows per destination (months,
+One row per destination country: an ISO 3166 alpha-3 code column, the quantity (a positive number) and,
+when the data has one, the destination's population. The origin is not a row. Several rows per destination (months,
 categories) must be narrowed to one with `where`. Countries: Europe and its neighbours (Kosovo and
 Northern Cyprus carry no code). A code the shapes do not hold is refused by name.
 
@@ -42,18 +46,18 @@ needs a hue of its own (the worked example records `#0B7A5E`, `origin: journalis
 | `eyebrow` | The rubric above the title, two to four words, in the story's language. |
 | `key` | The NAME of the column holding each destination's ISO alpha-3 code. |
 | `value` | The NAME of the column holding the quantity a band's WIDTH draws. |
-| `population` | The NAME of the column holding each destination's population (the per-inhabitant denominator). |
+| `population` | The NAME of the column holding each destination's population (the per-inhabitant denominator), or `null` when the data has none. |
 | `where` | Optional `{ column: value }` — keep only the rows matching every pair. |
 | `origin` | The ISO alpha-3 code every band leaves from (not a row). |
 | `names` | `{ CODE: "Name" }` for the origin and EVERY destination, in the story's language. |
-| `measures` | `{ count, perCapita, perArea }`, each `{ label, unit, announce, format(v) }`: `label` = the pill's words ("Per 1,000 inhabitants"), `unit` = what the key's rungs end with, `announce` = what a screen reader hears and must CONTAIN `label`, `format(v)` = how a value is printed (count: whole number; per capita: one decimal). |
+| `measures` | `{ count, perCapita, perArea }` (`{ count, perArea }` when `population` is null), each `{ label, unit, announce, format(v) }`: `label` = the pill's words ("Per 1,000 inhabitants"), `unit` = what the key's rungs end with, `announce` = what a screen reader hears and must CONTAIN `label`, `format(v)` = how a value is printed (count: whole number; per capita: one decimal). |
 | `controlLabel` | The control's name ("Band width: what divides it"). |
 | `note(r)` | The sentence shown when `perCapita` or `perArea` is chosen (see below). Must state `r.remainder.count`; every number from `r` (`r.format(v)` prints a value in that measure). |
 | `rank(n)` | How a rank is printed ("3rd"). |
-| `detail(r)` | The tooltip for one band; `r` = `{ code, name, people, sharePc, ranks, inhabitants, areaKm2, values }`: `people` = the quantity, `sharePc` = its percent of the total, `ranks` = its rank under the three measures, `values` = its three measured values. Must name `r.name` and print `r.people`. |
+| `detail(r)` | The tooltip for one band; `r` = `{ code, name, people, sharePc, ranks, inhabitants, areaKm2, values }`: `people` = the quantity, `sharePc` = its percent of the total, `ranks` = its rank under each measure, `values` = its value under each measure (`inhabitants` only with a population column). Must name `r.name` and print `r.people`. |
 | `countedLabel` | The key's label for a band counted but too thin to draw. |
 | `tableCaption({ destinations })` | The table's caption; a number it prints is `destinations`. |
-| `columns` | The table's six headings: destination, count, per inhabitants, per area, rank, width. |
+| `columns` | The table's six headings: destination, count, per inhabitants, per area, rank, width (five without population: no per inhabitants). |
 | `claimNote(c)` | The sentence under the map; `c` is the claim reading below plus `c.remainder` (the bands not drawn under the count). Every number from `c`. |
 | `mercator(m)` | Appended to `limits`: what the flat map costs this fan. `m` = `{ longest, shortest, spread }`: the arm to `longest` is drawn `spread` times longer per real km than the arm to `shortest`. Print `m.spread`. |
 | `reading(r)` | The reading line; `r` = `{ destinations }`. |
