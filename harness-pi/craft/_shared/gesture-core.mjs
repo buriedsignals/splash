@@ -351,6 +351,13 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
         set: { index: i, field: "of", value: "whole" },
       });
     }
+    // mvq71 (Qwen3.5-9B, dot-density video) wrote the takeaway as the filter's note, with the exact count where the
+    // takeaway rounds: the frame printed its title twice. Words compared without figures, so 8 872 matches 8 900.
+    const words = (t) => fold(t ?? "").replace(/[\p{N}]+/gu, " ").replace(/[^\p{L}]+/gu, " ").trim();
+    if (typeof g.note === "string" && claim.takeaway && words(g.note) && words(g.note) === words(claim.takeaway))
+      throw new GestureRefusal(`gestures[${i}].note`, `the note repeats the takeaway, which the title already prints: say what this gesture adds, or drop the note`, {
+        set: { index: i, value: Object.fromEntries(Object.entries(g).filter(([k]) => k !== "note")) },
+      });
     if (g.do === "zoom" && !figuresIn(g.note).length)
       throw new GestureRefusal(`gestures[${i}].note`, `a zoom prints its factor (no-let-camera-magnification): write it in the note, e.g. "×3"`, {
         remove: i,
