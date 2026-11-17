@@ -1670,6 +1670,9 @@ Reading:
   6 km LAEA grid (131.73, 681.81). The model looped between its check() refusing 132 and the title guard refusing a
   computed title. 3eabde01a measures the claim on the 6 km grid (a byte-for-byte copy of the static kit's field.mjs)
   and keeps drawing on 7 km; mvq63's story replayed outside the model renders with the title's 132/682.
+- contour-isoline web (mvq64 PASS, 11 turns, 776 s, 0 refusals): title 132/682 as the takeaway says, labelled
+  isolines, step control. Looking at it: height-bound at 1920, so wide empty basemap either side (as dot-density);
+  "CÔTE" in capitals in the subtitle (model).
 - locator web, the zoom ceiling (mvq58's page): 43216d60e (skills/map-web, at Rémy's go) raises the ceiling to the
   narrowest remove's fitted zoom when the closest-pair separation alone sits lower. mvq58's beat re-rendered and driven
   in Chrome: leash 3.771..5.486 (was 3.771..3.771), and Europe, voisinage and région now each show their own frame.
