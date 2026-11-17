@@ -485,6 +485,19 @@ export function liveLocatorCss({ scope }: { scope: string }): string {
  * the beat: the sweep that decides what a basemap layer becomes is stated ONCE, in that file, and
  * applied twice — to the style document the plate is baked from, and to the live style here.
  */
+/**
+ * The leash's ceiling, carried into the page's script as source. Two terms, and the higher wins: the zoom at
+ * which the two closest marks stand `needPx` apart (no declutter separates two pins on one pixel, only a camera
+ * can), and the zoom each remove is fitted at, so every answer the page argues for can be reached. With the
+ * first alone, a beat whose closest marks already stood apart at the widest fit got that fit as its ceiling,
+ * and every remove showed the continent (gx-locator web, mvq58: region needed +5.0, voisinage +2.4).
+ */
+export function zoomCeiling(outerZoom: number, closestPx: number, needPx: number, fitZooms: number[]): number {
+  var ceiling = outerZoom + Math.max(Math.log2(needPx / Math.max(closestPx, 0.01)), 0);
+  for (var i = 0; i < fitZooms.length; i++) if (isFinite(fitZooms[i]) && fitZooms[i] > ceiling) ceiling = fitZooms[i];
+  return ceiling;
+}
+
 export function liveLocatorScript(
   d: LiveLocatorDeclaration,
   {
@@ -666,6 +679,7 @@ export function liveLocatorScript(
   // as far as a reader is concerned, and no declutter separates them — only a camera can. So the
   // ceiling is the zoom at which those two stand a pin's width plus a gutter apart, derived from
   // their own separation in degrees and from the radius the pins are actually drawn at.
+  ${zoomCeiling.toString()}
   var leashed = false;
   function leash() {
     if (leashed) return;
@@ -690,7 +704,14 @@ export function liveLocatorScript(
     // camera whose span has just been measured rather than guessed.
     var px = (PLAN.closest.degrees / outerSpan) * map.getCanvas().clientWidth;
     var need = ${d.radius.station * 2 + 8};
-    map.setMaxZoom(outerZoom + Math.max(Math.log2(need / Math.max(px, 0.01)), 0));
+    // AND NO LOWER THAN THE NARROWEST REMOVE'S OWN FIT: measured while maxZoom is still the init's 22, so
+    // cameraForBounds is not clamped by the ceiling it is setting.
+    var fitZooms = [];
+    for (var slug in REMOVE) {
+      var cam = map.cameraForBounds(REMOVE[slug].bounds, { padding: FIT_PADDING_PX });
+      if (cam) fitZooms.push(cam.zoom);
+    }
+    map.setMaxZoom(zoomCeiling(outerZoom, px, need, fitZooms));
     if (outerSpan < 360) map.setMaxBounds(outer);
     figure.setAttribute("data-live-leash", outerZoom.toFixed(3) + ".." + map.getMaxZoom().toFixed(3));
     leashed = true;
