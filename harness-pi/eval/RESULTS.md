@@ -1686,6 +1686,9 @@ Reading:
   model's own check() read c.leaders as the top two by count (they are each measure's leader) and refused itself 3x
   before reading c.ranked. Looking at it: two-measure control, bands right; the map is height-bound at 1920, so the
   Atlantic and Kazakhstan fill the sides; the subtitle repeats "une bande par pays d'accueil" (model: standfirst + limits).
+- hex-grid web (mvq67 PASS, 15 turns, 201 s, 0 refusals counted): one title-form refusal (short form dropped 36,1 and
+  1 000), fixed next turn. Looking at it: Czechia accented with its value, comparison toggle, honest origin hex. The
+  five-class ramp is hard to tell apart in its middle (5-12, 12-18, 18-25 sit close in lightness).
 - Model-side residue (Tune, not Harness): mvq36's title names the ceiling's +2 that the three-gesture video never
   shows; "l'Chine" elision (mvq28).
 
