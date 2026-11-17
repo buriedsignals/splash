@@ -36,6 +36,12 @@ export type GestureGeoAreaFrameProps = {
   credit: { at: { x: number; y: number }; halo: number; lines: Line[] };
   colours: any;
   unitLine: Line;
+  classKey?: Array<{
+    kind: "class" | "missing";
+    index: number | null;
+    swatch: { x: number; y: number; size: number };
+    label: Line;
+  }>;
   noteTop: number;
   notes: Word[][];
   box: { x: number; y: number; width: number; height: number };
@@ -167,6 +173,36 @@ export function GestureGeoAreaFrame(
       </defs>
       <g opacity={mapInk}>
         <Text line={props.unitLine} register={r.axis} fill={C.text.axis} />
+        {(props.classKey ?? []).map((k) => {
+          // A class's swatch arrives with its class on the map; the missing swatch with the first class.
+          const shown = Math.max(
+            0,
+            Math.min(
+              1,
+              classes - (k.kind === "class" ? (k.index as number) : 0),
+            ),
+          );
+          return (
+            <g key={`key${k.kind}${k.index}`} opacity={shown}>
+              <rect
+                x={k.swatch.x}
+                y={k.swatch.y}
+                width={k.swatch.size}
+                height={k.swatch.size}
+                fill={
+                  k.kind === "class"
+                    ? C.classFill[k.index as number]
+                    : grids
+                      ? C.ground
+                      : C.missing
+                }
+                stroke={k.kind === "missing" && grids ? C.text.axis : "none"}
+                strokeWidth={1}
+              />
+              <Text line={k.label} register={r.axis} fill={C.text.axis} />
+            </g>
+          );
+        })}
         <g clipPath="url(#geo-video-box)">
           <g transform={`translate(${ox} ${oy}) scale(${s})`}>
             {props.land.map((d, i) => (
@@ -338,8 +374,7 @@ export function GestureGeoAreaFrame(
                       line={{
                         ...c.named!,
                         x: p.x,
-                        y:
-                          p.y + r.tile.fontSize * 0.85,
+                        y: p.y + r.tile.fontSize * 0.85,
                       }}
                       register={r.tile}
                       fill={ink}

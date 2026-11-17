@@ -11,7 +11,7 @@ import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
 import { stageGeo } from "./gesture-geo-area-static.mjs";
-import { scheduleGeoVideo, tileRegister } from "./gesture-geo-area-video.mjs";
+import { scheduleGeoVideo, tileRegister, videoClassKey } from "./gesture-geo-area-video.mjs";
 import { layoutCells, seatsBox } from "./gesture-geo-area-shapes.mjs";
 import { assertZoomFactors, readGeoBeat, readShapes, REPAIR } from "./gesture-geo-area-run.mjs";
 import { classIndex } from "./gesture-family-geo.mjs";
@@ -71,7 +71,26 @@ export async function renderGeoAreaVideo(here, variant, { composition, timing })
     const creditAt = { x: inset, y: stage.height - vInset - credit.height };
     const content = { left: inset, width: stage.width - 2 * inset };
     const unitLine = { ...measured(plain(beat.unit), axis), x: inset, y: vInset + band(axis).ascent };
-    const noteTop = unitLine.y + band(axis).descent + annot.lead;
+    // The class key under the unit line (a dot is not a class: dot density carries none).
+    const classKey =
+      variant === "dot-density"
+        ? null
+        : videoClassKey({
+            breaks: geo.breaks,
+            format,
+            missingLabel: plain(beat.missingLabel ?? ""),
+            hasMissing: rows.some((r) => r.value === null),
+            width: (t) => widthOf(applyCase(t, axis.transform), axis),
+            swatch: Math.round(axis.fontSize * 0.8),
+            gap: Math.round(axis.fontSize * 1.2),
+            x: inset,
+            y: unitLine.y + axis.lead,
+            maxWidth: content.width,
+            lead: axis.lead,
+          });
+    if (classKey) for (const it of classKey.items) it.label.text = applyCase(it.label.text, axis.transform);
+    const lastKeyLine = classKey ? unitLine.y + classKey.lines * axis.lead : unitLine.y;
+    const noteTop = lastKeyLine + band(axis).descent + annot.lead;
 
     // ── stage the gestures, then lay the map out under the notes and over the credit
     let layout;
@@ -163,6 +182,7 @@ export async function renderGeoAreaVideo(here, variant, { composition, timing })
       credit: { ...credit, at: creditAt },
       colours,
       unitLine,
+      classKey: classKey?.items ?? [],
       noteTop,
       notes,
       box,

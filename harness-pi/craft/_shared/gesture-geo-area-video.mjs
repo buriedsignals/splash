@@ -81,3 +81,37 @@ export function tileRegister(axis, { sizes, words, floor, width }) {
   const k = fontSize / axis.fontSize;
   return { ...axis, fontSize, lead: axis.lead * k, letterSpacing: (axis.letterSpacing ?? 0) * k };
 }
+
+/**
+ * The class key a video area map prints under its unit line: one swatch per class, lowest first, labelled as the web
+ * page labels them, then the missing label when a place has no value. Laid out left to right, wrapping at `maxWidth`.
+ * @returns { items: [{ kind: "class" | "missing", index, swatch: {x, y, size}, label: {text, x, y, width} }], lines }
+ */
+export function videoClassKey({ breaks, format, missingLabel, hasMissing, width, swatch, gap, x, y, maxWidth, lead }) {
+  const n = breaks.length + 1;
+  const text = (i) => (i === 0 ? `< ${format(breaks[0])}` : i === n - 1 ? `≥ ${format(breaks.at(-1))}` : `${format(breaks[i - 1])} – ${format(breaks[i])}`);
+  const wanted = [
+    ...Array.from({ length: n }, (_, i) => ({ kind: "class", index: i, text: text(i) })),
+    ...(hasMissing ? [{ kind: "missing", index: null, text: missingLabel }] : []),
+  ];
+  const items = [];
+  let cx = x;
+  let line = 0;
+  for (const w of wanted) {
+    const labelWidth = width(w.text);
+    const span = swatch + swatch * 0.4 + labelWidth;
+    if (cx > x && cx + span > x + maxWidth) {
+      cx = x;
+      line += 1;
+    }
+    const base = y + line * lead;
+    items.push({
+      kind: w.kind,
+      index: w.index,
+      swatch: { x: cx, y: base - swatch * 0.8, size: swatch },
+      label: { text: w.text, x: cx + swatch * 1.4, y: base, width: labelWidth },
+    });
+    cx += span + gap;
+  }
+  return { items, lines: line + 1 };
+}
