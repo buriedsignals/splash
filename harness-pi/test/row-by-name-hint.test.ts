@@ -23,6 +23,17 @@ describe("a failed render whose beat reads a row by a column name", () => {
   it("should catch the dotted access too", () => {
     expect(rowByNameHint(beatDir("const n = data.rows.map((row) => row.entity_fr);\n"))).toMatch(/row\.entity_fr is undefined/);
   });
+  // gx-locator web, Qwen3.5-9B (mvq57): rows were mapped to objects by index, then filtered as objects under the same
+  // parameter name; the hint read that r.kind as a raw row's, and the model rewrote its working access into a broken one.
+  it("should say nothing when the name reads an object a raw row was mapped to", () => {
+    const beat = 'const KIND = col("kind");\nconst rows = table.rows.map((r) => ({ kind: r[KIND] }));\nconst cities = rows.filter((r) => r.kind === "city");\n';
+    const dir = beatDir(beat);
+    writeFileSync(join(dir, "data.json"), JSON.stringify({ columns: [{ name: "kind" }], rows: [["city"]] }));
+    expect(rowByNameHint(dir)).toBe("");
+  });
+  it("should still catch a name read inside a loop over the raw rows", () => {
+    expect(rowByNameHint(beatDir("for (const r of data.rows) {\n  out.push(r.entity_fr);\n}\n"))).toMatch(/r\.entity_fr is undefined/);
+  });
   it("should say nothing when columns are read by index", () => {
     expect(rowByNameHint(beatDir('const NAME = col("entity_fr");\nconst n = data.rows.map((r) => r[NAME]);\n'))).toBe("");
   });

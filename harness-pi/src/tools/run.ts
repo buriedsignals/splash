@@ -141,6 +141,17 @@ export function refusalHint(output: string, record?: string): string {
     : "";
 }
 
+/** The text from the bracket at `at` to the one that closes it (or to the end). Quotes are not tracked: a stray bracket
+ *  in a string only widens or narrows the scope a hint searches, it never makes a hint lie about what it found. */
+function balanced(src: string, at: number): string {
+  let depth = 0;
+  for (let i = at; i < src.length; i += 1) {
+    if ("([{".includes(src[i])) depth += 1;
+    else if (")]}".includes(src[i]) && --depth === 0) return src.slice(at, i + 1);
+  }
+  return src.slice(at);
+}
+
 /** A data.json row is a list: read by a column name it is undefined. Qwen3.5-9B read r["entity_fr"] and its own check
  *  then refused "CHN has no French name in data.json" twice (gx-lollipop scrolly, 2026-11-17), searching data.json
  *  instead of its access. Rows are the parameters of data.rows' callbacks and loops; returns "" when none is read so. */
@@ -155,14 +166,21 @@ export function rowByNameHint(dir: string): string {
     return "";
   }
   const src = readFileSync(beat, "utf8");
-  const rows = new Set([
-    ...[...src.matchAll(/\.rows\.\w+\(\s*\(?\s*(\w+)/g)].map((m) => m[1]),
-    ...[...src.matchAll(/for\s*\(\s*(?:const|let)\s+(\w+)\s+of\s+[\w.]*rows\b/g)].map((m) => m[1]),
-  ]);
+  // A row name is read only where it holds a raw row: the callback a .rows method was handed, or the loop over .rows.
+  // The same name elsewhere is often the object that row was mapped to (gx-locator web, mvq57).
+  const scopes: { row: string; text: string }[] = [
+    ...[...src.matchAll(/\.rows\.\w+(\(\s*\(?\s*(\w+))/g)].map((m) => ({ row: m[2], text: balanced(src, m.index! + m[0].length - m[1].length) })),
+    ...[...src.matchAll(/for\s*(\(\s*(?:const|let)\s+(\w+)\s+of\s+[\w.]*rows\b)/g)].map((m) => {
+      const head = m.index! + m[0].length - m[1].length;
+      const after = head + balanced(src, head).length;
+      const open = src.slice(after).match(/^\s*\{/);
+      return { row: m[2], text: open ? balanced(src, after + open[0].length - 1) : src.slice(after).split(/;|\n/)[0] };
+    }),
+  ];
   const esc = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  for (const row of rows)
+  for (const { row, text } of scopes)
     for (const name of columns) {
-      const read = src.match(new RegExp(`\\b${esc(row)}(\\[(["'\`])${esc(name)}\\2\\]|\\.${esc(name)}\\b)`));
+      const read = text.match(new RegExp(`\\b${esc(row)}(\\[(["'\`])${esc(name)}\\2\\]|\\.${esc(name)}\\b)`));
       if (read)
         return `\nhint: a data.json row is a list, so ${read[0]} is undefined: read a column by its index — const ${name.toUpperCase().replace(/\W/g, "_")} = col(${JSON.stringify(name)}); then ${row}[${name.toUpperCase().replace(/\W/g, "_")}] — the worked example's col() returns that index; written in place, ${row}[col(${JSON.stringify(name)})].`;
     }
