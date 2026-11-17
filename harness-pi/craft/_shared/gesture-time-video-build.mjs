@@ -16,6 +16,7 @@ import { EYEBROW_TO_DISPLAY, registerOf } from "#shared/design-base/register.mjs
 import { resolveDirectionFamilies } from "#shared/design-base/resolve-families.mjs";
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
 import { bracketNoteFits, bracketText, niceTicks, pictureOf, tickLabel } from "./gesture-family-time.mjs";
+import { placeNoteBeside } from "./gesture-time-notes.mjs";
 import { EVENTS, scheduleTimeVideo } from "./gesture-time-video.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -178,22 +179,19 @@ export function buildTimeVideo({ id, chosen, model, valid, subject, copy, size, 
 
   // ── each gesture's marks in the y-units, its note measured and placed beside its anchor (nudged clear)
   const placedNotes = [];
-  const clear = (n) =>
-    !placedNotes.some((m) => Math.min(m.x + m.width, n.x + n.width) - Math.max(m.x, n.x) > -2 * gap && Math.abs(m.y - n.y) < annot.lead * 0.9);
+  // The drawn polylines a note steps clear of (./gesture-time-notes.mjs), split at gaps — lines only, as the still.
+  const drawn = line
+    ? model.series.flatMap((s) =>
+        (model.geometry.get(s) ?? []).reduce((runs, p) => {
+          if (p.gap) runs.push([]);
+          else runs.at(-1).push([Xfull(p.t), Y(p.y1)]);
+          return runs;
+        }, [[]]).filter((run) => run.length > 1),
+      )
+    : [];
   const noteBeside = (text, ax, ay) => {
     const w = word(text, annot);
-    const right = ax + gap + wide(w.width) <= plot.right;
-    const dx = right ? gap : -gap - wide(w.width);
-    let dy = -gap;
-    for (const step of [0, -1, 1, -2, 2, -3, 3, 4, -4]) {
-      const cand = { x: ax + dx, y: ay - gap + step * annot.lead, width: wide(w.width) };
-      if (cand.y - annot.lead < plot.top) continue;
-      if (clear(cand)) {
-        dy = -gap + step * annot.lead;
-        break;
-      }
-    }
-    placedNotes.push({ x: ax + dx, y: ay + dy, width: wide(w.width) });
+    const { dx, dy } = placeNoteBeside({ width: wide(w.width), gap, lead: annot.lead, fontSize: annot.fontSize, plot, placed: placedNotes, lines: drawn, ax, ay });
     return { ...w, dx, dy, leader: Math.abs(dy + gap) > annot.lead * 1.2 };
   };
   const ptOf = (p) => (p ? { t: p.t, y: line || model.series.length === 1 ? p.y1 : (p.y0 + p.y1) / 2 } : null);

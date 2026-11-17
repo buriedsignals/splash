@@ -43,3 +43,42 @@ export function nudgeNotes(notes, { boxes, boxOf, leadOf, plot, lines = [], font
   }
   return notes;
 }
+
+const VIDEO_STEPS = [0, -1, 1, -2, 2, -3, 3, 4, -4];
+
+/**
+ * THE VIDEO'S NOTE beside its reading (ax, ay): on the side it fits (right first), stepped by whole leads until it
+ * clears the notes already placed AND the drawn lines; at each distance the other side is tried before stepping
+ * further. mvq39 (gx-line video, Qwen, 2026-11-17) set "pic de 1973 : 46,2 Mt" on the thirty-year plateau right of
+ * the peak, its halo erasing the line — notes cleared each other only; cleared of the line on the right side alone,
+ * it fell four leads onto the comparison's rule, where the free space left of the peak sat unused. When nothing
+ * clears the lines, the first place clear of the notes is kept (the old placement). Pushes into `placed`.
+ * @param {{ width: number, gap: number, lead: number, fontSize: number, plot: { left?: number, top: number, right: number },
+ *   placed: { x: number, y: number, width: number }[], lines?: number[][][], ax: number, ay: number }} o
+ * @returns {{ dx: number, dy: number }}
+ */
+export function placeNoteBeside({ width, gap, lead, fontSize, plot, placed, lines = [], ax, ay }) {
+  const right = gap;
+  const left = -gap - width;
+  const fitsRight = ax + gap + width <= plot.right;
+  const fitsLeft = ax - gap - width >= (plot.left ?? -Infinity);
+  const sides = fitsRight ? (fitsLeft ? [right, left] : [right]) : [left];
+  const clearOfNotes = (c) => !placed.some((m) => Math.min(m.x + m.width, c.x + c.width) - Math.max(m.x, c.x) > -2 * gap && Math.abs(m.y - c.y) < lead * 0.9);
+  const boxOf = (c) => ({ left: c.x, right: c.x + c.width, top: c.y - fontSize, bottom: c.y + fontSize * 0.3 });
+  let fallback = null;
+  let chosen = null;
+  for (const step of VIDEO_STEPS) {
+    for (const dx of sides) {
+      const c = { x: ax + dx, y: ay - gap + step * lead, width };
+      if (c.y - lead < plot.top || !clearOfNotes(c)) continue;
+      fallback ??= { dx, step };
+      if (!crossesLine(lines, boxOf(c))) chosen = { dx, step };
+      if (chosen) break;
+    }
+    if (chosen) break;
+  }
+  const { dx, step } = chosen ?? fallback ?? { dx: sides[0], step: 0 };
+  const dy = -gap + step * lead;
+  placed.push({ x: ax + dx, y: ay + dy, width });
+  return { dx, dy };
+}
