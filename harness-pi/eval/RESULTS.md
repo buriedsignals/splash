@@ -1605,7 +1605,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | box-plot (position) | pass (mvq108, 12 t) | pass (mvq109, 9 t) | pass (mvq110, 12 t) |
 | bump-ranking-over-time (position) | pass (mvq111, 35 t) | pass (mvq112, 19 t) | pass (mvq113, 22 t) |
 | diverging-stacked-bar-likert (stack) | pass (mvq114, 7 t) | pass (mvq115, 19 t) | pass (mvq116, 14 t) |
-| marimekko-mosaic-plot (part-to-whole) | pass (mvq117, 4 t) | — | — |
+| marimekko-mosaic-plot (part-to-whole) | pass (mvq117, 4 t) | pass (mvq118, 11 t) | — |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1958,3 +1958,8 @@ Harness fixes, in order (each with a test that fails without it):
   2024 columns sized by generation, coal lit in Germany and Poland, "200.9 TWh · 12.3 %" of the whole and
   "199.8 TWh · 99.5 %" of the coal — both recomputed from data.json. Backlog: both toggles offer "The whole" though
   the second compares against the other countries' coal; "12 %" keeps the French space on an English page.
+- **gx-marimekko-mosaic-plot video (Qwen3.5-9B, mvq118).** Pass (11 turns, 289 s; one note refusal mid-run —
+  "99.5 % of the coal" against a bracket then still on `of: "whole"` — fixed by the model itself by bracketing the
+  other four countries' coal): the six columns, coal lit, "200.9 TWh, 12.3 % of all" then "99.5 % of the coal",
+  recomputed from data.json. Backlog: Poland's coal cell never prints its 93.5 TWh; a stray "106.3 TWh" sits under
+  the first note at the fifth frame.
