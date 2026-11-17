@@ -1689,6 +1689,9 @@ Reading:
 - hex-grid web (mvq67 PASS, 15 turns, 201 s, 0 refusals counted): one title-form refusal (short form dropped 36,1 and
   1 000), fixed next turn. Looking at it: Czechia accented with its value, comparison toggle, honest origin hex. The
   five-class ramp is hard to tell apart in its middle (5-12, 12-18, 18-25 sit close in lightness).
+- cartogram web (mvq68 PASS, 9 turns, 204 s, 0 refusals): rendered on the first try. Looking at it: equal tiles, Russia
+  outlined with "36 %", Ukraine as "not reported", Russia / Norway toggle. Same close mid-ramp classes as the hex grid.
+  With mvq67 the eight maps now pass in web on Qwen3.5-9B.
 - Model-side residue (Tune, not Harness): mvq36's title names the ceiling's +2 that the three-gesture video never
   shows; "l'Chine" elision (mvq28).
 
