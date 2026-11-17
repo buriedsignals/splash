@@ -1817,3 +1817,6 @@ Harness fixes, in order (each with a test that fails without it):
   scaffold interpolates did not, and the scaffold's "card 3 changes nothing" had no value, so the model re-read
   beat.mjs in a loop. The scheduler now compares flat states and refuses with the gesture to drop (592376bab); in
   mvq84 the model dropped it on the first refusal. Backlog: `name` on a whole fuel group shows no label of its own.
+- mvq85 contour scrolly (Qwen3.5-9B): PASS first try, 15 turns, 371 s, refusals=0. Six cards that each move the
+  picture: the empty field, the 100 km line (42 %), 132 km (half), 400 km (89 %), the close-up on the farthest point
+  in Belarus (682 km), the whole field with its 682 ring. Backlog: in the close-up the 682 point itself is not marked.
