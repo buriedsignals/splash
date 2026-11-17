@@ -1604,6 +1604,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | dumbbell-range-plot (position) | pass (mvq104, 8 t) | pass (mvq105, 7 t) | pass (mvq107, 8 t) |
 | box-plot (position) | pass (mvq108, 12 t) | pass (mvq109, 9 t) | pass (mvq110, 12 t) |
 | bump-ranking-over-time (position) | pass (mvq111, 35 t) | pass (mvq112, 19 t) | pass (mvq113, 22 t) |
+| diverging-stacked-bar-likert (stack) | pass (mvq114, 7 t) | — | — |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1940,3 +1941,7 @@ Harness fixes, in order (each with a test that fails without it):
   rank 8, "rang 5 en 2005", "du rang 8 en 1990 au rang 3 en 2024" with the 1990 rank carried across, the limits —
   every rank matches data.json. Three page-language refusals before the beat applied the named lines (it did, verbatim).
   Backlog: the reveal card already paints India in accent; the prose card sits on India's line in cards 1–3.
+- **gx-diverging-stacked-bar-likert web (Qwen3.5-9B, mvq114).** Pass (7 turns, 195 s, refusals=0): six 2024 mixes
+  split fossil left / renewable right around a nuclear centre, France lit, "67,7 % de nucléaire contre 32,3 %" —
+  67,7 / 5,1 / 27,2 recomputed from data.json's TWh. Backlog: the toggle again reads "67,7 / 32,3" rather than the
+  note; the legend's "< Fossile  Renouvelable >" pair reads as two loose words before the swatches.
