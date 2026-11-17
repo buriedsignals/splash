@@ -48,7 +48,12 @@ function closest(name, rows) {
 function rowsNamedIn(text, rows) {
   const hay = ` ${fold(text).replace(/[^\p{L}\p{N}]+/gu, " ")} `;
   // Trimmed: a name ending in punctuation ("Autres renouv.") left a double space and never matched.
-  return rows.filter((r) => hay.includes(` ${fold(r.name).replace(/[^\p{L}\p{N}]+/gu, " ").trim()} `)).map((r) => r.name);
+  // A code (EST, ITA) is read only in capitals: the French verb "est" named Estonia (gx-cartogram video, mvq76).
+  const code = (n) => /^[A-Z]{2,3}$/.test(n);
+  const caps = ` ${String(text).replace(/[^\p{L}\p{N}]+/gu, " ")} `;
+  return rows
+    .filter((r) => (code(String(r.name)) ? caps.includes(` ${r.name} `) : hay.includes(` ${fold(r.name).replace(/[^\p{L}\p{N}]+/gu, " ").trim()} `)))
+    .map((r) => r.name);
 }
 
 // ── numbers ───────────────────────────────────────────────────────────────────────────────────────
@@ -200,8 +205,9 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
   // carries the accent; a highlight on another row rings it instead (two highlights once left the subject grey).
   // By whole word: a row coded "ITA" once matched "habITAnts" and took the accent.
   const at = (name) => {
-    const hay = ` ${fold(claim.takeaway ?? "").replace(/[^\p{L}\p{N}]+/gu, " ")} `;
-    const i = hay.indexOf(` ${fold(name).replace(/[^\p{L}\p{N}]+/gu, " ")} `);
+    const code = /^[A-Z]{2,3}$/.test(name);
+    const hay = ` ${(code ? String(claim.takeaway ?? "") : fold(claim.takeaway ?? "")).replace(/[^\p{L}\p{N}]+/gu, " ")} `;
+    const i = hay.indexOf(` ${code ? name : fold(name).replace(/[^\p{L}\p{N}]+/gu, " ")} `);
     return i < 0 ? -1 : i;
   };
   const subject = rowsNamedIn(claim.entity ?? "", rows)[0] ?? rows.map((r) => r.name).filter((n) => at(n) >= 0).sort((a, b) => at(a) - at(b))[0];
