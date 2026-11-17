@@ -37,8 +37,9 @@ export type GestureGeoAreaFrameProps = {
   colours: any;
   unitLine: Line;
   classKey?: Array<{
-    kind: "class" | "missing";
+    kind: "class" | "missing" | "group";
     index: number | null;
+    key?: string;
     swatch: { x: number; y: number; size: number };
     label: Line;
   }>;
@@ -175,13 +176,30 @@ export function GestureGeoAreaFrame(
         <Text line={props.unitLine} register={r.axis} fill={C.text.axis} />
         {(props.classKey ?? []).map((k) => {
           // A class's swatch arrives with its class on the map; the missing swatch with the first class.
-          const shown = Math.max(
-            0,
-            Math.min(
-              1,
-              classes - (k.kind === "class" ? (k.index as number) : 0),
-            ),
-          );
+          const shown =
+            k.kind === "group"
+              ? f(`a:${k.key}`)
+              : Math.max(
+                  0,
+                  Math.min(
+                    1,
+                    classes - (k.kind === "class" ? (k.index as number) : 0),
+                  ),
+                );
+          if (k.kind === "group")
+            return (
+              <g key={`key${k.key}`} opacity={shown}>
+                <circle
+                  cx={k.swatch.x + k.swatch.size / 2}
+                  cy={k.swatch.y + k.swatch.size / 2}
+                  r={k.swatch.size * 0.4}
+                  fill="none"
+                  stroke={C.accent}
+                  strokeWidth={Math.max(1.5, k.swatch.size * 0.1)}
+                />
+                <Text line={k.label} register={r.axis} fill={C.text.axis} />
+              </g>
+            );
           return (
             <g key={`key${k.kind}${k.index}`} opacity={shown}>
               <rect

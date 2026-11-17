@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 // @ts-expect-error untyped kit module
-import { videoClassKey } from "../craft/_shared/gesture-geo-area-video.mjs";
+import { videoClassKey, videoGroupKey } from "../craft/_shared/gesture-geo-area-video.mjs";
 
 // gx-choropleth video (Qwen3.5-9B, mvq69): the gesture kit's area-map frame drew the unit line and no class key, while
 // the per-type kit it replaced drew one and the beat's reading line said the breaks were printed under the map. A
@@ -48,5 +48,19 @@ describe("the video area map's class key", () => {
   it("should keep every item inside the content width", () => {
     const { items } = videoClassKey({ ...base, maxWidth: 600 });
     expect(Math.max(...items.map((i: any) => i.label.x + i.label.width))).toBeLessThanOrEqual(base.x + 600);
+  });
+});
+
+// gx-dot-density video (Qwen3.5-9B, mvq71): the reactors were ringed in the accent and nothing said what a ring was;
+// the per-type kit's key named the subject, the gesture kit's carried only « un point = une centrale ».
+describe("the video dot map's group key", () => {
+  it("should name each ringed group after its group name", () => {
+    expect(
+      videoGroupKey({ ...base, groups: [{ key: "Nuclear", name: "nucléaire" }] }).items.map((i: any) => [i.kind, i.key, i.label.text]),
+    ).toEqual([["group", "Nuclear", "nucléaire"]]);
+  });
+
+  it("should carry nothing when no group is ringed", () => {
+    expect(videoGroupKey({ ...base, groups: [] }).items).toEqual([]);
   });
 });

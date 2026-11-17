@@ -94,6 +94,17 @@ export function videoClassKey({ breaks, format, missingLabel, hasMissing, width,
     ...Array.from({ length: n }, (_, i) => ({ kind: "class", index: i, text: text(i) })),
     ...(hasMissing ? [{ kind: "missing", index: null, text: missingLabel }] : []),
   ];
+  return layoutKey(wanted, { width, swatch, gap, x, y, maxWidth, lead });
+}
+
+/** The dot map's key: one ring per group the gestures ring in the accent, named after its group name. */
+export function videoGroupKey({ groups, width, swatch, gap, x, y, maxWidth, lead }) {
+  const wanted = groups.map((g) => ({ kind: "group", index: null, key: g.key, text: g.name }));
+  return layoutKey(wanted, { width, swatch, gap, x, y, maxWidth, lead });
+}
+
+/** Swatch-and-label items laid left to right from (x, y), wrapping to a new line at maxWidth. */
+function layoutKey(wanted, { width, swatch, gap, x, y, maxWidth, lead }) {
   const items = [];
   let cx = x;
   let line = 0;
@@ -108,10 +119,11 @@ export function videoClassKey({ breaks, format, missingLabel, hasMissing, width,
     items.push({
       kind: w.kind,
       index: w.index,
+      ...(w.key === undefined ? {} : { key: w.key }),
       swatch: { x: cx, y: base - swatch * 0.8, size: swatch },
       label: { text: w.text, x: cx + swatch * 1.4, y: base, width: labelWidth },
     });
     cx += span + gap;
   }
-  return { items, lines: line + 1 };
+  return { items, lines: wanted.length ? line + 1 : 0 };
 }
