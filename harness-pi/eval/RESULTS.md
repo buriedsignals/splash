@@ -1657,7 +1657,7 @@ Reading:
 - choropleth web (mvq59 PASS, 6 turns, 140 s): one title refusal (a short form dropped 94), then rendered; seven
   of forty above 94 %, Albania called out. Looking at it: the ramp's foot (< 40 %) and "non rapporté" are two
   near-identical greys, so Russia and Belarus read as either.
-- proportional-symbol web (mvq60 PASS): rendered first try; 985 of 8 813 sites drawn, area-true legend. The
+- proportional-symbol web (mvq60 PASS, 14 turns, 1063 s): rendered; 985 of 8 813 sites drawn, area-true legend. The
   largest site is labelled by its country ("Ukraine 6 000 MW"), not its name.
 - dot-density web (mvq61 stopped, mvq62 PASS, 12 turns, 144 s): two kit defects, neither the model's. The title-form
   guard read the takeaway's "8 900" as 8 and 900 (47a36412b reads a spaced thousands group as one number). Then
@@ -1665,6 +1665,15 @@ Reading:
   in every state, never finished painting between two frames (phone idle frames 515-816 px apart; "rest" off by
   216 k px). 249e4b726 draws one path per group and style; mvq61's story replayed outside the model passed twice,
   201/0. Left: the filter note prints a stray "· 1 · 72 – 72"; the height-bound map leaves wide margins at 1600.
+- contour-isoline web (mvq63 stopped): no beat could pass. The takeaway says 132 km median, 682 km deepest; the
+  per-type web kit measured the claim on its own 7 km raster (132.50 → "133", 681.41), every other contour kit on the
+  6 km LAEA grid (131.73, 681.81). The model looped between its check() refusing 132 and the title guard refusing a
+  computed title. 3eabde01a measures the claim on the 6 km grid (a byte-for-byte copy of the static kit's field.mjs)
+  and keeps drawing on 7 km; mvq63's story replayed outside the model renders with the title's 132/682.
+- locator web, the zoom ceiling (mvq58's page): 43216d60e (skills/map-web, at Rémy's go) raises the ceiling to the
+  narrowest remove's fitted zoom when the closest-pair separation alone sits lower. mvq58's beat re-rendered and driven
+  in Chrome: leash 3.771..5.486 (was 3.771..3.771), and Europe, voisinage and région now each show their own frame.
+  Left, model-side: the région bar says 20 km, a few pixels on a 1 000 km frame.
 - Model-side residue (Tune, not Harness): mvq36's title names the ceiling's +2 that the three-gesture video never
   shows; "l'Chine" elision (mvq28).
 
