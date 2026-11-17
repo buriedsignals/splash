@@ -38,7 +38,7 @@ export default {
   landingLabel: "The whole",
   title: [
     "China emitted 32.9 % of the world's CO2 in 2023, more than twice the United States' 13.3 %.",
-    "China: a third of the world's CO2, more than twice the United States",
+    "China: 32.9 % of the world's CO2 in 2023, over twice the United States' 13.3 %",
   ],
   limits: [
     `One ring is the world's territorial CO2 in 2023, ${one(world)} Gt; each arc is a country's share of it. Territorial emissions only (no trade adjustment), one year (2023); totals computed as per-person emissions times population.`,
