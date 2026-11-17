@@ -1607,6 +1607,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | diverging-stacked-bar-likert (stack) | pass (mvq114, 7 t) | pass (mvq115, 19 t) | pass (mvq116, 14 t) |
 | marimekko-mosaic-plot (part-to-whole) | pass (mvq117, 4 t) | pass (mvq118, 11 t) | pass (mvq119, 11 t) |
 | treemap (part-to-whole) | pass (mvq121, 7 t) | pass (mvq122, 9 t) | pass (mvq123, 7 t) |
+| parallel-coordinates (misfit) | pass (mvq124, 19 t) | — | — |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1982,3 +1983,9 @@ Harness fixes, in order (each with a test that fails without it):
   bracketed, cards "65.8 GW between them" → "14 % of the continent's 469 GW" → "10 countries in all", figures from
   data.json. Backlog: the last card covers Germany's name; 32 countries fold into one 200.9 GW tile, so the scrolly
   names fewer countries than the web page.
+- **gx-parallel-coordinates web (Qwen3.5-9B, mvq124).** Pass (19 turns, 412 s, refusals=0 at the end; two
+  mid-run drafts were refused for "23 % % contre 8 % %", the double-unit refusal handed back "23 % contre 8 %", and
+  the model rewrote the note itself). French story: 16 lines, seven share axes; "2 pays sur 16" (Finland 39/25,
+  Sweden 29/23 nuclear/wind %) and "23 % / 8 %" Sweden vs France wind, recomputed from data.json. Backlog: both
+  toggles read "Les seize pays"; the count note "2 pays sur 16" lands on the lines between the Gaz and Charbon
+  axes; France, a compared mark, is named but not drawn in the accent.
