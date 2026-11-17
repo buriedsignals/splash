@@ -1707,6 +1707,13 @@ Reading:
   the kit's own example, named the basemap alone. 0f028cb32 refuses that form in the four point-map video kits (field +
   « WRI · © MapTiler © OpenStreetMap ») and drops it from the bubble and contour examples; replayed on the bench, the
   WRI form fits the same corner. Left as is: the map is wide-bound, so the Atlantic fills the left third.
+- mvq71 dot-density video (Qwen3.5-9B): PASS, 19 turns, 499 s. The 72 reactors ringed in teal over the 8 872
+  plants, but nothing said what a ring was (the gesture kit's key carried only the unit line, where the per-type kit
+  named the subject), and the filter's note was the takeaway again under the title. b2996829c names each ringed group
+  in the key (« ○ nucléaire »); a new guard refuses a note whose words, figures aside, are the takeaway's, and repairs
+  it away; a one-row compare's refusal now gives real rows (« marks: ["Nuclear", "Hydro"], or of: "whole" ») instead
+  of a shape. Replayed on the bench: the guard refuses the beat as written, and without the note the subject frame
+  reads by its key alone.
 - Model-side residue (Tune, not Harness): mvq36's title names the ceiling's +2 that the three-gesture video never
   shows; "l'Chine" elision (mvq28).
 
