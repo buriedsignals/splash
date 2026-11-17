@@ -273,6 +273,19 @@ describe("stacked-bar on the low-carbon proof", () => {
       }),
     ).not.toThrow();
   });
+  // gx-stacked-bar web, Qwen3.5-9B (2026-11-17): "123 % de son total de 2000" (added over the 2000 level) was refused
+  // and repaired into "55 % de son total de 2000", a false sentence.
+  it("should accept a segment stated as a percent of another part of its bar", () => {
+    const level = stack.marks.find((m: any) => m.name === `Espagne · ${LEVEL}`).value;
+    expect(() =>
+      validateStack({
+        gestures: [{ do: "bracket", mark: `Espagne · ${ADDED}`, of: "whole", note: `${fr((spain / level) * 100)} % de son niveau de 2000` }],
+        stack,
+        format: "static",
+        claim: STACKED_CLAIM,
+      }),
+    ).not.toThrow();
+  });
   it("should refuse a bracket share of the bar that is false", () => {
     const share = (spain / stack.whole("Espagne")) * 100;
     expect(

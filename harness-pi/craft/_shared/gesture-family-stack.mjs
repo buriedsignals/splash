@@ -396,7 +396,13 @@ export function stackHooks(stack) {
       for (const m of ownSegs) {
         const b = stack.barOf(m);
         const w = whole(b);
-        if (w) out.push((stack.marks.find((x) => x.name === m).value / w) * 100);
+        const v = stack.marks.find((x) => x.name === m).value;
+        if (w) out.push((v / w) * 100);
+        // ... and of each other part of that bar: what was added over the level it started from.
+        for (const p of stack.partsOf(b)) {
+          const o = stack.valueOf(b, p);
+          if (o && stack.markName(b, p) !== m) out.push((v / o) * 100);
+        }
       }
       if (own.bars.length === 1 && whole(own.bars[0])) out.push((own.value / whole(own.bars[0])) * 100);
       if (variant === "diverging-stacked-bar-likert")
