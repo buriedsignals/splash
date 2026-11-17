@@ -1576,3 +1576,68 @@ Proposed design (Tom's "code > model for routing; the 2B makes the narrow decisi
 4. The journalist chooses between the two — the editorial decision stays theirs.
 
 Not yet built: it changes `show_candidates` and the storyboard question; to be done after the coverage batches.
+
+## 2026-11-17 — moving-format coverage on Qwen3.5-9B, family by family (mvq4–mvq37)
+
+One cell at a time (seeded, `SPLASH_STOP_AFTER_CRAFT=1`, so `completed=false` is expected), each watched render by
+render; a cell is stopped at the second repeated refusal, its story copied, the fault fixed test-first on the
+decomposed element (mutation-checked), and the cell re-run. A cell passes on `headline=true, refusals=0` AND on
+looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, never the still alone; scrolly: the cards).
+
+| Family / type | Web | Video | Scrolly |
+|---|---|---|---|
+| sankey | pass (mvq3, 14 t) | pass (mvq4, 13 t) | pass (mvq4, 27 t) |
+| small-multiples | pass (mvq13, 23 t; mvq4–12 stopped or failed) | pass (mvq15, 8 t) | pass (mvq16, 21 t) |
+| connected-scatter | pass (mvq19, 20 t) | pass (mvq20, 35 t) | pass (mvq22, 52 t) |
+| lollipop (length) | pass (mvq25, 29 t) | pass (mvq26, 23 t) | pass (mvq28, 17 t) |
+| stacked-bar (stack) | pass (mvq29, 40 t) | pass (mvq30, 4 t) | pass (mvq31, 7 t) |
+| dot-strip (position) | pass (mvq35, 11 t; mvq32–34 stopped) | pass (mvq36, 28 t) | pass (mvq37, 15 t) |
+
+Reading:
+- Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
+  sharply on the formats run after a family's web fixes (stacked-bar video/scrolly 4 and 7 turns).
+- The one refusal every non-English cell still pays is the first render reading `entity` where the page prints
+  `entity_fr`: 77 kit examples read `col("entity")`/`at("entity")`, each localizing its own way (some carry a typed
+  FRENCH table). Not rewritten mechanically; costs one turn, self-corrected every time. Open (names-from-data).
+- Polishing after the first passing render is the main turn sink (mvq36: the model reconciled the strip's printed
+  +29,5 with a title's "30 points" for ~10 turns). Answered by printing what the kit draws on its own (f009b9f37,
+  36d10bbac); mvq37, the first cell with it in scrolly, took 15 turns against 28 for the video.
+- Model-side residue (Tune, not Harness): mvq36's title names the ceiling's +2 that the three-gesture video never
+  shows; "l'Chine" elision (mvq28).
+
+Harness fixes, in order (each with a test that fails without it):
+
+- e509a12e7 fix(craft): a syntax error names its column, and a number followed by a method names the parentheses that fix it
+- 9ca983bf1 fix(craft): a sankey gesture on a zero flow is told it has no ribbon and offered a ribbon from the same source
+- 4d296534f fix(craft): the web small-multiples kit draws up to 24 panels, so a takeaway about all sixteen is not refused both ways
+- 9e26dff4a fix(craft): name the line, key column and missing entries when a hand-written lookup table finds no entry
+- 7e8c9ce25 fix(craft): name an empty array read at its ends, and the beat.mjs line of any runtime TypeError
+- fe700eb99 fix(craft): count a panel drawn under the entity's localized name or code as drawn
+- dc74af2ab feat(craft): members() and a row-function y take the name and measure decisions out of the beat
+- 2b21598e6 fix(harness): three stalls of Qwen3.5-9B on gx-small-multiples web, answered by code
+- dd81bb637 fix(craft): refuse a fraction of one printed as a percentage
+- eaa3d022f fix(craft): quote the web small-multiples example's article keys
+- 32b38fff7 fix(craft): name the splitting column and m.where when two rows give one year
+- f4a02f2da fix(craft): say an undefined bare name that is also a received key is a helper to define
+- 3ae81475d fix(craft): build the video small-multiples example on members() and series()
+- a02b9e49b fix(craft): build the scrolly small-multiples example on members() and series()
+- 045d3441e fix(web): name only the verify failures beat.mjs can answer when a known false red sits beside them
+- 8af70d667 fix(connected-scatter): write limits as a list of forms in the web and scrolly examples
+- 000945147 fix(guards): name a check() test of a number the takeaway never states, and say to delete it
+- 1b8987b7e fix(connected-scatter web): set the y title above the plot, over its graduations, not in a corner the data may fill
+- 73e7b0f80 fix(harness-pi): connected-scatter examples read names from data.json, not a typed table
+- 423baa650 fix(harness-pi): scrolly connected-scatter counts the subject's two moves as drawn title figures
+- 4f70bc8f6 fix(harness-pi): a shorter title form may drop the period the takeaway frames its claim with
+- 9612136e9 fix(harness-pi): a printed name that is a row's country code is refused when data.json holds its name
+- f60c98ced fix(web): refuse a list where the page prints one text, instead of gluing its items with a comma
+- ad91e43aa fix(scrolly-lollipop): read names from data.json by column index, keep only articles typed; short title forms keep the takeaway's numbers
+- a21b15da8 feat(render): hint that a data.json row is a list when a failed beat reads it by a column name
+- 103b8f1a2 fix(guards): open the first limits form with the journalist's words instead of refusing it
+- f8f568ef6 fix(render): name a ${…} written in plain quotes when a render fails
+- 6a82c949f fix(gestures): drop code written into a note and give each hole its mark's figure
+- 59913ae46 fix(stack): accept a segment stated as a percent of another part of its bar
+- 43f047b3b fix(position): draw and name the compared row on a paired dot strip
+- f009b9f37 feat(position): say what a paired dot strip prints on its own
+- be05439bd fix(position): refuse paired rows read from one data.json row, at the rows
+- 36e40f46c fix(gestures): a null mark names no row
+- 36d10bbac fix(position): print the dot strip's own change labels in video and scrolly too
