@@ -1603,7 +1603,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | population-pyramid (length) | pass (mvq101, 19 t) | pass (mvq102, 28 t) | pass (mvq103, 17 t) |
 | dumbbell-range-plot (position) | pass (mvq104, 8 t) | pass (mvq105, 7 t) | pass (mvq107, 8 t) |
 | box-plot (position) | pass (mvq108, 12 t) | pass (mvq109, 9 t) | pass (mvq110, 12 t) |
-| bump-ranking-over-time (position) | pass (mvq111, 35 t) | pass (mvq112, 19 t) | — |
+| bump-ranking-over-time (position) | pass (mvq111, 35 t) | pass (mvq112, 19 t) | pass (mvq113, 22 t) |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1936,3 +1936,7 @@ Harness fixes, in order (each with a test that fails without it):
   rank lines draw in, India traced 8th → 3rd, then "du 8e au 3e rang" with the 1990 rank carried across — ranks match
   data.json. The page-language refusal now names the lines: one refusal instead of four (mvq111). Backlog: the compare
   note sits on the x axis over the 2020 tick; "Inde" is highlighted after the trace already lit it.
+- **gx-bump-ranking-over-time scrolly (Qwen3.5-9B, mvq113).** Pass (22 turns, 372 s), four cards: the field from
+  rank 8, "rang 5 en 2005", "du rang 8 en 1990 au rang 3 en 2024" with the 1990 rank carried across, the limits —
+  every rank matches data.json. Three page-language refusals before the beat applied the named lines (it did, verbatim).
+  Backlog: the reveal card already paints India in accent; the prose card sits on India's line in cards 1–3.
