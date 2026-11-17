@@ -149,6 +149,13 @@ describe("importBeat on names and values that do not line up", () => {
     writeFileSync(join(beatDir, "beat.mjs"), shifted);
     await expect(importBeat(beatDir)).rejects.toThrow(/line 4.*4 names for 3 values.*const \[ENTITY, YEAR, SHARE\] = \[col\("Entity"\), col\("Year"\), col\("Share"\)\]/);
   });
+  // gx-area scrolly (Qwen3.5-9B, mvq93): [ENTITY, YEAR, ANNUAL] = [col("Year"), col("Annual CO₂ emissions")]; the fix
+  // kept the first two names and paired ENTITY with "Year", because ANNUAL only begins its column's name.
+  it("should pair a name to the column whose name it begins, not keep the first names", async () => {
+    const { beatDir } = story("claimShape: none");
+    writeFileSync(join(beatDir, "beat.mjs"), shifted.replace(/const \[.*\];/, 'const [ENTITY, YEAR, ANNUAL] = [col("Year"), col("Annual CO₂ emissions")];'));
+    await expect(importBeat(beatDir)).rejects.toThrow(/ENTITY is undefined.*const \[YEAR, ANNUAL\] = /);
+  });
   it("should pass names and values of the same length", async () => {
     const { beatDir } = story("claimShape: none");
     writeFileSync(join(beatDir, "beat.mjs"), shifted.replace(", CODE]", "]"));

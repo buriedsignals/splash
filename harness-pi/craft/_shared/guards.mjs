@@ -1045,7 +1045,11 @@ function unevenDestructure(source) {
     if (cur.trim()) values.push(cur.trim());
     if (names.length <= values.length) continue;
     const key = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
-    const byName = values.map((v) => names.find((name) => key(name) === key(/["'`]([^"'`]+)["'`]/.exec(v)?.[1] ?? "")));
+    // A name may only begin its column's name (ANNUAL for "Annual CO₂ emissions"): the exact match first, then the prefix.
+    const byName = values.map((v) => {
+      const col = key(/["'`]([^"'`]+)["'`]/.exec(v)?.[1] ?? "");
+      return col && (names.find((name) => key(name) === col) ?? names.find((name) => key(name) && col.startsWith(key(name))));
+    });
     const kept = byName.every(Boolean) && new Set(byName).size === byName.length ? byName : names.slice(0, values.length);
     return `beat.mjs line ${n + 1} gives ${names.length} names for ${values.length} values, so ${names.filter((x) => !kept.includes(x)).join(", ")} is undefined and the names after a missing value read the wrong column: write ${m[1]} [${kept.join(", ")}] = [${values.join(", ")}]`;
   }
