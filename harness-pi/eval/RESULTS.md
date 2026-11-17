@@ -1599,6 +1599,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | calendar-heatmap (cell) | pass (mvq51, 25 t) | pass (mvq52, 17 t) | pass (mvq54, 27 t) |
 | area-and-stacked-area (time) | pass (mvq90, 33 t) | pass (mvq92, 19 t; mvq91 shipped a false share, kit fix) | pass (mvq93, 16 t) |
 | grouped-bar (length) | pass (mvq94, 18 t) | pass (mvq95, 12 t) | pass (mvq96, 10 t) |
+| diverging-bar (length) | pass (mvq97, 19 t) | pass (mvq98, 16 t) | — |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1870,3 +1871,8 @@ Harness fixes, in order (each with a test that fails without it):
   self-corrections on the way: the takeaway title as a literal, a `.code` read on rows that carry no code, and the
   phone frame 507 px too tall (fixed by the short forms the hint asked for). Backlog, model choice: the bars are
   ordered by 2024 level, not by gap, so the diverging shape reads jagged.
+- **gx-diverging-bar video (Qwen3.5-9B, mvq98).** Passed: 16 turns, 284 s, refusals=0, 20 s. Title card, the 27
+  levels in 1990 then 2024 overlaid, collapse to the change, a ×200 zoom on Croatia's +0,03 (the others clamp at
+  the frame edge under the labelled zoom), then the whole chart sorted by change with every value. Final frame
+  checked against data.json (Croatia +0,03, Luxembourg −20,48, Estonia −17,40, Latvia −3,94). Backlog: the heading
+  counts "22 baisses" mid-transition before settling on 26.
