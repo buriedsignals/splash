@@ -551,11 +551,14 @@ export function sceneOf({ model, state, frame, text }) {
         if (strips === 2) add({ id: `strip-name-${s}`, kind: "text", x: frame.x, y, text: text.moments[s], anchor: "start", reg: "axis", role: "muted" });
       }
       const stripY = (s) => plot.y + band * (s + 0.5);
-      const ordered = [...shownRows.filter((nme) => !accent.has(nme) && !rings.has(nme)), ...shownRows.filter((nme) => accent.has(nme) || rings.has(nme))];
+      // A compared row is drawn and named like the subject: its laid change alone can be a few pixels on a phone.
+      const compared = new Set(state.compares.flatMap((c) => [c.subject, c.other]));
+      const marked = (nme) => accent.has(nme) || rings.has(nme) || compared.has(nme);
+      const ordered = [...shownRows.filter((nme) => !marked(nme)), ...shownRows.filter(marked)];
       ordered.forEach((name) => {
         const row = byName.get(name);
         const o = opacityOf(name);
-        const strong = accent.has(name) || rings.has(name);
+        const strong = marked(name);
         if (model.shape === "paired") {
           const [a, b] = [pos(row.from), pos(row.to)];
           add({ id: `link-${name}`, kind: "line", x1: a, y1: stripY(0), x2: b, y2: stripY(1), o: o * (strong ? 1 : 0.55), role: strong ? colourOf(name) : "grid", w: strong ? 2 : 1 });
