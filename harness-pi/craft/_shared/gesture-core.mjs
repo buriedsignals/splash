@@ -344,10 +344,13 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
         set: { index: i, value: kept.length > 1 ? { ...rest, marks: kept } : { do: g.do, mark: kept[0], of: "whole", ...rest } },
       });
     }
-    if (g.do === "compare" && marks.length === 1 && !ofWhole && !of.length)
-      throw new GestureRefusal(`gestures[${i}].marks`, `a compare needs a second row: marks: [subject, other], or of: [rows]`, {
+    if (g.do === "compare" && marks.length === 1 && !ofWhole && !of.length) {
+      const other = rows.filter((r) => r.name !== marks[0] && Number.isFinite(r.value)).sort((a, b) => b.value - a.value)[0];
+      const pair = other ? `marks: [${JSON.stringify(marks[0])}, ${JSON.stringify(other.name)}], or ` : "";
+      throw new GestureRefusal(`gestures[${i}].marks`, `a compare needs a second row: ${pair}of: "whole" to set ${marks[0]} against all the rest`, {
         set: { index: i, field: "of", value: "whole" },
       });
+    }
     if (g.do === "zoom" && !figuresIn(g.note).length)
       throw new GestureRefusal(`gestures[${i}].note`, `a zoom prints its factor (no-let-camera-magnification): write it in the note, e.g. "×3"`, {
         remove: i,
