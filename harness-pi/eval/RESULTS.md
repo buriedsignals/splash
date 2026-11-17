@@ -1603,6 +1603,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | population-pyramid (length) | pass (mvq101, 19 t) | pass (mvq102, 28 t) | pass (mvq103, 17 t) |
 | dumbbell-range-plot (position) | pass (mvq104, 8 t) | pass (mvq105, 7 t) | pass (mvq107, 8 t) |
 | box-plot (position) | pass (mvq108, 12 t) | pass (mvq109, 9 t) | pass (mvq110, 12 t) |
+| bump-ranking-over-time (position) | pass (mvq111, 35 t) | — | — |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1926,3 +1927,8 @@ Harness fixes, in order (each with a test that fails without it):
   9,96 t, the 2020s at 4,27 t with the drop line, the partial decade (5 years), the whole field — figures match
   data.json. Backlog: the prose card hides the 1980s and 1990s boxes; the "décennie partielle" card names the 2020s but
   the accent stays on the 1970s.
+- **gx-bump-ranking-over-time web (Qwen3.5-9B, mvq111).** Pass (35 turns, 714 s), India in accent from 8th (1990)
+  to 3rd (2024), French names on the right — both ranks match data.json. Four repeats of the page-language refusal
+  before the beat swapped col("Entity") and its typed "India" for Entity_fr and "Inde": the refusal now names each
+  beat.mjs line to change (`sourceLines` in guards.mjs, mutation-checked). Backlog: the toggle reads "#3 / #8" instead
+  of the compare note; series leaving the top ten break into dashes along rank 10; no names on the 1990 side.
