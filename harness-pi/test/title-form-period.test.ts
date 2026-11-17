@@ -15,20 +15,35 @@ function beatDir(takeaway: string) {
   return dir;
 }
 
+// A form that loses the claim is dropped with a note, not refused (mvq82–83).
+const noteOf = (f: () => void) => {
+  const said: string[] = [];
+  const log = console.log;
+  console.log = (...a: unknown[]) => void said.push(a.join(" "));
+  try {
+    f();
+  } finally {
+    console.log = log;
+  }
+  return said.join("\n");
+};
+
 describe("a shorter title form and the takeaway's period", () => {
   it("should accept a form that drops a span of years the takeaway frames its claim with", () => {
     const dir = beatDir("All 16 countries cleaned up their own electricity between 2000 and 2024, yet France lost 11.8 points of weight");
     const b = { title: ["All 16 countries cleaned up their own electricity between 2000 and 2024, yet France lost 11.8 points of weight", "All 16 cleaned up at home, France lost 11.8 points of weight"] };
     expect(() => applyStoryboard(b, dir)).not.toThrow();
   });
-  it("should still refuse a form that drops the one year the claim measures against", () => {
+  it("should still drop a form that drops the one year the claim measures against", () => {
     const dir = beatDir("Croatia is the only EU country emitting more than in 1990");
     const b = { title: ["Croatia is the only EU country emitting more than in 1990", "Croatia, the only EU country emitting more"] };
-    expect(() => applyStoryboard(b, dir)).toThrow(/leaves out 1990/);
+    expect(noteOf(() => applyStoryboard(b, dir))).toMatch(/leaves out 1990/);
+    expect(b.title).toHaveLength(1);
   });
-  it("should still refuse a form that drops a number of the claim beside the period", () => {
+  it("should still drop a form that drops a number of the claim beside the period", () => {
     const dir = beatDir("All 16 countries cleaned up their own electricity between 2000 and 2024, yet France lost 11.8 points of weight");
     const b = { title: ["All 16 countries cleaned up their own electricity between 2000 and 2024, yet France lost 11.8 points of weight", "All 16 cleaned up at home, France lost weight"] };
-    expect(() => applyStoryboard(b, dir)).toThrow(/leaves out 11.8/);
+    expect(noteOf(() => applyStoryboard(b, dir))).toMatch(/leaves out 11.8/);
+    expect(b.title).toHaveLength(1);
   });
 });

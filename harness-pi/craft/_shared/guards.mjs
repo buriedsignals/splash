@@ -260,7 +260,11 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
       const has = claim.filter((w) => said.has(stem(w))).length;
       const as = (ns) => ns.map((n) => shownAs.get(n) ?? n).join(", ");
       const why = missing.length ? `it leaves out ${as(missing)}` : `it keeps ${has} of the ${need} key words it needs`;
-      throw new Error(`title: its form ${lost + 1}, "${norm(forms[lost])}", drops the takeaway's claim${figures.length ? ` (${as(figures)})` : ""}: ${why}. A shorter form says the takeaway in fewer words: every number${figures.length ? ` (${as(figures)})` : ""} and at least ${need} of these words: ${claim.join(", ")} — a value that works: title: ${JSON.stringify(kept)}`);
+      // DROPPED, NOT REFUSED: the value that works is the title without the forms that lose the claim, so the code
+      // applies it. Qwen3.5-9B rewrote the lost form's words render after render and never put 8 900 back (gx-dot-density
+      // scrolly, mvq82 and mvq83); the note still says what a shorter form needs, for a beat that wants one.
+      beat[title] = kept;
+      console.log(`NOTE — title: its form ${lost + 1}, "${norm(forms[lost])}", drops the takeaway's claim${figures.length ? ` (${as(figures)})` : ""}: ${why}, so it is not printed. A shorter form says the takeaway in fewer words: every number${figures.length ? ` (${as(figures)})` : ""} and at least ${need} of these words: ${claim.join(", ")}. The title prints: ${JSON.stringify(kept)}`);
     }
   };
   if (!STOPWORDS[language]) return claimKept();

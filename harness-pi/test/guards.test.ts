@@ -318,9 +318,23 @@ describe("applyStoryboard", () => {
     ).toThrow(/copied as a literal string/);
   });
 
+  // A shorter form that loses the claim is dropped, not refused (gx-dot-density scrolly, Qwen3.5-9B, mvq82–83):
+  // the beat's title becomes the value the refusal used to offer, and the note says why.
+  const noteOf = (f: () => void) => {
+    const said: string[] = [];
+    const log = console.log;
+    console.log = (...a: unknown[]) => void said.push(a.join(" "));
+    try {
+      f();
+    } finally {
+      console.log = log;
+    }
+    return said.join("\n");
+  };
+
   // gx-proportional-symbol static (Qwen3.5-9B, 2026-11-13): the copy ladder spent the headline first and printed the
   // beat's third form, "La puissance tient dans peu de sites": the plate no longer said what the takeaway claims.
-  it("should refuse a shorter title form that drops the takeaway's claim", () => {
+  it("should drop a shorter title form that drops the takeaway's claim", () => {
     const root = mkdtempSync(join(tmpdir(), "splash-short-"));
     const dir = join(root, "beats", "1");
     mkdirSync(dir, { recursive: true });
@@ -335,12 +349,14 @@ describe("applyStoryboard", () => {
         "La puissance tient dans peu de sites",
       ],
     };
-    expect(() => applyStoryboard(b, dir)).toThrow(
-      /title: its form 3, "La puissance tient dans peu de sites", drops the takeaway's claim.*a value that works: title: \[.*"Un centième des sites, plus d’un tiers de la puissance"\]/,
-    );
+    expect(noteOf(() => applyStoryboard(b, dir))).toMatch(/title: its form 3, "La puissance tient dans peu de sites", drops the takeaway's claim/);
+    expect(b.title).toEqual([
+      "Un centième des sites porte plus d’un tiers de la puissance bas-carbone d’Europe",
+      "Un centième des sites, plus d’un tiers de la puissance",
+    ]);
   });
 
-  it("should refuse a shorter title form that drops a number of the takeaway", () => {
+  it("should drop a shorter title form that drops a number of the takeaway", () => {
     const root = mkdtempSync(join(tmpdir(), "splash-short-"));
     const dir = join(root, "beats", "1");
     mkdirSync(dir, { recursive: true });
@@ -354,9 +370,8 @@ describe("applyStoryboard", () => {
         "Lisboa carries most million trips",
       ],
     };
-    expect(() => applyStoryboard(b, dir)).toThrow(
-      /form 2.*drops the takeaway's claim \(214, 394\)/,
-    );
+    expect(noteOf(() => applyStoryboard(b, dir))).toMatch(/form 2.*drops the takeaway's claim \(214, 394\)/);
+    expect(b.title).toEqual(["Lisboa carries 214 of the 394 million trips"]);
   });
 
   // gx-dot-density web (Qwen3.5-9B, mvq61): the takeaway's "8 900", a French thousands group, was read as 8 and 900,
@@ -388,7 +403,8 @@ describe("applyStoryboard", () => {
       `---\nlanguage: fr\ntakeaway: "72 réacteurs sur 8 900 centrales bas-carbone — et un tiers de la puissance"\n---\n`,
     );
     const b = { title: ["72 réacteurs sur 8 900 centrales bas-carbone — et un tiers de la puissance", "72 sites nucléaires, un tiers de la puissance"] };
-    expect(() => applyStoryboard(b, dir)).toThrow(/drops the takeaway's claim \(72, 8 900\): it leaves out 8 900\./);
+    expect(noteOf(() => applyStoryboard(b, dir))).toMatch(/drops the takeaway's claim \(72, 8 900\): it leaves out 8 900,/);
+    expect(b.title).toHaveLength(1);
   });
 
   // gx-marimekko scrolly (12B, 2026-11-15): the refusal listed all eight key words as if each were required and never
@@ -408,7 +424,7 @@ describe("applyStoryboard", () => {
         "Coal: 12 % of the six, nearly all of it in Germany and Poland",
       ],
     };
-    expect(() => applyStoryboard(b, dir)).toThrow(/it leaves out 99\.5.*at least 3 of/);
+    expect(noteOf(() => applyStoryboard(b, dir))).toMatch(/it leaves out 99\.5.*at least 3 of/);
   });
 
   // gx-bullet web (Qwen3.5-9B, 2026-11-13): the credit line ended "· as of 2025-06-26" on a French plate.
