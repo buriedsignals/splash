@@ -1828,3 +1828,6 @@ Harness fixes, in order (each with a test that fails without it):
   unseen by any check; importBeat now refuses a printed month the data does not hold (c9ed4f684, replayed on the
   kept beat: it refuses with "juin 2026"). Backlog: card 3's Poland ribbon lies on Germany's (same bearing), and
   card 4's corner readout says 79,4 % where its note says 81 %.
+- mvq87 hex scrolly (Qwen3.5-9B): PASS first try, 7 turns, 143 s, refusals=0. Czechia 36,1 per 1 000 against
+  Germany 14,8, then the two side by side. Backlog: card 4 prints the raw "2026-06"; at card 2's capture the card
+  sits over DEU, the hexagon it names.
