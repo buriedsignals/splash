@@ -1598,6 +1598,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | heatmap-matrix (cell) | pass (mvq48, 14 t) | pass (mvq49, 13 t) | pass (mvq50, 17 t) |
 | calendar-heatmap (cell) | pass (mvq51, 25 t) | pass (mvq52, 17 t) | pass (mvq54, 27 t) |
 | area-and-stacked-area (time) | pass (mvq90, 33 t) | pass (mvq92, 19 t; mvq91 shipped a false share, kit fix) | pass (mvq93, 16 t) |
+| grouped-bar (length) | pass (mvq94, 18 t) | pass (mvq95, 12 t) | pass (mvq96, 10 t) |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1858,3 +1859,8 @@ Harness fixes, in order (each with a test that fails without it):
   country's full mix, the other sources falling away, wind and solar regrouped, "éolien devant : 5 sur 6" with
   Switzerland boxed; figures as on the web page. Seen, open (kit): mid-transition the pairs hang from the stack's top
   for a few frames before reaching the baseline.
+- **gx-grouped-bar scrolly (Qwen3.5-9B, mvq96).** Passed: 10 turns, 319 s, refusals=0. Six cards: wind, solar beside
+  it, the gap (wind minus solar), ranked by gap, 2015's gap dotted, the pairs again. Every gap checked against
+  data.json (Sweden +21,1, Germany +13,6, Norway +9,0, France +3,7, Switzerland −7,0; Switzerland 2015 −1,5, so
+  "4,6 fois" holds). Backlog, kit: the prose card covers Poland's bar and figure on every card (the known card-covers
+  class). Grouped-bar passes in all three formats.
