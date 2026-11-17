@@ -169,6 +169,21 @@ export function rowByNameHint(dir: string): string {
   return "";
 }
 
+/** "${X}" in plain quotes prints as is: JavaScript fills ${…} only between backticks. Qwen3.5-9B wrote
+ *  mark: "Espagne · ${ADDED}" and the refusal gave the drawn row, never the quotes (gx-stacked-bar web, 2026-11-17).
+ *  Lines holding a backtick are skipped: a quote inside a template literal is text, not a string's edge. */
+export function quotedTemplateHint(dir: string): string {
+  const beat = join(dir, "beat.mjs");
+  if (!existsSync(beat)) return "";
+  for (const line of readFileSync(beat, "utf8").split("\n")) {
+    if (line.includes("`")) continue;
+    const hit = line.match(/(["'])(?:(?!\1)[^\\\n])*\$\{[^}]+\}(?:(?!\1)[^\\\n])*\1/);
+    if (hit)
+      return `\nhint: ${hit[0]} is in plain quotes, so the page prints its \${…} as is: JavaScript fills \${…} only between backticks — write it \`${hit[0].slice(1, -1)}\``;
+  }
+  return "";
+}
+
 /** A line holding only a quote after the closing "};" is never code (gx-bullet web, 12B, 2026-11-13: told to delete
  *  it, the 12B edited template strings elsewhere through three passes). Removed before rendering; returns what it did. */
 export function trimStrayTail(file: string): string {
@@ -311,7 +326,7 @@ export function runTools(bases: Bases) {
       const result = await exec(["bun", path]);
       const record = zoned && existsSync(join(beatDir(bases, beat), "gestures.json")) ? `beats/${beat}/gestures.json` : undefined;
       const failed = /REFUSED|Error|error:/.test(result.content[0].text);
-      result.content[0].text = trimmed + result.content[0].text + refusalHint(result.content[0].text, record) + (zoned && failed ? rowByNameHint(beatDir(bases, beat)) : "");
+      result.content[0].text = trimmed + result.content[0].text + refusalHint(result.content[0].text, record) + (zoned && failed ? rowByNameHint(beatDir(bases, beat)) + quotedTemplateHint(beatDir(bases, beat)) : "");
       // Name every PNG the render wrote by its full path, so the next call can look at it.
       const renders = join(beatDir(bases, beat), "renders");
       if (existsSync(renders)) {
