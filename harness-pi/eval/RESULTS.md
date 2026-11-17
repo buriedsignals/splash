@@ -1609,6 +1609,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | treemap (part-to-whole) | pass (mvq121, 7 t) | pass (mvq122, 9 t) | pass (mvq123, 7 t) |
 | parallel-coordinates (misfit) | pass (mvq124, 19 t) | pass (mvq125, 14 t) | pass (mvq126, 12 t) |
 | radar-spider (misfit) | pass (mvq127, 11 t) | pass (mvq128, 10 t) | pass (mvq129, 18 t) |
+| scatter-and-bubble (position) | pass (mvq130, 22 t) | — | — |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -2012,3 +2013,9 @@ Harness fixes, in order (each with a test that fails without it):
   Germany 0,0 % nuclear / 28,5 % wind → "28,5 % contre 8,1 %", every card figure from data.json. Backlog (kit):
   the card sits at the radar's centre, over most of both shapes (they live inside the inner rings); in card 2
   France's lit line stays accent while Germany, the subject, is ink.
+- **gx-scatter-and-bubble web (Qwen3.5-9B, mvq130).** Pass (22 turns, 965 s — the slowest web cell so far,
+  refusals=0; per-type xy kit, no gestures): 165 countries, log income axis, $30k rule, band shaded; "41 countries,
+  71.2 to 85.1 years — 13.9 spread" vs "124 countries, spread over 41.1" recomputed from data.json, so "3 times
+  narrower" holds (2.96). Backlog: the subtitle carries the type sheet's own words to the reader ("the silent lie
+  most common in this family"); "Above :" / "Below :" with a French space on an English page; the note box covers
+  the band's lower edge.
