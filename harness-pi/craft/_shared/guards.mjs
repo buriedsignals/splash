@@ -727,6 +727,30 @@ function numberNotInTakeaway(e) {
   return `check() threw: ${e.message}${beatLine(e)} — this test compares to ${untold.join(", ")}, and the takeaway never states ${untold.join(" or ")} (it says: "${takeaway}"). check() tests only what the takeaway says — delete this test from check(); the data's own figure is the first one in the message`;
 }
 
+/**
+ * A field read on a list item that prints "undefined" (gx-population-pyramid web, Qwen3.5-9B, mvq101: check() read
+ * crossings[0]?.band where crossings holds band names, three times): quote what CONTRACT.md says the list holds.
+ */
+function undefinedField(e) {
+  if (!/\bundefined\b/.test(String(e?.message ?? ""))) return null;
+  const at = /(\/[^\s()]*\/beat\.mjs):(\d+)/.exec(String(e?.stack ?? ""));
+  if (!at) return null;
+  let text = "";
+  let contract = "";
+  try {
+    text = readFileSync(at[1], "utf8").split("\n")[Number(at[2]) - 1] ?? "";
+    contract = readFileSync(join(dirname(at[1]), "CONTRACT.md"), "utf8").replace(/\s+/g, " ");
+  } catch {
+    return null;
+  }
+  const read = /\b(\w+)\[\d+\]\??\.(\w+)/.exec(text);
+  if (!read) return null;
+  const [, list, field] = read;
+  const said = new RegExp("`" + list + "` = ([^;|]+?)(?=;|\\||, `|$)").exec(contract)?.[1]?.trim();
+  if (!said) return null;
+  return `${e.message}${beatLine(e)}: ${list}[0].${field} is undefined — CONTRACT.md: \`${list}\` = ${said}. Read ${list}[0] in that shape (no .${field} unless the contract names it)`;
+}
+
 /** " (beat.mjs line N: "<its text>")" from a runtime error's stack, or "". */
 function beatLine(e) {
   const at = /(\/[^\s()]*\/beat\.mjs):(\d+)/.exec(String(e?.stack ?? ""));
@@ -850,6 +874,8 @@ export function errorText(error) {
       const hint = emptyListHint(emptyList[1], dirname(process.argv[1]));
       if (hint) return hint;
     }
+    const shape = undefinedField(e);
+    if (shape) return shape;
     const miss = tableMiss(e);
     if (miss) return miss;
     const empty = emptyRead(e);

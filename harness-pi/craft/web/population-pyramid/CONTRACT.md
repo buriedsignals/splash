@@ -51,7 +51,7 @@ The fold reading `f` (given to `foldPill`, `announce`, `note`, `crossingText`) i
 being folded: `{ name, host, first, last, crossing, crossings, runs, ahead, behind, widestGap, total, hostTotal }`
 — `name` = the folded half, `host` = the half it is laid on, `first` / `last` = the youngest and oldest
 bands, `crossing` = `{ band, gap, leader }` at the FIRST band where the lead changes, `crossings` =
-every band where it changes, `ahead` / `behind` = how many bands the folded half leads / trails,
+the NAMES of every band where it changes, as strings (e.g. ["60-64"]; compare crossings[0] === "60-64", it has no .band), `ahead` / `behind` = how many bands the folded half leads / trails,
 `widestGap` = `{ band, gap, leader }` the band where the halves differ most, `total` / `hostTotal` =
 each half's whole count. `runs` = the stretches of one half's lead, youngest first:
 `[{ leader, from, to, count, ties, widest: { band, gap } }]`.

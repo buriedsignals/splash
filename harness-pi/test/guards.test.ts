@@ -837,6 +837,24 @@ describe("assertTicksSayTheirValue", () => {
 });
 
 describe("errorText", () => {
+  // gx-population-pyramid web (Qwen3.5-9B, mvq101): check() read crossings[0]?.band, crossings holds band names, and
+  // "the crossing is at undefined, not 60-64" came back three times with nothing saying what crossings holds.
+  it("should quote the contract's definition when a field read on a list item is undefined", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-ref-"));
+    writeFileSync(join(dir, "CONTRACT.md"), "`crossings` = the band names where the lead changes, e.g. [\"60-64\"]; `runs` = the stretches\n");
+    writeFileSync(
+      join(dir, "beat.mjs"),
+      'const crossings = ["60-64"];\nexport const go = () => {\n  if (crossings[0]?.band !== "60-64") throw new Error(`the crossing is at ${crossings[0]?.band}, not 60-64`);\n};\n',
+    );
+    let error;
+    try {
+      (await import(join(dir, "beat.mjs"))).go();
+    } catch (e) {
+      error = e;
+    }
+    expect(errorText(error)).toMatch(/crossings\[0\]\.band is undefined.*CONTRACT\.md: `crossings` = the band names where the lead changes, e\.g\. \["60-64"\]/);
+  });
+
   // gx-bullet web (12B, 2026-11-13): beat.mjs ended "};" then a line holding one backtick; the refusal read
   // "Unterminated string literal (line 125: `)" and the 12B edited a template string elsewhere three times.
   it("should name a lone quote line as stray and say to delete it", async () => {
