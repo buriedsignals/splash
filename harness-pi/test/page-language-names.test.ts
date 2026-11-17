@@ -29,6 +29,15 @@ describe("a drawn name on a page whose language data.json translates", () => {
   it("should hand the translated column and its name as a value that works", () => {
     expect(() => assertNoAggregates(["Saudi Arabia", "Qatar"], beat("fr"))).toThrow(/entity_fr[\s\S]*"Arabie saoudite"/);
   });
+  // gx-bump-ranking-over-time web (Qwen3.5-9B, mvq111): the refusal named the column, but beat.mjs also typed
+  // "India" to find its series, and the beat came back unchanged twice. Name the line and the typed names.
+  it("should name the beat.mjs lines that read the source column and type its names", () => {
+    const here = beat("fr");
+    writeFileSync(join(here, "beat.mjs"), 'const NAME = col("entity");\nconst lead = "Saudi Arabia";\n');
+    expect(() => assertNoAggregates(["Saudi Arabia", "Qatar"], here)).toThrow(
+      /line 1: col\("entity"\) → col\("entity_fr"\)[\s\S]*line 2: "Saudi Arabia" → "Arabie saoudite"/,
+    );
+  });
   it("should accept the translated names", () => {
     expect(assertNoAggregates(["Arabie saoudite", "Qatar", "Allemagne"], beat("fr"))).toBeUndefined();
   });

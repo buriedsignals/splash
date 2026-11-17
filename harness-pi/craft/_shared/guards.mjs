@@ -933,7 +933,7 @@ export function assertNoAggregates(names, here) {
   if (!existsSync(dataPath)) return;
   const table = JSON.parse(readFileSync(dataPath, "utf8"));
   const columns = table.columns ?? [];
-  assertPageLanguageNames(names, table, front(here)?.("language"));
+  assertPageLanguageNames(names, table, front(here)?.("language"), here);
   // OWID codes Kosovo OWID_KOS: a country with no ISO code, not an aggregate.
   const iso = (v) => /^([A-Z]{3}|OWID_KOS)$/.test(String(v ?? ""));
   const code = columns.findIndex((_, c) => table.rows.filter((r) => iso(r[c])).length >= table.rows.length * 0.6);
@@ -994,7 +994,7 @@ function assertNamesNotCodes(names, table, code, language) {
  * non-English story (H1), and a beat that read the source column printed "Saudi Arabia" on a French page
  * (gx-beeswarm static, Qwen3.5-9B, 2026-11-16). Called from assertNoAggregates, where every family checks its names.
  */
-function assertPageLanguageNames(names, table, language) {
+function assertPageLanguageNames(names, table, language, here) {
   const lang = String(language ?? "").toLowerCase().slice(0, 2);
   if (!lang || lang === "en") return;
   const columns = table.columns ?? [];
@@ -1007,9 +1007,25 @@ function assertPageLanguageNames(names, table, language) {
     if (!english.length) continue;
     const q = JSON.stringify;
     throw new Error(
-      `${english.slice(0, 3).map(q).join(", ")}${english.length > 3 ? ` and ${english.length - 3} more` : ""} ${english.length > 1 ? "are" : "is"} data.json's ${column.name}, the source's spelling; this ${lang} page prints its ${columns[s].name} — a value that works: read names from col(${q(columns[s].name)}), which gives ${q(english[0])} → ${q(local.get(english[0]))}`,
+      `${english.slice(0, 3).map(q).join(", ")}${english.length > 3 ? ` and ${english.length - 3} more` : ""} ${english.length > 1 ? "are" : "is"} data.json's ${column.name}, the source's spelling; this ${lang} page prints its ${columns[s].name} — a value that works: read names from col(${q(columns[s].name)}), which gives ${q(english[0])} → ${q(local.get(english[0]))}${sourceLines(here, column.name, columns[s].name, local)}`,
     );
   }
+}
+
+/**
+ * The beat.mjs lines a page-language refusal is about. gx-bump-ranking-over-time web (Qwen3.5-9B, mvq111): told the
+ * column, the beat came back unchanged twice — it also typed "India" to find its series. Name each line to change.
+ */
+function sourceLines(here, source, translated, local) {
+  const path = here ? join(here, "beat.mjs") : "";
+  if (!path || !existsSync(path)) return "";
+  const q = JSON.stringify;
+  const fixes = [];
+  readFileSync(path, "utf8").split("\n").forEach((line, i) => {
+    if (line.includes(`col(${q(source)})`)) fixes.push(`line ${i + 1}: col(${q(source)}) → col(${q(translated)})`);
+    for (const [name, fr] of local) if (line.includes(q(String(name)))) fixes.push(`line ${i + 1}: ${q(String(name))} → ${q(fr)}`);
+  });
+  return fixes.length ? `. In beat.mjs, ${fixes.slice(0, 6).join("; ")}` : "";
 }
 
 /** How data.json is laid out and how to read it, in this beat's own column names. */
