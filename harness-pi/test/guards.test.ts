@@ -505,6 +505,35 @@ describe("applyStoryboard", () => {
     });
   });
 
+  // gx-flow-map video (Qwen3.5-9B, mvq73): share() returned "Allemagne + Pologne: 49,1%" — the kit's example carried
+  // the no-break spaces, the model dropped them, and a function's words were never normalised as a field's were.
+  describe("French spacing", () => {
+    const beatIn = (language: string) => {
+      const root = mkdtempSync(join(tmpdir(), "splash-fr-space-"));
+      const dir = join(root, "beats", "1");
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(root, "STORYBOARD.md"), `---\nlanguage: ${language}\n---\n`);
+      return dir;
+    };
+    it("should put a no-break space before a colon and a percent that have none", () => {
+      const b: Record<string, unknown> = { alt: "Allemagne + Pologne: 49,1%" };
+      applyStoryboard(b, beatIn("fr"));
+      expect(b.alt).toBe("Allemagne + Pologne\u00A0: 49,1\u00A0%");
+    });
+    it("should normalise the words a beat's function returns", () => {
+      const b: Record<string, unknown> = { share: (s: number) => `Allemagne + Pologne: ${s}%` };
+      applyStoryboard(b, beatIn("fr"));
+      expect((b.share as (s: number) => string)(49.1)).toBe("Allemagne + Pologne\u00A0: 49,1\u00A0%");
+    });
+    it("should leave a time, a link and an English plate alone", () => {
+      const fr: Record<string, unknown> = { limits: "à 12:30, voir https://x.org" };
+      applyStoryboard(fr, beatIn("fr"));
+      const en: Record<string, unknown> = { alt: "Germany + Poland: 49.1%" };
+      applyStoryboard(en, beatIn("en"));
+      expect([fr.limits, en.alt]).toEqual(["à 12:30, voir https://x.org", "Germany + Poland: 49.1%"]);
+    });
+  });
+
   describe("apostrophes", () => {
     const beatIn = () => {
       const root = mkdtempSync(join(tmpdir(), "splash-apos-"));

@@ -77,6 +77,9 @@ function explainFaults(beat) {
 let printed = null;
 
 /** Wraps beat.format so that what it prints can be checked once the render is done. */
+/** Marks a beat function applyStoryboard already wraps, so a second pass does not wrap it twice. */
+const WRAPPED = Symbol("printed words normalised");
+
 export function recordPrinted(beat) {
   printed = [];
   if (typeof beat?.format !== "function") return;
@@ -196,10 +199,17 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
     // (gx-choropleth, 12B and Qwen3.5-9B, 2026-11-14). One or two decimals only, never a run of dotted numbers (a date,
     // a version), so a thousands group is never read as a decimal.
     const comma = /^(fr|de|es|it|pt|pl|nl|cs|sk|sl|hr|ro|ru|uk|tr|sv|fi|da|nb|no|el|hu)/i.test(String(field("language") ?? ""));
-    const mark = (t) => (comma ? t.replace(/(?<![\d.,]|\p{L})(\d+)\.(\d{1,2})(?![\d.])/gu, "$1,$2") : t);
+    const decimal = (t) => (comma ? t.replace(/(?<![\d.,]|\p{L})(\d+)\.(\d{1,2})(?![\d.])/gu, "$1,$2") : t);
+    // French sets a no-break space before : ; ! ? and % where the model wrote none ("Pologne: 49,1%", mvq73); a time
+    // (12:30) and a link (https:) are left alone, and a space already there is kept.
+    const french = /^fr/i.test(String(field("language") ?? ""));
+    const spaced = (t) => (french ? t.replace(/(?<=[\p{L}\p{N}»)\]])([:;!?])(?=\s|$)/gu, "\u00A0$1").replace(/(?<=\d)%/g, "\u00A0%") : t);
+    const mark = (t) => spaced(decimal(t));
     const curl = (v) => (typeof v === "string" && !asData.has(v) ? mark(v.replace(/(\p{L})'(?=\p{L})/gu, "$1’")) : v);
-    const curlAll = (v) => (Array.isArray(v) ? v.map(curl) : curl(v));
-    for (const key of Object.keys(beat)) if (key !== title && key !== source) beat[key] = curlAll(beat[key]);
+    // A beat's functions (count, share, host, figure) print words the plate draws: normalise what they return.
+    const curlAll = (v) =>
+      Array.isArray(v) ? v.map(curl) : typeof v === "function" ? Object.assign((...a) => curlAll(v(...a)), { [WRAPPED]: true }) : curl(v);
+    for (const key of Object.keys(beat)) if (key !== title && key !== source && !beat[key]?.[WRAPPED]) beat[key] = curlAll(beat[key]);
     if (Array.isArray(beat.gestures))
       beat.gestures = beat.gestures.map((g) => (g && typeof g === "object" ? Object.fromEntries(Object.entries(g).map(([k, v]) => [k, ["note", "card", "label"].includes(k) ? curlAll(v) : v])) : g));
   }
