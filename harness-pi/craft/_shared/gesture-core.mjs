@@ -491,6 +491,18 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
             set: { index: i, field: "note", value: g.note.slice(0, n.index) + total + g.note.slice(n.index + n.raw.length) },
           });
         }
+        // A 0 is never within half of anything, so a count beat.mjs computed wrong (mvq42: blocks counted with inverted
+        // bounds, "0 pays seulement" where the block draws 6) would only ever be told to drop the note.
+        const markValue = marks.length === 1 ? valueOf.get(marks[0]) : undefined;
+        if (n.value === 0 && !n.percent && Number.isFinite(markValue) && markValue > 0) {
+          const count = formatLike(n, markValue * 10 ** scale);
+          const fixed = g.note.slice(0, n.index) + count + g.note.slice(n.index + n.raw.length);
+          throw new GestureRefusal(
+            `gestures[${i}].note`,
+            `states 0 where ${marks[0]}, which this ${g.do} draws, holds ${count}: a figure beat.mjs computes for the note came out 0 — check the code that computes it — a value that works: ${fixed}`,
+            { set: { index: i, field: "note", value: fixed } },
+          );
+        }
         // Nothing this gesture draws is near the figure: the nearest would only swap one false number for another (a
         // China bracket on the wrong rows was offered the United States' total as "the next five"), so the note goes.
         if (Math.abs(best - n.value) > Math.abs(n.value) * 0.5)

@@ -381,3 +381,19 @@ describe("the units family's own rules", () => {
     ).toBe(true);
   });
 });
+
+// mvq42 (gx-pictogram-isotype video, Qwen3.5-9B, 2026-11-17): beat.mjs counted its blocks with inverted bounds,
+// so `${counts.middle} pays seulement` printed 0 where the middle block draws 6; "drop the note" came back twice
+// and named no count, because no figure is ever within half of 0.
+describe("a note whose count came out 0", () => {
+  const zero = () =>
+    refusal(() =>
+      stage("pictogram-isotype", [{ do: "reveal" }, { do: "name", mark: "middle", note: "0 pays seulement" }], "video"),
+    );
+  it("should hand back the count the named block draws", () => {
+    expect(zero().message).toContain("a value that works: 6 pays seulement");
+  });
+  it("should say a count in beat.mjs came out 0", () => {
+    expect(zero().message).toContain("came out 0");
+  });
+});
