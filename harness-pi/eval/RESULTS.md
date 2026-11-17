@@ -1677,6 +1677,15 @@ Reading:
   narrowest remove's fitted zoom when the closest-pair separation alone sits lower. mvq58's beat re-rendered and driven
   in Chrome: leash 3.771..5.486 (was 3.771..3.771), and Europe, voisinage and région now each show their own frame.
   Left, model-side: the région bar says 20 km, a few pixels on a 1 000 km frame.
+- flow-map web (mvq65 stopped): the per-type web kit (first measurement) required a population column for its
+  per-inhabitant measure; the seed's table is entity, code, month, people. Three refusals on "no column population",
+  none naming a value that works. b1d2ad580: `population: null` gives a two-measure page (count, per 1 000 km²), and a
+  beat naming a missing column is told that value. mvq65's beat, adapted, replayed outside the model: rendered, lead
+  passes from Germany to Malta, 7 bands under the floor at per area. Seen: the frozen frame centres on a wide Atlantic.
+- flow-map web (mvq66 PASS, 40 turns, 1013 s, 0 refusals counted): population: null taken on the first turn. The
+  model's own check() read c.leaders as the top two by count (they are each measure's leader) and refused itself 3x
+  before reading c.ranked. Looking at it: two-measure control, bands right; the map is height-bound at 1920, so the
+  Atlantic and Kazakhstan fill the sides; the subtitle repeats "une bande par pays d'accueil" (model: standfirst + limits).
 - Model-side residue (Tune, not Harness): mvq36's title names the ceiling's +2 that the three-gesture video never
   shows; "l'Chine" elision (mvq28).
 
