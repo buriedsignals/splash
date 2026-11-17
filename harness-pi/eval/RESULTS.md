@@ -1599,7 +1599,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | calendar-heatmap (cell) | pass (mvq51, 25 t) | pass (mvq52, 17 t) | pass (mvq54, 27 t) |
 | area-and-stacked-area (time) | pass (mvq90, 33 t) | pass (mvq92, 19 t; mvq91 shipped a false share, kit fix) | pass (mvq93, 16 t) |
 | grouped-bar (length) | pass (mvq94, 18 t) | pass (mvq95, 12 t) | pass (mvq96, 10 t) |
-| diverging-bar (length) | pass (mvq97, 19 t) | pass (mvq98, 16 t) | — |
+| diverging-bar (length) | pass (mvq97, 19 t) | pass (mvq98, 16 t) | pass (mvq99, 14 t) |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1876,3 +1876,8 @@ Harness fixes, in order (each with a test that fails without it):
   the frame edge under the labelled zoom), then the whole chart sorted by change with every value. Final frame
   checked against data.json (Croatia +0,03, Luxembourg −20,48, Estonia −17,40, Latvia −3,94). Backlog: the heading
   counts "22 baisses" mid-transition before settling on 26.
+- **gx-diverging-bar scrolly (Qwen3.5-9B, mvq99).** Passed: 14 turns, 254 s, refusals=0. Six cards: 1990 levels, 2024
+  over 1990 ghosts ("26 pays sur 27 émettent moins"), collapse to the change sorted by gap, the axis tightened to
+  ±0,5 t so Croatia's +0,03 shows, the 26 fallers against their −4,93 t mean, then the reading card. Checked against
+  data.json: Croatia 4,73 → 4,76 t, +0,03, 0,67 % of its 1990 base; Luxembourg 10,46 t in 2024. Diverging-bar passes
+  in all three formats.
