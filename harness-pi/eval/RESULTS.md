@@ -1600,6 +1600,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | area-and-stacked-area (time) | pass (mvq90, 33 t) | pass (mvq92, 19 t; mvq91 shipped a false share, kit fix) | pass (mvq93, 16 t) |
 | grouped-bar (length) | pass (mvq94, 18 t) | pass (mvq95, 12 t) | pass (mvq96, 10 t) |
 | diverging-bar (length) | pass (mvq97, 19 t) | pass (mvq98, 16 t) | pass (mvq99, 14 t) |
+| population-pyramid (length) | pass (mvq101, 19 t) | — | — |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1881,3 +1882,12 @@ Harness fixes, in order (each with a test that fails without it):
   ±0,5 t so Croatia's +0,03 shows, the 26 fallers against their −4,93 t mean, then the reading card. Checked against
   data.json: Croatia 4,73 → 4,76 t, +0,03, 0,67 % of its 1990 base; Luxembourg 10,46 t in 2024. Diverging-bar passes
   in all three formats.
+- **gx-population-pyramid web (Qwen3.5-9B, mvq100 → mvq101).** mvq100 rendered (11 turns) but its axis lied: the
+  model's tickFormat divided by 10,000 and wrote "k", so 350,000 printed "35k" and 175,000 "18k". Fix bab3c8f9c:
+  `assertTicksSayTheirValue` refuses a tick whose label reads as another value at its suffix's scale (k, M, Md, %),
+  wired into the three pyramid kits, beeswarm and waterfall static; mutation-checked. mvq101 passed (19 turns, 839 s,
+  refusals=0): axis 175k / 350k, peak 55-59 = 669 962, women ahead from 60-64 (293 052 vs 292 211), all checked
+  against data.json. On the way it read `crossings[0]?.band` three times where crossings holds band names, and
+  self-corrected; fix after the run: errorText quotes CONTRACT.md's definition of the list when a field read on its
+  item prints undefined, and the web contract now says crossings are strings. Backlog: the dek's "rien d'autre que la
+  tranche nommée ne dit laquelle" is copied kit prose that says nothing to a reader.
