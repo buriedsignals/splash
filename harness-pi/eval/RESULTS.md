@@ -1606,7 +1606,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | bump-ranking-over-time (position) | pass (mvq111, 35 t) | pass (mvq112, 19 t) | pass (mvq113, 22 t) |
 | diverging-stacked-bar-likert (stack) | pass (mvq114, 7 t) | pass (mvq115, 19 t) | pass (mvq116, 14 t) |
 | marimekko-mosaic-plot (part-to-whole) | pass (mvq117, 4 t) | pass (mvq118, 11 t) | pass (mvq119, 11 t) |
-| treemap (part-to-whole) | pass (mvq121, 7 t) | pass (mvq122, 9 t) | — |
+| treemap (part-to-whole) | pass (mvq121, 7 t) | pass (mvq122, 9 t) | pass (mvq123, 7 t) |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1978,3 +1978,7 @@ Harness fixes, in order (each with a test that fails without it):
   and bracketed, "14 % of Europe's 469 GW" then "10 countries", recomputed from data.json. Backlog (kit, not the
   model): the running sum under the axis label counts up from 48.8 GW and is replaced by the next note at 65.1 and
   65.3 GW — it never lands on its 65.8 GW before the hand-off; the lit tiles below the United Kingdom carry no name.
+- **gx-treemap scrolly (Qwen3.5-9B, mvq123).** Pass (7 turns, 137 s, refusals=0): 46 rows, the ten tipped lit then
+  bracketed, cards "65.8 GW between them" → "14 % of the continent's 469 GW" → "10 countries in all", figures from
+  data.json. Backlog: the last card covers Germany's name; 32 countries fold into one 200.9 GW tile, so the scrolly
+  names fewer countries than the web page.
