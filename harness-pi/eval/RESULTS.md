@@ -1608,7 +1608,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | marimekko-mosaic-plot (part-to-whole) | pass (mvq117, 4 t) | pass (mvq118, 11 t) | pass (mvq119, 11 t) |
 | treemap (part-to-whole) | pass (mvq121, 7 t) | pass (mvq122, 9 t) | pass (mvq123, 7 t) |
 | parallel-coordinates (misfit) | pass (mvq124, 19 t) | pass (mvq125, 14 t) | pass (mvq126, 12 t) |
-| radar-spider (misfit) | pass (mvq127, 11 t) | — | — |
+| radar-spider (misfit) | pass (mvq127, 11 t) | pass (mvq128, 10 t) | — |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -2004,3 +2004,7 @@ Harness fixes, in order (each with a test that fails without it):
   totals 561.8 / 496.0 TWh, all recomputed from data.json. Backlog: both toggles read "Les deux mix"; the nuclear
   filter counts "2 / 18" (two of eighteen spoke points), which reads as nothing; the model wrote the limits
   sentence twice (once with the totals); a 0–100 % ceiling leaves Germany's shape small at the centre.
+- **gx-radar-spider video (Qwen3.5-9B, mvq128).** Pass (10 turns, 258 s, refusals=0): France lit with "67,7 % de
+  nucléaire" → Germany drawn in ink → "28,5 % contre 8,1 %" on the wind spoke, shares from data.json. Backlog
+  (kit): the radar fills about a sixth of the frame; the compare draws no mark on the two wind points, so the note
+  floats left of the spoke it is about; Germany is never in the accent though the second shot is its.
