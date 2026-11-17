@@ -273,6 +273,28 @@ describe("applyStoryboard", () => {
     expect(() => applyStoryboard(b, dir)).not.toThrow();
   });
 
+  // gx-cartogram video (Qwen3.5-9B, mvq75): the storyboard kept one clause, the model titled with the article's two;
+  // the refusal said "not computed" of a literal title, and the next edit kept the same title.
+  it("should print the takeaway when the title is the takeaway with a clause added after it", () => {
+    const root = mkdtempSync(join(tmpdir(), "splash-clause-"));
+    const dir = join(root, "beats", "1");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(root, "STORYBOARD.md"), `---\ntakeaway: "Compté par pays, le bas-carbone européen est à 65,1 %"\n---\n`);
+    const b = {
+      title: ["Compté par pays, le bas-carbone européen est à 65,1 % ; compté au kilomètre carré, à 44,9 %", "Compté par pays : 65,1 %"],
+    };
+    applyStoryboard(b, dir);
+    expect(b.title).toEqual(["Compté par pays, le bas-carbone européen est à 65,1 %", "Compté par pays : 65,1 %"]);
+  });
+
+  it("should still refuse a title that runs on past the takeaway without a clause break", () => {
+    const root = mkdtempSync(join(tmpdir(), "splash-clause-"));
+    const dir = join(root, "beats", "1");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(root, "STORYBOARD.md"), `---\ntakeaway: "Le bas-carbone est à 65"\n---\n`);
+    expect(() => applyStoryboard({ title: "Le bas-carbone est à 65,1 %" }, dir)).toThrow(/copied as a literal string/);
+  });
+
   it("should still refuse a title that drops a clause stating no figure", () => {
     const root = mkdtempSync(join(tmpdir(), "splash-clause-"));
     const dir = join(root, "beats", "1");

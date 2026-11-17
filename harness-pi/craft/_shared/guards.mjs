@@ -182,7 +182,10 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
     }
     return prev[b.length] <= 2;
   };
-  if (takeaway && headline !== undefined && norm(headline) !== norm(takeaway) && (plain(headline) === plain(takeaway) || (digits(headline) === digits(takeaway) && slip(plain(headline), plain(takeaway)))))
+  // The takeaway with a clause run on after it is the article's sentence where the storyboard kept one clause
+  // (gx-cartogram video, Qwen3.5-9B, mvq75): the plate prints the journalist's takeaway and drops the added clause.
+  const runOn = (h, t) => h.startsWith(t) && /^(\s*[;:—–]|,\s)/.test(h.slice(t.length));
+  if (takeaway && headline !== undefined && norm(headline) !== norm(takeaway) && (plain(headline) === plain(takeaway) || runOn(norm(headline), norm(takeaway)) || (digits(headline) === digits(takeaway) && slip(plain(headline), plain(takeaway)))))
     beat[title] = Array.isArray(beat[title]) ? [takeaway, ...beat[title].slice(1)] : takeaway;
   // A title may drop whole clauses of the takeaway that state a figure: the headline guard offers that form when the
   // figure is not one the plate draws, and demanding the clause back here left no title that passes both (gx-cartogram
