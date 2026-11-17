@@ -1820,3 +1820,11 @@ Harness fixes, in order (each with a test that fails without it):
 - mvq85 contour scrolly (Qwen3.5-9B): PASS first try, 15 turns, 371 s, refusals=0. Six cards that each move the
   picture: the empty field, the 100 km line (42 %), 132 km (half), 400 km (89 %), the close-up on the farthest point
   in Belarus (682 km), the whole field with its 682 ring. Backlog: in the close-up the 682 point itself is not marked.
+- mvq86 flow scrolly (Qwen3.5-9B): PASS, 53 turns, 1349 s, refusals=0, but read wrong until two fixes. The model
+  wrote `const [ENTITY, CODE, MONTH, PEOPLE] = [col("code"), col("month"), col("people")]`, so every name read the
+  next column and its own check refused "2026-06 has no French name" for ~20 turns before it found the line;
+  importBeat now refuses names outnumbering values, naming the line and the pairing that works (6b3a43e4a). And
+  `MONTHS[Number(mm)]` on a 0-based list printed the data's June as "juillet 2026" in the unit and every card,
+  unseen by any check; importBeat now refuses a printed month the data does not hold (c9ed4f684, replayed on the
+  kept beat: it refuses with "juin 2026"). Backlog: card 3's Poland ribbon lies on Germany's (same bearing), and
+  card 4's corner readout says 79,4 % where its note says 81 %.
