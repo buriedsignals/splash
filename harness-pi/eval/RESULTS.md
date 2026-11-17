@@ -1597,6 +1597,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | pie-and-donut (part) | pass (mvq45, 8 t) | pass (mvq46, 13 t) | pass (mvq47, 17 t) |
 | heatmap-matrix (cell) | pass (mvq48, 14 t) | pass (mvq49, 13 t) | pass (mvq50, 17 t) |
 | calendar-heatmap (cell) | pass (mvq51, 25 t) | pass (mvq52, 17 t) | pass (mvq54, 27 t) |
+| area-and-stacked-area (time) | pass (mvq90, 33 t) | pass (mvq92, 19 t; mvq91 shipped a false share, kit fix) | pass (mvq93, 16 t) |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
