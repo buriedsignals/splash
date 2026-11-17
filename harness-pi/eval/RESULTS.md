@@ -1577,7 +1577,7 @@ Proposed design (Tom's "code > model for routing; the 2B makes the narrow decisi
 
 Not yet built: it changes `show_candidates` and the storyboard question; to be done after the coverage batches.
 
-## 2026-11-17 — moving-format coverage on Qwen3.5-9B, family by family (mvq4–mvq44)
+## 2026-11-17 — moving-format coverage on Qwen3.5-9B, family by family (mvq4–mvq47)
 
 One cell at a time (seeded, `SPLASH_STOP_AFTER_CRAFT=1`, so `completed=false` is expected), each watched render by
 render; a cell is stopped at the second repeated refusal, its story copied, the fault fixed test-first on the
@@ -1594,6 +1594,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | dot-strip (position) | pass (mvq35, 11 t; mvq32–34 stopped) | pass (mvq36, 28 t) | pass (mvq37, 15 t) |
 | line (time-series) | pass (mvq38, 14 t) | pass (mvq39, 15 t; kit fix after looking) | pass (mvq40, 12 t) |
 | pictogram-isotype (units) | pass (mvq41, 4 t) | pass (mvq43, 13 t; mvq42 stopped on a repeated refusal, 2 fixes) | pass (mvq44, 7 t; kit fix after looking) |
+| pie-and-donut (part) | pass (mvq45, 8 t) | pass (mvq46, 13 t) | pass (mvq47, 17 t) |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1613,6 +1614,11 @@ Reading:
   the cause and a value (e94c01ee8, d29cf491c); mvq43 passed. mvq44 (scrolly, refusals=0) clipped "6 sur 40" at the
   stage's edge: the label column was measured while the label was still empty (368f0e6b2). Open, kit: the video
   prints the count twice ("6 6 pays seulement") and a stray spine tick shows one frame before the bracket.
+- pie-and-donut: all three cells spent their first render on a shorter title form copied from the kit's own example,
+  which the shorter-form guard refuses (fixed in the four examples, ce19df276; the cells ran before it). Seen, open:
+  the web donut leaves India (3rd of 9) unlabelled at 1920x940 while smaller parts are named — its arc sits at six
+  o'clock and the label below the ring needs a 1656px plot; the scrolly's 375px header kept title form 1 while a
+  shorter form was available (one turn; mobile, after desktop validation).
 - Model-side residue (Tune, not Harness): mvq36's title names the ceiling's +2 that the three-gesture video never
   shows; "l'Chine" elision (mvq28).
 
@@ -1656,3 +1662,4 @@ Harness fixes, in order (each with a test that fails without it):
 - e94c01ee8 fix(craft): an empty list refusal names the beat's filter on a value data.json does not hold
 - d29cf491c fix(craft): a note's 0 where the named mark holds a count hands back that count
 - 368f0e6b2 fix(craft): the units scrolly reserves its label column at the widest text a label will show
+- ce19df276 fix(craft): the pie-and-donut examples' short title form keeps the takeaway's numbers
