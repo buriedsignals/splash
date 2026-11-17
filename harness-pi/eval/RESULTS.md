@@ -1793,3 +1793,7 @@ Harness fixes, in order (each with a test that fails without it):
 - f8be30787 fix(locator-web): refuse a peerless or repeated window with radii that work
 - 4b0966903 fix(locator-web): offer a ladder that steps out twice as wide, and say what to drop when none fits
 - fa0760107 fix(harness): read a row's column-name access only where the name holds a raw row
+- mvq78 choropleth scrolly (Qwen3.5-9B): PASS, 17 turns, 641 s, refusals=0. The title's short form dropped 94 and
+  was refused once; the model put 94 back on the next render. Four cards: the seven ≥ 94 % countries, Albania ringed
+  « Albanie 100 % », a ×3 zoom on the Balkans, then the whole scale. Kit defect (backlog): the ring's label sits over
+  the Albanian shape and its halo is too thin to separate it from the dark class.
