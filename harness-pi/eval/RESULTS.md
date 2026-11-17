@@ -1850,3 +1850,7 @@ Harness fixes, in order (each with a test that fails without it):
   uneven-destructure refusal offered a wrong fix: for `[ENTITY, YEAR, ANNUAL] = [col("Year"), col("Annual CO₂
   emissions")]` it kept the first two names, because ANNUAL only begins its column's name. A name now pairs to the
   column it begins (f138ca30c). The model had already split the line itself. Area passes in all three formats.
+- **gx-grouped-bar web (Qwen3.5-9B, mvq94).** Passed: 18 turns, 403 s, refusals=0 (one bare-name refusal mid-polish,
+  self-corrected). Shares checked against data.json (Germany wind 141,6 / 496 TWh = 28,5 %, solar 14,9 %; Switzerland
+  solar 7,2 % against wind 0,2 %, the one reversal). Backlog, kit: the dek explains the chart's own design ("c'est ce
+  qui fait lire des GROUPES plutôt qu'une file de barres alternées"), copied from the kit's example.
