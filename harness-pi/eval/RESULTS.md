@@ -1600,7 +1600,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | area-and-stacked-area (time) | pass (mvq90, 33 t) | pass (mvq92, 19 t; mvq91 shipped a false share, kit fix) | pass (mvq93, 16 t) |
 | grouped-bar (length) | pass (mvq94, 18 t) | pass (mvq95, 12 t) | pass (mvq96, 10 t) |
 | diverging-bar (length) | pass (mvq97, 19 t) | pass (mvq98, 16 t) | pass (mvq99, 14 t) |
-| population-pyramid (length) | pass (mvq101, 19 t) | pass (mvq102, 28 t) | — |
+| population-pyramid (length) | pass (mvq101, 19 t) | pass (mvq102, 28 t) | pass (mvq103, 17 t) |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1895,3 +1895,7 @@ Harness fixes, in order (each with a test that fails without it):
   the fold of the women's half over the men's, a ×10 gap shot whose labels match data.json (55-59 men ahead by
   5 136, 60-64 women by 841), then the whole pyramid with the crossing rule between 55-59 and 60-64. Backlog: mid-fold
   (≈42 %) the bars float detached from the centre line before they settle into the gap shot.
+- **gx-population-pyramid scrolly (Qwen3.5-9B, mvq103).** Pass (17 turns, 234 s, refusals=0), six cards: men
+  (4 405 220), women in mirror (4 465 340), the gap per band, the switch at 60-64 (+841), the oldest bands as
+  multiples (×2,1 / ×2,9 / ×4,1), the whole pyramid — every figure matches data.json. Backlog: the prose card sits
+  over 50-59, so on the switch card it hides 55-59, the band the crossing is read against.
