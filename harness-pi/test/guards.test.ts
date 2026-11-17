@@ -337,6 +337,38 @@ describe("applyStoryboard", () => {
     );
   });
 
+  // gx-dot-density web (Qwen3.5-9B, mvq61): the takeaway's "8 900", a French thousands group, was read as 8 and 900,
+  // and a short form that wrote it whole, or as 8900, was refused for leaving out "8, 900".
+  for (const written of ["8 900", "8\u00a0900", "8\u202f900", "8900"])
+    it(`should read a thousands group written as ${JSON.stringify(written)} as one number`, () => {
+      const root = mkdtempSync(join(tmpdir(), "splash-short-"));
+      const dir = join(root, "beats", "1");
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(
+        join(root, "STORYBOARD.md"),
+        `---\nlanguage: fr\ntakeaway: "72 réacteurs sur 8 900 centrales bas-carbone — et un tiers de la puissance"\n---\n`,
+      );
+      const b = {
+        title: [
+          "72 réacteurs sur 8 900 centrales bas-carbone — et un tiers de la puissance",
+          `72 réacteurs sur ${written} centrales, un tiers de la puissance`,
+        ],
+      };
+      expect(() => applyStoryboard(b, dir)).not.toThrow();
+    });
+
+  it("should still name a thousands group a shorter form left out as one number", () => {
+    const root = mkdtempSync(join(tmpdir(), "splash-short-"));
+    const dir = join(root, "beats", "1");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(
+      join(root, "STORYBOARD.md"),
+      `---\nlanguage: fr\ntakeaway: "72 réacteurs sur 8 900 centrales bas-carbone — et un tiers de la puissance"\n---\n`,
+    );
+    const b = { title: ["72 réacteurs sur 8 900 centrales bas-carbone — et un tiers de la puissance", "72 sites nucléaires, un tiers de la puissance"] };
+    expect(() => applyStoryboard(b, dir)).toThrow(/drops the takeaway's claim \(72, 8 900\): it leaves out 8 900\./);
+  });
+
   // gx-marimekko scrolly (12B, 2026-11-15): the refusal listed all eight key words as if each were required and never
   // said the form had only lost "99.5"; the 12B grew its short form back to the full takeaway, and the phone header
   // then took 31 % of the frame.

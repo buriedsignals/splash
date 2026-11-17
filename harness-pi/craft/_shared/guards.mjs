@@ -217,7 +217,15 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
     if (!takeaway || !Array.isArray(beat[title]) || beat[title].length < 2) return;
     const words = (t) => String(t).toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((w) => w.length > 3 && !/^\d/.test(w));
     const stem = (w) => w.slice(0, 5);
-    const numbers = (t) => String(t).match(/\d+(?:[.,]\d+)?/g) ?? [];
+    // A thousands group is one number however it is spaced: "8 900", "8\u202f900" and "8900" are the same figure, and
+    // read as 8 and 900 a short form writing it whole was refused (gx-dot-density web, Qwen3.5-9B, mvq61).
+    const GROUP = /(?<!\d)\d{1,3}(?:[ \u00a0\u202f\u2009]\d{3})+(?![\d.,]\d)|\d+(?:[.,]\d+)?/g;
+    const shownAs = new Map();
+    const numbers = (t) => (String(t).match(GROUP) ?? []).map((n) => {
+      const key = n.replace(/[ \u00a0\u202f\u2009]/g, "");
+      if (!shownAs.has(key)) shownAs.set(key, n.replace(/[\u00a0\u202f\u2009]/g, " "));
+      return key;
+    });
     const claim = words(takeaway);
     // Two years joined by a short word or a dash ("between 2000 and 2024", "1990–2023") frame the claim: the full form
     // carries that period and a shorter one may drop it. A lone year ("more than in 1990") is what the claim measures against.
@@ -237,8 +245,9 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
       const missing = figures.filter((n) => !shown.includes(n));
       const said = new Set(words(forms[lost]).map(stem));
       const has = claim.filter((w) => said.has(stem(w))).length;
-      const why = missing.length ? `it leaves out ${missing.join(", ")}` : `it keeps ${has} of the ${need} key words it needs`;
-      throw new Error(`title: its form ${lost + 1}, "${norm(forms[lost])}", drops the takeaway's claim${figures.length ? ` (${figures.join(", ")})` : ""}: ${why}. A shorter form says the takeaway in fewer words: every number${figures.length ? ` (${figures.join(", ")})` : ""} and at least ${need} of these words: ${claim.join(", ")} — a value that works: title: ${JSON.stringify(kept)}`);
+      const as = (ns) => ns.map((n) => shownAs.get(n) ?? n).join(", ");
+      const why = missing.length ? `it leaves out ${as(missing)}` : `it keeps ${has} of the ${need} key words it needs`;
+      throw new Error(`title: its form ${lost + 1}, "${norm(forms[lost])}", drops the takeaway's claim${figures.length ? ` (${as(figures)})` : ""}: ${why}. A shorter form says the takeaway in fewer words: every number${figures.length ? ` (${as(figures)})` : ""} and at least ${need} of these words: ${claim.join(", ")} — a value that works: title: ${JSON.stringify(kept)}`);
     }
   };
   if (!STOPWORDS[language]) return claimKept();
