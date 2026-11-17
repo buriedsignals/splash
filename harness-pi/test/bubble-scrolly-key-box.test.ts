@@ -57,4 +57,17 @@ describe("the bubble-map scrolly key", () => {
     applySymbolState(draft.r, { card: 0, level: 0, subject: 0, cut: 0 });
     expect(px(draft.swatch.parentElement.style.width)).toBeLessThanOrEqual(px(written.swatch.parentElement.style.width));
   });
+
+  // mvq80 (2026-11-17): the written page then sized the key for the tall cards too, hidden on a wide stage; their
+  // cover scale (×3) wrapped the key onto a second line and the stage came out 22 px shorter than it was baked for.
+  it("should not widen the key for a card shape the stage hides", () => {
+    const alone = root();
+    applySymbolState(alone.r, { card: 3, level: 0, subject: 0, cut: 0 });
+    const both = root();
+    const tall = { size: { width: 375, height: 798 }, cards: [5, 5, 5, 7, 7, 7].map((zoom) => ({ zoom })) };
+    Object.assign(both.r.__symbols.plan.fallback, { tall });
+    both.r.__symbols.fallbacks.push({ style: {}, dataset: { fallback: "3", shape: "tall" }, getClientRects: () => [] } as never);
+    applySymbolState(both.r, { card: 3, level: 0, subject: 0, cut: 0 });
+    expect(px(both.swatch.parentElement.style.width)).toBe(px(alone.swatch.parentElement.style.width));
+  });
 });

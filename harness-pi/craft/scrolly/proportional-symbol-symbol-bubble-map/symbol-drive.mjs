@@ -57,7 +57,10 @@ export function applySymbolState(root, state) {
   // circle that grows never moves a label nor the stage the map's zoom is read from; it overflows its row upward
   // and downward instead.
   // A frozen card image draws its circles at the card's zoom times its `cover` scale: the box holds those too.
-  const frozen = Object.values(c.plan.fallback).filter(baked).flatMap((shape) => {
+  // Only a shape this stage can show: the container query hides the tall cards on a wide stage, and a tall card's
+  // cover scale there widened the key until it wrapped onto a second line and shortened the stage.
+  const onScreen = new Set(c.fallbacks.filter((img) => img.getClientRects().length > 0).map((img) => img.dataset.shape));
+  const frozen = Object.entries(c.plan.fallback).filter(([name, shape]) => onScreen.has(name) && baked(shape)).flatMap(([, shape]) => {
     const s = Math.max(width / shape.size.width, height / shape.size.height);
     return shape.cards.map((card) => radiusAt(card.zoom) * s);
   });
