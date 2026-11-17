@@ -1654,6 +1654,17 @@ Reading:
   the widest zoom and fitBounds cannot reach region (+5.0 zoom needed) or voisinage (+2.4). The scale bar then
   states the region's 20 km over a continent. The earlier locator web cell (1794827803674) shows the same.
   Out of this harness's reach (skills/): the ceiling should be at least the narrowest remove's fitted zoom.
+- choropleth web (mvq59 PASS, 6 turns, 140 s): one title refusal (a short form dropped 94), then rendered; seven
+  of forty above 94 %, Albania called out. Looking at it: the ramp's foot (< 40 %) and "non rapporté" are two
+  near-identical greys, so Russia and Belarus read as either.
+- proportional-symbol web (mvq60 PASS): rendered first try; 985 of 8 813 sites drawn, area-true legend. The
+  largest site is labelled by its country ("Ukraine 6 000 MW"), not its name.
+- dot-density web (mvq61 stopped, mvq62 PASS, 12 turns, 144 s): two kit defects, neither the model's. The title-form
+  guard read the takeaway's "8 900" as 8 and 900 (47a36412b reads a spaced thousands group as one number). Then
+  verify-web refused the page five times "on motion" for a filter that was right: 8 900 dots drawn as one circle each,
+  in every state, never finished painting between two frames (phone idle frames 515-816 px apart; "rest" off by
+  216 k px). 249e4b726 draws one path per group and style; mvq61's story replayed outside the model passed twice,
+  201/0. Left: the filter note prints a stray "· 1 · 72 – 72"; the height-bound map leaves wide margins at 1600.
 - Model-side residue (Tune, not Harness): mvq36's title names the ceiling's +2 that the three-gesture video never
   shows; "l'Chine" elision (mvq28).
 
