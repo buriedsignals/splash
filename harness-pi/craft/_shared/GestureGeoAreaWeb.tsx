@@ -14,6 +14,7 @@
  * the colours ./GestureGeoAreaStatic.tsx's geoPalette, so a place looks the same as on the still. Every place answers
  * hover, tap and keyboard with its name, value, class and rank. Words are HTML at a fixed CSS size over the plot.
  */
+import { mergeDots } from "./dot-merge.mjs";
 import {
   adjustToContrast,
   contrast,
@@ -347,7 +348,7 @@ export function GestureGeoAreaWeb({
             );
           })}
         {isDots &&
-          layout.dots.map((d: any, i: number) => {
+          mergeDots(layout.dots, (d: any) => {
             const subject = d.key === state.accent;
             const stepped = back.has(d.key);
             const fill = stepped
@@ -355,18 +356,16 @@ export function GestureGeoAreaWeb({
               : subject
                 ? ink
                 : mix(muted, ground, 0.15);
-            return (
-              <circle
-                key={`d${i}`}
-                data-mark={mark(d.key)}
-                cx={d.x.toFixed(1)}
-                cy={d.y.toFixed(1)}
-                r={subject ? 1.6 : 1.1}
-                fill={fill}
-                style={{ ["--mark-active" as string]: ink }}
-              />
-            );
-          })}
+            return { fill, r: subject ? 1.6 : 1.1 };
+          }).map((g: any, i: number) => (
+            <path
+              key={`d${i}`}
+              data-mark={mark(g.key)}
+              d={g.d}
+              fill={g.fill}
+              style={{ ["--mark-active" as string]: ink }}
+            />
+          ))}
         {isDots &&
           state.accent &&
           layout.dots
