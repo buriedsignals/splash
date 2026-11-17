@@ -1600,7 +1600,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | area-and-stacked-area (time) | pass (mvq90, 33 t) | pass (mvq92, 19 t; mvq91 shipped a false share, kit fix) | pass (mvq93, 16 t) |
 | grouped-bar (length) | pass (mvq94, 18 t) | pass (mvq95, 12 t) | pass (mvq96, 10 t) |
 | diverging-bar (length) | pass (mvq97, 19 t) | pass (mvq98, 16 t) | pass (mvq99, 14 t) |
-| population-pyramid (length) | pass (mvq101, 19 t) | — | — |
+| population-pyramid (length) | pass (mvq101, 19 t) | pass (mvq102, 28 t) | — |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1891,3 +1891,7 @@ Harness fixes, in order (each with a test that fails without it):
   self-corrected; fix after the run: errorText quotes CONTRACT.md's definition of the list when a field read on its
   item prints undefined, and the web contract now says crossings are strings. Backlog: the dek's "rien d'autre que la
   tranche nommée ne dit laquelle" is copied kit prose that says nothing to a reader.
+- **gx-population-pyramid video (Qwen3.5-9B, mvq102).** Pass (28 turns, 671 s, refusals=0, 17.7 s mp4): title card,
+  the fold of the women's half over the men's, a ×10 gap shot whose labels match data.json (55-59 men ahead by
+  5 136, 60-64 women by 841), then the whole pyramid with the crossing rule between 55-59 and 60-64. Backlog: mid-fold
+  (≈42 %) the bars float detached from the centre line before they settle into the gap shot.
