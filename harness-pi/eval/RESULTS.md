@@ -1797,3 +1797,12 @@ Harness fixes, in order (each with a test that fails without it):
   was refused once; the model put 94 back on the next render. Four cards: the seven ≥ 94 % countries, Albania ringed
   « Albanie 100 % », a ×3 zoom on the Balkans, then the whole scale. Kit defect (backlog): the ring's label sits over
   the Albanian shape and its halo is too thin to separate it from the dark class.
+- mvq79–81 proportional-symbol scrolly (Qwen3.5-9B): PASS at mvq81, 16 turns, 445 s, refusals=0. mvq79 and mvq80 were
+  refused for a stage mismatch ("the wide stage measured … and its cards were baked for …") that the worked example
+  hit too: a kit defect, not the model's. The key's swatch boxes were sized for every card shape in
+  `plan.fallback`, so the bake's blank 1 × 1 draft shapes widened them (draft stage 46 px shorter), and on the
+  written page the tall shape, hidden on a wide stage, widened them until the key wrapped (stage 22 px shorter).
+  Fixed in `symbol-drive.mjs`: the key counts only baked shapes the stage shows (6f96eb5cc, b79cb8534; tests fail
+  without each). Other map scrolly drives read card shapes only to place an absolute ring, so no layout effect.
+  Both cells' first render was refused by the model's own check, a cut note claiming "over half the power"
+  (23.1 %, 41.2 % in the data); it rewrote the note from the figure each time.
