@@ -289,6 +289,38 @@ function traceFigures(grid, g) {
 }
 
 /**
+ * A calendar trace's note read by role (gx-calendar-heatmap web, Qwen3.5-9B): a whole number followed by a month is a
+ * day of the run, in order its first then its last; any other whole number but the threshold and a year is its length.
+ * Matching figures by value alone let a miscounted length through when it equalled the run's last day, and wrote the
+ * length into a date. Returns the note with every figure set to the run's own, or null when it already says the run.
+ */
+function calendarTraceNote(grid, g, r) {
+  const note = String(g.note ?? "");
+  if (!note || !r.length) return null;
+  const esc = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const months = grid.rows.map((row) => row.label);
+  const dateRe = new RegExp(`(?<![\\d.,])(\\d{1,2})(\\s+)(${months.map(esc).join("|")})(?![\\p{L}])`, "giu");
+  const years = new Set(grid.cells.map((c) => Number(String(c.date).slice(0, 4))));
+  const edits = [];
+  const ends = [r.from, r.to];
+  const dated = [...note.matchAll(dateRe)];
+  if (dated.length === 2)
+    dated.forEach((m, k) => {
+      const end = ends[k];
+      const label = months[end.r];
+      const written = m[3] === m[3].toLowerCase() ? label.toLowerCase() : label;
+      if (Number(m[1]) !== end.day || m[3].toLowerCase() !== label.toLowerCase()) edits.push({ index: m.index, length: m[0].length, text: `${end.day}${m[2]}${written}` });
+    });
+  const inDate = (index) => dated.some((m) => index >= m.index && index < m.index + m[0].length);
+  const count = figuresIn(note).find((n) => !n.percent && Number.isInteger(n.value) && !inDate(n.index) && n.value !== Number(g.value) && !years.has(n.value));
+  if (count && count.value !== r.length) edits.push({ index: count.index, length: count.raw.length, text: String(r.length) });
+  if (!edits.length) return null;
+  let fixed = note;
+  for (const e of edits.sort((a, b) => b.index - a.index)) fixed = fixed.slice(0, e.index) + e.text + fixed.slice(e.index + e.length);
+  return fixed;
+}
+
+/**
  * The family's hooks for validateGestures: the figures a gesture draws beyond the core's own (a group's mean, a row's
  * measure, a run's length and endpoints, the cells past a cutoff), and the family's own refusals.
  */
@@ -344,8 +376,11 @@ export function cellHooks(grid) {
           throw new GestureRefusal(`gestures[${i}].value`, `no cell${g.along ? ` along ${g.along}` : ""} reaches ${g.value}, so the trace would outline nothing: drop it, or give the threshold the takeaway names`, { remove: i });
         // A trace's note counts its run: a whole number it states that the run does not give is a miscount, fixed to the
         // run's own length (on a grid of many cells the core would read it as some other cell's value and drop the note).
+        const datedFix = grid.variant === "calendar-heatmap" ? calendarTraceNote(grid, g, r) : null;
+        if (datedFix !== null)
+          throw new GestureRefusal(`gestures[${i}].note`, `does not state the run at or above ${g.value}: it is ${r.length} days long, from ${r.from.day} ${grid.rows[r.from.r].label} to ${r.to.day} ${grid.rows[r.to.r].label}: write "${datedFix}"`, { set: { index: i, field: "note", value: datedFix } });
         const own = traceFigures(grid, g);
-        for (const n of figuresIn(g.note ?? "")) {
+        for (const n of grid.variant === "calendar-heatmap" ? [] : figuresIn(g.note ?? "")) {
           if (n.percent || own.some((f) => Math.abs(n.value - f) <= 0.5 * 10 ** -n.decimals + 1e-9)) continue;
           if (!Number.isInteger(n.value)) continue;
           const fixed = g.note.slice(0, n.index) + String(r.length) + g.note.slice(n.index + n.raw.length);

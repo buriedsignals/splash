@@ -397,6 +397,24 @@ describe("calendar-heatmap", () => {
     },
   ];
 
+  // gx-calendar-heatmap web (Qwen3.5-9B, mvq51): a note that counted 17 days "du 1 août au 17 août" was "fixed" to
+  // "17 jours … du 31 août au 17 août": its 17 passed because the run ends on a 17th, and the run's length went into
+  // the start date. A figure followed by a month is a day of the run; the other is its length.
+  it("should fix a trace note's length and both its dates by their roles", () => {
+    const month = (c: any) => CAL.rows[c.r].label;
+    const error = refusal(() =>
+      stage(CAL, CAL_CLAIM, "static", [{ do: "trace", value: 20, note: `${RUN.to.day} days in a row above 20 °C, from 1 August to ${RUN.to.day} August` }]),
+    );
+    expect(error.fix.set.value).toBe(`${RUN.length} days in a row above 20 °C, from ${RUN.from.day} ${month(RUN.from)} to ${RUN.to.day} ${month(RUN.to)}`);
+  });
+
+  it("should accept a trace note that counts its run and names its year", () => {
+    const month = (c: any) => CAL.rows[c.r].label;
+    expect(() =>
+      stage(CAL, CAL_CLAIM, "static", [{ do: "trace", value: 20, note: `${RUN.length} days in a row above 20 °C in 2024, from ${RUN.from.day} ${month(RUN.from)} to ${RUN.to.day} ${month(RUN.to)}` }]),
+    ).not.toThrow();
+  });
+
   // gx-calendar-heatmap web (12B, 2026-11-15): the beat found "August" as the first date holding "08", 2024-01-08, and
   // the page closed on "Janvier, mois le plus chaud": January is 11th of 12 by its mean. A month is ranked by its days.
   it("should refuse a month called the warmest when another month is", () => {
