@@ -1577,7 +1577,7 @@ Proposed design (Tom's "code > model for routing; the 2B makes the narrow decisi
 
 Not yet built: it changes `show_candidates` and the storyboard question; to be done after the coverage batches.
 
-## 2026-11-17 — moving-format coverage on Qwen3.5-9B, family by family (mvq4–mvq37)
+## 2026-11-17 — moving-format coverage on Qwen3.5-9B, family by family (mvq4–mvq40)
 
 One cell at a time (seeded, `SPLASH_STOP_AFTER_CRAFT=1`, so `completed=false` is expected), each watched render by
 render; a cell is stopped at the second repeated refusal, its story copied, the fault fixed test-first on the
@@ -1592,6 +1592,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | lollipop (length) | pass (mvq25, 29 t) | pass (mvq26, 23 t) | pass (mvq28, 17 t) |
 | stacked-bar (stack) | pass (mvq29, 40 t) | pass (mvq30, 4 t) | pass (mvq31, 7 t) |
 | dot-strip (position) | pass (mvq35, 11 t; mvq32–34 stopped) | pass (mvq36, 28 t) | pass (mvq37, 15 t) |
+| line (time-series) | pass (mvq38, 14 t) | pass (mvq39, 15 t; kit fix after looking) | pass (mvq40, 12 t) |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1602,6 +1603,9 @@ Reading:
 - Polishing after the first passing render is the main turn sink (mvq36: the model reconciled the strip's printed
   +29,5 with a title's "30 points" for ~10 turns). Answered by printing what the kit draws on its own (f009b9f37,
   36d10bbac); mvq37, the first cell with it in scrolly, took 15 turns against 28 for the video.
+- A passing cell can still carry a kit defect only the picture shows: mvq39 (line video, refusals=0) set the peak's
+  note on the plateau beside it, its halo erasing the line. Fixed in the kit (f107996a0), re-rendered from the kept
+  beat. Open: a level note wider than the free space beside the line still crosses it once (wrap to two lines).
 - Model-side residue (Tune, not Harness): mvq36's title names the ceiling's +2 that the three-gesture video never
   shows; "l'Chine" elision (mvq28).
 
@@ -1641,3 +1645,4 @@ Harness fixes, in order (each with a test that fails without it):
 - be05439bd fix(position): refuse paired rows read from one data.json row, at the rows
 - 36e40f46c fix(gestures): a null mark names no row
 - 36d10bbac fix(position): print the dot strip's own change labels in video and scrolly too
+- f107996a0 fix(time-video): step a note clear of the drawn line, trying both sides at each distance
