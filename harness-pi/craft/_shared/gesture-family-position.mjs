@@ -938,3 +938,15 @@ export function kitPrintsOf({ variant, model, state, delta }) {
   if (!rows.length) return "";
   return `the strip prints on its own: ${rows.map((r) => `${r.code ?? r.name} ${delta(r.change)}`).join(", ")} (each marked row's change under its last point, at the page's precision); a note may give it rounded, it does not have to match or repeat it`;
 }
+
+/**
+ * Two moments read from one row: when every paired row's two readings are equal, the beat filled both moments from
+ * the same data.json row (Qwen3.5-9B, gx-dot-strip web, 2026-11-17), and a title's "0 points" is the symptom, not the
+ * fault. Refused at the rows, with what to change there.
+ */
+export function assertPairedReadingsDiffer(model, moments) {
+  if (model.shape !== "paired" || model.rows.length < 2) return;
+  if (model.rows.some((r) => r.from !== r.to)) return;
+  const [a, b] = moments.map(String);
+  throw new Error(`rows: every row's from equals its to (${model.rows[0].name}: ${model.rows[0].from} and ${model.rows[0].to}), so ${a} and ${b} were read from the same data.json row; read from at ${a} and to at ${b}, each from its own rows of data.json (keep the rows whose year is ${a} for from, those whose year is ${b} for to)`);
+}

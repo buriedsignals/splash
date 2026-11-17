@@ -7,7 +7,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { applyFix, GestureRefusal, validateGestures } from "./gesture-core.mjs";
-import { deltaOf, kitPrintsOf, levelsOf, modelOf, positionHooks } from "./gesture-family-position.mjs";
+import { assertPairedReadingsDiffer, deltaOf, kitPrintsOf, levelsOf, modelOf, positionHooks } from "./gesture-family-position.mjs";
 import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertNoAggregates, assertNumbers, importBeat, legibleFormat, rowFacts, runCheck } from "./guards.mjs";
 
 export const REPAIR = process.env.SPLASH_GESTURE_REPAIR === "1";
@@ -34,6 +34,8 @@ export function hintOf(fix) {
  */
 export async function loadPositionBeat(here, variant, { required = REQUIRED } = {}) {
   const beat = await importBeat(here);
+  // The rows' fault before the title's symptom: a title computed from two equal readings says "0 points".
+  if (Array.isArray(beat.rows) && beat.rows.length) assertPairedReadingsDiffer(modelOf(variant, beat), beat.moments ?? ["from", "to"]);
   applyStoryboard(beat, here);
   const missing = required.filter((key) => beat[key] === undefined);
   if (missing.length)
