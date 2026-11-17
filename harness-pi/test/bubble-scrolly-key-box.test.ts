@@ -42,4 +42,19 @@ describe("the bubble-map scrolly key", () => {
     applySymbolState(r, { card: 3, level: 0, subject: 0, cut: 0 });
     expect(px(swatch.style.width)).toBeLessThanOrEqual(px(swatch.parentElement.style.width));
   });
+
+  // gx-proportional-symbol scrolly (Qwen3.5-9B, mvq79, 2026-11-17): the bake's draft page carries blank card images
+  // whose shapes are 1 × 1, so their cover scale read 1600 and the key's boxes grew wide enough to push the stage
+  // 46 px shorter than on the written page; every render, the worked example's too, was refused for a stage
+  // mismatch. A blank shape is no image: the key is sized as if it were not there.
+  it("should size the key on the bake's draft page as on the written page", () => {
+    const written = root();
+    applySymbolState(written.r, { card: 0, level: 0, subject: 0, cut: 0 });
+    const draft = root();
+    const blank = { size: { width: 1, height: 1 }, cards: [0, 0, 0, 0, 0, 0].map((zoom) => ({ zoom })) };
+    Object.assign(draft.r.__symbols.plan, { fallback: { wide: blank, tall: blank } });
+    draft.r.__symbols.fallbacks[0].dataset.fallback = "0";
+    applySymbolState(draft.r, { card: 0, level: 0, subject: 0, cut: 0 });
+    expect(px(draft.swatch.parentElement.style.width)).toBeLessThanOrEqual(px(written.swatch.parentElement.style.width));
+  });
 });

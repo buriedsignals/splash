@@ -16,6 +16,10 @@
 //   card     the nearest card, for its frozen image                                                      0..5
 //   camX camY camZoom camBearing camPitch camAlignY   the card's camera (`shared/map-beat/scrolly.mjs`)
 
+// The bake's draft page carries blank 1 × 1 card shapes to measure its stage with: they picture nothing, and a key
+// sized by their cover scale pushed the stage away from the one the cards were then baked for.
+const baked = (shape) => shape.size.width > 1 && shape.size.height > 1;
+
 export function applySymbolState(root, state) {
   if (!root.__symbols) setUpSymbols(root);
   const c = root.__symbols;
@@ -41,8 +45,10 @@ export function applySymbolState(root, state) {
   else {
     const shown = c.fallbacks.find((img) => Number(img.dataset.fallback) === card && img.getClientRects().length > 0);
     const shape = c.plan.fallback[shown ? shown.dataset.shape : "wide"];
-    zoom = shape.cards[card].zoom;
-    scale = Math.max(width / shape.size.width, height / shape.size.height);
+    if (baked(shape)) {
+      zoom = shape.cards[card].zoom;
+      scale = Math.max(width / shape.size.width, height / shape.size.height);
+    } else zoom = c.plan.cameras[card]?.zoom ?? c.plan.radius.anchorZoom;
   }
   const r = c.plan.radius;
   const radiusAt = (z) => r.largestPx * 2 ** (r.growth * (z - r.anchorZoom));
@@ -51,7 +57,7 @@ export function applySymbolState(root, state) {
   // circle that grows never moves a label nor the stage the map's zoom is read from; it overflows its row upward
   // and downward instead.
   // A frozen card image draws its circles at the card's zoom times its `cover` scale: the box holds those too.
-  const frozen = Object.values(c.plan.fallback).flatMap((shape) => {
+  const frozen = Object.values(c.plan.fallback).filter(baked).flatMap((shape) => {
     const s = Math.max(width / shape.size.width, height / shape.size.height);
     return shape.cards.map((card) => radiusAt(card.zoom) * s);
   });
