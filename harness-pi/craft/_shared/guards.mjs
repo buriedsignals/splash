@@ -1052,6 +1052,31 @@ function unevenDestructure(source) {
   return null;
 }
 
+const MONTHS_FR = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+
+/** A French "<month> <year>" printed in a field whose year data.json holds only as other months: the refusal text. */
+function offMonth(here, beat) {
+  const dataPath = join(here, "data.json");
+  if (!existsSync(dataPath)) return null;
+  const held = new Set();
+  for (const row of JSON.parse(readFileSync(dataPath, "utf8")).rows ?? [])
+    for (const cell of row) { const m = /^(\d{4})-(\d{2})$/.exec(String(cell)); if (m) held.add(`${m[1]}-${m[2]}`); }
+  if (!held.size) return null;
+  const said = new RegExp(`\\b(${MONTHS_FR.join("|")})\\s+(\\d{4})\\b`, "gi");
+  for (const key of ["eyebrow", "title", "limits", "source", "unit"]) {
+    for (const text of [beat[key]].flat().filter((v) => typeof v === "string")) {
+      for (const [whole, name, year] of text.matchAll(said)) {
+        const at = `${year}-${String(MONTHS_FR.indexOf(name.toLowerCase()) + 1).padStart(2, "0")}`;
+        const ofYear = [...held].filter((h) => h.startsWith(`${year}-`));
+        if (held.has(at) || !ofYear.length) continue;
+        const right = ofYear.length === 1 ? `${MONTHS_FR[Number(ofYear[0].slice(5)) - 1]} ${year}` : null;
+        return `${key} prints "${whole}" but data.json holds ${ofYear.join(", ")} for ${year}${right ? `: write "${text.replace(whole, right)}" — a month list is 0-based, so the month "${ofYear[0].slice(5)}" is MONTHS[${Number(ofYear[0].slice(5)) - 1}]` : ""}`;
+      }
+    }
+  }
+  return null;
+}
+
 export async function importBeat(here) {
   const file = join(here, "beat.mjs");
   const uneven = existsSync(file) && unevenDestructure(readFileSync(file, "utf8"));
@@ -1072,6 +1097,8 @@ export async function importBeat(here) {
   const recorded = join(here, "gestures.json");
   if (existsSync(recorded)) beat.gestures = JSON.parse(readFileSync(recorded, "utf8")).gestures;
   beat.check = claimCheck(here);
+  const month = offMonth(here, beat);
+  if (month) throw new Error(`${month} — ${readingHint(here)}`);
   return printable(beat);
 }
 

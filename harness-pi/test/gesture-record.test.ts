@@ -156,6 +156,23 @@ describe("importBeat on names and values that do not line up", () => {
   });
 });
 
+// gx-flow-map scrolly (Qwen3.5-9B, mvq86): `MONTHS[Number(mm)]` on a 0-based list named the data's 2026-06 "juillet
+// 2026" in the unit and every card; no check knew a printed month from the data's own.
+describe("importBeat on a month the data does not hold", () => {
+  const monthly = (unit: string) => {
+    const { beatDir } = story("claimShape: none");
+    writeFileSync(join(beatDir, "data.json"), JSON.stringify({ columns: [{ name: "code", type: "text" }, { name: "month", type: "text" }, { name: "people", type: "number" }], rows: [["DEU", "2026-06", 10], ["POL", "2026-06", 8]] }));
+    writeFileSync(join(beatDir, "beat.mjs"), `import { readFileSync } from "node:fs"; JSON.parse(readFileSync(new URL("./data.json", import.meta.url)));\nexport default { title: "t", unit: ${JSON.stringify(unit)} };`);
+    return beatDir;
+  };
+  it("should refuse a printed month off the data's, naming the field and the month that works", async () => {
+    await expect(importBeat(monthly("personnes, juillet 2026"))).rejects.toThrow(/unit.*juillet 2026.*2026-06.*juin 2026/);
+  });
+  it("should pass the data's own month", async () => {
+    await expect(importBeat(monthly("personnes, juin 2026"))).resolves.toBeTruthy();
+  });
+});
+
 describe("the contract a craft session reads", () => {
   it("should ask a still to record its gestures through record_gestures", async () => {
     const { contractText } = await import("../src/craft-kit.ts");
