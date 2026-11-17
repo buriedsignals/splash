@@ -1607,7 +1607,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | diverging-stacked-bar-likert (stack) | pass (mvq114, 7 t) | pass (mvq115, 19 t) | pass (mvq116, 14 t) |
 | marimekko-mosaic-plot (part-to-whole) | pass (mvq117, 4 t) | pass (mvq118, 11 t) | pass (mvq119, 11 t) |
 | treemap (part-to-whole) | pass (mvq121, 7 t) | pass (mvq122, 9 t) | pass (mvq123, 7 t) |
-| parallel-coordinates (misfit) | pass (mvq124, 19 t) | pass (mvq125, 14 t) | — |
+| parallel-coordinates (misfit) | pass (mvq124, 19 t) | pass (mvq125, 14 t) | pass (mvq126, 12 t) |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1994,3 +1994,7 @@ Harness fixes, in order (each with a test that fails without it):
   39.5/24.8, Sweden 29.4/23.5 nuclear/wind %). Backlog: the note sits on the Gaz-to-Charbon floor, over the
   axis's "0" and the two lines it points at; the seven axes' different tops (100/25/50 %) are said only in the
   axis heads.
+- **gx-parallel-coordinates scrolly (Qwen3.5-9B, mvq126).** Pass (12 turns, 176 s, refusals=0): Finland and Sweden
+  lit → the field dimmed to the two → Sweden's wind against France's ("23,5 % contre 8,1 %"), every card figure
+  from data.json. Backlog: the card about France leaves France's line dimmed with the field (only its wind point
+  is ringed), the same miss as web; the first card sits over the Solaire-to-Bioénergie lines.
