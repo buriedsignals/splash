@@ -429,16 +429,24 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
     // A note with a hole where its figure was: a sign or a unit with no number. Each hole takes its mark's value, in
     // order (gx-stacked-bar static, Qwen3.5-9B, 2026-11-14: "+TWh contre + pour la France").
     if (g.note !== undefined && g.do !== "zoom") {
-      const holes = noteHoles(String(g.note));
+      // Code written into the note (fr(spain.parts[ADDED]), ${…}) prints as is: it is dropped, and the hole it leaves
+      // takes its mark's figure like any other (gx-stacked-bar web, Qwen3.5-9B, 2026-11-17).
+      const marked = withoutCode(String(g.note), "\u0000");
+      const note = marked.replaceAll("\u0000", "");
+      const coded = marked !== note;
+      let holes = noteHoles(note);
+      // Code with no sign or unit around it leaves no hole: its own place takes the figure.
+      if (!holes.length && coded) holes = [...marked.matchAll(/\u0000/g)].map((m, k) => ({ at: m.index - k, pad: "" }));
       if (holes.length) {
         const comma = /[àâçéèêëîïôûùüœ’]/i.test(`${claim.takeaway ?? ""}${g.note}`);
         const say = (v) => { const s = Math.abs(v) >= 10 ? String(Math.round(Math.abs(v))) : Math.abs(v).toFixed(1); return comma ? s.replace(".", ",") : s; };
         const values = marks.map((m) => valueOf.get(m)).filter(Number.isFinite);
         if (values.length < holes.length)
           throw new GestureRefusal(`gestures[${i}].note`, `"${g.note}" has no figure where its sign or unit stands: write the number there, or drop the note`, { set: { index: i, field: "note", value: undefined } });
-        let fixed = String(g.note);
-        holes.forEach((h, k) => { const at = h.at + fixed.length - String(g.note).length; fixed = fixed.slice(0, at) + say(values[k]) + h.pad + fixed.slice(at); });
-        throw new GestureRefusal(`gestures[${i}].note`, `"${g.note}" has no figure where its sign or unit stands (a note is literal text: no \${…} is evaluated in it): write "${fixed}"`, {
+        let fixed = note;
+        holes.forEach((h, k) => { const at = h.at + fixed.length - note.length; fixed = fixed.slice(0, at) + say(values[k]) + h.pad + fixed.slice(at); });
+        fixed = fixed.replace(/ +([,.;:)])/g, "$1").replace(/ {2,}/g, " ").trim();
+        throw new GestureRefusal(`gestures[${i}].note`, coded ? `"${g.note}" holds code, which a note prints as is (no \${…} or call is evaluated in it): write "${fixed}"` : `"${g.note}" has no figure where its sign or unit stands (a note is literal text: no \${…} is evaluated in it): write "${fixed}"`, {
           set: { index: i, field: "note", value: fixed },
         });
       }
@@ -730,6 +738,13 @@ export function implicitAccent(gestures) {
  * Where a note's figure is missing: a sign followed by no number ("+ pour", "+TWh"), or a unit no number precedes
  * ("part de TWh"). A unit named as a unit ("en TWh", "in %") is no hole. Positions are in insertion order, left first.
  */
+/** A note is literal text: an expression written into it (fr(x.parts[ADDED]), ${…}) is removed, leaving the hole. */
+export function withoutCode(text, mark = "") {
+  return text
+    .replace(/\$\{[^}]*\}/g, mark)
+    .replace(/[A-Za-z_$][\w$]*(?:\.[\w$]+)*(?:\([^()]*(?:\([^()]*\)[^()]*)*\)|\[[^\]]*\])(?:\.[\w$]+|\([^()]*\)|\[[^\]]*\])*/g, mark);
+}
+
 export function noteHoles(text) {
   const holes = [];
   for (const m of text.matchAll(/(?<![\p{L}\p{N}])[+−](?!\s*\d)/gu)) holes.push({ at: m.index + 1, pad: /^[+−]\s/u.test(text.slice(m.index)) ? "" : " " });

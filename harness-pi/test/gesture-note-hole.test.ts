@@ -36,6 +36,25 @@ describe("a note with a hole where its figure was", () => {
     expect(gestures[0].note).toBe("+119 TWh contre +50 pour la France");
   });
 
+  // gx-stacked-bar web (Qwen3.5-9B, 2026-11-17): the note held the code that should have computed its figures; the
+  // refusal's value that works kept the code, "+119 fr(spain.parts[ADDED]) contre +50 fr(france.parts[ADDED])".
+  it("should put each mark's figure where the note holds code, and drop the code", () => {
+    expect(() =>
+      validateGestures({ ...STACK, gestures: [{ do: "compare", marks: ["Espagne", "France"], note: "+fr(spain.parts[ADDED]) contre +fr(france.parts[ADDED])" }] }),
+    ).toThrow(/write "\+119 contre \+50"/);
+  });
+
+  it("should drop an unevaluated ${…} the same way", () => {
+    const { gestures } = repairGestures({ ...STACK, gestures: [{ do: "compare", marks: ["Espagne", "France"], note: "+${fr(spain)} TWh contre +${fr(france)}" }] });
+    expect(gestures[0].note).toBe("+119 TWh contre +50");
+  });
+
+  it("should refuse code with no sign or unit around it, saying it prints as is", () => {
+    expect(() =>
+      validateGestures({ ...STACK, gestures: [{ do: "compare", marks: ["Espagne", "France"], note: "fr(spain.added) contre fr(france.added)" }] }),
+    ).toThrow(/prints as is.*write "119 contre 50"/);
+  });
+
   it("should pass a note whose unit is named, not counted", () => {
     expect(() => validateGestures({ ...LEVEL, gestures: [{ do: "annotate", mark: "France", note: "La France, en TWh, part de très haut" }] })).not.toThrow();
   });
