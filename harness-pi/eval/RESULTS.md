@@ -1609,7 +1609,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | treemap (part-to-whole) | pass (mvq121, 7 t) | pass (mvq122, 9 t) | pass (mvq123, 7 t) |
 | parallel-coordinates (misfit) | pass (mvq124, 19 t) | pass (mvq125, 14 t) | pass (mvq126, 12 t) |
 | radar-spider (misfit) | pass (mvq127, 11 t) | pass (mvq128, 10 t) | pass (mvq129, 18 t) |
-| scatter-and-bubble (position) | pass (mvq130, 22 t) | — | — |
+| scatter-and-bubble (position) | pass (mvq130, 22 t) | pass (mvq131, 10 t) | — |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -2019,3 +2019,7 @@ Harness fixes, in order (each with a test that fails without it):
   narrower" holds (2.96). Backlog: the subtitle carries the type sheet's own words to the reader ("the silent lie
   most common in this family"); "Above :" / "Below :" with a French space on an English page; the note box covers
   the band's lower edge.
+- **gx-scatter-and-bubble video (Qwen3.5-9B, mvq131).** Pass (10 turns, 233 s, refusals=0; per-type kit): cloud →
+  165 countries → points packed either side of $30k with spread bars "41 years" (41.1) and "14 years" (13.9) →
+  "3 times" → cloud restored; figures match data.json. Backlog (kit): at 25 % the counter reads "6 countries" while
+  the whole cloud is already on screen (the count tween lags the points' entry).
