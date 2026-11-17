@@ -1700,6 +1700,13 @@ Reading:
   38116e453: the gesture kit had dropped the per-type kit's key; the area maps' video now prints one swatch per class
   under the unit line (labels as on the web page, the missing label last), each arriving with its class. Replayed
   outside the model on mvq69's beat and on the tile cartogram's example: the key reads in the mp4's own frames.
+
+- mvq70 proportional-symbol video (Qwen3.5-9B): PASS, 9 turns, 308 s, 0 refusals. Title card, the hundred circles
+  climbing to « 100 sites : 43,0 % » against « 8 800 autres : 57,0 % », key 4 000 / 400 MW. The end frame credited
+  « © MapTiler © OpenStreetMap » only: the longer forms found no corner of open sea, and the last form, copied from
+  the kit's own example, named the basemap alone. 0f028cb32 refuses that form in the four point-map video kits (field +
+  « WRI · © MapTiler © OpenStreetMap ») and drops it from the bubble and contour examples; replayed on the bench, the
+  WRI form fits the same corner. Left as is: the map is wide-bound, so the Atlantic fills the left third.
 - Model-side residue (Tune, not Harness): mvq36's title names the ceiling's +2 that the three-gesture video never
   shows; "l'Chine" elision (mvq28).
 
