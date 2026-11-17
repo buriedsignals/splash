@@ -1608,7 +1608,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | marimekko-mosaic-plot (part-to-whole) | pass (mvq117, 4 t) | pass (mvq118, 11 t) | pass (mvq119, 11 t) |
 | treemap (part-to-whole) | pass (mvq121, 7 t) | pass (mvq122, 9 t) | pass (mvq123, 7 t) |
 | parallel-coordinates (misfit) | pass (mvq124, 19 t) | pass (mvq125, 14 t) | pass (mvq126, 12 t) |
-| radar-spider (misfit) | pass (mvq127, 11 t) | pass (mvq128, 10 t) | — |
+| radar-spider (misfit) | pass (mvq127, 11 t) | pass (mvq128, 10 t) | pass (mvq129, 18 t) |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -2008,3 +2008,7 @@ Harness fixes, in order (each with a test that fails without it):
   nucléaire" → Germany drawn in ink → "28,5 % contre 8,1 %" on the wind spoke, shares from data.json. Backlog
   (kit): the radar fills about a sixth of the frame; the compare draws no mark on the two wind points, so the note
   floats left of the spoke it is about; Germany is never in the accent though the second shot is its.
+- **gx-radar-spider scrolly (Qwen3.5-9B, mvq129).** Pass (18 turns, 189 s, refusals=0): France 67,7 % nuclear →
+  Germany 0,0 % nuclear / 28,5 % wind → "28,5 % contre 8,1 %", every card figure from data.json. Backlog (kit):
+  the card sits at the radar's centre, over most of both shapes (they live inside the inner rings); in card 2
+  France's lit line stays accent while Germany, the subject, is ink.
