@@ -1602,6 +1602,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | diverging-bar (length) | pass (mvq97, 19 t) | pass (mvq98, 16 t) | pass (mvq99, 14 t) |
 | population-pyramid (length) | pass (mvq101, 19 t) | pass (mvq102, 28 t) | pass (mvq103, 17 t) |
 | dumbbell-range-plot (position) | pass (mvq104, 8 t) | pass (mvq105, 7 t) | pass (mvq107, 8 t) |
+| box-plot (position) | pass (mvq108, 12 t) | — | — |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1913,3 +1914,7 @@ Harness fixes, in order (each with a test that fails without it):
   "+2,5 ans contre +5,0". Fix 652eb8bdd: a figure after a mark's name is not refused when the mark's own figure follows
   in the same span; mutation-checked. mvq107 passed (8 turns, 263 s, refusals=0) with the model's original card, four
   cards, figures as in mvq104. Backlog: the prose card hides Italy's dumbbell.
+- **gx-box-plot web (Qwen3.5-9B, mvq108).** Pass (12 turns, 135 s, refusals=0): eight decade boxes 1950-2020 with
+  their years as dots, the 1970s in accent (median 9,96 t, max 10,4), 1980 = 9,54 drawn as an outlier, the partial
+  2020s (5 years) named — medians and ranges match data.json. Backlog (kit, web, seen twice now with dumbbell): the
+  toggle's label repeats its second option; "années 2020: décennie partielle" lacks the French space before the colon.
