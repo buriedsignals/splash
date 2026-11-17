@@ -17,7 +17,7 @@ import { directionReachable, readRunDirection } from "#shared/design-base/run-di
 import { assertBeatMayEnter, directedFrame, exportSizeFromArgv, nameAtSize } from "#shared/chart-beat/directed-size.mjs";
 import { DirectedWaterfall } from "./DirectedWaterfall.tsx";
 import beat from "./beat.mjs";
-import { applyStoryboard, assertNumbers, assertLegibleLabels, assertHeadlineNumbersDrawn, errorText } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertLegibleLabels, assertHeadlineNumbersDrawn, errorText, assertTicksSayTheirValue } from "./guards.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 applyStoryboard(beat, HERE);
@@ -70,6 +70,7 @@ const top = Math.max(...(() => {
 })());
 const tickFormat = typeof beat.tickFormat === "function" ? beat.tickFormat : String;
 const ticks = scaleLinear().domain([0, top]).nice(5).ticks(5);
+assertTicksSayTheirValue(ticks, tickFormat);
 const wide = ticks.map((t) => tickFormat(t)).filter((t) => t.length > 3);
 if (wide.length)
   throw new Error(`the axis would print ${wide.slice(-1)[0]}, wider than the three characters its gutter holds: draw the values in a larger unit (thousands, millions, billions) and say it in unit and standfirst`);

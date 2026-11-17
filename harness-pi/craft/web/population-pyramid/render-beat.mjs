@@ -15,7 +15,7 @@ import { fileURLToPath } from "node:url";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
 import { DirectedPyramidWeb } from "./DirectedPyramidWeb.tsx";
-import { applyStoryboard, assertNumbers, assertHeadlineNumbersDrawn, assertDrawsClaimColumn } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, assertTicksSayTheirValue } from "./guards.mjs";
 import { chartWeb, plain, refusing, renderBeatWeb, storyLanguage } from "./web.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -128,6 +128,7 @@ await refusing(HERE, async () => {
   const span = Math.ceil(most / step) * step;
   const xTicks = [-span, -span / 2, 0, span / 2, span];
   const tickFormat = beat.tickFormat ? (t) => plain(beat.tickFormat(Math.abs(t))) : (t) => (span >= 10000 ? `${Math.abs(t) / 1000}k` : String(Math.abs(t)));
+  if (beat.tickFormat) assertTicksSayTheirValue(xTicks.filter((t) => t > 0), beat.tickFormat);
 
   const title = plain([beat.title].flat()[0]);
   const caveat = plain([beat.limits].flat()[0]);

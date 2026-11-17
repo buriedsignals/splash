@@ -7,6 +7,7 @@ import {
   assertDrawsClaimColumn,
   assertHeadlineNumbersDrawn,
   assertLegibleLabels,
+  assertTicksSayTheirValue,
   assertNoAggregates,
   errorText,
   assertFigureMatchesValue,
@@ -811,6 +812,27 @@ describe("assertLegibleLabels", () => {
     expect(() =>
       assertLegibleLabels([4_465_340, 4_312_005, 3_901_220], format),
     ).not.toThrow();
+  });
+});
+
+describe("assertTicksSayTheirValue", () => {
+  it("should refuse a tick that prints a tenth of its value", () => {
+    const tens = (v: number) => `${Math.round(v / 10000)}k`;
+    expect(() => assertTicksSayTheirValue([0, 350_000], tens)).toThrow(/tickFormat.*350000.*"35k"/);
+  });
+
+  it("should accept ticks in thousands, rounded or with a decimal comma", () => {
+    const thousands = (v: number) => `${String(v / 1000).replace(".", ",")}k`;
+    expect(() => assertTicksSayTheirValue([0, 17_500, 175_000, 350_000], thousands)).not.toThrow();
+  });
+
+  it("should accept millions, grouped figures, years and shares", () => {
+    const f = (v: number) => (v >= 1e6 ? `${v / 1e6} M` : v === 1990 ? "1990" : v === 0.25 ? "25 %" : "350\u202f000");
+    expect(() => assertTicksSayTheirValue([2e6, 1990, 0.25, 350_000], f)).not.toThrow();
+  });
+
+  it("should leave words alone", () => {
+    expect(() => assertTicksSayTheirValue([1, 2], (v: number) => (v === 1 ? "bas" : "haut"))).not.toThrow();
   });
 });
 

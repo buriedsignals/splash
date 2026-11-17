@@ -18,7 +18,7 @@ import { directionReachable, readRunDirection } from "#shared/design-base/run-di
 import { assertBeatMayEnter, directedFrame, exportSizeFromArgv, nameAtSize } from "#shared/chart-beat/directed-size.mjs";
 import { DirectedBeeswarm } from "./DirectedBeeswarm.tsx";
 import beat from "./beat.mjs";
-import { applyStoryboard, assertNumbers, assertDrawsClaimColumn, errorText } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertDrawsClaimColumn, errorText, assertTicksSayTheirValue } from "./guards.mjs";
 applyStoryboard(beat, dirname(fileURLToPath(import.meta.url)));
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -67,6 +67,7 @@ assertDrawsClaimColumn(beat.marks.map((m) => m.value), HERE);
 // The axis ticks: the beat's own, or round steps up to the largest value.
 const ticks = beat.ticks ?? scaleLinear().domain([0, top]).nice(5).ticks(5);
 const tickFormat = beat.tickFormat ?? String;
+assertTicksSayTheirValue(ticks, tickFormat);
 
 // The component reads { code, entity, tonnes, people }; the contract speaks { name, value, size }.
 const marks = beat.marks.map((m) => ({ code: m.name, entity: m.name, tonnes: m.value, people: m.size }));

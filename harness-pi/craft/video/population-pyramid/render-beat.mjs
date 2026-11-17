@@ -13,7 +13,7 @@
 import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { videoExportSize } from "#shared/chart-video/sizes.mjs";
-import { applyStoryboard, assertNumbers, assertHeadlineNumbersDrawn, assertDrawsClaimColumn } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, assertTicksSayTheirValue } from "./guards.mjs";
 import { assertEventFramesReadable, numberFormat, pickDirection, plain, refusing, renderBeatVideo, storyLanguage } from "./video.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -64,6 +64,10 @@ await refusing(HERE, async () => {
     return part ? `${g}${format.decimal}${part}` : g;
   };
   const tick = beat.tickFormat ? (v) => wordOf("tickFormat", beat.tickFormat, v) : (v) => (v >= 1000 ? `${String(+(v / 1000).toPrecision(6)).replace(".", format.decimal)}k` : String(+v.toPrecision(6)).replace(".", format.decimal));
+  if (beat.tickFormat) {
+    const most = Math.max(...counts), step = 10 ** Math.floor(Math.log10(most)) / 2;
+    assertTicksSayTheirValue(Array.from({ length: Math.ceil(most / step) }, (_, k) => (k + 1) * step), beat.tickFormat);
+  }
   const value = beat.format ? (v) => wordOf("format", beat.format, v) : grouped;
   assertDrawsClaimColumn(counts, HERE);
   const at = subject.crossing;

@@ -17,7 +17,7 @@ import { directionReachable, readRunDirection } from "#shared/design-base/run-di
 import { assertBeatMayEnter, directedFrame, exportSizeFromArgv, nameAtSize } from "#shared/chart-beat/directed-size.mjs";
 import { DirectedPyramid } from "./DirectedPyramid.tsx";
 import beat from "./beat.mjs";
-import { applyStoryboard, assertNumbers, assertOnePerX, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, errorText } from "./guards.mjs";
+import { applyStoryboard, assertNumbers, assertOnePerX, assertHeadlineNumbersDrawn, assertDrawsClaimColumn, errorText, assertTicksSayTheirValue } from "./guards.mjs";
 applyStoryboard(beat, dirname(fileURLToPath(import.meta.url)));
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -69,6 +69,7 @@ const tickFormat = beat.tickFormat ?? ((v) => (v >= 1000 ? `${Math.round(v / 100
 const most = Math.max(...bands.flatMap((b) => [b.left, b.right]));
 const ticks = scaleLinear().domain([0, most]).nice(4).ticks(4).filter((t) => t > 0);
 const tickLabels = ticks.map(tickFormat);
+assertTicksSayTheirValue(ticks, tickFormat);
 if (new Set(tickLabels).size < ticks.length)
   throw new Error(`the axis ticks ${ticks.join(", ")} print as ${tickLabels.join(", ")}: give beat.mjs a tickFormat(v) that prints them apart (shares need decimals, e.g. v.toFixed(1) + " %")`);
 

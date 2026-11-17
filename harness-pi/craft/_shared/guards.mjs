@@ -375,6 +375,34 @@ export function legibleFormat(values, format) {
 }
 
 /**
+ * Each axis tick, printed, must read as its own value: a Qwen tickFormat divided by 10,000 and wrote "k", so the
+ * 350,000 tick read "35k" (population-pyramid web, mvq100). A label that is not a figure (a word) is left alone.
+ */
+const SCALE = { "": 1, k: 1e3, K: 1e3, M: 1e6, Mio: 1e6, mn: 1e6, Md: 1e9, G: 1e9, B: 1e9, bn: 1e9 };
+export function assertTicksSayTheirValue(ticks, tickFormat) {
+  for (const v of ticks) {
+    const label = String(tickFormat(v));
+    const m = label.replace(/[\s  ]/g, "").replace(/^[−–]/, "-").match(/^(-?)([\d.,']+)(Mio|mn|Md|bn|[kKMGB])?(%)?$/);
+    if (!m) continue;
+    const [, sign, digits, suffix = "", percent] = m;
+    // "350,000" groups and "17,5" is a decimal: a figure matches if either reading of its marks does.
+    const readings = [digits.replace(/[,']/g, ""), digits.replace(/[.']/g, "").replace(",", "."), digits.replace(/[,'.](?=\d{3}(\D|$))/g, "").replace(",", ".")];
+    const ok = readings.some((d) => {
+      const n = Number(d);
+      if (!Number.isFinite(n)) return false;
+      const place = 10 ** -((d.split(".")[1] ?? "").length);
+      const printed = (sign ? -n : n) * SCALE[suffix];
+      const slack = (place / 2) * SCALE[suffix] + 1e-9;
+      return [Math.abs(v), v, ...(percent ? [v * 100, Math.abs(v) * 100] : [])].some((want) => Math.abs(Math.abs(printed) - Math.abs(want)) <= slack);
+    });
+    if (!ok) {
+      const example = suffix ? `(v) => \`\${fr(v / ${SCALE[suffix]})}${suffix}\`` : "(v) => fr(v)";
+      throw new Error(`tickFormat prints the tick ${v} as "${label}", which reads as another value: make the label say ${v} at the scale its suffix names, e.g. tickFormat: ${example}`);
+    }
+  }
+}
+
+/**
  * The beat's check(), its refusal saying which side may be wrong: a 12B's check() threw "Mazowieckie is rank 3",
  * which is the takeaway itself, and three attempts went to editing the data rather than the inverted condition.
  */
