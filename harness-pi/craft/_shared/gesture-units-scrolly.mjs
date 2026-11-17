@@ -165,7 +165,19 @@ export function applyUnitsState(root, state, context) {
       notes: data.plan.map((p) => root.querySelector(`[data-note="${p.k}"]`)),
       nameNatural: Math.max(0, ...groups.map((g) => width(g.name))),
       valueW: Math.max(0, ...groups.map((g) => width(g.value))),
-      sideW: Math.max(0, ...plan.filter((p) => p.label).map((p) => width(p.label))),
+      // A label is empty until its gesture lands: measured as it stands, the column reserved 0px and "6 sur 40" ran
+      // off the stage (mvq44). Each label is measured at the widest text it will ever show.
+      sideW: Math.max(
+        0,
+        ...plan
+          .filter((p) => p.label)
+          .map((p) => {
+            const now = p.label.textContent;
+            const widest = Math.max(...[now, p.noteText, ...(p.steps ?? [])].filter(Boolean).map((t) => ((p.label.textContent = t), width(p.label))), 0);
+            p.label.textContent = now;
+            return widest;
+          }),
+      ),
     };
   }
   const c = root.__ugrp;
