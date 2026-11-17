@@ -435,6 +435,15 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
       const marked = withoutCode(String(g.note), "\u0000");
       const note = marked.replaceAll("\u0000", "");
       const coded = marked !== note;
+      // A unit written twice after its figure ("100 % %": a format that already ends in its unit, then the unit again)
+      // is one unit too many, not a hole (gx-choropleth video, Qwen3.5-9B, mvq69).
+      const twice = /(\d[\d\s.,]*\s*)(TWh|GWh|MWh|kWh|GW|MW|kW|Gt|Mt|km²|%)\s+\2(?=$|[\s.,;:)])/gu;
+      if (!coded && twice.test(note)) {
+        const fixed = note.replace(twice, "$1$2");
+        throw new GestureRefusal(`gestures[${i}].note`, `"${g.note}" has its unit written twice after its figure: write "${fixed}"`, {
+          set: { index: i, field: "note", value: fixed },
+        });
+      }
       let holes = noteHoles(note);
       // Code with no sign or unit around it leaves no hole: its own place takes the figure.
       if (!holes.length && coded) holes = [...marked.matchAll(/\u0000/g)].map((m, k) => ({ at: m.index - k, pad: "" }));
