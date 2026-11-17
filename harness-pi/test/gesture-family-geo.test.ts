@@ -640,6 +640,25 @@ describe("the scrolly scheduler", () => {
     );
     expect(e.field).toBe("gestures[0].card");
   });
+  // gx-dot-density scrolly (Qwen3.5-9B, mvq82): a card stated the nuclear share of capacity, 34,4 %, which no dot
+  // draws; the gesture had no note, so the refusal's value that works was empty and the model moved the figure
+  // from card to card.
+  it("should offer the card without the sentence holding a figure no gesture draws", () => {
+    const e = refusalOf(() =>
+      scheduleGeoScrolly({
+        valid: stage([{ do: "name", mark: "ALB", card: ["Albania stands out. It holds 61 % of the power."] }]),
+        geo,
+        claim,
+      }),
+    );
+    expect(e.fix.set.value).toEqual(["Albania stands out."]);
+  });
+  it("should offer the place's name when every sentence holds that figure", () => {
+    const e = refusalOf(() =>
+      scheduleGeoScrolly({ valid: stage([{ do: "name", mark: "ALB", card: ["Albania, 61 %."] }]), geo, claim }),
+    );
+    expect(e.fix.set.value).toEqual([geo.nameOf("ALB")]);
+  });
   it("should lift the filter's wash on the closing card", () => {
     const { states } = scheduleGeoScrolly({
       valid: stage([{ do: "filter", marks: keys, card: ["Seven."] }, { do: "name", mark: "ALB", card: ["Albania."] }]),

@@ -43,10 +43,14 @@ export function scheduleGeoScrolly({ valid, geo, claim = {}, viewOf = () => ({ v
     for (const form of prose)
       for (const n of figuresIn(form)) {
         const ok = known.some((f) => [0, -3, -6, 3, 6, -2, 2].some((k) => Math.abs(n.value - f * 10 ** k) <= 0.5 * 10 ** -n.decimals + 1e-9));
-        if (!ok)
-          throw new GestureRefusal(`gestures[${i}].card`, `the card states ${n.raw}, which this ${g.do} does not draw: write the card from its own note`, {
-            set: { index: i, field: "card", value: g.note ? [String(g.note)] : undefined },
+        if (!ok) {
+          // With no note to fall back on, the value that works is the card without the sentences stating it.
+          const kept = prose.map((f) => f.split(/(?<=[.!?…])\s+/).filter((s) => !s.includes(n.raw)).join(" ").trim()).filter(Boolean);
+          const value = g.note ? [String(g.note)] : kept.length ? kept : [geo.nameOf(g.marks?.[0] ?? geo.marks[0].key)];
+          throw new GestureRefusal(`gestures[${i}].card`, `the card states ${n.raw}, which this ${g.do} does not draw: ${g.note ? "write the card from its own note" : "drop the sentence that states it"}`, {
+            set: { index: i, field: "card", value },
           });
+        }
       }
     cards.push({ id: `g${i}-${g.do}`, gesture: i, prose, state: s });
   });
