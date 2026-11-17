@@ -6,6 +6,7 @@ import {
   validateGestures,
 } from "../craft/_shared/gesture-core.mjs";
 import * as registry from "../craft/_shared/gesture-registry.mjs";
+import { answerPieces } from "../../skills/chart-web/assets/interaction-plan.ts";
 import * as familyModule from "../craft/_shared/gesture-family-cell.mjs";
 import * as staticModule from "../craft/_shared/gesture-cell-static.mjs";
 import * as webModule from "../craft/_shared/gesture-cell-web.mjs";
@@ -14,7 +15,20 @@ import * as videoModule from "../craft/_shared/gesture-cell-video.mjs";
 
 // The modules are plain JavaScript read through their JSDoc; the tests hold their behaviour, not their inferred types.
 const { FAMILIES } = registry as any;
-const { cellHooks, claimFor, factsFor, gridOf, keepsOthersInOrder, marksOf, outlineOf, pictureOf, precheck, reorderRows, run, stageCells } = familyModule as any;
+const {
+  cellHooks,
+  claimFor,
+  factsFor,
+  gridOf,
+  keepsOthersInOrder,
+  marksOf,
+  outlineOf,
+  pictureOf,
+  precheck,
+  reorderRows,
+  run,
+  stageCells,
+} = familyModule as any;
 const { composeCellStatic } = staticModule as any;
 const { scheduleCellWeb } = webModule as any;
 const { checkCellCards, scheduleCellScrolly } = scrollyModule as any;
@@ -239,6 +253,30 @@ describe("heatmap-matrix", () => {
     expect(new Set(pictures).size).toBe(4);
   });
 
+  // gx-heatmap-matrix web (Qwen3.5-9B, 2026-11-17): a filter with no note of its own revealed an empty sentence, and
+  // chart-web refused it twice as ".chart-gesture-4 changes nothing" — a refusal the model could only answer by
+  // deleting the gesture.
+  it("should reveal a reading the page does not already print for every web control, a filter without a note included", () => {
+    const { plan, orders } = stage(HEAT, HEAT_CLAIM, "web", GESTURES);
+    const { resting, controls } = scheduleCellWeb({
+      plan,
+      orders,
+      grid: HEAT,
+      format: (v: number) => one(v),
+    });
+    const printed = [
+      ...resting.notes.map((n: any) => n.text),
+      ...controls.flatMap((c: any) => [c.legend, c.chip]),
+    ].join(" ");
+    const silent = controls.filter(
+      (c: any) =>
+        !answerPieces(c.note ?? "").some(
+          (piece: string) => !printed.includes(piece),
+        ),
+    );
+    expect(silent.map((c: any) => c.do)).toEqual([]);
+  });
+
   it("should give the scrolly one distinct state per card and release the filter on the closing card", () => {
     const { plan, orders, valid } = stage(
       HEAT,
@@ -362,21 +400,59 @@ describe("calendar-heatmap", () => {
   // gx-calendar-heatmap web (12B, 2026-11-15): the beat found "August" as the first date holding "08", 2024-01-08, and
   // the page closed on "Janvier, mois le plus chaud": January is 11th of 12 by its mean. A month is ranked by its days.
   it("should refuse a month called the warmest when another month is", () => {
-    const wrong = [GESTURES[0], { do: "highlight", mark: "January", note: "January, the warmest month" }];
+    const wrong = [
+      GESTURES[0],
+      { do: "highlight", mark: "January", note: "January, the warmest month" },
+    ];
     let e: any;
-    try { stage(CAL, CAL_CLAIM, "static", wrong); } catch (x) { e = x; }
-    expect(e?.message).toMatch(/January ranks 11 of 12 and August is the highest/);
+    try {
+      stage(CAL, CAL_CLAIM, "static", wrong);
+    } catch (x) {
+      e = x;
+    }
+    expect(e?.message).toMatch(
+      /January ranks 11 of 12 and August is the highest/,
+    );
   });
   it("should refuse a French month called le plus chaud when another is", () => {
-    const FR = ["Janvier", "Février", "Mars", "Avril", "Mai", "Juin", "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"];
+    const FR = [
+      "Janvier",
+      "Février",
+      "Mars",
+      "Avril",
+      "Mai",
+      "Juin",
+      "Juillet",
+      "Août",
+      "Septembre",
+      "Octobre",
+      "Novembre",
+      "Décembre",
+    ];
     const grid = gridOf("calendar-heatmap", { ...calendarBeat(), months: FR });
     const claim = { takeaway: CAL_CLAIM.takeaway, facts: factsFor(grid) };
     let e: any;
-    try { stage(grid, claim, "web", [GESTURES[0], { do: "highlight", mark: "Janvier", note: "Janvier, mois le plus chaud" }]); } catch (x) { e = x; }
+    try {
+      stage(grid, claim, "web", [
+        GESTURES[0],
+        {
+          do: "highlight",
+          mark: "Janvier",
+          note: "Janvier, mois le plus chaud",
+        },
+      ]);
+    } catch (x) {
+      e = x;
+    }
     expect(e?.field).toBe("gestures[1].note");
   });
   it("should let the warmest month be called the warmest", () => {
-    expect(() => stage(CAL, CAL_CLAIM, "static", [GESTURES[0], { do: "highlight", mark: "August", note: "August, the warmest month" }])).not.toThrow();
+    expect(() =>
+      stage(CAL, CAL_CLAIM, "static", [
+        GESTURES[0],
+        { do: "highlight", mark: "August", note: "August, the warmest month" },
+      ]),
+    ).not.toThrow();
   });
 
   it("should outline the longest run of days at or above the threshold", () => {
@@ -524,13 +600,30 @@ describe("calendar-heatmap", () => {
 
 describe("the data's shape never refuses", () => {
   it("should draw the rows a gesture names plus the first others when a heatmap has too many rows, and state the rest", async () => {
-    const { fitRows } = (await import("../craft/_shared/gesture-cell-run.mjs")) as any;
+    const { fitRows } =
+      (await import("../craft/_shared/gesture-cell-run.mjs")) as any;
     const beat: any = heatmapBeat();
-    beat.rows = [...beat.rows, ...beat.rows.map((r: any) => ({ ...r, key: `${r.key}2`, label: `${r.label} 2` }))];
+    beat.rows = [
+      ...beat.rows,
+      ...beat.rows.map((r: any) => ({
+        ...r,
+        key: `${r.key}2`,
+        label: `${r.label} 2`,
+      })),
+    ];
     beat.gestures = [{ do: "highlight", mark: beat.rows[20].label }];
     const scope: string[] = [];
-    const grid = await fitRows(beat, gridOf("heatmap-matrix", beat), "static", scope);
-    expect([grid.rows.length, grid.rows[0].label, scope[0]]).toEqual([12, beat.rows[0].label, "12 / 24"]);
+    const grid = await fitRows(
+      beat,
+      gridOf("heatmap-matrix", beat),
+      "static",
+      scope,
+    );
+    expect([grid.rows.length, grid.rows[0].label, scope[0]]).toEqual([
+      12,
+      beat.rows[0].label,
+      "12 / 24",
+    ]);
   });
 });
 
@@ -542,16 +635,29 @@ describe("a note's figure belongs to the mark it follows", () => {
   const hydro = cellOf(HEAT, top, "Hydro");
   const france = cellOf(HEAT, "France", "Nuclear");
   const swapped = `France : ${one(hydro.value)} % ; ${top} : ${one(hydro.value)} %`;
-  const compare = (note: string) => [{ do: "compare", marks: [france.name, hydro.name], note }];
+  const compare = (note: string) => [
+    { do: "compare", marks: [france.name, hydro.name], note },
+  ];
 
   it("should refuse a figure written after a row that is another mark's figure", () => {
-    const error = refusal(() => stage(HEAT, HEAT_CLAIM, "static", compare(swapped)));
-    expect(error.message).toContain(`France · Nuclear draws ${one(france.value)}`);
+    const error = refusal(() =>
+      stage(HEAT, HEAT_CLAIM, "static", compare(swapped)),
+    );
+    expect(error.message).toContain(
+      `France · Nuclear draws ${one(france.value)}`,
+    );
   });
 
   it("should accept each figure written after its own row", () => {
     expect(() =>
-      stage(HEAT, HEAT_CLAIM, "static", compare(`France : ${one(france.value)} % ; ${top} : ${one(hydro.value)} %`)),
+      stage(
+        HEAT,
+        HEAT_CLAIM,
+        "static",
+        compare(
+          `France : ${one(france.value)} % ; ${top} : ${one(hydro.value)} %`,
+        ),
+      ),
     ).not.toThrow();
   });
 });
@@ -562,18 +668,36 @@ describe("a compare's note states each mark's own figure", () => {
   const top = HEAT.rows[0].label;
   const hydro = cellOf(HEAT, top, "Hydro");
   const france = cellOf(HEAT, "France", "Nuclear");
-  const compare = (note: string) => [{ do: "compare", marks: [hydro.name, france.name], note }];
+  const compare = (note: string) => [
+    { do: "compare", marks: [hydro.name, france.name], note },
+  ];
 
   it("should refuse a note that states one mark's figure for both", () => {
     const error = refusal(() =>
-      stage(HEAT, HEAT_CLAIM, "static", compare(`${one(hydro.value)} % contre ${one(hydro.value)} % pour la France`)),
+      stage(
+        HEAT,
+        HEAT_CLAIM,
+        "static",
+        compare(
+          `${one(hydro.value)} % contre ${one(hydro.value)} % pour la France`,
+        ),
+      ),
     );
-    expect(error.fix.set.value).toBe(`${one(hydro.value)} % contre ${one(france.value)} % pour la France`);
+    expect(error.fix.set.value).toBe(
+      `${one(hydro.value)} % contre ${one(france.value)} % pour la France`,
+    );
   });
 
   it("should accept a note that states each mark's figure once", () => {
     expect(() =>
-      stage(HEAT, HEAT_CLAIM, "static", compare(`${one(hydro.value)} % contre ${one(france.value)} % pour la France`)),
+      stage(
+        HEAT,
+        HEAT_CLAIM,
+        "static",
+        compare(
+          `${one(hydro.value)} % contre ${one(france.value)} % pour la France`,
+        ),
+      ),
     ).not.toThrow();
   });
 });
@@ -586,16 +710,36 @@ describe("a note's percent on a cell is the cell's drawn share", () => {
   const france = cellOf(HEAT, "France", "Nuclear");
   const raw = 13.46;
   const claim = { ...HEAT_CLAIM, facts: factsFor(HEAT, { [top]: [raw] }) };
-  const compare = (note: string) => [{ do: "compare", marks: [hydro.name, france.name], note }];
+  const compare = (note: string) => [
+    { do: "compare", marks: [hydro.name, france.name], note },
+  ];
 
   it("should refuse a row's raw figure written as the cell's percent, and offer the drawn share", () => {
-    const error = refusal(() => stage(HEAT, claim, "static", compare(`${top} : 13,5 % ; France : ${one(france.value).replace(".", ",")} %`)));
-    expect(error.fix.set.value).toBe(`${top} : ${one(hydro.value).replace(".", ",")} % ; France : ${one(france.value).replace(".", ",")} %`);
+    const error = refusal(() =>
+      stage(
+        HEAT,
+        claim,
+        "static",
+        compare(
+          `${top} : 13,5 % ; France : ${one(france.value).replace(".", ",")} %`,
+        ),
+      ),
+    );
+    expect(error.fix.set.value).toBe(
+      `${top} : ${one(hydro.value).replace(".", ",")} % ; France : ${one(france.value).replace(".", ",")} %`,
+    );
   });
 
   it("should accept the drawn shares", () => {
     expect(() =>
-      stage(HEAT, claim, "static", compare(`${top} : ${one(hydro.value)} % ; France : ${one(france.value)} %`)),
+      stage(
+        HEAT,
+        claim,
+        "static",
+        compare(
+          `${top} : ${one(hydro.value)} % ; France : ${one(france.value)} %`,
+        ),
+      ),
     ).not.toThrow();
   });
 });

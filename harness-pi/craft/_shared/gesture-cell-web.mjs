@@ -102,7 +102,9 @@ export function scheduleCellWeb({ plan, orders, grid, format = String }) {
           legend: short(p.label) || `${kept}`,
           chip: `${kept} / ${grid.cells.length}`,
           // A month's days have a mean worth reading; a row of shares always averages the same, so it is left out.
-          pieces: grid.variant === "calendar-heatmap" ? [`${kept} / ${grid.cells.length}`, `x̄ ${F(mean)}`] : [`${kept} / ${grid.cells.length}`],
+          // A row of shares always averages the same, so a matrix's kept cells are read by their span instead: the chip
+          // prints the count, and a control whose sentence only repeats it reveals nothing (chart-web refuses it).
+          pieces: grid.variant === "calendar-heatmap" ? [`${kept} / ${grid.cells.length}`, `x̄ ${F(mean)}`] : [`${kept} / ${grid.cells.length}`, `${F(Math.min(...cells.map((c) => c.value)))} – ${F(Math.max(...cells.map((c) => c.value)))}`],
           question: `What do ${p.label || "these cells"} look like without the others?`,
           changes: `Every other cell steps back; the grid, the order and the colours stay exactly where they were.`,
           parameter: `whether gestures[${k}] keeps only ${p.label || "its cells"}`,
@@ -122,6 +124,8 @@ export function scheduleCellWeb({ plan, orders, grid, format = String }) {
         break;
       }
     }
+    // A gesture with no words of its own still reveals a reading: the pieces the control answers with.
+    if (!control.note) control.note = control.pieces.join(" · ");
     controls.push(control);
   });
   return { resting, controls };
