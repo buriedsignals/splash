@@ -141,6 +141,34 @@ export function refusalHint(output: string, record?: string): string {
     : "";
 }
 
+/** A data.json row is a list: read by a column name it is undefined. Qwen3.5-9B read r["entity_fr"] and its own check
+ *  then refused "CHN has no French name in data.json" twice (gx-lollipop scrolly, 2026-11-17), searching data.json
+ *  instead of its access. Rows are the parameters of data.rows' callbacks and loops; returns "" when none is read so. */
+export function rowByNameHint(dir: string): string {
+  const beat = join(dir, "beat.mjs");
+  const data = join(dir, "data.json");
+  if (!existsSync(beat) || !existsSync(data)) return "";
+  let columns: string[];
+  try {
+    columns = (JSON.parse(readFileSync(data, "utf8")).columns ?? []).map((c: { name: string }) => c.name);
+  } catch {
+    return "";
+  }
+  const src = readFileSync(beat, "utf8");
+  const rows = new Set([
+    ...[...src.matchAll(/\.rows\.\w+\(\s*\(?\s*(\w+)/g)].map((m) => m[1]),
+    ...[...src.matchAll(/for\s*\(\s*(?:const|let)\s+(\w+)\s+of\s+[\w.]*rows\b/g)].map((m) => m[1]),
+  ]);
+  const esc = (t: string) => t.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  for (const row of rows)
+    for (const name of columns) {
+      const read = src.match(new RegExp(`\\b${esc(row)}(\\[(["'\`])${esc(name)}\\2\\]|\\.${esc(name)}\\b)`));
+      if (read)
+        return `\nhint: a data.json row is a list, so ${read[0]} is undefined: read a column by its index — const ${name.toUpperCase().replace(/\W/g, "_")} = col(${JSON.stringify(name)}); then ${row}[${name.toUpperCase().replace(/\W/g, "_")}] — the worked example's col() returns that index; written in place, ${row}[col(${JSON.stringify(name)})].`;
+    }
+  return "";
+}
+
 /** A line holding only a quote after the closing "};" is never code (gx-bullet web, 12B, 2026-11-13: told to delete
  *  it, the 12B edited template strings elsewhere through three passes). Removed before rendering; returns what it did. */
 export function trimStrayTail(file: string): string {
@@ -282,7 +310,8 @@ export function runTools(bases: Bases) {
       const trimmed = zoned ? trimStrayTail(join(beatDir(bases, beat), "beat.mjs")) + quoteSpacedKeys(join(beatDir(bases, beat), "beat.mjs")) : "";
       const result = await exec(["bun", path]);
       const record = zoned && existsSync(join(beatDir(bases, beat), "gestures.json")) ? `beats/${beat}/gestures.json` : undefined;
-      result.content[0].text = trimmed + result.content[0].text + refusalHint(result.content[0].text, record);
+      const failed = /REFUSED|Error|error:/.test(result.content[0].text);
+      result.content[0].text = trimmed + result.content[0].text + refusalHint(result.content[0].text, record) + (zoned && failed ? rowByNameHint(beatDir(bases, beat)) : "");
       // Name every PNG the render wrote by its full path, so the next call can look at it.
       const renders = join(beatDir(bases, beat), "renders");
       if (existsSync(renders)) {
