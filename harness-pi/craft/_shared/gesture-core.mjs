@@ -277,8 +277,9 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
     // marks
     let marks = [];
     // A list given as `mark` is the gesture's marks (a 12B China scrolly wrote mark: [the next five]).
-    if (g.mark !== undefined) marks = (Array.isArray(g.mark) ? g.mark.flatMap((m) => listed(m) ?? [asName(m)]) : listed(g.mark) ?? [asName(g.mark)]).map((m) => resolve(m, i, "mark"));
-    if (g.marks !== undefined) {
+    // A null mark names no row (Qwen wrote { do: "pull-back", mark: null } and was offered a row in its place).
+    if (g.mark != null) marks = (Array.isArray(g.mark) ? g.mark.flatMap((m) => listed(m) ?? [asName(m)]) : listed(g.mark) ?? [asName(g.mark)]).map((m) => resolve(m, i, "mark"));
+    if (g.marks != null) {
       const given = (Array.isArray(g.marks) ? g.marks : [g.marks]).flatMap((m) => listed(m) ?? [asName(m)]);
       const drawn = (m) => named(m);
       const bad = given.findIndex((m) => !drawn(m));
