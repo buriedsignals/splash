@@ -139,6 +139,23 @@ describe("importBeat on a beat.mjs that exports nothing", () => {
 });
 
 
+// gx-flow-map scrolly (Qwen3.5-9B, mvq86): `const [ENTITY, CODE, MONTH, PEOPLE] = [col("code"), col("month"),
+// col("people")]` shifted every column by one, so CODE read the month; beat.mjs's own check then refused "2026-06 has
+// no French name" render after render, and nothing pointed at the line that caused it.
+describe("importBeat on names and values that do not line up", () => {
+  const shifted = `import { readFileSync } from "node:fs";\nconst table = JSON.parse(readFileSync(new URL("./data.json", import.meta.url)));\nconst col = (n) => table.columns.findIndex((c) => c.name === n);\nconst [ENTITY, YEAR, SHARE, CODE] = [col("Entity"), col("Year"), col("Share")];\nexport default { title: "t" };`;
+  it("should refuse more names than values, naming the line and a value that works", async () => {
+    const { beatDir } = story("claimShape: none");
+    writeFileSync(join(beatDir, "beat.mjs"), shifted);
+    await expect(importBeat(beatDir)).rejects.toThrow(/line 4.*4 names for 3 values.*const \[ENTITY, YEAR, SHARE\] = \[col\("Entity"\), col\("Year"\), col\("Share"\)\]/);
+  });
+  it("should pass names and values of the same length", async () => {
+    const { beatDir } = story("claimShape: none");
+    writeFileSync(join(beatDir, "beat.mjs"), shifted.replace(", CODE]", "]"));
+    await expect(importBeat(beatDir)).resolves.toBeTruthy();
+  });
+});
+
 describe("the contract a craft session reads", () => {
   it("should ask a still to record its gestures through record_gestures", async () => {
     const { contractText } = await import("../src/craft-kit.ts");

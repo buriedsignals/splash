@@ -1026,8 +1026,36 @@ function throwingLine(file, error) {
   return line ? ` (beat.mjs line ${at[1]}: ${line.slice(0, 200)})` : "";
 }
 
+/** A `const [A, B, C] = [x, y]` line whose names outnumber its values: the extra names are undefined and every name
+ * after a missing value reads the wrong column. Returns the refusal text, naming the line and a line that works. */
+function unevenDestructure(source) {
+  const lines = source.split("\n");
+  for (let n = 0; n < lines.length; n++) {
+    const m = /^\s*(const|let|var)\s*\[([^\]]*)\]\s*=\s*\[(.*)\]\s*;?\s*$/.exec(lines[n]);
+    if (!m) continue;
+    const names = m[2].split(",").map((s) => s.trim()).filter(Boolean);
+    const values = [];
+    let depth = 0, cur = "";
+    for (const ch of m[3]) {
+      if (ch === "," && depth === 0) { values.push(cur.trim()); cur = ""; continue; }
+      if ("([{".includes(ch)) depth++;
+      if (")]}".includes(ch)) depth--;
+      cur += ch;
+    }
+    if (cur.trim()) values.push(cur.trim());
+    if (names.length <= values.length) continue;
+    const key = (s) => s.toLowerCase().replace(/[^a-z0-9]/g, "");
+    const byName = values.map((v) => names.find((name) => key(name) === key(/["'`]([^"'`]+)["'`]/.exec(v)?.[1] ?? "")));
+    const kept = byName.every(Boolean) && new Set(byName).size === byName.length ? byName : names.slice(0, values.length);
+    return `beat.mjs line ${n + 1} gives ${names.length} names for ${values.length} values, so ${names.filter((x) => !kept.includes(x)).join(", ")} is undefined and the names after a missing value read the wrong column: write ${m[1]} [${kept.join(", ")}] = [${values.join(", ")}]`;
+  }
+  return null;
+}
+
 export async function importBeat(here) {
   const file = join(here, "beat.mjs");
+  const uneven = existsSync(file) && unevenDestructure(readFileSync(file, "utf8"));
+  if (uneven) throw new Error(`${uneven} — ${readingHint(here)}`);
   let beat;
   try {
     ({ default: beat } = await import(file));
