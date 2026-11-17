@@ -30,3 +30,19 @@ describe("a compare on a paired dot strip", () => {
     expect(scene([{ index: 2, subject: "Pologne", other: "Suède" }]).prims.some((p: any) => p.id === "name-France")).toBe(false);
   });
 });
+
+// mvq33 (2026-11-17): Qwen took the strip's own "+29,5" for a contradiction of its note's "+30 points" and spent
+// eight renders, then deleted its highlight and annotate, trying to remove it. The render says what the kit prints.
+describe("what a paired dot strip prints on its own", () => {
+  const { kitPrintsOf } = familyModule as any;
+  const model = modelOf("dot-strip", { rows, format: (v: number) => String(v), unit: "%" });
+  const position = createPosition({ model });
+  const state = position.with(position.rest(), { accent: ["Pologne"] });
+  const line = () => kitPrintsOf({ variant: "dot-strip", model, state, delta: (v: number) => `+${v.toFixed(1)}` });
+  it("should name the marked row's change as the kit prints it", () => {
+    expect(line()).toContain("POL +29.5");
+  });
+  it("should say a note need not repeat or match it", () => {
+    expect(line()).toContain("rounded");
+  });
+});

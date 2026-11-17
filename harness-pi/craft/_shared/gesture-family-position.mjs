@@ -925,3 +925,16 @@ export function placeNotes({ scene, notes, text, frame, reg = "annot", role = "a
   }
   return { under };
 }
+
+/**
+ * What the drawing prints without any gesture asking: on a paired dot strip, each marked row's code over its first
+ * point and its change under its last. Said with the render so a model does not take that figure for a slip of its
+ * own note and edit gestures away chasing it (Qwen3.5-9B, gx-dot-strip web, 2026-11-17).
+ */
+export function kitPrintsOf({ variant, model, state, delta }) {
+  if (variant !== "dot-strip" || model.shape !== "paired") return "";
+  const marked = [...new Set([...state.accent, ...state.rings, ...state.compares.flatMap((c) => [c.subject, c.other])])];
+  const rows = marked.map((n) => model.rows.find((r) => r.name === n)).filter(Boolean);
+  if (!rows.length) return "";
+  return `the strip prints on its own: ${rows.map((r) => `${r.code ?? r.name} ${delta(r.change)}`).join(", ")} (each marked row's change under its last point, at the page's precision); a note may give it rounded, it does not have to match or repeat it`;
+}

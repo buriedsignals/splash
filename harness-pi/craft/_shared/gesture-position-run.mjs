@@ -7,7 +7,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { applyFix, GestureRefusal, validateGestures } from "./gesture-core.mjs";
-import { deltaOf, levelsOf, modelOf, positionHooks } from "./gesture-family-position.mjs";
+import { deltaOf, kitPrintsOf, levelsOf, modelOf, positionHooks } from "./gesture-family-position.mjs";
 import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertNoAggregates, assertNumbers, importBeat, legibleFormat, rowFacts, runCheck } from "./guards.mjs";
 
 export const REPAIR = process.env.SPLASH_GESTURE_REPAIR === "1";
@@ -270,6 +270,8 @@ export async function runWebPosition(here, variant) {
       value: model.rows.map((r) => (r.change !== undefined ? delta(r.change) : format(r.value))).join(" "),
     };
     console.log(`  ${model.rows.length} rows · resting: ${staged.valid.filter((g) => !controls.some((c) => c.index === staged.valid.indexOf(g))).map((g) => g.do).join(", ") || "—"} · controls: ${controls.map((c) => `${c.do} (${c.atom})`).join(", ")}`);
+    const printed = kitPrintsOf({ variant, model, state: { ...resting.state, compares: [...resting.state.compares, ...controls.flatMap((c) => c.state.compares)] }, delta });
+    if (printed) console.log(`  ${printed}`);
     const subject = resting.state.accent[0] ?? model.rows[0].name;
     const interaction = interactionPlanPosition({ controls, model, subject });
     const lang = beat.lang ?? storyLanguage(here) ?? "en";
