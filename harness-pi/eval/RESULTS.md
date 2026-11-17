@@ -1854,3 +1854,7 @@ Harness fixes, in order (each with a test that fails without it):
   self-corrected). Shares checked against data.json (Germany wind 141,6 / 496 TWh = 28,5 %, solar 14,9 %; Switzerland
   solar 7,2 % against wind 0,2 %, the one reversal). Backlog, kit: the dek explains the chart's own design ("c'est ce
   qui fait lire des GROUPES plutôt qu'une file de barres alternées"), copied from the kit's example.
+- **gx-grouped-bar video (Qwen3.5-9B, mvq95).** Passed: 12 turns, 280 s, refusals=0. Tiled from the mp4: each
+  country's full mix, the other sources falling away, wind and solar regrouped, "éolien devant : 5 sur 6" with
+  Switzerland boxed; figures as on the web page. Seen, open (kit): mid-transition the pairs hang from the stack's top
+  for a few frames before reaching the baseline.
