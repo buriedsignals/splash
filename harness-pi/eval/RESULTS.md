@@ -1727,6 +1727,11 @@ Reading:
   apostrophe, decimal and spacing rules; replayed on the bench, « Allemagne + Pologne : 49,1 % ». Kit residue
   (backlog): a destination label can sit on another flow's line (Tchéquie, then Autriche once the wider readout moved
   the map); an unlabelled thin flow leaves Romania southward.
+- mvq74 hex video (Qwen3.5-9B): PASS, 28 turns, 932 s. Title card, the grid revealed by class with the top class
+  (CZE, SVK) arriving last, « La Tchéquie : 36,1 pour 1 000 habitants », then Germany ringed beside it, « Une
+  différence de 2,4 fois ». The guards did their work in the loop: a short title form without the figures, a
+  « double » for a 2.44 ratio (refused, rewritten 2,4), a pull-back note restating the subject's figure. No new
+  defect; the grid sits small in the frame (the map-frame backlog item).
 - Model-side residue (Tune, not Harness): mvq36's title names the ceiling's +2 that the three-gesture video never
   shows; "l'Chine" elision (mvq28).
 
