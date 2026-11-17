@@ -1603,7 +1603,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | population-pyramid (length) | pass (mvq101, 19 t) | pass (mvq102, 28 t) | pass (mvq103, 17 t) |
 | dumbbell-range-plot (position) | pass (mvq104, 8 t) | pass (mvq105, 7 t) | pass (mvq107, 8 t) |
 | box-plot (position) | pass (mvq108, 12 t) | pass (mvq109, 9 t) | pass (mvq110, 12 t) |
-| bump-ranking-over-time (position) | pass (mvq111, 35 t) | — | — |
+| bump-ranking-over-time (position) | pass (mvq111, 35 t) | pass (mvq112, 19 t) | — |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1932,3 +1932,7 @@ Harness fixes, in order (each with a test that fails without it):
   before the beat swapped col("Entity") and its typed "India" for Entity_fr and "Inde": the refusal now names each
   beat.mjs line to change (`sourceLines` in guards.mjs, mutation-checked). Backlog: the toggle reads "#3 / #8" instead
   of the compare note; series leaving the top ten break into dashes along rank 10; no names on the 1990 side.
+- **gx-bump-ranking-over-time video (Qwen3.5-9B, mvq112).** Pass (19 turns, 384 s, 21.2 s mp4): title card, the
+  rank lines draw in, India traced 8th → 3rd, then "du 8e au 3e rang" with the 1990 rank carried across — ranks match
+  data.json. The page-language refusal now names the lines: one refusal instead of four (mvq111). Backlog: the compare
+  note sits on the x axis over the 2020 tick; "Inde" is highlighted after the trace already lit it.
