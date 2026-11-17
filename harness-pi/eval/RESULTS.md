@@ -1601,7 +1601,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | grouped-bar (length) | pass (mvq94, 18 t) | pass (mvq95, 12 t) | pass (mvq96, 10 t) |
 | diverging-bar (length) | pass (mvq97, 19 t) | pass (mvq98, 16 t) | pass (mvq99, 14 t) |
 | population-pyramid (length) | pass (mvq101, 19 t) | pass (mvq102, 28 t) | pass (mvq103, 17 t) |
-| dumbbell-range-plot (position) | pass (mvq104, 8 t) | pass (mvq105, 7 t) | — |
+| dumbbell-range-plot (position) | pass (mvq104, 8 t) | pass (mvq105, 7 t) | pass (mvq107, 8 t) |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1907,3 +1907,9 @@ Harness fixes, in order (each with a test that fails without it):
 - **gx-dumbbell-range-plot video (Qwen3.5-9B, mvq105).** Pass (7 turns, 194 s, refusals=0, 21.2 s mp4): title card,
   the ten dumbbells, Poland lit with the US gain laid under it as a bracket ("+5,0 ans contre +2,5"), then the US
   framed; figures as in mvq104. Backlog: the "le moins de gain : +2,5 ans" label sits on Italy's 2000 dot.
+- **gx-dumbbell-range-plot scrolly (Qwen3.5-9B, mvq106 → mvq107).** mvq106 rendered, but a guard had talked the
+  model out of a true card: "C'est deux fois le gain des États-Unis : +5,0 ans contre +2,5" was refused because +5,0
+  follows the US name ("write +2,5 ans contre +2,5"), the model complied, and the compare check then swapped it to
+  "+2,5 ans contre +5,0". Fix 652eb8bdd: a figure after a mark's name is not refused when the mark's own figure follows
+  in the same span; mutation-checked. mvq107 passed (8 turns, 263 s, refusals=0) with the model's original card, four
+  cards, figures as in mvq104. Backlog: the prose card hides Italy's dumbbell.
