@@ -1608,6 +1608,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | marimekko-mosaic-plot (part-to-whole) | pass (mvq117, 4 t) | pass (mvq118, 11 t) | pass (mvq119, 11 t) |
 | treemap (part-to-whole) | pass (mvq121, 7 t) | pass (mvq122, 9 t) | pass (mvq123, 7 t) |
 | parallel-coordinates (misfit) | pass (mvq124, 19 t) | pass (mvq125, 14 t) | pass (mvq126, 12 t) |
+| radar-spider (misfit) | pass (mvq127, 11 t) | — | — |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1998,3 +1999,8 @@ Harness fixes, in order (each with a test that fails without it):
   lit → the field dimmed to the two → Sweden's wind against France's ("23,5 % contre 8,1 %"), every card figure
   from data.json. Backlog: the card about France leaves France's line dimmed with the field (only its wind point
   is ringed), the same miss as web; the first card sits over the Solaire-to-Bioénergie lines.
+- **gx-radar-spider web (Qwen3.5-9B, mvq127).** Pass (11 turns, 220 s, refusals=0). French story: France and
+  Germany on nine share spokes, France lit with "67,7 % de nucléaire", wind compare "29 % / 8 %" (28.5 vs 8.1),
+  totals 561.8 / 496.0 TWh, all recomputed from data.json. Backlog: both toggles read "Les deux mix"; the nuclear
+  filter counts "2 / 18" (two of eighteen spoke points), which reads as nothing; the model wrote the limits
+  sentence twice (once with the totals); a 0–100 % ceiling leaves Germany's shape small at the centre.
