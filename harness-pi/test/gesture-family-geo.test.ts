@@ -197,6 +197,19 @@ describe("the geo family", () => {
 });
 
 describe("choropleth", () => {
+  // gx-cartogram scrolly (Qwen3.5-9B, mvq88): a filter with no marks, noted "40 sur 41" for the places with data; the
+  // count check read it as keeping 0 places and offered "40 sur 0".
+  it("should refuse a filter with no marks at its marks, not rewrite its count to 0", () => {
+    const e = refusalOf(() =>
+      stageGeo({
+        gestures: [{ do: "filter", note: "Seuls les pays dont la production est rapportée : 40 sur 41." }],
+        geo: choropleth(),
+        format: "static",
+        claim: LOWCARBON,
+      }),
+    );
+    expect([e.field, e.fix]).toEqual(["gestures[0].marks", { remove: 0 }]);
+  });
   it("should accept a filter whose note states the class floor its places sit at", () => {
     const geo = choropleth();
     const keys = above(geo, 94);

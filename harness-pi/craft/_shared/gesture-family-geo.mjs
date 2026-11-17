@@ -392,6 +392,8 @@ export function createGeo({ variant, rows, breaks, cameras = {}, seats = {}, gro
       const drawn = geoGesturesOf(variant);
       if (!drawn.includes(g.do))
         throw new GestureRefusal(`gestures[${i}].do`, `a ${variant} map does not draw ${g.do}; it draws ${drawn.join(", ")}`, { remove: i });
+      if (g.do === "filter" && !(names ?? []).length)
+        throw new GestureRefusal(`gestures[${i}].marks`, `a filter keeps the places its marks name, and this one names none: name them, or drop the filter — a place with no data is already drawn as missing`, { remove: i });
       if (g.do === "reference") {
         const v = Number(g.value);
         if (!BREAKS.length)
