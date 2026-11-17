@@ -24,20 +24,14 @@ import { applyStoryboard, assertHeadlineNumbersDrawn } from "./guards.mjs";
 import { ensurePlate, liveAssets, mapWeb, maptilerKey, renderLiveMapPage, verifyLiveMap } from "./map-web.mjs";
 import { plateWaterField } from "./plate-water.mjs";
 import { sourceSpelling } from "./place-labels.mjs";
+import { boxOf, frameRemoves, radiiHint } from "./removes.mjs";
 import { chartWeb, pickDirection, plain, plainRegisters, refusing, storyLanguage } from "./web.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const EARTH_KM = 6371.0088;
 const RAD = Math.PI / 180;
-/** How many peers one remove may draw, however many its frame holds — a declared priority decides
- *  which survive, never a size (`types/locator.md`). */
-const OTHERS_DRAWN = 12;
-/** How many settlements one remove may draw. */
-const PLACES_DRAWN = 6;
 /** The round distances a scale bar may state: the largest under a third of the frame. */
 const BAR_LADDER = [10, 20, 50, 100, 200, 500, 1000, 2000];
-/** Room a remove leaves around what it draws, as a fraction of its own box. */
-const WINDOW_PAD = 0.1;
 const PLATE_FRAME = [1600, 1216];
 const LAND_DOSE = 0.07;
 /** Screen radii, CSS px, identical at every zoom and every remove. */
@@ -101,45 +95,20 @@ await refusing(HERE, async () => {
   });
   if (!beat.removes.some((r) => r.key === beat.defaultKey)) throw new Error(`defaultKey ${JSON.stringify(beat.defaultKey)} names no remove`);
 
-  const kmPerDegLon = 111.32 * Math.cos(subject.lat * RAD);
-  const kmPerDegLat = 110.574;
-  const boxAround = (radiusKm) => ({
-    west: subject.lon - radiusKm / kmPerDegLon,
-    east: subject.lon + radiusKm / kmPerDegLon,
-    south: subject.lat - radiusKm / kmPerDegLat,
-    north: subject.lat + radiusKm / kmPerDegLat,
-  });
-  const EXTENT = {
-    west: Math.min(subject.lon, ...beat.others.map((s) => s.lon)),
-    east: Math.max(subject.lon, ...beat.others.map((s) => s.lon)),
-    south: Math.min(subject.lat, ...beat.others.map((s) => s.lat)),
-    north: Math.max(subject.lat, ...beat.others.map((s) => s.lat)),
-  };
-  const inWindow = (w, p) => p.lon >= w.west && p.lon <= w.east && p.lat >= w.south && p.lat <= w.north;
+  const { removes: framed } = frameRemoves(beat, subject);
   const barFor = (spanKm) => [...BAR_LADDER].reverse().find((km) => km <= spanKm / 3) ?? BAR_LADDER[0];
-
-  const removes = beat.removes.map((rung) => {
-    const selection = rung.radius === null ? EXTENT : boxAround(rung.radius);
-    const heldOthers = beat.others.filter((s) => inWindow(selection, s)).sort((a, b) => b.priority - a.priority);
-    const heldPlaces = beat.places.filter((p) => inWindow(selection, p)).sort((a, b) => b.priority - a.priority);
-    const drawnOthers = heldOthers.slice(0, OTHERS_DRAWN);
-    const drawnPlaces = rung.places === false ? [] : heldPlaces.slice(0, PLACES_DRAWN);
-    const drawn = [subject, ...drawnOthers, ...drawnPlaces];
-    const raw = {
-      west: Math.min(...drawn.map((m) => m.lon)),
-      east: Math.max(...drawn.map((m) => m.lon)),
-      south: Math.min(...drawn.map((m) => m.lat)),
-      north: Math.max(...drawn.map((m) => m.lat)),
-    };
-    const padLon = Math.max((raw.east - raw.west) * WINDOW_PAD, 0.25);
-    const padLat = Math.max((raw.north - raw.south) * WINDOW_PAD, 0.25);
-    const window = { west: raw.west - padLon, east: raw.east + padLon, south: raw.south - padLat, north: raw.north + padLat };
-    const spanKm = (window.east - window.west) * kmPerDegLon;
-    // What Mercator costs THIS type, per remove: ground scale runs as cos(latitude), so a bar true at
-    // the centre of the frame is wrong at its edges by the ratio of the two cosines.
-    const edgeError = Math.max(Math.cos(window.south * RAD), Math.cos(window.north * RAD)) / Math.min(Math.cos(window.south * RAD), Math.cos(window.north * RAD));
-    return { ...rung, slug: vantageSlugOf(rung.key), window, spanKm, edgeError, barKm: barFor(spanKm), heldOthers, heldPlaces, drawnOthers, drawnPlaces };
-  });
+  const removes = framed.map((r) => ({ ...r, slug: vantageSlugOf(r.key), barKm: barFor(r.spanKm) }));
+  // Both faults a radius causes are refused here, with radii that work, before any plate is baked.
+  for (const r of removes)
+    if (r.key !== beat.defaultKey && !r.heldOthers.length)
+      throw new Error(`remove ${r.key} frames no peer, so its note has no neighbour to name: widen its radius — ${radiiHint(beat, subject)}`);
+  const boxes = new Map();
+  for (const r of removes) {
+    const box = boxOf(r.window);
+    if (boxes.has(box))
+      throw new Error(`removes ${JSON.stringify(boxes.get(box))} and ${JSON.stringify(r.key)} frame the same window ${box} — two pills for one picture: ${radiiHint(beat, subject)}`);
+    boxes.set(box, r.key);
+  }
   if (new Set(removes.map((r) => r.slug)).size !== removes.length) throw new Error("two removes share one key");
 
   // ── the marks ───────────────────────────────────────────────────────────────────────────────
