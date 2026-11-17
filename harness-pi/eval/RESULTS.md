@@ -1631,6 +1631,29 @@ Reading:
   wrongly (17 days), and the trace-note guard answered with a broken value: matched by value alone, its 17 passed
   (the run ends on a 17th) and the length went into the start date, "du 31 août". Figures are now read by role
   (a92328e5d). Open, kit: the key's top class reads "≥ 19" against the takeaway's 20.
+- calendar-heatmap scrolly (mvq53 stopped, mvq54 pass): mvq53 was refused twice for a title that "did not match
+  the takeaway" — it did, but typed with the "ﬁ" ligature; mvq54 then lost one letter ("afilée"). The literal-title
+  repair now compares NFKC-normalised text with straight quotes (dfae5f629) and forgives a slip of two characters
+  when every figure matches (84c5b420b); a title one figure off is still refused.
+- locator web (mvq55 stopped): the model walked its three radii between 130/320/800 and 470/1150/2900 for the
+  whole cell, refused in turn for "site frames no peer" and "voisinage and europe frame the same window" — neither
+  named a value. Both are now refused before the bake with rising radii computed from the peers' own distances
+  (f8be30787); on mvq55's own beat it offers 500 · 650 · 1300, which pass both checks.
+- locator web (mvq56 stopped): the model took those radii and was refused, after the bake, for a 1.77x step —
+  vantage.ts asks each frame to be twice the last, and the offer ignored it. On this data no ladder of four removes
+  fits under the file's 3766 km. The offer now holds the 2x step, is checked before the bake, and when nothing
+  fits says what to change: settlements off, then one non-default remove dropped (4b0966903).
+- locator web (mvq57 stopped): the radii passed; a place-name refusal (data.json's "Bucharest") carried a
+  row-access hint that was false — the beat had mapped rows to objects by index, then filtered them as objects
+  under the same name — and the model rewrote its working access into a broken one (others read as {}). The hint
+  now searches only the callback a .rows method was handed and the body of a loop over .rows (fa0760107).
+- locator web (mvq58 PASS, 20 turns, 924 s): took the place names, then the ladder the refusal offered (site
+  dropped, settlements off, region 500 · voisinage 1200 · europe null) and rendered. Looking at it: with
+  JavaScript on, every remove shows the widest view. skills/map-web/assets/live-locator.ts (line 691) caps the
+  zoom where the two closest marks stand 18 px apart; here they already do at the widest fit, so the ceiling is
+  the widest zoom and fitBounds cannot reach region (+5.0 zoom needed) or voisinage (+2.4). The scale bar then
+  states the region's 20 km over a continent. The earlier locator web cell (1794827803674) shows the same.
+  Out of this harness's reach (skills/): the ceiling should be at least the narrowest remove's fitted zoom.
 - Model-side residue (Tune, not Harness): mvq36's title names the ceiling's +2 that the three-gesture video never
   shows; "l'Chine" elision (mvq28).
 
@@ -1678,3 +1701,8 @@ Harness fixes, in order (each with a test that fails without it):
 - 18e356790 fix(craft): give a cell-grid web control without a note the reading it answers with
 - 1c64a2ae0 fix(craft): the calendar-heatmap examples' short title form keeps the takeaway's year
 - a92328e5d fix(craft): read a calendar trace note's figures by role — a day before a month, the length otherwise
+- dfae5f629 fix(craft): fold ligatures before holding a title to the takeaway
+- 84c5b420b fix(craft): take a title one slip off the takeaway when every figure is intact
+- f8be30787 fix(locator-web): refuse a peerless or repeated window with radii that work
+- 4b0966903 fix(locator-web): offer a ladder that steps out twice as wide, and say what to drop when none fits
+- fa0760107 fix(harness): read a row's column-name access only where the name holds a raw row
