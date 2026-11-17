@@ -67,6 +67,21 @@ export function scheduleGeoScrolly({ valid, geo, claim = {}, viewOf = () => ({ v
     });
   }
   const states = cards.map((c) => ({ ...flatGeoState(geo, c.state), ...viewOf(c.state) }));
+  // The scaffold compares what the scroll moves, the flat states, not the family's state: a highlight after a filter on
+  // the same fuel changed the state (a note, a ring under the accent) but not the picture, and the scaffold's refusal
+  // carried no value that works (gx-dot-density scrolly, Qwen3.5-9B, mvq83). Refuse it here, with the gesture to drop.
+  const same = (a, b) => Object.keys(a).every((k) => a[k] === b[k]);
+  for (let k = 1; k < states.length; k++) {
+    if (!same(states[k], states[k - 1])) continue;
+    const at = cards[k].gesture;
+    if (at === null) {
+      cards.pop();
+      states.pop();
+      cards[cards.length - 1].limits = true;
+      break;
+    }
+    throw new GestureRefusal(`gestures[${at}]`, `${valid[at].do} leaves the map as the card before left it: drop it, or fold its words into that card`, { remove: at });
+  }
   return { cards, states };
 }
 

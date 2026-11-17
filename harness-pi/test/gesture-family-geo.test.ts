@@ -659,6 +659,30 @@ describe("the scrolly scheduler", () => {
     );
     expect(e.fix.set.value).toEqual([geo.nameOf("ALB")]);
   });
+  // gx-dot-density scrolly (Qwen3.5-9B, mvq83): a highlight after a filter on the same fuel changed the family's state
+  // (a ring) but not the flat state the scaffold interpolates, so the scaffold refused "card 3 changes nothing" with no
+  // value that works, and the model read beat.mjs over and over. The scheduler compares what the scroll moves.
+  it("should drop a card whose flat state is the card before's, as the scaffold would refuse it", () => {
+    const dots = createGeo({ variant: "dot-density", rows: stations() });
+    const e = refusalOf(() =>
+      scheduleGeoScrolly({
+        valid: stageGeo({
+          gestures: [
+            { do: "reveal", marks: ["Nuclear"], card: ["Every dot is a station."] },
+            { do: "filter", marks: ["Nuclear"], note: "72 nuclear sites", card: ["Only the nuclear sites."] },
+            { do: "highlight", mark: "Nuclear", note: "72 reactors", card: ["The nuclear sites, ringed."] },
+            { do: "pull-back", card: ["Back to all of them."] },
+          ],
+          geo: dots,
+          format: "scrolly",
+          claim: { takeaway: "Nuclear holds a third of the power", subject: "Nuclear", facts: {} },
+        }).valid,
+        geo: dots,
+        claim: { takeaway: "Nuclear holds a third of the power", subject: "Nuclear", facts: {} },
+      }),
+    );
+    expect(e.fix).toEqual({ remove: 2 });
+  });
   it("should lift the filter's wash on the closing card", () => {
     const { states } = scheduleGeoScrolly({
       valid: stage([{ do: "filter", marks: keys, card: ["Seven."] }, { do: "name", mark: "ALB", card: ["Albania."] }]),
