@@ -1609,7 +1609,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | treemap (part-to-whole) | pass (mvq121, 7 t) | pass (mvq122, 9 t) | pass (mvq123, 7 t) |
 | parallel-coordinates (misfit) | pass (mvq124, 19 t) | pass (mvq125, 14 t) | pass (mvq126, 12 t) |
 | radar-spider (misfit) | pass (mvq127, 11 t) | pass (mvq128, 10 t) | pass (mvq129, 18 t) |
-| scatter-and-bubble (position) | pass (mvq130, 22 t) | pass (mvq131, 10 t) | — |
+| scatter-and-bubble (position) | pass (mvq130, 22 t) | pass (mvq131, 10 t) | pass (mvq132, 15 t) |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -2023,3 +2023,8 @@ Harness fixes, in order (each with a test that fails without it):
   165 countries → points packed either side of $30k with spread bars "41 years" (41.1) and "14 years" (13.9) →
   "3 times" → cloud restored; figures match data.json. Backlog (kit): at 25 % the counter reads "6 countries" while
   the whole cloud is already on screen (the count tween lags the points' entry).
+- **gx-scatter-and-bubble scrolly (Qwen3.5-9B, mvq132).** Pass (15 turns, 233 s, refusals=0; per-type kit, 6 cards):
+  linear axis ("91 of 165 pile up in the first tenth" — 91 below max/10, recomputed) → log axis → $30k rule →
+  below band 40.3–81.4, 41 years (Central African Republic, Portugal) → above band 71.2–85.1, 14 years, "3.0 times"
+  (Seychelles, Hong Kong) → limits; every endpoint matches data.json. Backlog (kit): "$30000" unformatted in the
+  rule, kicker and band label; the card covers the cloud's middle on every step.
