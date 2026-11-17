@@ -1602,7 +1602,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | diverging-bar (length) | pass (mvq97, 19 t) | pass (mvq98, 16 t) | pass (mvq99, 14 t) |
 | population-pyramid (length) | pass (mvq101, 19 t) | pass (mvq102, 28 t) | pass (mvq103, 17 t) |
 | dumbbell-range-plot (position) | pass (mvq104, 8 t) | pass (mvq105, 7 t) | pass (mvq107, 8 t) |
-| box-plot (position) | pass (mvq108, 12 t) | pass (mvq109, 9 t) | — |
+| box-plot (position) | pass (mvq108, 12 t) | pass (mvq109, 9 t) | pass (mvq110, 12 t) |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1922,3 +1922,7 @@ Harness fixes, in order (each with a test that fails without it):
   gestures" refusal self-corrected): title card, the eight boxes, the 1970s lit, "médiane 9,96 t contre 4,27 t" with a
   drop to the 2020s median, then the partial decade named — both medians match data.json. Backlog: at 1920 px the
   decade labels touch ("années 1950années 1960"); the video kit should shorten or wrap them.
+- **gx-box-plot scrolly (Qwen3.5-9B, mvq110).** Pass (12 turns, 174 s, refusals=0), four cards: the 1970s median
+  9,96 t, the 2020s at 4,27 t with the drop line, the partial decade (5 years), the whole field — figures match
+  data.json. Backlog: the prose card hides the 1980s and 1990s boxes; the "décennie partielle" card names the 2020s but
+  the accent stays on the 1970s.
