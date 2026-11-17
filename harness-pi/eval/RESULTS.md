@@ -1844,3 +1844,8 @@ Harness fixes, in order (each with a test that fails without it):
   that works, which the model took. A bracket whose note says "after X" while its run holds X is now refused at its
   marks, with X dropped (84d8202c2). The rerun mvq92 passed: 19 turns, 358 s, the note reads "38 ans après 1986 :
   49,9 % du total", and the bracket starts at 1987.
+- **gx-area-and-stacked-area scrolly (Qwen3.5-9B, mvq93).** Passed: 16 turns, 323 s, refusals=0. Four cards: the stock,
+  the 1973 peak, "38 ans après 1986 : 49,9 % du total" bracketed from 1987, and the dek as the close. On the way, the
+  uneven-destructure refusal offered a wrong fix: for `[ENTITY, YEAR, ANNUAL] = [col("Year"), col("Annual CO₂
+  emissions")]` it kept the first two names, because ANNUAL only begins its column's name. A name now pairs to the
+  column it begins (f138ca30c). The model had already split the line itself. Area passes in all three formats.
