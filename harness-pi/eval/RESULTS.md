@@ -1604,7 +1604,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | dumbbell-range-plot (position) | pass (mvq104, 8 t) | pass (mvq105, 7 t) | pass (mvq107, 8 t) |
 | box-plot (position) | pass (mvq108, 12 t) | pass (mvq109, 9 t) | pass (mvq110, 12 t) |
 | bump-ranking-over-time (position) | pass (mvq111, 35 t) | pass (mvq112, 19 t) | pass (mvq113, 22 t) |
-| diverging-stacked-bar-likert (stack) | pass (mvq114, 7 t) | — | — |
+| diverging-stacked-bar-likert (stack) | pass (mvq114, 7 t) | pass (mvq115, 19 t) | — |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1945,3 +1945,7 @@ Harness fixes, in order (each with a test that fails without it):
   split fossil left / renewable right around a nuclear centre, France lit, "67,7 % de nucléaire contre 32,3 %" —
   67,7 / 5,1 / 27,2 recomputed from data.json's TWh. Backlog: the toggle again reads "67,7 / 32,3" rather than the
   note; the legend's "< Fossile  Renouvelable >" pair reads as two loose words before the swatches.
+- **gx-diverging-stacked-bar-likert video (Qwen3.5-9B, mvq115).** Pass (19 turns, 692 s, refusals=0, 21.2 s mp4):
+  title card, the six mixes split around the centre, France lit, "67,7 % contre 32,3 %", then Poland boxed with
+  "0,0 % de nucléaire" — figures match data.json. Backlog: the third gesture names an absence (Poland's zero) rather
+  than the coal that makes its 69 %; the compare's bar under France sits on the fossil side only; the legend wraps.
