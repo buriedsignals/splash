@@ -1837,3 +1837,10 @@ Harness fixes, in order (each with a test that fails without it):
   rerun mvq89 passed: 17 turns, 479 s, refusals=0. Three cards: one tile per country, Russia at 36 %, and Norway at
   99 % against it. Backlog: card 3 folds the limits text into a long card, and the title falls back to its short
   form. All 8 maps now pass in scrolly on Qwen3.5-9B.
+
+- **gx-area-and-stacked-area, web and video (Qwen3.5-9B, mvq90–92).** Web mvq90 passed: 33 turns, 233 s, refusals=0;
+  the 1973 peak (46,2 Mt) and the 49,9 % after 1986 match data.json. Video mvq91 rendered a false figure: the bracket
+  held 1986 under a note saying "après 1986", and the share check offered 51,2 % (the share WITH 1986) as the value
+  that works, which the model took. A bracket whose note says "after X" while its run holds X is now refused at its
+  marks, with X dropped (84d8202c2). The rerun mvq92 passed: 19 turns, 358 s, the note reads "38 ans après 1986 :
+  49,9 % du total", and the bracket starts at 1987.
