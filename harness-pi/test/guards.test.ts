@@ -221,6 +221,18 @@ describe("applyStoryboard", () => {
     ]);
   });
 
+  // gx-calendar-heatmap scrolly (Qwen3.5-9B, mvq53): "d’affilée" came back as "d'af\uFB01lée", the "fi" ligature its
+  // tokenizer writes, and three renders refused a title the reader could not tell apart from the takeaway.
+  it("should take a title that differs from the takeaway only by a ligature, and print the journalist's own", () => {
+    const root = mkdtempSync(join(tmpdir(), "splash-ligature-"));
+    const dir = join(root, "beats", "1");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(root, "STORYBOARD.md"), `---\ntakeaway: "Genève a tenu 31 jours d’affilée au-dessus de 20 °C en 2024"\n---\n`);
+    const b: Record<string, unknown> = { title: ["Genève a tenu 31 jours d'af\uFB01lée au-dessus de 20 °C en 2024"] };
+    applyStoryboard(b, dir);
+    expect(b.title).toEqual(["Genève a tenu 31 jours d’affilée au-dessus de 20 °C en 2024"]);
+  });
+
   // gx-cartogram web (12B, 2026-11-14): the headline guard refused the takeaway's "44,9 %", which data.json cannot
   // derive, and offered the title without that clause; this guard then demanded the clause back, and the session
   // spent its passes between the two.
