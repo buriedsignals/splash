@@ -1606,7 +1606,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | bump-ranking-over-time (position) | pass (mvq111, 35 t) | pass (mvq112, 19 t) | pass (mvq113, 22 t) |
 | diverging-stacked-bar-likert (stack) | pass (mvq114, 7 t) | pass (mvq115, 19 t) | pass (mvq116, 14 t) |
 | marimekko-mosaic-plot (part-to-whole) | pass (mvq117, 4 t) | pass (mvq118, 11 t) | pass (mvq119, 11 t) |
-| treemap (part-to-whole) | pass (mvq121, 7 t) | — | — |
+| treemap (part-to-whole) | pass (mvq121, 7 t) | pass (mvq122, 9 t) | — |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1974,3 +1974,7 @@ Harness fixes, in order (each with a test that fails without it):
   tiles, ten tipped countries lit, "65.8 GW · 14.0 %" and "469 GW" recomputed from data.json. Backlog: the ten
   tipped include Morocco, Algeria, Tunisia and Belarus under "European" (the seed's framing); five small lit tiles
   carry no name.
+- **gx-treemap video (Qwen3.5-9B, mvq122).** Pass (9 turns, 221 s, refusals=0): all 46 tiles, the ten tipped lit
+  and bracketed, "14 % of Europe's 469 GW" then "10 countries", recomputed from data.json. Backlog (kit, not the
+  model): the running sum under the axis label counts up from 48.8 GW and is replaced by the next note at 65.1 and
+  65.3 GW — it never lands on its 65.8 GW before the hand-off; the lit tiles below the United Kingdom carry no name.
