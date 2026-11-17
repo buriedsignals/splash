@@ -43,7 +43,7 @@ sea), `field.deepest` (km; the farthest point), `field.deepestIso` (its country'
 `field.within(km)` (percent of the study land within `km`), `field.quantile(p)`, `field.levels` (every
 line the page can draw, multiples of 50 km), `field.steps` (`[50, 100, 200, 400]`),
 `field.defaultStep` (100), `field.topKm` (the ramp's top), `field.binKm` (25: the field is binned once
-at this quantum), `field.cellKm` (the mesh, about 7 km), `field.scaleErrorPc` (3),
+at this quantum), `field.cellKm` (the mesh the claim is measured on, 6 km), `field.scaleErrorPc` (3),
 `field.errorKm` (the scale error at the farthest point, km), `field.cells`, `field.study` (codes
 measured), `field.offFrame` (study countries with islands outside the frame — not measured).
 
@@ -106,7 +106,7 @@ name it cannot place.
 ## Rules
 
 - `check()` tests only what the field can decide. A figure the field cannot confirm stays in the title as the journalist wrote it and is not checked.
-- In `check()`, compare a computed value with the takeaway's figure at the takeaway's precision (`Math.round(field.median) === 133`), never with strict equality on the raw value.
+- In `check()`, compare a computed value with the takeaway's figure at the takeaway's precision (`Math.round(field.median) === 132`), never with strict equality on the raw value.
 - The title's figures must be the field's own (its median, its farthest point, a drawn level, a step, a quantile, or `within()` of one): the render refuses a headline whose numbers the field does not hold.
 - Every number in a sentence is computed from `field` or taken from the reading the render hands you (`s`, `b`, `l`, `m`), never typed — except the title, which is the journalist's own sentence, copied as written.
 - The title says the confirmed takeaway; do not invent a different claim.

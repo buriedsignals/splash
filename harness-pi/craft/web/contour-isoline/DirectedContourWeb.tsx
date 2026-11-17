@@ -8,11 +8,11 @@
  *
  * An isoline map turns a continuous surface into a set of CHOSEN levels, so the STEP between the
  * lines is the whole argument: it decides how much of the surface survives into the picture. Too
- * fine and the map draws detail the field cannot support — this field is measured on a 7 km mesh in
+ * fine and the map draws detail the field cannot support — this field is drawn on a 7 km mesh in
  * an equal-area projection whose scale error reaches 3 % across the frame, so at a 50 km step the
  * lines are drawn to a precision the measurement does not have and the reader reads texture as
  * information. Too coarse and the thing the story is about is swallowed: at 400 km the headline's
- * own 133 km median falls inside the first band, and a map whose finest distinction is "nearer than
+ * own 132 km median falls inside the first band, and a map whose finest distinction is "nearer than
  * 400 km" cannot show what the sentence claims. Every other decision on this page is visible to the
  * reader — the camera, the ramp, the numbers printed on the lines — but the step is not: they see
  * ten bands and read ten facts, never that somebody picked ten. So the step becomes the control, the

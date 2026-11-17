@@ -1,5 +1,5 @@
 // beat.mjs for the worked example proof/web-contour-europe-distance — "La moitié de l'Europe est à
-// moins de 133 km de la mer". The field is measured by field.mjs; every number in a sentence other
+// moins de 132 km de la mer". The field is measured by field.mjs; every number in a sentence other
 // than the title is COMPUTED from it or taken from the reading a word function receives. The bands,
 // the lines, the step control, the camera and the colours are the kit's.
 import { readFileSync } from "node:fs";
@@ -71,7 +71,7 @@ export default {
   hint:
     "La carte est vivante : molette ou boutons pour zoomer, glisser pour déplacer, flèches du clavier une fois la carte au focus. Survolez la terre pour la distance mesurée, le pays et la bande que le pas choisi lui donne.",
   smallestLabel: "une maille peinte",
-  title: "La moitié de l'Europe est à moins de 133 km de la mer",
+  title: "La moitié de l'Europe est à moins de 132 km de la mer",
   limits:
     "Chaque courbe relie les points également distants de la CÔTE — pas d'un réseau de stations : un champ fait d'enregistrements n'est continu que si les enregistrements sont complets, et rien ne manque à un polygone.",
   source:
@@ -84,6 +84,6 @@ export default {
   evidenceLevels: 3,
   // The claim checked at the takeaway's precision: if the study area changes, the render refuses.
   check(f) {
-    if (Math.round(f.median) !== 133) throw new Error(`the median distance is ${Math.round(f.median)} km, not 133`);
+    if (Math.round(f.median) !== 132) throw new Error(`the median distance is ${Math.round(f.median)} km, not 132`);
   },
 };

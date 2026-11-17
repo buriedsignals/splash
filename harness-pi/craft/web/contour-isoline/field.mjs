@@ -13,6 +13,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { WINDOW, laea, project as rasterProject, unproject, CAMERA_ASPECT as MEASURE_ASPECT } from "./camera.ts";
+import { measureSeaDistance as measureClaim } from "./sea-distance.mjs";
 
 /** The raster's longer side, in cells (the worked example's 900: one cell is a 7 km mesh). */
 export const SIZE = 900;
@@ -195,7 +196,6 @@ export function measureSeaDistance(dir, { study } = {}) {
     if (km[i] > farthest.km) farthest = { km: km[i], idx: i };
   }
   landKm.sort((a, b) => a - b);
-  const median = landKm[Math.floor(landKm.length / 2)];
   const FINEST = Math.min(...STEPS_KM);
   const COARSEST = Math.max(...STEPS_KM);
   const levels = [];
@@ -203,24 +203,28 @@ export function measureSeaDistance(dir, { study } = {}) {
   if (levels.length < 2)
     throw new Error(`the study area's farthest point is ${Math.round(farthest.km)} km from the sea: too shallow a field for two isolines (study more inland countries)`);
   const topKm = Math.ceil(farthest.km / COARSEST) * COARSEST;
+  // The claim's figures are measured where every other contour kit measures them: on the static kit's 6 km LAEA
+  // grid (./sea-distance.mjs, carried byte for byte). This raster draws; on its 7 km cells the median came out
+  // 132.50, "133", against the takeaway's 132 (gx-contour-isoline web, mvq63). One story, one figure per format.
+  const claim = measureClaim(dir, { study: codes });
   return {
     kind: "distance-to-sea",
     study: codes,
     offFrame,
-    cellKm: KM_PER_CELL,
-    cells: landKm.length,
-    median,
-    deepest: farthest.km,
-    deepestIso: codes[owner[farthest.idx]],
-    within: (limit) => (landKm.filter((v) => v <= limit).length / landKm.length) * 100,
-    quantile: (p) => landKm[Math.min(landKm.length - 1, Math.floor(p * landKm.length))],
+    cellKm: claim.cellKm,
+    cells: Math.round(claim.landKm2 / (claim.cellKm * claim.cellKm)),
+    median: claim.median,
+    deepest: claim.deepest,
+    deepestIso: claim.deepestIso,
+    within: claim.within,
+    quantile: claim.quantile,
     levels,
     binKm: BIN_KM,
     steps: [...STEPS_KM],
     defaultStep: DEFAULT_KM,
     topKm,
     scaleErrorPc: SCALE_ERROR_PC,
-    errorKm: (farthest.km * SCALE_ERROR_PC) / 100,
+    errorKm: (claim.deepest * SCALE_ERROR_PC) / 100,
     _grid: { nx, ny, owner, km, landKm, codes, kmPerCell: KM_PER_CELL, toLonLat: ([px, py]) => unproject([px / SIZE, py / SIZE]) },
   };
 }
