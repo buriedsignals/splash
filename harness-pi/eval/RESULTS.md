@@ -1697,6 +1697,9 @@ Reading:
   and offered "100 % 100 %". 4861f4eba names a unit written twice and offers it once. Looking at the mp4 (4 frames):
   title card, reveal, filter on the 7 countries at 94 % or more, Albania named; the whole map closes. No class legend in
   any frame, while the reading line says the breaks are printed under the map: a reader cannot read a class.
+  38116e453: the gesture kit had dropped the per-type kit's key; the area maps' video now prints one swatch per class
+  under the unit line (labels as on the web page, the missing label last), each arriving with its class. Replayed
+  outside the model on mvq69's beat and on the tile cartogram's example: the key reads in the mp4's own frames.
 - Model-side residue (Tune, not Harness): mvq36's title names the ceiling's +2 that the three-gesture video never
   shows; "l'Chine" elision (mvq28).
 
