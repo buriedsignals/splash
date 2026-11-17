@@ -1606,6 +1606,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | bump-ranking-over-time (position) | pass (mvq111, 35 t) | pass (mvq112, 19 t) | pass (mvq113, 22 t) |
 | diverging-stacked-bar-likert (stack) | pass (mvq114, 7 t) | pass (mvq115, 19 t) | pass (mvq116, 14 t) |
 | marimekko-mosaic-plot (part-to-whole) | pass (mvq117, 4 t) | pass (mvq118, 11 t) | pass (mvq119, 11 t) |
+| treemap (part-to-whole) | pass (mvq121, 7 t) | — | — |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1966,3 +1967,10 @@ Harness fixes, in order (each with a test that fails without it):
 - **gx-marimekko-mosaic-plot scrolly (Qwen3.5-9B, mvq119).** Pass (11 turns, 240 s, refusals=0): four cards,
   coal lit, "200.9 TWh · 12.3 %" then "99.5 % of the coal", recomputed from data.json. Backlog: the prose card
   covers Germany's wind label; the two-country bracket draws no outline the third card could point at.
+- **gx-treemap web (Qwen3.5-9B, mvq120 → guard → mvq121).** mvq120 rendered but drew 40 of the 46 countries in
+  data.json (a hand-typed "European" list) under the storyboard's 469 GW whole, printing "459 GW", and nothing said
+  so. New guard (c87a0c5ee, `assertPanelsAccounted(…, "parts")` in the part-to-whole reader, mutation-checked; every
+  earlier part-family kept run and kit example still passes). mvq121: pass (7 turns, 277 s, refusals=0), all 46
+  tiles, ten tipped countries lit, "65.8 GW · 14.0 %" and "469 GW" recomputed from data.json. Backlog: the ten
+  tipped include Morocco, Algeria, Tunisia and Belarus under "European" (the seed's framing); five small lit tiles
+  carry no name.
