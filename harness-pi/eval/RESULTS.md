@@ -1864,3 +1864,9 @@ Harness fixes, in order (each with a test that fails without it):
   data.json (Sweden +21,1, Germany +13,6, Norway +9,0, France +3,7, Switzerland −7,0; Switzerland 2015 −1,5, so
   "4,6 fois" holds). Backlog, kit: the prose card covers Poland's bar and figure on every card (the known card-covers
   class). Grouped-bar passes in all three formats.
+- **gx-diverging-bar web (Qwen3.5-9B, mvq97).** Passed: 19 turns, 339 s, refusals=0. 27 member states, zero = each
+  one's 1990 level, a three-way reference toggle (own 1990 / 1990 median / today's median). Checked against
+  data.json: Croatia +0,03 t (the only riser), the other 26 fall by 4,93 t on average, Luxembourg −20,48. Three
+  self-corrections on the way: the takeaway title as a literal, a `.code` read on rows that carry no code, and the
+  phone frame 507 px too tall (fixed by the short forms the hint asked for). Backlog, model choice: the bars are
+  ordered by 2024 level, not by gap, so the diverging shape reads jagged.
