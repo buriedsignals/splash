@@ -68,7 +68,7 @@ export default {
   ],
   title: [
     `Genève a tenu ${best.length} jours d’affilée au-dessus de ${THRESHOLD} ${UNIT} en ${year}`,
-    `${best.length} jours d’affilée au-dessus de ${THRESHOLD} ${UNIT} à Genève`,
+    `${best.length} jours d’affilée au-dessus de ${THRESHOLD} ${UNIT} à Genève en ${year}`,
   ],
   limits: [
     `Température moyenne de chaque jour de ${year} à Genève, une case par jour ; une seule station, une seule année, et la moyenne du jour lisse les pics de l’après-midi.`,
