@@ -560,6 +560,8 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
           const first = stated.find((n) => n.index > x.i + labels[x.k].length - 1 && n.index < end);
           if (!first || figuresOf(x.m).some((f) => hit(first, f))) continue;
           if (!marks.some((o) => o !== x.m && figuresOf(o).some((f) => hit(first, f)))) continue;
+          // "… des États-Unis : +5,0 ans contre +2,5": the mark's own figure follows in its span, set against another's.
+          if (stated.some((n) => n !== first && n.index > first.index && n.index < end && figuresOf(x.m).some((f) => hit(n, f)))) continue;
           const own = valueOf.get(x.m);
           const fixed = g.note.slice(0, first.index) + formatLike(first, own) + g.note.slice(first.index + first.raw.length);
           throw new GestureRefusal(

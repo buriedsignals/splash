@@ -666,6 +666,14 @@ describe("a note's figure belongs to the mark it follows", () => {
     );
   });
 
+  // gx-dumbbell-range-plot scrolly (Qwen3.5-9B, mvq106): "C'est deux fois le gain des États-Unis : +5,0 ans contre
+  // +2,5" was told to write "+2,5 ans contre +2,5", and the model did. The mark's own figure follows in the same span.
+  it("should accept another mark's figure set against the mark's own after its name", () => {
+    expect(() =>
+      stage(HEAT, HEAT_CLAIM, "static", compare(`deux fois la France : ${one(hydro.value)} % contre ${one(france.value)} %`)),
+    ).not.toThrow();
+  });
+
   it("should accept each figure written after its own row", () => {
     expect(() =>
       stage(
