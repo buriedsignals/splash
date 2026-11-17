@@ -1692,6 +1692,11 @@ Reading:
 - cartogram web (mvq68 PASS, 9 turns, 204 s, 0 refusals): rendered on the first try. Looking at it: equal tiles, Russia
   outlined with "36 %", Ukraine as "not reported", Russia / Norway toggle. Same close mid-ramp classes as the hex grid.
   With mvq67 the eight maps now pass in web on Qwen3.5-9B.
+- choropleth video (mvq69 PASS, 24 turns, 507 s, 0 refusals counted): short title form without 94, then
+  `${format(v)} %` with a format that already ends in " %" gave "100 % %"; the hole check read the second % as a hole
+  and offered "100 % 100 %". 4861f4eba names a unit written twice and offers it once. Looking at the mp4 (4 frames):
+  title card, reveal, filter on the 7 countries at 94 % or more, Albania named; the whole map closes. No class legend in
+  any frame, while the reading line says the breaks are printed under the map: a reader cannot read a class.
 - Model-side residue (Tune, not Harness): mvq36's title names the ceiling's +2 that the three-gesture video never
   shows; "l'Chine" elision (mvq28).
 
