@@ -719,6 +719,47 @@ function tableMiss(e) {
   return `${head}: ${name} is keyed by the values of column "${key.name}" (${keys.slice(0, 3).join(", ")}…), and every one of them has an entry, so line ${line} looks it up with a value of another column — a value that works: look it up with the row's "${key.name}" value, e.g. r[table.columns.findIndex((c) => c.name === "${key.name}")]${named}`;
 }
 
+/**
+ * A kit's "<field> must be a non-empty array" refusal, said with its usual cause: a filter in beat.mjs on a value
+ * data.json does not hold. gx-pictogram-isotype video (Qwen3.5-9B, mvq42, 2026-11-17) filtered on `const YEAR =
+ * 2023` where data.json holds only 2024; the bare refusal named neither. Names the constant, its line, and what the
+ * column holds; without such a constant, what data.json's few-valued columns hold. Null when data.json is absent.
+ */
+export function emptyListHint(field, here) {
+  let data, source;
+  try {
+    data = JSON.parse(readFileSync(join(here, "data.json"), "utf8"));
+  } catch {
+    return null;
+  }
+  try {
+    source = readFileSync(join(here, "beat.mjs"), "utf8");
+  } catch {
+    source = "";
+  }
+  const names = (data.columns ?? []).map((c) => String(c?.name ?? c));
+  const rows = Array.isArray(data.rows) ? data.rows : [];
+  const held = names.map((_, i) => [...new Set(rows.map((r) => r?.[i]))]);
+  const list = (vs) => (vs.length === 1 ? `only ${vs[0]}` : vs.slice(0, 6).join(", ") + (vs.length > 6 ? ", …" : ""));
+  const few = names.map((n, i) => ({ n, vs: held[i] })).filter((c) => c.vs.length && c.vs.length <= 6);
+  const lines = source.split("\n");
+  for (const [k, text] of lines.entries()) {
+    const m = /^\s*const\s+([A-Za-z_$][\w$]*)\s*=\s*(-?\d+(?:\.\d+)?|"[^"]*"|'[^']*')\s*;?/.exec(text);
+    if (!m) continue;
+    const [, name, raw] = m;
+    if (!new RegExp(`[=!]==?\\s*${name}\\b|\\b${name}\\s*[=!]==?`).test(source)) continue;
+    const value = /^["']/.test(raw) ? raw.slice(1, -1) : Number(raw);
+    if (held.some((vs) => vs.some((v) => String(v) === String(value)))) continue;
+    const kind = typeof value;
+    const col = few.find((c) => c.vs.every((v) => typeof v === kind) && (name.toLowerCase().includes(c.n.toLowerCase()) || c.n.toLowerCase().includes(name.toLowerCase()))) ?? few.find((c) => c.vs.every((v) => typeof v === kind));
+    const instead = col ? ` — ${col.n} holds ${list(col.vs)}` : "";
+    const works = col ? `${name} = ${JSON.stringify(col.vs.at(-1))}` : `${name} set to a value data.json holds`;
+    return `${field} is empty: beat.mjs line ${k + 1} sets ${name} = ${raw} and filters on it, but no row of data.json holds ${raw}${instead} — a value that works: ${works}`;
+  }
+  const said = few.map((c) => `${c.n} holds ${list(c.vs)}`).join("; ");
+  return `${field} is empty: the rows that fill it matched nothing in data.json (${rows.length} rows${said ? `; ${said}` : ""}) — a value that works: filter on values data.json holds`;
+}
+
 export function errorText(error) {
   const one = (e) => {
     // The video credit's only refusal (chart-video shots.mjs sourceCreditFor) names no field: the field is source.
@@ -735,6 +776,11 @@ export function errorText(error) {
       const line = /\/beat\.mjs:(\d+)/.exec(String(e.stack ?? ""))?.[1];
       const name = bare[1];
       return `${name} is not defined${line ? ` (beat.mjs line ${line})` : ""}: a function in beat.mjs calls ${name} by its bare name, but nothing defines it there — a field of the beat is not a variable — a value that works: const ${name} = … above export default, then give the field as ${name}, (shorthand)`;
+    }
+    const emptyList = /^beat\.mjs: (\w+) must be a non-empty array/.exec(String(e?.message ?? ""));
+    if (emptyList && process.argv[1]) {
+      const hint = emptyListHint(emptyList[1], dirname(process.argv[1]));
+      if (hint) return hint;
     }
     const miss = tableMiss(e);
     if (miss) return miss;
