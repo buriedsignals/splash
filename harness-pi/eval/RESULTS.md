@@ -1601,7 +1601,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | grouped-bar (length) | pass (mvq94, 18 t) | pass (mvq95, 12 t) | pass (mvq96, 10 t) |
 | diverging-bar (length) | pass (mvq97, 19 t) | pass (mvq98, 16 t) | pass (mvq99, 14 t) |
 | population-pyramid (length) | pass (mvq101, 19 t) | pass (mvq102, 28 t) | pass (mvq103, 17 t) |
-| dumbbell-range-plot (position) | pass (mvq104, 8 t) | — | — |
+| dumbbell-range-plot (position) | pass (mvq104, 8 t) | pass (mvq105, 7 t) | — |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1904,3 +1904,6 @@ Harness fixes, in order (each with a test that fails without it):
   gain, Poland +5,0 in accent, the United States +2,5 framed; every endpoint and gain matches data.json (2000 vs 2023).
   Backlog: "États-Unis: le moins de gain" lacks the French space before the colon; the toggle's label repeats its
   second option ("Pologne / États-Unis").
+- **gx-dumbbell-range-plot video (Qwen3.5-9B, mvq105).** Pass (7 turns, 194 s, refusals=0, 21.2 s mp4): title card,
+  the ten dumbbells, Poland lit with the US gain laid under it as a bracket ("+5,0 ans contre +2,5"), then the US
+  framed; figures as in mvq104. Backlog: the "le moins de gain : +2,5 ans" label sits on Italy's 2000 dot.
