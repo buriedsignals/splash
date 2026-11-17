@@ -1577,7 +1577,7 @@ Proposed design (Tom's "code > model for routing; the 2B makes the narrow decisi
 
 Not yet built: it changes `show_candidates` and the storyboard question; to be done after the coverage batches.
 
-## 2026-11-17 — moving-format coverage on Qwen3.5-9B, family by family (mvq4–mvq40)
+## 2026-11-17 — moving-format coverage on Qwen3.5-9B, family by family (mvq4–mvq44)
 
 One cell at a time (seeded, `SPLASH_STOP_AFTER_CRAFT=1`, so `completed=false` is expected), each watched render by
 render; a cell is stopped at the second repeated refusal, its story copied, the fault fixed test-first on the
@@ -1593,6 +1593,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | stacked-bar (stack) | pass (mvq29, 40 t) | pass (mvq30, 4 t) | pass (mvq31, 7 t) |
 | dot-strip (position) | pass (mvq35, 11 t; mvq32–34 stopped) | pass (mvq36, 28 t) | pass (mvq37, 15 t) |
 | line (time-series) | pass (mvq38, 14 t) | pass (mvq39, 15 t; kit fix after looking) | pass (mvq40, 12 t) |
+| pictogram-isotype (units) | pass (mvq41, 4 t) | pass (mvq43, 13 t; mvq42 stopped on a repeated refusal, 2 fixes) | pass (mvq44, 7 t; kit fix after looking) |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1606,6 +1607,12 @@ Reading:
 - A passing cell can still carry a kit defect only the picture shows: mvq39 (line video, refusals=0) set the peak's
   note on the plateau beside it, its halo erasing the line. Fixed in the kit (f107996a0), re-rendered from the kept
   beat. Open: a level note wider than the free space beside the line still crosses it once (wrap to two lines).
+- Two refusals that named no cause, both on mvq42 (pictogram video): a filter on `YEAR = 2023` where data.json
+  holds only 2024 emptied `units` ("must be a non-empty array" twice), then blocks counted with inverted bounds
+  noted "0 pays seulement" ("drop the note" three times: no figure is ever within half of 0). Each refusal now names
+  the cause and a value (e94c01ee8, d29cf491c); mvq43 passed. mvq44 (scrolly, refusals=0) clipped "6 sur 40" at the
+  stage's edge: the label column was measured while the label was still empty (368f0e6b2). Open, kit: the video
+  prints the count twice ("6 6 pays seulement") and a stray spine tick shows one frame before the bracket.
 - Model-side residue (Tune, not Harness): mvq36's title names the ceiling's +2 that the three-gesture video never
   shows; "l'Chine" elision (mvq28).
 
@@ -1646,3 +1653,6 @@ Harness fixes, in order (each with a test that fails without it):
 - 36e40f46c fix(gestures): a null mark names no row
 - 36d10bbac fix(position): print the dot strip's own change labels in video and scrolly too
 - f107996a0 fix(time-video): step a note clear of the drawn line, trying both sides at each distance
+- e94c01ee8 fix(craft): an empty list refusal names the beat's filter on a value data.json does not hold
+- d29cf491c fix(craft): a note's 0 where the named mark holds a count hands back that count
+- 368f0e6b2 fix(craft): the units scrolly reserves its label column at the widest text a label will show
