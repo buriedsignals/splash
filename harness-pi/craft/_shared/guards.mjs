@@ -166,7 +166,20 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
   // scrolly, mvq53), so compatibility forms fold before comparing.
   const plain = (t) => norm(t).normalize("NFKC").replace(/[’‘ʼ`´]/g, "'").replace(/[«»“”„]/g, '"').replace(/\s+/g, "");
   const headline = [beat[title]].flat()[0];
-  if (takeaway && headline !== undefined && norm(headline) !== norm(takeaway) && plain(headline) === plain(takeaway))
+  // A slip of a letter or two with every figure intact is the takeaway mistyped: Qwen3.5-9B cannot write "affilée"
+  // ("afﬁlée", then "afilée"; gx-calendar-heatmap scrolly, mvq53-54). Figures are what a title must never change.
+  const digits = (t) => (plain(t).match(/\d+/g) ?? []).join(",");
+  const slip = (a, b) => {
+    if (Math.abs(a.length - b.length) > 2) return false;
+    let prev = Array.from({ length: b.length + 1 }, (_, j) => j);
+    for (let i = 1; i <= a.length; i++) {
+      const row = [i];
+      for (let j = 1; j <= b.length; j++) row[j] = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      prev = row;
+    }
+    return prev[b.length] <= 2;
+  };
+  if (takeaway && headline !== undefined && norm(headline) !== norm(takeaway) && (plain(headline) === plain(takeaway) || (digits(headline) === digits(takeaway) && slip(plain(headline), plain(takeaway)))))
     beat[title] = Array.isArray(beat[title]) ? [takeaway, ...beat[title].slice(1)] : takeaway;
   // A title may drop whole clauses of the takeaway that state a figure: the headline guard offers that form when the
   // figure is not one the plate draws, and demanding the clause back here left no title that passes both (gx-cartogram

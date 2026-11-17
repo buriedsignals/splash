@@ -233,6 +233,27 @@ describe("applyStoryboard", () => {
     expect(b.title).toEqual(["Genève a tenu 31 jours d’affilée au-dessus de 20 °C en 2024"]);
   });
 
+  // gx-calendar-heatmap scrolly (Qwen3.5-9B, mvq54): once the ligature folded, the next render typed "afilée", one
+  // letter short. A slip of a letter or two, with every figure the takeaway's, is the takeaway mistyped.
+  it("should take a title one letter off the takeaway, its figures intact, and print the journalist's own", () => {
+    const root = mkdtempSync(join(tmpdir(), "splash-typo-"));
+    const dir = join(root, "beats", "1");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(root, "STORYBOARD.md"), `---\ntakeaway: "Genève a tenu 31 jours d’affilée au-dessus de 20 °C en 2024"\n---\n`);
+    const b: Record<string, unknown> = { title: ["Genève a tenu 31 jours d'afilée au-dessus de 20 °C en 2024"] };
+    applyStoryboard(b, dir);
+    expect(b.title).toEqual(["Genève a tenu 31 jours d’affilée au-dessus de 20 °C en 2024"]);
+  });
+
+  it("should still refuse a title one figure off the takeaway", () => {
+    const root = mkdtempSync(join(tmpdir(), "splash-typo-"));
+    const dir = join(root, "beats", "1");
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(root, "STORYBOARD.md"), `---\ntakeaway: "Genève a tenu 31 jours d’affilée au-dessus de 20 °C en 2024"\n---\n`);
+    const b: Record<string, unknown> = { title: ["Genève a tenu 37 jours d’affilée au-dessus de 20 °C en 2024"] };
+    expect(() => applyStoryboard(b, dir)).toThrow(/literal string/);
+  });
+
   // gx-cartogram web (12B, 2026-11-14): the headline guard refused the takeaway's "44,9 %", which data.json cannot
   // derive, and offered the title without that clause; this guard then demanded the clause back, and the session
   // spent its passes between the two.
