@@ -19,7 +19,7 @@ import { assertBeatMayEnter, directedFrame, exportSizeFromArgv, nameAtSize } fro
 import { applyFix, GestureRefusal } from "./gesture-core.mjs";
 import { partMarks, validatePart, SEP } from "./gesture-family-part.mjs";
 import { composePartStatic } from "./gesture-part-static.mjs";
-import { applyStoryboard, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, errorText, importBeat, legibleFormat, rowFacts, runCheck } from "./guards.mjs";
+import { applyStoryboard, assertHeadlineNumbersDrawn, assertLegibleLabels, assertNoAggregates, assertPanelsAccounted, errorText, importBeat, legibleFormat, rowFacts, runCheck } from "./guards.mjs";
 
 /** The beat.mjs fields every part-to-whole gesture beat gives (CONTRACT.md). */
 export const REQUIRED = ["eyebrow", "rows", "gestures", "format", "unit", "restLabel", "title", "limits", "source", "alt", "check"];
@@ -51,6 +51,7 @@ export function readPartBeat(beat, here, variant) {
   runCheck(beat);
   const names = variant === "marimekko-mosaic-plot" ? [...new Set(marks.flatMap((m) => [m.key, m.series]))] : marks.map((m) => m.name);
   assertNoAggregates(names, here);
+  assertPanelsAccounted(names, here, beat, "parts");
   const format = (v) => String(beat.format(v));
   const whole = marks.reduce((s, m) => s + m.value, 0);
   const title = [beat.title].flat().map(String);

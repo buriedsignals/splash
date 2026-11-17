@@ -1217,7 +1217,7 @@ export function rowFacts(here) {
  * @param {string} here the beat folder
  * @param {{ foldNote?: unknown, limits?: unknown }} beat
  */
-export function assertPanelsAccounted(names, here, beat) {
+export function assertPanelsAccounted(names, here, beat, what = "panels") {
   const dataPath = join(here, "data.json");
   if (!existsSync(dataPath)) return;
   const table = JSON.parse(readFileSync(dataPath, "utf8"));
@@ -1236,6 +1236,12 @@ export function assertPanelsAccounted(names, here, beat) {
   const said = typeof beat.foldNote === "function" ||
     [beat.limits].flat().some((l) => typeof l === "string" && l.includes(String(all.length)) && l.includes(String(all.length - dropped.length)));
   if (said) return;
+  if (what !== "panels")
+    throw new Error(
+      `${what} draw ${all.length - dropped.length} of the ${all.length} rows in data.json and nothing says so, so the drawn whole is not the data's; missing: ${dropped.join(", ")}. ` +
+        `If the takeaway is about all of them, draw them all (the kit folds the smallest into one remainder part itself). ` +
+        `If leaving some out is right, say it in limits with both counts: "${all.length - dropped.length} of the ${all.length} …" in the story's language.`,
+    );
   throw new Error(
     `panels draw ${all.length - dropped.length} of the ${all.length} entities in data.json and nothing says so; missing: ${dropped.join(", ")}. ` +
       `If the takeaway is about all of them, draw them all — a panel too small to see means the scale is wrong for the claim: draw the measure the takeaway names (a share, a rate) so every panel shows. ` +
