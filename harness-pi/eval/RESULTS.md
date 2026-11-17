@@ -1806,3 +1806,14 @@ Harness fixes, in order (each with a test that fails without it):
   without each). Other map scrolly drives read card shapes only to place an absolute ring, so no layout effect.
   Both cells' first render was refused by the model's own check, a cut note claiming "over half the power"
   (23.1 %, 41.2 % in the data); it rewrote the note from the figure each time.
+- mvq82–84 dot-density scrolly (Qwen3.5-9B): PASS at mvq84, 31 turns, 345 s, refusals=0. Cards read: filter on the
+  72 nuclear sites (the rest washed, rings on each), the "un tiers de la puissance" card, then the pull-back to every
+  station. Three stalls, each fixed in code rather than in the prompt:
+  mvq82, a card's figure no gesture draws was refused with an empty value, so the model moved 34,4 % from card to
+  card; the refusal now offers the card without that sentence (4a5579fdb). mvq83, a shorter title form without
+  8 900 was refused render after render; the guard now drops the forms that lose the claim and logs a NOTE
+  (0587fb78c). The title then shrinks instead of shortening, so check it again when the mobile layout is designed.
+  mvq83 also hit a highlight after a filter on the same fuel: the family's state changed (a ring), the flat state the
+  scaffold interpolates did not, and the scaffold's "card 3 changes nothing" had no value, so the model re-read
+  beat.mjs in a loop. The scheduler now compares flat states and refuses with the gesture to drop (592376bab); in
+  mvq84 the model dropped it on the first refusal. Backlog: `name` on a whole fuel group shows no label of its own.
