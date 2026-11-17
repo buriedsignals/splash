@@ -32,7 +32,7 @@ this story's from scratch with `write_file`.
 | `rest(n, share)` | The others' words: `n` sites carrying `share` percent (one decimal) ("8,800 others: 57.0 %"). |
 | `figure(v)` | A value printed short, for the key's two named circles ("4,000 MW"). |
 | `keyValues` | Optional: the key's two values, larger first. Default: the largest round value under ¾ of the largest site, and a tenth of it. |
-| `source` | The credit in one to four forms, longest first, exactly as the storyboard records it; EVERY form must carry "© MapTiler © OpenStreetMap". The render sets the longest form that finds one line of open sea. |
+| `source` | The credit in one to four forms, longest first, exactly as the storyboard records it; EVERY form must carry "© MapTiler © OpenStreetMap" AND the data's source — the shortest is still "WRI · © MapTiler © OpenStreetMap", never the basemap alone. The render sets the longest form that finds one line of open sea. |
 | `lang` | Optional: the story's language tag ("fr", "en"). Default: STORYBOARD.md's `language`. |
 | `evidenceLevels` | Optional, 2. |
 | `check(map)` | Throws if the data no longer supports the title. `map.ranked` = `[{ lon, lat, value }]` largest first; `map.total` = how many sites; `map.sum` = their total value; `map.drawCount`; `map.shareTop` = the percent the `drawCount` largest carry; `map.shareOf(k)` = the percent the `k` largest carry. |

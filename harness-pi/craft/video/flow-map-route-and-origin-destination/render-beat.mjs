@@ -18,6 +18,7 @@ import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
 import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn } from "./guards.mjs";
 import { mapTilerKey, measureMap, renderMapVideo } from "./map-video.mjs";
 import { assertEventFramesReadable, pickDirection, plain, refusing } from "./video.mjs";
+import { refuseBasemapOnlyCredit } from "./source-forms.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const NB = " ";
@@ -63,6 +64,7 @@ await refusing(HERE, async () => {
   if (!copy.title.length || copy.title.some((t) => !t.trim())) throw new Error("title must hold at least one non-empty form (the takeaway first)");
   if (!copy.source.length || copy.source.some((t) => !/MapTiler/.test(t)))
     throw new Error("every form of source must carry the basemap's attribution « © MapTiler © OpenStreetMap » (the map is MapTiler's): add it to each form");
+  refuseBasemapOnlyCredit([beat.source].flat());
 
   const { buildDirection, loadBeat, textPerRegisterOf } = await import("./build.mjs");
   const { FlowFrame } = await import("./FlowFrame.tsx");

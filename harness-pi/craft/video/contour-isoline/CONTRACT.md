@@ -41,7 +41,7 @@ the Azores, the Canaries) are not measured.
 | `study` | The ISO alpha-3 codes of the countries the claim is measured over, from `data.json`. |
 | `count` | The climbing count, with `{p}` where the percent of the land goes and `{km}` where the distance goes ("{p} % within {km} km"). |
 | `outsideLabel` | The key's word for land outside the measurement ("not measured"). |
-| `source` | The credit in one to three forms, longest first, exactly as the storyboard records it; EVERY form must carry "© MapTiler © OpenStreetMap". The render sets the longest form that finds one line of open sea. |
+| `source` | The credit in one to three forms, longest first, exactly as the storyboard records it; EVERY form must carry "© MapTiler © OpenStreetMap" AND the data's source — the shortest is still "WRI · © MapTiler © OpenStreetMap", never the basemap alone. The render sets the longest form that finds one line of open sea. |
 | `lang` | Optional: the story's language tag ("fr", "en"). Default: STORYBOARD.md's `language`. |
 | `evidenceLevels` | Optional, 2. |
 | `check(map)` | Throws if the field no longer supports the title. `map.median` (km: half the study land is nearer the sea), `map.deepest` (km: the farthest point), `map.deepestIso` (its country), `map.within(km)` (percent of the study land within `km` of the sea), `map.studyCount`. |

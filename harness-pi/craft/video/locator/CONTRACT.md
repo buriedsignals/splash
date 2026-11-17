@@ -33,7 +33,7 @@ inside the country `country` names (the render checks the point against the map'
 | `areas` | The countries the close-up names: `{ <iso3>: <name in the story's language> }`, the subject's own country included. A country with no ground in the close-up, or with no room inside its own border for its name, is left unnamed (the render says which). |
 | `places` | Settlements that help place the subject: `[{ lon, lat, name, label?, priority }]`, `priority` = population. The close-up names the SIX largest in its frame (`label`, default `name`). `[]` names none. |
 | `waters` | Optional: `[{ name, lon, lat }]`, the seas, gulfs or rivers the close-up names in italic, each at a point on the water and inside the close-up. |
-| `source` | The credit in one to four forms, longest first, exactly as the storyboard records it; EVERY form must carry "© MapTiler © OpenStreetMap". The render sets the longest form that finds one line of open sea. |
+| `source` | The credit in one to four forms, longest first, exactly as the storyboard records it; EVERY form must carry "© MapTiler © OpenStreetMap" AND the data's source — the shortest is still "WRI · © MapTiler © OpenStreetMap", never the basemap alone. The render sets the longest form that finds one line of open sea. |
 | `lang` | Optional: the story's language tag ("fr", "en"). Default: STORYBOARD.md's `language`. |
 | `evidenceLevels` | Optional, 2. |
 | `check(map)` | Throws if the data no longer supports the title. `map.countryOf(lon, lat)` = the ISO alpha-3 code of the country the point falls in (or `null`); `map.km(a, b)` = great-circle km between two `{ lon, lat }`; `map.subject` = your `subject`. |

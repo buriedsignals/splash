@@ -19,7 +19,7 @@ export default {
   // The climbing count: {p} is the percent of the land, {km} the distance the sweep has reached.
   count: `{p}${NB}% à moins de {km}${NB}km`,
   outsideLabel: "hors mesure",
-  source: ["Natural Earth · grille de 6 km · © MapTiler © OpenStreetMap", "Natural Earth · © MapTiler © OpenStreetMap", "© MapTiler © OpenStreetMap"],
+  source: ["Natural Earth · grille de 6 km · © MapTiler © OpenStreetMap", "Natural Earth · © MapTiler © OpenStreetMap"],
   // The claim checked against the field: half the land within 132 km, no point 1 000 km from the sea.
   check(map) {
     if (Math.round(map.median) !== 132) throw new Error(`the title says half of Europe is within 132 km of the sea; the median is ${map.median.toFixed(0)} km`);

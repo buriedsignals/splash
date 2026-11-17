@@ -36,7 +36,7 @@ this story's from scratch with `write_file`.
 | `host(name, n)` | A destination's label on the map: its name and its flow, short ("Germany 1.25 M"). |
 | `figure(v)` | The width scale's labels ("1 million", "100,000"). |
 | `scaleValues` | Optional: the width scale's two values, larger first. Default: the largest round value at most the largest flow, and a tenth of it. |
-| `source` | The credit in one to four forms, longest first, exactly as the storyboard records it; EVERY form must carry "© MapTiler © OpenStreetMap". The render sets the longest form that finds one line of open sea. |
+| `source` | The credit in one to four forms, longest first, exactly as the storyboard records it; EVERY form must carry "© MapTiler © OpenStreetMap" AND the data's source — the shortest is still "WRI · © MapTiler © OpenStreetMap", never the basemap alone. The render sets the longest form that finds one line of open sea. |
 | `lang` | Optional: the story's language tag ("fr", "en"). Default: STORYBOARD.md's `language`. |
 | `evidenceLevels` | Optional, 2. |
 | `check(map)` | Throws if the data no longer supports the title. `map.total` = the sum of the flows; `map.ranked` = `[{ iso, name, value }]` largest first; `map.topTwoShare` = the percent the two largest take; `map.origin`. |

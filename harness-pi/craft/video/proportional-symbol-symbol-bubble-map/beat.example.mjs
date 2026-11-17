@@ -36,7 +36,6 @@ export default {
     "Source : WRI Global Power Plant Database · © MapTiler © OpenStreetMap",
     "WRI Global Power Plant Database · © MapTiler © OpenStreetMap",
     "WRI · © MapTiler © OpenStreetMap",
-    "© MapTiler © OpenStreetMap",
   ],
   // The claim checked against the drawn data: the hundred are under a fiftieth of the sites (« a hundredth », rounded),
   // and carry over a third of the capacity.
