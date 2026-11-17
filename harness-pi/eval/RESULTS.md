@@ -1714,6 +1714,11 @@ Reading:
   it away; a one-row compare's refusal now gives real rows (« marks: ["Nuclear", "Hydro"], or of: "whole" ») instead
   of a shape. Replayed on the bench: the guard refuses the beat as written, and without the note the subject frame
   reads by its key alone.
+- mvq72 contour video (Qwen3.5-9B): PASS, 22 turns, 663 s, one title refusal recovered (form 2 dropped 132 and
+  682). Title card, then the sweep: « 50 % à moins de 132 km » with the cumulative curve and the bands filling, to
+  « 100 % à moins de 682 km » and the deepest point ringed; check() holds both figures against the field. Kit residue
+  (backlog, not model): the « hors mesure » swatch is the land's own grey, so it reads as nothing; isoline labels
+  inside the filling band are grey on green mid-sweep; the credit lands just above the readout in the left panel.
 - Model-side residue (Tune, not Harness): mvq36's title names the ceiling's +2 that the three-gesture video never
   shows; "l'Chine" elision (mvq28).
 
