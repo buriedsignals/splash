@@ -1719,6 +1719,14 @@ Reading:
   « 100 % à moins de 682 km » and the deepest point ringed; check() holds both figures against the field. Kit residue
   (backlog, not model): the « hors mesure » swatch is the land's own grey, so it reads as nothing; isoline labels
   inside the filling band are grey on green mid-sweep; the credit lands just above the readout in the left panel.
+- mvq73 flow-map video (Qwen3.5-9B): PASS, 17 turns, 844 s, 0 refusals. Title card, the bands drawn out of Ukraine,
+  the count climbing to 4 504 080, the others stepping back while « Allemagne + Pologne » counts up to 49,1. The
+  readout printed « Pologne: 49,1% »: the kit's example carried the no-break spaces, the model dropped them, and
+  applyStoryboard normalised a beat's fields but never what its functions return. Now a French plate gets the
+  no-break space before : ; ! ? % where none was written, and count/share/host/figure's words pass through the same
+  apostrophe, decimal and spacing rules; replayed on the bench, « Allemagne + Pologne : 49,1 % ». Kit residue
+  (backlog): a destination label can sit on another flow's line (Tchéquie, then Autriche once the wider readout moved
+  the map); an unlabelled thin flow leaves Romania southward.
 - Model-side residue (Tune, not Harness): mvq36's title names the ceiling's +2 that the three-gesture video never
   shows; "l'Chine" elision (mvq28).
 
