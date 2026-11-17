@@ -1596,6 +1596,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | pictogram-isotype (units) | pass (mvq41, 4 t) | pass (mvq43, 13 t; mvq42 stopped on a repeated refusal, 2 fixes) | pass (mvq44, 7 t; kit fix after looking) |
 | pie-and-donut (part) | pass (mvq45, 8 t) | pass (mvq46, 13 t) | pass (mvq47, 17 t) |
 | heatmap-matrix (cell) | pass (mvq48, 14 t) | pass (mvq49, 13 t) | pass (mvq50, 17 t) |
+| calendar-heatmap (cell) | pass (mvq51, 25 t) | | |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -1625,6 +1626,11 @@ Reading:
   control now reveals its own pieces, and a matrix filter's carry the kept cells' span (18e356790). The page itself is
   clean: seven rows, three paths (hydro, nuclear, mixed) readable at a glance. Video and scrolly passed with no
   refusal; open, kit: the scrolly's prose card covers the compare's second cell (France · nuclear) on cards 2-4.
+- calendar-heatmap web (mvq51): the first render was refused for the example's short title form, which drops the
+  year (1c64a2ae0); the second passed and is the page kept. The model then kept polishing, rewrote the run's loop
+  wrongly (17 days), and the trace-note guard answered with a broken value: matched by value alone, its 17 passed
+  (the run ends on a 17th) and the length went into the start date, "du 31 août". Figures are now read by role
+  (a92328e5d). Open, kit: the key's top class reads "≥ 19" against the takeaway's 20.
 - Model-side residue (Tune, not Harness): mvq36's title names the ceiling's +2 that the three-gesture video never
   shows; "l'Chine" elision (mvq28).
 
@@ -1670,3 +1676,5 @@ Harness fixes, in order (each with a test that fails without it):
 - 368f0e6b2 fix(craft): the units scrolly reserves its label column at the widest text a label will show
 - ce19df276 fix(craft): the pie-and-donut examples' short title form keeps the takeaway's numbers
 - 18e356790 fix(craft): give a cell-grid web control without a note the reading it answers with
+- 1c64a2ae0 fix(craft): the calendar-heatmap examples' short title form keeps the takeaway's year
+- a92328e5d fix(craft): read a calendar trace note's figures by role — a day before a month, the length otherwise
