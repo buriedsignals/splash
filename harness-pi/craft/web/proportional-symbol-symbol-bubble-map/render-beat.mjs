@@ -97,9 +97,13 @@ await refusing(HERE, async () => {
   const rows = ranked.filter((r) => r.value >= threshold);
   const cut = { threshold, drawn: rows.length, total: ranked.length, drawnShare: (rows.reduce((t, r) => t + r.value, 0) / total) * 100 };
   if (threshold > 0) console.log(`cut: ${cut.drawn} of ${cut.total} symbols drawn (value >= ${threshold}), carrying ${cut.drawnShare.toFixed(1)} % of the total`);
-  const limitsText = plain([typeof beat.limits === "function" ? beat.limits(cut) : beat.limits].flat()[0] ?? "");
-  // limits(cut) is held to the journalist's named limits now that it has its words.
-  if (typeof beat.limits === "function") applyStoryboard({ ...beat, limits: limitsText }, HERE);
+  let limitsText = plain([typeof beat.limits === "function" ? beat.limits(cut) : beat.limits].flat()[0] ?? "");
+  // limits(cut) is held to the journalist's named limits now that it has its words; the page prints what that returns.
+  if (typeof beat.limits === "function") {
+    const resolved = { ...beat, limits: limitsText };
+    applyStoryboard(resolved, HERE);
+    limitsText = resolved.limits;
+  }
   const biggest = rows[0];
   const median = rows[Math.floor(rows.length / 2)];
 

@@ -362,22 +362,38 @@ describe("applyStoryboard", () => {
   // apostrophe; the plate's own words print the typographic one, and a data cell keeps its spelling for the join.
   // gx-bullet scrolly (Qwen3.5-9B, 2026-11-13) and stress-p (E4B, nine refusals in a row, 2026-11-12): the refusal
   // said "the standfirst's first form" where the kit's field is limits; Qwen wrote a standfirst field the kit never reads.
-  it("should name the field the limits belong in and the value that works", () => {
-    const root = mkdtempSync(join(tmpdir(), "splash-limits-"));
-    const dir = join(root, "beats", "1");
-    mkdirSync(dir, { recursive: true });
-    writeFileSync(
-      join(root, "STORYBOARD.md"),
-      `---\nlimits: "Six pays seulement, 2015 et 2024."\n---\n`,
-    );
-    expect(() =>
-      applyStoryboard(
-        { limits: "Rangés par niveau, les six retrouvent l'ordre." },
-        dir,
-      ),
-    ).toThrow(
-      /^limits: .*a value that works: limits: "Six pays seulement, 2015 et 2024\."/,
-    );
+  // 71 worked examples' limits are their own reading note, written before this rule; Qwen3.5-9B copied the note, was
+  // refused, then moved it to a longer "shorter form" that never showed on desktop (gx-lollipop scrolly, 2026-11-17).
+  // The journalist's words are known: the first form now opens with them and keeps the beat's own note after.
+  describe("a first form that leaves out the journalist's limits", () => {
+    const at = () => {
+      const root = mkdtempSync(join(tmpdir(), "splash-limits-"));
+      const dir = join(root, "beats", "1");
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(join(root, "STORYBOARD.md"), `---\nlimits: "Six pays seulement, 2015 et 2024."\n---\n`);
+      return dir;
+    };
+    const applied = (limits: unknown) => {
+      const beat = { limits };
+      applyStoryboard(beat, at());
+      return beat.limits;
+    };
+    it("should open the form with the journalist's words and keep the beat's own after them", () => {
+      expect(applied("Rangés par niveau, les six retrouvent leur ordre.")).toBe(
+        "Six pays seulement, 2015 et 2024. Rangés par niveau, les six retrouvent leur ordre.",
+      );
+    });
+    it("should keep the shorter forms that follow", () => {
+      expect(applied(["Rangés par niveau, les six retrouvent leur ordre.", "Rangés par niveau."])).toEqual([
+        "Six pays seulement, 2015 et 2024. Rangés par niveau, les six retrouvent leur ordre.",
+        "Rangés par niveau.",
+      ]);
+    });
+    it("should leave a first form that already carries them", () => {
+      expect(applied("Six pays seulement, 2015 et 2024 : rangés par niveau.")).toBe(
+        "Six pays seulement, 2015 et 2024 : rangés par niveau.",
+      );
+    });
   });
 
   // gx-choropleth static (12B and Qwen3.5-9B, 2026-11-14): "Albanie, 100.0 % : la seule hors du nord-ouest" printed an

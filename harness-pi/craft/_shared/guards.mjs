@@ -150,10 +150,13 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
     const words = (t) => String(t).toLowerCase().split(/[^\p{L}\p{N}]+/u).filter((w) => w.length > 3);
     const said = new Set(words(first));
     const theirs = words(named);
-    if (theirs.length && theirs.filter((w) => said.has(w)).length / theirs.length < 0.4)
-      // The refusal names the kit's own field: "the standfirst" sent Qwen3.5-9B to write a standfirst field the scrolly kit
-      // never reads (gx-bullet scrolly, 2026-11-13), and the E4B refused nine times in a row on it (stress-p, 2026-11-12).
-      throw new Error(`${standfirst}: its first form must carry the limits the journalist named, in their words (shorter forms may follow) — a value that works: ${standfirst}: ${Array.isArray(beat[standfirst]) ? `[${JSON.stringify(named)}, …]` : JSON.stringify(named)}`);
+    if (theirs.length && theirs.filter((w) => said.has(w)).length / theirs.length < 0.4) {
+      // The journalist's words are known, so code puts them first instead of refusing: the refusal cost a turn on 71 of
+      // the worked examples' own first forms, and Qwen3.5-9B answered it by moving the words to a form desktop never shows.
+      const opened = `${named.trim()} ${String(first).trim()}`;
+      beat[standfirst] = Array.isArray(beat[standfirst]) ? [opened, ...beat[standfirst].slice(1)] : opened;
+      console.log(`${standfirst}: opened with the journalist's words — ${opened}`);
+    }
   }
   const takeaway = field("takeaway");
   const norm = (t) => String(t).replace(/\s+/g, " ").trim().replace(/[.。]$/, "");

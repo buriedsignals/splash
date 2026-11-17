@@ -41,8 +41,9 @@ describe.skipIf(!existsSync(join(BENCH, "package.json")) || !existsSync(KEPT))("
     expect(render(beat)).toMatch(/limits must say so and print figure\(cut\.threshold\)/);
   }, 120_000);
 
-  it("should hold a standfirst written as a function to the journalist's named limits", () => {
+  // Since 2026-11-17 the journalist's limits open the first form instead of refusing it (71 examples lacked them).
+  it("should open a standfirst written as a function with the journalist's named limits", () => {
     const beat = 'import example from "./beat.example.mjs";\nexport default { ...example, limits: (cut) => `Sous ${cut.threshold} MW, rien.` };\n';
-    expect(render(beat)).toMatch(/limits: its first form must carry the limits the journalist named/);
+    expect(render(beat)).toMatch(/limits: opened with the journalist's words — .+ Sous [\d.,]+ MW, rien\./);
   }, 120_000);
 });
