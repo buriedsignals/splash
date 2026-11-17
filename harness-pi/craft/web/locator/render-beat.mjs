@@ -24,7 +24,7 @@ import { applyStoryboard, assertHeadlineNumbersDrawn } from "./guards.mjs";
 import { ensurePlate, liveAssets, mapWeb, maptilerKey, renderLiveMapPage, verifyLiveMap } from "./map-web.mjs";
 import { plateWaterField } from "./plate-water.mjs";
 import { sourceSpelling } from "./place-labels.mjs";
-import { boxOf, frameRemoves, radiiHint } from "./removes.mjs";
+import { MIN_STEP, boxOf, frameRemoves, radiiHint, shortSteps } from "./removes.mjs";
 import { chartWeb, pickDirection, plain, plainRegisters, refusing, storyLanguage } from "./web.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -98,7 +98,7 @@ await refusing(HERE, async () => {
   const { removes: framed } = frameRemoves(beat, subject);
   const barFor = (spanKm) => [...BAR_LADDER].reverse().find((km) => km <= spanKm / 3) ?? BAR_LADDER[0];
   const removes = framed.map((r) => ({ ...r, slug: vantageSlugOf(r.key), barKm: barFor(r.spanKm) }));
-  // Both faults a radius causes are refused here, with radii that work, before any plate is baked.
+  // The three faults a radius causes are refused here, with radii that work, before any plate is baked.
   for (const r of removes)
     if (r.key !== beat.defaultKey && !r.heldOthers.length)
       throw new Error(`remove ${r.key} frames no peer, so its note has no neighbour to name: widen its radius — ${radiiHint(beat, subject)}`);
@@ -109,6 +109,9 @@ await refusing(HERE, async () => {
       throw new Error(`removes ${JSON.stringify(boxes.get(box))} and ${JSON.stringify(r.key)} frame the same window ${box} — two pills for one picture: ${radiiHint(beat, subject)}`);
     boxes.set(box, r.key);
   }
+  const [short] = shortSteps(removes);
+  if (short)
+    throw new Error(`vantage declaration: ${JSON.stringify(short.from)} → ${JSON.stringify(short.to)} widens the frame by ${short.step.toFixed(2)}x, under the ${MIN_STEP}x two removes a reader has to tell apart need — ${radiiHint(beat, subject)}`);
   if (new Set(removes.map((r) => r.slug)).size !== removes.length) throw new Error("two removes share one key");
 
   // ── the marks ───────────────────────────────────────────────────────────────────────────────
