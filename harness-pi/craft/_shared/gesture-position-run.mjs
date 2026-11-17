@@ -360,6 +360,8 @@ export async function runScrollyPosition(here, variant) {
       value: [...notes, ...model.rows.map((r) => (r.change !== undefined ? delta(r.change) : format(r.value)))].join(" "),
     };
     console.log(`  ${model.rows.length} rows · cards: ${steps.join(" · ")}`);
+    const printedScrolly = kitPrintsOf({ variant, model, states: scheduled.cards, delta });
+    if (printedScrolly) console.log(`  ${printedScrolly}`);
     const lang = beat.lang ?? storyLanguage(here) ?? "en";
     // The states depend on the direction's type sizes: the direction renderBeatScrolly will pick (the same call, the
     // same words) is picked here first, so the states the verifier checks are the ones the page draws.
@@ -444,6 +446,8 @@ export async function runVideoPosition(here, variant) {
       pre: (list) => assertVideoThree(list, model, claim),
       stage: (valid, _list, entities) => scheduleVideoPosition({ gestures: valid, model, format, delta, domain: beat.domain, entities }),
     });
+    const printedVideo = kitPrintsOf({ variant, model, states: Object.values(staged.states ?? {}), delta });
+    if (printedVideo) console.log(`  ${printedVideo}`);
     const textPerRegister = {
       display: title,
       eyebrow: plain(beat.eyebrow),

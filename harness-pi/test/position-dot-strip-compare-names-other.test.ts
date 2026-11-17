@@ -46,3 +46,15 @@ describe("what a paired dot strip prints on its own", () => {
     expect(line()).toContain("rounded");
   });
 });
+
+// mvq36 (dot-strip video, Qwen): the same "+29,5 vs 30" polishing came back in video, where the line was not printed.
+// A video's or a scrolly's marked rows are spread over several states: the line reads them all.
+describe("what a paired dot strip prints across several states", () => {
+  const { kitPrintsOf } = familyModule as any;
+  const model = modelOf("dot-strip", { rows, format: (v: number) => String(v), unit: "%" });
+  const position = createPosition({ model });
+  const states = [position.rest(), position.with(position.rest(), { accent: ["Pologne"] })];
+  it("should name a row marked in any one of the states", () => {
+    expect(kitPrintsOf({ variant: "dot-strip", model, states, delta: (v: number) => `+${v.toFixed(1)}` })).toContain("POL +29.5");
+  });
+});
