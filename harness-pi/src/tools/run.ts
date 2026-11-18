@@ -122,7 +122,13 @@ export function shotsDir(bases: Bases, beat: string): string {
  * shorter ones go after the takeaway, not in its place. A standfirst with one form then left the headline as
  * the only thing the plate could shorten, and the delivered map lost the takeaway.
  */
-export function refusalHint(output: string, record?: string): string {
+/** Whether the kit's page draws limits' last form on a phone (connected-scatter web does; most kits draw only the first). */
+export function drawsLastLimits(dir: string): boolean {
+  const kit = join(dir, "render-beat.mjs");
+  return existsSync(kit) && /\[beat\.limits\]\.flat\(\)\.at\(-1\)/.test(readFileSync(kit, "utf8"));
+}
+
+export function refusalHint(output: string, record?: string, drawsLastLimits = true): string {
   // A recorded staging is the one the kit reads: Qwen3.5-9B fixed beat.mjs's gestures three times against a refusal of
   // gestures.json's note (tile cartogram, 2026-11-15) and the craft step stopped on the same refusal.
   const gesture = output.match(/REFUSED — (gestures(?:\[\d+\])?(?:\.\w+)?)/);
@@ -134,6 +140,8 @@ export function refusalHint(output: string, record?: string): string {
   if (twice)
     return `\nhint: beat.mjs declares "${twice[1]}" twice — an edit added a declaration without removing the old one. Read beat.mjs, then rewrite it whole with write_file, each name declared once.`;
   const phone = output.match(/phone \d+x\d+: no vertical scroll[^\n]*?overflow (\d+)px/);
+  if (phone && !drawsLastLimits)
+    return `\nhint: the failures are the phone frame's height, not a label: on a phone the page is ${phone[1]}px too tall. Shorten limits' first form and reading — this page draws only the first form of each. The title's first form stays the journalist's takeaway, word for word.`;
   if (phone)
     return `\nhint: the failures are the phone frame's height, not a label: on a phone the page is ${phone[1]}px too tall. Make limits a list and add a shorter form AFTER the first one — the phone draws the last form; shorten reading too. The title's first form stays the journalist's takeaway, word for word.`;
   return /shorter forms/i.test(output)
@@ -399,7 +407,7 @@ export function runTools(bases: Bases) {
       const result = await exec(["bun", path]);
       const record = zoned && existsSync(join(beatDir(bases, beat), "gestures.json")) ? `beats/${beat}/gestures.json` : undefined;
       const failed = /REFUSED|Error|error:/.test(result.content[0].text);
-      result.content[0].text = trimmed + result.content[0].text + refusalHint(result.content[0].text, record) + (zoned && failed ? rowByNameHint(beatDir(bases, beat)) + quotedTemplateHint(beatDir(bases, beat)) : "");
+      result.content[0].text = trimmed + result.content[0].text + refusalHint(result.content[0].text, record, !zoned || drawsLastLimits(beatDir(bases, beat))) + (zoned && failed ? rowByNameHint(beatDir(bases, beat)) + quotedTemplateHint(beatDir(bases, beat)) : "");
       // Name every PNG the render wrote by its full path, so the next call can look at it.
       const renders = join(beatDir(bases, beat), "renders");
       if (existsSync(renders)) {

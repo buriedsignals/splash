@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createRunRoot, stageStory } from "../src/run-root.ts";
 import type { Bases } from "../src/tools/fs.ts";
-import { quoteSpacedKeys, runTools , refusalHint, closeOpenExport, trimDuplicatedTail, trimStrayTail } from "../src/tools/run.ts";
+import { quoteSpacedKeys, runTools , refusalHint, closeOpenExport, drawsLastLimits, trimDuplicatedTail, trimStrayTail } from "../src/tools/run.ts";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 
 const CHECKOUT = resolve(import.meta.dirname, "../..");
@@ -97,6 +97,23 @@ describe("refusal hints", () => {
         "  - phone 375x812: no vertical scroll inside the visual  — document 851px in a 812px window (overflow 39px)\nREFUSED — the page rendered but the chart-web verification failed (2)",
       ),
     ).toMatch(/phone.*39px.*limits.*shorter form.*title's first form stays/i);
+  });
+
+  // gx-lollipop web (12B, mvg14, 2026-11-18): 49 of 50 web kits draw only limits' first form, so "add a shorter
+  // form after the first one" sends the model to a form the page never draws.
+  it("should send a phone overflow to a shorter first form when the kit draws only that one", () => {
+    const hint = refusalHint(
+      "  - phone 375x812: no vertical scroll inside the visual  — document 833px in a 812px window (overflow 21px)\nREFUSED — the page rendered but the chart-web verification failed (2)",
+      undefined,
+      false,
+    );
+    expect(hint).toMatch(/21px.*shorten limits' first form.*draws only the first/i);
+    expect(hint).not.toMatch(/the phone draws the last form/);
+  });
+
+  it("should tell a kit that draws limits' last form from one that draws only the first", () => {
+    const web = join(import.meta.dir, "..", "craft", "web");
+    expect([drawsLastLimits(join(web, "connected-scatter")), drawsLastLimits(join(web, "lollipop"))]).toEqual([true, false]);
   });
 
   it("should add nothing to a refusal that does not ask for shorter forms", () => {
