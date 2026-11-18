@@ -2092,7 +2092,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 | stacked-bar | pass (mvg18, 5 t) | pass (mvg19, 8 t) | pass (mvg20, 9 t) |
 | dot-strip | pass (mvg22, 9 t; mvg21 failed, kit fixed) | pass (mvg23, 10 t; kit layout fixed after) | pass (mvg24, 8 t) |
 | line | pass (mvg25, 8 t) | pass (mvg26, 12 t) | pass (mvg27, 14 t) |
-| pictogram-isotype | pass (mvg28, 7 t) | | |
+| pictogram-isotype | pass (mvg28, 7 t) | pass (mvg29, 9 t) | |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
@@ -2225,3 +2225,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
   country, three bands of low-carbon share 2024: 16 above 75 %, 6 between 60 and 75 % (accent, named, bracketed 6/40),
   18 below 60 %, 1 country with no generation left out; recomputed from data.json, all four counts match. Desktop
   clean; phone squares shrink to dashes (phone backlog).
+- **gx-pictogram-isotype video (12B, mvg29).** Pass (9 turns, 480 s, refusals=0). 21 s: title card; bands appear
+  empty, squares fill 16/6/18; middle band named "6 pays seulement"; a bracket over the whole column ends on "6 sur
+  40" (at 17 s its label still reads a bare "6" while it builds). Counts as recomputed for mvg28. The plot uses the left
+  half of the frame and leaves the right empty, as stacked-bar video did (backlog).
