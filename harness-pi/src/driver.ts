@@ -436,7 +436,8 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
             },
           } as T)
         : t;
-    const cf = fsTools({ ...bases, ...craftReads(beatDir, beat, staging?.pending) });
+    let renderTried = false;
+    const cf = fsTools({ ...bases, ...craftReads(beatDir, beat, staging?.pending, () => renderTried) });
     const sess = await session(
       "skill:chart-beat",
       beat,
@@ -451,6 +452,7 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
         // A refusal render_beat returns offers names record_gestures must then accept (the render is the authority).
         staging
           ? ({ ...r.render, execute: async (...a: Parameters<typeof r.render.execute>) => {
+              renderTried = true;
               try {
                 const out = (await r.render.execute(...a)) as { content: { text: string }[] };
                 staging.learn(out.content[0]?.text ?? "");
@@ -460,7 +462,7 @@ writeRunDirection(${JSON.stringify(o.storyDir)}, chosen);\n`,
                 throw e;
               }
             } } as typeof r.render)
-          : r.render,
+          : ({ ...r.render, execute: (...a: Parameters<typeof r.render.execute>) => ((renderTried = true), r.render.execute(...a)) } as typeof r.render),
       ],
     );
     // The 12B often says DONE, or stops, while its beat still refuses to render. The harness renders

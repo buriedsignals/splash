@@ -213,13 +213,16 @@ function rendersNow(beatDir: string): boolean {
 
 /** What a craft session's reads are answered with in code: proof/ is not the beat's (the example was written from it
  *  and is all of it the beat needs), the worked example was given in the first message, and an unchanged reread is
- *  sent to the step the beat waits for (gx-proportional-symbol video, Qwen3.5-9B, 2026-11-13: never written). */
-export function craftReads(beatDir: string, beat: string, pending?: () => string | undefined) {
+ *  sent to the step the beat waits for (gx-proportional-symbol video, Qwen3.5-9B, 2026-11-13: never written; gx-locator
+ *  scrolly, Gemma 12B, mvg93, 2026-11-19: written, never rendered, and told to edit "where the last refusal points"). */
+export function craftReads(beatDir: string, beat: string, pending?: () => string | undefined, renderTried?: () => boolean) {
   const next = () =>
     pending?.()
       ? `Next: record_gestures again, with the list your last call sent changed only where its refusal points: ${pending()}`
       : rendersNow(beatDir)
       ? `Next: beats/${beat}/beat.mjs renders as it stands (its render is newer than the file): if the PNG you looked at is right, reply DONE; else edit what is wrong and render_beat again.`
+      : existsSync(join(beatDir, "beat.mjs")) && renderTried && !renderTried()
+      ? `Next: render_beat (beat "${beat}"): beats/${beat}/beat.mjs is written and has not been rendered yet.`
       : existsSync(join(beatDir, "beat.mjs"))
         ? `Next: edit beats/${beat}/beat.mjs where the last refusal points, then render_beat (beat "${beat}").`
         : `Next: write_file of beats/${beat}/beat.mjs, this story's own, from the worked example in your first message.`;

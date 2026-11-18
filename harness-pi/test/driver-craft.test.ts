@@ -177,6 +177,14 @@ describe("the craft reads", () => {
     expect(await craftReads(dir, "1").noRereads()).toMatch(/render_beat/);
   });
 
+  // gx-locator scrolly (Gemma 12B, mvg93, 2026-11-19): beat.mjs written, never rendered, then three reads of data.json,
+  // each answered "edit where the last refusal points" — there was no refusal — until the craft stopped on the same failure.
+  it("should send a reread to render_beat when beat.mjs is written and nothing has rendered it yet", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "beat-"));
+    writeFileSync(join(dir, "beat.mjs"), "export default {};");
+    expect(await craftReads(dir, "1", undefined, () => false).noRereads()).not.toMatch(/refusal/);
+  });
+
   // gx-proportional-symbol static (Qwen3.5-9B, 2026-11-13): the beat rendered and was looked at, then twelve turns of
   // reads, each answered "edit where the last refusal points", until the craft stopped on no new record.
   it("should send a reread to DONE once the beat's render is newer than beat.mjs", async () => {
