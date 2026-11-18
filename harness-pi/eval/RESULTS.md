@@ -2088,7 +2088,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 | sankey | pass (mvg1, 8 t) | pass (mvg2, 5 t) | pass* (mvg3, 7 t) |
 | small-multiples | pass (mvg4, 15 t) | pass (mvg5, 5 t) | pass (mvg6, 9 t) |
 | connected-scatter | pass (mvg10, 10 t; after 3 kit/harness fixes) | pass (mvg12, 8 t; after 1 kit fix) | pass (mvg13, 11 t) |
-| lollipop | pass (mvg15, 13 t; mvg14 failed, harness fixed) | | |
+| lollipop | pass (mvg15, 13 t; mvg14 failed, harness fixed) | pass (mvg16, 11 t) | |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
@@ -2172,3 +2172,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
   hint (shortened limits' first form and reading); re-rendered locally, verify-web 367/0. China 2.9→8.6 (+198 %, ×3),
   USA 21.4→14.3 (−33 %), ratio 1.7; Iran detail 4th→3rd, ×3.9→×1.6 — all as in data.json. Backlog: on a phone the
   lollipops are crushed to ~90 px and their value labels collide (same as connected-scatter web).
+- **gx-lollipop video (12B, mvg16).** Pass (11 turns, 17.7 s mp4), judged on frames: title card, the 2000 sticks,
+  China's stick copied and stacked onto the USA's to ×7,5 (21.4/2.9 = 7.4 → "7,5" on unrounded values, as the beat's own
+  guard asserts), then the 2023 pairs grow and the stack shrinks to ×1,7; China 8,6 ringed, every figure as in data.json.
+  Minor: the ×7,5 badge replaces the 21,4 label while it shows.
