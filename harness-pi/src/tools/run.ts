@@ -222,6 +222,39 @@ export function trimStrayTail(file: string): string {
   return `the harness removed line ${removed.reverse().join(", ")} of beat.mjs: a lone quote (and its comma) after the closing "};"\n`;
 }
 
+/** gx-connected-scatter web (12B, mvg8, 2026-11-18): an edit rewrote check()'s tail and left the old tail after its
+ *  closing "},"; the file stopped parsing and the 12B spent its remaining 30 minutes editing around it. A block that
+ *  sits between two closing braces, repeats at least half the lines before it, and whose removal makes the file
+ *  parse is a stale copy, never meant code: the harness removes it before rendering; returns what it did. */
+export function trimDuplicatedTail(file: string): string {
+  if (!existsSync(file)) return "";
+  const transpiler = new Bun.Transpiler({ loader: "js" });
+  const parses = (text: string) => {
+    try {
+      transpiler.transformSync(text);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const text = readFileSync(file, "utf8");
+  if (parses(text)) return "";
+  const lines = text.split("\n");
+  const closes = lines.flatMap((line, i) => (/^\s*\},?\s*$/.test(line) ? [i] : []));
+  for (let k = 0; k + 1 < closes.length; k++) {
+    const [i, j] = [closes[k], closes[k + 1]];
+    const block = lines.slice(i + 1, j).map((l) => l.trim()).filter(Boolean);
+    if (!block.length) continue;
+    const before = new Set(lines.slice(0, i).map((l) => l.trim()));
+    if (block.filter((l) => before.has(l)).length * 2 < block.length) continue;
+    const kept = [...lines.slice(0, i + 1), ...lines.slice(j + 1)].join("\n");
+    if (!parses(kept)) continue;
+    writeFileSync(file, kept);
+    return `the harness removed lines ${i + 2}–${j + 1} of beat.mjs: a stale copy of the lines before line ${i + 1}, left after its closing brace\n`;
+  }
+  return "";
+}
+
 /** An unquoted object key with a space (`Czech Republic: "Tchéquie"`) never parses. Told the quoted key six times,
  *  Qwen3.5-9B rewrote the file with the same line (gx-proportional-symbol web, 2026-11-14). Quoting a key changes no
  *  meaning: the harness quotes each one the parser stops at, before rendering; returns what it did. */
@@ -340,7 +373,7 @@ export function runTools(bases: Bases) {
         throw new Error(`${beat} has no ${runner}; scaffold the beat first`);
       if (zoned && !existsSync(join(beatDir(bases, beat), "beat.mjs")))
         throw new Error(`beats/${beat}/beat.mjs does not exist yet: write it with write_file, then render`);
-      const trimmed = zoned ? trimStrayTail(join(beatDir(bases, beat), "beat.mjs")) + quoteSpacedKeys(join(beatDir(bases, beat), "beat.mjs")) : "";
+      const trimmed = zoned ? trimStrayTail(join(beatDir(bases, beat), "beat.mjs")) + trimDuplicatedTail(join(beatDir(bases, beat), "beat.mjs")) + quoteSpacedKeys(join(beatDir(bases, beat), "beat.mjs")) : "";
       const result = await exec(["bun", path]);
       const record = zoned && existsSync(join(beatDir(bases, beat), "gestures.json")) ? `beats/${beat}/gestures.json` : undefined;
       const failed = /REFUSED|Error|error:/.test(result.content[0].text);

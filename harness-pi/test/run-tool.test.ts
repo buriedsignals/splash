@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createRunRoot, stageStory } from "../src/run-root.ts";
 import type { Bases } from "../src/tools/fs.ts";
-import { quoteSpacedKeys, runTools , refusalHint, trimStrayTail } from "../src/tools/run.ts";
+import { quoteSpacedKeys, runTools , refusalHint, trimDuplicatedTail, trimStrayTail } from "../src/tools/run.ts";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 
 const CHECKOUT = resolve(import.meta.dirname, "../..");
@@ -154,6 +154,33 @@ describe("an unquoted key with a space in beat.mjs", () => {
     const dir = mkdtempSync(join(tmpdir(), "splash-key-"));
     writeFileSync(join(dir, "beat.mjs"), 'export default { title: "Czech Republic: a, b" };\n');
     expect(quoteSpacedKeys(join(dir, "beat.mjs"))).toBe("");
+  });
+});
+
+// gx-connected-scatter web (12B, mvg8, 2026-11-18): an edit_file rewrote check()'s tail and left the old tail after
+// its closing "},". The file stopped parsing ("Expected identifier but found "!""), and the 12B spent the rest of
+// its 30 minutes editing around it. A block that repeats the lines before the "}," it follows, and whose removal is
+// what makes the file parse, is never meant: the harness removes it before rendering.
+describe("a stale copy of a method's tail after its closing brace", () => {
+  const head = "export default {\n  check() {\n    const a = 1;\n    if (a > 2) throw new Error(\"x\");\n    if (a < 0) throw new Error(\"y\");\n  },\n";
+  const stale = "\n    if (!(a > 2)) throw new Error(\"x\");\n    if (a < 0) throw new Error(\"y\");\n  },\n";
+  it("should be removed, and said", () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-dup-"));
+    writeFileSync(join(dir, "beat.mjs"), `${head}${stale}};\n`);
+    expect(trimDuplicatedTail(join(dir, "beat.mjs"))).toMatch(/removed lines 7.10/);
+    expect(readFileSync(join(dir, "beat.mjs"), "utf8")).toBe(`${head}};\n`);
+  });
+  it("should leave a beat that parses", () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-dup-"));
+    writeFileSync(join(dir, "beat.mjs"), `${head}};\n`);
+    expect(trimDuplicatedTail(join(dir, "beat.mjs"))).toBe("");
+  });
+  it("should leave a broken beat whose removal would not make it parse", () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-dup-"));
+    const src = `${head}${stale}  title: \`t,\n};\n`;
+    writeFileSync(join(dir, "beat.mjs"), src);
+    expect(trimDuplicatedTail(join(dir, "beat.mjs"))).toBe("");
+    expect(readFileSync(join(dir, "beat.mjs"), "utf8")).toBe(src);
   });
 });
 
