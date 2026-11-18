@@ -316,7 +316,7 @@ export function crossing(model, a, b) {
     if (da === 0 || db === 0 ? db === 0 : Math.sign(da) !== Math.sign(db)) {
       const w = db === 0 ? 1 : da / (da - db);
       const tc = t + (u - t) * w;
-      out.push({ t: tc, level: magnitude(model, at(model, a, t)) + (magnitude(model, at(model, a, u)) - magnitude(model, at(model, a, t))) * w });
+      out.push({ t: tc, between: w === 1 ? undefined : [t, u], level: magnitude(model, at(model, a, t)) + (magnitude(model, at(model, a, u)) - magnitude(model, at(model, a, t))) * w });
     }
   }
   return out;
@@ -715,7 +715,7 @@ export function pictureOf(model, valid, { format = String, subject } = {}) {
         }
         const cross = crossing(model, series[0], series[1]).map((c) => {
           const p = at(model, series[0], c.t) ?? {};
-          return { t: c.t, level: c.level, y: (p.y0 + p.y1) / 2 };
+          return { t: c.t, between: c.between, level: c.level, y: (p.y0 + p.y1) / 2 };
         });
         return { ...base, kind: "crossing", crossings: cross };
       }

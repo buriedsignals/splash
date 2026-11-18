@@ -74,7 +74,8 @@ export function scheduleTimeWeb({ model, valid, format = String, subject }) {
     switch (it.do) {
       case "compare":
         if (it.kind === "crossing") {
-          const years = it.crossings.map((c) => fx(c.t, Number.isInteger(c.t) ? 0 : 1));
+          // A crossing solved between two readings is named by those readings: its fraction is no date a reader can use.
+          const years = it.crossings.map((c) => (c.between && !Number.isInteger(c.t) ? c.between.map((u) => fx(u, Number.isInteger(u) ? 0 : 1)).join("–") : fx(c.t, Number.isInteger(c.t) ? 0 : 1)));
           Object.assign(control, {
             kind: "crossing",
             crossings: it.crossings,
