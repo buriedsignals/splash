@@ -9,20 +9,31 @@
 // Measured on the seed's last frame, 2026-09-13.
 //
 // So the render resolves the faces here, in node, and hands them over as input props: the stack
-// the composition must draw in, and the woff2 bytes for it. `embeddedWebFaces` is the web beats'
-// own function (carried beside this file as `./typefaces.mjs`), so fetching, the `wOF2` check, the
-// cache, the subset and the range read back off each cut file's cmap are the same code for both
-// genres. Bytes rather than a stylesheet link for the reason `film/scripts/fetch-typefaces.mjs`
-// gives: a frame painted before a network face arrives is a frame in the wrong face.
+// the composition must draw in, and the woff2 bytes for it. The bytes are the very TrueType file
+// Bun measured every line with (`typefaceFile`, carried beside this file as `./typefaces.mjs`),
+// embedded whole — see `measuredFileFaces` for why neither Google's web woff2 nor a cut subset
+// draws a line at its measured width. Bytes rather than a stylesheet link for the reason
+// `film/scripts/fetch-typefaces.mjs` gives: a frame painted before a network face arrives is a
+// frame in the wrong face.
 //
-// The subset is cut against every string in the props plus the digits and separators a value is
-// formatted with. Text a composition composes that this cannot foresee is caught on the other side,
-// by `assets/face-coverage.ts`, against what the frame actually drew.
+// A character the file has no glyph for is refused here, before any frame is drawn. Text a
+// composition composes that the props cannot foresee is caught on the other side, by
+// `assets/face-coverage.ts`, against what the frame actually drew.
 
+import { existsSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
+import fontverter from "fontverter";
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { embeddedWebFaces, requestedFamily } from "./typefaces.mjs";
+import {
+  codePointsOf,
+  fontCodePoints,
+  rangeSpec,
+  requestedFamily,
+  servedFace,
+  isWoff2,
+  typefaceFile,
+} from "./typefaces.mjs";
 
 /**
  * THE LATIN-1 BLOCK, CARRIED WHOLE. A composition types words of its own — a unit, an axis title,
@@ -42,6 +53,83 @@ const LATIN_1 = String.fromCodePoint(
 function stringsOf(value, out = []) {
   if (typeof value === "string") out.push(value);
   else if (value && typeof value === "object") for (const item of Object.values(value)) stringsOf(item, out);
+  return out;
+}
+
+/**
+ * THE FACES CUT FROM THE FILE BUN MEASURED WITH — never from Google's web woff2.
+ *
+ * Every width a directed video lays out is resvg's reading of the TrueType file `typefaceFile`
+ * fetches, and `embedded-faces.ts` refuses a frame whose line Chrome draws more than max(1px, 2%)
+ * off that width. Google serves the web woff2 from a different build: in Merriweather Italic its
+ * space is ~1.2px wider at 39px, so a short line with spaces ("20 t : 6 pays", 206.29px in Bun,
+ * 210.98px in Chrome) failed the agreement on spaces alone (gx-beeswarm video, 2026-11-18). Chrome
+ * handed Bun's own file drew it at 206.29px. The file is also the whole family, so a character no
+ * web subset reaches (U+2082) needs no second request.
+ *
+ * AND IT IS EMBEDDED WHOLE, NOT CUT. hb-subset drops the legacy `kern` table that resvg and Chrome
+ * both apply to this file: the same line cut to its own characters drew at 212.17px against the
+ * whole file's 207.48px. A video's faces never leave this machine, so the whole file costs no reader
+ * anything; its woff2 is converted once and cached beside the TrueType.
+ */
+const wholeInMemory = new Map();
+
+/** The TrueType file as a woff2, unchanged in its tables — converted once, cached beside it. */
+async function wholeWoff2(file, bytes) {
+  const held = wholeInMemory.get(file);
+  if (held) return held;
+  const path = `${file}.whole.woff2`;
+  let woff2 = existsSync(path) && statSync(path).size > 0 ? readFileSync(path) : null;
+  if (woff2 && !isWoff2(woff2)) woff2 = null;
+  if (!woff2) {
+    woff2 = Buffer.from(await fontverter.convert(bytes, "woff2"));
+    if (!isWoff2(woff2)) throw new Error(`converting ${file} produced no woff2. Nothing was cached.`);
+    const staging = `${path}.${process.pid}.part`;
+    writeFileSync(staging, woff2);
+    renameSync(staging, path);
+  }
+  wholeInMemory.set(file, woff2);
+  return woff2;
+}
+
+async function measuredFileFaces(requests, text) {
+  const required = codePointsOf(text);
+  const groups = new Map();
+  for (const request of requests) {
+    const weight = request.weight ?? 400;
+    const style = request.style ?? "normal";
+    const italic = style === "italic";
+    const served = servedFace(request.family, weight, { italic });
+    if (!served || served.style !== style)
+      throw new Error(
+        `"${request.family}" has no ${style} face${served ? ` — Google serves ${served.style} for it` : ""}. ` +
+          `Declaring other bytes as ${style} would set the frame in the wrong face with nothing to say so.`,
+      );
+    const file = typefaceFile(request.family, weight, { italic });
+    const group = groups.get(file) ?? { family: served.family, style, file, weights: [] };
+    group.weights.push(weight);
+    groups.set(file, group);
+  }
+  const out = [];
+  for (const { family, style, file, weights } of groups.values()) {
+    const bytes = readFileSync(file);
+    const cmap = new Set(fontCodePoints(bytes));
+    const missing = required.filter((cp) => !cmap.has(cp));
+    if (missing.length > 0)
+      throw new Error(
+        `"${family}" ${style} cannot set ` +
+          `${missing.map((cp) => `U+${cp.toString(16).toUpperCase().padStart(4, "0")} (${JSON.stringify(String.fromCodePoint(cp))})`).join(", ")} — ` +
+          `the face has no glyph for them. Change the character or change the family.`,
+      );
+    out.push({
+      family,
+      style,
+      weight: Math.min(...weights),
+      weightTo: Math.max(...weights),
+      unicodeRange: rangeSpec([...cmap]),
+      base64: (await wholeWoff2(file, bytes)).toString("base64"),
+    });
+  }
   return out;
 }
 
@@ -110,7 +198,7 @@ export async function videoFaces({ wanted, stack, weights, props }) {
   const requests = hasWanted
     ? dedupeWanted(wanted)
     : [...new Set(weights)].map((weight) => ({ family: requestedFamily(stack), weight }));
-  const faces = await embeddedWebFaces(requests, [LATIN_1, ...stringsOf(props)].join("\n"));
+  const faces = await measuredFileFaces(requests, [LATIN_1, ...stringsOf(props)].join("\n"));
   return {
     fontFamily: stack ?? null,
     faces: faces.map(({ family, style, weight, weightTo, unicodeRange, base64 }) => ({

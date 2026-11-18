@@ -218,3 +218,51 @@ describe("writeRenderProps", () => {
     ]).toEqual(["Pluie", STACK, true, "Pluie", STACK, true, false, false]);
   });
 });
+
+describe("the bytes a video frame is drawn in", () => {
+  // gx-beeswarm video (Gemma 12B, 2026-11-18): Bun laid "20 t : 6 pays" out 206.29px wide in
+  // Merriweather Italic 39px and Chrome drew it 210.98px — past the width agreement — because Bun
+  // measured the TrueType file `typefaceFile` fetches and Chrome drew Google's web woff2, a
+  // different build whose space alone is ~1.2px wider at that size. Chrome handed Bun's own file
+  // draws the line at 206.29px; the embedded face has to be cut from the file that was measured.
+  it("should set a line at the width Bun measured it", async () => {
+    const puppeteer = (await import("puppeteer-core")).default;
+    const { measureText } = await import("../scripts/render-still.mjs");
+    const text = "20 t : 6 pays";
+    const { faces } = await videoFaces({
+      wanted: [{ family: "Merriweather", weight: 400, style: "italic" }],
+      props: { note: text },
+    });
+    const css = faces
+      .map(
+        (f: { family: string; style: string; weight: number; base64: string }) =>
+          `@font-face{font-family:"${f.family}";font-style:${f.style};font-weight:${f.weight};src:url(data:font/woff2;base64,${f.base64}) format("woff2")}`,
+      )
+      .join("");
+    const browser = await puppeteer.launch({ executablePath: process.env.CHROME_PATH });
+    try {
+      const page = await browser.newPage();
+      await page.setContent(
+        `<style>${css}</style><svg width="2000" height="200"><text x="0" y="100" style="font-family:Merriweather;font-style:italic;font-weight:400;font-size:39px">${text}</text></svg>`,
+      );
+      // The ink span `embedded-faces.ts` compares: the advances, less the last glyph's side bearing.
+      const drawn = await page.evaluate(async () => {
+        await document.fonts.ready;
+        const node = document.querySelector("text") as SVGTextElement;
+        const c = document.createElement("canvas").getContext("2d") as CanvasRenderingContext2D;
+        c.font = "italic 400 39px Merriweather";
+        const m = c.measureText((node.textContent ?? "").at(-1) ?? "");
+        return node.getComputedTextLength() - (m.width - m.actualBoundingBoxRight);
+      });
+      const measured = measureText(text, {
+        fontSize: 39,
+        fontWeight: 400,
+        fontFamily: "Merriweather",
+        fontStyle: "italic",
+      });
+      expect(Math.abs(drawn - measured)).toBeLessThan(0.1);
+    } finally {
+      await browser.close();
+    }
+  }, 60_000);
+});
