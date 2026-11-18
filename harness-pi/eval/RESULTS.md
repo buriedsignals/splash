@@ -2087,6 +2087,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 |---|---|---|---|
 | sankey | pass (mvg1, 8 t) | pass (mvg2, 5 t) | pass* (mvg3, 7 t) |
 | small-multiples | pass (mvg4, 15 t) | pass (mvg5, 5 t) | pass (mvg6, 9 t) |
+| connected-scatter | fail (mvg7 stuck, mvg8 budget; both kit/harness, fixed) | | |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
@@ -2125,3 +2126,16 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
   by gain with Danemark +74 and Suède +2 accented, then the reading note. Every figure and both orderings match
   data.json. check() adds that the smallest gain belongs to the highest starter (Suède). Backlog (kit): the centred
   prose card covers two or three panels on cards 2 and 3; the 2000/2024 legend stays on the scatter card.
+- **gx-connected-scatter web (12B, mvg7).** Stuck, killed after three identical refusals: the phone (375x812)
+  overflowed by 10 px. The refusal hint told the model "the phone draws the last form" of limits; the 12B added a
+  short form, but this kit drew only `limits[0]`, so nothing it could write changed the page. Kit fixed
+  (f5c46e5ec): limits' last form shows at ≤480px, as in the geo-area kit. The untouched mvg7 beat then passes
+  verify-web (only the two known typeface false reds).
+- **gx-connected-scatter web (12B, mvg8).** Fail on budget (16 turns, 1805 s, refusals=0 counted): first render OK,
+  then a self-inflicted wrong check (10 countries lost weight; data says 5) was refused and corrected, but an
+  edit_file left the old tail of `check()` after its closing `},` and the 12B spent the rest of its 30 minutes
+  editing around the parse error. Harness fixed (b892fd513, `trimDuplicatedTail`): a block between two closing
+  braces that repeats at least half the lines before it, and whose removal makes the file parse, is removed before
+  rendering, and said. The repaired mvg8 beat passes verify-web; every figure checked against data.json (France
+  +4.2 at home, −11.8 in Europe, 38.4→26.5; all 16 rose at home; 5 lost European weight). Backlog: on the phone the
+  plot is crushed to ~120 px high under the six-line title.
