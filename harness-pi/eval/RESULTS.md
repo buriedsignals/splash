@@ -1610,7 +1610,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | parallel-coordinates (misfit) | pass (mvq124, 19 t) | pass (mvq125, 14 t) | pass (mvq126, 12 t) |
 | radar-spider (misfit) | pass (mvq127, 11 t) | pass (mvq128, 10 t) | pass (mvq129, 18 t) |
 | scatter-and-bubble (position) | pass (mvq130, 22 t) | pass (mvq131, 10 t) | pass (mvq132, 15 t) |
-| slope-slopegraph (time) | pass* (mvq133, 8 t) | pass (mvq134, 17 t) | — |
+| slope-slopegraph (time) | pass* (mvq133, 8 t) | pass (mvq134, 17 t) | pass* (mvq135, 11 t) |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -2040,3 +2040,9 @@ Harness fixes, in order (each with a test that fails without it):
   2024"), endpoints match data.json. Backlog (kit): the highlighted Finland is drawn in ink while France takes the
   accent from the first shot; the compare draws a dashed line from Finland's 2000 point to nowhere (≈ 67 in 2024);
   both notes float in the empty lower field, far from their marks.
+- **gx-slope-slopegraph scrolly (Qwen3.5-9B, mvq135).** Pass with the same false aside as mvq133 (11 turns, 942 s,
+  refusals=0 at the end): one mid-run refusal (the France note said 65,5 — Finland's 2000 value) handed back
+  "90,7 % en 2000, 94,9 % en 2024" and the model took it. Cards: Finland 65,5 % in 2000 → 95,3 % in 2024 ahead of
+  France 94,9 % → France started at 90,7 % → limits; all match data.json. The limits card repeats "les 6 plus gros
+  producteurs, dont la paire" (Finland is 9th); card 1 says "sans carbone" for low-carbon. Backlog (kit): Finland
+  ink / France accent again; the dashed compare line to nowhere again.
