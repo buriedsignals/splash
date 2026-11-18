@@ -2089,7 +2089,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 | small-multiples | pass (mvg4, 15 t) | pass (mvg5, 5 t) | pass (mvg6, 9 t) |
 | connected-scatter | pass (mvg10, 10 t; after 3 kit/harness fixes) | pass (mvg12, 8 t; after 1 kit fix) | pass (mvg13, 11 t) |
 | lollipop | pass (mvg15, 13 t; mvg14 failed, harness fixed) | pass (mvg16, 11 t) | pass (mvg17, 9 t) |
-| stacked-bar | pass (mvg18, 5 t) | pass (mvg19, 8 t) | |
+| stacked-bar | pass (mvg18, 5 t) | pass (mvg19, 8 t) | pass (mvg20, 9 t) |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
@@ -2191,3 +2191,8 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
   → additions grow → Spain highlighted → "+119 TWh contre +50 pour la France" → "La France part de 483 TWh"; figures
   as in mvg18 (top 10 of 16 shown, said). Backlog: the compare gesture underlines only Spain's 119 segment, not
   France's 50; the chart sits in the left 2/3 with notes in the margin.
+- **gx-stacked-bar scrolly (12B, mvg20).** Pass (9 turns), first render OK: four cards — Spain 97 → 216; "+119 TWh
+  contre +50" with France's 50 drawn as a ruler inside Spain's addition; France 533 boxed ("partait déjà de 483"); the
+  limits — every figure as in mvg18. The run then spent 13 min in three aborted turns streaming `<|channel>thought`
+  (the known Gemma/Osaurus channel loop; the existing silence/loop cuts fired) until the 15-min cap; mvg18 lost its
+  tail the same way. Not a beat defect: both renders were final before the stall.
