@@ -1610,7 +1610,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | parallel-coordinates (misfit) | pass (mvq124, 19 t) | pass (mvq125, 14 t) | pass (mvq126, 12 t) |
 | radar-spider (misfit) | pass (mvq127, 11 t) | pass (mvq128, 10 t) | pass (mvq129, 18 t) |
 | scatter-and-bubble (position) | pass (mvq130, 22 t) | pass (mvq131, 10 t) | pass (mvq132, 15 t) |
-| slope-slopegraph (time) | pass* (mvq133, 8 t) | — | — |
+| slope-slopegraph (time) | pass* (mvq133, 8 t) | pass (mvq134, 17 t) | — |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -2035,3 +2035,8 @@ Harness fixes, in order (each with a test that fails without it):
   the subtitle says the drawn six are "les 6 plus gros producteurs, dont la paire" — Finland is 9th by 2024
   generation (Sweden 172 TWh and Poland 172 TWh are bigger); it is the 5 biggest plus Finland. Backlog: the
   toggle group label repeats its only option ("Finlande / France"); "France: 90,7 %" without the French space.
+- **gx-slope-slopegraph video (Qwen3.5-9B, mvq134).** Pass (17 turns, 861 s, refusals=0): same rows and gestures as
+  mvq133 (highlight Finland → compare "95,3 % contre 94,9 % en 2024" → name France "90,7 % en 2000, 94,9 % en
+  2024"), endpoints match data.json. Backlog (kit): the highlighted Finland is drawn in ink while France takes the
+  accent from the first shot; the compare draws a dashed line from Finland's 2000 point to nowhere (≈ 67 in 2024);
+  both notes float in the empty lower field, far from their marks.
