@@ -136,6 +136,7 @@ export function DirectedConnectedScatterWeb({
   title,
   eyebrow,
   caveat,
+  caveatShort,
   source,
   alt,
   reading,
@@ -159,6 +160,8 @@ export function DirectedConnectedScatterWeb({
   title: string;
   eyebrow: string;
   caveat: string;
+  /** limits' last form: a phone draws it in place of the first (mvg7: the kit drew only the first). */
+  caveatShort?: string;
   source: string;
   alt: string;
   reading: string;
@@ -316,6 +319,8 @@ export function DirectedConnectedScatterWeb({
 
   const css = [
     aimChromeCss({ scope: SCOPE }),
+    `${SCOPE} .caveat-short { display: none; }`,
+    `@media (max-width: 480px) { ${SCOPE} .caveat-long.has-short { display: none; } ${SCOPE} .caveat-short { display: inline; } }`,
     aimCss(aim, arrows, {
       scope: SCOPE,
       idPrefix: AIM_ID_PREFIX,
@@ -378,7 +383,10 @@ export function DirectedConnectedScatterWeb({
       <div className="chart-header">
         <p className="chart-eyebrow" style={{ ...regs.eyebrow, margin: "0 0 6px" }}>{eyebrow}</p>
         <h2 className="chart-title" style={{ ...regs.display, margin: "0 0 6px" }}>{title}</h2>
-        <p className="chart-caveat" style={{ ...regs.body, margin: 0 }}>{caveat}</p>
+        <p className="chart-caveat" style={{ ...regs.body, margin: 0 }}>
+          <span className={caveatShort && caveatShort !== caveat ? "caveat-long has-short" : "caveat-long"}>{caveat}</span>
+          {caveatShort && caveatShort !== caveat ? <span className="caveat-short">{caveatShort}</span> : null}
+        </p>
       </div>
 
       {/* THE CONTROL. Native radios in a real `<fieldset>` with a `<legend>`: a radio group to the

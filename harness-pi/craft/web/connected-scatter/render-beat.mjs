@@ -203,6 +203,7 @@ await refusing(HERE, async () => {
 
   const title = plain([beat.title].flat()[0]);
   const caveat = plain([beat.limits].flat()[0]);
+  const caveatShort = plain([beat.limits].flat().at(-1));
   const source = plain(beat.source);
   const reading = plain([beat.reading].flat()[0] ?? "");
   const eyebrow = plain(beat.eyebrow);
@@ -217,7 +218,7 @@ await refusing(HERE, async () => {
   const textPerRegister = {
     display: title,
     eyebrow,
-    body: `${caveat} ${reading} ${source} ${aim.label} ${aim.noneLabel} ${aim.options.map((o) => `${o.label} ${o.note}`).join(" ")}`,
+    body: `${caveat} ${caveatShort} ${reading} ${source} ${aim.label} ${aim.noneLabel} ${aim.options.map((o) => `${o.label} ${o.note}`).join(" ")}`,
     axis: [...xTicks, ...yTicks].map((t) => t.text).join(" "),
     annot: `${xTitle} ${yTitle} ${figures.join(" ")}`,
     value: named.map((r) => r.label).join(" "),
@@ -293,7 +294,7 @@ await refusing(HERE, async () => {
         component: DirectedConnectedScatterWeb,
         props: {
           arrows, anchors, names: namesFor(direction), aim, xTicks, yTicks, xTitle, yTitle,
-          title, eyebrow, caveat, source, reading, alt,
+          title, eyebrow, caveat, caveatShort, source, reading, alt,
           interaction,
           direction,
           ground: direction.ground,
