@@ -2087,7 +2087,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 |---|---|---|---|
 | sankey | pass (mvg1, 8 t) | pass (mvg2, 5 t) | pass* (mvg3, 7 t) |
 | small-multiples | pass (mvg4, 15 t) | pass (mvg5, 5 t) | pass (mvg6, 9 t) |
-| connected-scatter | fail (mvg7 stuck, mvg8 budget, mvg9 stuck; all kit/harness, fixed) | | |
+| connected-scatter | pass (mvg10, 10 t; after 3 kit/harness fixes) | | |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
@@ -2147,3 +2147,8 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
   output (16 countries)"); the refusal names no field. Kit fix: at ≤480px the title wraps within `50vw − 24px`
   (it sits left of the page centre, so that always fits). The mvg9 beat re-rendered with the fixed kit clears the
   horizontal failure; desktop unchanged. Saved in the scratchpad (`mvg9-stuck`).
+- **gx-connected-scatter web (12B, mvg10).** Pass (10 turns, 507 s, refusals=0 counted, headline): a wrong count
+  in its own check (11 lost weight; data 5) refused and corrected, then the phone height met by a limits short form
+  the kit now draws. Desktop and phone checked by eye; France +4.2 at home, −11.8 in Europe (38.4→26.5), all 16 up
+  at home — every figure as in data.json. Weakness: the 12B emptied its −11.8 check into comments, so the title's
+  number is guarded only by the move-direction check; it is right by the data, not by its own check.
