@@ -2086,7 +2086,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 | Family / type | Web | Video | Scrolly |
 |---|---|---|---|
 | sankey | pass (mvg1, 8 t) | pass (mvg2, 5 t) | pass* (mvg3, 7 t) |
-| small-multiples | pass (mvg4, 15 t) | pass (mvg5, 5 t) | — |
+| small-multiples | pass (mvg4, 15 t) | pass (mvg5, 5 t) | pass (mvg6, 9 t) |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
@@ -2119,3 +2119,9 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
   every one rising, and a start–gain correlation below −0.5 (−0.75). Backlog (kit): during the regroup the bars
   tween through shrunken 2024 values (Suède at zero for a frame), which reads as a fall; the counter shows a
   transient "+1" for Suède.
+- **gx-small-multiples scrolly (12B, mvg6).** Pass (9 turns, 519 s, refusals=0, first render OK): six cards —
+  2000 bars alone ("de 1,6 % en Pologne à 96,7 % en Suède"), 2024 added ("seize sur seize"), panels re-sorted by
+  2000 level, the grid folding into a start–gain scatter (r = −0.76, Danemark and Suède labelled), panels re-sorted
+  by gain with Danemark +74 and Suède +2 accented, then the reading note. Every figure and both orderings match
+  data.json. check() adds that the smallest gain belongs to the highest starter (Suède). Backlog (kit): the centred
+  prose card covers two or three panels on cards 2 and 3; the 2000/2024 legend stays on the scatter card.
