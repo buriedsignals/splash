@@ -2088,7 +2088,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 | sankey | pass (mvg1, 8 t) | pass (mvg2, 5 t) | pass* (mvg3, 7 t) |
 | small-multiples | pass (mvg4, 15 t) | pass (mvg5, 5 t) | pass (mvg6, 9 t) |
 | connected-scatter | pass (mvg10, 10 t; after 3 kit/harness fixes) | pass (mvg12, 8 t; after 1 kit fix) | pass (mvg13, 11 t) |
-| lollipop | fail (mvg14: NaN printed; harness fixed) | | |
+| lollipop | pass (mvg15, 13 t; mvg14 failed, harness fixed) | | |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
@@ -2168,3 +2168,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
   "NaN" twice. Figures otherwise right (China 2.9→8.6, ×3; USA 21.4→14.3; ratio 1.7). Fixed in the harness: such a
   field is rewritten into an array before the render (8b8b71b7e); the phone-height hint now tells a kit that draws
   only limits' first form to shorten that one (4b156b3b0; 49 of 50 web kits draw only the first form).
+- **gx-lollipop web (12B, mvg15).** Pass (13 turns, 370 s, headline): one phone-height refusal, met with the new
+  hint (shortened limits' first form and reading); re-rendered locally, verify-web 367/0. China 2.9→8.6 (+198 %, ×3),
+  USA 21.4→14.3 (−33 %), ratio 1.7; Iran detail 4th→3rd, ×3.9→×1.6 — all as in data.json. Backlog: on a phone the
+  lollipops are crushed to ~90 px and their value labels collide (same as connected-scatter web).
