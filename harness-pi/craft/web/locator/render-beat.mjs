@@ -24,14 +24,13 @@ import { applyStoryboard, assertHeadlineNumbersDrawn } from "./guards.mjs";
 import { ensurePlate, liveAssets, mapWeb, maptilerKey, renderLiveMapPage, verifyLiveMap } from "./map-web.mjs";
 import { plateWaterField } from "./plate-water.mjs";
 import { sourceSpelling } from "./place-labels.mjs";
-import { MIN_STEP, boxOf, frameRemoves, radiiHint, shortSteps } from "./removes.mjs";
+import { MIN_STEP, barKmFor, boxOf, frameRemoves, radiiHint, shortSteps } from "./removes.mjs";
 import { chartWeb, pickDirection, plain, plainRegisters, refusing, storyLanguage } from "./web.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const EARTH_KM = 6371.0088;
 const RAD = Math.PI / 180;
 /** The round distances a scale bar may state: the largest under a third of the frame. */
-const BAR_LADDER = [10, 20, 50, 100, 200, 500, 1000, 2000];
 const PLATE_FRAME = [1600, 1216];
 const LAND_DOSE = 0.07;
 /** Screen radii, CSS px, identical at every zoom and every remove. */
@@ -95,9 +94,8 @@ await refusing(HERE, async () => {
   });
   if (!beat.removes.some((r) => r.key === beat.defaultKey)) throw new Error(`defaultKey ${JSON.stringify(beat.defaultKey)} names no remove`);
 
-  const { removes: framed } = frameRemoves(beat, subject);
-  const barFor = (spanKm) => [...BAR_LADDER].reverse().find((km) => km <= spanKm / 3) ?? BAR_LADDER[0];
-  const removes = framed.map((r) => ({ ...r, slug: vantageSlugOf(r.key), barKm: barFor(r.spanKm) }));
+  const { removes: framed } = frameRemoves(beat, subject, PLATE_FRAME[0] / PLATE_FRAME[1]);
+  const removes = framed.map((r) => ({ ...r, slug: vantageSlugOf(r.key), barKm: barKmFor(r.spanKm) }));
   // The three faults a radius causes are refused here, with radii that work, before any plate is baked.
   for (const r of removes)
     if (r.key !== beat.defaultKey && !r.heldOthers.length)

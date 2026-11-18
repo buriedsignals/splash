@@ -15,7 +15,10 @@ export const MIN_STEP = 2;
 /** Room a remove leaves around what it draws, as a fraction of its own box. */
 const WINDOW_PAD = 0.1;
 
-export function frameRemoves(beat, subject) {
+/** The plate's frame, width over height: the box the camera fits each window into. */
+export const FRAME_ASPECT = 1600 / 1216;
+
+export function frameRemoves(beat, subject, aspect = FRAME_ASPECT) {
   const kmPerDegLon = 111.32 * Math.cos(subject.lat * RAD);
   const kmPerDegLat = 110.574;
   const boxAround = (radiusKm) => ({
@@ -47,7 +50,10 @@ export function frameRemoves(beat, subject) {
     const padLon = Math.max((raw.east - raw.west) * WINDOW_PAD, 0.25);
     const padLat = Math.max((raw.north - raw.south) * WINDOW_PAD, 0.25);
     const window = { west: raw.west - padLon, east: raw.east + padLon, south: raw.south - padLat, north: raw.north + padLat };
-    const spanKm = (window.east - window.west) * kmPerDegLon;
+    // The ground the frame SHOWS: the camera fits the window into a frame of `aspect`, so a tall window is seen as
+    // wide as its height times that aspect (gx-locator web, mvg91: a window ~70 km wide and ~600 km tall printed a
+    // 20 km bar on a map seen ~1 900 km wide).
+    const spanKm = Math.max((window.east - window.west) * kmPerDegLon, (window.north - window.south) * kmPerDegLat * aspect);
     // What Mercator costs THIS type, per remove: ground scale runs as cos(latitude), so a bar true at
     // the centre of the frame is wrong at its edges by the ratio of the two cosines.
     const edgeError = Math.max(Math.cos(window.south * RAD), Math.cos(window.north * RAD)) / Math.min(Math.cos(window.south * RAD), Math.cos(window.north * RAD));
@@ -55,6 +61,12 @@ export function frameRemoves(beat, subject) {
   };
   return { frame, removes: beat.removes.map(frame), kmPerDegLon, kmPerDegLat };
 }
+
+/** The round lengths a scale bar may take, in km. */
+export const BAR_LADDER = [10, 20, 50, 100, 200, 500, 1000, 2000];
+
+/** A remove's scale bar: the longest round length within a third of the ground its frame shows. */
+export const barKmFor = (spanKm) => [...BAR_LADDER].reverse().find((km) => km <= spanKm / 3) ?? BAR_LADDER[0];
 
 /** The window as vantage.ts compares it: two removes with one box are one picture. */
 export const boxOf = (w) => [w.west, w.south, w.east, w.north].map((v) => v.toFixed(4)).join(",");
