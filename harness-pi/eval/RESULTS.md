@@ -2087,7 +2087,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 |---|---|---|---|
 | sankey | pass (mvg1, 8 t) | pass (mvg2, 5 t) | pass* (mvg3, 7 t) |
 | small-multiples | pass (mvg4, 15 t) | pass (mvg5, 5 t) | pass (mvg6, 9 t) |
-| connected-scatter | pass (mvg10, 10 t; after 3 kit/harness fixes) | pass (mvg12, 8 t; after 1 kit fix) | |
+| connected-scatter | pass (mvg10, 10 t; after 3 kit/harness fixes) | pass (mvg12, 8 t; after 1 kit fix) | pass (mvg13, 11 t) |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
@@ -2158,3 +2158,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 - **gx-connected-scatter video (12B, mvg12).** Pass first render (8 turns, 504 s, 0 refusals, headline). Frames read
   from the mp4: 16 of 16 cleaner, 5 lighter (France, Germany, Sweden, Austria, Belgium, as in data.json), France
   +4.2 pts / −11.8 pts (38.4→26.5). Backlog: the zoom shot cuts Germany's arc at the right edge.
+- **gx-connected-scatter scrolly (12B, mvg13).** Pass (11 turns, 867 s, 0 refusals, headline). Six cards read at
+  desktop and the phone card: France 38.4% in 2000, 5 move left (France, Sweden, Germany, Belgium, Austria), +4.2 /
+  −11.8, and in the 0–12% zoom 11 of the 14 remaining heavier (16 − France − Germany; Sweden, Austria, Belgium
+  lighter) — all as in data.json. Backlog: the prose card sits over Germany's arc on cards 3 and 6.
