@@ -2093,7 +2093,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 | dot-strip | pass (mvg22, 9 t; mvg21 failed, kit fixed) | pass (mvg23, 10 t; kit layout fixed after) | pass (mvg24, 8 t) |
 | line | pass (mvg25, 8 t) | pass (mvg26, 12 t) | pass (mvg27, 14 t) |
 | pictogram-isotype | pass (mvg28, 7 t) | pass (mvg29, 9 t) | pass (mvg30, 8 t; 15 min cap, final render good) |
-| pie-and-donut | pass (mvg31, 8 t) | | |
+| pie-and-donut | pass (mvg31, 8 t) | pass (mvg32, 8 t) | |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
@@ -2232,3 +2232,4 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
   half of the frame and leaves the right empty, as stacked-bar video did (backlog).
 - gx-pictogram-isotype scrolly (12B, mvg30, 2026-11-18): four cards, figures match the mvg28 recompute — squares 16 / 6 / 18, the middle band boxed and named "6 pays seulement", a bracket over the field "6 sur 40", then the whole field under the standfirst. Hit the 15 min cap because one turn ran 575 s in a `<|channel>thought` loop before it was cut; the 90 s hidden-reasoning, 300 s silence and token-loop cuts should each have ended it far earlier. Where the time went is not in the log (no delta timestamps): backlog.
 - gx-pie-and-donut web (12B, mvg31, 2026-11-18, 233 s): one donut of 37.0 Gt, China's arc in the accent at 12.2 Gt, the United States outlined at 4.9 Gt, Russia 1.7 Gt, "205 other countries" 11.9 Gt; recomputed from data.json (t per person × population, 213 countries): China 32.9 %, United States 13.3 %, ratio 2.47 — title and notes agree. Phone frame keeps the ring legible.
+- gx-pie-and-donut video (12B, mvg32, 2026-11-18, 340 s, 21.2 s mp4): title card, grey ring with China 12.2, United States 4.9, India 3.1, Russia 1.7, Japan 1.0 and "206 other countries" 12.6 Gt (the two unlabelled arcs hold the remaining 1.5 Gt; every named value matches the mvg31 recompute), then China in the accent, the United States outlined, and the compare. Two weak points, backlog: the model's note "13.3 % of the world" does not say whose share it is, and the compare draws the United States' arc as a thin dashed ghost on China's inner edge, hard to read at video speed.
