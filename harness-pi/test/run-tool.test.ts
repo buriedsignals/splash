@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createRunRoot, stageStory } from "../src/run-root.ts";
 import type { Bases } from "../src/tools/fs.ts";
-import { quoteSpacedKeys, runTools , refusalHint, closeOpenExport, drawsLastLimits, trimDuplicatedTail, trimStrayTail } from "../src/tools/run.ts";
+import { quoteSpacedKeys, runTools , refusalHint, closeOpenExport, drawsLastLimits, listifyDashedForms, trimDuplicatedTail, trimStrayTail } from "../src/tools/run.ts";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 
 const CHECKOUT = resolve(import.meta.dirname, "../..");
@@ -222,6 +222,42 @@ describe("an export object whose closing brace is gone", () => {
     writeFileSync(join(dir, "beat.mjs"), src);
     expect(closeOpenExport(join(dir, "beat.mjs"))).toBe("");
     expect(readFileSync(join(dir, "beat.mjs"), "utf8")).toBe(src);
+  });
+});
+
+// gx-lollipop web (12B, mvg14, 2026-11-18): limits and reading written as YAML lists ("limits:" then "- `…`" lines).
+// JS reads each "- `a` - `b`" as subtraction of strings: NaN, which the page printed and the checks let through.
+describe("a field written as a YAML list of forms", () => {
+  const beat = (body: string) => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-dash-"));
+    writeFileSync(join(dir, "beat.mjs"), body);
+    return join(dir, "beat.mjs");
+  };
+  const yaml = [
+    "const A = 1;",
+    "export default {",
+    "  title: \"T\",",
+    "  limits:",
+    "  - `${A} long form.`",
+    "  - `short.`",
+    ",",
+    "  reading:",
+    "  - `first ` +",
+    "    `continued.`",
+    "  - `second.`,",
+    "  source: `S`,",
+    "};",
+    "",
+  ].join("\n");
+  it("should become a list of forms, and said", async () => {
+    const file = beat(yaml);
+    expect(listifyDashedForms(file)).toMatch(/limits, reading.*list/);
+    const { default: b } = await import(file);
+    expect([b.limits, b.reading, b.source]).toEqual([["1 long form.", "short."], ["first continued.", "second."], "S"]);
+  });
+  it("should leave a beat whose lists are already arrays", () => {
+    const file = beat("export default {\n  limits: [`a`, `b`],\n  n: 3 - 1,\n};\n");
+    expect(listifyDashedForms(file)).toBe("");
   });
 });
 

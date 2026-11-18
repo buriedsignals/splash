@@ -288,6 +288,52 @@ export function closeOpenExport(file: string): string {
 /** An unquoted object key with a space (`Czech Republic: "Tchéquie"`) never parses. Told the quoted key six times,
  *  Qwen3.5-9B rewrote the file with the same line (gx-proportional-symbol web, 2026-11-14). Quoting a key changes no
  *  meaning: the harness quotes each one the parser stops at, before rendering; returns what it did. */
+/**
+ * A field written as a YAML list of forms ("limits:" then "- `long`" / "- `short`" lines) parses as JS — each "- `x`"
+ * is unary or binary minus on a string — and the page prints NaN (gx-lollipop web, 12B, 2026-11-18). Rewrite each such
+ * field as an array of its forms; an item continues on the next line while its line ends with "+".
+ */
+export function listifyDashedForms(file: string): string {
+  if (!existsSync(file)) return "";
+  const lines = readFileSync(file, "utf8").split("\n");
+  const item = /^\s*-\s+[`"']/;
+  const out: string[] = [];
+  const fixed: string[] = [];
+  for (let i = 0; i < lines.length; i++) {
+    const head = /^(\s*)([A-Za-z_$][\w$]*|"[^"]+"):\s*$/.exec(lines[i]);
+    if (!head || !item.test(lines[i + 1] ?? "")) {
+      out.push(lines[i]);
+      continue;
+    }
+    const forms: string[][] = [];
+    let k = i + 1;
+    for (; k < lines.length; k++) {
+      const line = lines[k];
+      const last = forms.at(-1);
+      if (item.test(line)) forms.push([line.replace(/^\s*-\s+/, "")]);
+      else if (/^\s*,\s*$/.test(line)) {
+        k++;
+        break;
+      } else if (last && /\+\s*$/.test(last.at(-1) ?? "")) last.push(line);
+      else break;
+    }
+    const tail = forms.at(-1)!;
+    tail[tail.length - 1] = tail[tail.length - 1].replace(/,\s*$/, "");
+    out.push(`${head[1]}${head[2]}: [`, ...forms.map((f) => `${head[1]}  ${f.join("\n")},`), `${head[1]}],`);
+    fixed.push(head[2]);
+    i = k - 1;
+  }
+  if (!fixed.length) return "";
+  const text = out.join("\n");
+  try {
+    new Bun.Transpiler({ loader: "js" }).transformSync(text);
+  } catch {
+    return "";
+  }
+  writeFileSync(file, text);
+  return `the harness rewrote ${fixed.join(", ")} in beat.mjs as a list of forms ([\`long\`, \`short\`]): a "- " line is JS minus, not a list item, and the page printed NaN\n`;
+}
+
 export function quoteSpacedKeys(file: string): string {
   if (!existsSync(file)) return "";
   const transpiler = new Bun.Transpiler({ loader: "js" });
@@ -403,7 +449,7 @@ export function runTools(bases: Bases) {
         throw new Error(`${beat} has no ${runner}; scaffold the beat first`);
       if (zoned && !existsSync(join(beatDir(bases, beat), "beat.mjs")))
         throw new Error(`beats/${beat}/beat.mjs does not exist yet: write it with write_file, then render`);
-      const trimmed = zoned ? trimStrayTail(join(beatDir(bases, beat), "beat.mjs")) + trimDuplicatedTail(join(beatDir(bases, beat), "beat.mjs")) + closeOpenExport(join(beatDir(bases, beat), "beat.mjs")) + quoteSpacedKeys(join(beatDir(bases, beat), "beat.mjs")) : "";
+      const trimmed = zoned ? trimStrayTail(join(beatDir(bases, beat), "beat.mjs")) + trimDuplicatedTail(join(beatDir(bases, beat), "beat.mjs")) + closeOpenExport(join(beatDir(bases, beat), "beat.mjs")) + listifyDashedForms(join(beatDir(bases, beat), "beat.mjs")) + quoteSpacedKeys(join(beatDir(bases, beat), "beat.mjs")) : "";
       const result = await exec(["bun", path]);
       const record = zoned && existsSync(join(beatDir(bases, beat), "gestures.json")) ? `beats/${beat}/gestures.json` : undefined;
       const failed = /REFUSED|Error|error:/.test(result.content[0].text);
