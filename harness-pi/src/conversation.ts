@@ -116,6 +116,7 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
   let tail = "";
   let checkedAt = 0;
   let cutLoop = false;
+  let turnAt = Date.now();
   const hush = () => {
     clearTimeout(mute);
     mute = undefined;
@@ -148,6 +149,7 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
       if (tail.length - checkedAt >= 200 || tail.length === LOOP_WINDOW) {
         checkedAt = tail.length === LOOP_WINDOW ? LOOP_WINDOW - 200 : tail.length;
         if (isTokenLoop(tail)) {
+          o.log.push(`HARNESS: token loop seen ${Math.round((Date.now() - turnAt) / 1000)} s into the turn, abort sent`);
           cut = cutLoop = true;
           void o.session.abort();
         }
@@ -161,6 +163,7 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
       const t = e.assistantMessageEvent?.type;
       if (t === "thinking_start" && !hidden)
         hidden = setTimeout(() => {
+          o.log.push(`HARNESS: hidden reasoning cut ${Math.round((Date.now() - turnAt) / 1000)} s into the turn, abort sent`);
           cut = true;
           void o.session.abort();
         }, limits.hiddenReasoningSeconds * 1000);
@@ -240,7 +243,9 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
     for (; rounds < limits.rounds && !stop; rounds++) {
       const lastRound = rounds === limits.rounds - 1;
       const callsBefore = toolCalls;
+      turnAt = Date.now();
       mute = setTimeout(() => {
+        o.log.push(`HARNESS: silence cut ${limits.silentTurnSeconds} s into the turn, abort sent`);
         cut = cutSilent = true;
         void o.session.abort();
       }, limits.silentTurnSeconds * 1000);
@@ -255,6 +260,7 @@ export async function converse(o: ConverseOptions): Promise<ConverseResult> {
         }
       } else await o.session.prompt(prompt);
       narrow = false;
+      if (cut) o.log.push(`HARNESS: aborted turn returned ${Math.round((Date.now() - turnAt) / 1000)} s after it started`);
       disarm();
       hush();
       if (cut) {
