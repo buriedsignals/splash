@@ -2086,7 +2086,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 | Family / type | Web | Video | Scrolly |
 |---|---|---|---|
 | sankey | pass (mvg1, 8 t) | pass (mvg2, 5 t) | pass* (mvg3, 7 t) |
-| small-multiples | pass* (mvg4, 15 t) | — | — |
+| small-multiples | pass (mvg4, 15 t) | pass (mvg5, 5 t) | — |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
@@ -2110,3 +2110,12 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
   (Poland ×19); in points, which is what "avancé" reads as, Poland gains +29.5 against Denmark's +73.7 and Portugal's
   +55.4 — the beat's own check() only compares the lowest and highest starters. Backlog (kit): the country toggle
   shows 11 of 16 options on one line and clips the rest; the grid is a narrow centred column on a wide page.
+- **Correction to mvg4.** Re-judged after mvg5: across the sixteen, start share and gain in points correlate at
+  r = −0.75, so "ceux qui partaient de plus bas ont le plus avancé" holds as the trend the title states (Poland is
+  the outlier, not the rule). mvg4 moves from pass* to pass; its check() is still weaker than mvg5's.
+- **gx-small-multiples video (12B, mvg5).** Pass (5 turns, 256 s, refusals=0, first render OK): sixteen 2000/2024
+  bar pairs, gains counted in (Allemagne +23, Danemark +74, Portugal +55, Suède +2, all match data.json), regrouped
+  from lowest to highest start, then Danemark and Suède boxed. The model's own check() requires sixteen panels,
+  every one rising, and a start–gain correlation below −0.5 (−0.75). Backlog (kit): during the regroup the bars
+  tween through shrunken 2024 values (Suède at zero for a frame), which reads as a fall; the counter shows a
+  transient "+1" for Suède.
