@@ -210,7 +210,10 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
     const i = hay.indexOf(` ${code ? name : fold(name).replace(/[^\p{L}\p{N}]+/gu, " ")} `);
     return i < 0 ? -1 : i;
   };
-  const subject = rowsNamedIn(claim.entity ?? "", rows)[0] ?? rows.map((r) => r.name).filter((n) => at(n) >= 0).sort((a, b) => at(a) - at(b))[0];
+  // Then the storyboard's own subject, when it names one drawn row: a takeaway may name the row compared against first
+  // ("… un seul a doublé la France", subject "La Finlande": France took the accent in web, video and scrolly).
+  const ofSubject = rowsNamedIn(claim.subject ?? "", rows);
+  const subject = rowsNamedIn(claim.entity ?? "", rows)[0] ?? (ofSubject.length === 1 ? ofSubject[0] : undefined) ?? rows.map((r) => r.name).filter((n) => at(n) >= 0).sort((a, b) => at(a) - at(b))[0];
   // Every figure the drawn rows hold: each value, the whole, and every run of rows in rank order added up (the next
   // five, the top three). A stated figure among these that a gesture does not draw belongs to other rows: swapping it
   // for the gesture's nearest figure printed China's 12,289,037,000 as "the next five together".
