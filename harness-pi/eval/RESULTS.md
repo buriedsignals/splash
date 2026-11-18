@@ -1610,6 +1610,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | parallel-coordinates (misfit) | pass (mvq124, 19 t) | pass (mvq125, 14 t) | pass (mvq126, 12 t) |
 | radar-spider (misfit) | pass (mvq127, 11 t) | pass (mvq128, 10 t) | pass (mvq129, 18 t) |
 | scatter-and-bubble (position) | pass (mvq130, 22 t) | pass (mvq131, 10 t) | pass (mvq132, 15 t) |
+| slope-slopegraph (time) | pass* (mvq133, 8 t) | — | — |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -2028,3 +2029,9 @@ Harness fixes, in order (each with a test that fails without it):
   below band 40.3–81.4, 41 years (Central African Republic, Portugal) → above band 71.2–85.1, 14 years, "3.0 times"
   (Seychelles, Hong Kong) → limits; every endpoint matches data.json. Backlog (kit): "$30000" unformatted in the
   rule, kicker and band label; the card covers the cloud's middle on every step.
+- **gx-slope-slopegraph web (Qwen3.5-9B, mvq133).** Pass with one false aside (8 turns, 217 s, refusals=0):
+  low-carbon share 2000→2024 recomputed from data.json for all 16 countries — all rose, and Finland (65.5 → 95.3)
+  is the only one to overtake France (90.7 → 94.9), so the headline holds; every drawn endpoint matches. False:
+  the subtitle says the drawn six are "les 6 plus gros producteurs, dont la paire" — Finland is 9th by 2024
+  generation (Sweden 172 TWh and Poland 172 TWh are bigger); it is the 5 biggest plus Finland. Backlog: the
+  toggle group label repeats its only option ("Finlande / France"); "France: 90,7 %" without the French space.
