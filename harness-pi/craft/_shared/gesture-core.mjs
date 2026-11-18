@@ -179,6 +179,10 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
   if (!rows?.length) throw new Error("the beat draws no row, so no gesture can name one: check the readings beat.mjs passes (names and values)");
   const additive = FAMILIES[family]?.additive !== false;
   // An empty note is no note: told to drop a note, a 12B wrote note: "" and was refused for it three times over.
+  // A note is one line of type: told its note was too wide, a 12B broke it with newlines, and every family then refused
+  // U+000A for 25 turns (gx-beeswarm video, mvg89).
+  if (Array.isArray(gestures))
+    gestures = gestures.map((g) => (g && typeof g.note === "string" ? { ...g, note: g.note.replace(/[ \t\r\n]+/g, " ").trim() } : g));
   if (Array.isArray(gestures))
     gestures = gestures.map((g) => (g && typeof g.note === "string" && !g.note.trim() ? Object.fromEntries(Object.entries(g).filter(([k]) => k !== "note")) : g));
   const allowed = admissible(family, format).map((a) => a.do);
