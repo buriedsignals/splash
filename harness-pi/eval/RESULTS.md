@@ -2091,7 +2091,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 | lollipop | pass (mvg15, 13 t; mvg14 failed, harness fixed) | pass (mvg16, 11 t) | pass (mvg17, 9 t) |
 | stacked-bar | pass (mvg18, 5 t) | pass (mvg19, 8 t) | pass (mvg20, 9 t) |
 | dot-strip | pass (mvg22, 9 t; mvg21 failed, kit fixed) | pass (mvg23, 10 t; kit layout fixed after) | pass (mvg24, 8 t) |
-| line | pass (mvg25, 8 t) | | |
+| line | pass (mvg25, 8 t) | pass (mvg26, 12 t) | |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
@@ -2214,3 +2214,6 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 - **gx-line web (12B, mvg25).** Pass (8 turns, 276 s, refusals=0, first render OK). Suisse 1858–2024; the 1973 peak
   named (46,2 Mt, the series' max); compare 2024 vs 1967 (32,1 / 32,5); title true (32,07 < 32,53). Desktop clean;
   phone plot short with the same squeeze as the other web kits (backlog).
+- **gx-line video (12B, mvg26).** Pass (12 turns, 552 s, refusals=0, two renders both OK). 21 s: title card; the
+  Suisse line traced from 1858; 1973 peak named (46,2 Mt); compare draws 1967's level (32,5) to 2024 (32,1), note
+  under the line. Figures match data.json; no overlap in the frames.
