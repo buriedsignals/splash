@@ -2110,7 +2110,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 | radar-spider | desktop pass, phone squashed (mvg73, 7 t) | pass, compare words cover the polygons (mvg74, 8 t) | pass, card covers the centre (mvg75, 9 t) |
 | scatter-and-bubble | desktop pass, raw float in band note, end ticks collide (mvg76, 9 t) | pass, end bars cover points at the break (mvg77, 9 t) | pass, x ticks lose their thousands (mvg78, 8 t) |
 | slope-slopegraph | desktop pass, accent on the held line, unlabelled copy (mvg79, 5 t, 15-min cap) | pass, same accent and copy, notes far from the lines (mvg80, 10 t) | pass, same accent and copy (mvg81, 9 t) |
-| streamgraph | desktop pass, crossing year printed raw "× 2015,7" (mvg82, 7 t) | | |
+| streamgraph | desktop pass, crossing year printed raw "× 2015,7" (mvg82, 7 t) | pass, notes written over the stream's edge (mvg83, 7 t) | |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
@@ -2310,3 +2310,4 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
   - The compare's dashed copy had no label. It now reads "France +4,2" along its far end (`gesture-family-position.mjs`; `test/position-slope-copy-named.test.ts`).
   - Re-render of mvg79's beat: Finlande in the accent, France ringed, copy named. 2261 harness tests pass; `bubble-web-standfirst` timed out once in the full run and passed alone.
 - mvg82 streamgraph web (12B, 7 turns, 333 s, no refusal; gesture kit). Gestures: highlight Solaire; compare Solaire / Pétrole ("le solaire passe le pétrole"); annotate 2016 · Solaire ("3e source en 2016 : 1,3 TWh"). Figures checked against data.json: in 2016 solar is third at 1.33 TWh, oil 1.28; 2024 end labels 5,7 / 44,9 / 24,0 / 1,2 are right. Defect: the control's line prints the interpolated crossing as a year, "× 2015,7". The compare note also sits above the stream, far from the crossing, with the oil band at the bottom.
+- mvg83 streamgraph video (12B, 7 turns, 384 s, no refusal; gesture kit): reveal; compare Solaire / Pétrole; annotate 2016 · Solaire ("3e source en 2016 : 1,3 TWh"). The figures are the ones checked in mvg82; the "2023" in the reveal frame is the year counter mid-climb. Defect: both notes are set over the stream's top edge. No crossing year is printed in video.
