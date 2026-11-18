@@ -48,7 +48,9 @@ export async function loadStackBeat(here, variant) {
     const stack = stackFromBeat(beat, variant);
     const values = stack.marks.map((m) => m.value);
     assertNumbers(stack.marks.map((m) => [m.name, m.value]));
-    beat.format = legibleFormat(values, beat.format);
+    // toLocaleString writes a negative with a hyphen; the step labels write "−" (mvg85/mvg87): one sign per chart.
+    const legible = legibleFormat(values, beat.format);
+    beat.format = (v) => String(legible(v)).replace(/^-(?=\d)/, "−");
     assertLegibleLabels(values, beat.format);
     runCheck(beat);
     assertNoAggregates(stack.names, here);
