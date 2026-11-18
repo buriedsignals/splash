@@ -214,11 +214,14 @@ export function profileScene({ axes, entities, ceiling, plan, box, measure, lead
       });
     }
     // A note on a whole profile sits by the profile's name, at its farthest reading; a note on one reading, by it.
-    const whole = (p) => p.do === "highlight" && entities.some((e) => p.own.length > 1 && p.own.every((m) => m.startsWith(`${e.name}${SEP}`)));
+    // Several whole profiles take the first one's: the last reading of the last one is, on parallel coordinates, the
+    // floor of the last axis where every line ends (gx-parallel-coordinates, mvg70/mvg71), under the end names.
+    const ownersOf = (p) => entities.filter((e) => p.own.some((m) => m.startsWith(`${e.name}${SEP}`)));
+    const whole = (p) => p.do === "highlight" && p.own.length > 1 && ownersOf(p).length > 0 && p.own.every((m) => ownersOf(p).some((e) => m.startsWith(`${e.name}${SEP}`))) && ownersOf(p).every((e) => p.own.filter((m) => m.startsWith(`${e.name}${SEP}`)).length > 1);
     const items = noteItems(plan, (name) => marks[at.get(name)]?.anchor ?? null).map((it) => {
       const p = plan.find((q) => q.k === it.k);
       if (!whole(p)) return it;
-      const e = entities.find((x) => p.own[0].startsWith(`${x.name}${SEP}`));
+      const e = ownersOf(p).find((x) => p.own[0].startsWith(`${x.name}${SEP}`)) ?? ownersOf(p)[0];
       const best = axes.reduce((b, ax) => ((e.values[ax] ?? -1) > (e.values[b] ?? -1) ? ax : b), axes[0]);
       return { ...it, at: marks[at.get(`${e.name}${SEP}${best}`)].anchor };
     });
