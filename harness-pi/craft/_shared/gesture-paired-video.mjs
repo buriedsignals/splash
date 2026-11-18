@@ -194,7 +194,11 @@ export function valueText(v, f) {
   return `${sign}${part ? `${grouped}${f.decimal}${part}` : grouped}`;
 }
 
-export const landedOf = (item, g) => Math.min(item.steps.length, Math.floor(g * item.steps.length + 1e-9));
+// The climb lands its last step at CLIMB_LANDS of the gesture's progress and holds the true total until the note takes
+// over at 1: landing it at 1 itself (gx-treemap video, mvg68) put the note up on that frame, so the total never showed
+// and the last figure on screen was a partial one.
+const CLIMB_LANDS = 0.8;
+export const landedOf = (item, g) => Math.min(item.steps.length, Math.floor((g / CLIMB_LANDS) * item.steps.length + 1e-9));
 
 /** Every text a climbing figure can show, for the runner to measure before anything is drawn. */
 export function countedTexts(plan, format) {

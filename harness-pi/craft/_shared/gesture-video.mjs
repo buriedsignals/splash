@@ -319,7 +319,11 @@ export function valueText(v, f) {
 }
 
 /** How many of a climbing figure's steps have landed when its gesture's field is at `g`. */
-export const landedOf = (item, g) => Math.min(item.steps.length, Math.floor(g * item.steps.length + 1e-9));
+// The climb lands its last step at CLIMB_LANDS of the gesture's progress and holds the true total until the note takes
+// over at 1: landing it at 1 itself (gx-treemap video, mvg68) put the note up on that frame, so the total never showed
+// and the last figure on screen was a partial one.
+const CLIMB_LANDS = 0.8;
+export const landedOf = (item, g) => Math.min(item.steps.length, Math.floor((g / CLIMB_LANDS) * item.steps.length + 1e-9));
 
 /** The text a count or bracket's figure shows at a frame, or null while none of its steps has landed. */
 export function countTextAt(props, item, frame) {
