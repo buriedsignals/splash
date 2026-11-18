@@ -1612,7 +1612,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | scatter-and-bubble (position) | pass (mvq130, 22 t) | pass (mvq131, 10 t) | pass (mvq132, 15 t) |
 | slope-slopegraph (time) | pass* (mvq133, 8 t) | pass (mvq134, 17 t) | pass* (mvq135, 11 t) |
 | streamgraph (time) | pass (mvq136, 13 t) | pass (mvq137, 28 t) | pass (mvq138, 14 t) |
-| waterfall-bridge (part-to-whole) | pass (mvq139, 8 t) | — | — |
+| waterfall-bridge (part-to-whole) | pass (mvq139, 8 t) | pass (mvq140, 23 t) | — |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -2067,3 +2067,8 @@ Harness fixes, in order (each with a test that fails without it):
   — every bar and the headline match. Backlog: two toggle groups each with its own "Le pont seul" option (two
   rests for one chart); toggle labels use hyphen-minus "-143" while the bars use "−"; the named nuclear bar stays
   orange with only its label in accent.
+- **gx-waterfall-bridge video (Qwen3.5-9B, mvq140).** Pass (23 turns, 426 s, refusals=0; two mid-run refusals it
+  fixed itself — the source line as a note, rejected by the language guard, and `mark:"ALL"`, answered with "2015"):
+  reveal → bracket the three steps "143 TWh de moins au bout du compte" → pull-back; bars and net match data.json
+  (as mvq139). Backlog (kit): the bracket's running total ticks through a bare "11 TWh" on its way from +103 to
+  −143 (no sign, reads as a claim for one frame); the reveal of "Renouvelables" draws every bar at once.
