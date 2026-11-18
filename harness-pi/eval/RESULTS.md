@@ -1611,6 +1611,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | radar-spider (misfit) | pass (mvq127, 11 t) | pass (mvq128, 10 t) | pass (mvq129, 18 t) |
 | scatter-and-bubble (position) | pass (mvq130, 22 t) | pass (mvq131, 10 t) | pass (mvq132, 15 t) |
 | slope-slopegraph (time) | pass* (mvq133, 8 t) | pass (mvq134, 17 t) | pass* (mvq135, 11 t) |
+| streamgraph (time) | pass (mvq136, 13 t) | — | — |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -2046,3 +2047,9 @@ Harness fixes, in order (each with a test that fails without it):
   France 94,9 % → France started at 90,7 % → limits; all match data.json. The limits card repeats "les 6 plus gros
   producteurs, dont la paire" (Finland is 9th); card 1 says "sans carbone" for low-carbon. Backlog (kit): Finland
   ink / France accent again; the dashed compare line to nowhere again.
+- **gx-streamgraph web (Qwen3.5-9B, mvq136).** Pass (13 turns, 177 s, refusals=0): Swiss generation by source;
+  recomputed from data.json, solar (1.33 TWh) first passes oil (1.28) in 2016 and stays third through 2024, so
+  the headline holds; "3e source en 2016 : 1,3 TWh" and every 2024 edge label (hydro 44,9, nuclear 24,0, solar
+  5,7, oil 1,2 …) match. Backlog: the toggle group label "Solaire contre pétrole" sits beside an option named
+  "Solaire × Pétrole" (same thing twice, two spellings); the bottom bands taper to a point at 2024 so the last
+  three edge labels float below their own bands.
