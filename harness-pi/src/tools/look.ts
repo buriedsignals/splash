@@ -6,7 +6,7 @@ import { readFile } from "node:fs/promises";
 import { relative } from "node:path";
 import { defineTool } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
-import { type Bases, resolveInStory, stillInContext } from "./fs.ts";
+import { type Bases, resolveReadable, stillInContext } from "./fs.ts";
 
 // A video kit's look list holds the middle of each gesture ("reveal-<do>", "subject-<do>", "conclusion-<do>", "mid-…").
 // There a count is still climbing: Qwen3.5-9B read a bracket's 8.1 of 11.7 Gt as a wrong sum (stress-v, 2026-11-13).
@@ -27,7 +27,9 @@ export function lookTool(bases: Bases) {
       "Look at a PNG inside the story (a render or a verification screenshot). Use it after every render, before saying the beat is done.",
     parameters: Type.Object({ path: Type.String() }),
     async execute(id, { path }, _signal, _onUpdate, ctx) {
-      let abs = resolveInStory(bases, path);
+      // A look only reads: it takes the read resolver's repairs (gx-slope-slopegraph video, 12B, mvg80: the run's name
+      // taken for a story's, three refusals and a stopped craft).
+      let abs = resolveReadable(bases, path);
       // Renders come as an SVG and its PNG twin; the model often names the SVG.
       if (abs.endsWith(".svg") && existsSync(abs.replace(/\.svg$/, ".png"))) abs = abs.replace(/\.svg$/, ".png");
       if (!abs.endsWith(".png")) throw new Error(`${path} is not a PNG`);
