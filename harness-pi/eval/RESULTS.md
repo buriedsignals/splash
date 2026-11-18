@@ -2077,3 +2077,18 @@ Harness fixes, in order (each with a test that fails without it):
   matches data.json. Backlog (kit): the compare's excess bar inside "Fossile" is labelled with the bare "103" (the
   matched height), not the 51 TWh excess it draws; bracket total "-143" uses hyphen-minus.
   **With this cell, Qwen3.5-9B has passed web, video and scrolly for every gesture family (all charts + 8 maps).**
+
+## 2026-11-18 — moving-format coverage on Gemma 12B, family by family (mvg1–)
+
+Same protocol as the Qwen matrix above (`scratchpad/matrix.sh`, `SPLASH_LOCAL_MODEL=gemma-4-12b-it-optiq-4bit`,
+seeded, craft only, one cell at a time, judged by looking and against data.json), same family order.
+
+| Family / type | Web | Video | Scrolly |
+|---|---|---|---|
+| sankey | pass (mvg1, 8 t) | — | — |
+
+- **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
+  nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
+  = 83.6 %; highlight → bracket "455,1 TWh" → compare France vs Sweden + Switzerland "380,5 contre 74,7", all match.
+  Backlog: the compare toggle's label is the raw mark list "Nucléaire – France / Nucléaire – Suède + Nucléaire –
+  Suisse"; the highlight note is printed twice (subtitle line and over the flow).
