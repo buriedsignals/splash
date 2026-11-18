@@ -2088,7 +2088,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 | sankey | pass (mvg1, 8 t) | pass (mvg2, 5 t) | pass* (mvg3, 7 t) |
 | small-multiples | pass (mvg4, 15 t) | pass (mvg5, 5 t) | pass (mvg6, 9 t) |
 | connected-scatter | pass (mvg10, 10 t; after 3 kit/harness fixes) | pass (mvg12, 8 t; after 1 kit fix) | pass (mvg13, 11 t) |
-| lollipop | pass (mvg15, 13 t; mvg14 failed, harness fixed) | pass (mvg16, 11 t) | |
+| lollipop | pass (mvg15, 13 t; mvg14 failed, harness fixed) | pass (mvg16, 11 t) | pass (mvg17, 9 t) |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
@@ -2176,3 +2176,8 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
   China's stick copied and stacked onto the USA's to ×7,5 (21.4/2.9 = 7.4 → "7,5" on unrounded values, as the beat's own
   guard asserts), then the 2023 pairs grow and the stack shrinks to ×1,7; China 8,6 ringed, every figure as in data.json.
   Minor: the ×7,5 badge replaces the 21,4 label while it shows.
+- **gx-lollipop scrolly (12B, mvg17).** Pass (9 turns, 495 s), judged on the six cards: 2000 sticks → 2023 pairs →
+  China beside the USA → ×7,5 then ×1,7 with dashed level guides → +/- % under each pair ("4 en hausse, 2 en baisse":
+  China, India, Russia, Iran up; USA, Japan down) → 63,9 % of world CO₂; every figure as in data.json. One refusal:
+  a backtick glued to the closing "};" (as in mvg14) — self-corrected; the harness now removes it (813846e38).
+  Backlog: the prose card covers Russia's value labels on cards 1, 2, 5 and 6.
