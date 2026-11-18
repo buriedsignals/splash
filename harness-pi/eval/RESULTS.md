@@ -2085,10 +2085,14 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 
 | Family / type | Web | Video | Scrolly |
 |---|---|---|---|
-| sankey | pass (mvg1, 8 t) | — | — |
+| sankey | pass (mvg1, 8 t) | pass (mvg2, 5 t) | — |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
   = 83.6 %; highlight → bracket "455,1 TWh" → compare France vs Sweden + Switzerland "380,5 contre 74,7", all match.
   Backlog: the compare toggle's label is the raw mark list "Nucléaire – France / Nucléaire – Suède + Nucléaire –
   Suisse"; the highlight note is printed twice (subtitle line and over the flow).
+- **gx-sankey video (12B, mvg2).** Pass (5 turns, 248 s, refusals=0, first render OK): reveal → bracket the nuclear
+  node "455,1 TWh de nucléaire" (its three flows outlined) → highlight France "84 % du nucléaire des six pays";
+  same figures as mvg1. Backlog (kit): the France flow is already in the accent from the reveal on, so the
+  highlight adds only its note; the note sits over grey flows in a light italic that barely reads.
