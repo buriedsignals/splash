@@ -2092,6 +2092,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 | stacked-bar | pass (mvg18, 5 t) | pass (mvg19, 8 t) | pass (mvg20, 9 t) |
 | dot-strip | pass (mvg22, 9 t; mvg21 failed, kit fixed) | pass (mvg23, 10 t; kit layout fixed after) | pass (mvg24, 8 t) |
 | line | pass (mvg25, 8 t) | pass (mvg26, 12 t) | pass (mvg27, 14 t) |
+| pictogram-isotype | pass (mvg28, 7 t) | | |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
@@ -2220,3 +2221,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 - **gx-line scrolly (12B, mvg27).** Pass (14 turns, 621 s, refusals=0, every render OK). Four cards: the line drawn
   1858→1973 (46,2); the 1973 peak named; the rest of the line with 1967's level carried to 2024 (32,5 / 32,1); the
   whole. Figures match data.json. Same backlog item as lollipop: the centred prose card sits over the steep 1960s rise.
+- **gx-pictogram-isotype web (12B, mvg28).** Pass (7 turns, 226 s, refusals=0, first render OK). One square per
+  country, three bands of low-carbon share 2024: 16 above 75 %, 6 between 60 and 75 % (accent, named, bracketed 6/40),
+  18 below 60 %, 1 country with no generation left out; recomputed from data.json, all four counts match. Desktop
+  clean; phone squares shrink to dashes (phone backlog).
