@@ -404,9 +404,15 @@ const SUBSET = /^[a-z][a-z0-9-]*$/;
 const webStylesheets = new Map();
 
 /** Where a family's modern stylesheet is kept when the network answered once and may not next
- *  time. Beside the `.ttf` files, in the same cache, written the same staged way. */
-function webCssPath(family) {
-  return join(typefaceCacheDir(), `${family.replace(/\s+/g, "-")}-web.css`);
+ *  time. Beside the `.ttf` files, in the same cache, written the same staged way. Every request is
+ *  kept, the one-weight and `text=` ones under a digest of what was asked: a `text=` stylesheet was
+ *  once the one request never kept, so a network reset refused a "CO₂" title and a model rewrote
+ *  it as "CO2" (gx-beeswarm web, mvg88). */
+function webCssPath(family, spec = AXIS, text = null) {
+  const stem = `${family.replace(/\s+/g, "-")}-web`;
+  if (spec === AXIS && text === null) return join(typefaceCacheDir(), `${stem}.css`);
+  const digest = createHash("sha256").update(`${spec}|${text ?? ""}`).digest("hex").slice(0, 10);
+  return join(typefaceCacheDir(), `${stem}-${digest}.css`);
 }
 
 function writeCached(path, bytes) {
@@ -439,12 +445,12 @@ function webCssFor(family, { spec = AXIS, text = null } = {}) {
   const args = ["-A", MODERN_AGENT, "--get", "--data-urlencode", `family=${family}:${spec}`];
   if (text !== null) args.push("--data-urlencode", `text=${text}`);
   const answer = curl([...args, CSS_ENDPOINT]);
-  const cacheable = spec === AXIS && text === null;
+  const cachePath = webCssPath(family, spec, text);
   if (!answer.ok) {
     // No network. A stylesheet cached from an earlier run is the only thing that can still say
     // which subsets exist and where they live; without one there is nothing to embed, and a page
     // with no faces in it is a page in the wrong typeface.
-    const cached = cacheable && existsSync(webCssPath(family)) ? readFileSync(webCssPath(family), "utf8") : null;
+    const cached = existsSync(cachePath) ? readFileSync(cachePath, "utf8") : null;
     if (cached) {
       webStylesheets.set(key, cached);
       return cached;
@@ -462,7 +468,7 @@ function webCssFor(family, { spec = AXIS, text = null } = {}) {
       `Google Fonts answered for "${family}" with something that is not a stylesheet — ` +
         `${JSON.stringify(css.slice(0, 120))}. Nothing was cached.`,
     );
-  if (cacheable) writeCached(webCssPath(family), Buffer.from(css, "utf8"));
+  writeCached(cachePath, Buffer.from(css, "utf8"));
   webStylesheets.set(key, css);
   return css;
 }
