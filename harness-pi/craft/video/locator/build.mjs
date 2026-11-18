@@ -24,6 +24,7 @@ import { camerasOf, mapPlanFor, mapSeatsOf, projectorOf, SEA_SEATS, unprojectorO
 import { planDigestOf } from "./measure.mjs";
 import { statesFor } from "./states.mjs";
 import { placePills, stepOf } from "./scene.mjs";
+import { leaderTo } from "./leader.mjs";
 import { EUROPE_WINDOW } from "./subject.mjs";
 import { LOCATOR_VIDEO_TIMING } from "./timing-contract.ts";
 
@@ -414,6 +415,8 @@ export function buildDirection(id, chosen, { subject, states, copy }, { measured
   const waterNames = waters.map((wt) => ({ key: wt.key, kind: "water", text: wt.text, width: wt.textWidth, box: wt.box, at: wt.lonLat, register: water, ink: colours.text.water, halo: haloOf(water, k), haloColour: haloUnder(wt.box) }));
   const stationAt = { x: placed.station.x + air, y: placed.station.y + air };
   const stationBox = { x: stationAt.x, y: stationAt.y, ...stationBlock };
+  // Seated against its ring the block stands gap + air off the ring's edge; anywhere further it gets a line back.
+  const leader = leaderTo(stationAtStage, RING_NEAR, stationBox, 2 * gap + air);
   const stationLines = {
     name: { text: stationName.text, width: stationName.textWidth, x: stationAt.x + pad, y: stationAt.y + pad + valueBand.ascent },
     capacity: { x: stationAt.x + pad, y: stationAt.y + pad + 2 * valueBand.ascent + valueBand.descent },
@@ -469,7 +472,7 @@ export function buildDirection(id, chosen, { subject, states, copy }, { measured
     credit: { ...credit, at: creditAt, haloColour: band ? ground : sea },
     colours,
     strokes,
-    station: { lines: stationLines, capacityTexts },
+    station: { lines: stationLines, capacityTexts, leader },
     layoutInset: { x: inset, y: vInset },
     mapPlan: withNames(mapPlan, { dots: copy.places.map((p) => [p.lon, p.lat]), names: [...waterNames, ...names], colours, strokes, dotR }),
     ...drive,

@@ -24,7 +24,7 @@ export type LocatorFrameProps = {
   titleCard: { register: Register; eyebrow: Line; title: Line[] };
   credit: { at: { x: number; y: number }; halo: number; haloColour: string; lines: Line[] };
   colours: { ground: string; text: Record<"eyebrow" | "title" | "station" | "source", string> } & Record<string, unknown>;
-  station: { lines: { name: Line; capacity: { x: number; y: number }; halo: number; haloColour: string }; capacityTexts: Record<string, { text: string; width: number }> };
+  station: { lines: { name: Line; capacity: { x: number; y: number }; halo: number; haloColour: string }; capacityTexts: Record<string, { text: string; width: number }>; leader: { x1: number; y1: number; x2: number; y2: number } | null };
   cameras: { whole: Record<string, number>; closeUp: Record<string, number> };
   mapPlan: { layers: Array<{ id: string; bindings?: Record<string, unknown> }> } & Record<string, unknown>;
   capacity: number;
@@ -57,6 +57,12 @@ export function LocatorFrame(props: LocatorFrameProps & { at: number; liveMap: (
 
         {/* ── THE STATION'S NAME AND ITS CAPACITY, counted in measured texts. ── */}
         <g opacity={Math.min(1, scene.subject * 3)}>
+          {station.leader ? (
+            <g>
+              <line {...station.leader} stroke={station.lines.haloColour} strokeWidth={station.lines.halo + 2} strokeLinecap="round" />
+              <line {...station.leader} stroke={colours.text.station} strokeWidth={2} strokeLinecap="round" />
+            </g>
+          ) : null}
           <Word line={station.lines.name} register={r.value} fill={colours.text.station} halo={{ colour: station.lines.haloColour, width: station.lines.halo }} />
           <Word line={{ ...capacity, ...station.lines.capacity }} register={r.value} fill={colours.text.station} halo={{ colour: station.lines.haloColour, width: station.lines.halo }} />
         </g>
