@@ -220,6 +220,14 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
 
   const resolve = (name, i, field) => {
     if (valueOf.has(name)) return name;
+    // An object in a name's place printed as "[object Object]", and the nearest name to THAT text (gx-marimekko video,
+    // 12B, 2026-11-18: "France · Solar") is a guess about nothing the beat said.
+    if (typeof name !== "string" && typeof name !== "number")
+      throw new GestureRefusal(
+        `gestures[${i}].${field}`,
+        `${JSON.stringify(name)?.slice(0, 120) ?? String(name)} is not a row's name: write each mark as the drawn row's name, one string, e.g. "${rows[0]?.name}"`,
+        { set: { index: i, field: field.replace(/\[\d+\]$/, ""), value: undefined } },
+      );
     const folded = rows.find((r) => fold(r.name) === fold(name));
     if (folded) return folded.name;
     // A family may know why a name has no mark (a sankey's zero flow) and which drawn marks stand nearest in meaning.
