@@ -2088,6 +2088,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 | sankey | pass (mvg1, 8 t) | pass (mvg2, 5 t) | pass* (mvg3, 7 t) |
 | small-multiples | pass (mvg4, 15 t) | pass (mvg5, 5 t) | pass (mvg6, 9 t) |
 | connected-scatter | pass (mvg10, 10 t; after 3 kit/harness fixes) | pass (mvg12, 8 t; after 1 kit fix) | pass (mvg13, 11 t) |
+| lollipop | fail (mvg14: NaN printed; harness fixed) | | |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
@@ -2162,3 +2163,8 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
   desktop and the phone card: France 38.4% in 2000, 5 move left (France, Sweden, Germany, Belgium, Austria), +4.2 /
   −11.8, and in the 0–12% zoom 11 of the 14 remaining heavier (16 − France − Germany; Sweden, Austria, Belgium
   lighter) — all as in data.json. Backlog: the prose card sits over Germany's arc on cards 3 and 6.
+- **gx-lollipop web (12B, mvg14).** Fail (14 turns, 488 s): rendered and passed verify-web, but limits and reading
+  were written as YAML lists ("limits:" then "- `…`" lines), which JS reads as minus on strings — the page printed
+  "NaN" twice. Figures otherwise right (China 2.9→8.6, ×3; USA 21.4→14.3; ratio 1.7). Fixed in the harness: such a
+  field is rewritten into an array before the render (8b8b71b7e); the phone-height hint now tells a kit that draws
+  only limits' first form to shorten that one (4b156b3b0; 49 of 50 web kits draw only the first form).
