@@ -20,3 +20,12 @@ describe("the connected-scatter web caveat on a phone", () => {
     expect(tsx).toMatch(/<span className=\{caveatShort && caveatShort !== caveat \? "caveat-long has-short" : "caveat-long"\}>\{caveat\}<\/span>/);
   });
 });
+
+// gx-connected-scatter web, Gemma 12B (mvg9, 2026-11-18): the vertical-axis title "Share of European low-carbon output
+// (16 countries)" never wrapped, so the phone page was 395px wide in a 375px window, and the refusal named no field.
+// The title sits at the plot's left edge, left of the page's centre; half the window less the gutter always fits.
+describe("the connected-scatter web vertical-axis title on a phone", () => {
+  it("should wrap within half the window at phone width", () => {
+    expect(tsx).toMatch(/@media \(max-width: 480px\) \{ \$\{SCOPE\} \.y-title \{ white-space: normal !important; width: max-content; max-width: calc\(50vw - 24px\); \} \}/);
+  });
+});

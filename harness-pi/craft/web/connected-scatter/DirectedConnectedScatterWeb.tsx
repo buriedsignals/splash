@@ -321,6 +321,7 @@ export function DirectedConnectedScatterWeb({
     aimChromeCss({ scope: SCOPE }),
     `${SCOPE} .caveat-short { display: none; }`,
     `@media (max-width: 480px) { ${SCOPE} .caveat-long.has-short { display: none; } ${SCOPE} .caveat-short { display: inline; } }`,
+    `@media (max-width: 480px) { ${SCOPE} .y-title { white-space: normal !important; width: max-content; max-width: calc(50vw - 24px); } }`,
     aimCss(aim, arrows, {
       scope: SCOPE,
       idPrefix: AIM_ID_PREFIX,
