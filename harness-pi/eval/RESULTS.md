@@ -2089,7 +2089,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 | small-multiples | pass (mvg4, 15 t) | pass (mvg5, 5 t) | pass (mvg6, 9 t) |
 | connected-scatter | pass (mvg10, 10 t; after 3 kit/harness fixes) | pass (mvg12, 8 t; after 1 kit fix) | pass (mvg13, 11 t) |
 | lollipop | pass (mvg15, 13 t; mvg14 failed, harness fixed) | pass (mvg16, 11 t) | pass (mvg17, 9 t) |
-| stacked-bar | pass (mvg18, 5 t) | | |
+| stacked-bar | pass (mvg18, 5 t) | pass (mvg19, 8 t) | |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
@@ -2187,3 +2187,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
   by addition; Spain 96.7 + 118.9 = 216, France 483.0 + 50.1 = 533 — recomputed from data.json. Then the model stalled
   after its look and the 15-min cap aborted the request (the render was already final). Backlog: phone bars ~70 px wide,
   in-bar numbers collide; a local re-render fails two 0.1 px font-fallback checks (host fonts, not the beat).
+- **gx-stacked-bar video (12B, mvg19).** Pass (8 turns, 282 s, 21.2 s mp4), judged on frames: title card → 2000 levels
+  → additions grow → Spain highlighted → "+119 TWh contre +50 pour la France" → "La France part de 483 TWh"; figures
+  as in mvg18 (top 10 of 16 shown, said). Backlog: the compare gesture underlines only Spain's 119 segment, not
+  France's 50; the chart sits in the left 2/3 with notes in the margin.
