@@ -2091,6 +2091,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 | lollipop | pass (mvg15, 13 t; mvg14 failed, harness fixed) | pass (mvg16, 11 t) | pass (mvg17, 9 t) |
 | stacked-bar | pass (mvg18, 5 t) | pass (mvg19, 8 t) | pass (mvg20, 9 t) |
 | dot-strip | pass (mvg22, 9 t; mvg21 failed, kit fixed) | pass (mvg23, 10 t; kit layout fixed after) | pass (mvg24, 8 t) |
+| line | pass (mvg25, 8 t) | | |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
@@ -2210,3 +2211,6 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
   entity names on a fr page, and the next one read `entity_fr` as the refusal said). Four cards: Pologne 1,6 % in 2000;
   the floor +30 (1,6 → 31,1 %); Suède +2 (96,7 → 98,8 %); the whole field. Figures match data.json; the top-line note
   sits right of the unit with no overlap in this kit.
+- **gx-line web (12B, mvg25).** Pass (8 turns, 276 s, refusals=0, first render OK). Suisse 1858–2024; the 1973 peak
+  named (46,2 Mt, the series' max); compare 2024 vs 1967 (32,1 / 32,5); title true (32,07 < 32,53). Desktop clean;
+  phone plot short with the same squeeze as the other web kits (backlog).
