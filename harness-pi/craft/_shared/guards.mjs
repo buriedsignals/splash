@@ -670,6 +670,40 @@ function commaBefore(e) {
 }
 
 /**
+ * A nested template closed with its "}" and "`" swapped — `de plus}`}` for `de plus`}` — parses on until the next
+ * backtick, lines later (gx-population-pyramid web, 12B, 2026-11-18: 40 turns on lines 34–35, the slip on line 31).
+ * Tries the swap, and dropping the "}", on each "}`" up to the reported line; returns the first that parses.
+ */
+function swappedTemplateClose(e) {
+  if (!e?.position?.file || !/^(Expected "\}" but found|Unexpected "?\}|Unterminated (string|template))/.test(String(e.message ?? ""))) return null;
+  if (!existsSync(e.position.file) || !globalThis.Bun?.Transpiler) return null;
+  const source = readFileSync(e.position.file, "utf8");
+  const lines = source.split("\n");
+  const parses = (text) => {
+    try {
+      new Bun.Transpiler({ loader: "js" }).transformSync(text);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  for (let i = 0; i < Math.min(e.position.line, lines.length); i++) {
+    for (let at = lines[i].indexOf("}`"); at >= 0; at = lines[i].indexOf("}`", at + 1)) {
+      const line = lines[i];
+      const fixes = line[at + 2] === "}" ? [[3, "`}`"], [2, "`}"], [1, ""]] : [[2, "`}"], [1, ""]];
+      for (const [cut, put] of fixes) {
+        const fixed = line.slice(0, at) + put + line.slice(at + cut);
+        if (!parses([...lines.slice(0, i), fixed, ...lines.slice(i + 1)].join("\n"))) continue;
+        const from = line.slice(Math.max(0, at - 7), at + cut);
+        const to = line.slice(Math.max(0, at - 7), at) + put;
+        return `line ${i + 1} closes a nested template with "${from}" — the "}" and the backtick are swapped, so the string runs on to line ${e.position.line} — a value that works: "${to}" (edit_file "${from}" to "${to}" on line ${i + 1})`;
+      }
+    }
+  }
+  return null;
+}
+
+/**
  * A beat.mjs holding the beat twice: the line where its imports start again, and the lines to delete — the copy
  * without `export default` goes, else the first (gx-proportional-symbol web, 12B, 2026-11-13: a draft in lines 1–122,
  * a whole beat from 123, and six refusals listing "has already been declared" names).
@@ -918,6 +952,8 @@ export function errorText(error) {
   // One build error comes alone, carrying its own position; several come grouped. An unquoted key with a space
   // (gx-proportional-symbol web, Qwen3.5-9B, 2026-11-13: `San Marino: "Saint-Marin"`) breaks the parse once and
   // cascades into "Expected ;" errors that point at nothing: only its own error is named.
+  const swapped = swappedTemplateClose(error?.errors?.[0] ?? error);
+  if (swapped) return `${error?.message ?? ""} — ${swapped}`;
   if (!error?.errors?.length) return one(error);
   const first = error.errors.find((e) => spacedKey(e) || commaBefore(e) || secondCopy(e));
   return [error.message, ...(first ? [first] : error.errors).map(one)].join(" — ");

@@ -184,10 +184,13 @@ describe("applyStoryboard", () => {
   // receives, and the same refusal came back twice.
   it("should say a bare name that is also a received key is a function beat.mjs must define", () => {
     const b = {
-      detail: (p: { rank: number }) => `${(globalThis as any).eval("rank")(p.rank)}`,
+      detail: (p: { rank: number }) =>
+        `${(globalThis as any).eval("rank")(p.rank)}`,
     };
     applyStoryboard(b, mkdtempSync(join(tmpdir(), "splash-fn-")));
-    expect(() => b.detail({ name: "Suède", rank: 1 } as never)).toThrow(/p\.rank is the number[\s\S]*const rank = /);
+    expect(() => b.detail({ name: "Suède", rank: 1 } as never)).toThrow(
+      /p\.rank is the number[\s\S]*const rank = /,
+    );
   });
 
   it("should leave a check's own refusal word for word", () => {
@@ -228,10 +231,19 @@ describe("applyStoryboard", () => {
     const root = mkdtempSync(join(tmpdir(), "splash-ligature-"));
     const dir = join(root, "beats", "1");
     mkdirSync(dir, { recursive: true });
-    writeFileSync(join(root, "STORYBOARD.md"), `---\ntakeaway: "Genève a tenu 31 jours d’affilée au-dessus de 20 °C en 2024"\n---\n`);
-    const b: Record<string, unknown> = { title: ["Genève a tenu 31 jours d'af\uFB01lée au-dessus de 20 °C en 2024"] };
+    writeFileSync(
+      join(root, "STORYBOARD.md"),
+      `---\ntakeaway: "Genève a tenu 31 jours d’affilée au-dessus de 20 °C en 2024"\n---\n`,
+    );
+    const b: Record<string, unknown> = {
+      title: [
+        "Genève a tenu 31 jours d'af\uFB01lée au-dessus de 20 °C en 2024",
+      ],
+    };
     applyStoryboard(b, dir);
-    expect(b.title).toEqual(["Genève a tenu 31 jours d’affilée au-dessus de 20 °C en 2024"]);
+    expect(b.title).toEqual([
+      "Genève a tenu 31 jours d’affilée au-dessus de 20 °C en 2024",
+    ]);
   });
 
   // gx-calendar-heatmap scrolly (Qwen3.5-9B, mvq54): once the ligature folded, the next render typed "afilée", one
@@ -240,18 +252,30 @@ describe("applyStoryboard", () => {
     const root = mkdtempSync(join(tmpdir(), "splash-typo-"));
     const dir = join(root, "beats", "1");
     mkdirSync(dir, { recursive: true });
-    writeFileSync(join(root, "STORYBOARD.md"), `---\ntakeaway: "Genève a tenu 31 jours d’affilée au-dessus de 20 °C en 2024"\n---\n`);
-    const b: Record<string, unknown> = { title: ["Genève a tenu 31 jours d'afilée au-dessus de 20 °C en 2024"] };
+    writeFileSync(
+      join(root, "STORYBOARD.md"),
+      `---\ntakeaway: "Genève a tenu 31 jours d’affilée au-dessus de 20 °C en 2024"\n---\n`,
+    );
+    const b: Record<string, unknown> = {
+      title: ["Genève a tenu 31 jours d'afilée au-dessus de 20 °C en 2024"],
+    };
     applyStoryboard(b, dir);
-    expect(b.title).toEqual(["Genève a tenu 31 jours d’affilée au-dessus de 20 °C en 2024"]);
+    expect(b.title).toEqual([
+      "Genève a tenu 31 jours d’affilée au-dessus de 20 °C en 2024",
+    ]);
   });
 
   it("should still refuse a title one figure off the takeaway", () => {
     const root = mkdtempSync(join(tmpdir(), "splash-typo-"));
     const dir = join(root, "beats", "1");
     mkdirSync(dir, { recursive: true });
-    writeFileSync(join(root, "STORYBOARD.md"), `---\ntakeaway: "Genève a tenu 31 jours d’affilée au-dessus de 20 °C en 2024"\n---\n`);
-    const b: Record<string, unknown> = { title: ["Genève a tenu 37 jours d’affilée au-dessus de 20 °C en 2024"] };
+    writeFileSync(
+      join(root, "STORYBOARD.md"),
+      `---\ntakeaway: "Genève a tenu 31 jours d’affilée au-dessus de 20 °C en 2024"\n---\n`,
+    );
+    const b: Record<string, unknown> = {
+      title: ["Genève a tenu 37 jours d’affilée au-dessus de 20 °C en 2024"],
+    };
     expect(() => applyStoryboard(b, dir)).toThrow(/literal string/);
   });
 
@@ -280,20 +304,34 @@ describe("applyStoryboard", () => {
     const root = mkdtempSync(join(tmpdir(), "splash-clause-"));
     const dir = join(root, "beats", "1");
     mkdirSync(dir, { recursive: true });
-    writeFileSync(join(root, "STORYBOARD.md"), `---\ntakeaway: "Compté par pays, le bas-carbone européen est à 65,1 %"\n---\n`);
+    writeFileSync(
+      join(root, "STORYBOARD.md"),
+      `---\ntakeaway: "Compté par pays, le bas-carbone européen est à 65,1 %"\n---\n`,
+    );
     const b = {
-      title: ["Compté par pays, le bas-carbone européen est à 65,1 % ; compté au kilomètre carré, à 44,9 %", "Compté par pays : 65,1 %"],
+      title: [
+        "Compté par pays, le bas-carbone européen est à 65,1 % ; compté au kilomètre carré, à 44,9 %",
+        "Compté par pays : 65,1 %",
+      ],
     };
     applyStoryboard(b, dir);
-    expect(b.title).toEqual(["Compté par pays, le bas-carbone européen est à 65,1 %", "Compté par pays : 65,1 %"]);
+    expect(b.title).toEqual([
+      "Compté par pays, le bas-carbone européen est à 65,1 %",
+      "Compté par pays : 65,1 %",
+    ]);
   });
 
   it("should still refuse a title that runs on past the takeaway without a clause break", () => {
     const root = mkdtempSync(join(tmpdir(), "splash-clause-"));
     const dir = join(root, "beats", "1");
     mkdirSync(dir, { recursive: true });
-    writeFileSync(join(root, "STORYBOARD.md"), `---\ntakeaway: "Le bas-carbone est à 65"\n---\n`);
-    expect(() => applyStoryboard({ title: "Le bas-carbone est à 65,1 %" }, dir)).toThrow(/copied as a literal string/);
+    writeFileSync(
+      join(root, "STORYBOARD.md"),
+      `---\ntakeaway: "Le bas-carbone est à 65"\n---\n`,
+    );
+    expect(() =>
+      applyStoryboard({ title: "Le bas-carbone est à 65,1 %" }, dir),
+    ).toThrow(/copied as a literal string/);
   });
 
   it("should still refuse a title that drops a clause stating no figure", () => {
@@ -350,7 +388,9 @@ describe("applyStoryboard", () => {
         "La puissance tient dans peu de sites",
       ],
     };
-    expect(noteOf(() => applyStoryboard(b, dir))).toMatch(/title: its form 3, "La puissance tient dans peu de sites", drops the takeaway's claim/);
+    expect(noteOf(() => applyStoryboard(b, dir))).toMatch(
+      /title: its form 3, "La puissance tient dans peu de sites", drops the takeaway's claim/,
+    );
     expect(b.title).toEqual([
       "Un centième des sites porte plus d’un tiers de la puissance bas-carbone d’Europe",
       "Un centième des sites, plus d’un tiers de la puissance",
@@ -371,7 +411,9 @@ describe("applyStoryboard", () => {
         "Lisboa carries most million trips",
       ],
     };
-    expect(noteOf(() => applyStoryboard(b, dir))).toMatch(/form 2.*drops the takeaway's claim \(214, 394\)/);
+    expect(noteOf(() => applyStoryboard(b, dir))).toMatch(
+      /form 2.*drops the takeaway's claim \(214, 394\)/,
+    );
     expect(b.title).toEqual(["Lisboa carries 214 of the 394 million trips"]);
   });
 
@@ -403,8 +445,15 @@ describe("applyStoryboard", () => {
       join(root, "STORYBOARD.md"),
       `---\nlanguage: fr\ntakeaway: "72 réacteurs sur 8 900 centrales bas-carbone — et un tiers de la puissance"\n---\n`,
     );
-    const b = { title: ["72 réacteurs sur 8 900 centrales bas-carbone — et un tiers de la puissance", "72 sites nucléaires, un tiers de la puissance"] };
-    expect(noteOf(() => applyStoryboard(b, dir))).toMatch(/drops the takeaway's claim \(72, 8 900\): it leaves out 8 900,/);
+    const b = {
+      title: [
+        "72 réacteurs sur 8 900 centrales bas-carbone — et un tiers de la puissance",
+        "72 sites nucléaires, un tiers de la puissance",
+      ],
+    };
+    expect(noteOf(() => applyStoryboard(b, dir))).toMatch(
+      /drops the takeaway's claim \(72, 8 900\): it leaves out 8 900,/,
+    );
     expect(b.title).toHaveLength(1);
   });
 
@@ -425,7 +474,9 @@ describe("applyStoryboard", () => {
         "Coal: 12 % of the six, nearly all of it in Germany and Poland",
       ],
     };
-    expect(noteOf(() => applyStoryboard(b, dir))).toMatch(/it leaves out 99\.5.*at least 3 of/);
+    expect(noteOf(() => applyStoryboard(b, dir))).toMatch(
+      /it leaves out 99\.5.*at least 3 of/,
+    );
   });
 
   // gx-bullet web (Qwen3.5-9B, 2026-11-13): the credit line ended "· as of 2025-06-26" on a French plate.
@@ -474,7 +525,10 @@ describe("applyStoryboard", () => {
       const root = mkdtempSync(join(tmpdir(), "splash-limits-"));
       const dir = join(root, "beats", "1");
       mkdirSync(dir, { recursive: true });
-      writeFileSync(join(root, "STORYBOARD.md"), `---\nlimits: "Six pays seulement, 2015 et 2024."\n---\n`);
+      writeFileSync(
+        join(root, "STORYBOARD.md"),
+        `---\nlimits: "Six pays seulement, 2015 et 2024."\n---\n`,
+      );
       return dir;
     };
     const applied = (limits: unknown) => {
@@ -488,15 +542,20 @@ describe("applyStoryboard", () => {
       );
     });
     it("should keep the shorter forms that follow", () => {
-      expect(applied(["Rangés par niveau, les six retrouvent leur ordre.", "Rangés par niveau."])).toEqual([
+      expect(
+        applied([
+          "Rangés par niveau, les six retrouvent leur ordre.",
+          "Rangés par niveau.",
+        ]),
+      ).toEqual([
         "Six pays seulement, 2015 et 2024. Rangés par niveau, les six retrouvent leur ordre.",
         "Rangés par niveau.",
       ]);
     });
     it("should leave a first form that already carries them", () => {
-      expect(applied("Six pays seulement, 2015 et 2024 : rangés par niveau.")).toBe(
-        "Six pays seulement, 2015 et 2024 : rangés par niveau.",
-      );
+      expect(
+        applied("Six pays seulement, 2015 et 2024 : rangés par niveau."),
+      ).toBe("Six pays seulement, 2015 et 2024 : rangés par niveau.");
     });
   });
 
@@ -551,7 +610,10 @@ describe("applyStoryboard", () => {
       const root = mkdtempSync(join(tmpdir(), "splash-fr-space-"));
       const dir = join(root, "beats", "1");
       mkdirSync(dir, { recursive: true });
-      writeFileSync(join(root, "STORYBOARD.md"), `---\nlanguage: ${language}\n---\n`);
+      writeFileSync(
+        join(root, "STORYBOARD.md"),
+        `---\nlanguage: ${language}\n---\n`,
+      );
       return dir;
     };
     it("should put a no-break space before a colon and a percent that have none", () => {
@@ -560,16 +622,25 @@ describe("applyStoryboard", () => {
       expect(b.alt).toBe("Allemagne + Pologne\u00A0: 49,1\u00A0%");
     });
     it("should normalise the words a beat's function returns", () => {
-      const b: Record<string, unknown> = { share: (s: number) => `Allemagne + Pologne: ${s}%` };
+      const b: Record<string, unknown> = {
+        share: (s: number) => `Allemagne + Pologne: ${s}%`,
+      };
       applyStoryboard(b, beatIn("fr"));
-      expect((b.share as (s: number) => string)(49.1)).toBe("Allemagne + Pologne\u00A0: 49,1\u00A0%");
+      expect((b.share as (s: number) => string)(49.1)).toBe(
+        "Allemagne + Pologne\u00A0: 49,1\u00A0%",
+      );
     });
     it("should leave a time, a link and an English plate alone", () => {
-      const fr: Record<string, unknown> = { limits: "à 12:30, voir https://x.org" };
+      const fr: Record<string, unknown> = {
+        limits: "à 12:30, voir https://x.org",
+      };
       applyStoryboard(fr, beatIn("fr"));
       const en: Record<string, unknown> = { alt: "Germany + Poland: 49.1%" };
       applyStoryboard(en, beatIn("en"));
-      expect([fr.limits, en.alt]).toEqual(["à 12:30, voir https://x.org", "Germany + Poland: 49.1%"]);
+      expect([fr.limits, en.alt]).toEqual([
+        "à 12:30, voir https://x.org",
+        "Germany + Poland: 49.1%",
+      ]);
     });
   });
 
@@ -818,21 +889,38 @@ describe("assertLegibleLabels", () => {
 describe("assertTicksSayTheirValue", () => {
   it("should refuse a tick that prints a tenth of its value", () => {
     const tens = (v: number) => `${Math.round(v / 10000)}k`;
-    expect(() => assertTicksSayTheirValue([0, 350_000], tens)).toThrow(/tickFormat.*350000.*"35k"/);
+    expect(() => assertTicksSayTheirValue([0, 350_000], tens)).toThrow(
+      /tickFormat.*350000.*"35k"/,
+    );
   });
 
   it("should accept ticks in thousands, rounded or with a decimal comma", () => {
     const thousands = (v: number) => `${String(v / 1000).replace(".", ",")}k`;
-    expect(() => assertTicksSayTheirValue([0, 17_500, 175_000, 350_000], thousands)).not.toThrow();
+    expect(() =>
+      assertTicksSayTheirValue([0, 17_500, 175_000, 350_000], thousands),
+    ).not.toThrow();
   });
 
   it("should accept millions, grouped figures, years and shares", () => {
-    const f = (v: number) => (v >= 1e6 ? `${v / 1e6} M` : v === 1990 ? "1990" : v === 0.25 ? "25 %" : "350\u202f000");
-    expect(() => assertTicksSayTheirValue([2e6, 1990, 0.25, 350_000], f)).not.toThrow();
+    const f = (v: number) =>
+      v >= 1e6
+        ? `${v / 1e6} M`
+        : v === 1990
+          ? "1990"
+          : v === 0.25
+            ? "25 %"
+            : "350\u202f000";
+    expect(() =>
+      assertTicksSayTheirValue([2e6, 1990, 0.25, 350_000], f),
+    ).not.toThrow();
   });
 
   it("should leave words alone", () => {
-    expect(() => assertTicksSayTheirValue([1, 2], (v: number) => (v === 1 ? "bas" : "haut"))).not.toThrow();
+    expect(() =>
+      assertTicksSayTheirValue([1, 2], (v: number) =>
+        v === 1 ? "bas" : "haut",
+      ),
+    ).not.toThrow();
   });
 });
 
@@ -841,7 +929,10 @@ describe("errorText", () => {
   // "the crossing is at undefined, not 60-64" came back three times with nothing saying what crossings holds.
   it("should quote the contract's definition when a field read on a list item is undefined", async () => {
     const dir = mkdtempSync(join(tmpdir(), "splash-ref-"));
-    writeFileSync(join(dir, "CONTRACT.md"), "`crossings` = the band names where the lead changes, e.g. [\"60-64\"]; `runs` = the stretches\n");
+    writeFileSync(
+      join(dir, "CONTRACT.md"),
+      '`crossings` = the band names where the lead changes, e.g. ["60-64"]; `runs` = the stretches\n',
+    );
     writeFileSync(
       join(dir, "beat.mjs"),
       'const crossings = ["60-64"];\nexport const go = () => {\n  if (crossings[0]?.band !== "60-64") throw new Error(`the crossing is at ${crossings[0]?.band}, not 60-64`);\n};\n',
@@ -852,7 +943,9 @@ describe("errorText", () => {
     } catch (e) {
       error = e;
     }
-    expect(errorText(error)).toMatch(/crossings\[0\]\.band is undefined.*CONTRACT\.md: `crossings` = the band names where the lead changes, e\.g\. \["60-64"\]/);
+    expect(errorText(error)).toMatch(
+      /crossings\[0\]\.band is undefined.*CONTRACT\.md: `crossings` = the band names where the lead changes, e\.g\. \["60-64"\]/,
+    );
   });
 
   // gx-bullet web (12B, 2026-11-13): beat.mjs ended "};" then a line holding one backtick; the refusal read
@@ -947,6 +1040,26 @@ describe("errorText", () => {
     }
     expect(errorText(error)).toMatch(
       /line 2 ends with "," .*a value that works: end line 2 with ";"/,
+    );
+  });
+
+  // gx-population-pyramid web (12B, 2026-11-18): `de plus}`}` closed a nested template with a stray "}" inside its
+  // text, so the parse broke three lines later at the next backtick; the refusal quoted only that line and the 12B
+  // spent 40 turns on lines 34–35, never on line 31.
+  it("should name the stray brace that closes a nested template early", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-ref-"));
+    writeFileSync(
+      join(dir, "beat.mjs"),
+      'const fr = (v) => String(v);\nexport default {\n  detail: (b) =>\n    `${b.gap === 0 ? "parité" : `${fr(b.gap)} de plus}`},\n  name: "x",\n  pill: (f) => `les ${f.name}`,\n};\n',
+    );
+    let error;
+    try {
+      await import(join(dir, "beat.mjs"));
+    } catch (e) {
+      error = e;
+    }
+    expect(errorText(error)).toMatch(
+      /line 4 .*"de plus}`}" .*a value that works: .*"de plus`}`"/,
     );
   });
 
@@ -1554,13 +1667,31 @@ describe("assertHeadlineNumbersDrawn on a map of percentages", () => {
 
 describe("assertHeadlineNumbersDrawn on the marks' mean", () => {
   // Qwen3.5-9B's tile cartogram (2026-11-15): forty country shares drawn, a title stating their mean, 65,1 %.
-  const shares = [0, 100, 40, 85, 62, 71, 93, 30, 55, 115].map((v) => v * 0.6 + 26.1 - 26.1 * 0.6 + 0.0);
+  const shares = [0, 100, 40, 85, 62, 71, 93, 30, 55, 115].map(
+    (v) => v * 0.6 + 26.1 - 26.1 * 0.6 + 0.0,
+  );
   const mean = shares.reduce((a, b) => a + b, 0) / shares.length;
   it("should accept a percentage title that states the mean of the drawn marks", () => {
-    expect(() => assertHeadlineNumbersDrawn(`Compté par pays, la part est à ${mean.toFixed(1).replace(".", ",")} %`, shares, "places", "/nonexistent/data.json", { percent: true })).not.toThrow();
+    expect(() =>
+      assertHeadlineNumbersDrawn(
+        `Compté par pays, la part est à ${mean.toFixed(1).replace(".", ",")} %`,
+        shares,
+        "places",
+        "/nonexistent/data.json",
+        { percent: true },
+      ),
+    ).not.toThrow();
   });
   it("should still refuse a percentage the marks neither hold nor average to", () => {
-    expect(() => assertHeadlineNumbersDrawn("Compté par pays, la part est à 44,9 %", shares, "places", "/nonexistent/data.json", { percent: true })).toThrow(/44\.9/);
+    expect(() =>
+      assertHeadlineNumbersDrawn(
+        "Compté par pays, la part est à 44,9 %",
+        shares,
+        "places",
+        "/nonexistent/data.json",
+        { percent: true },
+      ),
+    ).toThrow(/44\.9/);
   });
 });
 
@@ -1569,6 +1700,14 @@ describe("assertHeadlineNumbersDrawn on a near-miss mean", () => {
   // title of 65,1, and the refusal told it to compute the measure it was already computing.
   const shares = [50, 60, 70, 80, 65.04];
   it("should name the marks' average and point at the measure's columns", () => {
-    expect(() => assertHeadlineNumbersDrawn("Compté par pays, la part est à 65,1 %", shares, "places", "/nonexistent/data.json", { percent: true })).toThrow(/average 65\.0\d.*columns/);
+    expect(() =>
+      assertHeadlineNumbersDrawn(
+        "Compté par pays, la part est à 65,1 %",
+        shares,
+        "places",
+        "/nonexistent/data.json",
+        { percent: true },
+      ),
+    ).toThrow(/average 65\.0\d.*columns/);
   });
 });
