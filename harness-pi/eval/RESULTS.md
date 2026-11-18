@@ -2087,7 +2087,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 |---|---|---|---|
 | sankey | pass (mvg1, 8 t) | pass (mvg2, 5 t) | pass* (mvg3, 7 t) |
 | small-multiples | pass (mvg4, 15 t) | pass (mvg5, 5 t) | pass (mvg6, 9 t) |
-| connected-scatter | pass (mvg10, 10 t; after 3 kit/harness fixes) | | |
+| connected-scatter | pass (mvg10, 10 t; after 3 kit/harness fixes) | pass (mvg12, 8 t; after 1 kit fix) | |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
@@ -2155,3 +2155,6 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 - **gx-connected-scatter video (12B, mvg11).** Stuck, killed: refused twice for printing "AUT", "BEL"… while its
   beat followed the kit's own example ({ name: code, label: nameOf(code) }) and the frame prints label. Kit defect: the
   code-not-name guard read the key, not the printed label (video and static); fixed in e1397b94d.
+- **gx-connected-scatter video (12B, mvg12).** Pass first render (8 turns, 504 s, 0 refusals, headline). Frames read
+  from the mp4: 16 of 16 cleaner, 5 lighter (France, Germany, Sweden, Austria, Belgium, as in data.json), France
+  +4.2 pts / −11.8 pts (38.4→26.5). Backlog: the zoom shot cuts Germany's arc at the right edge.
