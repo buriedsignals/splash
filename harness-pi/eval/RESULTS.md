@@ -1611,7 +1611,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | radar-spider (misfit) | pass (mvq127, 11 t) | pass (mvq128, 10 t) | pass (mvq129, 18 t) |
 | scatter-and-bubble (position) | pass (mvq130, 22 t) | pass (mvq131, 10 t) | pass (mvq132, 15 t) |
 | slope-slopegraph (time) | pass* (mvq133, 8 t) | pass (mvq134, 17 t) | pass* (mvq135, 11 t) |
-| streamgraph (time) | pass (mvq136, 13 t) | pass (mvq137, 28 t) | — |
+| streamgraph (time) | pass (mvq136, 13 t) | pass (mvq137, 28 t) | pass (mvq138, 14 t) |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -2057,3 +2057,7 @@ Harness fixes, in order (each with a test that fails without it):
   revising): reveal → compare solar/oil "le solaire dépasse le pétrole" → annotate "3e source en 2016 : 1,3 TWh";
   same data as mvq136, figures match data.json. Backlog (kit): the compare never lights the oil band (only solar
   is accent, so "dépasse" has nothing to point at); the two notes stack into one block over the nuclear band.
+- **gx-streamgraph scrolly (Qwen3.5-9B, mvq138).** Pass (14 turns, 319 s, refusals=0): hydro + nuclear carry the
+  mix → "la bande solaire s'épaissit jusqu'à dépasser celle du pétrole" → "en 2016, avec 1,3 TWh, le solaire devient
+  la troisième source" → limits; all true against data.json. Backlog (kit): as in video, the compare never lights
+  the oil band, which sits at the opposite edge of the stream from solar, so the reader cannot see the overtaking.
