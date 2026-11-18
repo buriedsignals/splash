@@ -2089,6 +2089,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 | small-multiples | pass (mvg4, 15 t) | pass (mvg5, 5 t) | pass (mvg6, 9 t) |
 | connected-scatter | pass (mvg10, 10 t; after 3 kit/harness fixes) | pass (mvg12, 8 t; after 1 kit fix) | pass (mvg13, 11 t) |
 | lollipop | pass (mvg15, 13 t; mvg14 failed, harness fixed) | pass (mvg16, 11 t) | pass (mvg17, 9 t) |
+| stacked-bar | pass (mvg18, 5 t) | | |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
@@ -2181,3 +2182,8 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
   China, India, Russia, Iran up; USA, Japan down) → 63,9 % of world CO₂; every figure as in data.json. One refusal:
   a backtick glued to the closing "};" (as in mvg14) — self-corrected; the harness now removes it (813846e38).
   Backlog: the prose card covers Russia's value labels on cards 1, 2, 5 and 6.
+- **gx-stacked-bar web (12B, mvg18).** Pass (5 turns), first render in 2 min, verify-web passed in the run: low-carbon
+  electricity (hydro + wind + solar + bio + other + nuclear) in 2000 plus what was added by 2024, 16 countries sorted
+  by addition; Spain 96.7 + 118.9 = 216, France 483.0 + 50.1 = 533 — recomputed from data.json. Then the model stalled
+  after its look and the 15-min cap aborted the request (the render was already final). Backlog: phone bars ~70 px wide,
+  in-bar numbers collide; a local re-render fails two 0.1 px font-fallback checks (host fonts, not the beat).
