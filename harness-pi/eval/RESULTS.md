@@ -1611,7 +1611,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | radar-spider (misfit) | pass (mvq127, 11 t) | pass (mvq128, 10 t) | pass (mvq129, 18 t) |
 | scatter-and-bubble (position) | pass (mvq130, 22 t) | pass (mvq131, 10 t) | pass (mvq132, 15 t) |
 | slope-slopegraph (time) | pass* (mvq133, 8 t) | pass (mvq134, 17 t) | pass* (mvq135, 11 t) |
-| streamgraph (time) | pass (mvq136, 13 t) | — | — |
+| streamgraph (time) | pass (mvq136, 13 t) | pass (mvq137, 28 t) | — |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -2053,3 +2053,7 @@ Harness fixes, in order (each with a test that fails without it):
   5,7, oil 1,2 …) match. Backlog: the toggle group label "Solaire contre pétrole" sits beside an option named
   "Solaire × Pétrole" (same thing twice, two spellings); the bottom bands taper to a point at 2024 so the last
   three edge labels float below their own bands.
+- **gx-streamgraph video (Qwen3.5-9B, mvq137).** Pass (28 turns, 686 s, refusals=0; four renders before it stopped
+  revising): reveal → compare solar/oil "le solaire dépasse le pétrole" → annotate "3e source en 2016 : 1,3 TWh";
+  same data as mvq136, figures match data.json. Backlog (kit): the compare never lights the oil band (only solar
+  is accent, so "dépasse" has nothing to point at); the two notes stack into one block over the nuclear band.
