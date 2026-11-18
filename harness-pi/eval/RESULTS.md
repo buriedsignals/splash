@@ -2086,6 +2086,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 | Family / type | Web | Video | Scrolly |
 |---|---|---|---|
 | sankey | pass (mvg1, 8 t) | pass (mvg2, 5 t) | pass* (mvg3, 7 t) |
+| small-multiples | pass* (mvg4, 15 t) | — | — |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
@@ -2102,3 +2103,10 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
   and offered the largest drawn figure, 380,5; the model pasted it in brackets after a sentence about the other two
   countries, so the card reads as if Sweden + Switzerland made 380,5 (they make 74,7). Harness backlog: for a filter
   card the guard's "value that works" should include the sum of the non-accent marks, not only the largest one.
+- **gx-small-multiples web (12B, mvg4).** Pass* (15 turns, 1434 s, refusals=0; two refusals it fixed — a mojibake
+  syntax error, then a column `low_carbon_share` that does not exist): sixteen panels of low-carbon share 2000 →
+  2024, recomputed from data.json (hydro included): all sixteen rise (Sweden 96.7 → 98.8 … Poland 1.6 → 31.1), every
+  panel's end value matches. The title "ceux qui partaient de plus bas ont le plus avancé" holds only as a ratio
+  (Poland ×19); in points, which is what "avancé" reads as, Poland gains +29.5 against Denmark's +73.7 and Portugal's
+  +55.4 — the beat's own check() only compares the lowest and highest starters. Backlog (kit): the country toggle
+  shows 11 of 16 options on one line and clips the rest; the grid is a narrow centred column on a wide page.
