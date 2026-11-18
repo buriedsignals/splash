@@ -2085,7 +2085,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 
 | Family / type | Web | Video | Scrolly |
 |---|---|---|---|
-| sankey | pass (mvg1, 8 t) | pass (mvg2, 5 t) | — |
+| sankey | pass (mvg1, 8 t) | pass (mvg2, 5 t) | pass* (mvg3, 7 t) |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
@@ -2096,3 +2096,9 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
   node "455,1 TWh de nucléaire" (its three flows outlined) → highlight France "84 % du nucléaire des six pays";
   same figures as mvg1. Backlog (kit): the France flow is already in the accent from the reveal on, so the
   highlight adds only its note; the note sits over grey flows in a light italic that barely reads.
+- **gx-sankey scrolly (12B, mvg3).** Pass* (7 turns, 926 s, refusals=0): bracket "première source des six pays :
+  455,1 TWh" (true: hydro 346.2 next) → highlight France "380,5 TWh … soit 84 %" → filter nuclear "Hors de France,
+  seuls Suède et Suisse en produisent. (380,5 TWh)" → limits. The false aside: the card-figure guard refused card 3
+  and offered the largest drawn figure, 380,5; the model pasted it in brackets after a sentence about the other two
+  countries, so the card reads as if Sweden + Switzerland made 380,5 (they make 74,7). Harness backlog: for a filter
+  card the guard's "value that works" should include the sum of the non-accent marks, not only the largest one.
