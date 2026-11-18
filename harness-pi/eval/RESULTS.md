@@ -1612,7 +1612,7 @@ looking at the output (web: desktop page; video: an ffmpeg tile of the mp4, neve
 | scatter-and-bubble (position) | pass (mvq130, 22 t) | pass (mvq131, 10 t) | pass (mvq132, 15 t) |
 | slope-slopegraph (time) | pass* (mvq133, 8 t) | pass (mvq134, 17 t) | pass* (mvq135, 11 t) |
 | streamgraph (time) | pass (mvq136, 13 t) | pass (mvq137, 28 t) | pass (mvq138, 14 t) |
-| waterfall-bridge (part-to-whole) | pass (mvq139, 8 t) | pass (mvq140, 23 t) | — |
+| waterfall-bridge (part-to-whole) | pass (mvq139, 8 t) | pass (mvq140, 23 t) | pass (mvq141, 13 t) |
 
 Reading:
 - Every cell ends passing once the harness answers the failure it showed; none needed a model change. Turns fall
@@ -2072,3 +2072,8 @@ Harness fixes, in order (each with a test that fails without it):
   reveal → bracket the three steps "143 TWh de moins au bout du compte" → pull-back; bars and net match data.json
   (as mvq139). Backlog (kit): the bracket's running total ticks through a bare "11 TWh" on its way from +103 to
   −143 (no sign, reads as a claim for one frame); the reveal of "Renouvelables" draws every bar at once.
+- **gx-waterfall-bridge scrolly (Qwen3.5-9B, mvq141).** Pass (13 turns, 285 s, refusals=0): bracket "−143, de 639 à
+  496" → name nuclear "retire à elle seule 92 TWh" → compare fossil −154 vs renewables +103 → limits; every figure
+  matches data.json. Backlog (kit): the compare's excess bar inside "Fossile" is labelled with the bare "103" (the
+  matched height), not the 51 TWh excess it draws; bracket total "-143" uses hyphen-minus.
+  **With this cell, Qwen3.5-9B has passed web, video and scrolly for every gesture family (all charts + 8 maps).**
