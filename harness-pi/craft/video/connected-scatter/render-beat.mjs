@@ -58,7 +58,7 @@ await refusing(HERE, async () => {
 
   // ── the entities and their moves (./subject.mjs: the proof's derivation, its asserts as refusals)
   // A printed name is the one data.json holds for the row, never its code (FRA over the plot).
-  assertNoAggregates((Array.isArray(beat.entities) ? beat.entities : []).map((e) => String(e.name)), HERE);
+  assertNoAggregates((Array.isArray(beat.entities) ? beat.entities : []).map((e) => String(e.label ?? e.name)), HERE);
   for (const at of ["from", "to"]) for (const axis of ["x", "y"]) assertNumbers(beat.entities.map((e) => [`${e.name} ${at}.${axis}`, e[at]?.[axis]]));
   // The claim first: a title the data no longer supports is the refusal to read, before any the gesture raises.
   beat.check();
