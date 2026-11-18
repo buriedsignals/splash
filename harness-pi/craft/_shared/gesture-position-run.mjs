@@ -417,6 +417,11 @@ export async function runScrollyPosition(here, variant) {
  * state laid out as a scene in Bun at the video size (every word measured), the type floor at every event's end, the
  * look stills, then the mp4.
  */
+/** True when one of the notes written on the line above a video's plot would run into the unit line at its right. */
+export function noteLineStacks({ notes, unit, width, gap }) {
+  return notes.some((w) => w + gap + unit > width);
+}
+
 export async function runVideoPosition(here, variant) {
   const { adjustToContrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } = await import("#shared/chart-beat/colour.mjs");
   const { deriveFurniture } = await import("#shared/chart-beat/render-still.mjs");
@@ -483,17 +488,29 @@ export async function runVideoPosition(here, variant) {
     const text = { measure, lead, format, delta, moments: model.moments };
     // The note line above the plot, then the plot down to the credit.
     const unitLine = plain(beat.unit);
-    const plotFrame = { x: inset, y: vInset + lead("axis") * 1.6, width: row.width - 2 * inset, height: creditAt.y - lead("axis") - (vInset + lead("axis") * 1.6) };
-    const scenes = {};
     const noteOf = { reveal: staged.notes.reveal, subject: staged.notes.subject, conclusion: staged.notes.conclusion };
-    for (const e of EVENTS) {
-      const scene = sceneOf({ model, state: staged.states[e], frame: plotFrame, text });
-      const note = noteOf[e === "hold" ? "conclusion" : e];
-      if (note) {
-        const { under } = placeNotes({ scene, notes: [note], text, frame: plotFrame });
-        // A note no spot in the field holds is written on the line above the plot.
-        under.forEach((u, j) => scene.prims.push({ id: `note-${u.index}-top-${j}`, kind: "text", x: plotFrame.x, y: vInset + lead("annot") * 0.6, text: u.text, anchor: "start", reg: "annot", role: "accent", o: 1 }));
-      }
+    // The line above the plot holds the unit at its right and a note no spot in the field holds at its left; a note too
+    // long to sit beside the unit takes a line of its own under it, and the plot starts one line lower (mvg23).
+    const frameFor = (stacked) => {
+      const top = vInset + lead("axis") * 1.6 + (stacked ? lead("annot") : 0);
+      return { x: inset, y: top, width: row.width - 2 * inset, height: creditAt.y - lead("axis") - top };
+    };
+    const lay = (stacked) => {
+      const plotFrame = frameFor(stacked);
+      return EVENTS.map((e) => {
+        const scene = sceneOf({ model, state: staged.states[e], frame: plotFrame, text });
+        const note = noteOf[e === "hold" ? "conclusion" : e];
+        const under = note ? placeNotes({ scene, notes: [note], text, frame: plotFrame }).under : [];
+        return { e, scene, under };
+      });
+    };
+    let laid = lay(false);
+    const stacked = noteLineStacks({ notes: laid.flatMap((l) => l.under.map((u) => measure(u.text))), unit: measure(unitLine, "axis"), width: row.width - 2 * inset, gap: lead("annot") });
+    if (stacked) laid = lay(true);
+    const plotFrame = frameFor(stacked);
+    const scenes = {};
+    for (const { e, scene, under } of laid) {
+      under.forEach((u, j) => scene.prims.push({ id: `note-${u.index}-top-${j}`, kind: "text", x: plotFrame.x, y: vInset + lead("annot") * 0.6 + (stacked ? lead("annot") : 0), text: u.text, anchor: "start", reg: "annot", role: "accent", o: 1 }));
       scene.prims.push({ id: "unit", kind: "text", x: row.width - inset, y: vInset + lead("axis") * 0.6, text: unitLine, anchor: "end", reg: "axis", role: "muted", o: e === "establish" ? 0 : 1 });
       // A video sets every word at its register's own weight: a bold run measured in Bun drifted past Chrome's
       // width agreement (2 %), so a marked row is told by its colour and ring alone.
