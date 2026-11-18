@@ -365,3 +365,21 @@ describe.each(TYPES)("%s, video and scrolly", (slug) => {
     expect(v.states.hold).toBe(v.states.conclusion);
   });
 });
+
+// mvg21 (gx-dot-strip web, the 12B, 2026-11-18): "+30 points contre +0" passed on a compare of Pologne (+29,5) and
+// Suède (+2,1). The 0 matched one of Suède's raw cells in data.json (its oil generation, 0 TWh): a figure signed "+"
+// is a change, and a change is never a raw cell of the row.
+describe("a signed figure in a dot strip's compare note", () => {
+  it("should refuse a +0 that only matches a raw zero cell of the compared row", async () => {
+    const ex = await example("dot-strip");
+    const rows = ex.model.rows as any[];
+    const floor = rows.reduce((a, b) => (b.from < a.from ? b : a));
+    const ceiling = rows.reduce((a, b) => (b.to > a.to ? b : a));
+    const claim = { ...ex.claim, facts: { ...ex.claim.facts, [ceiling.name]: [...ex.claim.facts[ceiling.name], 0, 12.4] } };
+    const gestures = [{ do: "compare", marks: [floor.name, ceiling.name], note: `+${Math.round(floor.to - floor.from)} points contre +0` }];
+    const refusal = refusalOf(() =>
+      validateGestures({ gestures, rows: ex.model.core, family: "position", format: "web", claim, hooks: positionHooks(ex.model) }),
+    );
+    expect(refusal?.field).toBe("gestures[0].note");
+  });
+});

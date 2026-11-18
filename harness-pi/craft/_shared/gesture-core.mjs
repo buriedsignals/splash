@@ -441,7 +441,8 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
     hooks.refuse?.(g, ctx);
     // The whole only where values add up, and ranks only for a few marks: a highlighted series of thirty readings made
     // every integer up to thirty a "rank", and a sum of ranks at a power of ten passed for "rank 2".
-    const context = [...(additive ? [whole] : []), ...(marks.length <= 3 ? marks.map((m) => rankOf.get(m)) : []), ...marks.flatMap((m) => claim.facts?.[m] ?? [])];
+    const facts = marks.flatMap((m) => claim.facts?.[m] ?? []);
+    const context = [...(additive ? [whole] : []), ...(marks.length <= 3 ? marks.map((m) => rankOf.get(m)) : []), ...facts];
 
     // A note with a hole where its figure was: a sign or a unit with no number. Each hole takes its mark's value, in
     // order (gx-stacked-bar static, Qwen3.5-9B, 2026-11-14: "+TWh contre + pour la France").
@@ -496,7 +497,10 @@ export function validateGestures({ gestures, rows, family, format, claim, hooks 
         // A figure with no percent sign is never a percentage gap: "4,3 beds per million fewer" was offered "3,4", the
         // gap in percent, when the gap is 132 beds per million.
         // A percent only ever matches a percentage or a row's own value, never any figure of the gesture.
-        const pool = n.percent ? asPercent : figures.filter((f) => !gapPercents.some((p) => Math.abs(p * 10 ** scale - f) < 1e-9));
+        // A figure signed "+" is a change: a raw cell of the row is not one. mvg21 (gx-dot-strip web, the 12B,
+        // 2026-11-18) printed "+30 points contre +0" for Suède's +2,1, and the 0 matched Suède's 0 TWh of oil.
+        const changes = n.raw.startsWith("+") ? [...own, ...context.slice(0, context.length - facts.length)].map((f) => f * 10 ** scale) : figures;
+        const pool = n.percent ? asPercent : changes.filter((f) => !gapPercents.some((p) => Math.abs(p * 10 ** scale - f) < 1e-9));
         if (pool.some((f) => matches(n, f))) continue;
         // A fix offers only what this gesture itself draws: a rank or a count may be stated, never substituted for a
         // figure ("4,3 beds fewer" was offered Mazowieckie's rank, "3,0").
