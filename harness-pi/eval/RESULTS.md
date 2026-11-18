@@ -2087,7 +2087,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 |---|---|---|---|
 | sankey | pass (mvg1, 8 t) | pass (mvg2, 5 t) | pass* (mvg3, 7 t) |
 | small-multiples | pass (mvg4, 15 t) | pass (mvg5, 5 t) | pass (mvg6, 9 t) |
-| connected-scatter | fail (mvg7 stuck, mvg8 budget; both kit/harness, fixed) | | |
+| connected-scatter | fail (mvg7 stuck, mvg8 budget, mvg9 stuck; all kit/harness, fixed) | | |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
@@ -2139,3 +2139,11 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
   rendering, and said. The repaired mvg8 beat passes verify-web; every figure checked against data.json (France
   +4.2 at home, −11.8 in Europe, 38.4→26.5; all 16 rose at home; 5 lost European weight). Backlog: on the phone the
   plot is crushed to ~120 px high under the six-line title.
+- **gx-connected-scatter web (12B, mvg9).** Stuck, killed: two harness-side defects, then one in the kit. (1) Each
+  edit of `check()` left the file ending on `},` without the object's `};`, refused twice — harness fix
+  `closeOpenExport` appends that one line when it alone makes the file parse. (2) The 12B then fixed its checks and
+  its phone height, and was left with one failure it could not touch: "no horizontal scroll — 405px in a 375px
+  window". The cause was the kit's vertical-axis title (`white-space: nowrap`, "Share of European low-carbon
+  output (16 countries)"); the refusal names no field. Kit fix: at ≤480px the title wraps within `50vw − 24px`
+  (it sits left of the page centre, so that always fits). The mvg9 beat re-rendered with the fixed kit clears the
+  horizontal failure; desktop unchanged. Saved in the scratchpad (`mvg9-stuck`).
