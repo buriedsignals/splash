@@ -42,6 +42,6 @@ describe("a failed render whose beat reads a row by a column name", () => {
 describe("render_beat", () => {
   it("should append the row hint to a failed render", () => {
     const src = require("node:fs").readFileSync(join(import.meta.dirname, "..", "src", "tools", "run.ts"), "utf8");
-    expect(src).toMatch(/failed \? rowByNameHint\(beatDir\(bases, beat\)\)/);
+    expect(src).toMatch(/failed\s*\?\s*rowByNameHint\(beatDir\(bases, beat\)\)/);
   });
 });

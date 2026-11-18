@@ -27,6 +27,6 @@ describe("a failed render whose beat puts ${…} inside plain quotes", () => {
 describe("render_beat wiring", () => {
   it("should append the hint to a failed render", async () => {
     const src = await Bun.file(join(import.meta.dirname, "../src/tools/run.ts")).text();
-    expect(src).toMatch(/failed \? rowByNameHint\(beatDir\(bases, beat\)\) \+ quotedTemplateHint\(beatDir\(bases, beat\)\)/);
+    expect(src).toMatch(/failed\s*\?\s*rowByNameHint\(beatDir\(bases, beat\)\)\s*\+\s*quotedTemplateHint\(beatDir\(bases, beat\)\)/);
   });
 });
