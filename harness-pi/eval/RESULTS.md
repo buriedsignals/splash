@@ -2152,3 +2152,6 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
   the kit now draws. Desktop and phone checked by eye; France +4.2 at home, −11.8 in Europe (38.4→26.5), all 16 up
   at home — every figure as in data.json. Weakness: the 12B emptied its −11.8 check into comments, so the title's
   number is guarded only by the move-direction check; it is right by the data, not by its own check.
+- **gx-connected-scatter video (12B, mvg11).** Stuck, killed: refused twice for printing "AUT", "BEL"… while its
+  beat followed the kit's own example ({ name: code, label: nameOf(code) }) and the frame prints label. Kit defect: the
+  code-not-name guard read the key, not the printed label (video and static); fixed in e1397b94d.
