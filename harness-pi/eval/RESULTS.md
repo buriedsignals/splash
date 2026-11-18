@@ -2090,7 +2090,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 | connected-scatter | pass (mvg10, 10 t; after 3 kit/harness fixes) | pass (mvg12, 8 t; after 1 kit fix) | pass (mvg13, 11 t) |
 | lollipop | pass (mvg15, 13 t; mvg14 failed, harness fixed) | pass (mvg16, 11 t) | pass (mvg17, 9 t) |
 | stacked-bar | pass (mvg18, 5 t) | pass (mvg19, 8 t) | pass (mvg20, 9 t) |
-| dot-strip | pass (mvg22, 9 t; mvg21 failed, kit fixed) | | |
+| dot-strip | pass (mvg22, 9 t; mvg21 failed, kit fixed) | pass (mvg23, 10 t; kit layout fixed after) | |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
@@ -2202,3 +2202,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
   from itself. The core admitted the 0 because it matched a raw cell of Suède's row (0 TWh of oil). Fixed in
   `09470ec63`: a figure signed "+" is a change and never matches a raw cell. mvg22 (9 turns, 224 s, refusals=0) wrote
   "+30 points contre +2", every figure checked against data.json.
+- **gx-dot-strip video (12B, mvg23).** Pass (10 turns, 362 s, refusals=0; one syntax error, `/[ ]/ g`, self-fixed on
+  the next render). 21 s: title card; Pologne 1,6 → 31,1 % (+29,5); Suède named, +2,1; title's "+30 / +2" match. Kit
+  defect seen in the frames: a long note on the line above the plot ran into the unit line at its right. Fixed in
+  the runner (the note takes its own line, the plot starts one lower), checked on a local re-render of the same beat.
