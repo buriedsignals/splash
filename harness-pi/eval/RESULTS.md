@@ -2090,7 +2090,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
 | connected-scatter | pass (mvg10, 10 t; after 3 kit/harness fixes) | pass (mvg12, 8 t; after 1 kit fix) | pass (mvg13, 11 t) |
 | lollipop | pass (mvg15, 13 t; mvg14 failed, harness fixed) | pass (mvg16, 11 t) | pass (mvg17, 9 t) |
 | stacked-bar | pass (mvg18, 5 t) | pass (mvg19, 8 t) | pass (mvg20, 9 t) |
-| dot-strip | pass (mvg22, 9 t; mvg21 failed, kit fixed) | pass (mvg23, 10 t; kit layout fixed after) | |
+| dot-strip | pass (mvg22, 9 t; mvg21 failed, kit fixed) | pass (mvg23, 10 t; kit layout fixed after) | pass (mvg24, 8 t) |
 
 - **gx-sankey web (12B, mvg1).** Pass (8 turns, 269 s, refusals=0; one failed render fixed on the next): "Le
   nucléaire de ces six pays est français à 84 %" — 2024 nuclear France 380.45 / (380.45 + 50.67 + 24.02 = 455.14)
@@ -2206,3 +2206,7 @@ seeded, craft only, one cell at a time, judged by looking and against data.json)
   the next render). 21 s: title card; Pologne 1,6 → 31,1 % (+29,5); Suède named, +2,1; title's "+30 / +2" match. Kit
   defect seen in the frames: a long note on the line above the plot ran into the unit line at its right. Fixed in
   the runner (the note takes its own line, the plot starts one lower), checked on a local re-render of the same beat.
+- **gx-dot-strip scrolly (12B, mvg24).** Pass (8 turns, 335 s, refusals=0 at the end; one render refused English
+  entity names on a fr page, and the next one read `entity_fr` as the refusal said). Four cards: Pologne 1,6 % in 2000;
+  the floor +30 (1,6 → 31,1 %); Suède +2 (96,7 → 98,8 %); the whole field. Figures match data.json; the top-line note
+  sits right of the unit with no overlap in this kit.
