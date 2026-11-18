@@ -723,6 +723,8 @@ export function sceneOf({ model, state, frame, text }) {
     } else if (variant === "slope-slopegraph") {
       // The other line's change, laid from the subject's left end.
       add({ id: `copy-${c.index}`, kind: "line", x1: plot.x, y1: pos(a.from), x2: plot.x + plot.width * (c.grow ?? 1), y2: pos(a.from + b.change * (c.grow ?? 1)), o: o * 0.9, role: "copy", w: 2, dash: true });
+      // Named along its far end, or a reader sees a stray line (mvg79–mvg81: unlabelled in web, video and scrolly).
+      add({ id: `copylabel-${c.index}`, kind: "text", x: plot.x + plot.width * 0.75, y: pos(a.from + b.change * 0.75) - lead("annot") * 0.4, text: `${c.other} ${text.delta(b.change)}`, anchor: "middle", reg: "annot", role: "muted", o: o * (c.grow ?? 1) });
     } else if (variant === "box-plot") {
       // The other group's median carried across to the subject's box, and the gap between the two medians bracketed
       // just left of the subject's box.
