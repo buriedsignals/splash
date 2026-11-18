@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { createRunRoot, stageStory } from "../src/run-root.ts";
 import type { Bases } from "../src/tools/fs.ts";
-import { quoteSpacedKeys, runTools , refusalHint, trimDuplicatedTail, trimStrayTail } from "../src/tools/run.ts";
+import { quoteSpacedKeys, runTools , refusalHint, closeOpenExport, trimDuplicatedTail, trimStrayTail } from "../src/tools/run.ts";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 
 const CHECKOUT = resolve(import.meta.dirname, "../..");
@@ -180,6 +180,30 @@ describe("a stale copy of a method's tail after its closing brace", () => {
     const src = `${head}${stale}  title: \`t,\n};\n`;
     writeFileSync(join(dir, "beat.mjs"), src);
     expect(trimDuplicatedTail(join(dir, "beat.mjs"))).toBe("");
+    expect(readFileSync(join(dir, "beat.mjs"), "utf8")).toBe(src);
+  });
+});
+
+// gx-connected-scatter web (12B, mvg9, 2026-11-18): each edit of check() left the file ending on its "}," with the
+// object's closing "};" gone ("Expected identifier but found end of file"), refused twice in a row. A file that
+// parses once the object is closed lost only that line: the harness restores it before rendering.
+describe("an export object whose closing brace is gone", () => {
+  it("should be closed, and said", () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-close-"));
+    writeFileSync(join(dir, "beat.mjs"), "export default {\n  check() {\n    return 1;\n  },");
+    expect(closeOpenExport(join(dir, "beat.mjs"))).toMatch(/added "};"/);
+    expect(readFileSync(join(dir, "beat.mjs"), "utf8")).toBe("export default {\n  check() {\n    return 1;\n  },\n};\n");
+  });
+  it("should leave a beat that parses", () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-close-"));
+    writeFileSync(join(dir, "beat.mjs"), "export default {\n  title: 1,\n};\n");
+    expect(closeOpenExport(join(dir, "beat.mjs"))).toBe("");
+  });
+  it("should leave a broken beat that closing would not fix", () => {
+    const dir = mkdtempSync(join(tmpdir(), "splash-close-"));
+    const src = "export default {\n  check() {\n    if (a) {\n  },";
+    writeFileSync(join(dir, "beat.mjs"), src);
+    expect(closeOpenExport(join(dir, "beat.mjs"))).toBe("");
     expect(readFileSync(join(dir, "beat.mjs"), "utf8")).toBe(src);
   });
 });

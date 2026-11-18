@@ -255,6 +255,28 @@ export function trimDuplicatedTail(file: string): string {
   return "";
 }
 
+/** gx-connected-scatter web (12B, mvg9, 2026-11-18): each edit of check() left the file ending on "}," with the
+ *  export object's closing "};" gone, refused twice. When appending that one line makes the file parse, nothing
+ *  else was lost: the harness appends it before rendering; returns what it did. */
+export function closeOpenExport(file: string): string {
+  if (!existsSync(file)) return "";
+  const transpiler = new Bun.Transpiler({ loader: "js" });
+  const parses = (text: string) => {
+    try {
+      transpiler.transformSync(text);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const text = readFileSync(file, "utf8");
+  if (parses(text)) return "";
+  const closed = `${text.replace(/\s*$/, "")}\n};\n`;
+  if (!parses(closed)) return "";
+  writeFileSync(file, closed);
+  return `the harness added "};" at the end of beat.mjs: the export object was never closed\n`;
+}
+
 /** An unquoted object key with a space (`Czech Republic: "Tchéquie"`) never parses. Told the quoted key six times,
  *  Qwen3.5-9B rewrote the file with the same line (gx-proportional-symbol web, 2026-11-14). Quoting a key changes no
  *  meaning: the harness quotes each one the parser stops at, before rendering; returns what it did. */
@@ -373,7 +395,7 @@ export function runTools(bases: Bases) {
         throw new Error(`${beat} has no ${runner}; scaffold the beat first`);
       if (zoned && !existsSync(join(beatDir(bases, beat), "beat.mjs")))
         throw new Error(`beats/${beat}/beat.mjs does not exist yet: write it with write_file, then render`);
-      const trimmed = zoned ? trimStrayTail(join(beatDir(bases, beat), "beat.mjs")) + trimDuplicatedTail(join(beatDir(bases, beat), "beat.mjs")) + quoteSpacedKeys(join(beatDir(bases, beat), "beat.mjs")) : "";
+      const trimmed = zoned ? trimStrayTail(join(beatDir(bases, beat), "beat.mjs")) + trimDuplicatedTail(join(beatDir(bases, beat), "beat.mjs")) + closeOpenExport(join(beatDir(bases, beat), "beat.mjs")) + quoteSpacedKeys(join(beatDir(bases, beat), "beat.mjs")) : "";
       const result = await exec(["bun", path]);
       const record = zoned && existsSync(join(beatDir(bases, beat), "gestures.json")) ? `beats/${beat}/gestures.json` : undefined;
       const failed = /REFUSED|Error|error:/.test(result.content[0].text);
