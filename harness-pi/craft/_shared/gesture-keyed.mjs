@@ -581,7 +581,7 @@ export const textBox = (t, lead) => {
  * @param items   [{ k, text, at: { x, y } | null (a caption: the plot's top) }]
  * @param taken   boxes already on the plate (names, ticks, labels)
  */
-export function placeNotes({ items, taken = [], soft = [], top = 0, box, measure, lead, reg = "annot", max = 0.42 }) {
+export function placeNotes({ items, taken = [], soft = [], solid = [], top = 0, box, measure, lead, reg = "annot", max = 0.42 }) {
   const L = lead(reg);
   const boxes = [...taken];
   const out = [];
@@ -614,7 +614,8 @@ export function placeNotes({ items, taken = [], soft = [], top = 0, box, measure
     const inside = (b) => b.x >= -2 && b.y >= top - 2 && b.x + b.w <= box.width + 2 && b.y + b.h <= box.height + 2;
     const scored = cands.map((c, order) => {
       const b = boxOf(c);
-      const cover = boxes.reduce((s, o) => s + overlap(b, o), 0) + soft.reduce((s, o) => s + overlap(b, o) * 0.2, 0);
+      // `solid`: marks a note must not stand on at all (a gantt's bars), weighed as heavily as words.
+      const cover = boxes.reduce((s, o) => s + overlap(b, o), 0) + soft.reduce((s, o) => s + overlap(b, o) * 0.2, 0) + solid.reduce((s, o) => s + overlap(b, o), 0);
       return { c, b, score: (inside(b) ? 0 : 1e9) + cover * 10 + order };
     });
     const best = scored.reduce((p, q) => (q.score < p.score ? q : p), scored[0]);

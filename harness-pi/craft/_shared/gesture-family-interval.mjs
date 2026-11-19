@@ -133,7 +133,8 @@ export function intervalScene({ rows, first, last, plan, box, measure, lead, for
           { tag: "rect", role: "copy", attrs: { x: from, y, width: Math.max(1, end - from), height: Math.max(2, bar * 0.35) } },
           { tag: "line", role: "rule", attrs: { x1: end, x2: end, y1: yMid(i) - bar / 2 - 2, y2: y + bar * 0.35 + 2 } },
         ],
-        label: { text, x: Math.min(end + 6, box.width - measure(text, "annot")), y: y + bar * 0.35 + lead("annot") * 0.85, anchor: "start", reg: "annot", width: measure(text, "annot") },
+        // Placed with the notes below, clear of every bar (mvg102: under its copy it stood on the next row's bar).
+        at: { x: end, y: y + bar * 0.17 },
       });
     } else if (p.do === "reference") {
       const rx = x(p.value);
@@ -147,8 +148,19 @@ export function intervalScene({ rows, first, last, plan, box, measure, lead, for
     }
   }
   const taken = [...texts.map((t) => textBox(t, lead(t.reg))), ...overlays.filter((o) => o.label).map((o) => textBox(o.label, lead("annot")))];
+  // A gantt is dense with bars: a note or a compare's words stand on clear ground, the band above the plot included
+  // (mvg100/mvg101: anchored at a bar's end on the axis's right edge, the note could only stand on that bar).
   const soft = marks.flatMap((m) => m.shapes.map((p) => ({ x: p.attrs.x, y: p.attrs.y, w: p.attrs.width, h: p.attrs.height })));
-  const notes = placeNotes({ items: noteItems(plan, (name) => marks[at.get(name)]?.anchor ?? null), taken, soft, box: { width: box.width, height: plotH }, measure, lead });
+  const solid = soft.map((b) => ({ ...b, x: b.x - 2, y: b.y - 2, w: b.w + 4, h: b.h + 4 }));
+  const place = (items) => placeNotes({ items, taken, soft: [], top: -lead("annot"), box: { width: box.width, height: plotH }, measure, lead, solid });
+  for (const o of overlays.filter((o) => o.at)) {
+    const [n] = place([{ k: o.k, text: plan.find((p) => p.k === o.k).label, at: o.at }]);
+    o.label = { text: n.text, x: n.x, y: n.y, anchor: "start", reg: "annot", width: n.width };
+    if (n.leader) o.shapes.push({ tag: "line", role: "rule", attrs: { x1: n.leader.x1, y1: n.leader.y1, x2: n.leader.x2, y2: n.leader.y2 } });
+    taken.push(textBox(o.label, lead("annot")));
+    delete o.at;
+  }
+  const notes = place(noteItems(plan, (name) => marks[at.get(name)]?.anchor ?? null));
   return { width: box.width, height: box.height, furniture, marks, texts, overlays, notes, topRoom: lead("annot") };
 }
 
