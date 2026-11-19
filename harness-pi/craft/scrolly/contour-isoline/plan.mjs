@@ -23,6 +23,19 @@ const RAD = Math.PI / 180;
 const LAT0 = 52 * RAD;
 const LON0 = 10 * RAD;
 
+/** THE CLOSE CAMERA on the farthest point: the region `box` (Web Mercator) held with a 15 % margin, the point
+ *  `subject` seated at `seat` of the frame's height from the top. The prose card is centred on the stage, so a
+ *  camera centred on the point hid it under the very card that names it. */
+export function closeCameraOf({ box, subject, reference, seat = 0.72 }) {
+  const above = subject[1] - box.y0;
+  const below = box.y1 - subject[1];
+  const width = (box.x1 - box.x0) * 1.15;
+  const height = 1.15 * Math.max(above / seat, below / (1 - seat), (box.y1 - box.y0));
+  const zoom = Math.log2(Math.min(reference.width / (width * 512), reference.height / (height * 512)));
+  const frameHeight = reference.height / (512 * 2 ** zoom);
+  return { center: lonLatOf([(box.x0 + box.x1) / 2, subject[1] + (0.5 - seat) * frameHeight]), zoom };
+}
+
 /** The inverse of `contour-field.mjs`'s `laea`. Ported from the validated video beat's `subject.mjs`. */
 export function unlaea([x, yNeg]) {
   const y = -yNeg;

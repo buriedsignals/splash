@@ -34,7 +34,7 @@ import { validateExpressions } from "#shared/map-beat/mount.mjs";
 import { cameraFields, lonLatOf, mercatorOf, validateScrollyPlan } from "#shared/map-beat/scrolly.mjs";
 import { SEA_LAND_MIN } from "#shared/map-beat/tints.mjs";
 import { CELL_KM, contourField } from "./contour-field.mjs";
-import { bestSeatOf, contourMapPlan, iso2Of, lonLatOfFrame, sweepOf } from "./plan.mjs";
+import { bestSeatOf, closeCameraOf, contourMapPlan, iso2Of, lonLatOfFrame, sweepOf } from "./plan.mjs";
 import { applyStoryboard, assertHeadlineNumbersDrawn } from "./guards.mjs";
 import { plain, refusing, storyLanguage } from "./web.mjs";
 import { renderBeatScrolly, scrollySkill } from "./scrolly.mjs";
@@ -130,8 +130,8 @@ await refusing(HERE, async () => {
   const cx1 = Math.max(...closeCorners.map((p) => p[0]));
   const cy0 = Math.min(...closeCorners.map((p) => p[1]));
   const cy1 = Math.max(...closeCorners.map((p) => p[1]));
-  const CLOSE_ZOOM = Math.log2(Math.min(REFERENCE.width / ((cx1 - cx0) * 1.15 * 512), REFERENCE.height / ((cy1 - cy0) * 1.15 * 512)));
-  const close = cameraFields({ center: lonLatOf([(cx0 + cx1) / 2, (cy0 + cy1) / 2]), zoom: CLOSE_ZOOM });
+  const closeView = closeCameraOf({ box: { x0: cx0, x1: cx1, y0: cy0, y1: cy1 }, subject: mercatorOf(lonLatOfFrame(field, field.summit)), reference: REFERENCE });
+  const close = cameraFields(closeView);
   const cameras = [whole, whole, whole, whole, close, whole];
 
   // ── the reading ─────────────────────────────────────────────────────────────────────────────────
