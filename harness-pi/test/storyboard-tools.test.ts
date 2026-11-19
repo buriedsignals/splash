@@ -1041,6 +1041,21 @@ describe("candidates from the reader's need", () => {
     expect(withNeedMenu(gap, [{ id: 1, intent: "Change over time.", medium: "chart" }])).toMatch(/show_candidates with need = .*2\. compare before and after/);
   });
 
+  // stress-t on Qwen (2026-11-20): intent recorded, the student skipped need and named its own two types.
+  it("should ask for the need when the student names types the journalist never named", async () => {
+    const tools = await withIntent();
+    await expect(
+      call(tools.showCandidates, { slot: "1", candidates: [{ type: "bar", why: "a" }, { type: "pictogram", why: "b" }] }),
+    ).rejects.toThrow(/give need: .*1\. rank or compare one value per category/);
+  });
+
+  it("should keep a type the journalist named on the free path", async () => {
+    const tools = await withIntent();
+    dialogue.lastJournalist = "I'd like a lollipop chart, please.";
+    await call(tools.showCandidates, { slot: "1", candidates: [{ type: "lollipop", why: "a" }, { type: "pictogram", why: "b" }] });
+    expect(meta().slots[0].candidates[0]).toBe("Lollipop");
+  });
+
   it("should ask for the need, with the family's needs, when show_candidates gets neither need nor types", async () => {
     const tools = await withIntent();
     await expect(call(tools.showCandidates, { slot: "1" })).rejects.toThrow(/give need: .*1\. rank or compare one value per category/);

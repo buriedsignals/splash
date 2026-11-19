@@ -350,6 +350,22 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
   /** Whether this local harness has a kit for the type in the slot's format. */
   const drawable = (type: string, id = "1") => adapterFor(type, slotFormat(id));
 
+  /** Whether the journalist's own words, in any answer so far, name this type. */
+  function journalistNamed(type: string, medium: string): boolean {
+    let canon: string;
+    try {
+      canon = canonicalTreatment(type, medium);
+    } catch {
+      return false;
+    }
+    const said = [dialogue.lastJournalist, ...(dialogue.history ?? []).map((h) => h.answer)].filter(Boolean).join(" ").toLowerCase();
+    const words = (s: string) => s.toLowerCase().split(/[^a-z0-9\u00c0-\u024f]+/).filter((w) => w.length > 2 && !["and", "chart", "map", "the"].includes(w));
+    return [type, canon].some((name) => {
+      const w = words(name.replace(/\(.*?\)/g, ""));
+      return w.length > 0 && w.every((x) => said.includes(x));
+    });
+  }
+
   /** Two candidates for a need: its table's first drawable type, then the next one that is a different idea. */
   function rankedForNeed(need: ReturnType<typeof readNeeds>[number], family: string, medium: string, id: string) {
     const typed = (rows: typeof need.rows) =>
@@ -680,7 +696,8 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
         const picked = resolveNeed(family, need);
         if (!picked) throw new Error(`need must be one of: ${needMenu(family)} — give its number`);
         candidates = rankedForNeed(picked, family, medium, slot);
-      } else if (!candidates.length && family)
+      } else if (family && !candidates.some((c) => journalistNamed(c.type, medium)))
+        // Types are the journalist's to name; otherwise the student's one decision is the need, and code ranks.
         throw new Error(`give need: the number of what the reader must see — ${needMenu(family)}`);
       if (candidates.length === 1) {
         // One candidate the harness can draw: add the smallest honest alternative, a distinct idea.
