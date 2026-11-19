@@ -74,10 +74,9 @@ export function geoPalette(direction: any, classCount: number) {
     mix(low, high, classCount > 1 ? i / (classCount - 1) : 0.5);
   // A stepped-back place keeps a trace of its class (nothing about its value is hidden) at a wash toward the ground.
   const backFill = (i: number) => mix(classFill(i), direction.ground, 0.72);
-  const missingFill = floorAgainstGround(
-    mix(direction.ground, ink, 0.16),
-    "the fill of a place with no data",
-  );
+  // No data stays a light neutral below the ramp's floor: lifted to that floor too, it drew in the lowest class's
+  // grey (contrast 1.00) and, once the classes stepped back, it was the darkest place on the map.
+  const missingFill = mix(direction.ground, ink, 0.16);
   const landFill = mix(direction.ground, ink, 0.07);
   const accentInk = adjustToContrast(
     direction.accent,
