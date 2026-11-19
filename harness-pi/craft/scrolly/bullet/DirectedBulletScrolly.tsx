@@ -44,6 +44,7 @@ export function DirectedBulletScrolly({
   ticks,
   zoomTicks,
   zoomFrom,
+  zoomMid,
   orderBefore,
   alt,
   regs,
@@ -65,6 +66,8 @@ export function DirectedBulletScrolly({
   /** The narrowed axis the fifth card opens, and where it starts. */
   zoomTicks: { value: number; label: string }[];
   zoomFrom: number;
+  /** Where the rows card 5 names start: they keep full ink in the close-up. */
+  zoomMid?: number;
   /** Each row's position before the fourth card re-sorts it (this component renders the sorted order). */
   orderBefore: number[];
   alt: string;
@@ -101,7 +104,7 @@ export function DirectedBulletScrolly({
     <div
       role="img"
       aria-label={alt}
-      data-bullet={JSON.stringify({ ceiling, zoomFrom, orderBefore, rows: rows.map((r) => ({ marker: r.marker, measure: r.measure })) })}
+      data-bullet={JSON.stringify({ ceiling, zoomFrom, zoomMid, orderBefore, rows: rows.map((r) => ({ marker: r.marker, measure: r.measure })) })}
       style={{
         position: "absolute",
         inset: 0,

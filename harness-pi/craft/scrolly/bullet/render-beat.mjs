@@ -215,6 +215,7 @@ await refusing(HERE, async () => {
             ticks,
             zoomTicks,
             zoomFrom,
+            zoomMid,
             orderBefore,
             alt,
             regs,

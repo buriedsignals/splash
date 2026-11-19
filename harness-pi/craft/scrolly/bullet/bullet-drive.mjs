@@ -15,6 +15,14 @@
 // THE REORDER IS MEASURED: the row pitch is read on every resize, and each row's name, track and verdict
 // travel together from their position in the 2015 order to their place in the sorted one.
 
+/** A row's ink. The close-up (card 5) is about the rows already at the top of the scale before — those starting
+ *  at or above `zoomMid` — so every other row steps back, including one whose later bar reaches into the zoom. */
+export function rowDim(row, state, c) {
+  const clamp = (v) => (v < 0 ? 0 : v > 1 ? 1 : v);
+  const named = row.marker >= (c.zoomMid ?? c.zoomFrom);
+  return (1 - 0.7 * state.zoom * (named ? 0 : 1)) * (1 - 0.7 * clamp(state.half) * (row.measure >= 50 ? 1 : 0));
+}
+
 export function applyBulletState(root, state, context) {
   const carrier = root.querySelector("[data-bullet]");
   if (!carrier) return;
@@ -43,7 +51,7 @@ export function applyBulletState(root, state, context) {
     // single row climbs while the rows it passes step down one slot together.
     const slot = c.slotAt(i, state.reorder);
     const offset = (slot - i) * c.pitch;
-    const dim = (1 - 0.7 * state.zoom * (row.measure < c.zoomFrom ? 1 : 0)) * (1 - 0.7 * clamp(state.half) * (row.measure >= 50 ? 1 : 0));
+    const dim = rowDim(row, state, c);
     for (const node of c.byRow[i]) {
       node.style.transform = `translateY(${offset}px)`;
       node.style.opacity = String(dim);
