@@ -12,7 +12,7 @@ import { adjustToContrast, mix, NON_TEXT_CONTRAST_MIN, TEXT_CONTRAST_MIN } from 
 
 type Style = Record<string, string | number>;
 export type ScrollyGroup = { name: string; count: number; label: string };
-export type ScrollyItem = { k: number; do: string; own: number[]; value?: number; members?: number[]; between?: number[]; steps?: string[]; noteText?: string; label?: string };
+export type ScrollyItem = { k: number; do: string; own: number[]; value?: number; members?: number[]; part?: number[]; between?: number[]; steps?: string[]; noteText?: string; label?: string };
 
 export function GestureUnitsScrolly({
   variant,
@@ -127,7 +127,10 @@ export function GestureUnitsScrolly({
                 </g>
               )
             ) : p.do === "bracket" ? (
-              <path key={p.k} data-spine={p.k} fill="none" stroke={inkOnGround} strokeWidth={1.5} opacity={0} />
+              <g key={p.k}>
+                <path data-spine={p.k} fill="none" stroke={inkOnGround} strokeWidth={1.5} opacity={0} />
+                {p.part ? <path data-partspine={p.k} fill="none" stroke={accentInk} strokeWidth={4} opacity={0} /> : null}
+              </g>
             ) : p.do === "reference" ? (
               <line key={p.k} data-rule={p.k} stroke={accentInk} strokeWidth={1.2} strokeDasharray="4 3" opacity={0} />
             ) : null,
@@ -147,7 +150,7 @@ export function GestureUnitsScrolly({
         {plan
           .filter((p) => p.label !== undefined)
           .map((p) => (
-            <span key={p.k} data-label={p.k} style={abs({ ...regs.value, color: p.do === "reference" ? accentInk : inkOnGround, fontWeight: 700, textShadow: halo, opacity: 0 })}>
+            <span key={p.k} data-label={p.k} style={abs({ ...regs.value, color: p.do === "reference" || p.part ? accentInk : inkOnGround, fontWeight: 700, textShadow: halo, opacity: 0 })}>
               {p.label}
             </span>
           ))}

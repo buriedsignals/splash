@@ -91,7 +91,7 @@ await refusing(HERE, async () => {
     own: idx(p.own),
     ...(p.do === "compare" ? { value: p.value } : {}),
     ...(p.do === "reference" ? { value: p.value, between: p.between, label: plain(p.note ?? format(p.value)) } : {}),
-    ...(p.do === "bracket" ? { members: idx(p.members), steps: p.steps.map(format), noteText: p.note ? plain(p.note) : "", label: plain(p.note ?? format(p.steps.at(-1))) } : {}),
+    ...(p.do === "bracket" ? { members: idx(p.members), ...(p.whole ? { part: idx(p.own) } : {}), steps: p.steps.map(format), noteText: p.note ? plain(p.note) : "", label: plain(p.note ?? format(p.steps.at(-1))) } : {}),
     ...(p.do === "count" ? { steps: p.steps.map(format), noteText: notes[j] } : {}),
   }));
   const closing = scheduled.states.at(-1);

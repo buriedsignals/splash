@@ -152,6 +152,7 @@ export function applyUnitsState(root, state, context) {
       copy: q(`[data-copy="${p.k}"]`),
       copies: Array.from(stage.querySelectorAll(`[data-copyu="${p.k}"]`)),
       spine: q(`[data-spine="${p.k}"]`),
+      partSpine: q(`[data-partspine="${p.k}"]`),
       rule: q(`[data-rule="${p.k}"]`),
       label: q(`[data-label="${p.k}"]`),
     }));
@@ -264,6 +265,11 @@ export function applyUnitsState(root, state, context) {
       const y1 = Math.max(...ys) + band;
       const reach = y0 + (y1 - y0) * g;
       set(p.spine, { d: `M${x - 6},${y0} H${x} V${reach}${g >= 0.995 ? ` H${x - 6}` : ""}`, opacity: Math.min(1, g * 4) });
+      if (p.part && p.partSpine) {
+        // Against the whole: the group's own stretch of the spine, in the accent, closed by a tick (mvg99).
+        const partY1 = Math.max(...p.part.map((i) => rowTop(i))) + band;
+        set(p.partSpine, { d: `M${x - 6},${y0} H${x} V${Math.min(reach, partY1)}${reach >= partY1 ? ` H${x - 6}` : ""}`, opacity: Math.min(1, g * 4) });
+      }
       const landed = landedOf(g, p.steps.length);
       const text = g >= 0.995 && p.noteText ? p.noteText : landed > 0 ? p.steps[landed - 1] : "";
       if (p.label.textContent !== text) p.label.textContent = text;
