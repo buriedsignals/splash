@@ -1220,6 +1220,16 @@ function offMonth(here, beat) {
   return null;
 }
 
+/** Whether a beat reads data.json, itself or through a module beside it (the kit's `readTable` in series.mjs). */
+function readsData(here, source) {
+  if (/data\.json/.test(source)) return true;
+  for (const [, spec] of source.matchAll(/from\s+["'](\.\/[^"']+\.mjs)["']/g)) {
+    const path = join(here, spec);
+    if (existsSync(path) && /data\.json/.test(readFileSync(path, "utf8"))) return true;
+  }
+  return false;
+}
+
 export async function importBeat(here) {
   const file = join(here, "beat.mjs");
   const uneven = existsSync(file) && unevenDestructure(readFileSync(file, "utf8"));
@@ -1232,7 +1242,7 @@ export async function importBeat(here) {
       throw new Error(`beat.mjs throws while loading: ${errorText(error)}${throwingLine(file, error)} — ${/data\.json/.test(errorText(error)) ? "data.json is not a module to import from: read it as a file. " : ""}${readingHint(here)}`);
     throw error;
   }
-  if (existsSync(join(here, "data.json")) && !/data\.json/.test(readFileSync(file, "utf8")))
+  if (existsSync(join(here, "data.json")) && !readsData(here, readFileSync(file, "utf8")))
     throw new Error(`beat.mjs types its rows instead of reading data.json, so the data can never refuse its title: ${readingHint(here)}`);
   if (!beat || typeof beat !== "object")
     throw new Error(`beat.mjs exports no object: end it with export default { … } (see CONTRACT.md) — ${readingHint(here)}`);

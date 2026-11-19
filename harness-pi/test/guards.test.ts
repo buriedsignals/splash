@@ -1308,6 +1308,27 @@ describe("importBeat", () => {
     );
   });
 
+  // The CONTRACT.md files teach `readTable(import.meta.dirname)` from the kit's series.mjs, which reads data.json
+  // itself; the beat's own text never names the file (gx-small-multiples web, refused on replay 2026-11-19).
+  it("should return the beat when a module beside it reads data.json for it", async () => {
+    const dir = beatWith(
+      `import { readTable } from "./reader.mjs";\nconst data = readTable(import.meta.dirname);\nexport default { first: data.rows[0][0] };`,
+    );
+    writeFileSync(
+      join(dir, "reader.mjs"),
+      `import { readFileSync } from "node:fs"; import { join } from "node:path";\nexport function readTable(dir) { return JSON.parse(readFileSync(join(dir, "data.json"), "utf8")); }`,
+    );
+    expect((await importBeat(dir)).first).toBe("Lisboa");
+  });
+
+  it("should still refuse a typed beat that imports a module which never reads data.json", async () => {
+    const dir = beatWith(
+      `import { fr } from "./words.mjs";\nexport default { rows: [{ name: fr("Lisboa"), value: 214 }] };`,
+    );
+    writeFileSync(join(dir, "words.mjs"), `export const fr = (s) => s;`);
+    await expect(importBeat(dir)).rejects.toThrow(/types its rows instead of reading data\.json/);
+  });
+
   it("should return the beat when it reads data.json", async () => {
     const dir = beatWith(
       `import { readFileSync } from "node:fs"; import { join } from "node:path";\nconst data = JSON.parse(readFileSync(join(import.meta.dirname, "data.json"), "utf8"));\nexport default { rows: data.rows.map((r) => ({ name: r[0], value: r[1] })) };`,
