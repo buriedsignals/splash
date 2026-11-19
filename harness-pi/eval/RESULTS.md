@@ -2369,5 +2369,5 @@ Every point the owner's read of the 12B and Qwen renders raised, fixed in code a
 - Dot-density: the wording no longer claims one dot per person when a dot stands for many (a9bf400f6; seed edits).
 - Flow-map: the standfirst fits one line or moves its derived sentence under the map (62cca6622); scrolly card 4 counter and country names on the frozen card images (5ff469208); web destination names on the live map and its plate, widest band first (6cf5a9c4c). The last one hid behind MapLibre dropping a layer whose text-size was `null` without an error on the page; the layer now refuses it.
 - Units static: bracket (ba205aedb). mvq150 line chip (b7e8ea80c). mvq151 slopegraph notes (a5a2ea9b3). mvq153 bullet scrolly (0b3be967d).
-- Open, owner's decision: web maps on wide windows (flow, proportional symbol) fit to the height and show ~170° of longitude. The fit is correct at a ~3:1 frame; the doctrine forbids capping the width. Proposal: on wide windows, set the words in a left column so the map gets the full height.
+- Closed, owner's decision (2026-11-19): web maps on wide windows (flow, proportional symbol) fit to the height and show ~170° of longitude. That stays: a wider window shows more map. No side column, no width cap.
 - Phone layout: deferred until desktop is validated.
