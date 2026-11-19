@@ -75,6 +75,12 @@ describe("locator scrolly drive — the settlements the beat names", () => {
     const { warm } = await drive();
     expect(warm.zoomRange["City labels"]?.[0]).toBe(0);
   });
+  // mvg96 (2026-11-19): the beat named "Bucharest", MapTiler's name:latin is "București" (its name:en is "Bucharest"),
+  // so the dot was drawn and the word never was. A name the beat gives must find the feature under any of its names.
+  it("should find a settlement the beat names by its English name too", async () => {
+    const { warm } = await drive();
+    expect(JSON.stringify(warm.filters["City labels"])).toContain('"name:en"');
+  });
   // Same replay: each name printed centred ON the dot the beat draws for it ("Dn·ipro", "O·desa").
   it("should set a settlement's name beside the dot the beat draws for it, not on it", async () => {
     const { warm } = await drive();

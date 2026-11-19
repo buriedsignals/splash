@@ -110,8 +110,9 @@ function setUpNativeLabels(map, native) {
   map.setPaintProperty("Country labels", "text-color", native.countryColor, { validate: false });
   map.setPaintProperty("Country labels", "text-halo-color", native.landHalo, { validate: false });
 
-  const nameOf = ["coalesce", ["get", "name:latin"], ["get", "name"]];
-  const placeFilter = ["in", nameOf, ["literal", native.placeNames]];
+  // Any of the tile's names: București carries "Bucharest" only as name:en (gx-locator scrolly mvg96, 2026-11-19).
+  const named = (key) => ["in", ["coalesce", ["get", key], ""], ["literal", native.placeNames]];
+  const placeFilter = ["any", named("name:latin"), named("name"), named("name:en"), named(`name:${native.lang ?? "en"}`)];
   for (const id of ["City labels", "Town labels", "Village labels", "Place labels", "State labels"]) {
     map.setFilter(id, ["all", CLASS_SCOPE[id], placeFilter], { validate: false });
     // MapTiler opens "City labels" at zoom 5; the close-up can sit below it (4.88 on the worked example's data), and

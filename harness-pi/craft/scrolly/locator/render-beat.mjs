@@ -252,11 +252,12 @@ await refusing(HERE, async () => {
           await namesPage.setViewport({ width: 1280, height: 800, deviceScaleFactor: 1 });
           const zoom = CLOSE_ZOOM + zoomShiftFor({ referenceWidth: REFERENCE.width, referenceHeight: REFERENCE.height }, 1280, 680);
           const seen = await namesPage.evaluate(
-            async (style, center, zoom) => {
+            async (style, center, zoom, lang) => {
               const map = new maplibregl.Map({ container: "map", style, center, zoom, interactive: false, fadeDuration: 0 });
               await new Promise((r) => map.once("idle", r));
-              const nameOf = (f) => f.properties["name:latin"] ?? f.properties.name;
-              const places = map.querySourceFeatures("maptiler_planet", { sourceLayer: "place" }).map(nameOf);
+              // Every name the drive's filter accepts (locator-drive.mjs setUpNativeLabels).
+              const namesOf = (f) => ["name:latin", "name", "name:en", `name:${lang}`].map((k) => f.properties[k]).filter(Boolean);
+              const places = map.querySourceFeatures("maptiler_planet", { sourceLayer: "place" }).flatMap(namesOf);
               const waters = map.querySourceFeatures("maptiler_planet", { sourceLayer: "water_name" }).map((f) => f.properties.name);
               map.remove();
               return { places: [...new Set(places)], waters: [...new Set(waters)] };
@@ -264,6 +265,7 @@ await refusing(HERE, async () => {
             cards.styleDoc,
             CLOSE_CENTER,
             zoom,
+            lang,
           );
           const unknownPlaces = placeNames.filter((n) => !seen.places.includes(n));
           const unknownWaters = waters.filter((n) => !seen.waters.includes(n));
@@ -332,6 +334,7 @@ await refusing(HERE, async () => {
           countryCodes: beat.areas.map((iso) => ISO3_TO_ISO2[iso]),
           countryColor: mutedOnLand,
           placeNames,
+          lang,
           placeColor: inkOnLand,
           waterNames: waters,
           waterColor: waterInk,
