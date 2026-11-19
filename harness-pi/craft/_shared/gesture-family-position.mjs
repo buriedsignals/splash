@@ -421,6 +421,24 @@ function levelsOf_(items, gap = 6, maxLevels = 8) {
  * @param frame   { x, y, width, height } the plot, labels included
  * @param text    { measure(text, reg) → width, lead(reg) → line height, format(v), delta(v), moments, unit }
  */
+/** The page width a phone leaves a plot: 375 px less the page's 24 px gutters. */
+const PHONE_PLOT_PX = 375 - 2 * 24;
+
+/**
+ * A column's words on a web page. Positions shrink with the window while words keep their CSS size, so eight
+ * "années 1950" columns printed over each other at 375 px (gx-box-plot, 2026-11-19). When the widest name does not fit
+ * a phone's column, the words every name shares are dropped and the part that tells them apart is printed; the hover
+ * detail still carries the whole name.
+ */
+export function columnNames(names, { pitchPx, measure }) {
+  const fits = (list) => Math.max(...list.map((t) => measure(t))) <= pitchPx * 0.9;
+  if (!names.length || fits(names)) return names;
+  const words = names.map((t) => String(t).split(/\s+/));
+  let k = 0;
+  while (words.every((w) => w.length > k + 1 && w[k] === words[0][k])) k++;
+  return k ? words.map((w) => w.slice(k).join(" ")) : names;
+}
+
 export function sceneOf({ model, state, frame, text }) {
   const prims = [];
   const add = (p) => (prims.push({ o: 1, ...p }), p);
@@ -677,6 +695,7 @@ export function sceneOf({ model, state, frame, text }) {
     pos = (v) => plot.y + plot.height - ((v - lo) / (hi - lo)) * plot.height;
     const pitch = plot.width / Math.max(1, n);
     const boxW = Math.max(6, Math.min(46, pitch * 0.38));
+    const shown = text.web ? columnNames(shownRows, { pitchPx: (PHONE_PLOT_PX - tickW) / Math.max(1, n), measure: (t) => W(t, "axis") }) : shownRows;
     const dotR = Math.max(1.6, Math.min(3.2, pitch * 0.05));
     shownRows.forEach((name, i) => {
       const row = byName.get(name);
@@ -692,7 +711,7 @@ export function sceneOf({ model, state, frame, text }) {
         const jitter = ((k * 7919) % 11) / 10 - 0.5;
         add({ id: `pt-${name}-${k}`, kind: "circle", cx: outlier ? cx : cx + boxW / 2 + 5 + (jitter + 0.5) * Math.min(14, pitch * 0.25), cy: pos(v), r: dotR, o: o * (outlier ? 1 : 0.85), role: role === "accent" ? "accent" : "rule", hollow: outlier });
       });
-      add({ id: `name-${name}`, kind: "text", x: plot.x + (i + 0.5) * pitch, y: plot.y + plot.height + nameH * 0.8, text: name, anchor: "middle", reg: "axis", role: accent.has(name) || rings.has(name) ? "ink" : "muted", bold: accent.has(name) || rings.has(name), o: hidden.has(name) ? 0 : 1 * revealOf(name) });
+      add({ id: `name-${name}`, kind: "text", x: plot.x + (i + 0.5) * pitch, y: plot.y + plot.height + nameH * 0.8, text: shown[i], anchor: "middle", reg: "axis", role: accent.has(name) || rings.has(name) ? "ink" : "muted", bold: accent.has(name) || rings.has(name), o: hidden.has(name) ? 0 : 1 * revealOf(name) });
       if (rings.has(name)) add({ id: `ring-${name}`, kind: "rect", x: cx - boxW / 2 - 4, y: pos(s.whiskerHi) - 4, width: boxW + 8 + Math.min(14, pitch * 0.25) + 8, height: pos(s.whiskerLo) - pos(s.whiskerHi) + 8, o, role: "ink", stroke: true });
       out.anchors.set(name, { x: cx + boxW / 2, y: pos(s.median), top: pos(s.whiskerHi) - dotR - 2, side: "above", rowY: pos(s.median), cx, boxW });
     });
