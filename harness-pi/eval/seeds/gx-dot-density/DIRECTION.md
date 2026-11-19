@@ -1,7 +1,7 @@
 # creme/creme/the newsroom
 
 - name: creme/creme/the newsroom
-- origin: NEWSROOM.md + 72 réacteurs sur 8 900 centrales bas-carbone — et un tiers de la puissance (palette origin: newsroom)
+- origin: NEWSROOM.md + 72 sites nucléaires sur 8 900 centrales bas-carbone — et un tiers de la puissance (palette origin: newsroom)
 - measuredFrom: creme, measured on abc-net-au-news-2024-05-23-afl-mullet-count-data-analysis-103850072
 - ground: #FFFFFF
 - accent: #0B7A75

@@ -1,4 +1,4 @@
-// beat.mjs for the worked example proof/video-dot-density-europe-stations — « 72 réacteurs sur 8 900 centrales
+// beat.mjs for the worked example proof/video-dot-density-europe-stations — « 72 sites nucléaires sur 8 900 centrales
 // bas-carbone — et un tiers de la puissance », told in time. data.json is the register of low-carbon stations. Every
 // number the video draws is COMPUTED from data.json; the arrival order, the shares and the growth are the kit's.
 import { readFileSync } from "node:fs";
@@ -24,7 +24,7 @@ export default {
   lang: "fr",
   eyebrow: "Énergie · Europe",
   // The title card in forms, longest first: the first is the journalist's takeaway, copied as written.
-  title: [`72 réacteurs sur 8${NB}900 centrales bas-carbone — et un tiers de la puissance`, "72 sites nucléaires, un tiers de la puissance bas-carbone"],
+  title: [`72 sites nucléaires sur 8${NB}900 centrales bas-carbone — et un tiers de la puissance`, "72 sites nucléaires, un tiers de la puissance bas-carbone"],
   dots,
   subject: "Nuclear",
   count: (n) => `${n0(n)}${NB}centrales`,

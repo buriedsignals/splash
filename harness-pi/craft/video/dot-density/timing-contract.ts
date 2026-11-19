@@ -1,5 +1,5 @@
 /**
- * The timing contract for « 72 réacteurs sur 8 900 centrales bas-carbone » (BRIEF.md, « The choreography »).
+ * The timing contract for « 72 sites nucléaires sur 8 900 centrales bas-carbone » (BRIEF.md, « The choreography »).
  *
  * - `establish`: 45 frames. THE TITLE CARD from frame 0.
  * - `reference`: 120 frames. The land, then the seven fuels arriving one after another, the count climbing to 8 900.

@@ -1,5 +1,5 @@
 /**
- * One frame of « 72 réacteurs sur 8 900 centrales bas-carbone » — the title card, then the stations arriving fuel by
+ * One frame of « 72 sites nucléaires sur 8 900 centrales bas-carbone » — the title card, then the stations arriving fuel by
  * fuel, the 72 named, every dot growing into its weight, ending on the weighted map (BRIEF.md).
  *
  * THE MAP IS THE CALLER'S (`liveMap`: the live MapTiler map in the composition — the land and every station, each fuel

@@ -1,4 +1,4 @@
-// beat.mjs for the worked example proof/static-dot-density-europe-stations, as a video GESTURE beat — "72 réacteurs sur
+// beat.mjs for the worked example proof/static-dot-density-europe-stations, as a video GESTURE beat — "72 sites nucléaires sur
 // 8 900 centrales bas-carbone — et un tiers de la puissance". One dot per station at its own coordinates; the marks
 // a gesture names are the GROUPS (a fuel), each worth its count of dots. Every number is COMPUTED from data.json.
 import { readFileSync } from "node:fs";
@@ -38,7 +38,7 @@ export default {
   missingLabel: "",
   format: (v) => n0(v),
   title: [
-    "72 réacteurs sur 8 900 centrales bas-carbone — et un tiers de la puissance",
+    "72 sites nucléaires sur 8 900 centrales bas-carbone — et un tiers de la puissance",
     `${nuclear.length} sites nucléaires, un tiers de la puissance`,
   ],
   limits: [

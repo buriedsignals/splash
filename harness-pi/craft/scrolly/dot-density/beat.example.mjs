@@ -1,4 +1,4 @@
-// beat.mjs for the worked example proof/scrolly-dot-density-europe-stations — "72 réacteurs sur 8 900
+// beat.mjs for the worked example proof/scrolly-dot-density-europe-stations — "72 sites nucléaires sur 8 900
 // centrales bas-carbone — et un tiers de la puissance", as a scrolly. Every number in a card is
 // COMPUTED: the counts, the shares and the focus region's averages come from render-beat.mjs as `r` and
 // are only WORDED here.
@@ -60,7 +60,7 @@ export default {
       `${capital(named(IN_REGION, r.focus.region))}, qui compte ${r.focus.count} des ${r.subject.count} sites, un site nucléaire pèse en moyenne ${n0(r.focus.subjectMean)} MW ; un site solaire, ${one(r.focus.compareMean)} MW.`,
   },
   title: [
-    "72 réacteurs sur 8 900 centrales bas-carbone — et un tiers de la puissance",
+    "72 sites nucléaires sur 8 900 centrales bas-carbone — et un tiers de la puissance",
     "72 sites nucléaires, un tiers de la puissance bas-carbone",
     "Où sont les centrales bas-carbone d’Europe",
   ],

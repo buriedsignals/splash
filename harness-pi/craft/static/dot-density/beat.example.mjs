@@ -1,4 +1,4 @@
-// beat.mjs for the worked example proof/static-dot-density-europe-stations — "72 réacteurs sur 8 900
+// beat.mjs for the worked example proof/static-dot-density-europe-stations — "72 sites nucléaires sur 8 900
 // centrales bas-carbone — et un tiers de la puissance". One dot per station, at its own coordinates;
 // the nuclear stations are the subject, ringed. Every number on the plate is COMPUTED from data.json.
 import { readPoints, readTable } from "./points.mjs";
@@ -37,10 +37,10 @@ export default {
   thing: "centrale",
   // The headline in forms, longest first: the first is the journalist's takeaway, copied literally.
   title: [
-    "72 réacteurs sur 8 900 centrales bas-carbone — et un tiers de la puissance",
+    "72 sites nucléaires sur 8 900 centrales bas-carbone — et un tiers de la puissance",
     `${subject.length} sites nucléaires, un tiers de la puissance bas-carbone`,
     // Every shorter form still states the takeaway: the ladder may land on the last one.
-    `${subject.length} réacteurs, un tiers de la puissance`,
+    `${subject.length} sites nucléaires, un tiers de la puissance`,
   ],
   limits: [
     `Une centrale bas-carbone, un point, à ses propres coordonnées : les ${n0(total)} sites ` +

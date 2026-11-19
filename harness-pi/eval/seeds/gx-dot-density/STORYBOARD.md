@@ -1,5 +1,5 @@
 ---
-takeaway: "72 réacteurs sur 8 900 centrales bas-carbone — et un tiers de la puissance"
+takeaway: "72 sites nucléaires sur 8 900 centrales bas-carbone — et un tiers de la puissance"
 grounding: supported
 claimShape: none
 subject: "le nucléaire"
@@ -11,7 +11,7 @@ effectiveDate: 2026-10-27
 limits: "Une centrale bas-carbone, un point ; les sites que la base recense."
 slots:
   - id: 1
-    proves: "72 réacteurs sur 8 900 centrales bas-carbone — et un tiers de la puissance"
+    proves: "72 sites nucléaires sur 8 900 centrales bas-carbone — et un tiers de la puissance"
     medium: chart
     format: static
     reachable: yes
