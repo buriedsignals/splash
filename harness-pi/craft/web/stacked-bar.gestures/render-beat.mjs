@@ -13,7 +13,8 @@ import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { webRegisters } from "#shared/design-base/web.mjs";
 import { readPalette } from "#shared/chart-beat/colour.mjs";
-import { GestureStackWeb } from "./GestureStackWeb.tsx";
+import { GestureStackWeb, FRAME } from "./GestureStackWeb.tsx";
+import { stackRowFloor } from "./stack-row-floor.mjs";
 import { GestureRefusal } from "./gesture-core.mjs";
 import { stageStackWeb } from "./gesture-stack-web.mjs";
 import { loadStackBeat } from "./gesture-stack-beat.mjs";
@@ -104,7 +105,8 @@ await refusing(HERE, async () => {
       const decreaseInk = running ? seriesInks({ ground: direction.ground, accent: direction.accent, accents: [direction.accent, ...(newsroom.accents ?? []).slice(1)] }, 2)[1] : undefined;
       const H = Math.max(stack.names.length * 30, 280);
       const nameBox = labelBoxPx("Hg", regs.axis, measureText, { chip: false }).h;
-      const rowFloor = !running && stack.names.length >= 2 ? { rows: stack.names.length, pitch: H / stack.names.length, px: Math.ceil(nameBox), why: `Each of the ${stack.names.length} bars carries its name in the gutter and its total at its end; under that pitch a bar prints both over its neighbour's.` } : null;
+      const figureLine = labelBoxPx("Hg", regs.value, measureText, { chip: false }).h;
+      const rowFloor = running ? null : stackRowFloor({ rows: stack.names.length, height: H, maxBar: FRAME.maxBar, namePx: nameBox, figurePx: figureLine });
       // The key's fills, the same ramp the component draws (its first bar's).
       const { mix } = await import(chartWeb(HERE, "scripts", "colour.mjs"));
       const keyItems = keyParts.map((p) => {
@@ -132,6 +134,7 @@ await refusing(HERE, async () => {
           restLabel,
           restNotes,
           gutterPx,
+          insideFit: { widthOf: (t) => labelBoxPx(t, regs.value, measureText, { chip: false }).w, linePx: figureLine },
           keyItems,
           sideNames: VARIANT === "diverging-stacked-bar-likert" ? { left: beat.leftName && plain(beat.leftName), right: beat.rightName && plain(beat.rightName) } : undefined,
           decreaseInk,

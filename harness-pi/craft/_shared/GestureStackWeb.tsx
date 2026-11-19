@@ -20,6 +20,7 @@ import {
   TEXT_CONTRAST_MIN,
 } from "#shared/chart-beat/colour.mjs";
 import { figureVars, webRegisters } from "#shared/design-base/web.mjs";
+import { stackBarUnits } from "./stack-row-floor.mjs";
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
 const { controlChromeCss } = await import(
   skillScriptFrom(
@@ -101,6 +102,9 @@ type Label = {
   muted?: boolean;
   /** The fill a centred figure sits on: its ink is measured against it. */
   on?: string;
+  /** A centred figure's own segment, in viewBox units: the box it must fit inside on the reader's page. */
+  w?: number;
+  h?: number;
 };
 type Path = { d: string; dash?: boolean };
 
@@ -114,6 +118,8 @@ export function GestureStackWeb(props: {
   restLabel: string;
   restNotes: string[];
   gutterPx: number;
+  /** The page width of a figure printed inside its segment, and its line's height, in CSS px (value register). */
+  insideFit?: { widthOf: (text: string) => number; linePx: number };
   keyItems: { label: string; fill: string }[];
   sideNames?: { left?: string; right?: string };
   decreaseInk?: string;
@@ -139,6 +145,7 @@ export function GestureStackWeb(props: {
     restLabel,
     restNotes,
     gutterPx,
+    insideFit,
     title,
     eyebrow,
     caveat,
@@ -248,7 +255,7 @@ export function GestureStackWeb(props: {
     const back = new Set(s.stepBack.filter((b) => !s.accent.includes(b)));
     if (rowsLayout) {
       const ROW = H / s.order.length;
-      const barH = Math.min(ROW * 0.62, FRAME.maxBar);
+      const barH = stackBarUnits(ROW, FRAME.maxBar);
       const yTop = (b: string) => slotOf.get(b)! * ROW + (ROW - barH) / 2;
       const mid = (b: string) => slotOf.get(b)! * ROW + ROW / 2;
       for (const b of s.order) {
@@ -279,6 +286,8 @@ export function GestureStackWeb(props: {
               anchor: "centre",
               muted: back.has(b),
               on: fill,
+              w: x(t) - x(f),
+              h: barH,
             });
         }
         const [f, t] = stack.unit(segs).extent;
@@ -462,6 +471,18 @@ export function GestureStackWeb(props: {
     return { id, state: s, rects, labels, paths, hits, slotOf };
   }
   const plates = states.map((s, i) => plateOf(i, s));
+  // A FIGURE PRINTED INSIDE ITS OWN SEGMENT FITS OR IT DOES NOT, AND ONLY THE READER'S PAGE KNOWS WHICH. Its words keep
+  // their CSS size while the segment follows the viewBox: at 375 px (gx-likert, 2026-11-19) "54,3" printed across its
+  // neighbours. Each one sits in a size container the shape of its segment, hidden below its own measured width or line
+  // (chart-web's `data-fits-its-mark`); the segment still answers a pointer, a tap and a key with the value.
+  const insideW = (t: string) => (insideFit ? Math.ceil(insideFit.widthOf(t)) : 0);
+  const insideWidths = [
+    ...new Set(
+      plates.flatMap((p) =>
+        p.labels.filter((l) => l.anchor === "centre").map((l) => insideW(l.text)),
+      ),
+    ),
+  ].sort((a, b) => a - b);
 
   const plateCss = [
     `${SCOPE} [data-plate]:not([data-plate="0"]) { display: none; }`,
@@ -475,6 +496,16 @@ export function GestureStackWeb(props: {
     `${SCOPE} .chart-rest-notes { margin: 4px 0 0; }`,
     `${SCOPE} .stack-key { display: flex; flex-wrap: wrap; gap: 2px 16px; margin: 4px 0 2px; }`,
     `${SCOPE} .stack-key i { display: inline-block; width: 0.7em; height: 0.7em; margin-right: 5px; vertical-align: baseline; }`,
+    ...(insideFit
+      ? [
+          `${SCOPE} .chart-plot .inside-box { position: absolute; container-type: size; }`,
+          `${SCOPE} .chart-plot .inside-box > .end-label { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); white-space: nowrap; padding: 0; }`,
+          `@container (max-height: ${insideFit.linePx - 0.01}px) { ${SCOPE} .chart-plot .inside-box > .end-label { opacity: 0; } }`,
+          ...insideWidths.map(
+            (w) => `@container (max-width: ${w - 0.01}px) { ${SCOPE} .chart-plot .inside-box > .end-label[data-w="${w}"] { opacity: 0; } }`,
+          ),
+        ]
+      : []),
     `${SCOPE} .chart-plot .x-axis .axis-label.x { white-space: normal; text-align: center; width: ${Math.floor(pct(slot, W))}%; line-height: 1.1; }`,
     ...controls.flatMap((_, k) => {
       const on = `${SCOPE}:has(#gesture-${k + 1}-on:checked)`;
@@ -633,7 +664,32 @@ export function GestureStackWeb(props: {
         data-plate={p.id}
         key={`l${p.id}`}
       >
-        {p.labels.map((l, i) => (
+        {p.labels.map((l, i) =>
+          insideFit && l.anchor === "centre" && l.w !== undefined && l.h !== undefined ? (
+            <span
+              key={i}
+              className="inside-box"
+              style={{
+                left: `${pct(l.x - l.w / 2, W).toFixed(3)}%`,
+                top: `${pct(l.y - l.h / 2, H).toFixed(3)}%`,
+                width: `${pct(l.w, W).toFixed(3)}%`,
+                height: `${pct(l.h, H).toFixed(3)}%`,
+              }}
+            >
+              <span
+                className="end-label"
+                data-fits-its-mark=""
+                data-w={String(insideW(l.text))}
+                style={{
+                  ...regs.value,
+                  background: "transparent",
+                  color: adjustToContrast(ink, l.on!, TEXT_CONTRAST_MIN) ?? labelInk,
+                }}
+              >
+                {l.text}
+              </span>
+            </span>
+          ) : (
           <span
             key={i}
             className="end-label"
@@ -648,7 +704,8 @@ export function GestureStackWeb(props: {
           >
             {l.text}
           </span>
-        ))}
+          ),
+        )}
       </div>,
     ];
   };
