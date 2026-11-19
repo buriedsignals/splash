@@ -90,6 +90,9 @@ export function scheduleUnitsVideo({ gestures, groups }) {
         const ofWhole = own.length === 1 && g.of === "whole";
         item.members = ofWhole ? names : own;
         item.whole = ofWhole;
+        // The group measured, so the whole's spine shows where it ends (mvg98: an even spine over every bin read as
+        // if all of them were the share).
+        item.part = ofWhole ? own : null;
         // Against the whole the figure states the group's own count, then the whole it is measured against.
         item.steps = ofWhole ? [countOf.get(own[0]), total] : prefixSums(item.members.map((n) => countOf.get(n)));
         break;
@@ -185,7 +188,8 @@ export function sceneUnitsAt(props, frame) {
       const landedSteps = landedOf(p, g[p.index]);
       const label = props.bracketLabels.find((b) => b.item === p.index);
       const noted = g[p.index] >= 1 && label?.note;
-      return { index: p.index, y1, reach: y1 + (y2 - y1) * g[p.index], y2, figure: noted ? null : landedSteps > 0 ? valueText(p.steps[landedSteps - 1], props.format) : null, note: noted ? label.note : null, x: label.x };
+      const partY2 = p.part ? Math.max(...p.part.map((m) => props.rows.findIndex((r) => r.key === m)).map((i) => props.rows[i].top + props.rows[i].band)) : null;
+      return { index: p.index, y1, reach: y1 + (y2 - y1) * g[p.index], y2, partY2, figure: noted ? null : landedSteps > 0 ? valueText(p.steps[landedSteps - 1], props.format) : null, note: noted ? label.note : null, x: label.x };
     });
   const rules = props.plan
     .filter((p) => p.do === "reference" && g[p.index] > 0)

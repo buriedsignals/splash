@@ -363,6 +363,15 @@ export function GestureUnitsFrame(
             stroke={colours.text.count}
             strokeWidth={props.strokes.grid * 1.8}
           />
+          {b.partY2 != null ? (
+            // Against the whole: the group's own stretch of the spine, in the accent, closed by a tick.
+            <path
+              d={`M${b.x - L.gap / 2},${b.y1} H${b.x} V${Math.min(b.reach, b.partY2)}${b.reach >= b.partY2 ? ` H${b.x - L.gap / 2}` : ""}`}
+              fill="none"
+              stroke={colours.first}
+              strokeWidth={props.strokes.grid * 3.6}
+            />
+          ) : null}
           {b.figure ? (
             <Text
               line={figure(
@@ -383,7 +392,7 @@ export function GestureUnitsFrame(
                 y: (b.y1 + b.y2) / 2 + r.annot.fontSize * 0.35,
               }}
               register={r.annot}
-              fill={colours.text.count}
+              fill={b.partY2 != null ? colours.text.first : colours.text.count}
               halo={halo(props.halo.annot)}
             />
           ) : null}
