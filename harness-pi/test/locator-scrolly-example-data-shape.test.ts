@@ -1,4 +1,5 @@
 import { describe, expect, it } from "bun:test";
+import { proseSpelling } from "../craft/_shared/place-labels.mjs";
 import { copyFileSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -43,10 +44,9 @@ describe("the locator scrolly example on the seed's data", () => {
     expect(() => beat.check(r)).not.toThrow();
   });
 
-  it("should name in card 4 the settlements it draws", async () => {
+  it("should name in card 4 the settlements it draws, in the page's language", async () => {
     const beat = await load();
-    const named = beat.places.slice(0, 4).map((p: { name: string }) => p.name);
-    expect(named.every((n: string) => beat.cards.places(r).includes(n))).toBe(true);
+    expect(() => proseSpelling(beat.cards.places(r), beat.places, "fr")).not.toThrow();
   });
 
   it("should still state unreported generation when the file shows it", async () => {

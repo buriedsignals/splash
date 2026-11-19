@@ -28,6 +28,24 @@ function valuesOf(stations) {
   });
 }
 
+/** A CLOSE CAMERA THAT SEATS THE STATION BELOW THE CARD. The prose card is centred on the stage, so a camera
+ *  centred on the station hid the ring and its label under the card that names them. `subject` and `places` are
+ *  Web Mercator [x, y] (y south); the station lands at `seat` of the frame's height from the top, and the zoom eases
+ *  out — never in — until every named place, with a margin, still fits above and below it. */
+export function seatedCamera({ subject, places, zoom, reference, seat = 0.72, margin = 0.06 }) {
+  const frameAt = (z) => reference.height / (512 * 2 ** z);
+  const ys = places.map((p) => p[1]);
+  const above = Math.max(0, subject[1] - Math.min(subject[1], ...ys));
+  const below = Math.max(0, Math.max(subject[1], ...ys) - subject[1]);
+  const needed = Math.max(above / (seat - margin), below / (1 - seat - margin));
+  const fitted = needed > 0 ? Math.log2(reference.height / (needed * 512)) : zoom;
+  const z = Math.min(zoom, fitted);
+  const cy = subject[1] + (0.5 - seat) * frameAt(z);
+  const lon = subject[0] * 360 - 180;
+  const lat = (Math.atan(Math.sinh(Math.PI * (1 - 2 * cy))) * 180) / Math.PI;
+  return { center: [lon, lat], zoom: z };
+}
+
 export function locatorPlan({
   tints,
   subjectCountryIso,

@@ -38,3 +38,29 @@ export function sourceSpelling(places, rows, lang, { printed: field = "label" } 
     }`,
   );
 }
+
+/** Throws when a sentence prints a place's map spelling that the page's language writes otherwise. A live-map
+ *  scrolly keeps `places[].name` as MapTiler spells it (it filters the map's own labels); its cards are prose in the
+ *  page's language (gx-locator scrolly, Qwen3.5-9B mvq144 and 12B mvg96, 2026-11-19: « Kyiv, Bucharest »). */
+export function proseSpelling(text, places, lang) {
+  const code = String(lang ?? "").toLowerCase().slice(0, 2);
+  if (!code || code === "en") return undefined;
+  table ??= JSON.parse(readFileSync(join(import.meta.dirname, "place-names.json"), "utf8")).places;
+  const folded = ` ${fold(text).replace(/[^\p{L}\p{N}-]+/gu, " ")} `;
+  const wrong = [];
+  for (const p of [places].flat()) {
+    if (!p || typeof p.name !== "string" || !Number.isFinite(p.lon) || !Number.isFinite(p.lat)) continue;
+    const nearest = table
+      .filter((t) => near(p, t))
+      .sort((a, b) => Math.hypot(a[1] - p.lat, a[2] - p.lon) - Math.hypot(b[1] - p.lat, b[2] - p.lon))[0];
+    const local = nearest?.[3][code];
+    if (!local || fold(local) === fold(p.name)) continue;
+    if (folded.includes(` ${fold(p.name)} `)) wrong.push({ name: p.name, local });
+  }
+  if (!wrong.length) return undefined;
+  const q = JSON.stringify;
+  throw new Error(
+    `${wrong.map(({ name, local }) => `${q(name)} → ${q(local)}`).join("; ")} — the card prints the map's spelling; a ${code} page says ${wrong.map(({ local }) => q(local)).join(", ")}. ` +
+      `places[].name stays the map's spelling (it filters MapTiler's labels); the cards name each place through a table of the page's names — values that work: { ${wrong.map(({ name, local }) => `${q(name)}: ${q(local)}`).join(", ")} }`,
+  );
+}

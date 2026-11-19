@@ -64,7 +64,7 @@ labels, only the marks and the words the beat draws (the values, the subject's l
 | `subjectLabel(r)` | The words beside the ring on card 5; must state `r.subject.name` and `format(r.subject.value)`. |
 | `country` | `{ iso, name }` — the ISO alpha-3 code of the subject's own country (card 2 outlines it; the render checks the subject falls in it) and its name in the story's language. |
 | `areas` | ISO alpha-3 codes of the countries card 4 names (the subject's country and the neighbours a reader needs). |
-| `places` | The settlements card 4 names, `[{ name, lon, lat }]`, at most 8, inside the close-up; `name` as MapTiler's map spells it. Chosen by a rule (the most populous), never by hand. `[]` names none. |
+| `places` | The settlements card 4 names, `[{ name, lon, lat }]`, at most 8, inside the close-up; `name` as MapTiler's map spells it — the CARDS, though, say each place as the page's language writes it (a French card: Kiev, Bucarest, Rostov-sur-le-Don), through a table like the example's `SAID`. Chosen by a rule (the most populous), never by hand. `[]` names none. |
 | `waters` | The seas card 4 names, as MapTiler's map spells them (`["Black Sea"]`). `[]` names none. |
 | `river` | Optional `{ text, lon, lat }`: a river name the map carries no label for, drawn by the beat at a point on the river, in the story's language. |
 | `span` | Optional `{ lon, lat }`: degrees either side of the subject the close-up holds (default 9 by 5.2). |

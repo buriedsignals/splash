@@ -28,6 +28,8 @@ const biggest = sites.reduce((a, b) => (b.value > a.value ? b : a));
 // The settlements named: the six most populous, chosen by a rule, not by hand. MapTiler's map spells
 // two of them otherwise than the data (Odesa, Rostov-on-Don): the names must be the map's.
 const TILE_NAME = { Odessa: "Odesa", Rostov: "Rostov-on-Don" };
+// The CARDS are prose in the page's language: they name each settlement as a French reader writes it.
+const SAID = { Kyiv: "Kiev", Bucharest: "Bucarest", Rostov: "Rostov-sur-le-Don" };
 const cities = rows.filter((r) => r.kind === "city").sort((a, b) => b.pop - a.pop).slice(0, 6);
 const unreported = TWH < 0 ? [] : rows.filter((r) => r.kind === "country" && !(r.twh > 0));
 // Card 2's claim, only when the file shows it: the subject's country is the one with no reported generation.
@@ -64,7 +66,7 @@ export default {
         ? `La plus grosse est en ${r.country.name}, le seul pays du continent dont la production électrique de 2024 n’est pas rapportée.`
         : `La plus grosse est en ${r.country.name} : ${format(r.subject.value)}, devant ${format(r.second.value)} pour la suivante.`,
     zoom: () => "Approchons : l’Ukraine, la mer Noire, la mer d’Azov.",
-    places: () => `Pays en capitales, villes en bas de casse sur un point, eaux en italique : ${cities.slice(0, 4).map((c) => TILE_NAME[c.name] ?? c.name).join(", ")}.`,
+    places: () => `Pays en capitales, villes en bas de casse sur un point, eaux en italique : ${cities.slice(0, 4).map((c) => SAID[c.name] ?? c.name).join(", ")}.`,
     subject: (r) => `${r.subject.name}, sur le Dniepr : ${format(r.subject.value)} de puissance installée, la plus grosse centrale bas-carbone d’Europe.`,
   },
   // The header's accent note while each card is read.

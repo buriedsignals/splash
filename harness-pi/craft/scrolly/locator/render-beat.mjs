@@ -34,7 +34,8 @@ import { ISO3_TO_ISO2 } from "#shared/map-beat/iso-codes.mjs";
 import { validateExpressions } from "#shared/map-beat/mount.mjs";
 import { cameraFields, lonLatOf, mercatorOf, validateScrollyPlan, zoomShiftFor } from "#shared/map-beat/scrolly.mjs";
 import { plateTints } from "#shared/map-beat/tints.mjs";
-import { locatorPlan } from "./plan.mjs";
+import { locatorPlan, seatedCamera } from "./plan.mjs";
+import { proseSpelling } from "./place-labels.mjs";
 import { applyStoryboard, assertNumbers, assertLegibleLabels, assertHeadlineNumbersDrawn, assertDrawsClaimColumn } from "./guards.mjs";
 import { plain, refusing, storyLanguage } from "./web.mjs";
 import { renderBeatScrolly, scrollySkill } from "./scrolly.mjs";
@@ -157,8 +158,13 @@ await refusing(HERE, async () => {
   const CLOSE_CENTER = [subjectRow.lon, subjectRow.lat];
   const PULLBACK_ZOOM = CLOSE_ZOOM - (CLOSE_ZOOM - WHOLE_ZOOM) * PULLBACK;
   const whole = cameraFields({ center: WHOLE_CENTER, zoom: WHOLE_ZOOM, alignY: 1 });
-  const closeUp = cameraFields({ center: CLOSE_CENTER, zoom: CLOSE_ZOOM, alignY: 0 });
-  const pullback = cameraFields({ center: CLOSE_CENTER, zoom: PULLBACK_ZOOM, alignY: 0 });
+  // Seated below the centred prose card, never under it (gx-locator scrolly mvq144 / mvg96, 2026-11-19).
+  const placesMerc = beat.places.filter((p) => isPoint(p)).map((p) => mercatorOf([p.lon, p.lat]));
+  const subjectMerc = mercatorOf(CLOSE_CENTER);
+  const seatedClose = seatedCamera({ subject: subjectMerc, places: placesMerc, zoom: CLOSE_ZOOM, reference: REFERENCE });
+  const seatedBack = seatedCamera({ subject: subjectMerc, places: [], zoom: PULLBACK_ZOOM, reference: REFERENCE });
+  const closeUp = cameraFields({ ...seatedClose, alignY: 0 });
+  const pullback = cameraFields({ ...seatedBack, alignY: 0 });
   const cameras = [whole, whole, closeUp, closeUp, closeUp, pullback];
   const STATES = BASE_STATES.map((state, k) => ({ ...state, ...cameras[k], card: k }));
   const inClose = (p) => Math.abs(p.lon - subjectRow.lon) <= span.lon && Math.abs(p.lat - subjectRow.lat) <= span.lat;
@@ -188,6 +194,7 @@ await refusing(HERE, async () => {
   const say = wordsOf(reading);
   const format = (v) => plain(beat.format(v));
   const prose = [...WORDED.map((k) => say(`cards.${k}`, beat.cards[k])), say("limits", [beat.limits].flat()[0])];
+  proseSpelling(prose.flat().join(" "), beat.places, beat.lang ?? storyLanguage(HERE));
   const words = { unit: plain(beat.unit) };
   for (const [k, slot] of Object.entries(NOTE_SLOTS)) words[slot] = say(`notes.${k}`, beat.notes[k]).join(" ");
   const subjectLabel = say("subjectLabel", beat.subjectLabel).join(" ");
@@ -250,7 +257,7 @@ await refusing(HERE, async () => {
         const namesPage = await cards.mapPage();
         try {
           await namesPage.setViewport({ width: 1280, height: 800, deviceScaleFactor: 1 });
-          const zoom = CLOSE_ZOOM + zoomShiftFor({ referenceWidth: REFERENCE.width, referenceHeight: REFERENCE.height }, 1280, 680);
+          const zoom = seatedClose.zoom + zoomShiftFor({ referenceWidth: REFERENCE.width, referenceHeight: REFERENCE.height }, 1280, 680);
           const seen = await namesPage.evaluate(
             async (style, center, zoom, lang) => {
               const map = new maplibregl.Map({ container: "map", style, center, zoom, interactive: false, fadeDuration: 0 });
@@ -263,7 +270,7 @@ await refusing(HERE, async () => {
               return { places: [...new Set(places)], waters: [...new Set(waters)] };
             },
             cards.styleDoc,
-            CLOSE_CENTER,
+            seatedClose.center,
             zoom,
             lang,
           );
