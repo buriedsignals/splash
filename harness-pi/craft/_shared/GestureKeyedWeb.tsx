@@ -29,6 +29,8 @@ const { controlChromeCss } = await import(
 );
 
 const SCOPE = ".chart-figure";
+/** chart-web's narrow breakpoint (NARROW_FLOOR_BELOW_PX in render-web.mjs), under which the phone plates show. */
+export const PHONE_BELOW_PX = 640;
 const ACTIVE_STEP = 0.3;
 
 export type KeyedControl = {
@@ -48,6 +50,7 @@ export function GestureKeyedWeb({
   controls,
   colours,
   svgRegs,
+  phone,
   restLabel,
   restNotes,
   title,
@@ -62,6 +65,7 @@ export function GestureKeyedWeb({
   controls: KeyedControl[];
   colours: KeyedColours;
   svgRegs: Record<string, Register>;
+  phone?: { scene: Scene; svgRegs: Record<string, Register> };
   restLabel: string;
   restNotes: string[];
   title: string;
@@ -85,6 +89,12 @@ export function GestureKeyedWeb({
       lifted = mix(fill, ink, (t += 0.1));
     return lifted;
   };
+  // Under chart-web's narrow breakpoint the page shows the phone plates: the same viewBox (chart-web holds one per
+  // page), its words laid out larger so the letterbox brings them back to their own size (see PHONE_PLOT_PX).
+  const fits = [
+    { name: "wide", scene, svgRegs },
+    ...(phone ? [{ name: "phone", ...phone }] : []),
+  ];
   const plates = [
     { id: 0, state: resting },
     ...controls.map((c, k) => ({ id: k + 1, state: c.state })),
@@ -92,6 +102,12 @@ export function GestureKeyedWeb({
   const css = [
     `${SCOPE} [data-plate]:not([data-plate="0"]) { display: none; }`,
     `${SCOPE} .chart-plot { --y-gutter: 0px; }`,
+    ...(phone
+      ? [
+          `@container not (max-width: ${PHONE_BELOW_PX}px) { ${SCOPE} .chart-plot svg[data-fit="phone"] { display: none !important; } }`,
+          `@container (max-width: ${PHONE_BELOW_PX}px) { ${SCOPE} .chart-plot svg[data-fit="wide"] { display: none !important; } }`,
+        ]
+      : []),
     `${SCOPE} [data-mark].mark-active { fill: var(--mark-active); }`,
     `${SCOPE} [data-mark-edge].mark-active { stroke: var(--mark-active); }`,
     `${SCOPE} .gesture-controls { flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 0 28px; margin-top: 4px; }`,
@@ -213,46 +229,48 @@ export function GestureKeyedWeb({
         }}
       >
         <div className="y-axis" />
-        {plates.map((p) => (
-          <svg
-            key={p.id}
-            role="group"
-            aria-label={title}
-            xmlns="http://www.w3.org/2000/svg"
-            className="chart"
-            data-hit="cell"
-            data-plate={p.id}
-            viewBox={`${-4} ${-4 - (scene.topRoom ?? 0)} ${W + 8} ${H + 8 + (scene.topRoom ?? 0)}`}
-            preserveAspectRatio="xMidYMid meet"
-          >
-            <desc>{alt}</desc>
-            <rect
-              x={-4}
-              y={-4 - (scene.topRoom ?? 0)}
-              width={W + 8}
-              height={H + 8 + (scene.topRoom ?? 0)}
-              fill={colours.ground}
-            />
-            <KeyedLayer
-              scene={scene}
-              state={p.state}
-              colours={colours}
-              regs={svgRegs}
-              hits
-              plate={p.id}
-              active={activeOf}
-            />
-            <rect
-              className="hit-area"
-              x={-4}
-              y={-4 - (scene.topRoom ?? 0)}
-              width={W + 8}
-              height={H + 8 + (scene.topRoom ?? 0)}
-              fill="transparent"
-              pointerEvents="all"
-            />
-          </svg>
-        ))}
+        {fits.flatMap((fit) =>
+          plates.map((p) => {
+            const w = fit.scene.width;
+            const h = fit.scene.height;
+            const top = fit.scene.topRoom ?? 0;
+            return (
+            <svg
+              key={`${fit.name}-${p.id}`}
+              role="group"
+              aria-label={title}
+              xmlns="http://www.w3.org/2000/svg"
+              className="chart"
+              data-hit="cell"
+              data-plate={p.id}
+              data-fit={fit.name}
+              viewBox={`${-4} ${-4 - top} ${w + 8} ${h + 8 + top}`}
+              preserveAspectRatio="xMidYMid meet"
+            >
+              <desc>{alt}</desc>
+              <rect x={-4} y={-4 - top} width={w + 8} height={h + 8 + top} fill={colours.ground} />
+              <KeyedLayer
+                scene={fit.scene}
+                state={p.state}
+                colours={colours}
+                regs={fit.svgRegs}
+                hits
+                plate={p.id}
+                active={activeOf}
+              />
+              <rect
+                className="hit-area"
+                x={-4}
+                y={-4 - top}
+                width={w + 8}
+                height={h + 8 + top}
+                fill="transparent"
+                pointerEvents="all"
+              />
+            </svg>
+            );
+          }),
+        )}
         <div className="overlay" aria-hidden="true" />
         <div className="x-axis" />
       </div>

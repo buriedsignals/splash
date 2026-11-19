@@ -139,12 +139,28 @@ export async function runKeyedStatic({ here, spec, Component, variant, required,
 }
 
 /** The registers as numbers (an SVG scene's words), the colours, and the measurers, for the run's direction. */
-async function plateKit(direction) {
+async function plateKit(direction, scale = 1) {
   const { measureText } = await import("#shared/chart-beat/render-still.mjs");
   const { keyedColoursOf, registersOf } = await import("./GestureKeyedStatic.tsx");
   const { measurers } = await import("./GestureKeyedPlate.tsx");
-  const regs = registersOf(direction);
+  const regs = scaleRegisters(registersOf(direction), scale);
   return { regs, colours: keyedColoursOf(direction), ...measurers(regs, measureText) };
+}
+
+/**
+ * The plot width, in CSS px, a 375 px phone gives a keyed plate. Every word of a keyed plate lives inside its viewBox,
+ * so a page under chart-web's narrow breakpoint letterboxes the desktop plate at ~0.38 and the radar's axis names
+ * printed at ~5 px (gx-radar-spider, 2026-11-19). The phone plate is the same viewBox laid out again with every
+ * register this much larger, so its words come out at their own size there.
+ */
+export const PHONE_PLOT_PX = 343;
+
+/** The registers with every size a viewBox carries (font size, letter spacing) multiplied by `scale`. */
+export function scaleRegisters(regs, scale) {
+  if (scale === 1) return regs;
+  return Object.fromEntries(
+    Object.entries(regs).map(([n, r]) => [n, { ...r, fontSize: r.fontSize * scale, ...(r.letterSpacing ? { letterSpacing: Number(r.letterSpacing) * scale } : {}) }]),
+  );
 }
 
 /**
@@ -186,6 +202,10 @@ export async function runKeyedWeb({ here, spec, Component, variant, required, mo
         const kit = await plateKit(direction);
         const box = plotOf ? plotOf(model, kit) : { width: 900, height: 520 };
         const scene = spec.scene(model, { plan: scheduled.plan, box, measure: kit.measure, lead: kit.lead, format, variant });
+        const phoneKit = await plateKit(direction, (box.width + 8) / PHONE_PLOT_PX);
+        // The kit's own box at the phone's registers: a plot whose height follows its rows grows with their words.
+        const phoneBox = plotOf ? plotOf(model, phoneKit) : box;
+        const phoneScene = spec.scene(model, { plan: scheduled.plan, box: phoneBox, measure: phoneKit.measure, lead: phoneKit.lead, format, variant });
         const { outPath } = await renderWeb({
           lang: beat.lang ?? storyLanguage(here) ?? "en",
           component: Component,
@@ -196,6 +216,7 @@ export async function runKeyedWeb({ here, spec, Component, variant, required, mo
             controls,
             colours: kit.colours,
             svgRegs: kit.regs,
+            phone: { scene: phoneScene, svgRegs: phoneKit.regs },
             restLabel: plain(beat.restLabel),
             restNotes: restingNotes,
             title,

@@ -18,5 +18,6 @@ await runKeyedWeb({
   required: ["eyebrow", "flows", "gestures", "title", "limits", "source", "alt", "check"],
   modelOf: (beat) => flowModel(beat),
   namesOf: (model) => [...model.left, ...model.right],
-  plotOf: () => ({ width: 900, height: 560 }),
+  // The plot grows with its words where the bands crowd them (the phone plate lays its registers out larger).
+  plotOf: (model, kit) => ({ width: 900, height: Math.max(560, Math.max(model.left.length, model.right.length) * kit.lead("axis") * 2.6) }),
 });

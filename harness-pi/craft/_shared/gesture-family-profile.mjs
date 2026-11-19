@@ -84,6 +84,20 @@ function entityLabels({ entities, named, place }) {
   return entities.filter((e) => named.has(e.name)).map((e) => place(e));
 }
 
+/**
+ * True when two neighbouring axis names, at their anchors, come within `gap` of each other. A phone's plate lays seven
+ * axes in ~340 px and "Hydraulique" printed over "Bioénergie" (gx-parallel-coordinates, 2026-11-19); crowded, every
+ * other name drops a line.
+ */
+export function crowdedHeads(xs, widths, anchorOf, gap) {
+  const span = (k) => {
+    const a = anchorOf(k);
+    const w = widths[k];
+    return a === "start" ? [xs[k], xs[k] + w] : a === "end" ? [xs[k] - w, xs[k]] : [xs[k] - w / 2, xs[k] + w / 2];
+  };
+  return xs.some((_, k) => k > 0 && span(k)[0] - span(k - 1)[1] < gap);
+}
+
 export function profileScene({ axes, entities, ceiling, plan, box, measure, lead, format = String, variant = "radar-spider" }) {
   const marks = [];
   const at = new Map();
@@ -154,17 +168,24 @@ export function profileScene({ axes, entities, ceiling, plan, box, measure, lead
   const nameW = Math.max(...entities.filter((e) => named.has(e.name)).map((e) => measure(e.name, "axis")), 0);
   const x0 = 6;
   const x1 = box.width - nameW - 14;
-  const yTop = lead("axis") * 2;
-  const yBot = box.height - lead("axis") * 1.4;
   const xs = axes.map((_, k) => x0 + (k / (axes.length - 1)) * (x1 - x0));
   const tops = axes.map((a) => nice(Math.max(...entities.map((e) => e.values[a] ?? 0))));
+  const anchorOf = (k) => (k === 0 ? "start" : k === axes.length - 1 ? "end" : "middle");
+  const crowded = crowdedHeads(xs, axes.map((a) => measure(a, "axis")), anchorOf, lead("axis") * 0.5);
+  const topLabels = tops.map((t) => format(t));
+  const crowdedTops = crowded && crowdedHeads(xs, topLabels.map((t) => measure(t, "axis")), anchorOf, lead("axis") * 0.5);
+  const yTop = lead("axis") * (crowdedTops ? 4.2 : crowded ? 3.2 : 2);
+  const yBot = box.height - lead("axis") * 1.4;
   const y = (k, v) => yBot - (Math.max(0, v) / tops[k]) * (yBot - yTop);
   axes.forEach((a, k) => {
     furniture.push({ tag: "line", role: "axis", attrs: { x1: xs[k], x2: xs[k], y1: yTop, y2: yBot } });
-    const anchor = k === 0 ? "start" : k === axes.length - 1 ? "end" : "middle";
-    texts.push({ text: a, x: xs[k], y: lead("axis") * 0.8, anchor, reg: "axis", role: "tick", width: measure(a, "axis") });
+    const anchor = anchorOf(k);
+    texts.push({ text: a, x: xs[k], y: lead("axis") * (crowded && k % 2 ? 1.8 : 0.8), anchor, reg: "axis", role: "tick", width: measure(a, "axis") });
     const tl = format(tops[k]);
-    texts.push({ text: tl, x: xs[k] + (k === axes.length - 1 ? -4 : 4), y: yTop + lead("axis") * 0.1, anchor: k === axes.length - 1 ? "end" : "start", reg: "axis", role: "tick", width: measure(tl, "axis") });
+    // Crowded, each axis's top reading stands on its own axis in a row of its own (every other one a row lower when
+    // those crowd too), so two neighbours' never meet.
+    if (crowded) texts.push({ text: tl, x: xs[k], y: lead("axis") * (crowdedTops && k % 2 ? 3.8 : 2.8), anchor, reg: "axis", role: "tick", width: measure(tl, "axis") });
+    else texts.push({ text: tl, x: xs[k] + (k === axes.length - 1 ? -4 : 4), y: yTop + lead("axis") * 0.1, anchor: k === axes.length - 1 ? "end" : "start", reg: "axis", role: "tick", width: measure(tl, "axis") });
     texts.push({ text: "0", x: xs[k] + (k === axes.length - 1 ? -4 : 4), y: yBot + lead("axis") * 0.9, anchor: k === axes.length - 1 ? "end" : "start", reg: "axis", role: "tick", width: measure("0", "axis") });
   });
   for (const e of entities) {
