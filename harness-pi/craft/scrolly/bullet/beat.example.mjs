@@ -12,7 +12,8 @@ const BEFORE = 2015;
 const AFTER = 2024;
 /** Low-carbon: nuclear and every renewable; the whole is every source column (after Entity, Code, Year). */
 const LOW_CARBON = ["Other renewables", "Bioenergy", "Solar", "Wind", "Hydropower", "Nuclear"];
-const SOURCES = names.slice(3);
+// The source columns by type, not by position: a text column after them (Entity_fr) would make every share NaN.
+const SOURCES = data.columns.filter((c) => c.type === "number" && c.name !== "Year").map((c) => c.name);
 const shareOf = (entity, year) => {
   const row = data.rows.find((r) => r[ENTITY] === entity && Number(r[YEAR]) === year);
   if (!row) throw new Error(`no ${year} row for ${entity}`);

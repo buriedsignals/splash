@@ -27,7 +27,7 @@ const SOURCES = [
   { key: "Solar", label: "solaire" },
   { key: "Wind", label: "éolien" },
 ];
-const unstacked = data.columns.slice(3).map((c) => c.name).filter((n) => !SOURCES.some((s) => s.key === n));
+const unstacked = data.columns.filter((c) => c.type === "number" && c.name !== "Year").map((c) => c.name).filter((n) => !SOURCES.some((s) => s.key === n));
 if (unstacked.length) throw new Error(`unstacked source(s): ${unstacked.join(", ")}`);
 const FRENCH = { France: ["France", "la France"], Germany: ["Allemagne", "l’Allemagne"], Norway: ["Norvège", "la Norvège"], Poland: ["Pologne", "la Pologne"], Sweden: ["Suède", "la Suède"], Switzerland: ["Suisse", "la Suisse"] };
 const columns = data.rows

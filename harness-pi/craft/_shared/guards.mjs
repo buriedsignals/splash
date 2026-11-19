@@ -327,8 +327,13 @@ function languageOf(text) {
 /** Every drawn value is a number (a cell in another digit system once concatenated instead of adding). */
 export function assertNumbers(entries, label = "values") {
   const bad = entries.filter(([, v]) => typeof v !== "number" || !Number.isFinite(v));
-  if (bad.length)
-    throw new Error(`${label} hold values that are not numbers: ${bad.slice(0, 3).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(", ")}. Convert them with Number(), or leave out the rows the data cannot give (say so in the standfirst)`);
+  if (!bad.length) return;
+  const shown = bad.slice(0, 3).map(([k, v]) => `${k}=${typeof v === "number" ? String(v) : JSON.stringify(v)}`).join(", ");
+  // A NaN already went through Number(): the arithmetic that made it read a cell that is not a number — a text
+  // column swept into a sum (mvg105: names.slice(3) took Entity_fr in), or an empty cell. Asking for Number() again loops.
+  if (bad.every(([, v]) => typeof v === "number"))
+    throw new Error(`${label} are NaN or infinite: ${shown}. The arithmetic that made them read a cell that is not a number — a text column swept into a sum or a ratio (list the numeric columns by name instead of slicing the header), an empty cell, or a division by zero. Name each column the computation reads`);
+  throw new Error(`${label} hold values that are not numbers: ${shown}. Convert them with Number(), or leave out the rows the data cannot give (say so in the standfirst)`);
 }
 
 /** Value labels a reader can tell apart (a per-resident rate once printed 0,004 on every bar). */

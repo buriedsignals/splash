@@ -18,8 +18,8 @@ const FIRST = 2000;
 /** 2025 is in the file and partial: a partial year drawn on a stream reads as a collapse. */
 const LAST = 2024;
 const LABELS = { Hydropower: "Hydraulique", Nuclear: "Nucléaire", Solar: "Solaire", Oil: "Pétrole", Gas: "Gaz", Bioenergy: "Bioénergie", "Other renewables": "Autres renouv.", Wind: "Éolien", Coal: "Charbon" };
-// The layers: every column after Entity, Code, Year.
-const keys = data.columns.slice(3).map((c) => c.name);
+// The layers: every numeric column but Year — by type, not position, so a text column after them stays out.
+const keys = data.columns.filter((c) => c.type === "number" && c.name !== "Year").map((c) => c.name);
 for (const k of keys) if (!LABELS[k]) throw new Error(`${k} has no French name filed in this beat`);
 const readings = data.rows
   .filter((r) => r[ENTITY] === "Switzerland" && Number(r[YEAR]) >= FIRST && Number(r[YEAR]) <= LAST)

@@ -13,7 +13,8 @@ const col = (name) => {
   return i;
 };
 const [ENTITY, YEAR] = [col("Entity"), col("Year")];
-const SOURCES = table.columns.slice(3).map((c) => c.name);
+// The source columns by type, not by position: a text column after them (Entity_fr) would make every share NaN.
+const SOURCES = table.columns.filter((c) => c.type === "number" && c.name !== "Year").map((c) => c.name);
 // Low-carbon: nuclear and every renewable — the split the source's own columns make.
 const LOW_CARBON = ["Other renewables", "Bioenergy", "Solar", "Wind", "Hydropower", "Nuclear"];
 const BEFORE = 2015;
