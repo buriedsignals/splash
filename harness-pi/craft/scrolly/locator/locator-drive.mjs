@@ -106,6 +106,10 @@ const CLASS_SCOPE = {
 };
 
 function setUpNativeLabels(map, native) {
+  // In the page's language first: the style's own field is the English name ("Kyiv", "BLACK SEA" on a French page).
+  const field = ["coalesce", ["get", `name:${native.lang ?? "en"}`], ["get", "name:latin"], ["get", "name"]];
+  for (const id of ["Country labels", "City labels", "Town labels", "Village labels", "Place labels", "State labels", "Sea labels", "Ocean labels", "Lakeline labels"])
+    map.setLayoutProperty(id, "text-field", field, { validate: false });
   map.setFilter("Country labels", ["all", ["==", ["get", "class"], "country"], ["has", "iso_a2"], ["in", ["get", "iso_a2"], ["literal", native.countryCodes]]], { validate: false });
   map.setPaintProperty("Country labels", "text-color", native.countryColor, { validate: false });
   map.setPaintProperty("Country labels", "text-halo-color", native.landHalo, { validate: false });

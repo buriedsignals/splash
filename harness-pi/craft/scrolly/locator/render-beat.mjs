@@ -34,6 +34,7 @@ import { ISO3_TO_ISO2 } from "#shared/map-beat/iso-codes.mjs";
 import { validateExpressions } from "#shared/map-beat/mount.mjs";
 import { cameraFields, lonLatOf, mercatorOf, validateScrollyPlan, zoomShiftFor } from "#shared/map-beat/scrolly.mjs";
 import { plateTints } from "#shared/map-beat/tints.mjs";
+import { nativeLabelOps } from "./native-labels.mjs";
 import { locatorPlan, seatedCamera } from "./plan.mjs";
 import { proseSpelling } from "./place-labels.mjs";
 import { applyStoryboard, assertNumbers, assertLegibleLabels, assertHeadlineNumbersDrawn, assertDrawsClaimColumn } from "./guards.mjs";
@@ -303,6 +304,7 @@ await refusing(HERE, async () => {
           unreported,
           accentMark,
           accentInk,
+          nameInk: adjustToContrast(accentInk, unreported, TEXT_CONTRAST_MIN) ?? accentInk,
           regionLine: adjustToContrast(mix(tints.land, ink, 0.45), unreported, NON_TEXT_CONTRAST_MIN) ?? mix(tints.land, ink, 0.45),
           stationDot: adjustToContrast(direction.accent, tints.land, NON_TEXT_CONTRAST_MIN) ?? direction.accent,
           inkOnLand,
@@ -347,6 +349,8 @@ await refusing(HERE, async () => {
           waterColor: waterInk,
           landHalo: tints.land,
         };
+        // The card images keep the same native labels the live drive filters and fades (mvq144: none were baked).
+        plan.native = nativeLabelOps(native);
         const renderPage = (fallbacks, shapes) =>
           renderScrolly({
             steps: prose.map((p, i) => ({ id: CARDS[i], prose: p })),

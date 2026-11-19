@@ -40,3 +40,21 @@ describe("locator scrolly plan — the words drawn on the live map", () => {
     expect(layer("station-values").layout["text-allow-overlap"]).toBe(true);
   });
 });
+
+// gx-locator scrolly (Qwen3.5-9B mvq144, 2026-11-19): the station's name sits on the country's grey fill, but its
+// accent ink was measured against the paler land, and its halo was a 1.5 px hairline — the name read weakly.
+describe("locator scrolly plan — the station's name on the country's fill", () => {
+  it("should set the name in the ink measured against the fill it sits on", () => {
+    expect(layer("subject-name").paint["text-color"]).toBe("#nameInk");
+  });
+  it("should give the name a halo wide enough to stand on", () => {
+    expect(layer("subject-name").paint["text-halo-width"]).toBeGreaterThanOrEqual(2.5);
+  });
+});
+
+// Same replay: the river's word (the beat sets it south-west of the station) sat under the name, set below the dot.
+describe("locator scrolly plan — the station's name and the river's word", () => {
+  it("should set the name on the side of the station away from the river's word", () => {
+    expect(layer("subject-name").layout["text-anchor"]).toBe("bottom");
+  });
+});

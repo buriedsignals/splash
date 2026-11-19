@@ -113,7 +113,7 @@ export async function bakePlan({ page, plan, glyphsUrl, tints, keepLabels, outPa
  *  The page must define `window.__mountPlan`, and `mountPlan` is not self-contained (it calls
  *  `sourceIdOf`, `beforeIdFor`, `radiusPaintOf`…): inject `scrollyMapScript()` and
  *  `window.__mountPlan = mountPlan`, never `mountPlan.toString()`. The same holds for `bakePlan`. */
-export async function bakeCards({ page, plan, cameras, size, viewStage = size, glyphsUrl, tints, keepLabels, statesForCards, outDir, stem, project = [], scale = 2 }) {
+export async function bakeCards({ page, plan, cameras, size, viewStage = size, glyphsUrl, tints, keepLabels, native, statesForCards, outDir, stem, project = [], scale = 2 }) {
   const style = transformStyle(plan.style, { tints, glyphs: glyphsUrl, keepLabels });
   // The same stage view the live runtime draws on `viewStage`, the stage the page publishes: cameras are authored for
   // the plan's reference stage. A card baked LARGER than that stage (to be shown `cover`) keeps that stage's view at its
@@ -124,30 +124,42 @@ export async function bakeCards({ page, plan, cameras, size, viewStage = size, g
   // bake: a 2x picture drawn at half size renders the map's words thinner than the live 1x canvas that
   // replaces it, and the reader sees the type change at the reveal.
   await page.setViewport({ ...size, deviceScaleFactor: scale });
+  // `native` ({ setup, bindings }, optional): the style's own label layers a beat keeps (`keepLabels`) and drives
+  // itself on the live page — filtered, recoloured, faded. The bake cannot run the beat's drive, so it replays the
+  // same set-up as data, and binds each card's state like a plan layer's `bindings`.
   await page.evaluate(
-    async (style, plan, first) => {
+    async (style, plan, first, setup) => {
       const map = new maplibregl.Map({ container: "map", style, ...first, interactive: false, attributionControl: false, fadeDuration: 0 });
       await new Promise((r) => map.once("style.load", r));
       // A flat Web Mercator map unless the plan names another projection (owner's ruling, addendum §7.1).
       map.setProjection({ type: plan.projection || "mercator" });
       window.__mountPlan(map, plan);
+      for (const [kind, id, a, b] of setup) {
+        if (!map.getLayer(id)) continue;
+        if (kind === "filter") map.setFilter(id, a, { validate: false });
+        else if (kind === "paint") map.setPaintProperty(id, a, b, { validate: false });
+        else if (kind === "layout") map.setLayoutProperty(id, a, b, { validate: false });
+        else if (kind === "zoomRange") map.setLayerZoomRange(id, a, b);
+      }
       window.__cardsMap = map;
       await new Promise((r) => (map.loaded() ? r() : map.once("idle", r)));
     },
     style,
     plan,
     shiftedView(0),
+    native?.setup ?? [],
   );
   const out = [];
   for (let k = 0; k < cameras.length; k++) {
     const paints = [];
     for (const layer of plan.layers)
       for (const property in layer.bindings || {}) paints.push([layer.id, property, bindState(layer.bindings[property], statesForCards[k])]);
+    for (const [id, property, binding] of native?.bindings ?? []) paints.push([id, property, bindState(binding, statesForCards[k])]);
     const projected = await page.evaluate(
       async (view, paints, points) => {
         const map = window.__cardsMap;
         map.jumpTo(view);
-        for (const [id, property, value] of paints) map.setPaintProperty(id, property, value);
+        for (const [id, property, value] of paints) if (map.getLayer(id)) map.setPaintProperty(id, property, value);
         await new Promise((r) => map.once("idle", r));
         return points.map((p) => {
           const q = map.project(p);

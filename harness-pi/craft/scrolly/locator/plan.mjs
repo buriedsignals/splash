@@ -68,12 +68,12 @@ export function locatorPlan({
     // word layer (the values, the subject's name, the river) drew nothing — live and in the card images.
     features: entries.map((e) => ({ type: "Feature", properties: e.properties ?? (e.text === undefined ? {} : { text: e.text }), geometry: { type: "Point", coordinates: e.coords } })),
   });
-  const wordLayer = (id, entries, layout, ink, halo, opacity) => ({
+  const wordLayer = (id, entries, layout, ink, halo, opacity, haloWidth = 1.5) => ({
     id,
     type: "symbol",
     data: points(entries),
     layout: { "text-field": ["get", "text"], "text-allow-overlap": true, "text-ignore-placement": true, ...layout },
-    paint: { "text-color": ink, "text-halo-color": halo, "text-halo-width": 1.5, "text-opacity": 0 },
+    paint: { "text-color": ink, "text-halo-color": halo, "text-halo-width": haloWidth, "text-opacity": 0 },
     bindings: { "text-opacity": opacity },
   });
 
@@ -162,10 +162,14 @@ export function locatorPlan({
         "subject-name",
         [{ coords: [subject.lon, subject.lat], text: subject.label }],
         // One line: MapLibre's default 10-em wrap broke the name inside its number ("6 / 000 MW").
-        { "text-font": [fonts.annot], "text-size": fonts.annotSize, "text-offset": [0, 1.4], "text-anchor": "top", "text-max-width": 40 },
-        colours.accentInk,
+        // Set on the side of the station away from the river's word (mvq144: "Dniepr" sat under a name set below).
+        { "text-font": [fonts.annot], "text-size": fonts.annotSize, ...(subject.riverAt?.[1] < subject.lat ? { "text-offset": [0, -1.4], "text-anchor": "bottom" } : { "text-offset": [0, 1.4], "text-anchor": "top" }), "text-max-width": 40 },
+        // It sits on the country's grey fill, not the land: its ink is measured against that fill, and a land halo
+        // wide enough to stand on (mvq144: the land-measured accent on a hairline halo read weakly).
+        colours.nameInk,
         tints.land,
         { $state: "subject" },
+        2.5,
       ),
       wordLayer(
         "dnieper",

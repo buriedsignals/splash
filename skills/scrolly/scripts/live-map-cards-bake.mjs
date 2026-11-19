@@ -219,7 +219,9 @@ export async function renderWithCardImages(
           viewStage: stages[shape],
           glyphsUrl: cards.styleDoc.glyphs,
           tints: plan.tints,
-          keepLabels: [],
+          // A plan that drives some of the style's own labels itself (`native`) keeps them in its images too.
+          keepLabels: plan.native ? (plan.keepLabels ?? []).map((source) => new RegExp(source, "i")) : [],
+          native: plan.native,
           statesForCards: states,
           outDir: fallbackDir,
           stem: cardImageStem(id, shape, scale),
