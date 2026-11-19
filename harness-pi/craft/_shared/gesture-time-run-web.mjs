@@ -15,6 +15,7 @@ export async function runTimeWeb(here, variant) {
   await refusing(here, async () => {
     const { webRegisters } = await import("#shared/design-base/web.mjs");
     const { GestureTimeWeb, FRAME } = await import("./GestureTimeWeb.tsx");
+    const { bumpRowFloor } = await import("./time-row-floor.mjs");
     const { renderWeb } = await import(chartWeb(here, "scripts", "render-web.mjs"));
     const { deriveFurniture, measureText } = await import(chartWeb(here, "scripts", "render-still.mjs"));
     const { labelBoxPx } = await import(chartWeb(here, "assets", "keyed-note.ts"));
@@ -130,7 +131,14 @@ export async function runTimeWeb(here, variant) {
         const regs = webRegisters(direction, { ink: { ink: furniture.ink, muted: furniture.muted, accent: direction.accent } });
         const gutterPx = yTicks.length ? Math.ceil(Math.max(...yTicks.map((t) => labelBoxPx(t.label, regs.axis, measureText, { chip: false }).w)) + 16) : 8;
         const endGutterPx = Math.min(260, Math.ceil(Math.max(0, ...ends.map((e) => labelBoxPx(e.text, { ...regs.annot, fontWeight: 700 }, measureText, { chip: false }).w)) + 18));
+        const rowFloor = bumpRowFloor({
+          variant,
+          domain: model.domain,
+          height: FRAME.height,
+          px: Math.max(0, ...ends.map((e) => labelBoxPx(e.text, { ...regs.annot, fontWeight: 700 }, measureText, { chip: false }).h)),
+        });
         return renderWeb({
+          rowFloor,
           lang,
           component: GestureTimeWeb,
           props: {
