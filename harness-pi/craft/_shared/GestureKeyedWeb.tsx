@@ -28,9 +28,10 @@ const { controlChromeCss } = await import(
   )
 );
 
+// @ts-expect-error untyped module
+import { phoneFitCss } from "./phone-plate.mjs";
+
 const SCOPE = ".chart-figure";
-/** chart-web's narrow breakpoint (NARROW_FLOOR_BELOW_PX in render-web.mjs), under which the phone plates show. */
-export const PHONE_BELOW_PX = 640;
 const ACTIVE_STEP = 0.3;
 
 export type KeyedControl = {
@@ -102,12 +103,7 @@ export function GestureKeyedWeb({
   const css = [
     `${SCOPE} [data-plate]:not([data-plate="0"]) { display: none; }`,
     `${SCOPE} .chart-plot { --y-gutter: 0px; }`,
-    ...(phone
-      ? [
-          `@container not (max-width: ${PHONE_BELOW_PX}px) { ${SCOPE} .chart-plot svg[data-fit="phone"] { display: none !important; } }`,
-          `@container (max-width: ${PHONE_BELOW_PX}px) { ${SCOPE} .chart-plot svg[data-fit="wide"] { display: none !important; } }`,
-        ]
-      : []),
+    ...(phone ? phoneFitCss(SCOPE) : []),
     `${SCOPE} [data-mark].mark-active { fill: var(--mark-active); }`,
     `${SCOPE} [data-mark-edge].mark-active { stroke: var(--mark-active); }`,
     `${SCOPE} .gesture-controls { flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 0 28px; margin-top: 4px; }`,

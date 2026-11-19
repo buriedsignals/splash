@@ -66,6 +66,8 @@ import {
 } from "#shared/chart-beat/colour.mjs";
 import { figureVars, webRegisters } from "#shared/design-base/web.mjs";
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
+// @ts-expect-error untyped module
+import { phoneFitCss, phonePlateScale } from "./phone-plate.mjs";
 // The harness copy reaches the carry vocabulary through skillScriptFrom (the proof imported
 // "../../skills/chart-web/assets/carry.ts", which resolves only two levels under a checkout): a
 // beat sits at stories/<slug>/beats/<id>/, and an installed root has no skills/ at all.
@@ -239,9 +241,26 @@ export function DirectedSmallMultiplesWeb({
   const stackOf = (family: unknown) => String(family).replace(/"/g, "");
 
   // ── THE GRID ────────────────────────────────────────────────────────────────────────────────
-  const rows = Math.ceil(panels.length / columns);
-  const width = columns * PANEL.w + (columns - 1) * GAP.x;
-  const height = MARGIN.top + rows * PANEL.h + (rows - 1) * GAP.y + MARGIN.bottom;
+  // One plate at the beat's columns, and one for a phone at two: three columns letterboxed into a 375 px page printed
+  // the panel names at ~7 px (gx-small-multiples web, 2026-11-19). `k` scales the words and the rows' room for them;
+  // the phone's makes the axis register print at its own CSS size. Panels keep one size and one scale in both.
+  const gridOf = (fit: string, cols: number, k: number) => {
+    const gapY = GAP.y * k;
+    const top = MARGIN.top * k;
+    const rows = Math.ceil(panels.length / cols);
+    const width = cols * PANEL.w + (cols - 1) * GAP.x;
+    const height = top + rows * PANEL.h + (rows - 1) * gapY + MARGIN.bottom * k;
+    const originOf = (i: number) => ({
+      x: (i % cols) * (PANEL.w + GAP.x),
+      y: top + Math.floor(i / cols) * (PANEL.h + gapY),
+    });
+    return { fit, k, width, height, originOf, originByCode: new Map(panels.map((p, i) => [p.code, originOf(i)])) };
+  };
+  const wide = gridOf("wide", columns, 1);
+  const phoneCols = Math.min(columns, 2);
+  const phoneWidth = phoneCols * PANEL.w + (phoneCols - 1) * GAP.x;
+  const phone = gridOf("phone", phoneCols, phonePlateScale({ plateWidth: phoneWidth, drawnAt: 15, axisPx: parseFloat(String(regs.axis.fontSize)) }));
+  const { width, height } = wide;
 
   const first = years[0];
   const last = years[years.length - 1];
@@ -272,11 +291,6 @@ export function DirectedSmallMultiplesWeb({
   const shapes = carryShapes(carry, panelKeys);
   const verdicts = carryVerdicts(carry, panelKeys);
 
-  const originOf = (i: number) => ({
-    x: (i % columns) * (PANEL.w + GAP.x),
-    y: MARGIN.top + Math.floor(i / columns) * (PANEL.h + GAP.y),
-  });
-  const originByCode = new Map(panels.map((p, i) => [p.code, originOf(i)]));
   const px = (year: number) => ((year - first) / (last - first)) * PANEL.w;
   const py = (v: number) => PANEL.h - (v / ceiling) * PANEL.h;
 
@@ -303,6 +317,7 @@ export function DirectedSmallMultiplesWeb({
     // three lines is the whole fix; bare `#tooltip` because the element is the page's, not this
     // figure's, and this sheet is emitted after the format's own.
     `#tooltip { max-width: 330px; }`,
+    ...phoneFitCss(SCOPE),
   ].join("\n\n");
 
   return (
@@ -375,20 +390,23 @@ export function DirectedSmallMultiplesWeb({
         }}
       >
         <div className="y-axis" />
+        {[wide, phone].map((g) => (
         <svg
+          key={g.fit}
+          data-fit={g.fit}
           role="group"
           aria-label={title}
           xmlns="http://www.w3.org/2000/svg"
           className="chart"
           data-hit="cell"
-          viewBox={`0 0 ${width} ${height}`}
+          viewBox={`0 0 ${g.width} ${g.height}`}
           preserveAspectRatio="xMidYMid meet"
         >
           <desc>{alt}</desc>
-          <rect x={0} y={0} width={width} height={height} fill={ground} />
+          <rect x={0} y={0} width={g.width} height={g.height} fill={ground} />
 
           {panels.map((p, i) => {
-            const o = originOf(i);
+            const o = g.originOf(i);
             return <rect key={`bg-${p.code}`} x={o.x} y={o.y} width={PANEL.w} height={PANEL.h} fill={panelGround} />;
           })}
 
@@ -398,7 +416,7 @@ export function DirectedSmallMultiplesWeb({
               control that needs no transform does not get to re-open that hole. */}
           <g aria-hidden="true">
             {shapes.map((shape) => {
-              const o = originByCode.get(shape.panel) as { x: number; y: number };
+              const o = g.originByCode.get(shape.panel) as { x: number; y: number };
               return (
                 <path
                   key={`carry-${shape.slug}-${shape.panel}`}
@@ -412,7 +430,7 @@ export function DirectedSmallMultiplesWeb({
           </g>
 
           {panels.map((p, i) => {
-            const o = originOf(i);
+            const o = g.originOf(i);
             const line = p.highlight ? lit : thread;
             return (
               <g key={p.code}>
@@ -454,7 +472,7 @@ export function DirectedSmallMultiplesWeb({
           })}
 
           {panels.map((p, i) => {
-            const o = originOf(i);
+            const o = g.originOf(i);
             return (
               <circle
                 key={`hit-${p.code}`}
@@ -472,19 +490,19 @@ export function DirectedSmallMultiplesWeb({
               />
             );
           })}
-          <rect className="hit-area" x={0} y={0} width={width} height={height} fill="transparent" pointerEvents="all" />
+          <rect className="hit-area" x={0} y={0} width={g.width} height={g.height} fill="transparent" pointerEvents="all" />
 
           {panels.map((p, i) => {
-            const o = originOf(i);
+            const o = g.originOf(i);
             return (
               <g key={`t-${p.code}`}>
                 <text
                   pointerEvents="none"
                   x={o.x}
-                  y={o.y - 9}
+                  y={o.y - 9 * g.k}
                   fill={p.highlight ? lit : label}
                   fontFamily={stackOf(regs.axis.fontFamily)}
-                  fontSize={15}
+                  fontSize={15 * g.k}
                   fontWeight={p.highlight ? 700 : (regs.axis.fontWeight as number)}
                 >
                   {p.name}
@@ -492,10 +510,10 @@ export function DirectedSmallMultiplesWeb({
                 <text
                   pointerEvents="none"
                   x={o.x + PANEL.w}
-                  y={o.y - 9}
+                  y={o.y - 9 * g.k}
                   fill={p.highlight ? lit : label}
                   fontFamily={stackOf(regs.value.fontFamily)}
-                  fontSize={15}
+                  fontSize={15 * g.k}
                   fontWeight={700}
                   textAnchor="end"
                 >
@@ -513,17 +531,17 @@ export function DirectedSmallMultiplesWeb({
               sentence under the pills, in a live region, which is where the derived numbers are. */}
           <g aria-hidden="true">
             {verdicts.map((v) => {
-              const o = originByCode.get(v.panel) as { x: number; y: number };
+              const o = g.originByCode.get(v.panel) as { x: number; y: number };
               return (
                 <text
                   key={`v-${v.slug}-${v.panel}`}
                   data-carry-verdict={v.slug}
                   pointerEvents="none"
                   x={o.x}
-                  y={o.y + PANEL.h + 16}
+                  y={o.y + PANEL.h + 16 * g.k}
                   fill={quiet}
                   fontFamily={stackOf(regs.axis.fontFamily)}
-                  fontSize={13}
+                  fontSize={13 * g.k}
                   fontWeight={regs.axis.fontWeight as number}
                 >
                   {v.text}
@@ -532,6 +550,7 @@ export function DirectedSmallMultiplesWeb({
             })}
           </g>
         </svg>
+        ))}
         <div className="overlay" aria-hidden="true" />
         <div className="x-axis" />
       </div>

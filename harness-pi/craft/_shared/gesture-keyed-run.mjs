@@ -147,13 +147,8 @@ async function plateKit(direction, scale = 1) {
   return { regs, colours: keyedColoursOf(direction), ...measurers(regs, measureText) };
 }
 
-/**
- * The plot width, in CSS px, a 375 px phone gives a keyed plate. Every word of a keyed plate lives inside its viewBox,
- * so a page under chart-web's narrow breakpoint letterboxes the desktop plate at ~0.38 and the radar's axis names
- * printed at ~5 px (gx-radar-spider, 2026-11-19). The phone plate is the same viewBox laid out again with every
- * register this much larger, so its words come out at their own size there.
- */
-export const PHONE_PLOT_PX = 343;
+export { PHONE_PLOT_PX } from "./phone-plate.mjs";
+import { PHONE_PLOT_PX } from "./phone-plate.mjs";
 
 /** The registers with every size a viewBox carries (font size, letter spacing) multiplied by `scale`. */
 export function scaleRegisters(regs, scale) {
