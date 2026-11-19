@@ -149,6 +149,7 @@ await refusing(HERE, async () => {
           restNotes,
           gutterPx,
           wrapNames,
+          rowPx: rowFloor?.px ?? 0,
           title,
           eyebrow,
           caveat,

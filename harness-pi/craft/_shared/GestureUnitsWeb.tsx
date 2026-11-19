@@ -27,6 +27,8 @@ import {
 import { figureVars, webRegisters } from "#shared/design-base/web.mjs";
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
 import { layoutRows } from "./gesture-family-units.mjs";
+// @ts-expect-error untyped module
+import { PHONE_PLOT_PX, phoneFitCss, phoneUnitsBox } from "./phone-plate.mjs";
 const { controlChromeCss } = await import(
   skillScriptFrom(
     import.meta.dirname,
@@ -76,6 +78,16 @@ type Shape = {
   ring?: boolean;
 };
 type Label = { text: string; x: number; y: number; accent?: boolean };
+type Row = any;
+type Plate = {
+  id: number;
+  named: string[];
+  shapes: Shape[];
+  labels: Label[];
+  rules: number[];
+  hitAt: Map<string, { cx: number; cy: number }>;
+};
+type Fit = { fit: "wide" | "phone"; W: number; H: number; geo: any; rowOf: (name: string) => Row; plates?: Plate[] };
 const pct = (v: number, extent: number) => (v / extent) * 100;
 
 export function GestureUnitsWeb({
@@ -88,6 +100,7 @@ export function GestureUnitsWeb({
   restNotes,
   gutterPx,
   wrapNames,
+  rowPx = 0,
   title,
   eyebrow,
   caveat,
@@ -114,6 +127,7 @@ export function GestureUnitsWeb({
   restNotes: string[];
   gutterPx: number;
   wrapNames: boolean;
+  rowPx?: number;
   title: string;
   eyebrow: string;
   caveat: string;
@@ -134,14 +148,25 @@ export function GestureUnitsWeb({
   const countOf = new Map(groups.map((g) => [g.name, g.count]));
   const keyOf = new Map(groups.map((g, i) => [g.name, `g${i + 1}`]));
   // Room after the longest mark for its figure: the geometry stops short of the plot's end.
-  const geo = layoutRows({
-    groups: groups as any,
-    variant,
-    box: { x: 0, y: 0, width: W * 0.86, height: H },
-    gutter: 0,
-    laid,
-  });
-  const rowOf = (name: string) => geo.rows[names.indexOf(name)];
+  const fitOf = (fit: "wide" | "phone", W: number, H: number): Fit => {
+    const geo = layoutRows({
+      groups: groups as any,
+      variant,
+      box: { x: 0, y: 0, width: W * 0.86, height: H },
+      gutter: 0,
+      laid,
+    });
+    return { fit, W, H, geo, rowOf: (name: string) => geo.rows[names.indexOf(name)] };
+  };
+  const wide = fitOf("wide", W, H);
+  // A pictogram letterboxed into a phone draws its squares a few px across (18 squares in ~150 px, 2026-11-19).
+  // The phone plate wraps each row's squares onto lines of readable squares instead.
+  const PHONE_CELL_PX = 14;
+  const phoneBox =
+    variant !== "histogram" && (wide.geo.cell * (PHONE_PLOT_PX - gutterPx)) / W < PHONE_CELL_PX
+      ? phoneUnitsBox({ gutterPx, maxCount: wide.geo.max, rows: groups.length, rowPx, cellPx: PHONE_CELL_PX })
+      : null;
+  const fits: Fit[] = phoneBox ? [wide, fitOf("phone", phoneBox.width, phoneBox.height)] : [wide];
 
   assertLegible(accent, ground, {
     role: "mark",
@@ -162,10 +187,11 @@ export function GestureUnitsWeb({
   const ringSet = new Set(resting.rings);
   const fillOf = (name: string) => (accentSet.has(name) ? accent : neutral);
 
+  function platesFor(geo: any, rowOf: (name: string) => Row): Plate[] {
   /** The shapes a run of `n` units draws in a row, starting after `from` units already there. */
   const unitsIn = (
     name: string,
-    row: (typeof geo.rows)[number],
+    row: Row,
     from: number,
     n: number,
     fill: string,
@@ -202,7 +228,7 @@ export function GestureUnitsWeb({
     });
   };
   const middleOf = (
-    row: (typeof geo.rows)[number],
+    row: Row,
     from: number,
     n: number,
   ) => {
@@ -211,17 +237,9 @@ export function GestureUnitsWeb({
     const c = row.cellAt(from + Math.max(0, Math.floor((n - 1) / 2)));
     return { cx: c.x + c.size / 2, cy: c.y + c.size / 2 };
   };
-  const endOf = (row: (typeof geo.rows)[number], n: number) =>
+  const endOf = (row: Row, n: number) =>
     variant === "histogram" ? row.end(n) : row.end(Math.min(n, geo.perLine));
 
-  type Plate = {
-    id: number;
-    named: string[];
-    shapes: Shape[];
-    labels: Label[];
-    rules: number[];
-    hitAt: Map<string, { cx: number; cy: number }>;
-  };
   function restPlate(id: number, keep: string[] | null = null): Plate {
     const shown = names.filter((n) => !keep || keep.includes(n));
     const shapes: Shape[] = [];
@@ -306,10 +324,14 @@ export function GestureUnitsWeb({
       plates.push(p);
     } else plates.push(restPlate(id, c.kept ?? null));
   });
+    return plates;
+  }
+  for (const f of fits) f.plates = platesFor(f.geo, f.rowOf);
 
   const plateCss = [
     `${SCOPE} [data-plate]:not([data-plate="0"]) { display: none; }`,
     `${SCOPE} .chart-plot { --y-gutter: ${gutterPx}px; }`,
+    ...(fits.length > 1 ? phoneFitCss(SCOPE) : []),
     `${SCOPE} .chart-plot .gesture-layer { position: relative; pointer-events: none; }`,
     `${SCOPE} .gesture-controls { flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 0 28px; margin-top: 4px; }`,
     `${SCOPE} .gesture-controls > fieldset { flex: 0 1 auto; max-width: 100%; }`,
@@ -340,10 +362,11 @@ export function GestureUnitsWeb({
     ),
   ].join("\n");
 
-  const drawPlate = (p: Plate) => {
-    const key = (name: string) => `p${p.id}-${keyOf.get(name)}`;
+  const drawPlate = (p: Plate, { fit, W, H, rowOf }: Fit) => {
+    const key = (name: string) => `${fit === "phone" ? "f" : ""}p${p.id}-${keyOf.get(name)}`;
+    const fitAttr = fits.length > 1 ? { "data-fit": fit } : {};
     return [
-      <div className="y-axis" data-plate={p.id} key={`y${p.id}`}>
+      <div className="y-axis" data-plate={p.id} {...fitAttr} key={`y${fit}${p.id}`}>
         {p.named.map((n) => (
           <span
             key={n}
@@ -361,7 +384,8 @@ export function GestureUnitsWeb({
         ))}
       </div>,
       <svg
-        key={`s${p.id}`}
+        key={`s${fit}${p.id}`}
+        {...fitAttr}
         role="group"
         aria-label={title}
         xmlns="http://www.w3.org/2000/svg"
@@ -451,7 +475,8 @@ export function GestureUnitsWeb({
         className={p.id === 0 ? "overlay" : "gesture-layer"}
         aria-hidden="true"
         data-plate={p.id}
-        key={`l${p.id}`}
+        {...fitAttr}
+        key={`l${fit}${p.id}`}
       >
         {p.labels.map((l, i) => (
           <span
@@ -567,7 +592,7 @@ export function GestureUnitsWeb({
           aspectRatio: `${W + gutterPx} / ${H}`,
         }}
       >
-        {plates.flatMap(drawPlate)}
+        {fits.flatMap((f) => f.plates!.flatMap((p) => drawPlate(p, f)))}
       </div>
       <p className="chart-source" style={{ ...regs.body, margin: "6px 0 0" }}>
         {source}

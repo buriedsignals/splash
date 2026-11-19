@@ -1283,16 +1283,20 @@ export function stampNarrowFloor(markup) {
 function narrowFloorCss(plotWidth, plotHeight, phone = null) {
   // A page that draws plates of its own for the narrow page (`data-fit="phone"`) hands the cell THEIR box there.
   const [w, h] = phone ? [phone.width, phone.height] : [plotWidth, plotHeight];
+  const floorPx = `max(${PLOT_FLOOR_PX}px, calc((100cqw - var(--y-gutter) - var(--end-gutter, 0px)) * ${h} / ${w} + var(--x-axis-h)), calc(var(--row-floor-cell, 0px) + var(--x-axis-h)))`;
   return `/* THE NARROW PAGE SCROLLS RATHER THAN SHRINK THE CHART — see narrowFloorCss. As specific as the rule for rows and
    later, and it takes the larger of the two, so a page that carries both keeps both. The figure is the container the query and
    its cqw read; inline-size containment changes nothing else, since the figure already takes its width from its parent. */
 .chart-figure[data-narrow-floor] { container-type: inline-size; }
 @container (max-width: ${NARROW_FLOOR_BELOW_PX}px) {
   .chart-figure[data-narrow-floor] .chart-plot {
-    min-height: max(${PLOT_FLOOR_PX}px, calc((100cqw - var(--y-gutter) - var(--end-gutter, 0px)) * ${h} / ${w} + var(--x-axis-h)), calc(var(--row-floor-cell, 0px) + var(--x-axis-h)));${
+    min-height: ${floorPx};${
       phone
         ? `
-    aspect-ratio: ${w} / ${h} !important;
+    /* The phone plate's ratio is the drawing's, not the plot's: the plot also carries the name gutter. A ratio on
+       the plot drew it gutter × h / w too tall (~80 px of blank around a pictogram, 2026-11-19); its height is the floor. */
+    aspect-ratio: auto !important;
+    height: ${floorPx};
     --cell-w: min(var(--track-w), calc(var(--track-h) * ${w} / ${h}));
     --cell-h: min(var(--track-h), calc(var(--track-w) * ${h} / ${w}));`
         : ""

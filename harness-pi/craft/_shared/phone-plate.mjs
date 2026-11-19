@@ -11,8 +11,8 @@ export const PHONE_PLOT_PX = 343;
 /** The two container rules that show the wide plates above the breakpoint and the phone plates under it. */
 export function phoneFitCss(scope) {
   return [
-    `@container not (max-width: ${PHONE_BELOW_PX}px) { ${scope} .chart-plot svg[data-fit="phone"] { display: none !important; } }`,
-    `@container (max-width: ${PHONE_BELOW_PX}px) { ${scope} .chart-plot svg[data-fit="wide"] { display: none !important; } }`,
+    `@container not (max-width: ${PHONE_BELOW_PX}px) { ${scope} .chart-plot [data-fit="phone"] { display: none !important; } }`,
+    `@container (max-width: ${PHONE_BELOW_PX}px) { ${scope} .chart-plot [data-fit="wide"] { display: none !important; } }`,
   ];
 }
 
@@ -22,4 +22,15 @@ export function phoneFitCss(scope) {
  */
 export function phonePlateScale({ plateWidth, drawnAt, axisPx }) {
   return Math.max(1, (plateWidth / PHONE_PLOT_PX) * (axisPx / drawnAt));
+}
+
+/** A unit row's box for the phone plate, in CSS px at PHONE_PLOT_PX: narrow enough that each row's squares wrap onto
+ *  lines of `cellPx` squares, and tall enough for those lines and for the row's own floor (`rowPx`). */
+export function phoneUnitsBox({ gutterPx, maxCount, rows, rowPx = 0, cellPx = 14, reach = 0.86, gap = 0.22 }) {
+  const width = Math.max(1, PHONE_PLOT_PX - gutterPx);
+  const perLine = Math.max(1, Math.floor((width * reach) / cellPx));
+  const lines = Math.ceil(Math.max(1, maxCount) / perLine);
+  // layoutRows searches squares on a 0.25 step down from the band: a band of exactly `lines × cellPx` lands one step under.
+  const pitch = Math.max(rowPx, (lines * (cellPx + 0.5)) / (1 - gap));
+  return { width, height: Math.ceil(rows * pitch) };
 }

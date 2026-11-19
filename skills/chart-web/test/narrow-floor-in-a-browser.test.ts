@@ -7,7 +7,7 @@ import { existsSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import puppeteer from "puppeteer-core";
-import { rowPage } from "./row-floor-fixture.ts";
+import { AXIS_PX, rowPage } from "./row-floor-fixture.ts";
 import { plotViewBoxOf } from "../scripts/render-web.mjs";
 
 setDefaultTimeout(600000);
@@ -90,6 +90,23 @@ describe("a narrow page's own plates, in a real browser", () => {
         return Math.round((b.height / b.width) * 100) / 100;
       });
       expect(r).toBe(1);
+    } finally {
+      await browser.close();
+    }
+  });
+  it("should hold the plot to the phone plate's height beside the name gutter at 375 px", async () => {
+    const file = write("phone-hug.html", rowPage({ narrow: true, phone: true }));
+    const browser = await puppeteer.launch({ executablePath: resolveChrome(), args: ["--force-device-scale-factor=1"] });
+    try {
+      const page = await browser.newPage();
+      await page.setViewport({ width: 375, height: 812, deviceScaleFactor: 1 });
+      await page.goto(`file://${file}`, { waitUntil: "load" });
+      const slack = await page.evaluate((axis) => {
+        const plot = document.querySelector(".chart-plot")!.getBoundingClientRect();
+        const svg = document.querySelector('svg[data-fit="phone"]')!.getBoundingClientRect();
+        return Math.round(plot.height - svg.height - axis);
+      }, AXIS_PX);
+      expect(Math.abs(slack)).toBeLessThanOrEqual(1);
     } finally {
       await browser.close();
     }
