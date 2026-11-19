@@ -48,6 +48,7 @@ import {
 } from "#shared/chart-beat/colour.mjs";
 import { figureVars, noteAnchor, webRegisters } from "#shared/design-base/web.mjs";
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
+import { nameTop } from "./phone-names.mjs";
 // The harness copy reaches the aim and keyed-note vocabularies through skillScriptFrom (the proof
 // imported "../../skills/chart-web/assets/…", which resolves only two levels under a checkout): a
 // beat sits at stories/<slug>/beats/<id>/, and an installed root has no skills/ at all.
@@ -238,6 +239,7 @@ export function DirectedConnectedScatterWeb({
    * version fails, and all four leave together. Under the plot it is led by the name the plate
    * already prints at France's ring, in that name's own ink.
    */
+  const valueLine = Number.parseFloat(String(regs.value.fontSize)) * Number(regs.value.lineHeight);
   const annotPx = Number.parseFloat(String(regs.annot.fontSize));
   const annotLine = annotPx * Number(regs.annot.lineHeight);
   /** One LINE of the annot register, measured whole (case, tracking and bearing included), chipless. */
@@ -568,7 +570,7 @@ export function DirectedConnectedScatterWeb({
                 ...regs.value,
                 color: n.key === subjectKey ? subjectInk : labelInk,
                 ...noteAnchor(pct(n.x, FRAME.width)),
-                top: `${pct(n.y, FRAME.height)}%`,
+                top: nameTop(pct(n.y, FRAME.height), n.below, valueLine),
                 transform: `${noteAnchor(pct(n.x, FRAME.width)).transform} translateY(${n.below ? "35%" : "-135%"})`,
                 whiteSpace: "nowrap",
               }}
