@@ -35,6 +35,23 @@ function arcAt(coordinates, cumulative, t) {
   return out.length > 1 ? out : [out[0], out[0]];
 }
 
+/** How far band `i` has traced at a `bands` state. Each band finishes a fifth of a step early: the card stills are
+ *  taken where the scroll settles, a hair short of the card's own state (progress 2.98 for card 4), and a band
+ *  still tracing there left the counter at 79,4 % beside a card saying the drawn bands carry 81 %. */
+export function bandTrace(bands, i) {
+  const t = (bands - i) / 0.8;
+  return t < 0 ? 0 : t > 1 ? 1 : t;
+}
+
+/** Where projected point `k` sits on the stage when a frozen card is the picture: the card's own bake projected it at
+ *  the bake's size, and the image is scaled and cropped exactly as \`object-fit: cover\` scales and crops it. Without
+ *  this the names showed only over the live map, and every card still and every reader without it saw none. */
+export function fallbackPoint(stage, size, baked, k) {
+  const scale = Math.max(stage.width / size.width, stage.height / size.height);
+  const [bx, by] = baked.at[k];
+  return { x: (stage.width - size.width * scale) / 2 + bx * scale, y: (stage.height - size.height * scale) / 2 + by * scale };
+}
+
 export function applyFlowState(root, state) {
   if (!root.__flow) setUpFlow(root);
   const c = root.__flow;
@@ -51,13 +68,18 @@ export function applyFlowState(root, state) {
 
   const narrow = c.stage.clientWidth < 560;
   const named = narrow ? NARROW_NAMES : c.bands.length;
-  // map.project returns a maplibregl.Point ({x, y}), never an array — not destructurable as [x, y].
-  const originPt = shown ? map.project(c.node.seat) : null;
+  // Point k (0 = the node, 1 + i = band i's seat): asked of the live map when it is the picture, read off the frozen
+  // card's own bake otherwise. map.project returns a maplibregl.Point ({x, y}), never an array.
+  const frozen = c.fallbacks.find((img) => Number(img.dataset.fallback) === card && img.getClientRects().length > 0);
+  const shape = c.plan.fallback && c.plan.fallback[frozen ? frozen.dataset.shape : "wide"];
+  const placeable = shown || Boolean(shape && shape.cards[card] && shape.cards[card].at && shape.cards[card].at.length);
+  const pointOf = (k, lonLat) => (shown ? map.project(lonLat) : fallbackPoint(c.stage.getBoundingClientRect(), shape.size, shape.cards[card], k));
+  const originPt = placeable ? pointOf(0, c.node.seat) : null;
 
   let arrived = 0;
   let people = 0;
   c.bands.forEach((b, i) => {
-    const t = clamp(state.bands - i);
+    const t = bandTrace(state.bands, i);
     if (t >= 1) {
       arrived++;
       people += b.people;
@@ -68,12 +90,12 @@ export function applyFlowState(root, state) {
       if (source) source.setData({ type: "FeatureCollection", features: [{ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: cut } }] });
     }
     const label = c.labels[b.code];
-    if (!shown) {
+    if (!placeable) {
       label.style.opacity = "0";
       return;
     }
     // The name beyond the seat, on the side away from the node — never on its own band.
-    const p = map.project(b.seat);
+    const p = pointOf(1 + i, b.seat);
     const px = p.x;
     const py = p.y;
     const dx = px - originPt.x;
@@ -88,7 +110,7 @@ export function applyFlowState(root, state) {
   keepApart(c.bands.map((b) => c.labels[b.code]).filter((l) => Number(l.style.opacity) > 0.05));
 
   c.nodeLabel.textContent = narrow ? c.originCode : c.originName;
-  if (shown) {
+  if (placeable) {
     c.nodeLabel.style.left = `${originPt.x}px`;
     c.nodeLabel.style.top = `${originPt.y}px`;
     c.nodeLabel.style.opacity = "1";

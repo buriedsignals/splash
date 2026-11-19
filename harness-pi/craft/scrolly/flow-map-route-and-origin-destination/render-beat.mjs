@@ -337,7 +337,10 @@ await refusing(HERE, async () => {
           plan,
           states: STATES,
           stageGround: tints.water,
-          cardOf: (baked) => ({ zoom: baked.zoom }),
+          // The node and every drawn seat, read back at each card: the names sit on the frozen images too.
+          project: [plan.node.seat, ...plan.bands.map((b) => b.seat)],
+          cardOf: (baked) => ({ zoom: baked.zoom, at: baked.projected.map(([x, y]) => [Math.round(x * 10) / 10, Math.round(y * 10) / 10]) }),
+          blankCard: { zoom: 0, at: [] },
           renderPage,
         }));
       } finally {

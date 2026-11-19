@@ -91,7 +91,10 @@ export function DirectedFlowMapScrolly({
   };
   // A name reads over the band it names as much as over the land: a halo of the land's own tint, not a flat
   // outline, so it stands clear of whatever passes under it (the static plate's own `halo` treatment).
-  const halo = `0 0 3px ${landColour}, 0 0 3px ${landColour}, 0 0 2px ${landColour}`;
+  // A ring of hard offsets under the blur: the blur alone left « Pologne » unreadable where it sits on Germany's band
+  // (gx-flow-map scrolly, 2026-11-19).
+  const ring = [[-1.5, 0], [1.5, 0], [0, -1.5], [0, 1.5], [-1, -1], [1, -1], [-1, 1], [1, 1]].map(([x, y]) => `${x}px ${y}px 0 ${landColour}`);
+  const halo = [...ring, `0 0 3px ${landColour}`, `0 0 3px ${landColour}`].join(", ");
   const label: CSSProperties = {
     ...regs.axis,
     position: "absolute",
