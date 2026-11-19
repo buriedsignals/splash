@@ -216,3 +216,29 @@ export function seatsBox(cells, keys, pad = 40) {
   const ys = s.map((p) => p.y);
   return { x: Math.min(...xs) - pad, y: Math.min(...ys) - pad, width: Math.max(...xs) - Math.min(...xs) + 2 * pad, height: Math.max(...ys) - Math.min(...ys) + 2 * pad };
 }
+
+/**
+ * The scrolly close-up on a box: the prose card rests at 42–63 % of the stage, so the focus is framed in the band
+ * below it (66–97 % of the view's height), never centred under the card (gx-hex-grid scrolly, mvg125).
+ */
+export function closeView({ box, W, H, band = [0.66, 0.97] }) {
+  const k = Math.max(box.width / W, box.height / (H * (band[1] - band[0])), 0.12);
+  const cy = box.y + box.height / 2;
+  return { vx: box.x + box.width / 2 - (W * k) / 2, vy: cy - H * k * ((band[0] + band[1]) / 2), vw: W * k, vh: H * k };
+}
+
+/**
+ * The scrolly whole-map view when a place is named: if the named box falls under the prose card (centred, 33–67 %
+ * of the width, 40–65 % of the height), the camera pulls back just enough to seat it above the card (map top kept)
+ * or below it (map bottom kept), whichever shrinks the map less (gx-hex-grid scrolly, mvg125: DEU under card 2).
+ */
+export function wholeView({ box, W, H, card = { x: [0.33, 0.67], y: [0.38, 0.67] } }) {
+  const whole = { vx: 0, vy: 0, vw: W, vh: H };
+  if (!box) return whole;
+  const under = box.x < card.x[1] * W && box.x + box.width > card.x[0] * W && box.y < card.y[1] * H && box.y + box.height > card.y[0] * H;
+  if (!under) return whole;
+  const above = Math.max(1, (box.y + box.height) / (card.y[0] * H));
+  const below = Math.max(1, (H - box.y) / ((1 - card.y[1]) * H));
+  const k = Math.min(above, below);
+  return { vx: (W - W * k) / 2, vy: k === above ? 0 : H - H * k, vw: W * k, vh: H * k };
+}

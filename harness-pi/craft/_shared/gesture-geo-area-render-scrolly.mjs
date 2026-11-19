@@ -10,7 +10,7 @@ import { EYEBROW_TO_DISPLAY, gapOf, registerOf } from "#shared/design-base/regis
 import { GestureGeoAreaScrolly, SCROLLY_FRAME } from "./GestureGeoAreaScrolly.tsx";
 import { stageGeo } from "./gesture-geo-area-static.mjs";
 import { GEO_APPLY, geoDriveSource, scheduleGeoScrolly } from "./gesture-geo-area-scrolly.mjs";
-import { layoutCells, seatsBox } from "./gesture-geo-area-shapes.mjs";
+import { closeView, layoutCells, seatsBox, wholeView } from "./gesture-geo-area-shapes.mjs";
 import { assertZoomFactors, readGeoBeat, readShapes, REPAIR } from "./gesture-geo-area-run.mjs";
 import { plain, refusing, storyLanguage } from "./web.mjs";
 import { renderBeatScrolly, scrollySkill } from "./scrolly.mjs";
@@ -25,10 +25,12 @@ export async function renderGeoAreaScrolly(here, variant) {
     const layout = layoutCells(variant, { rows, shapes, grid: beat.grid, points, box: { x: 0, y: 0, width: W, height: H } });
     // The camera of a state: its close-up framed at the frame's ratio, else the whole map.
     const viewOf = (s) => {
-      if (s.camera !== "closeUp" || !s.focus?.length) return { vx: 0, vy: 0, vw: W, vh: H };
+      if (s.camera !== "closeUp" || !s.focus?.length) {
+        const named = [...(s.named ?? []), ...(s.accent ? [s.accent] : [])];
+        return wholeView({ box: named.length ? seatsBox(layout.cells, named, Math.max(W, H) * 0.05) : null, W, H });
+      }
       const b = seatsBox(layout.cells, s.focus, Math.max(W, H) * 0.08) ?? { x: 0, y: 0, width: W, height: H };
-      const k = Math.max(b.width / W, b.height / H, 0.12);
-      return { vx: b.x + b.width / 2 - (W * k) / 2, vy: b.y + b.height / 2 - (H * k) / 2, vw: W * k, vh: H * k };
+      return closeView({ box: b, W, H });
     };
     const staged = stageGeo({ gestures: beat.gestures, geo, format: "scrolly", claim, repair: REPAIR(), stage: (valid) => {
         assertZoomFactors(valid, (g) => W / viewOf({ camera: "closeUp", focus: g.marks.map(geo.resolve) }).vw);
