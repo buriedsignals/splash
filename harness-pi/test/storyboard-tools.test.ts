@@ -905,7 +905,7 @@ describe("gaps the harness fills", () => {
     expect(out[0]).toMatch(/ask the journalist "Static, interactive web, video or scrollytelling\?".*record_slot 1 format/);
     expect(out[1]).toMatch(/Landscape, square or portrait\?.*record_slot 1 size/);
     // stress-ad (2026-11-13): the hint's "compare categories" was recorded against the answer "Comparison between categories." and refused 3x.
-    expect(out[2]).toMatch(/ask the journalist "Comparison between categories, change over time, part-to-whole or location\?".*record_slot 1 intent/);
+    expect(out[2]).toMatch(/ask the journalist "Comparison between categories, change over time, distribution, relationship between measures, part-to-whole, sequence or flow, or location\?".*record_slot 1 intent/);
     expect(out[3]).toMatch(/show_candidates.*record_slot 1 chosen/);
   });
 
@@ -1004,5 +1004,50 @@ slots:
     dialogue.lastJournalist = "Landscape.";
     const res = await call(storyboardTools(bases, dialogue).recordSlot, { slot: "1", field: "size", value: "landscape" });
     expect(JSON.stringify(res)).toMatch(/survey of other subjects.*record_subject/);
+  });
+});
+
+// The 2026-11-16 probes: a free pick among 20 intents scored 13–39 % on both students, the need inside the
+// journalist's family 70–77 %, and the type step model ≈ code. The student now names the need; code ranks the types.
+describe("candidates from the reader's need", () => {
+  async function withIntent(intent = "Comparison between categories.") {
+    const tools = await withFormat();
+    dialogue.lastJournalist = intent;
+    await call(tools.recordSlot, { slot: "1", field: "intent", value: intent });
+    return tools;
+  }
+
+  it("should build the menu from the need's ranked table when the student names only the need", async () => {
+    const tools = await withIntent();
+    await call(tools.showCandidates, { slot: "1", need: "1" });
+    // Lollipop, the table's rank 2, is the same idea as a bar (assertDistinctWays); rank 3 is the next distinct one.
+    expect(meta().slots[0].candidates).toEqual(["Bar and column", "Pictogram (isotype)"]);
+  });
+
+  it("should give each candidate the table's own use-when as its reason", async () => {
+    const tools = await withIntent();
+    const out = await call(tools.showCandidates, { slot: "1", need: "1" });
+    expect(out.content[0].text).toMatch(/clearest magnitude or rank comparison/);
+  });
+
+  it("should name the family's needs when the pick is not one of them", async () => {
+    const tools = await withIntent();
+    await expect(call(tools.showCandidates, { slot: "1", need: "9" })).rejects.toThrow(/need must be one of: 1\. rank or compare one value per category/);
+  });
+
+  it("should list the family's needs in the open gap once the intent is recorded", async () => {
+    const { withNeedMenu, gapsForModel } = await import("../src/tools/storyboard.ts");
+    const [gap] = gapsForModel(["slot 1: nothing chosen yet"]);
+    expect(withNeedMenu(gap, [{ id: 1, intent: "Change over time.", medium: "chart" }])).toMatch(/show_candidates with need = .*2\. compare before and after/);
+  });
+
+  it("should ask for the need, with the family's needs, when show_candidates gets neither need nor types", async () => {
+    const tools = await withIntent();
+    await expect(call(tools.showCandidates, { slot: "1" })).rejects.toThrow(/give need: .*1\. rank or compare one value per category/);
+  });
+
+  it("should ask the journalist the seven families when the intent is missing", async () => {
+    const { gapsForModel } = await import("../src/tools/storyboard.ts");
+    expect(gapsForModel(["slot 1: no narrow intent was named"])[0]).toMatch(/relationship between measures, part-to-whole, sequence or flow, or location\?/);
   });
 });

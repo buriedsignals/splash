@@ -30,6 +30,7 @@ import {
   SIZED_FORMATS,
 } from "../../../skills/splash/scripts/gate-contract.mjs";
 import { adapterFor } from "../adapters.ts";
+import { FAMILY_QUESTION, familyFor, needMenu, needsFor, readNeeds, resolveNeed } from "../chart-choice.ts";
 import type { Bases } from "./fs.ts";
 
 /** What the journalist and the model last said, kept by the driver. */
@@ -192,7 +193,7 @@ export function gapsForModel(gaps: string[]): string[] {
           : /size is missing/.test(g)
             ? `${g.split(":")[0]}: size is missing — ask the journalist "Landscape, square or portrait?", then record_slot ${g.split(":")[0].replace("slot ", "")} size`
           : /no narrow intent was named/.test(g)
-            ? `${g.split(":")[0]}: intent is missing — ask the journalist "Comparison between categories, change over time, part-to-whole or location?", then record_slot ${g.split(":")[0].replace("slot ", "")} intent`
+            ? `${g.split(":")[0]}: intent is missing — ask the journalist "${FAMILY_QUESTION}", then record_slot ${g.split(":")[0].replace("slot ", "")} intent`
           : /nothing chosen/.test(g)
             ? `${g.split(":")[0]}: no treatment chosen — call show_candidates, show its menu as it returns, then record_slot ${g.split(":")[0].replace("slot ", "")} chosen with the journalist's pick`
           : /^no slot/.test(g)
@@ -201,6 +202,16 @@ export function gapsForModel(gaps: string[]): string[] {
             ? `${g.split(":")[0]}: producer is missing — its Datawrapper eligibility is already checked, read nothing: ask the journalist "Custom or Datawrapper?", then record their answer with record_slot ${g.split(":")[0].replace("slot ", "")} producer (custom or datawrapper)`
             : g,
   );
+}
+
+/** The "no treatment chosen" gap of a slot whose intent names a family, with that family's needs numbered. */
+export function withNeedMenu(gap: string, slots: { id: unknown; intent?: unknown; medium?: unknown }[]): string {
+  const m = gap.match(/^slot (\S+): no treatment chosen/);
+  const slot = m && slots.find((s) => String(s.id) === m[1]);
+  const family = slot?.intent ? familyFor(String(slot.intent), String(slot.medium ?? "chart")) : undefined;
+  return family
+    ? `slot ${m![1]}: no treatment chosen — call show_candidates with need = the number of what the reader must see (${needMenu(family)}); show its menu as it returns, then record_slot ${m![1]} chosen with the journalist's pick`
+    : gap;
 }
 
 /** The drawable types with what each is for, in the catalogue's words: what the model can offer. */
@@ -339,10 +350,43 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
   /** Whether this local harness has a kit for the type in the slot's format. */
   const drawable = (type: string, id = "1") => adapterFor(type, slotFormat(id));
 
+  /** Two candidates for a need: its table's first drawable type, then the next one that is a different idea. */
+  function rankedForNeed(need: ReturnType<typeof readNeeds>[number], family: string, medium: string, id: string) {
+    const typed = (rows: typeof need.rows) =>
+      rows.flatMap((r) => {
+        try {
+          const type = canonicalTreatment(r.name, medium);
+          return drawable(type, id) ? [{ type, why: r.use }] : [];
+        } catch {
+          return [];
+        }
+      });
+    // The need's own table first; a need this harness draws nothing for borrows its family's other tables.
+    const own = typed(need.rows);
+    const pool = [...own, ...needsFor(family).flatMap(({ need: n }) => (n === need ? [] : typed(n.rows)))];
+    const seen = new Set<string>();
+    const ranked = pool.filter((c) => !seen.has(c.type) && seen.add(c.type));
+    const profile = JSON.parse(readFileSync(join(bases.storyDir, "source", "profile.json"), "utf8"));
+    const format = slotFormat(id);
+    const fits = (pair: { type: string; why: string }[]) => {
+      try {
+        formatCandidateRows({ medium, candidates: pair.map((c) => ({ ...c, format })), profile });
+        return true;
+      } catch {
+        return false;
+      }
+    };
+    const lead = ranked.find((c) => fits([c, { type: distinctAlternative(c.type, profile) ?? c.type, why: "" }])) ?? ranked[0];
+    if (!lead) throw new Error(`this local harness draws none of the types for "${need.title}" in ${format}; types it draws: ${LOCAL_MENU(format, medium)}`);
+    const second = ranked.find((c) => c !== lead && fits([lead, c]));
+    const alt = distinctAlternative(lead.type, profile);
+    return [lead, second ?? { type: alt ?? lead.type, why: "a different way of seeing the same values" }];
+  }
+
   const status = async () => {
     await dropUnsizedSizes(path);
     const { meta } = parseStoryboard(readFileSync(path, "utf8"));
-    const gaps = gapsForModel(checkStoryboard(meta));
+    const gaps = gapsForModel(checkStoryboard(meta)).map((g) => withNeedMenu(g, meta.slots ?? []));
     if (!gaps.length && !existsSync(join(bases.storyDir, "SUBJECTS.md")))
       gaps.push("the survey of other subjects is open — propose ONE other angle this data supports to the journalist, then record it with record_subject");
     return gaps.length
@@ -616,16 +660,28 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
     name: "show_candidates",
     label: "Build the candidates menu",
     description:
-      `Build the menu of candidate treatments for a slot, after its medium and format are recorded: give at least two genuinely different chart types, each with why it fits THIS story. The code checks each against the catalogue, refuses two that are the same idea, records them, and returns the menu lines (purpose, what it is not for, the interaction it promises). Show those lines to the journalist and ask which one. Types this local harness draws: ${LOCAL_MENU(slotFormat(), slotMedium())}.`,
+      `Build the menu of candidate treatments for a slot, after its medium, format and intent are recorded. Give need: the number of what the reader must see, from the list the open gap names for the journalist's intent; the code ranks the catalogue's types for that need, keeps two different ideas this harness draws, records them, and returns the menu lines (purpose, what it is not for, the interaction it promises). Only when the journalist named chart types themselves, give those as candidates instead. Show the lines to the journalist and ask which one.`,
     parameters: Type.Object({
       slot: Type.String(),
-      candidates: Type.Array(Type.Object({ type: Type.String(), why: Type.String() })),
+      need: Type.Optional(Type.String()),
+      candidates: Type.Optional(Type.Array(Type.Object({ type: Type.String(), why: Type.String() }))),
     }),
-    async execute(_id, { slot, candidates }) {
+    async execute(_id, { slot, need, candidates = [] }) {
       if (!allowedSlots.includes(slot)) throw new Error(`this run produces slot(s) ${allowedSlots.join(", ")} only`);
       const current = currentSlot(slot);
       if (!current?.medium || !current?.format) throw new Error("record the slot's medium and format with the journalist first");
       const medium = String(current.medium);
+      const family = current.intent ? familyFor(String(current.intent), medium) : undefined;
+      if (need !== undefined && String(need).trim() !== "") {
+        if (!family)
+          throw new Error(current.intent
+            ? `the recorded intent ${JSON.stringify(current.intent)} names none of the families; ask the journalist "${FAMILY_QUESTION}", record_slot ${slot} intent with their answer, then call show_candidates with need`
+            : `no intent is recorded: ask the journalist "${FAMILY_QUESTION}", record_slot ${slot} intent with their answer, then call show_candidates with need`);
+        const picked = resolveNeed(family, need);
+        if (!picked) throw new Error(`need must be one of: ${needMenu(family)} — give its number`);
+        candidates = rankedForNeed(picked, family, medium, slot);
+      } else if (!candidates.length && family)
+        throw new Error(`give need: the number of what the reader must see — ${needMenu(family)}`);
       if (candidates.length === 1) {
         // One candidate the harness can draw: add the smallest honest alternative, a distinct idea.
         let only = "";
