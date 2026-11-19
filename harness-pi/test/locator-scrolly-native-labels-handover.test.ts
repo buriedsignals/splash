@@ -7,9 +7,15 @@ import { describe, expect, it } from "bun:test";
 function fakeMap() {
   const filters: Record<string, unknown> = {};
   const paint: Record<string, unknown> = {};
+  const zoomRange: Record<string, [number, number]> = {};
+  const layout: Record<string, unknown> = {};
   return {
     filters,
     paint,
+    zoomRange,
+    layout,
+    setLayoutProperty: (id: string, p: string, v: unknown) => (layout[`${id}.${p}`] = v),
+    setLayerZoomRange: (id: string, min: number, max: number) => (zoomRange[id] = [min, max]),
     getLayer: () => ({}),
     setFilter: (id: string, f: unknown) => (filters[id] = JSON.parse(JSON.stringify(f))),
     getFilter: (id: string) => filters[id],
@@ -58,5 +64,20 @@ describe("locator scrolly drive — MapTiler's own labels after the warm map tak
   it("should give the handed-over map's country labels the land's halo", async () => {
     const { warm } = await drive();
     expect(warm.paint["Country labels.text-halo-color"]).toBe("#f4f4f4");
+  });
+});
+
+// gx-locator scrolly (Gemma 12B, mvg94 replay, 2026-11-19): card 4 named Kyiv, Kharkiv, Dnipro and drew their dots, but
+// the live map printed none of them. MapTiler's "City labels" layer starts at zoom 5 and the close-up sits at 4.88 —
+// measured on the live page. The names are already filtered to the beat's own, so they may show at any zoom.
+describe("locator scrolly drive — the settlements the beat names", () => {
+  it("should open the settlement label layers below MapTiler's own minimum zoom", async () => {
+    const { warm } = await drive();
+    expect(warm.zoomRange["City labels"]?.[0]).toBe(0);
+  });
+  // Same replay: each name printed centred ON the dot the beat draws for it ("Dn·ipro", "O·desa").
+  it("should set a settlement's name beside the dot the beat draws for it, not on it", async () => {
+    const { warm } = await drive();
+    expect([warm.layout["City labels.text-anchor"], (warm.layout["City labels.text-offset"] as number[] | undefined)?.[0]]).toEqual(["left", 0.6]);
   });
 });

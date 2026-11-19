@@ -20,6 +20,14 @@ const countries = { type: "vector", url: `https://api.maptiler.com/tiles/countri
 
 const clamp = (x) => ["max", 0, ["min", 1, x]];
 
+const NEAR_DEGREES = 2;
+function valuesOf(stations) {
+  return stations.map((s) => {
+    const above = stations.some((o) => o !== s && o.lat < s.lat && s.lat - o.lat < NEAR_DEGREES && Math.abs(o.lon - s.lon) < NEAR_DEGREES);
+    return { coords: [s.lon, s.lat], properties: { text: s.label, anchor: above ? "bottom" : "top", offset: [0, above ? -1.1 : 1.1] } };
+  });
+}
+
 export function locatorPlan({
   tints,
   subjectCountryIso,
@@ -108,8 +116,10 @@ export function locatorPlan({
       },
       wordLayer(
         "station-values",
-        stations.filter((s) => !s.isSubject).map((s) => ({ coords: [s.lon, s.lat], text: s.label })),
-        { "text-font": [fonts.axis], "text-size": fonts.axisSize, "text-offset": [0, 1.1], "text-anchor": "top" },
+        // A value goes BELOW its dot, unless another station sits just below it: then above, so two neighbours'
+        // values never print one over the other (gx-locator scrolly, 2026-11-19: "5 460 MW" on "5 320 MW").
+        valuesOf(stations.filter((s) => !s.isSubject)),
+        { "text-font": [fonts.axis], "text-size": fonts.axisSize, "text-offset": ["get", "offset"], "text-anchor": ["get", "anchor"] },
         colours.inkOnLand,
         tints.land,
         { $state: "tops" },
@@ -133,7 +143,8 @@ export function locatorPlan({
       wordLayer(
         "subject-name",
         [{ coords: [subject.lon, subject.lat], text: subject.label }],
-        { "text-font": [fonts.annot], "text-size": fonts.annotSize, "text-offset": [0, 1.4], "text-anchor": "top" },
+        // One line: MapLibre's default 10-em wrap broke the name inside its number ("6 / 000 MW").
+        { "text-font": [fonts.annot], "text-size": fonts.annotSize, "text-offset": [0, 1.4], "text-anchor": "top", "text-max-width": 40 },
         colours.accentInk,
         tints.land,
         { $state: "subject" },

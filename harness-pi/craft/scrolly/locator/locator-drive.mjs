@@ -114,6 +114,12 @@ function setUpNativeLabels(map, native) {
   const placeFilter = ["in", nameOf, ["literal", native.placeNames]];
   for (const id of ["City labels", "Town labels", "Village labels", "Place labels", "State labels"]) {
     map.setFilter(id, ["all", CLASS_SCOPE[id], placeFilter], { validate: false });
+    // MapTiler opens "City labels" at zoom 5; the close-up can sit below it (4.88 on the worked example's data), and
+    // the names are already the beat's own, so they show at any zoom (gx-locator scrolly, 2026-11-19).
+    map.setLayerZoomRange(id, 0, 24);
+    // Beside the beat's own dot, not centred on it.
+    map.setLayoutProperty(id, "text-anchor", "left", { validate: false });
+    map.setLayoutProperty(id, "text-offset", [0.6, 0], { validate: false });
     map.setPaintProperty(id, "text-color", native.placeColor, { validate: false });
     map.setPaintProperty(id, "text-halo-color", native.landHalo, { validate: false });
   }
