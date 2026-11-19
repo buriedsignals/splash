@@ -95,7 +95,8 @@ export function scheduleTimeWeb({ model, valid, format = String, subject }) {
             a,
             b,
             legend: `${a.key} / ${b.key}`,
-            chip: `${F(a.name)} / ${F(b.name)}`,
+            // Each level says whose it is: the same time names the series, two times name the time.
+            chip: [a, b].map((m) => `${a.key === b.key ? m.series : m.key} · ${F(m.name)}`).join(" / "),
             pieces: bump
               ? [`${b.key}: #${b.value} · ${a.key}: #${a.value}`]
               : [`${format(model.measureOf.get(a.name))} - ${format(model.measureOf.get(b.name))} = ${format(model.measureOf.get(a.name) - model.measureOf.get(b.name))}`, ...(b.value !== 0 ? [`${diff >= 0 ? "+" : ""}${fx((diff / Math.abs(b.value)) * 100)} %`] : [])],

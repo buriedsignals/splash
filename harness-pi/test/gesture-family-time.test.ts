@@ -607,3 +607,14 @@ describe("the web bracket's control", () => {
     expect(s.controls.find((c: any) => c.kind === "bracket" || c.do === "bracket").chip).toMatch(/^[^=]+ · [\d,.]+ %$/);
   });
 });
+
+describe("the web compare's control", () => {
+  // gx-line web, Qwen (mvq150, 2026-11-19): the chip read a bare "32,1 / 32,5" — two levels with nothing saying
+  // which year each one is.
+  it("should name each level's year in the chip", () => {
+    const gestures = [{ do: "compare", marks: ["2024", "1967"] }];
+    const v = validateTime({ gestures, model: LINE.model, format: "web", claim: LINE.claim });
+    const s = scheduleTimeWeb({ model: LINE.model, valid: v.gestures, format: fmt, subject: v.subject });
+    expect(s.controls.find((c: any) => c.do === "compare").chip).toMatch(/^2024 · [\d.,]+ \/ 1967 · [\d.,]+$/);
+  });
+});
