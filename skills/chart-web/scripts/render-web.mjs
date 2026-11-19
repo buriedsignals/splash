@@ -380,12 +380,19 @@ function escapeHtml(text) {
  */
 function plotViewBoxOf(markup, name = "this beat") {
   const boxes = new Map();
+  const phones = new Map();
   for (const tag of String(markup).matchAll(/<svg\b[^>]*>/g)) {
     const source = tag[0];
     if (!/\bclass="(?:[^"]*\s)?chart(?:\s[^"]*)?"/.test(source)) continue;
     const box = /\bviewBox="\s*[-\d.]+\s+[-\d.]+\s+([\d.]+)\s+([\d.]+)\s*"/.exec(source);
-    if (box) boxes.set(`${box[1]}|${box[2]}`, { width: Number(box[1]), height: Number(box[2]) });
+    // A plate drawn for the narrow page (`data-fit="phone"`, see `narrowFloorCss`) carries a box of its own.
+    if (box) (/\bdata-fit="phone"/.test(source) ? phones : boxes).set(`${box[1]}|${box[2]}`, { width: Number(box[1]), height: Number(box[2]) });
   }
+  if (phones.size > 1)
+    throw new Error(
+      `${name}: the narrow page's plates draw ${phones.size} different viewBoxes (${[...phones.keys()].join(", ")}). ` +
+        `Its cell carries one ratio, as the wide page's does: lay every phone plate out on one box.`,
+    );
   if (boxes.size === 0)
     throw new Error(
       `${name}: no <svg class="chart"> with a viewBox in the rendered markup. The plot cell is ` +
@@ -398,7 +405,8 @@ function plotViewBoxOf(markup, name = "this beat") {
         `One beat is one box: a cell can only carry one ratio, and a control that changed it would ` +
         `reshape the plot under the reader rather than answer a question about it.`,
     );
-  return [...boxes.values()][0];
+  const plot = [...boxes.values()][0];
+  return phones.size ? { ...plot, phone: [...phones.values()][0] } : plot;
 }
 
 /** The same two numbers, refused rather than defaulted. A stylesheet built with no geometry would
@@ -1272,14 +1280,23 @@ export function stampNarrowFloor(markup) {
   return markup.replace(/<figure class="chart-figure"/, "<figure class=\"chart-figure\" data-narrow-floor");
 }
 
-function narrowFloorCss(plotWidth, plotHeight) {
+function narrowFloorCss(plotWidth, plotHeight, phone = null) {
+  // A page that draws plates of its own for the narrow page (`data-fit="phone"`) hands the cell THEIR box there.
+  const [w, h] = phone ? [phone.width, phone.height] : [plotWidth, plotHeight];
   return `/* THE NARROW PAGE SCROLLS RATHER THAN SHRINK THE CHART — see narrowFloorCss. As specific as the rule for rows and
    later, and it takes the larger of the two, so a page that carries both keeps both. The figure is the container the query and
    its cqw read; inline-size containment changes nothing else, since the figure already takes its width from its parent. */
 .chart-figure[data-narrow-floor] { container-type: inline-size; }
 @container (max-width: ${NARROW_FLOOR_BELOW_PX}px) {
   .chart-figure[data-narrow-floor] .chart-plot {
-    min-height: max(${PLOT_FLOOR_PX}px, calc((100cqw - var(--y-gutter) - var(--end-gutter, 0px)) * ${plotHeight} / ${plotWidth} + var(--x-axis-h)), calc(var(--row-floor-cell, 0px) + var(--x-axis-h)));
+    min-height: max(${PLOT_FLOOR_PX}px, calc((100cqw - var(--y-gutter) - var(--end-gutter, 0px)) * ${h} / ${w} + var(--x-axis-h)), calc(var(--row-floor-cell, 0px) + var(--x-axis-h)));${
+      phone
+        ? `
+    aspect-ratio: ${w} / ${h} !important;
+    --cell-w: min(var(--track-w), calc(var(--track-h) * ${w} / ${h}));
+    --cell-h: min(var(--track-h), calc(var(--track-w) * ${h} / ${w}));`
+        : ""
+    }
   }
   /* The overflow does not carry the figure's bottom padding; this keeps the margin in the scroll (as the row floor does). */
   .chart-figure[data-narrow-floor]::after { content: ""; flex: 0 0 ${FRAME_PAD_PX}px; }
@@ -1585,7 +1602,7 @@ svg.chart { display: block; }
 }
 #tooltip[hidden] { display: none; }
 ${rowFloorRules ? `\n${rowFloorRules}\n` : ""}
-${drawing ? "" : narrowFloorCss(plotWidth, plotHeight)}
+${drawing ? "" : narrowFloorCss(plotWidth, plotHeight, plot.phone ?? null)}
 ${
   drawing
     ? `

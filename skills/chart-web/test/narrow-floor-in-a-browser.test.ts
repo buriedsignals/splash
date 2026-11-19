@@ -8,6 +8,7 @@ import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import puppeteer from "puppeteer-core";
 import { rowPage } from "./row-floor-fixture.ts";
+import { plotViewBoxOf } from "../scripts/render-web.mjs";
 
 setDefaultTimeout(600000);
 
@@ -71,6 +72,30 @@ describe("the narrow floor, in a real browser", () => {
   });
   it("should leave a wide window's page as it was", () => {
     expect(cells["narrow@1400"]).toEqual(cells["plain@1400"]);
+  });
+});
+
+// A keyed kit draws its words inside its viewBox; under 640 px it shows plates laid out for the phone, on a box of
+// their own (sankey, gantt: taller, so their rows keep their words apart). The cell takes THAT box's ratio there.
+describe("a narrow page's own plates, in a real browser", () => {
+  it("should give the phone plate's square box a square cell at 375 px", async () => {
+    const file = write("phone.html", rowPage({ narrow: true, phone: true }));
+    const browser = await puppeteer.launch({ executablePath: resolveChrome(), args: ["--force-device-scale-factor=1"] });
+    try {
+      const page = await browser.newPage();
+      await page.setViewport({ width: 375, height: 812, deviceScaleFactor: 1 });
+      await page.goto(`file://${file}`, { waitUntil: "load" });
+      const r = await page.evaluate(() => {
+        const b = document.querySelector('svg[data-fit="phone"]')!.getBoundingClientRect();
+        return Math.round((b.height / b.width) * 100) / 100;
+      });
+      expect(r).toBe(1);
+    } finally {
+      await browser.close();
+    }
+  });
+  it("should read the phone plates' box apart from the page's own", () => {
+    expect(plotViewBoxOf(rowPage({ narrow: true, phone: true }))).toEqual({ width: 800, height: 400, phone: { width: 800, height: 800 } });
   });
 });
 

@@ -9,6 +9,7 @@ import {
   buildCss,
   stampNarrowFloor,
   stampRowFloor,
+  plotViewBoxOf,
   webDocument,
 } from "../scripts/render-web.mjs";
 
@@ -26,7 +27,8 @@ export const FLOOR = {
 
 /** `rounds` draws round marks over the bars — a row marker (r=6), a symbol spanning rows (r=60) and an
  *  ellipse — so the browser test can measure what the floor's counter-scale keeps round. */
-export function rowMarkup({ spacerPx = 0, circleR = 0, rounds = false }: { spacerPx?: number; circleR?: number; rounds?: boolean } = {}) {
+/** `phone` also draws a narrow page's plate (`data-fit="phone"`) on a square box, shown under 640 px as a kit shows it. */
+export function rowMarkup({ spacerPx = 0, circleR = 0, rounds = false, phone = false }: { spacerPx?: number; circleR?: number; rounds?: boolean; phone?: boolean } = {}) {
   const rows = Array.from({ length: ROWS }, (_, i) => i);
   const { width: W, height: H } = PLOT;
   return `<figure class="chart-figure" style="--title-size:24px;--title-weight:700;--subtitle-size:14px;--source-size:13px;--axis-size:12px;--note-size:12px;--label-size:14px;--label-weight:600">
@@ -39,7 +41,12 @@ export function rowMarkup({ spacerPx = 0, circleR = 0, rounds = false }: { space
     rounds
       ? `<circle id="marker" cx="300" cy="50" r="6" fill="#0b7a75"/><circle id="symbol" cx="600" cy="200" r="60" fill="#0b7a75" fill-opacity="0.5"/><ellipse id="ellipse" cx="450" cy="300" rx="30" ry="15" fill="#0b7a75"/>`
       : ""
-  }</svg>
+  }</svg>${
+    phone
+      ? `<svg class="chart" data-fit="phone" viewBox="0 0 ${W} ${W}" preserveAspectRatio="none"><rect x="0" y="0" width="${W}" height="${W}" fill="#0b7a75"/></svg>
+<style>@container not (max-width: 640px) { svg[data-fit="phone"] { display: none !important; } } @container (max-width: 640px) { svg.chart:not([data-fit]) { display: none !important; } }</style>`
+      : ""
+  }
 <div class="overlay"></div>
 <div class="x-axis"><span class="axis-label x" style="left:0%">0</span><span class="axis-label x" style="left:100%">100</span></div>
 </div>
@@ -50,10 +57,10 @@ export function rowMarkup({ spacerPx = 0, circleR = 0, rounds = false }: { space
 export const FURNITURE = { ground: "#ffffff", accent: "#0b7a75", ink: "#111111", muted: "#666666", grid: "#dddddd" };
 
 /** The whole page, through the same three guards `renderWeb` runs before it writes one. */
-export function rowPage({ spacerPx = 0, rowFloor = null as typeof FLOOR | null, rounds = false, narrow = false } = {}) {
-  const stamped = stampRowFloor(rowMarkup({ spacerPx, rounds }), rowFloor);
+export function rowPage({ spacerPx = 0, rowFloor = null as typeof FLOOR | null, rounds = false, narrow = false, phone = false } = {}) {
+  const stamped = stampRowFloor(rowMarkup({ spacerPx, rounds, phone }), rowFloor);
   const markup = narrow ? stampNarrowFloor(stamped) : stamped;
-  const css = buildCss({ ...FURNITURE, plot: PLOT, rowFloor, fontStack: "Georgia, serif" });
+  const css = buildCss({ ...FURNITURE, plot: plotViewBoxOf(markup), rowFloor, fontStack: "Georgia, serif" });
   const html = webDocument({ lang: "en", title: "Row floor fixture", css, markup, script: "" });
   assertPlotCellIsItsViewBox(html);
   assertRowFloor(html, rowFloor);
