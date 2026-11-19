@@ -24,9 +24,10 @@ import { guardColour } from "#shared/design-base/compose.mjs";
 import { ISO3_TO_ISO2 } from "#shared/map-beat/iso-codes.mjs";
 import { countryGround, plateGrounds, plateTints } from "#shared/map-beat/tints.mjs";
 import { frameProjector, markOccupancy, occupancyLine } from "#shared/map-beat/occupancy.mjs";
-import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertNumbers } from "./guards.mjs";
+import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertNumbers, storyLimits } from "./guards.mjs";
 import { ensurePlate, liveAssets, mapWeb, maptilerKey, renderLiveMapPage, verifyLiveMap } from "./map-web.mjs";
 import { plateWaterField } from "./plate-water.mjs";
+import { fitCaveat } from "./caveat-fit.mjs";
 import { chartWeb, pickDirection, plain, plainRegisters, refusing, storyLanguage } from "./web.mjs";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -366,6 +367,18 @@ await refusing(HERE, async () => {
     value: tableRows.map((r) => r.cells[0]).join(" "),
   };
   const { label, direction } = pickDirection(HERE, plainRegisters(registers), beat.evidenceLevels ?? 3);
+  // The standfirst holds one desktop line; the Mercator sentence moves under the map when the two do not fit.
+  const { webRegisters } = await import("#shared/design-base/web.mjs");
+  const { measureText } = await import(chartWeb(HERE, "scripts", "render-still.mjs"));
+  const { labelBoxPx } = await import(chartWeb(HERE, "assets", "keyed-note.ts"));
+  const bodyReg = webRegisters(direction, { ink: { ...deriveFurniture(direction.ground), accent: direction.accent } }).body;
+  const fitted = fitCaveat({
+    limits: plain([beat.limits].flat()[0]),
+    derived: mercator,
+    reading,
+    named: storyLimits(HERE),
+    width: (t) => labelBoxPx(t, bodyReg, measureText, { chip: false }).w,
+  });
   const tints = plateTints(direction, { landDose: LAND_DOSE });
   const sameWindow = (facts) => JSON.stringify(facts.bounds) === JSON.stringify(WINDOW);
   const plateFacts = ensurePlate({ here: HERE, label, water: tints.water, land: tints.land, frame: PLATE_FRAME, args: ["--countries", join(HERE, "shapes.geojson"), "--bounds", WINDOW.flat().join(",")], current: sameWindow });
@@ -480,9 +493,9 @@ await refusing(HERE, async () => {
         size: box.width,
         title,
         eyebrow,
-        caveat,
+        caveat: fitted.caveat,
         source,
-        reading,
+        reading: fitted.reading,
         claimNote,
         alt,
         interaction,

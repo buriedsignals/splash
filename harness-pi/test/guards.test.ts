@@ -557,6 +557,26 @@ describe("applyStoryboard", () => {
         applied("Six pays seulement, 2015 et 2024 : rangés par niveau."),
       ).toBe("Six pays seulement, 2015 et 2024 : rangés par niveau.");
     });
+    // gx-flow-map web (Qwen3.5-9B, 2026-11-19): the beat's first sentence said what the journalist's says, in other
+    // words, and the plate printed both: « …sa largeur est le nombre de personnes. Une bande par pays d'accueil, sa
+    // LARGEUR proportionnelle à la mesure choisie. »
+    it("should drop the beat's sentence that restates the journalist's", () => {
+      const root = mkdtempSync(join(tmpdir(), "splash-limits-"));
+      const dir = join(root, "beats", "1");
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(
+        join(root, "STORYBOARD.md"),
+        `---\nlimits: "Un ruban par pays d’accueil, partant d’un même nœud posé sur l’Ukraine : sa largeur est le nombre de personnes."\n---\n`,
+      );
+      const beat = {
+        limits:
+          "Une bande par pays d'accueil, sa LARGEUR proportionnelle à la mesure choisie. La courbe est schématique et n'est pas un itinéraire : ce qui est exact, c'est la largeur, les deux extrémités et la direction du départ.",
+      };
+      applyStoryboard(beat, dir);
+      expect(beat.limits).toBe(
+        "Un ruban par pays d’accueil, partant d’un même nœud posé sur l’Ukraine : sa largeur est le nombre de personnes. La courbe est schématique et n’est pas un itinéraire : ce qui est exact, c’est la largeur, les deux extrémités et la direction du départ.",
+      );
+    });
   });
 
   // gx-choropleth static (12B and Qwen3.5-9B, 2026-11-14): "Albanie, 100.0 % : la seule hors du nord-ouest" printed an

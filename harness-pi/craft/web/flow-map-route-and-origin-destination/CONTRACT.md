@@ -59,7 +59,7 @@ needs a hue of its own (the worked example records `#0B7A5E`, `origin: journalis
 | `tableCaption({ destinations })` | The table's caption; a number it prints is `destinations`. |
 | `columns` | The table's six headings: destination, count, per inhabitants, per area, rank, width (five without population: no per inhabitants). |
 | `claimNote(c)` | The sentence under the map; `c` is the claim reading below plus `c.remainder` (the bands not drawn under the count). Every number from `c`. |
-| `mercator(m)` | Appended to `limits`: what the flat map costs this fan. `m` = `{ longest, shortest, spread }`: the arm to `longest` is drawn `spread` times longer per real km than the arm to `shortest`. Print `m.spread`. |
+| `mercator(m)` | Appended to `limits` when both fit the one desktop line the standfirst holds, else opens the reading line under the map: what the flat map costs this fan. `m` = `{ longest, shortest, spread }`: the arm to `longest` is drawn `spread` times longer per real km than the arm to `shortest`. Print `m.spread`. |
 | `reading(r)` | The reading line; `r` = `{ destinations }`. |
 | `hint` | One sentence shown once the live map is up: zoom, drag, hover a band. |
 | `title` | The headline: the journalist's takeaway from STORYBOARD.md, copied word for word as a literal string (the render checks it). |

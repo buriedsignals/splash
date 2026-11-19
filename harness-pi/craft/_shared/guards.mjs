@@ -12,6 +12,12 @@ const front = (here) => {
   return (key) => text.match(new RegExp(`^${key}:\\s*"?(.*?)"?\\s*$`, "m"))?.[1]?.replace(/\\"/g, '"');
 };
 
+/** The journalist's limits from STORYBOARD.md, or undefined when there are none. */
+export function storyLimits(here) {
+  const named = front(here)?.("limits");
+  return named && !/^none$/i.test(named) ? named.trim() : undefined;
+}
+
 /**
  * What the journalist recorded, held on the plate: the credit line with its as-of date (a 12B beat
  * printed "unattributed" with no date), the takeaway as the headline's first form, word for word (one
@@ -163,7 +169,17 @@ export function applyStoryboard(beat, here, { title = "title", standfirst = "lim
     if (theirs.length && theirs.filter((w) => said.has(w)).length / theirs.length < 0.4) {
       // The journalist's words are known, so code puts them first instead of refusing: the refusal cost a turn on 71 of
       // the worked examples' own first forms, and Qwen3.5-9B answered it by moving the words to a form desktop never shows.
-      const opened = `${named.trim()} ${String(first).trim()}`;
+      // A sentence of the beat's that says the journalist's in other words goes: printed after them it read as the
+      // same sentence twice (gx-flow-map web, Qwen3.5-9B, 2026-11-19: « …sa largeur est le nombre de personnes. Une
+      // bande par pays d'accueil, sa LARGEUR proportionnelle à la mesure choisie. »).
+      const theirSet = new Set(theirs);
+      const restates = (sentence) => {
+        const ws = words(sentence);
+        const shared = ws.filter((w) => theirSet.has(w)).length;
+        return shared >= 3 && shared / ws.length >= 0.4;
+      };
+      const kept = String(first).trim().split(/(?<=[.!?…])\s+(?=\p{Lu})/u).filter((sentence) => !restates(sentence));
+      const opened = [named.trim(), ...kept].join(" ");
       beat[standfirst] = Array.isArray(beat[standfirst]) ? [opened, ...beat[standfirst].slice(1)] : opened;
       console.log(`${standfirst}: opened with the journalist's words — ${opened}`);
     }
