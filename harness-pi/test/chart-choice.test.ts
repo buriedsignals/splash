@@ -34,4 +34,11 @@ describe("resolveNeed", () => {
   it("should accept the need's own words as well as its number", () => {
     expect(resolveNeed("change over time", "2. compare before and after")?.title).toBe("compare before and after");
   });
+  // stress-p on the 12B (2026-11-20) wrote the story into need, twice, after being told to give the number.
+  it("should read a sentence about the story as the need its words name", () => {
+    expect(resolveNeed("comparison between categories", "compare Lisboa (214M), Porto (96M), and the other cities (totaling 394M) to show Lisboa's dominance.")?.title).toBe("rank or compare one value per category");
+  });
+  it("should name no need when the sentence names none of them", () => {
+    expect(resolveNeed("comparison between categories", "Lisboa is big.")).toBeUndefined();
+  });
 });

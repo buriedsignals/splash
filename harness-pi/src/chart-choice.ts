@@ -99,10 +99,21 @@ export function resolveNeed(
     .toLowerCase()
     .replace(/^\d+[.)]\s*/, "")
     .trim();
-  return list.find(
+  const exact = list.find(
     ({ need }) =>
       need.title.toLowerCase() === p ||
       need.title.toLowerCase().includes(p) ||
       p.includes(need.title.toLowerCase()),
   )?.need;
+  if (exact) return exact;
+  // A sentence about the story (the 12B, stress-p 2026-11-20): the need whose title shares the most word stems
+  // with it. Ties go to the earlier need, the family's more general case; no shared stem names no need.
+  const stems = (s: string) =>
+    new Set(plain(s).split(/[^a-z]+/).filter((w) => w.length > 3 && !STOP.has(w)).map((w) => w.slice(0, 5)));
+  const said = stems(p);
+  const scored = list.map(({ need }) => ({ need, hits: [...stems(need.title)].filter((w) => said.has(w)).length }));
+  const best = Math.max(0, ...scored.map((x) => x.hits));
+  return best > 0 ? scored.find((x) => x.hits === best)?.need : undefined;
 }
+
+const STOP = new Set(["show", "what", "that", "this", "with", "from", "they", "their", "reader", "must", "values", "value"]);
