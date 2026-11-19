@@ -49,4 +49,25 @@ describe("the units scrolly bracket against the whole", () => {
     const [p, w] = [lastY(part.attrs.d ?? ""), lastY(spine.attrs.d ?? "")];
     expect(p > 0 && p < w).toBe(true);
   });
+
+  // gx-pictogram-isotype scrolly mvq148 (Qwen3.5-9B, 2026-11-19): the MIDDLE row was the part, and the accent ran
+  // from the top of the spine, over the row above it, down to the middle row's end.
+  it("should start the group's own stretch at its row when the group is not the first", () => {
+    DATA.plan[2] = { ...DATA.plan[2], own: [1], part: [1] } as any;
+    const { root, spine, part } = page();
+    const state = { fill: 1, note: 2, g0: 1, g1: 1, g2: 1 };
+    applyUnitsState(root, state, { resized: true });
+    applyUnitsState(root, state, {});
+    const firstY = (d: string) => Number(/^M[\d.]+,([\d.]+)/.exec(d)?.[1]);
+    expect(firstY(part.attrs.d ?? "")).toBeGreaterThan(firstY(spine.attrs.d ?? ""));
+  });
+
+  // mvq148 again: "6 sur 40" printed twice on cards 3 and 4 — beside the spine, and in the header.
+  it("should leave the header empty for a bracket whose note stands beside its spine", () => {
+    const { root } = page();
+    const state = { fill: 1, note: 2, g0: 1, g1: 1, g2: 1 };
+    applyUnitsState(root, state, { resized: true });
+    applyUnitsState(root, state, {});
+    expect(root.querySelector('[data-note="2"]').style.opacity).toBe("0");
+  });
 });

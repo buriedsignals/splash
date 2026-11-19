@@ -266,9 +266,12 @@ export function applyUnitsState(root, state, context) {
       const reach = y0 + (y1 - y0) * g;
       set(p.spine, { d: `M${x - 6},${y0} H${x} V${reach}${g >= 0.995 ? ` H${x - 6}` : ""}`, opacity: Math.min(1, g * 4) });
       if (p.part && p.partSpine) {
-        // Against the whole: the group's own stretch of the spine, in the accent, closed by a tick (mvg99).
-        const partY1 = Math.max(...p.part.map((i) => rowTop(i))) + band;
-        set(p.partSpine, { d: `M${x - 6},${y0} H${x} V${Math.min(reach, partY1)}${reach >= partY1 ? ` H${x - 6}` : ""}`, opacity: Math.min(1, g * 4) });
+        // Against the whole: the group's own stretch of the spine, in the accent, closed by a tick (mvg99) — from its
+        // own row, not from the top: a middle row's part ran over the row above it (mvq148).
+        const partTop = Math.min(...p.part.map((i) => rowTop(i)));
+        const partEnd = Math.max(...p.part.map((i) => rowTop(i))) + band;
+        const drawn = reach > partTop;
+        set(p.partSpine, { d: drawn ? `M${x - 6},${partTop} H${x} V${Math.min(reach, partEnd)}${reach >= partEnd ? ` H${x - 6}` : ""}` : "", opacity: drawn ? Math.min(1, g * 4) : 0 });
       }
       const landed = landedOf(g, p.steps.length);
       const text = g >= 0.995 && p.noteText ? p.noteText : landed > 0 ? p.steps[landed - 1] : "";
@@ -292,6 +295,8 @@ export function applyUnitsState(root, state, context) {
       const text = g >= 0.995 ? p.noteText : landed > 0 ? p.steps[landed - 1] : "";
       if (node.textContent !== text) node.textContent = text;
     }
-    node.style.opacity = String(clamp(1 - 2 * Math.abs(state.note - p.k)));
+    // A bracket's or a rule's note already stands beside its mark: the header would print it twice (mvq148).
+    const beside = (p.do === "bracket" || p.do === "reference") && p.noteText;
+    node.style.opacity = beside ? "0" : String(clamp(1 - 2 * Math.abs(state.note - p.k)));
   });
 }

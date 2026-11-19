@@ -29,4 +29,12 @@ describe("units video — a bracket measured against the whole", () => {
     const [b] = sceneOf(plan.map((p: any, i: number) => ({ ...p, index: i, field: p.field ?? `g${i}` }))).brackets;
     expect(b.partY2).toBe(130);
   });
+
+  // gx-pictogram-isotype scrolly mvq148 (Qwen3.5-9B, 2026-11-19): the middle row of three was marked, and the
+  // accent ran from the top of the spine — over the 16 above it — down to the middle row's end.
+  it("should start the group's stretch at its own row, not at the top of the whole", () => {
+    const { plan } = scheduleUnitsVideo({ gestures: [{ do: "highlight", marks: ["4–8"] }, { do: "name", marks: ["0–4"] }, { do: "bracket", marks: ["4–8"], of: "whole" }], groups });
+    const [b] = sceneOf(plan.map((p: any, i: number) => ({ ...p, index: i, field: p.field ?? `g${i}` }))).brackets;
+    expect([b.partY1, b.partY2]).toEqual([140, 170]);
+  });
 });

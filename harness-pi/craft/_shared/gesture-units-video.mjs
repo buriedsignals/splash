@@ -188,8 +188,11 @@ export function sceneUnitsAt(props, frame) {
       const landedSteps = landedOf(p, g[p.index]);
       const label = props.bracketLabels.find((b) => b.item === p.index);
       const noted = g[p.index] >= 1 && label?.note;
-      const partY2 = p.part ? Math.max(...p.part.map((m) => props.rows.findIndex((r) => r.key === m)).map((i) => props.rows[i].top + props.rows[i].band)) : null;
-      return { index: p.index, y1, reach: y1 + (y2 - y1) * g[p.index], y2, partY2, figure: noted ? null : landedSteps > 0 ? valueText(p.steps[landedSteps - 1], props.format) : null, note: noted ? label.note : null, x: label.x };
+      const partRows = p.part ? p.part.map((m) => props.rows[props.rows.findIndex((r) => r.key === m)]) : null;
+      // The group's OWN stretch of the whole's spine: a middle row's part starts at that row, not at the top.
+      const partY1 = partRows ? Math.min(...partRows.map((r) => r.top)) : null;
+      const partY2 = partRows ? Math.max(...partRows.map((r) => r.top + r.band)) : null;
+      return { index: p.index, y1, reach: y1 + (y2 - y1) * g[p.index], y2, partY1, partY2, figure: noted ? null : landedSteps > 0 ? valueText(p.steps[landedSteps - 1], props.format) : null, note: noted ? label.note : null, x: label.x };
     });
   const rules = props.plan
     .filter((p) => p.do === "reference" && g[p.index] > 0)

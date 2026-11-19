@@ -363,10 +363,10 @@ export function GestureUnitsFrame(
             stroke={colours.text.count}
             strokeWidth={props.strokes.grid * 1.8}
           />
-          {b.partY2 != null ? (
-            // Against the whole: the group's own stretch of the spine, in the accent, closed by a tick.
+          {b.partY2 != null && b.reach > (b.partY1 ?? b.y1) ? (
+            // Against the whole: the group's own stretch of the spine, in the accent, a tick at each end.
             <path
-              d={`M${b.x - L.gap / 2},${b.y1} H${b.x} V${Math.min(b.reach, b.partY2)}${b.reach >= b.partY2 ? ` H${b.x - L.gap / 2}` : ""}`}
+              d={`M${b.x - L.gap / 2},${b.partY1 ?? b.y1} H${b.x} V${Math.min(b.reach, b.partY2)}${b.reach >= b.partY2 ? ` H${b.x - L.gap / 2}` : ""}`}
               fill="none"
               stroke={colours.first}
               strokeWidth={props.strokes.grid * 3.6}
