@@ -130,6 +130,11 @@ function refusePrintedNothing(beat) {
     } else if (Array.isArray(v)) v.forEach((x, i) => typeof x === "string" && look(`${where}[${i}]`, x));
   };
   for (const [key, v] of Object.entries(beat)) look(key, v);
+  // gx-lollipop web, 12B (2026-11-19): `limits:` written as a YAML list, "- `a` - `b`", which JavaScript reads as a
+  // subtraction of two strings; the field arrived as the NUMBER NaN and the page printed it twice.
+  for (const [key, v] of Object.entries(beat))
+    if (typeof v === "number" && Number.isNaN(v))
+      found.push(`${key} is NaN: a list written "- \`a\` - \`b\`" is read as a subtraction; write it as an array, ${key}: [\`first form\`, \`shorter form\`]`);
   if (Array.isArray(beat.gestures))
     beat.gestures.forEach((g, i) => g && typeof g === "object" && ["note", "card", "label"].forEach((k) => look(`gestures[${i}].${k}`, g[k])));
   if (found.length)

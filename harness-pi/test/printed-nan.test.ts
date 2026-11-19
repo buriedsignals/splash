@@ -22,4 +22,9 @@ describe("applyStoryboard on a beat whose printed words hold NaN or undefined", 
   it("should accept a word that only contains the letters", () => {
     expect(() => applyStoryboard({ title: "NaNa et Nanterre", standfirst: "indefinite" }, here())).not.toThrow();
   });
+  // gx-lollipop web, 12B (gx-lollipop-web-seeded-osaurus-1794975050886): `limits:` written as a YAML list,
+  // "- `a` - `b`", which JavaScript reads as a subtraction of two strings, so the page printed "NaN" twice.
+  it("should refuse a text field that is the number NaN, showing the array it meant", () => {
+    expect(() => applyStoryboard({ title: "Un titre", limits: NaN }, here())).toThrow(/limits is NaN: .* limits: \[`first form`, `shorter form`\]/);
+  });
 });
