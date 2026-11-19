@@ -14,7 +14,9 @@ import { dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { scaleLinear } from "d3-scale";
 import { beatFacts, applicableTreatments } from "#shared/chart-beat/treatments.mjs";
-import { DirectedLollipopWeb, SERIES, scaleFor } from "./DirectedLollipopWeb.tsx";
+import { DirectedLollipopWeb, SERIES, scaleFor, FRAME, HEADROOM, headClearPx } from "./DirectedLollipopWeb.tsx";
+import { lollipopRowFloor } from "./phone-floor.mjs";
+import { webRegisters } from "#shared/design-base/web.mjs";
 import { applyStoryboard, assertNumbers, assertLegibleLabels, assertHeadlineNumbersDrawn, assertDrawsClaimColumn } from "./guards.mjs";
 import { chartWeb, plain, refusing, renderBeatWeb, storyLanguage } from "./web.mjs";
 
@@ -195,7 +197,20 @@ await refusing(HERE, async () => {
     textPerRegister,
     evidenceLevels: beat.evidenceLevels ?? 4,
     async render({ label, direction, outDir }) {
+      const { deriveFurniture } = await import(chartWeb(HERE, "scripts", "render-still.mjs"));
+      const furniture = deriveFurniture(direction.ground);
+      const value = webRegisters(direction, { ink: { ink: furniture.ink, muted: furniture.muted, accent: direction.accent } }).value;
+      const valuePx = Math.max(11, Number.parseFloat(value.fontSize) - 2);
+      const rowFloor = lollipopRowFloor({
+        intervals: yTicks.length - 1,
+        height: FRAME.height,
+        headroom: HEADROOM,
+        valuePx,
+        lead: Number(value.lineHeight),
+        headClearPx: headClearPx(),
+      });
       return renderWeb({
+        rowFloor,
         lang: beat.lang ?? storyLanguage(HERE) ?? "en",
         component: DirectedLollipopWeb,
         props: {

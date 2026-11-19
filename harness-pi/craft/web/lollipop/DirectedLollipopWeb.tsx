@@ -24,6 +24,7 @@
  * where China is in 2023.
  */
 
+import { pairLiftPx } from "./phone-floor.mjs";
 import { mix, adjustToContrast, contrast, TEXT_CONTRAST_MIN, NON_TEXT_CONTRAST_MIN } from "#shared/chart-beat/colour.mjs";
 import { webRegisters, figureVars, fitY } from "#shared/design-base/web.mjs";
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
@@ -49,6 +50,8 @@ const LEVEL_ID_PREFIX = "chart-level";
 export const SERIES = ["before", "after"] as const;
 /** The fraction of the span left above the tallest stem, so its printed figure has ground to sit on. */
 export const HEADROOM = 0.14;
+/** The head's radius plus the gap its figure keeps above it, in CSS px — what phone-floor.mjs floors the cell on. */
+export const headClearPx = () => HEAD_BOX_PX / 2 + LABEL_GAP_PX;
 
 /**
  * THE HEAD IS DRAWN IN HTML, AT A FIXED CSS SIZE — this format's own split, not an exception to it.
@@ -324,6 +327,23 @@ export function DirectedLollipopWeb({
   // The plot inline-size at which one band stops holding the widest of the two on one line. `+ 2` is
   // the padding each needs off its neighbour before it is a collision.
   const wrapBelowPx = Math.ceil((Math.max(widestNamePx, widestChangePx) + 2) * pairs.length);
+  // A PAIR'S TWO FIGURES MEET BELOW A WIDTH THE BUILD CAN MEASURE. Each is centred on its own head, and the two heads
+  // stand `2 × off` viewBox units apart — a span that shrinks with the plot while the figures keep their CSS size. At
+  // 375 px (gx-lollipop, 2026-11-19) "10,4" printed over "11,9". Below the plot width where the widest figure's box
+  // (its 4 px padding each side included) no longer fits between the two centres, the HIGHER head's figure rises one
+  // line: it stays above its own head, and the lower head's figure, whose top sits at or under the higher one's
+  // baseline, can no longer meet it. The tallest head's lifted figure needs the plot's headroom to hold it: the
+  // runner floors the cell for that (phone-floor.mjs), or "21,4" rose out of the plot onto the notes above it.
+  const valuePx = Math.max(11, Number.parseFloat(regs.value.fontSize as string) - 2);
+  const widestValuePx = Math.max(
+    ...pairs.flatMap((p) =>
+      [p.beforeLabel, p.afterLabel].map((t) =>
+        measure(String(t), { fontSize: valuePx, fontWeight: regs.value.fontWeight, fontFamily: faceOf(regs.value).family }),
+      ),
+    ),
+  );
+  const pairMeetsBelowPx = Math.ceil(((widestValuePx + 8 + 2) * FRAME.width) / (2 * off));
+  const liftPx = pairLiftPx(valuePx, Number(regs.value.lineHeight));
 
   // THE AXIS REGISTER'S INK AND WEIGHT LEAVE THE INLINE STYLE. An inline `color` beats every
   // generated selector, so with `regs.axis` spread whole the yardstick's own rules could not light a
@@ -406,6 +426,14 @@ export function DirectedLollipopWeb({
     // overlaps, at any width, in any direction.
     `@container (max-width: ${wrapBelowPx}px) {`,
     `  ${SCOPE} .chart-plot { --x-axis-h: ${xAxisRowWrappedPx}px; }`,
+    `}`,
+    `@container (max-width: ${pairMeetsBelowPx}px) {`,
+    `  ${SCOPE} .overlay .end-label[data-pair-lift] { translate: 0 -${liftPx}px; }`,
+    // The lower head's figure, centred on its head, still crossed its partner's head (« 10,1 » on 11,9): it moves
+    // to stand against its partner's head, on its own side, clear of that head by its radius and a pixel.
+    `  ${SCOPE} .overlay .end-label[data-pair-low] { left: var(--partner-left) !important; }`,
+    `  ${SCOPE} .overlay .end-label[data-pair-low="before"] { translate: calc(-50% - ${HEAD_BOX_PX / 2 + 1}px) 0; }`,
+    `  ${SCOPE} .overlay .end-label[data-pair-low="after"] { translate: calc(50% + ${HEAD_BOX_PX / 2 + 1}px) 0; }`,
     `}`,
   ].join("\n\n");
 
@@ -681,7 +709,9 @@ export function DirectedLollipopWeb({
                   left: `${pct(cx(i) - off, FRAME.width)}%`,
                   top: `${pct(y(p.before), FRAME.height)}%`,
                   transform: `translate(-50%, -100%) translateY(-${HEAD_BOX_PX / 2 + LABEL_GAP_PX}px)`,
+                  ["--partner-left" as any]: `${pct(cx(i) + off, FRAME.width)}%`,
                 }}
+                {...(p.before > p.after ? { "data-pair-lift": "" } : { "data-pair-low": "before" })}
               >
                 {p.beforeLabel}
               </span>
@@ -694,7 +724,9 @@ export function DirectedLollipopWeb({
                   left: `${pct(cx(i) + off, FRAME.width)}%`,
                   top: `${pct(y(p.after), FRAME.height)}%`,
                   transform: `translate(-50%, -100%) translateY(-${HEAD_BOX_PX / 2 + LABEL_GAP_PX}px)`,
+                  ["--partner-left" as any]: `${pct(cx(i) - off, FRAME.width)}%`,
                 }}
+                {...(p.after >= p.before ? { "data-pair-lift": "" } : { "data-pair-low": "after" })}
               >
                 {p.afterLabel}
               </span>
