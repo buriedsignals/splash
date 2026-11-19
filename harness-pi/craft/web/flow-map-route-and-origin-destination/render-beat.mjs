@@ -27,6 +27,8 @@ import { frameProjector, markOccupancy, occupancyLine } from "#shared/map-beat/o
 import { applyStoryboard, assertDrawsClaimColumn, assertHeadlineNumbersDrawn, assertNumbers, storyLimits } from "./guards.mjs";
 import { ensurePlate, liveAssets, mapWeb, maptilerKey, renderLiveMapPage, verifyLiveMap } from "./map-web.mjs";
 import { plateWaterField } from "./plate-water.mjs";
+import { nameAnchor } from "./names.mjs";
+import { assertNotFallback, maptilerGlyphs } from "#shared/map-beat/glyphs.mjs";
 import { fitCaveat } from "./caveat-fit.mjs";
 import { chartWeb, pickDirection, plain, plainRegisters, refusing, storyLanguage } from "./web.mjs";
 
@@ -429,6 +431,25 @@ await refusing(HERE, async () => {
     locale: beat.mapLocale ?? (lang.startsWith("fr") ? { title: "Carte", zoomIn: "Zoomer", zoomOut: "Dézoomer" } : { title: "Map", zoomIn: "Zoom in", zoomOut: "Zoom out" }),
     changeMs: CHANGE_MS,
     closest: CLOSEST,
+    names: await (async () => {
+      // Every destination named on the map, beyond its seat and away from the node; the widest band's name wins a
+      // collision. The face is the axis register's own, PROBED: MapTiler answers 200 with Noto Sans for a family it lacks.
+      const spec = direction.registers.axis;
+      const font = [`${spec.family} ${Number(spec.weight) >= 600 ? "Bold" : Number(spec.weight) >= 500 ? "Medium" : "Regular"}`, `${spec.family} Regular`];
+      const glyphKey = maptilerKey(HERE);
+      const noto = await maptilerGlyphs("Noto Sans Regular", "0-255", glyphKey);
+      for (const face of new Set(font)) assertNotFallback(await maptilerGlyphs(face, "0-255", glyphKey), noto, face);
+      return {
+        font: [...new Set(font)],
+        size: parseFloat(webRegisters(direction, { ink: { ...furniture, accent: direction.accent } }).axis.fontSize),
+        ink: furniture.ink,
+        halo: tints.land,
+        places: bandFeatures.map((f) => {
+          const code = f.properties.code;
+          return { code, text: NAME(code), lon: seats[code][0], lat: seats[code][1], anchor: nameAnchor(origin, seats[code]) };
+        }),
+      };
+    })(),
   };
   const livePlan = liveFlowPlan(live);
   const { maplibreJs, maplibreCss, styleModule } = liveAssets(HERE);

@@ -447,7 +447,53 @@ export type LiveFlowDeclaration = {
    *  pointable; on a fan every band converges on one node, so what a reader zooms IN to separate is
    *  not a country's width but the two nearest ENDS. */
   closest: { a: string; b: string; degrees: number };
+  /** THE DESTINATIONS' NAMES, on the map itself — optional. Without them a reader saw thirty bands and had to open the
+   *  table to learn where any of them went. Widest band first: on a collision, the narrower band's name gives way. */
+  names?: FlowNames;
 };
+
+export type FlowNames = {
+  /** A MapTiler font stack, every face with its suffix (a bare family is served as Noto Sans with no error). */
+  font: string[];
+  size: number;
+  ink: string;
+  /** The land's own tint: a name reads over the band it sits on as much as over the land. */
+  halo: string;
+  /** anchor: the side of the text that touches the seat — chosen away from the node. */
+  places: { code: string; text: string; lon: number; lat: number; anchor: "left" | "right" | "top" | "bottom" }[];
+};
+
+/** The names as one symbol layer. Each name keeps its register's size at every zoom, like every word on the page. */
+export function flowNameLayer(n: FlowNames): Record<string, unknown> {
+  if (!Array.isArray(n.font) || !n.font.length || n.font.some((face) => !/\s/.test(face)))
+    throw new Error(`live-flow: the names' font stack ${JSON.stringify(n.font)} must name faces with their suffix, e.g. ["Open Sans Regular"]`);
+  if (typeof n.size !== "number" || !Number.isFinite(n.size) || n.size <= 0)
+    throw new Error(`live-flow: the names' size ${JSON.stringify(n.size)} must be a number of pixels, e.g. 13`);
+  return {
+    id: "mw-names",
+    type: "symbol",
+    data: {
+      type: "FeatureCollection",
+      features: n.places.map((p, rank) => ({
+        type: "Feature",
+        properties: { code: p.code, text: p.text, anchor: p.anchor, rank },
+        geometry: { type: "Point", coordinates: [p.lon, p.lat] },
+      })),
+    },
+    layout: {
+      "text-field": ["get", "text"],
+      "text-font": n.font,
+      "text-size": n.size,
+      "text-anchor": ["get", "anchor"],
+      "text-offset": ["match", ["get", "anchor"], "right", ["literal", [-0.5, 0]], "left", ["literal", [0.5, 0]], "bottom", ["literal", [0, -0.4]], ["literal", [0, 0.4]]],
+      "symbol-sort-key": ["get", "rank"],
+      "text-allow-overlap": false,
+      "text-padding": 2,
+    },
+    paint: { "text-color": n.ink, "text-halo-color": n.halo, "text-halo-width": 1.5 },
+    hover: false,
+  };
+}
 
 const CODE = /^[A-Za-z0-9_-]{2,8}$/;
 
@@ -623,6 +669,7 @@ export function liveFlowPlan(d: LiveFlowDeclaration): Record<string, unknown> {
       },
       hover: false,
     },
+    ...(d.names ? [flowNameLayer(d.names)] : []),
   ];
 
   return {
@@ -745,6 +792,9 @@ export function liveFlowScript(
     bounds: [[PLAN.studyBounds.west, PLAN.studyBounds.south], [PLAN.studyBounds.east, PLAN.studyBounds.north]],
     fitBoundsOptions: { padding: FIT_PADDING_PX, animate: false },
     maxZoom: 22,
+    // The destination names are placed with collision: MapLibre's default 300 ms cross-fade kept two
+    // idle frames apart on a phone, so a measure click could not be told from the labels settling.
+    fadeDuration: 0,
     attributionControl: false,
     locale: {
       "NavigationControl.ZoomIn": PLAN.locale.zoomIn,
