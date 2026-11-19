@@ -869,6 +869,15 @@ export function placeNotes({ scene, notes, text, frame, reg = "annot", role = "a
     const w = Math.max(...lines.map((l) => measure(l)));
     const H = lines.length * h;
     const anchor = note.marks?.length ? scene.anchors.get(note.marks[0]) : null;
+    // A note read as its row's must sit within a few lines of it (mvq151: a slope's notes found their first free spot
+    // far below their lines); further than that, the note line above the plot holds it, naming its row. A column at
+    // the frame's right, level with its row, is near however far across it is.
+    const near = (b) => {
+      if (!anchor) return true;
+      const dy = Math.max(0, b.y0 - anchor.y, (anchor.top ?? anchor.y) - b.y1);
+      const dx = anchor.side === "after" ? 0 : Math.max(0, b.x0 - anchor.x, anchor.x - b.x1);
+      return Math.hypot(dx, dy) <= 3 * h;
+    };
     const candidates = [];
     if (anchor) {
       const ax = anchor.x;
@@ -910,14 +919,14 @@ export function placeNotes({ scene, notes, text, frame, reg = "annot", role = "a
     const spot = candidates
       .map((c) => ({ ...c, x0: Math.max(frame.x, Math.min(frame.x + frame.width - w, c.x0)) }))
       .map((c) => ({ ...c, box: { x0: c.x0, x1: c.x0 + w, y0: c.y0, y1: c.y0 + H } }))
-      .find((c) => inside(c.box) && taken.every((t) => !overlaps(c.box, t)));
+      .find((c) => inside(c.box) && taken.every((t) => !overlaps(c.box, t)) && near(c.box));
     if (!spot) {
-      under.push({ index: note.index, text: note.marks?.length && !note.text.includes(note.marks[0]) ? `${note.marks[0]} : ${note.text}`.replace(" : ", ": ") : note.text });
+      under.push({ index: note.index, role: note.role ?? role, text: note.marks?.length && !note.text.includes(note.marks[0]) ? `${note.marks[0]} : ${note.text}`.replace(" : ", ": ") : note.text });
       continue;
     }
     taken.push(spot.box);
     lines.forEach((l, k) =>
-      scene.prims.push({ id: `note-${note.index}-${k}`, kind: "text", x: spot.x0, y: spot.y0 + h * (k + 0.5), text: l, anchor: "start", reg, role, o: note.o ?? 1, note: note.index }),
+      scene.prims.push({ id: `note-${note.index}-${k}`, kind: "text", x: spot.x0, y: spot.y0 + h * (k + 0.5), text: l, anchor: "start", reg, role: note.role ?? role, o: note.o ?? 1, note: note.index }),
     );
     if (anchor && spot.leader) {
       const ly = spot.box.y1 + 1;

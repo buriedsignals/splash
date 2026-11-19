@@ -500,7 +500,9 @@ export async function runVideoPosition(here, variant) {
       return EVENTS.map((e) => {
         const scene = sceneOf({ model, state: staged.states[e], frame: plotFrame, text });
         const note = noteOf[e === "hold" ? "conclusion" : e];
-        const under = note ? placeNotes({ scene, notes: [note], text, frame: plotFrame }).under : [];
+        // A note takes its row's ink: the accent only when its row is the accent.
+        const role = note?.marks?.length && !(staged.states[e].accent ?? []).includes(note.marks[0]) ? "ink" : "accent";
+        const under = note ? placeNotes({ scene, notes: [{ ...note, role }], text, frame: plotFrame }).under : [];
         return { e, scene, under };
       });
     };
@@ -510,7 +512,7 @@ export async function runVideoPosition(here, variant) {
     const plotFrame = frameFor(stacked);
     const scenes = {};
     for (const { e, scene, under } of laid) {
-      under.forEach((u, j) => scene.prims.push({ id: `note-${u.index}-top-${j}`, kind: "text", x: plotFrame.x, y: vInset + lead("annot") * 0.6 + (stacked ? lead("annot") : 0), text: u.text, anchor: "start", reg: "annot", role: "accent", o: 1 }));
+      under.forEach((u, j) => scene.prims.push({ id: `note-${u.index}-top-${j}`, kind: "text", x: plotFrame.x, y: vInset + lead("annot") * 0.6 + (stacked ? lead("annot") : 0), text: u.text, anchor: "start", reg: "annot", role: u.role ?? "accent", o: 1 }));
       scene.prims.push({ id: "unit", kind: "text", x: row.width - inset, y: vInset + lead("axis") * 0.6, text: unitLine, anchor: "end", reg: "axis", role: "muted", o: e === "establish" ? 0 : 1 });
       // A video sets every word at its register's own weight: a bold run measured in Bun drifted past Chrome's
       // width agreement (2 %), so a marked row is told by its colour and ring alone.
