@@ -470,9 +470,17 @@ export function sceneOf({ model, state, frame, text }) {
     const k1 = text.moments[1];
     add({ id: "key-from-dot", kind: "circle", cx: plot.x + r, cy: ky, r, role: "early", ring: "neutral" });
     add({ id: "key-from", kind: "text", x: plot.x + 2 * r + 5, y: ky, text: k0, anchor: "start", reg: "axis", role: "muted" });
-    const k1x = plot.x + 2 * r + 5 + W(k0, "axis") + 16;
-    add({ id: "key-to-dot", kind: "circle", cx: k1x + r, cy: ky, r, role: "neutral" });
-    add({ id: "key-to", kind: "text", x: k1x + 2 * r + 5, y: ky, text: k1, anchor: "start", reg: "axis", role: "muted" });
+    if (text.web) {
+      // On a page the gaps below are viewBox units that shrink with the window while the words keep their CSS size:
+      // a 375 px phone printed "2023" over "2000". So the second moment stands at the plot's far edge, its point after it.
+      const right = plot.x + plot.width;
+      add({ id: "key-to-dot", kind: "circle", cx: right - r, cy: ky, r, role: "neutral" });
+      add({ id: "key-to", kind: "text", x: right - 2 * r - 5, y: ky, text: k1, anchor: "end", reg: "axis", role: "muted" });
+    } else {
+      const k1x = plot.x + 2 * r + 5 + W(k0, "axis") + 16;
+      add({ id: "key-to-dot", kind: "circle", cx: k1x + r, cy: ky, r, role: "neutral" });
+      add({ id: "key-to", kind: "text", x: k1x + 2 * r + 5, y: ky, text: k1, anchor: "start", reg: "axis", role: "muted" });
+    }
     shownRows.forEach((name, i) => {
       const row = byName.get(name);
       const y = plot.y + (i + 0.5) * pitch;

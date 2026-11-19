@@ -214,6 +214,7 @@ export async function runWebPosition(here, variant) {
   const { chartWeb, plain, refusing, renderBeatWeb, storyLanguage } = await import("./web.mjs");
   const { assertPositionWebMapping, assertWebHasAControl, interactionPlanPosition, scheduleWebPosition } = await import("./gesture-position-web.mjs");
   const { GesturePositionWeb } = await import("./GesturePositionWeb.tsx");
+  const { webRowFloor } = await import("./position-row-floor.mjs");
   await refusing(here, async () => {
     const { renderWeb } = await import(chartWeb(here, "scripts", "render-web.mjs"));
     const { measureText } = await import(chartWeb(here, "scripts", "render-still.mjs"));
@@ -295,7 +296,15 @@ export async function runWebPosition(here, variant) {
           delta,
           moments: model.moments,
         };
+        // The tallest thing a dumbbell row carries: its name in the gutter, or a reading's chip beside its point.
+        const rowFloor = webRowFloor({
+          variant,
+          rows: model.rows.length,
+          lead: text.lead,
+          px: Math.max(text.lead("axis"), ...model.rows.map((r) => labelBoxPx(r.change !== undefined ? delta(r.change) : format(r.value), regs.value, measureText, { chip: true }).h)),
+        });
         const { outPath } = await renderWeb({
+          rowFloor,
           lang,
           component: GesturePositionWeb,
           props: { variant, model, resting: resting.state, controls, details, restLabel, restNotes, restLine, gutterPx, title, eyebrow, caveat, source, unit, alt, text, interaction, direction, ground: direction.ground, accent: direction.accent },

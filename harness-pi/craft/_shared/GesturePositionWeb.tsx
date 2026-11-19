@@ -24,6 +24,7 @@ import {
 import { figureVars, webRegisters } from "#shared/design-base/web.mjs";
 import { skillScriptFrom } from "#shared/design-base/skill-script.mjs";
 import { sceneOf } from "./gesture-family-position.mjs";
+import { WEB_FRAME, webFrameHeight } from "./position-row-floor.mjs";
 
 const { controlChromeCss } = await import(
   skillScriptFrom(
@@ -34,7 +35,7 @@ const { controlChromeCss } = await import(
   )
 );
 
-export const WEB_FRAME = { width: 900, pitch: 30, minHeight: 300, height: 380 };
+export { WEB_FRAME };
 const SCOPE = ".chart-figure";
 const MARK_ACTIVE_STEP = 0.3;
 
@@ -100,10 +101,7 @@ export function GesturePositionWeb({
 }) {
   const regs = webRegisters(direction, { ink: { ink, muted, accent } });
   const W = WEB_FRAME.width;
-  const H =
-    variant === "dumbbell-range-plot"
-      ? Math.max(model.rows.length * WEB_FRAME.pitch + 40, WEB_FRAME.minHeight)
-      : WEB_FRAME.height;
+  const H = webFrameHeight(variant, model.rows.length);
   assertLegible(accent, ground, {
     role: "mark",
     where: `${direction.id ?? "this direction"}'s accent`,
