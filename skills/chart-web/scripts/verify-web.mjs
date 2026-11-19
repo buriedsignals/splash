@@ -219,6 +219,7 @@ async function checkFit(page, vp) {
         xAxis: box(".chart-plot .x-axis"),
         filter: box(".chart-filter"),
         rowFloor: document.querySelector(".chart-figure")?.getAttribute("data-row-floor") ?? null,
+        narrowFloor: document.querySelector(".chart-figure")?.hasAttribute("data-narrow-floor") ?? false,
       };
     });
   const m = await measure();
@@ -227,23 +228,29 @@ async function checkFit(page, vp) {
   // THE PAGE WITHOUT ITS FLOOR — measured only when there is an overflow to account for and a
   // floor declared to account for it; restored before anything else reads the page.
   let without = null;
-  if (vOverflow > 1 && m.rowFloor !== null) {
+  // The narrow page's floor (render-web.mjs, narrowFloorCss) is a floor too, and is taken away the same way.
+  const floored = m.rowFloor !== null || m.narrowFloor;
+  if (vOverflow > 1 && floored) {
     await page.evaluate(() => {
       const figure = document.querySelector(".chart-figure");
-      figure.dataset.rowFloorHeld = figure.getAttribute("data-row-floor");
+      if (figure.hasAttribute("data-row-floor")) figure.dataset.rowFloorHeld = figure.getAttribute("data-row-floor");
       figure.removeAttribute("data-row-floor");
+      figure.toggleAttribute("data-narrow-floor-held", figure.hasAttribute("data-narrow-floor"));
+      figure.removeAttribute("data-narrow-floor");
     });
     await sleep(60);
     without = await measure();
     await page.evaluate(() => {
       const figure = document.querySelector(".chart-figure");
-      figure.setAttribute("data-row-floor", figure.dataset.rowFloorHeld);
+      if (figure.dataset.rowFloorHeld !== undefined) figure.setAttribute("data-row-floor", figure.dataset.rowFloorHeld);
       delete figure.dataset.rowFloorHeld;
+      if (figure.hasAttribute("data-narrow-floor-held")) figure.setAttribute("data-narrow-floor", "");
+      figure.removeAttribute("data-narrow-floor-held");
     });
     await sleep(60);
   }
   const verdict = rowFloorVerdict({
-    declared: m.rowFloor !== null,
+    declared: floored,
     overflowPx: vOverflow,
     overflowWithoutFloorPx: without ? without.docH - without.innerH : null,
     floorGrowthPx: without ? Math.round(m.plot.h - without.plot.h) : 0,

@@ -186,6 +186,8 @@ async function renderWeb({ component, props, outDir, name, frame = null, drawing
   // THE ROW FLOOR TRAVELS WITH THE PAGE, as attributes on the figure — the stylesheet's floor rules
   // are scoped to them and `verify-web.mjs` reads them back. See `rowFloorCss`.
   markup = stampRowFloor(markup, rowFloor, name ?? "this beat");
+  // The narrow page's floor travels the same way, so verify-web.mjs can take it away and measure. See `narrowFloorCss`.
+  if (!drawing) markup = stampNarrowFloor(markup);
 
   const declaresEntrance = /\sdata-entrance-motion="/.test(markup);
 
@@ -1254,6 +1256,36 @@ function entranceCss() {
 `.trim();
 }
 
+/**
+ * THE NARROW PAGE SCROLLS RATHER THAN SHRINK THE CHART. On a phone the words of the column (a long title wraps onto
+ * six lines) leave the plot little of a window-high figure, the plot shrinks to PLOT_FLOOR_PX, and the cell — which
+ * keeps the viewBox's ratio — gives its WIDTH back with its height: measured 2026-11-19 at 375 × 812, the connected
+ * scatter drew in ~140 × 70 px, the lollipop in ~180 × 90 px, and every name printed over its neighbour. Below
+ * NARROW_FLOOR_BELOW_PX of figure width the plot holds at least the height its full track width gives at that ratio,
+ * so the drawing keeps the page's width and the page scrolls. The window fit is a desktop promise — at 375 px a reader
+ * scrolls anyway. Above the threshold nothing here applies, so a desktop page is the page it was. A map (a beat that
+ * declared a drawing share) keeps its own share rule.
+ */
+export const NARROW_FLOOR_BELOW_PX = 640;
+
+export function stampNarrowFloor(markup) {
+  return markup.replace(/<figure class="chart-figure"/, "<figure class=\"chart-figure\" data-narrow-floor");
+}
+
+function narrowFloorCss(plotWidth, plotHeight) {
+  return `/* THE NARROW PAGE SCROLLS RATHER THAN SHRINK THE CHART — see narrowFloorCss. As specific as the rule for rows and
+   later, and it takes the larger of the two, so a page that carries both keeps both. The figure is the container the query and
+   its cqw read; inline-size containment changes nothing else, since the figure already takes its width from its parent. */
+.chart-figure[data-narrow-floor] { container-type: inline-size; }
+@container (max-width: ${NARROW_FLOOR_BELOW_PX}px) {
+  .chart-figure[data-narrow-floor] .chart-plot {
+    min-height: max(${PLOT_FLOOR_PX}px, calc((100cqw - var(--y-gutter) - var(--end-gutter, 0px)) * ${plotHeight} / ${plotWidth} + var(--x-axis-h)), calc(var(--row-floor-cell, 0px) + var(--x-axis-h)));
+  }
+  /* The overflow does not carry the figure's bottom padding; this keeps the margin in the scroll (as the row floor does). */
+  .chart-figure[data-narrow-floor]::after { content: ""; flex: 0 0 ${FRAME_PAD_PX}px; }
+}`;
+}
+
 function buildCss({ ground, accent, ink, muted, grid, plot, frame = null, rowFloor = null, filter = null, entrance = false, fontStack = "sans-serif", drawing = null, direction = null }) {
   const { width: plotWidth, height: plotHeight } = assertPlotGeometry(plot);
   // The display's phone step, only for a direction that files one. See `PHONE_STEP_BELOW_PX`.
@@ -1553,6 +1585,7 @@ svg.chart { display: block; }
 }
 #tooltip[hidden] { display: none; }
 ${rowFloorRules ? `\n${rowFloorRules}\n` : ""}
+${drawing ? "" : narrowFloorCss(plotWidth, plotHeight)}
 ${
   drawing
     ? `

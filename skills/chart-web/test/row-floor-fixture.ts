@@ -7,6 +7,7 @@ import {
   assertPlotCellIsItsViewBox,
   assertRowFloor,
   buildCss,
+  stampNarrowFloor,
   stampRowFloor,
   webDocument,
 } from "../scripts/render-web.mjs";
@@ -49,8 +50,9 @@ export function rowMarkup({ spacerPx = 0, circleR = 0, rounds = false }: { space
 export const FURNITURE = { ground: "#ffffff", accent: "#0b7a75", ink: "#111111", muted: "#666666", grid: "#dddddd" };
 
 /** The whole page, through the same three guards `renderWeb` runs before it writes one. */
-export function rowPage({ spacerPx = 0, rowFloor = null as typeof FLOOR | null, rounds = false } = {}) {
-  const markup = stampRowFloor(rowMarkup({ spacerPx, rounds }), rowFloor);
+export function rowPage({ spacerPx = 0, rowFloor = null as typeof FLOOR | null, rounds = false, narrow = false } = {}) {
+  const stamped = stampRowFloor(rowMarkup({ spacerPx, rounds }), rowFloor);
+  const markup = narrow ? stampNarrowFloor(stamped) : stamped;
   const css = buildCss({ ...FURNITURE, plot: PLOT, rowFloor, fontStack: "Georgia, serif" });
   const html = webDocument({ lang: "en", title: "Row floor fixture", css, markup, script: "" });
   assertPlotCellIsItsViewBox(html);
