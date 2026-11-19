@@ -116,3 +116,11 @@ export function composeUnitsStatic({ gestures, groups }) {
 
   return { ...plate, stepBack: plate.stepBack.filter((n) => !plate.accent.includes(n)) };
 }
+
+/** The part a bracket of the whole stands for, as a stretch of the whole's spine: from its own row's top to its own
+ *  row's foot. Null for a bracket of its own groups, whose spine is already the part. */
+export function bracketPart(br, rowOf) {
+  if (!br.whole) return null;
+  const rows = br.own.map(rowOf);
+  return { y1: Math.min(...rows.map((r) => r.top)), y2: Math.max(...rows.map((r) => r.top + r.band)) };
+}

@@ -32,6 +32,7 @@ import {
   registerOf,
 } from "#shared/design-base/register.mjs";
 import { layoutRows } from "./gesture-family-units.mjs";
+import { bracketPart } from "./gesture-units-static.mjs";
 
 const FRAME = { width: 960, height: 540 };
 
@@ -485,6 +486,7 @@ export function GestureUnitsStatic({
         const y1 = Math.max(...rowsOf.map((r) => r.top + r.band));
         const x = plotRight + 4 + j * 14;
         const lines = sideLines[j];
+        const part = bracketPart(br, (n: string) => geo.rows[groups.findIndex((g) => g.name === n)]);
         return (
           <g key={`br${j}`}>
             <path
@@ -493,6 +495,9 @@ export function GestureUnitsStatic({
               stroke={inkText}
               strokeWidth={1.4}
             />
+            {part ? (
+              <line data-partspine={j} x1={x} x2={x} y1={part.y1} y2={part.y2} stroke={accentInk} strokeWidth={4} />
+            ) : null}
             {lines.map((l, k) => (
               <text
                 key={k}
