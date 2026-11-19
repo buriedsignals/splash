@@ -43,7 +43,7 @@ const shapeOf = (args) =>
  * 'r.parts.map')" until the session stopped. The fault now names the field, its line in beat.mjs and the keys it
  * receives. A function's own Error (a check's refusal) passes word for word.
  */
-function explainFaults(beat) {
+export function explainFaults(beat) {
   for (const [key, fn] of Object.entries(beat)) {
     if (typeof fn !== "function") continue;
     const explain = (error, args) => {
@@ -58,7 +58,14 @@ function explainFaults(beat) {
           `beat.mjs's ${key}(…) failed${line ? ` at line ${line}` : ""}: ${bare}(…) is called as a function, but nothing in beat.mjs defines it — ${param}.${bare} is the number ${key} receives, not a function. A value that works: define it at the top of beat.mjs, e.g. ${bare === "rank" ? 'const rank = (n) => (n === 1 ? "1re" : `${n}e`);' : `const ${bare} = (v) => String(v);`} (the example defines its helpers there), or print ${param}.${bare} directly.`,
         );
       }
-      return new Error(`beat.mjs's ${key}(…) failed${line ? ` at line ${line}` : ""}: ${error.message}. ${key} receives ${shapeOf(args)} and nothing else: read anything more from beat.mjs's own constants, by those keys.`);
+      // An index past the end of an array the function receives (c.leaders[2] where the data crowns two): listing the
+      // keys reads as "it is there"; the count and the entries say it is not (gx-flow-map web, Gemma 12B, mvg119).
+      const past = /evaluating '(\w+)\.(\w+)\[(\d+)\]/.exec(String(error.message));
+      const held = past && args.find((a) => a && typeof a === "object" && Array.isArray(a[past[2]]))?.[past[2]];
+      const count = held && Number(past[3]) >= held.length
+        ? ` ${past[1]}.${past[2]} holds ${held.length} entries on this data, ${JSON.stringify(held).slice(0, 240)}: [${past[3]}] does not exist — a value that works: ${held.length ? `${past[1]}.${past[2]}[${held.length - 1}]` : `no ${past[2]} sentence`}, or drop the words that need it.`
+        : "";
+      return new Error(`beat.mjs's ${key}(…) failed${line ? ` at line ${line}` : ""}: ${error.message}.${count} ${key} receives ${shapeOf(args)} and nothing else: read anything more from beat.mjs's own constants, by those keys.`);
     };
     beat[key] = function (...args) {
       try {
