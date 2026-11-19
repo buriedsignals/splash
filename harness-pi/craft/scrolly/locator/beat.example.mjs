@@ -24,7 +24,7 @@ const rows = table.rows.map((r) => ({
 
 const stations = rows.filter((r) => r.kind === "station");
 const sites = stations.map((s) => ({ value: s.mw, lon: s.lon, lat: s.lat, country: s.country }));
-const biggest = stations.reduce((a, b) => (b.mw > a.mw ? b : a));
+const biggest = sites.reduce((a, b) => (b.value > a.value ? b : a));
 // The settlements named: the six most populous, chosen by a rule, not by hand. MapTiler's map spells
 // two of them otherwise than the data (Odesa, Rostov-on-Don): the names must be the map's.
 const TILE_NAME = { Odessa: "Odesa", Rostov: "Rostov-on-Don" };
@@ -78,7 +78,7 @@ export default {
   title: [
     "La plus grosse centrale bas-carbone d’Europe est en Ukraine",
     "La plus grosse centrale d’Europe est en Ukraine",
-    `Zaporijjia, ${format(biggest.mw)}`,
+    `Zaporijjia, ${format(biggest.value)}`,
   ],
   // The last card: the accounting the map rests on.
   limits: "Lecture : la base enregistre une puissance installée, jamais une production. La centrale est dessinée là où elle est, pas là où elle produit.",

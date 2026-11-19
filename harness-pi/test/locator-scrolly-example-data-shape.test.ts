@@ -62,3 +62,13 @@ describe("the locator scrolly example on the seed's data", () => {
     expect(beat.cards.country(r)).toMatch(/n’est pas rapportée/);
   });
 });
+
+// mvg95 (2026-11-19) and an earlier 12B run (2026-11-16): the example kept two shapes of the same station, rows with
+// `mw` and sites with `value`, and the 12B swapped one for the other — the title read `.mw` off a site and printed
+// "NaN MW", then six edits never landed. One shape for every printed number leaves nothing to swap.
+describe("locator scrolly example — one shape for a station's number", () => {
+  it("should read capacity as `mw` only where a site is built", async () => {
+    const source = await Bun.file(EXAMPLE).text();
+    expect(source.match(/\.mw\b/g)?.length).toBe(1);
+  });
+});
