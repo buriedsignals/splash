@@ -2371,3 +2371,17 @@ Every point the owner's read of the 12B and Qwen renders raised, fixed in code a
 - Units static: bracket (ba205aedb). mvq150 line chip (b7e8ea80c). mvq151 slopegraph notes (a5a2ea9b3). mvq153 bullet scrolly (0b3be967d).
 - Closed, owner's decision (2026-11-19): web maps on wide windows (flow, proportional symbol) fit to the height and show ~170° of longitude. That stays: a wider window shows more map. No side column, no width cap.
 - Phone layout: deferred until desktop is validated.
+
+## 2026-11-19 — phone pass (375 × 812)
+
+Each web kit's kept run, replayed at 375 × 812 after desktop validation and checked against its shot. Each fix has a test that fails without it; desktop shots unchanged.
+
+- Stack family (00a21c95c), lollipop (27327f88e): value axis floored on a narrow page; a pair's figures kept apart.
+- chart-web trunk (1f318f1d4): below 640 px a page scrolls rather than shrink the plot under a tall header; verify-web accepts that scroll when it is all the declared floor's.
+- Connected scatter (a749ceb67): a name set below its point stays above the plot's bottom edge.
+- Keyed kits (radar, parallel coordinates, sankey, gantt; c4968954d, a52a8748f): their words sit inside the viewBox and printed at ~5 px. They now draw a second plate laid out for the phone, with registers scaled by the plot's shrink (`PHONE_PLOT_PX` = 343), shown under 640 px by container query. Sankey and gantt take a taller phone box so their rows keep their words apart; the trunk gives that plate's cell its own ratio. Parallel-coordinate heads and top readings that crowd are set on two alternating lines.
+- Marimekko, treemap: fine as they were.
+- By design: keyed pages reserve ~136 px of note space above the plot on a phone (no layout shift when a note appears), as the connected scatter does.
+- Not checked: small-multiples. Its kept run is now refused by a later guard (beat.mjs types its rows instead of reading data.json), unrelated to this pass.
+- Minor, open: pictogram leaves empty space under the plot on a phone.
+- Suites: chart-web 340 pass, 1 fail ("a floored plot keeps its round marks round", fails on HEAD before this pass too). Harness 2361 pass, 3 fail: two live-map desktop-shot tests time out waiting for MapTiler (`mw-live` never set) and the bubble-map standfirst test timed out in the full run but passes alone. None import the code changed here.
