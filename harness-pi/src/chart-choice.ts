@@ -99,6 +99,8 @@ export function resolveNeed(
     .toLowerCase()
     .replace(/^\d+[.)]\s*/, "")
     .trim();
+  // The whole menu pasted back (the 12B, r8 2026-11-20) names every need and decides none.
+  if (list.filter(({ need }) => p.includes(need.title.toLowerCase())).length > 1) return undefined;
   const exact = list.find(
     ({ need }) =>
       need.title.toLowerCase() === p ||

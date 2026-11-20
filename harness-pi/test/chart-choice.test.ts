@@ -41,4 +41,8 @@ describe("resolveNeed", () => {
   it("should name no need when the sentence names none of them", () => {
     expect(resolveNeed("comparison between categories", "Lisboa is big.")).toBeUndefined();
   });
+  // r8 road deaths on the 12B (2026-11-20) pasted the whole menu as need: that is no decision.
+  it("should name no need when the pick lists several of them", () => {
+    expect(resolveNeed("change over time", "show a measured trend over time; compare before and after; show rank changing over time")).toBeUndefined();
+  });
 });

@@ -694,7 +694,7 @@ export function storyboardTools(bases: Bases, dialogue: Dialogue, { slots: allow
             ? `the recorded intent ${JSON.stringify(current.intent)} names none of the families; ask the journalist "${FAMILY_QUESTION}", record_slot ${slot} intent with their answer, then call show_candidates with need`
             : `no intent is recorded: ask the journalist "${FAMILY_QUESTION}", record_slot ${slot} intent with their answer, then call show_candidates with need`);
         const picked = resolveNeed(family, need);
-        if (!picked) throw new Error(`need must be one of: ${needMenu(family)} — give its number`);
+        if (!picked) throw new Error(`need must be one of: ${needMenu(family)} — give ONE number, the need this story's reader must see`);
         candidates = rankedForNeed(picked, family, medium, slot);
       } else if (family && !candidates.some((c) => journalistNamed(c.type, medium)))
         // Types are the journalist's to name; otherwise the student's one decision is the need, and code ranks.
