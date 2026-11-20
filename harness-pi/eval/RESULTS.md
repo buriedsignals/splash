@@ -2387,3 +2387,40 @@ Each web kit's kept run, replayed at 375 × 812 after desktop validation and che
 - Pictogram (c913906ed): 18 squares on one line printed ~7 px wide. Its phone plate wraps each row's squares onto lines of ~14-unit squares (`phoneUnitsBox`), ~11 px on screen; the 40-square bracket wraps onto three lines. The empty space under the plot was the page being shorter than the window, not a defect. In the same commit the trunk's narrow floor stopped setting the plot's aspect-ratio to the phone plate's box (it ignored the name gutter and left ~80 px of blank); the plot takes the floor's height. Small-multiples and sankey replayed after it, unchanged.
 - Desktop, not changed: small-multiples labels print small (~7 px) in a narrow centred grid; this predates the pass and desktop was validated.
 - Suites (after the pictogram): chart-web 342 pass, 0 fail. Harness 2371 pass, 0 fail (2378 tests, 348 s). The earlier three harness failures were timeouts under full-suite load: run alone, the live-map desktop-shot tests pass in 13 s and the bubble standfirst in 74 s.
+
+## 2026-11-20 — chart choice: the student names the need, code ranks the types
+
+The 2026-11-16 probes (`eval/choice/hier-probe.ts`) split the choice where the students are reliable. A free pick
+among 20 intents scored 13–39 %, the need inside a family 70–77 % (Qwen 70, 12B 77, code alone 46), and the type
+step model ≈ code. So:
+
+1. The journalist answers the family, now one of seven: comparison between categories, change over time,
+   distribution, relationship between measures, part-to-whole, sequence or flow, location (a map slot is always
+   location). `src/chart-choice.ts` reads it from their words, accents stripped.
+2. The open gap lists the family's 2–5 needs, numbered, from `skills/storyboard/references/chart-choice.md`; the
+   student's one decision is `show_candidates {need}`.
+3. Code takes that need's ranked table, keeps the types this harness draws, takes the first and the next one that
+   is a different idea (`formatCandidateRows` accepts the pair), and uses the table's use-when text as the reason.
+   A need with nothing drawable borrows its family's other tables.
+4. The journalist picks between the two. Types the student names itself are refused unless the journalist's own
+   words named one (ab13cef17).
+
+Commits: 487bfa2e3 (need path), ab13cef17 (free path only for the journalist's types), 579baf27e (a sentence given
+as need resolves by shared word stems, ties to the family's more general need), 3b8d42db4 (a need that lists
+several needs is refused). Suite 2391 pass / 0 fail.
+
+Live, storyboard only (`SPLASH_STOP_AFTER=storyboard`, Osaurus, unseeded), three sheets:
+
+| cell | Qwen3.5-9B | Gemma 12B, first pass | Gemma 12B, after the fixes |
+|---|---|---|---|
+| stress-p transport (categories) | need 1 → Bar, Pictogram; chose Bar | need = a sentence about Lisboa, refused twice; menu came from record_slot's net (Bar, Treemap) | need "rank or compare one value per category" → Bar, Pictogram; chose Bar |
+| r8 road deaths (time) | need "show a measured trend over time" → Line, Bar; chose Line | need = the whole menu pasted, code took the first (Line, Bar) — no decision | need "show a measured trend over time" → Line, Bar; chose Line |
+| stress-t recycling (map) | need "2. compare named regions" → Choropleth, Proportional symbol; chose Choropleth | need "compare named regions" → same menu; chose Choropleth | — |
+
+Final state: 6/6 cells reach the menu through one need, and every journalist pick is on it. Qwen also sends its
+own `candidates` next to `need`; the need path ignores them.
+
+Limits: one run per cell, three sheets, and the scripted journalist answers the family from the sheet's `intent`
+key. A real journalist answering "where Germany stands" will lean on `familyFor`'s word lists, which are short.
+The stem fallback can mis-resolve a sentence that shares a word with a neighbouring need ("changed" → "rank
+changing over time"); it is reached only when the student ignores the numbered list.

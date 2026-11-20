@@ -1049,6 +1049,20 @@ describe("candidates from the reader's need", () => {
     ).rejects.toThrow(/give need: .*1\. rank or compare one value per category/);
   });
 
+  // stress-t on Qwen (2026-11-20, after ab13cef17): a map slot, two map types the journalist never named.
+  it("should ask a map slot for the need when the student names its own map types", async () => {
+    const tools = storyboardTools(bases, dialogue);
+    dialogue.lastJournalist = "A map.";
+    await call(tools.recordSlot, { slot: "1", field: "medium", value: "map" });
+    dialogue.lastJournalist = "Static.";
+    await call(tools.recordSlot, { slot: "1", field: "format", value: "static" });
+    dialogue.lastJournalist = "Comparison between places.";
+    await call(tools.recordSlot, { slot: "1", field: "intent", value: "comparison between categories" });
+    await expect(
+      call(tools.showCandidates, { slot: "1", candidates: [{ type: "choropleth", why: "a" }, { type: "proportional-symbol", why: "b" }] }),
+    ).rejects.toThrow(/give need: .*2\. compare named regions/);
+  });
+
   it("should keep a type the journalist named on the free path", async () => {
     const tools = await withIntent();
     dialogue.lastJournalist = "I'd like a lollipop chart, please.";
